@@ -290,7 +290,7 @@ body {
 /* 快速操作按钮 */
 .quick-actions {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--spacing-md);
     margin-top: var(--spacing-xl);
     max-width: 800px;
