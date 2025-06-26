@@ -823,7 +823,22 @@ body {
     .welcome-content h1 { font-size: 2rem; }
     .search-logo { font-size: 3rem; }
     
-    .search-tips { flex-direction: column; gap: 0.5rem; align-items: center; }
+    .search-tips { 
+        flex-direction: column; 
+        gap: 0.5rem; 
+        align-items: center; 
+        max-width: 400px;
+    }
+    
+    .tip {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
+        gap: 0.3rem;
+    }
+    
+    .tip i {
+        font-size: 0.7rem;
+    }
     
     .quick-actions {
         grid-template-columns: repeat(3, 1fr); gap: 0.75rem;
@@ -872,13 +887,48 @@ body {
         font-size: 0.95rem;
         min-height: 36px;
     }
+    
+    .input-wrapper .input-icon {
+        font-size: 0.9rem;
+        margin-right: 0.4rem;
+    }
+    
+    /* 平板端输入框滚动条优化 */
+    #messageInput::-webkit-scrollbar,
+    #chatInput::-webkit-scrollbar {
+        width: 5px;
+    }
+    
+    #messageInput::-webkit-scrollbar-thumb,
+    #chatInput::-webkit-scrollbar-thumb {
+        background: rgba(66,133,244,0.18);
+    }
+    
+    #messageInput::-webkit-scrollbar-thumb:hover,
+    #chatInput::-webkit-scrollbar-thumb:hover {
+        background: rgba(66,133,244,0.35);
+    }
 }
 
 @media (max-width: 480px) {
     .welcome-section { padding: 1rem; }
     .welcome-content h1 { font-size: 1.75rem; }
     .search-logo { font-size: 2.5rem; }
-    .search-tips { font-size: 0.7rem; }
+    .search-tips { 
+        font-size: 0.7rem; 
+        max-width: 300px;
+        gap: 0.4rem;
+    }
+    
+    .tip {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+        gap: 0.25rem;
+    }
+    
+    .tip i {
+        font-size: 0.65rem;
+    }
     
     .quick-actions { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-top: 1rem; }
     .quick-action-btn { padding: 0.625rem 0.75rem; font-size: 0.8rem; min-height: 40px; }
@@ -927,6 +977,22 @@ body {
     .input-wrapper .input-icon {
         font-size: 0.9rem;
         margin-right: 0.4rem;
+    }
+    
+    /* 移动端输入框滚动条优化 */
+    #messageInput::-webkit-scrollbar,
+    #chatInput::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    #messageInput::-webkit-scrollbar-thumb,
+    #chatInput::-webkit-scrollbar-thumb {
+        background: rgba(66,133,244,0.15);
+    }
+    
+    #messageInput::-webkit-scrollbar-thumb:hover,
+    #chatInput::-webkit-scrollbar-thumb:hover {
+        background: rgba(66,133,244,0.3);
     }
 }
 
@@ -1032,22 +1098,138 @@ body {
     justify-content: center;
     gap: 1.5rem;
     margin-top: 1rem;
-    opacity: 0.7;
+    opacity: 0.8;
+    flex-wrap: wrap;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    animation: fadeInUp 0.6s ease-out 0.3s both;
 }
 
 .tip {
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.8);
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.9);
     font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: default;
+    user-select: none;
+    animation: tipFadeIn 0.5s ease-out both;
+    position: relative;
+}
+
+.tip:nth-child(1) { animation-delay: 0.4s; }
+.tip:nth-child(2) { animation-delay: 0.5s; }
+.tip:nth-child(3) { animation-delay: 0.6s; }
+.tip:nth-child(4) { animation-delay: 0.7s; }
+.tip:nth-child(5) { animation-delay: 0.8s; }
+
+@keyframes tipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.tip:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    color: rgba(255,255,255,1);
+}
+
+.tip i {
+    font-size: 0.75rem;
+    color: #4285f4;
+    opacity: 0.9;
+    transition: all 0.3s ease;
+}
+
+.tip:hover i {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* 自定义工具提示样式 */
+.tip::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
 
 .tip::before {
-    content: '\f0eb';
-    font-family: 'Font Awesome 6 Free';
+    content: '';
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(0,0,0,0.9);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+}
+
+.tip:hover::after,
+.tip:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-5px);
+}
+
+.tip:hover::before {
+    transform: translateX(-50%) translateY(-10px);
+}
+
+/* 特殊图标的样式调整 */
+.tip i.fa-shift {
     font-weight: 900;
-    margin-right: 0.25rem;
-    font-size: 0.8rem;
-    color: #4285f4;
+    font-style: italic;
+}
+
+.tip i.fa-keyboard {
+    color: #34a853;
+}
+
+.tip i.fa-search {
+    color: #fbbc04;
+}
+
+.tip i.fa-trash {
+    color: #ea4335;
+}
+
+.tip i.fa-paste {
+    color: #9c27b0;
 }
 
 /* 加载指示器 */
@@ -1110,4 +1292,63 @@ body {
 .message.deleting {
     transform: translateX(100px) scale(0.8); opacity: 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 输入框滚动条样式 */
+#messageInput::-webkit-scrollbar,
+#chatInput::-webkit-scrollbar {
+    width: 6px;
+}
+
+#messageInput::-webkit-scrollbar-track,
+#chatInput::-webkit-scrollbar-track {
+    background: rgba(66,133,244,0.05);
+    border-radius: 3px;
+    margin: 2px 0;
+}
+
+#messageInput::-webkit-scrollbar-thumb,
+#chatInput::-webkit-scrollbar-thumb {
+    background: rgba(66,133,244,0.2);
+    border-radius: 3px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#messageInput::-webkit-scrollbar-thumb:hover,
+#chatInput::-webkit-scrollbar-thumb:hover {
+    background: rgba(66,133,244,0.4);
+    transform: scaleX(1.2);
+}
+
+#messageInput::-webkit-scrollbar-thumb:active,
+#chatInput::-webkit-scrollbar-thumb:active {
+    background: rgba(66,133,244,0.6);
+}
+
+/* 输入框聚焦时的滚动条样式 */
+.input-wrapper:focus-within #messageInput::-webkit-scrollbar-thumb,
+.input-wrapper:focus-within #chatInput::-webkit-scrollbar-thumb,
+.search-input-wrapper:focus-within #messageInput::-webkit-scrollbar-thumb {
+    background: rgba(66,133,244,0.3);
+    box-shadow: 0 0 4px rgba(66,133,244,0.2);
+}
+
+.input-wrapper:focus-within #messageInput::-webkit-scrollbar-thumb:hover,
+.input-wrapper:focus-within #chatInput::-webkit-scrollbar-thumb:hover,
+.search-input-wrapper:focus-within #messageInput::-webkit-scrollbar-thumb:hover {
+    background: rgba(66,133,244,0.5);
+    box-shadow: 0 0 6px rgba(66,133,244,0.3);
+}
+
+/* Firefox 滚动条样式 */
+#messageInput,
+#chatInput {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(66,133,244,0.2) rgba(66,133,244,0.05);
+}
+
+.input-wrapper:focus-within #messageInput,
+.input-wrapper:focus-within #chatInput,
+.search-input-wrapper:focus-within #messageInput {
+    scrollbar-color: rgba(66,133,244,0.3) rgba(66,133,244,0.05);
 } 

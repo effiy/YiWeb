@@ -23,8 +23,10 @@
                         <button class="send-btn" id="sendBtn" disabled title="发送消息 (Enter)"><i class="fas fa-paper-plane"></i></button>
                     </div>
                     <div class="search-tips">
-                        <span class="tip">按 Enter 发送</span>
-                        <span class="tip">Ctrl + K 快速聚焦</span>
+                        <span class="tip" title="按回车键快速发送消息"><i class="fas fa-keyboard"></i>Enter 发送</span>
+                        <span class="tip" title="按住Shift键再按回车键可以换行"><i class="fas fa-shift"></i>Shift+Enter 换行</span>
+                        <span class="tip" title="快速聚焦到输入框"><i class="fas fa-search"></i>Ctrl+K 聚焦</span>
+                        <span class="tip" title="清空所有对话记录"><i class="fas fa-trash"></i>Ctrl+L 清空</span>
                     </div>
                 </div>
 
@@ -58,7 +60,7 @@
             <div class="input-container">
                 <div class="input-wrapper">
                     <i class="fas fa-search input-icon"></i>
-                    <textarea id="chatInput" placeholder="继续对话... (Shift+Enter 换行 | Enter 发送 | Ctrl+L 清空 | Ctrl+K 聚焦)" rows="1" maxlength="2000"></textarea>
+                    <textarea id="chatInput" placeholder="继续对话..." rows="1" maxlength="2000"></textarea>
                     <button class="send-btn" id="chatSendBtn" disabled title="发送消息"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
