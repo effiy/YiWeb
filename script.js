@@ -457,10 +457,6 @@ async function sendMessage(inputElement) {
         setTimeout(() => {
             elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
         }, 100);
-        
-        // 添加发送成功反馈
-        showToast('消息发送成功', 'success');
-        
     } catch (error) {
         hideLoading();
         showToast('发送失败，请重试', 'error');
