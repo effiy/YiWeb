@@ -19,6 +19,7 @@ let typingTimeout = null;
 document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
     autoResizeTextarea(elements.messageInput);
+    autoResizeTextarea(elements.chatInput);
     elements.messageInput.focus();
     setupKeyboardShortcuts();
     preloadAnimations();
@@ -296,9 +297,21 @@ function handleInput() {
 // 处理键盘事件 - 优化交互
 function handleKeyDown(e) {
     if (e.key === 'Enter') {
-        e.preventDefault();
         const input = e.target;
         const sendBtn = input === elements.messageInput ? elements.sendBtn : elements.chatSendBtn;
+        
+        // 如果按下 Shift + Enter，允许换行
+        if (e.shiftKey) {
+            // 不阻止默认行为，允许换行
+            // 自动调整文本框高度
+            if (input.tagName === 'TEXTAREA') {
+                setTimeout(() => autoResizeTextarea(input), 0);
+            }
+            return;
+        }
+        
+        // 普通 Enter 键发送消息
+        e.preventDefault();
         
         if (!sendBtn.disabled) {
             // 添加键盘发送的视觉反馈
@@ -691,6 +704,8 @@ function switchToChat() {
         });
         
         elements.chatInput.focus();
+        // 确保 chatInput 也设置自动调整高度
+        autoResizeTextarea(elements.chatInput);
     }, 300);
 }
 
