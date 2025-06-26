@@ -9,7 +9,10 @@ const elements = {
     chatSendBtn: document.getElementById('chatSendBtn'),
     chatMessages: document.getElementById('chatMessages'),
     loadingIndicator: document.getElementById('loadingIndicator'),
-    quickActions: document.querySelectorAll('.quick-action-btn')
+    quickActions: document.querySelectorAll('.quick-action-btn'),
+    scrollToBottomBtn: document.getElementById('scrollToBottomBtn'),
+    homeMessageInput: document.getElementById('homeMessageInput'),
+    homeSendBtn: document.getElementById('homeSendBtn')
 };
 
 let isFirstMessage = true, isTyping = false, messageIdCounter = 0, lastMessageTime = 0;
@@ -68,13 +71,16 @@ function initializeEventListeners() {
     // 聊天区域事件 - 优化交互
     elements.chatMessages.addEventListener('click', handleChatAreaClick);
     elements.chatMessages.addEventListener('dblclick', handleMessageDoubleClick);
-    elements.chatMessages.addEventListener('scroll', handleChatScroll);
+    elements.chatMessages.addEventListener('scroll', handleScroll);
     
     // 触摸事件支持
     if ('ontouchstart' in window) {
         elements.chatMessages.addEventListener('touchstart', handleTouchStart);
         elements.chatMessages.addEventListener('touchend', handleTouchEnd);
     }
+    
+    // 检测键盘弹出
+    detectKeyboardOpen();
 }
 
 // 处理输入框聚焦 - 优化交互
@@ -134,15 +140,24 @@ function handleQuickActionLeave() {
 }
 
 // 处理聊天区域滚动
-function handleChatScroll() {
-    const { scrollTop, scrollHeight, clientHeight } = this;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 50;
+function handleScroll() {
+    const { scrollTop, scrollHeight, clientHeight } = elements.chatMessages;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
     
-    // 自动滚动到底部的视觉反馈
-    if (isNearBottom) {
-        this.style.scrollBehavior = 'smooth';
+    if (isAtBottom) {
+        elements.scrollToBottomBtn.classList.remove('show');
     } else {
-        this.style.scrollBehavior = 'auto';
+        elements.scrollToBottomBtn.classList.add('show');
+    }
+    
+    // 检测滚动状态，为输入区域添加吸顶效果
+    const inputSection = document.querySelector('.input-section');
+    if (inputSection) {
+        if (scrollTop > 10) {
+            inputSection.classList.add('scrolling');
+        } else {
+            inputSection.classList.remove('scrolling');
+        }
     }
 }
 
@@ -1007,5 +1022,53 @@ function addMessage(content, type, messageId = null) {
     }, 100);
     
     return messageId;
+}
+
+// 检测键盘弹出
+function detectKeyboardOpen() {
+    const inputSection = document.querySelector('.input-section');
+    const messageInput = elements.messageInput;
+    
+    if (!inputSection || !messageInput) return;
+    
+    // 监听输入框聚焦事件
+    messageInput.addEventListener('focus', function() {
+        // 延迟检测，确保键盘完全弹出
+        setTimeout(() => {
+            const windowHeight = window.innerHeight;
+            const inputRect = messageInput.getBoundingClientRect();
+            const inputBottom = inputRect.bottom;
+            
+            // 如果输入框底部距离窗口底部很近，说明键盘已弹出
+            if (inputBottom < windowHeight - 100) {
+                inputSection.classList.add('keyboard-open');
+            }
+        }, 300);
+    });
+    
+    // 监听输入框失焦事件
+    messageInput.addEventListener('blur', function() {
+        // 延迟移除，确保键盘完全收起
+        setTimeout(() => {
+            inputSection.classList.remove('keyboard-open');
+        }, 300);
+    });
+    
+    // 监听窗口大小变化（键盘弹出/收起时）
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            const windowHeight = window.innerHeight;
+            const inputRect = messageInput.getBoundingClientRect();
+            const inputBottom = inputRect.bottom;
+            
+            if (inputBottom < windowHeight - 100) {
+                inputSection.classList.add('keyboard-open');
+            } else {
+                inputSection.classList.remove('keyboard-open');
+            }
+        }, 100);
+    });
 }
 
