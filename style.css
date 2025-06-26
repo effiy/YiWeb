@@ -534,6 +534,8 @@ body::before {
     border: 1px solid var(--border-primary);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    max-width: 100%;
+    width: 100%;
 }
 
 .chat-container::before {
@@ -652,11 +654,14 @@ body::before {
 .chat-messages { 
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: var(--spacing-xl);
     background: var(--bg-secondary);
     position: relative;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
 }
 
 .chat-messages::before {
@@ -679,6 +684,7 @@ body::before {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-lg);
+    width: 100%;
     max-width: 100%;
     margin: 0 auto;
 }
@@ -690,6 +696,8 @@ body::before {
     transform: translateY(20px);
     animation: slideInFromBottom 0.5s ease forwards;
     position: relative;
+    width: 100%;
+    max-width: 100%;
 }
 
 .message.show { 
@@ -808,6 +816,9 @@ body::before {
     z-index: 100;
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .input-section::before {
@@ -852,9 +863,11 @@ body::before {
 }
 
 .input-container { 
-    max-width: none; 
+    width: 100%;
+    max-width: 100%;
     margin: 0; 
     position: relative;
+    box-sizing: border-box;
 }
 
 /* 聊天页面输入框样式 */
@@ -875,6 +888,9 @@ body::before {
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
     overflow: hidden;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .input-wrapper::before {
@@ -999,6 +1015,8 @@ body::before {
     min-height: 24px;
     max-height: 100px;
     min-width: 0;
+    width: 100%;
+    max-width: 100%;
     color: var(--text-primary);
     transition: var(--transition-normal);
     resize: none;
@@ -1007,7 +1025,11 @@ body::before {
     letter-spacing: 0;
     font-weight: 400;
     overflow-y: auto;
+    overflow-x: hidden;
     padding-bottom: var(--spacing-xs);
+    box-sizing: border-box;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .input-wrapper textarea::placeholder {
@@ -1036,6 +1058,7 @@ body::before {
     transition: var(--transition-normal); 
     pointer-events: none; 
     min-width: 140px; 
+    max-width: 200px;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     overflow: hidden;
@@ -1066,10 +1089,12 @@ body::before {
 
 .message.user .message-menu { 
     right: -140px; 
+    left: auto;
 }
 
 .message.ai .message-menu { 
     left: -140px; 
+    right: auto;
 }
 
 .menu-item {
@@ -1304,17 +1329,21 @@ body::before {
     display: flex; 
     flex-direction: column; 
     max-width: 70%; 
-    position: relative; 
     min-width: 0;
+    width: 100%;
+    position: relative; 
     gap: var(--spacing-xs);
+    flex-shrink: 1;
 }
 
 .message.user .message-wrapper { 
     align-items: flex-end; 
+    margin-left: auto;
 }
 
 .message.ai .message-wrapper { 
     align-items: flex-start; 
+    margin-right: auto;
 }
 
 /* 消息内容 */
@@ -1330,13 +1359,15 @@ body::before {
     transition: var(--transition-normal); 
     user-select: text;
     box-shadow: var(--shadow-sm); 
-    max-width: 100%; 
+    width: 100%;
+    max-width: 100%;
     overflow-wrap: break-word;
     font-family: 'Inter', 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     letter-spacing: -0.01em;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     overflow: hidden;
+    box-sizing: border-box;
 }
 
 .message-content::before {
@@ -1391,7 +1422,7 @@ body::before {
 
 /* 长文本消息优化 */
 .message-content.long-text {
-    max-width: 600px;
+    max-width: 100%;
     line-height: 1.7;
     font-size: 0.9rem;
     padding: var(--spacing-lg);
@@ -1532,6 +1563,11 @@ body::before {
         font-size: 1rem;
     }
     
+    .chat-container {
+        margin: var(--spacing-sm);
+        border-radius: var(--radius-lg);
+    }
+    
     .chat-messages { 
         padding: var(--spacing-lg); 
         gap: var(--spacing-md);
@@ -1553,13 +1589,13 @@ body::before {
     }
     
     .message-content { 
-        max-width: 80%; 
+        max-width: 85%; 
         font-size: 0.9rem;
         padding: var(--spacing-md) var(--spacing-lg);
     }
     
     .message-wrapper {
-        max-width: 80%;
+        max-width: 85%;
     }
     
     .welcome-content h1 {
@@ -1572,6 +1608,23 @@ body::before {
     
     .welcome-content p {
         font-size: 1rem;
+    }
+    
+    .input-section {
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+    
+    .message-menu {
+        min-width: 120px;
+        max-width: 160px;
+    }
+    
+    .message.user .message-menu { 
+        right: -120px; 
+    }
+    
+    .message.ai .message-menu { 
+        left: -120px; 
     }
 }
 
@@ -1593,6 +1646,11 @@ body::before {
         font-size: 0.9rem;
     }
     
+    .chat-container {
+        margin: var(--spacing-xs);
+        border-radius: var(--radius-md);
+    }
+    
     .chat-messages { 
         padding: var(--spacing-md); 
         gap: var(--spacing-sm); 
@@ -1612,13 +1670,13 @@ body::before {
     }
     
     .message-content { 
-        max-width: 85%; 
+        max-width: 90%; 
         padding: var(--spacing-sm) var(--spacing-md); 
         font-size: 0.9rem; 
     }
     
     .message-wrapper {
-        max-width: 85%;
+        max-width: 90%;
     }
     
     .welcome-content h1 {
@@ -1634,11 +1692,29 @@ body::before {
     }
     
     .input-section {
-        padding: var(--spacing-md);
+        padding: var(--spacing-sm) var(--spacing-md);
     }
     
     .chat-header {
         padding: var(--spacing-md);
+    }
+    
+    .message-menu {
+        min-width: 100px;
+        max-width: 140px;
+    }
+    
+    .message.user .message-menu { 
+        right: -100px; 
+    }
+    
+    .message.ai .message-menu { 
+        left: -100px; 
+    }
+    
+    .menu-item {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.8rem;
     }
 }
 
