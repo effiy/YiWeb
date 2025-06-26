@@ -124,8 +124,8 @@
         opacity: 1;
     }
     50% {
-        transform: scale(1.05);
-        opacity: 0.8;
+        transform: scale(1.02);
+        opacity: 0.9;
     }
 }
 
@@ -280,6 +280,13 @@ body::before {
     border: 1px solid var(--border-glass);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    min-height: 44px;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    overflow: hidden;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .search-input-wrapper:hover, .input-wrapper:hover {
@@ -527,7 +534,6 @@ body::before {
     flex-direction: column;
     background: var(--bg-secondary);
     border-radius: var(--radius-xl);
-    margin: var(--spacing-lg);
     box-shadow: var(--shadow-xl);
     overflow: hidden;
     position: relative;
@@ -561,7 +567,7 @@ body::before {
 /* 聊天头部 */
 .chat-header { 
     background: var(--bg-elevated);
-    padding: var(--spacing-lg) var(--spacing-xl);
+    padding: var(--spacing-md) var(--spacing-lg);
     border-bottom: 1px solid var(--border-primary);
     display: flex;
     align-items: center;
@@ -655,7 +661,7 @@ body::before {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: var(--spacing-xl);
+    padding: var(--spacing-lg);
     background: var(--bg-secondary);
     position: relative;
     scroll-behavior: smooth;
@@ -683,7 +689,7 @@ body::before {
 .messages-container {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
     width: 100%;
     max-width: 100%;
     margin: 0 auto;
@@ -691,7 +697,7 @@ body::before {
 
 .message { 
     display: flex;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
     opacity: 0;
     transform: translateY(20px);
     animation: slideInFromBottom 0.5s ease forwards;
@@ -803,7 +809,7 @@ body::before {
 .input-section { 
     background: var(--bg-elevated);
     border-top: 1px solid var(--border-primary);
-    padding: var(--spacing-lg) var(--spacing-xl);
+    padding: var(--spacing-md) var(--spacing-lg);
     position: sticky;
     bottom: 0;
     left: 0;
@@ -884,7 +890,7 @@ body::before {
     border: 1px solid var(--border-glass);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    min-height: 40px;
+    min-height: 44px;
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
     overflow: hidden;
@@ -928,20 +934,30 @@ body::before {
     animation: quantumPulse 2s ease-in-out infinite;
 }
 
+.input-wrapper.typing, .input-wrapper:focus-within {
+    background: var(--bg-elevated);
+}
+
+.search-input-wrapper:focus-within #messageInput::placeholder,
+.input-wrapper:focus-within #chatInput::placeholder {
+    color: var(--text-accent);
+    opacity: 0.7;
+}
+
 .input-wrapper .send-btn {
     background: var(--primary-gradient);
     color: var(--text-inverse);
     box-shadow: var(--shadow-primary);
-    min-width: 40px;
-    height: 40px;
+    min-width: 36px;
+    height: 36px;
     padding: 0;
     border-radius: 50%;
-    font-size: 1rem;
+    font-size: 0.9rem;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: var(--transition-normal);
-    margin-left: var(--spacing-sm);
+    margin-left: var(--spacing-xs);
     border: none;
     cursor: pointer;
     position: relative;
@@ -994,7 +1010,7 @@ body::before {
 
 .input-wrapper .input-icon {
     color: var(--text-muted);
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     margin-right: var(--spacing-sm);
     flex-shrink: 0;
     transition: var(--transition-fast);
@@ -1011,7 +1027,7 @@ body::before {
     outline: none;
     background: transparent;
     font-size: 16px;
-    padding: var(--spacing-md) 0;
+    padding: var(--spacing-sm) 0;
     min-height: 24px;
     max-height: 100px;
     min-width: 0;
@@ -1270,13 +1286,13 @@ body::before {
 
 /* 头像 */
 .avatar { 
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: var(--radius-full);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-inverse);
     flex-shrink: 0;
@@ -1348,7 +1364,7 @@ body::before {
 
 /* 消息内容 */
 .message-content { 
-    padding: var(--spacing-md) var(--spacing-lg); 
+    padding: var(--spacing-sm) var(--spacing-md); 
     border-radius: var(--radius-lg); 
     line-height: 1.6; 
     word-wrap: break-word; 
@@ -1425,7 +1441,7 @@ body::before {
     max-width: 100%;
     line-height: 1.7;
     font-size: 0.9rem;
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
 }
 
 /* 消息底部 */
@@ -1569,15 +1585,15 @@ body::before {
     }
     
     .chat-messages { 
-        padding: var(--spacing-lg); 
-        gap: var(--spacing-md);
+        padding: var(--spacing-md); 
+        gap: var(--spacing-sm);
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
         -webkit-overscroll-behavior: contain;
     }
     
     .messages-container {
-        gap: var(--spacing-md);
+        gap: var(--spacing-sm);
     }
     
     .scroll-to-bottom {
@@ -1588,10 +1604,14 @@ body::before {
         font-size: 1.1rem;
     }
     
+    .message {
+        gap: var(--spacing-xs);
+    }
+    
     .message-content { 
         max-width: 85%; 
         font-size: 0.9rem;
-        padding: var(--spacing-md) var(--spacing-lg);
+        padding: var(--spacing-sm) var(--spacing-md);
     }
     
     .message-wrapper {
@@ -1611,7 +1631,28 @@ body::before {
     }
     
     .input-section {
-        padding: var(--spacing-md) var(--spacing-lg);
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+    
+    .input-wrapper {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        min-height: 40px;
+    }
+    
+    .input-wrapper textarea {
+        padding: var(--spacing-xs) 0;
+    }
+    
+    .input-wrapper .send-btn {
+        min-width: 32px;
+        height: 32px;
+        font-size: 0.85rem;
+    }
+    
+    .avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
     }
     
     .message-menu {
@@ -1652,13 +1693,13 @@ body::before {
     }
     
     .chat-messages { 
-        padding: var(--spacing-md); 
-        gap: var(--spacing-sm); 
+        padding: var(--spacing-sm); 
+        gap: var(--spacing-xs); 
         -webkit-overflow-scrolling: touch;
     }
     
     .messages-container {
-        gap: var(--spacing-sm);
+        gap: var(--spacing-xs);
     }
     
     .scroll-to-bottom {
@@ -1669,9 +1710,13 @@ body::before {
         font-size: 1rem;
     }
     
+    .message {
+        gap: var(--spacing-xs);
+    }
+    
     .message-content { 
         max-width: 90%; 
-        padding: var(--spacing-sm) var(--spacing-md); 
+        padding: var(--spacing-xs) var(--spacing-sm); 
         font-size: 0.9rem; 
     }
     
@@ -1692,11 +1737,11 @@ body::before {
     }
     
     .input-section {
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-xs) var(--spacing-sm);
     }
     
     .chat-header {
-        padding: var(--spacing-md);
+        padding: var(--spacing-xs) var(--spacing-sm);
     }
     
     .message-menu {
@@ -1715,6 +1760,34 @@ body::before {
     .menu-item {
         padding: var(--spacing-sm) var(--spacing-md);
         font-size: 0.8rem;
+    }
+    
+    .input-wrapper {
+        padding: var(--spacing-xs);
+        min-height: 36px;
+    }
+    
+    .input-wrapper textarea {
+        padding: var(--spacing-xs) 0;
+        font-size: 15px;
+    }
+    
+    .input-wrapper .send-btn {
+        min-width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+        margin-left: var(--spacing-xs);
+    }
+    
+    .input-wrapper .input-icon {
+        font-size: 1rem;
+        margin-right: var(--spacing-xs);
+    }
+    
+    .avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
     }
 }
 
