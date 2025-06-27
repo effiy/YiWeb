@@ -70,6 +70,18 @@ const keyboardShortcuts = {
                     input.focus();
                 }
             }
+            
+            // Ctrl+L 清空输入框内容
+            if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+                e.preventDefault();
+                const input = document.querySelector('#messageInput');
+                if (input) {
+                    input.value = '';
+                    input.style.height = 'auto';
+                    input.focus();
+                    console.log('已清空输入框内容');
+                }
+            }
         });
     }
 };
@@ -84,10 +96,13 @@ const inputHandler = {
             
             // 键盘事件处理
             messageInput.addEventListener('keydown', (e) => {
+                // Enter 发送消息（不按Shift）
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     this.handleSend();
                 }
+                // Shift+Enter 换行（不阻止默认行为）
+                // 不需要额外处理，让浏览器默认行为处理换行
             });
             
             // 输入事件处理
