@@ -598,7 +598,7 @@
     box-shadow: 0 10px 30px rgba(79, 172, 254, 0.5);
 }
 
-/* 数据分析卡片 - 科学家风格（蓝色科技主题） */
+/* 数据分析卡片 - 科学家风格（蓝色科技主题）增强交互 */
 .feature-card.scientist-card {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 197, 253, 0.05) 100%);
     border: 1px solid rgba(59, 130, 246, 0.2);
@@ -619,6 +619,32 @@
     pointer-events: none;
 }
 
+/* 数据分析卡片 - 数据流动画 */
+.feature-card.scientist-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(59, 130, 246, 0.03) 10px,
+        rgba(59, 130, 246, 0.03) 20px
+    );
+    animation: dataFlow 20s linear infinite;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+}
+
+@keyframes dataFlow {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(0deg); }
+    100% { transform: translateX(100%) translateY(100%) rotate(360deg); }
+}
+
 .feature-card.scientist-card:hover {
     transform: translateY(-8px) scale(1.02);
     border-color: rgba(59, 130, 246, 0.4);
@@ -630,16 +656,38 @@
     opacity: 1;
 }
 
+.feature-card.scientist-card:hover::after {
+    opacity: 1;
+}
+
 .feature-card[data-feature="数据分析"] .card-icon {
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
     color: white;
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    animation: scientistScan 4s ease-in-out infinite;
+}
+
+@keyframes scientistScan {
+    0%, 100% { 
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        transform: scale(1);
+    }
+    50% { 
+        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.5);
+        transform: scale(1.05);
+    }
 }
 
 .feature-card[data-feature="数据分析"] .card-badge {
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
     color: white;
     border: 1px solid rgba(59, 130, 246, 0.3);
+    animation: badgePulse 3s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
 }
 
 .feature-card[data-feature="数据分析"]:hover {
@@ -650,9 +698,21 @@
 .feature-card[data-feature="数据分析"]:hover .card-icon {
     transform: scale(1.1) rotate(5deg);
     box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    animation: scientistScanHover 2s ease-in-out infinite;
 }
 
-/* 代码编写卡片 - 极客风格（绿色黑客主题） */
+@keyframes scientistScanHover {
+    0%, 100% { 
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        transform: scale(1.1) rotate(5deg);
+    }
+    50% { 
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
+        transform: scale(1.15) rotate(8deg);
+    }
+}
+
+/* 代码编写卡片 - 极客风格（绿色黑客主题）增强交互 */
 .feature-card.geek-card {
     background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(134, 239, 172, 0.05) 100%);
     border: 1px solid rgba(34, 197, 94, 0.2);
@@ -673,6 +733,37 @@
     pointer-events: none;
 }
 
+/* 代码编写卡片 - 矩阵雨效果 */
+.feature-card.geek-card::after {
+    content: '01';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 20px,
+        rgba(34, 197, 94, 0.02) 20px,
+        rgba(34, 197, 94, 0.02) 21px
+    );
+    animation: matrixRain 15s linear infinite;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: rgba(34, 197, 94, 0.1);
+    line-height: 12px;
+    overflow: hidden;
+}
+
+@keyframes matrixRain {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+}
+
 .feature-card.geek-card:hover {
     transform: translateY(-8px) scale(1.02);
     border-color: rgba(34, 197, 94, 0.4);
@@ -684,11 +775,32 @@
     opacity: 1;
 }
 
+.feature-card.geek-card:hover::after {
+    opacity: 1;
+}
+
 .feature-card[data-feature="代码编写"] .card-icon {
     background: linear-gradient(135deg, #22c55e, #16a34a);
     color: white;
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
     animation: codeGlow 2s ease-in-out infinite alternate;
+    position: relative;
+}
+
+.feature-card[data-feature="代码编写"] .card-icon::before {
+    content: '{}';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.8rem;
+    opacity: 0.3;
+    animation: codeBrackets 3s ease-in-out infinite;
+}
+
+@keyframes codeBrackets {
+    0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
 }
 
 @keyframes codeGlow {
@@ -700,6 +812,12 @@
     background: linear-gradient(135deg, #22c55e, #16a34a);
     color: white;
     border: 1px solid rgba(34, 197, 94, 0.3);
+    animation: terminalBlink 2s ease-in-out infinite;
+}
+
+@keyframes terminalBlink {
+    0%, 90%, 100% { opacity: 1; }
+    95% { opacity: 0.7; }
 }
 
 .feature-card[data-feature="代码编写"]:hover {
@@ -710,6 +828,18 @@
 .feature-card[data-feature="代码编写"]:hover .card-icon {
     transform: scale(1.1) rotate(-5deg);
     box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+    animation: codeGlowHover 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes codeGlowHover {
+    0% { 
+        box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+        transform: scale(1.1) rotate(-5deg);
+    }
+    100% { 
+        box-shadow: 0 8px 25px rgba(34, 197, 94, 0.6);
+        transform: scale(1.15) rotate(-8deg);
+    }
 }
 
 /* 图表绘制卡片 - 艺术家风格（紫色创意主题） */
@@ -733,6 +863,36 @@
     pointer-events: none;
 }
 
+/* 生图创造卡片 - 彩虹光谱效果 */
+.feature-card.artist-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        45deg,
+        rgba(255, 0, 0, 0.02),
+        rgba(255, 165, 0, 0.02),
+        rgba(255, 255, 0, 0.02),
+        rgba(0, 255, 0, 0.02),
+        rgba(0, 0, 255, 0.02),
+        rgba(75, 0, 130, 0.02),
+        rgba(238, 130, 238, 0.02)
+    );
+    background-size: 400% 400%;
+    animation: rainbowShift 8s ease-in-out infinite;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+}
+
+@keyframes rainbowShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
 .feature-card.artist-card:hover {
     transform: translateY(-8px) scale(1.02);
     border-color: rgba(168, 85, 247, 0.4);
@@ -744,11 +904,45 @@
     opacity: 1;
 }
 
+.feature-card.artist-card:hover::after {
+    opacity: 1;
+}
+
 .feature-card[data-feature="图表绘制"] .card-icon {
     background: linear-gradient(135deg, #a855f7, #9333ea);
     color: white;
     box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
     animation: artistPulse 3s ease-in-out infinite;
+    position: relative;
+}
+
+.feature-card[data-feature="图表绘制"] .card-icon::before {
+    content: '🎨';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.2rem;
+    animation: paintSplash 4s ease-in-out infinite;
+}
+
+@keyframes paintSplash {
+    0%, 100% { 
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        opacity: 1;
+    }
+    25% { 
+        transform: translate(-50%, -50%) scale(1.2) rotate(90deg);
+        opacity: 0.8;
+    }
+    50% { 
+        transform: translate(-50%, -50%) scale(0.8) rotate(180deg);
+        opacity: 1;
+    }
+    75% { 
+        transform: translate(-50%, -50%) scale(1.1) rotate(270deg);
+        opacity: 0.9;
+    }
 }
 
 @keyframes artistPulse {
@@ -760,6 +954,18 @@
     background: linear-gradient(135deg, #a855f7, #9333ea);
     color: white;
     border: 1px solid rgba(168, 85, 247, 0.3);
+    animation: creativeSparkle 3s ease-in-out infinite;
+}
+
+@keyframes creativeSparkle {
+    0%, 100% { 
+        transform: scale(1);
+        filter: brightness(1);
+    }
+    50% { 
+        transform: scale(1.05);
+        filter: brightness(1.2);
+    }
 }
 
 .feature-card[data-feature="图表绘制"]:hover {
@@ -770,6 +976,63 @@
 .feature-card[data-feature="图表绘制"]:hover .card-icon {
     transform: scale(1.1) rotate(10deg);
     box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+    animation: artistPulseHover 2s ease-in-out infinite;
+}
+
+@keyframes artistPulseHover {
+    0%, 100% { 
+        transform: scale(1.1) rotate(10deg);
+        box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+    }
+    50% { 
+        transform: scale(1.2) rotate(15deg);
+        box-shadow: 0 8px 25px rgba(168, 85, 247, 0.6);
+    }
+}
+
+/* 点击反馈动画 */
+@keyframes dataPointFloat {
+    0% {
+        transform: scale(0) translateY(0);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1) translateY(-20px);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(0) translateY(-40px);
+        opacity: 0;
+    }
+}
+
+@keyframes codeLineScan {
+    0% {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes colorParticleExplode {
+    0% {
+        transform: scale(0) translateX(0) translateY(0);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1) translateX(var(--x, 0)) translateY(var(--y, 0));
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(0) translateX(calc(var(--x, 0) * 2)) translateY(calc(var(--y, 0) * 2));
+        opacity: 0;
+    }
 }
 
 /* 响应式设计优化 */

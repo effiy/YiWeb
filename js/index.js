@@ -137,7 +137,81 @@ const featureCards = {
             card.setAttribute('tabindex', '0');
             card.setAttribute('role', 'button');
             card.setAttribute('aria-label', `选择${card.getAttribute('data-feature')}功能`);
+            
+            // 添加鼠标悬停效果
+            this.addHoverEffects(card);
         });
+    },
+    
+    addHoverEffects(card) {
+        const feature = card.getAttribute('data-feature');
+        
+        card.addEventListener('mouseenter', () => {
+            this.playHoverAnimation(card, feature);
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            this.stopHoverAnimation(card, feature);
+        });
+    },
+    
+    playHoverAnimation(card, feature) {
+        // 根据功能类型播放不同的悬停动画
+        switch(feature) {
+            case '数据分析':
+                this.playScientistHover(card);
+                break;
+            case '代码编写':
+                this.playGeekHover(card);
+                break;
+            case '图表绘制':
+                this.playArtistHover(card);
+                break;
+        }
+    },
+    
+    stopHoverAnimation(card, feature) {
+        // 停止悬停动画
+        card.style.animation = '';
+    },
+    
+    playScientistHover(card) {
+        // 科学家风格：数据扫描效果
+        const icon = card.querySelector('.card-icon');
+        const badge = card.querySelector('.card-badge');
+        
+        if (icon) {
+            icon.style.animation = 'scientistScanHover 2s ease-in-out infinite';
+        }
+        if (badge) {
+            badge.style.animation = 'badgePulse 1s ease-in-out infinite';
+        }
+    },
+    
+    playGeekHover(card) {
+        // 极客风格：代码闪烁效果
+        const icon = card.querySelector('.card-icon');
+        const badge = card.querySelector('.card-badge');
+        
+        if (icon) {
+            icon.style.animation = 'codeGlowHover 1.5s ease-in-out infinite alternate';
+        }
+        if (badge) {
+            badge.style.animation = 'terminalBlink 1s ease-in-out infinite';
+        }
+    },
+    
+    playArtistHover(card) {
+        // 艺术家风格：创意脉冲效果
+        const icon = card.querySelector('.card-icon');
+        const badge = card.querySelector('.card-badge');
+        
+        if (icon) {
+            icon.style.animation = 'artistPulseHover 2s ease-in-out infinite';
+        }
+        if (badge) {
+            badge.style.animation = 'creativeSparkle 1.5s ease-in-out infinite';
+        }
     },
     
     handleCardClick(card) {
@@ -162,21 +236,155 @@ const featureCards = {
             messageInput.dispatchEvent(new Event('input'));
             
             // 添加点击反馈效果
-            this.addClickFeedback(card);
+            this.addClickFeedback(card, feature);
             
             console.log(`选择了${feature}功能`);
         }
     },
     
-    addClickFeedback(card) {
-        // 添加点击动画效果
+    addClickFeedback(card, feature) {
+        // 根据功能类型添加不同的点击反馈
+        switch(feature) {
+            case '数据分析':
+                this.addScientistClickFeedback(card);
+                break;
+            case '代码编写':
+                this.addGeekClickFeedback(card);
+                break;
+            case '图表绘制':
+                this.addArtistClickFeedback(card);
+                break;
+        }
+    },
+    
+    addScientistClickFeedback(card) {
+        // 科学家风格：数据收集效果
         card.style.transform = 'scale(0.95)';
         card.style.transition = 'transform 0.1s ease';
+        
+        // 添加数据点动画
+        this.createDataPoints(card);
         
         setTimeout(() => {
             card.style.transform = '';
             card.style.transition = '';
-        }, 100);
+        }, 150);
+    },
+    
+    addGeekClickFeedback(card) {
+        // 极客风格：代码编译效果
+        card.style.transform = 'scale(0.95)';
+        card.style.transition = 'transform 0.1s ease';
+        
+        // 添加代码行动画
+        this.createCodeLines(card);
+        
+        setTimeout(() => {
+            card.style.transform = '';
+            card.style.transition = '';
+        }, 150);
+    },
+    
+    addArtistClickFeedback(card) {
+        // 艺术家风格：创意爆发效果
+        card.style.transform = 'scale(0.95)';
+        card.style.transition = 'transform 0.1s ease';
+        
+        // 添加色彩粒子动画
+        this.createColorParticles(card);
+        
+        setTimeout(() => {
+            card.style.transform = '';
+            card.style.transition = '';
+        }, 150);
+    },
+    
+    createDataPoints(card) {
+        // 创建数据点动画效果
+        for (let i = 0; i < 5; i++) {
+            const point = document.createElement('div');
+            point.style.cssText = `
+                position: absolute;
+                width: 4px;
+                height: 4px;
+                background: #3b82f6;
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 1000;
+                animation: dataPointFloat 1s ease-out forwards;
+            `;
+            
+            point.style.left = Math.random() * 100 + '%';
+            point.style.top = Math.random() * 100 + '%';
+            point.style.animationDelay = i * 0.1 + 's';
+            
+            card.appendChild(point);
+            
+            setTimeout(() => {
+                if (point.parentNode) {
+                    point.parentNode.removeChild(point);
+                }
+            }, 1000);
+        }
+    },
+    
+    createCodeLines(card) {
+        // 创建代码行动画效果
+        for (let i = 0; i < 3; i++) {
+            const line = document.createElement('div');
+            line.style.cssText = `
+                position: absolute;
+                height: 2px;
+                background: linear-gradient(90deg, #22c55e, transparent);
+                pointer-events: none;
+                z-index: 1000;
+                animation: codeLineScan 0.8s ease-out forwards;
+            `;
+            
+            line.style.left = '0%';
+            line.style.top = (20 + i * 30) + '%';
+            line.style.width = '100%';
+            line.style.animationDelay = i * 0.2 + 's';
+            
+            card.appendChild(line);
+            
+            setTimeout(() => {
+                if (line.parentNode) {
+                    line.parentNode.removeChild(line);
+                }
+            }, 800);
+        }
+    },
+    
+    createColorParticles(card) {
+        // 创建色彩粒子动画效果
+        const colors = ['#ff0000', '#ffa500', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#ee82ee'];
+        
+        for (let i = 0; i < 8; i++) {
+            const particle = document.createElement('div');
+            particle.style.cssText = `
+                position: absolute;
+                width: 6px;
+                height: 6px;
+                background: ${colors[i % colors.length]};
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 1000;
+                animation: colorParticleExplode 1.2s ease-out forwards;
+            `;
+            
+            particle.style.left = '50%';
+            particle.style.top = '50%';
+            particle.style.animationDelay = i * 0.1 + 's';
+            
+            card.appendChild(particle);
+            
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, 1200);
+        }
     }
 };
 
