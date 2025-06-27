@@ -199,38 +199,54 @@
 /* 功能卡片容器样式 */
 .feature-cards-container {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: var(--spacing-xl) var(--spacing-lg);
 }
 
 .feature-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--spacing-lg);
-    margin-top: var(--spacing-xl);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--spacing-xl);
+    margin-top: var(--spacing-2xl);
 }
 
-/* 侦探风格卡片基础样式 */
-.feature-card.detective-card {
+/* 卡片基础样式优化 */
+.feature-card.detective-card,
+.feature-card.scientist-card,
+.feature-card.geek-card,
+.feature-card.artist-card,
+.feature-card.writer-card,
+.feature-card.diplomat-card {
     background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.05) 0%, 
-        rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    padding: var(--spacing-lg);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        rgba(255, 255, 255, 0.08) 0%, 
+        rgba(255, 255, 255, 0.03) 50%,
+        rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: var(--spacing-xl);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
     cursor: pointer;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     box-shadow: 
-        0 4px 20px rgba(0, 0, 0, 0.1),
-        0 1px 3px rgba(0, 0, 0, 0.05);
+        0 8px 32px rgba(0, 0, 0, 0.12),
+        0 4px 16px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
-.feature-card.detective-card::before {
+.feature-card.detective-card::before,
+.feature-card.scientist-card::before,
+.feature-card.geek-card::before,
+.feature-card.artist-card::before,
+.feature-card.writer-card::before,
+.feature-card.diplomat-card::before {
     content: '';
     position: absolute;
     top: 0;
@@ -238,316 +254,551 @@
     right: 0;
     bottom: 0;
     background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.03) 0%, 
-        transparent 50%, 
-        rgba(255, 255, 255, 0.01) 100%);
+        rgba(255, 255, 255, 0.08) 0%, 
+        transparent 30%, 
+        rgba(255, 255, 255, 0.02) 70%,
+        transparent 100%);
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.4s ease;
     pointer-events: none;
 }
 
-.feature-card.detective-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    border-color: rgba(255, 255, 255, 0.15);
+.feature-card.detective-card:hover,
+.feature-card.scientist-card:hover,
+.feature-card.geek-card:hover,
+.feature-card.artist-card:hover,
+.feature-card.writer-card:hover,
+.feature-card.diplomat-card:hover {
+    transform: translateY(-12px) scale(1.03);
+    border-color: rgba(255, 255, 255, 0.25);
     box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.15),
-        0 8px 16px rgba(0, 0, 0, 0.1),
-        0 0 0 1px rgba(255, 255, 255, 0.1);
+        0 32px 64px rgba(0, 0, 0, 0.2),
+        0 16px 32px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.feature-card.detective-card:hover::before {
+.feature-card.detective-card:hover::before,
+.feature-card.scientist-card:hover::before,
+.feature-card.geek-card:hover::before,
+.feature-card.artist-card:hover::before,
+.feature-card.writer-card:hover::before,
+.feature-card.diplomat-card:hover::before {
     opacity: 1;
 }
 
-/* 卡片头部样式 */
+/* 卡片头部样式优化 */
 .card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    position: relative;
+    z-index: 2;
 }
 
 .card-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
-    background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.1) 0%, 
-        rgba(255, 255, 255, 0.05) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
-    transition: all 0.3s ease;
-}
-
-.feature-card.detective-card:hover .card-icon {
-    transform: scale(1.1) rotate(5deg);
+    font-size: 1.4rem;
     background: linear-gradient(135deg, 
         rgba(255, 255, 255, 0.15) 0%, 
         rgba(255, 255, 255, 0.08) 100%);
-    border-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.card-icon::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.2) 0%, 
+        transparent 50%, 
+        rgba(255, 255, 255, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.feature-card.detective-card:hover .card-icon,
+.feature-card.scientist-card:hover .card-icon,
+.feature-card.geek-card:hover .card-icon,
+.feature-card.artist-card:hover .card-icon,
+.feature-card.writer-card:hover .card-icon,
+.feature-card.diplomat-card:hover .card-icon {
+    transform: scale(1.15) rotate(8deg);
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.25) 0%, 
+        rgba(255, 255, 255, 0.12) 100%);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.feature-card.detective-card:hover .card-icon::before,
+.feature-card.scientist-card:hover .card-icon::before,
+.feature-card.geek-card:hover .card-icon::before,
+.feature-card.artist-card:hover .card-icon::before,
+.feature-card.writer-card:hover .card-icon::before,
+.feature-card.diplomat-card:hover .card-icon::before {
+    opacity: 1;
 }
 
 .card-badge {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
+    padding: 6px 16px;
+    border-radius: 24px;
+    font-size: 0.8rem;
     font-weight: 600;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
     text-transform: uppercase;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
-/* 卡片内容样式 */
+.card-badge::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.3), 
+        transparent);
+    transition: left 0.5s ease;
+}
+
+.feature-card.detective-card:hover .card-badge::before,
+.feature-card.scientist-card:hover .card-badge::before,
+.feature-card.geek-card:hover .card-badge::before,
+.feature-card.artist-card:hover .card-badge::before,
+.feature-card.writer-card:hover .card-badge::before,
+.feature-card.diplomat-card:hover .card-badge::before {
+    left: 100%;
+}
+
+/* 卡片内容样式优化 */
 .card-content {
     text-align: left;
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .card-title {
-    font-size: 1.25rem;
-    font-weight: 700;
+    font-size: 1.4rem;
+    font-weight: 800;
     color: var(--text-primary);
-    margin-bottom: var(--spacing-sm);
-    letter-spacing: -0.5px;
+    margin-bottom: var(--spacing-md);
+    letter-spacing: -0.8px;
+    line-height: 1.3;
+    position: relative;
 }
 
 .card-description {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
-    line-height: 1.6;
-    margin-bottom: var(--spacing-md);
-    opacity: 0.8;
+    line-height: 1.7;
+    margin-bottom: var(--spacing-lg);
+    opacity: 0.85;
+    font-weight: 400;
 }
 
 .card-features {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-xs);
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
 }
 
 .feature-tag {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.1);
     color: var(--text-secondary);
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.2s ease;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: all 0.3s ease;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
-.feature-card.detective-card:hover .feature-tag {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.15);
+.feature-card.detective-card:hover .feature-tag,
+.feature-card.scientist-card:hover .feature-tag,
+.feature-card.geek-card:hover .feature-tag,
+.feature-card.artist-card:hover .feature-tag,
+.feature-card.writer-card:hover .feature-tag,
+.feature-card.diplomat-card:hover .feature-tag {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.25);
     color: var(--text-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* 卡片底部样式 */
+/* 统计区域样式优化 */
+.card-stats {
+    display: flex;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.feature-card.detective-card:hover .card-stats,
+.feature-card.scientist-card:hover .card-stats,
+.feature-card.geek-card:hover .card-stats,
+.feature-card.artist-card:hover .card-stats,
+.feature-card.writer-card:hover .card-stats,
+.feature-card.diplomat-card:hover .card-stats {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+}
+
+.stat-number {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 卡片底部样式优化 */
 .card-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: var(--spacing-sm);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    z-index: 2;
 }
 
 .card-hint {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
-    opacity: 0.7;
+    opacity: 0.8;
     transition: all 0.3s ease;
+    font-weight: 500;
 }
 
-.feature-card.detective-card:hover .card-hint {
+.feature-card.detective-card:hover .card-hint,
+.feature-card.scientist-card:hover .card-hint,
+.feature-card.geek-card:hover .card-hint,
+.feature-card.artist-card:hover .card-hint,
+.feature-card.writer-card:hover .card-hint,
+.feature-card.diplomat-card:hover .card-hint {
     color: var(--text-secondary);
     opacity: 1;
-}
-
-.card-footer i {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    transition: all 0.3s ease;
-}
-
-.feature-card.detective-card:hover .card-footer i {
-    color: var(--text-primary);
     transform: translateX(4px);
 }
 
-/* 问答卡片 - 蓝色主题 */
+.card-footer i {
+    font-size: 1rem;
+    color: var(--text-muted);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.7;
+}
+
+.feature-card.detective-card:hover .card-footer i,
+.feature-card.scientist-card:hover .card-footer i,
+.feature-card.geek-card:hover .card-footer i,
+.feature-card.artist-card:hover .card-footer i,
+.feature-card.writer-card:hover .card-footer i,
+.feature-card.diplomat-card:hover .card-footer i {
+    color: var(--text-primary);
+    transform: translateX(8px) scale(1.1);
+    opacity: 1;
+}
+
+/* 问答卡片 - 侦探风格（蓝色主题）优化 */
+.feature-card.detective-card {
+    background: linear-gradient(135deg, 
+        rgba(79, 172, 254, 0.08) 0%, 
+        rgba(0, 242, 254, 0.04) 50%,
+        rgba(79, 172, 254, 0.02) 100%);
+    border: 1px solid rgba(79, 172, 254, 0.15);
+}
+
 .feature-card[data-feature="问答"] .card-icon {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     color: white;
-    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
 }
 
 .feature-card[data-feature="问答"] .card-badge {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
+    box-shadow: 0 4px 16px rgba(79, 172, 254, 0.4);
 }
 
 .feature-card[data-feature="问答"]:hover {
-    border-color: rgba(79, 172, 254, 0.3);
+    border-color: rgba(79, 172, 254, 0.4);
     box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.15),
-        0 8px 16px rgba(0, 0, 0, 0.1),
-        0 0 0 1px rgba(79, 172, 254, 0.2);
+        0 32px 64px rgba(0, 0, 0, 0.2),
+        0 16px 32px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(79, 172, 254, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .feature-card[data-feature="问答"]:hover .card-icon {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+    transform: scale(1.15) rotate(8deg);
+    box-shadow: 0 10px 30px rgba(79, 172, 254, 0.5);
 }
 
-/* 数据分析卡片 - 绿色主题 */
+/* 数据分析卡片 - 科学家风格（绿色主题）优化 */
+.feature-card.scientist-card {
+    background: linear-gradient(135deg, 
+        rgba(67, 233, 123, 0.08) 0%, 
+        rgba(56, 249, 215, 0.04) 50%,
+        rgba(67, 233, 123, 0.02) 100%);
+    border: 1px solid rgba(67, 233, 123, 0.15);
+}
+
 .feature-card[data-feature="数据分析"] .card-icon {
     background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
     color: white;
-    box-shadow: 0 4px 15px rgba(67, 233, 123, 0.3);
+    box-shadow: 0 6px 20px rgba(67, 233, 123, 0.4);
 }
 
 .feature-card[data-feature="数据分析"] .card-badge {
     background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    box-shadow: 0 2px 8px rgba(67, 233, 123, 0.3);
+    box-shadow: 0 4px 16px rgba(67, 233, 123, 0.4);
 }
 
 .feature-card[data-feature="数据分析"]:hover {
-    border-color: rgba(67, 233, 123, 0.3);
+    border-color: rgba(67, 233, 123, 0.4);
     box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.15),
-        0 8px 16px rgba(0, 0, 0, 0.1),
-        0 0 0 1px rgba(67, 233, 123, 0.2);
+        0 32px 64px rgba(0, 0, 0, 0.2),
+        0 16px 32px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(67, 233, 123, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .feature-card[data-feature="数据分析"]:hover .card-icon {
     background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 6px 20px rgba(67, 233, 123, 0.4);
+    transform: scale(1.15) rotate(8deg);
+    box-shadow: 0 10px 30px rgba(67, 233, 123, 0.5);
 }
 
-/* 代码编写卡片 - 紫色主题 */
+/* 代码编写卡片 - 极客风格（紫色主题）优化 */
+.feature-card.geek-card {
+    background: linear-gradient(135deg, 
+        rgba(102, 126, 234, 0.08) 0%, 
+        rgba(118, 75, 162, 0.04) 50%,
+        rgba(102, 126, 234, 0.02) 100%);
+    border: 1px solid rgba(102, 126, 234, 0.15);
+}
+
 .feature-card[data-feature="代码编写"] .card-icon {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .feature-card[data-feature="代码编写"] .card-badge {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
 }
 
 .feature-card[data-feature="代码编写"]:hover {
-    border-color: rgba(102, 126, 234, 0.3);
+    border-color: rgba(102, 126, 234, 0.4);
     box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.15),
-        0 8px 16px rgba(0, 0, 0, 0.1),
-        0 0 0 1px rgba(102, 126, 234, 0.2);
+        0 32px 64px rgba(0, 0, 0, 0.2),
+        0 16px 32px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(102, 126, 234, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .feature-card[data-feature="代码编写"]:hover .card-icon {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    transform: scale(1.15) rotate(8deg);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
 }
 
-/* 图表绘制卡片 - 橙色主题 */
+/* 图表绘制卡片 - 艺术家风格（橙色主题）优化 */
+.feature-card.artist-card {
+    background: linear-gradient(135deg, 
+        rgba(250, 112, 154, 0.08) 0%, 
+        rgba(254, 225, 64, 0.04) 50%,
+        rgba(250, 112, 154, 0.02) 100%);
+    border: 1px solid rgba(250, 112, 154, 0.15);
+}
+
 .feature-card[data-feature="图表绘制"] .card-icon {
     background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
     color: white;
-    box-shadow: 0 4px 15px rgba(250, 112, 154, 0.3);
+    box-shadow: 0 6px 20px rgba(250, 112, 154, 0.4);
 }
 
 .feature-card[data-feature="图表绘制"] .card-badge {
     background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-    box-shadow: 0 2px 8px rgba(250, 112, 154, 0.3);
+    box-shadow: 0 4px 16px rgba(250, 112, 154, 0.4);
 }
 
 .feature-card[data-feature="图表绘制"]:hover {
-    border-color: rgba(250, 112, 154, 0.3);
+    border-color: rgba(250, 112, 154, 0.4);
     box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.15),
-        0 8px 16px rgba(0, 0, 0, 0.1),
-        0 0 0 1px rgba(250, 112, 154, 0.2);
+        0 32px 64px rgba(0, 0, 0, 0.2),
+        0 16px 32px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(250, 112, 154, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .feature-card[data-feature="图表绘制"]:hover .card-icon {
     background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-    transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 6px 20px rgba(250, 112, 154, 0.4);
+    transform: scale(1.15) rotate(8deg);
+    box-shadow: 0 10px 30px rgba(250, 112, 154, 0.5);
 }
 
-/* 内容创作卡片 - 红色主题 */
+/* 内容创作卡片 - 作家风格（红色主题）优化 */
+.feature-card.writer-card {
+    background: linear-gradient(135deg, 
+        rgba(255, 107, 107, 0.08) 0%, 
+        rgba(238, 90, 36, 0.04) 50%,
+        rgba(255, 107, 107, 0.02) 100%);
+    border: 1px solid rgba(255, 107, 107, 0.15);
+}
+
 .feature-card[data-feature="内容创作"] .card-icon {
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
     color: white;
-    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
 }
 
 .feature-card[data-feature="内容创作"] .card-badge {
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+    box-shadow: 0 4px 16px rgba(255, 107, 107, 0.4);
 }
 
 .feature-card[data-feature="内容创作"]:hover {
-    border-color: rgba(255, 107, 107, 0.3);
+    border-color: rgba(255, 107, 107, 0.4);
     box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.15),
-        0 8px 16px rgba(0, 0, 0, 0.1),
-        0 0 0 1px rgba(255, 107, 107, 0.2);
+        0 32px 64px rgba(0, 0, 0, 0.2),
+        0 16px 32px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(255, 107, 107, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .feature-card[data-feature="内容创作"]:hover .card-icon {
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-    transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+    transform: scale(1.15) rotate(8deg);
+    box-shadow: 0 10px 30px rgba(255, 107, 107, 0.5);
 }
 
-/* 文本翻译卡片 - 青色主题 */
+/* 文本翻译卡片 - 外交官风格（青色主题）优化 */
+.feature-card.diplomat-card {
+    background: linear-gradient(135deg, 
+        rgba(6, 182, 212, 0.08) 0%, 
+        rgba(8, 145, 178, 0.04) 50%,
+        rgba(6, 182, 212, 0.02) 100%);
+    border: 1px solid rgba(6, 182, 212, 0.15);
+}
+
 .feature-card[data-feature="文本翻译"] .card-icon {
     background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
     color: white;
-    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+    box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
 }
 
 .feature-card[data-feature="文本翻译"] .card-badge {
     background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+    box-shadow: 0 4px 16px rgba(6, 182, 212, 0.4);
 }
 
 .feature-card[data-feature="文本翻译"]:hover {
-    border-color: rgba(6, 182, 212, 0.3);
+    border-color: rgba(6, 182, 212, 0.4);
     box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.15),
-        0 8px 16px rgba(0, 0, 0, 0.1),
-        0 0 0 1px rgba(6, 182, 212, 0.2);
+        0 32px 64px rgba(0, 0, 0, 0.2),
+        0 16px 32px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(6, 182, 212, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .feature-card[data-feature="文本翻译"]:hover .card-icon {
     background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-    transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+    transform: scale(1.15) rotate(8deg);
+    box-shadow: 0 10px 30px rgba(6, 182, 212, 0.5);
 }
 
-/* 响应式设计 */
+/* 响应式设计优化 */
+@media (max-width: 1200px) {
+    .feature-cards-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--spacing-lg);
+    }
+}
+
 @media (max-width: 768px) {
     .feature-cards-grid {
         grid-template-columns: 1fr;
-        gap: var(--spacing-md);
+        gap: var(--spacing-lg);
     }
     
     .feature-cards-container {
-        padding: var(--spacing-md);
+        padding: var(--spacing-lg);
     }
     
-    .feature-card.detective-card {
-        padding: var(--spacing-md);
+    .feature-card.detective-card,
+    .feature-card.scientist-card,
+    .feature-card.geek-card,
+    .feature-card.artist-card,
+    .feature-card.writer-card,
+    .feature-card.diplomat-card {
+        padding: var(--spacing-lg);
+        min-height: 260px;
+    }
+    
+    .card-title {
+        font-size: 1.25rem;
+    }
+    
+    .card-stats {
+        gap: var(--spacing-md);
+        padding: var(--spacing-sm);
     }
 }
 
@@ -555,10 +806,32 @@
     .card-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: var(--spacing-sm);
+        gap: var(--spacing-md);
     }
     
     .card-badge {
         align-self: flex-end;
+    }
+    
+    .card-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 1.2rem;
+    }
+    
+    .card-stats {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+    
+    .stat-item {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .stat-number {
+        font-size: 1.1rem;
+        margin-bottom: 0;
     }
 }

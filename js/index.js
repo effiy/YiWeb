@@ -116,7 +116,7 @@ const inputHandler = {
 // 功能卡片处理
 const featureCards = {
     init() {
-        const cards = document.querySelectorAll('.feature-card.detective-card');
+        const cards = document.querySelectorAll('.feature-card.detective-card, .feature-card.scientist-card, .feature-card.geek-card, .feature-card.artist-card, .feature-card.writer-card, .feature-card.diplomat-card');
         
         cards.forEach(card => {
             card.addEventListener('click', (e) => {
