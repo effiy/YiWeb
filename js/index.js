@@ -116,7 +116,8 @@ const inputHandler = {
 // 功能卡片处理
 const featureCards = {
     init() {
-        const cards = document.querySelectorAll('.feature-card.detective-card, .feature-card.scientist-card, .feature-card.geek-card, .feature-card.artist-card, .feature-card.writer-card, .feature-card.diplomat-card');
+        // 更新选择器，只包含当前存在的卡片
+        const cards = document.querySelectorAll('.feature-card.scientist-card, .feature-card.geek-card, .feature-card.artist-card');
         
         cards.forEach(card => {
             card.addEventListener('click', (e) => {
@@ -144,14 +145,11 @@ const featureCards = {
         const messageInput = document.querySelector('#messageInput');
         
         if (messageInput) {
-            // 根据功能类型设置不同的提示文本
+            // 根据功能类型设置不同的提示文本，更新为当前存在的功能
             const prompts = {
-                '问答': '请帮我回答一个问题：',
                 '数据分析': '请帮我分析以下数据：',
                 '代码编写': '请帮我编写代码，需求是：',
-                '图表绘制': '请帮我绘制一个图表，数据是：',
-                '内容创作': '请帮我创作内容，主题是：',
-                '文本翻译': '请帮我翻译以下文本：'
+                '图表绘制': '请帮我生成一张图片，描述是：' // 更新为生图创造的提示
             };
             
             const prompt = prompts[feature] || `请帮我处理${feature}相关的问题：`;
