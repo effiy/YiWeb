@@ -113,6 +113,75 @@ const inputHandler = {
     }
 };
 
+// 功能卡片处理
+const featureCards = {
+    init() {
+        const cards = document.querySelectorAll('.feature-card.detective-card');
+        
+        cards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleCardClick(card);
+            });
+            
+            // 添加键盘支持
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.handleCardClick(card);
+                }
+            });
+            
+            // 设置可访问性
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('role', 'button');
+            card.setAttribute('aria-label', `选择${card.getAttribute('data-feature')}功能`);
+        });
+    },
+    
+    handleCardClick(card) {
+        const feature = card.getAttribute('data-feature');
+        const messageInput = document.querySelector('#messageInput');
+        
+        if (messageInput) {
+            // 根据功能类型设置不同的提示文本
+            const prompts = {
+                '问答': '请帮我回答一个问题：',
+                '数据分析': '请帮我分析以下数据：',
+                '代码编写': '请帮我编写代码，需求是：',
+                '图表绘制': '请帮我绘制一个图表，数据是：',
+                '内容创作': '请帮我创作内容，主题是：',
+                '文本翻译': '请帮我翻译以下文本：'
+            };
+            
+            const prompt = prompts[feature] || `请帮我处理${feature}相关的问题：`;
+            
+            // 填充输入框
+            messageInput.value = prompt;
+            messageInput.focus();
+            
+            // 触发输入事件以调整高度
+            messageInput.dispatchEvent(new Event('input'));
+            
+            // 添加点击反馈效果
+            this.addClickFeedback(card);
+            
+            console.log(`选择了${feature}功能`);
+        }
+    },
+    
+    addClickFeedback(card) {
+        // 添加点击动画效果
+        card.style.transform = 'scale(0.95)';
+        card.style.transition = 'transform 0.1s ease';
+        
+        setTimeout(() => {
+            card.style.transform = '';
+            card.style.transition = '';
+        }, 100);
+    }
+};
+
 // 页面初始化
 document.addEventListener('DOMContentLoaded', () => {
     // 初始化键盘快捷键
@@ -120,6 +189,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 初始化输入框处理
     inputHandler.init();
+    
+    // 初始化功能卡片
+    featureCards.init();
     
     // 检测键盘弹出
     utils.detectKeyboardOpen();
