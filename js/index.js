@@ -156,6 +156,10 @@ const featureCards = {
     },
     
     playHoverAnimation(card, feature) {
+        // 防止动画叠加
+        if (card._hoverAnimating) return;
+        card._hoverAnimating = true;
+        
         // 根据功能类型播放不同的悬停动画
         switch(feature) {
             case '数据分析':
@@ -168,11 +172,26 @@ const featureCards = {
                 this.playArtistHover(card);
                 break;
         }
+        
+        // 动画结束后重置状态
+        setTimeout(() => {
+            card._hoverAnimating = false;
+        }, 2000);
     },
     
     stopHoverAnimation(card, feature) {
         // 停止悬停动画
-        card.style.animation = '';
+        const icon = card.querySelector('.card-icon');
+        const badge = card.querySelector('.card-badge');
+        
+        if (icon) {
+            icon.style.animation = '';
+        }
+        if (badge) {
+            badge.style.animation = '';
+        }
+        
+        card._hoverAnimating = false;
     },
     
     playScientistHover(card) {
@@ -221,9 +240,9 @@ const featureCards = {
         if (messageInput) {
             // 根据功能类型设置不同的提示文本，更新为当前存在的功能
             const prompts = {
-                '数据分析': '请帮我分析以下数据，我需要了解：',
-                '代码编写': '请帮我编写代码，具体需求是：',
-                '图表绘制': '请帮我生成一张图片，我想看到：' // 更新为生图创造的提示
+                '数据分析': '请帮我进行智能数据分析，我想了解：',
+                '代码编写': '请帮我编写智能代码，具体需求是：',
+                '图表绘制': '请帮我创作AI艺术作品，我想看到：' // 更新为AI艺术创作的提示
             };
             
             const prompt = prompts[feature] || `请帮我处理${feature}相关的问题：`;
@@ -300,37 +319,47 @@ const featureCards = {
     },
     
     createDataPoints(card) {
-        // 创建数据点动画效果
-        for (let i = 0; i < 5; i++) {
+        // 创建数据点动画效果，防止叠加
+        if (card._dataPointAnimating) return;
+        card._dataPointAnimating = true;
+        const isMobile = window.innerWidth < 600;
+        const count = isMobile ? 3 : 7;
+        for (let i = 0; i < count; i++) {
             const point = document.createElement('div');
             point.style.cssText = `
                 position: absolute;
-                width: 4px;
-                height: 4px;
+                width: 5px;
+                height: 5px;
                 background: #3b82f6;
                 border-radius: 50%;
                 pointer-events: none;
                 z-index: 1000;
-                animation: dataPointFloat 1s ease-out forwards;
+                will-change: transform, opacity;
+                animation: dataPointFloat 0.7s cubic-bezier(0.4,0,0.2,1) forwards;
+                opacity: 0.85;
             `;
-            
-            point.style.left = Math.random() * 100 + '%';
-            point.style.top = Math.random() * 100 + '%';
-            point.style.animationDelay = i * 0.1 + 's';
-            
+            // 让点从中心向四周浮动
+            const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
+            const radius = 30 + Math.random() * 20;
+            point.style.left = `calc(50% + ${Math.cos(angle) * radius}px)`;
+            point.style.top = `calc(50% + ${Math.sin(angle) * radius}px)`;
+            point.style.animationDelay = i * 0.05 + 's';
             card.appendChild(point);
-            
+            // 销毁动画元素
             setTimeout(() => {
-                if (point.parentNode) {
-                    point.parentNode.removeChild(point);
-                }
-            }, 1000);
+                if (point.parentNode) point.parentNode.removeChild(point);
+                if (i === count - 1) card._dataPointAnimating = false;
+            }, 700 + i * 50);
         }
     },
     
     createCodeLines(card) {
-        // 创建代码行动画效果
-        for (let i = 0; i < 3; i++) {
+        // 创建代码行动画效果，防止叠加
+        if (card._codeLineAnimating) return;
+        card._codeLineAnimating = true;
+        const isMobile = window.innerWidth < 600;
+        const count = isMobile ? 2 : 4;
+        for (let i = 0; i < count; i++) {
             const line = document.createElement('div');
             line.style.cssText = `
                 position: absolute;
@@ -338,52 +367,56 @@ const featureCards = {
                 background: linear-gradient(90deg, #22c55e, transparent);
                 pointer-events: none;
                 z-index: 1000;
-                animation: codeLineScan 0.8s ease-out forwards;
+                will-change: transform, opacity;
+                animation: codeLineScan 0.6s cubic-bezier(0.4,0,0.2,1) forwards;
+                opacity: 0.8;
             `;
-            
             line.style.left = '0%';
-            line.style.top = (20 + i * 30) + '%';
+            line.style.top = (25 + i * 20) + '%';
             line.style.width = '100%';
-            line.style.animationDelay = i * 0.2 + 's';
-            
+            line.style.animationDelay = i * 0.08 + 's';
             card.appendChild(line);
-            
             setTimeout(() => {
-                if (line.parentNode) {
-                    line.parentNode.removeChild(line);
-                }
-            }, 800);
+                if (line.parentNode) line.parentNode.removeChild(line);
+                if (i === count - 1) card._codeLineAnimating = false;
+            }, 600 + i * 80);
         }
     },
     
     createColorParticles(card) {
-        // 创建色彩粒子动画效果
+        // 创建色彩粒子动画效果，防止叠加
+        if (card._colorParticleAnimating) return;
+        card._colorParticleAnimating = true;
         const colors = ['#ff0000', '#ffa500', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#ee82ee'];
-        
-        for (let i = 0; i < 8; i++) {
+        const isMobile = window.innerWidth < 600;
+        const count = isMobile ? 5 : 10;
+        for (let i = 0; i < count; i++) {
             const particle = document.createElement('div');
             particle.style.cssText = `
                 position: absolute;
-                width: 6px;
-                height: 6px;
+                width: 7px;
+                height: 7px;
                 background: ${colors[i % colors.length]};
                 border-radius: 50%;
                 pointer-events: none;
                 z-index: 1000;
-                animation: colorParticleExplode 1.2s ease-out forwards;
+                will-change: transform, opacity;
+                animation: colorParticleExplode 0.9s cubic-bezier(0.4,0,0.2,1) forwards;
+                opacity: 0.85;
             `;
-            
+            // 粒子随机方向爆炸
+            const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
+            const dist = 30 + Math.random() * 25;
+            particle.style.setProperty('--x', `${Math.cos(angle) * dist}px`);
+            particle.style.setProperty('--y', `${Math.sin(angle) * dist}px`);
             particle.style.left = '50%';
             particle.style.top = '50%';
-            particle.style.animationDelay = i * 0.1 + 's';
-            
+            particle.style.animationDelay = i * 0.04 + 's';
             card.appendChild(particle);
-            
             setTimeout(() => {
-                if (particle.parentNode) {
-                    particle.parentNode.removeChild(particle);
-                }
-            }, 1200);
+                if (particle.parentNode) particle.parentNode.removeChild(particle);
+                if (i === count - 1) card._colorParticleAnimating = false;
+            }, 900 + i * 40);
         }
     }
 };
