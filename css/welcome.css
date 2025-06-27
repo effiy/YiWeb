@@ -211,7 +211,7 @@
     margin-top: var(--spacing-2xl);
 }
 
-/* 卡片基础样式优化 - 减少卡顿 */
+/* 功能卡片基础样式优化 - 增强辨识度 */
 .feature-card.detective-card,
 .feature-card.scientist-card,
 .feature-card.geek-card,
@@ -222,10 +222,10 @@
         rgba(255, 255, 255, 0.08) 0%, 
         rgba(255, 255, 255, 0.03) 50%,
         rgba(255, 255, 255, 0.01) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
     padding: var(--spacing-xl);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
     cursor: pointer;
@@ -234,7 +234,7 @@
     box-shadow: 
         0 8px 32px rgba(0, 0, 0, 0.12),
         0 4px 16px rgba(0, 0, 0, 0.08);
-    min-height: 280px;
+    min-height: 320px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -259,7 +259,7 @@
         rgba(255, 255, 255, 0.02) 70%,
         transparent 100%);
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.4s ease;
     pointer-events: none;
 }
 
@@ -269,11 +269,11 @@
 .feature-card.artist-card:hover,
 .feature-card.writer-card:hover,
 .feature-card.diplomat-card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(255, 255, 255, 0.3);
     box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.15),
-        0 8px 16px rgba(0, 0, 0, 0.1);
+        0 24px 48px rgba(0, 0, 0, 0.2),
+        0 12px 24px rgba(0, 0, 0, 0.15);
 }
 
 .feature-card.detective-card:hover::before,
@@ -285,7 +285,7 @@
     opacity: 1;
 }
 
-/* 卡片头部样式优化 - 简化动画 */
+/* 卡片头部样式优化 - 增强辨识度 */
 .card-header {
     display: flex;
     align-items: center;
@@ -296,22 +296,23 @@
 }
 
 .card-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 16px;
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     background: linear-gradient(135deg, 
         rgba(255, 255, 255, 0.15) 0%, 
         rgba(255, 255, 255, 0.08) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.2);
     color: var(--text-primary);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
     will-change: transform;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .card-icon::before {
@@ -326,7 +327,7 @@
         transparent 50%, 
         rgba(255, 255, 255, 0.1) 100%);
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.4s ease;
 }
 
 .feature-card.detective-card:hover .card-icon,
@@ -335,12 +336,12 @@
 .feature-card.artist-card:hover .card-icon,
 .feature-card.writer-card:hover .card-icon,
 .feature-card.diplomat-card:hover .card-icon {
-    transform: scale(1.1);
+    transform: scale(1.15) rotate(5deg);
     background: linear-gradient(135deg, 
         rgba(255, 255, 255, 0.25) 0%, 
         rgba(255, 255, 255, 0.12) 100%);
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .feature-card.detective-card:hover .card-icon::before,
@@ -355,16 +356,17 @@
 .card-badge {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 6px 16px;
-    border-radius: 24px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.8px;
+    padding: 8px 18px;
+    border-radius: 28px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
     text-transform: uppercase;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    transition: all 0.3s ease;
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    transition: all 0.4s ease;
     position: relative;
     overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .card-badge::before {
@@ -378,7 +380,7 @@
         transparent, 
         rgba(255, 255, 255, 0.3), 
         transparent);
-    transition: left 0.5s ease;
+    transition: left 0.6s ease;
 }
 
 .feature-card.detective-card:hover .card-badge::before,
@@ -448,6 +450,7 @@
     position: relative;
 }
 
+/* 功能标签样式优化 - 增强辨识度 */
 .feature-tag {
     background: rgba(255, 255, 255, 0.12);
     color: var(--text-secondary);
@@ -498,7 +501,49 @@
     left: 100%;
 }
 
-/* 统计区域样式优化 - 简化动画 */
+/* 数据分析卡片功能标签 */
+.feature-card[data-feature="数据分析"] .feature-tag {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+}
+
+.feature-card[data-feature="数据分析"]:hover .feature-tag {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.5);
+    color: #dbeafe;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+/* 代码编写卡片功能标签 */
+.feature-card[data-feature="代码编写"] .feature-tag {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 0.3);
+    color: #86efac;
+}
+
+.feature-card[data-feature="代码编写"]:hover .feature-tag {
+    background: rgba(34, 197, 94, 0.25);
+    border-color: rgba(34, 197, 94, 0.5);
+    color: #dcfce7;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+}
+
+/* 图表绘制卡片功能标签 */
+.feature-card[data-feature="图表绘制"] .feature-tag {
+    background: rgba(168, 85, 247, 0.15);
+    border-color: rgba(168, 85, 247, 0.3);
+    color: #c4b5fd;
+}
+
+.feature-card[data-feature="图表绘制"]:hover .feature-tag {
+    background: rgba(168, 85, 247, 0.25);
+    border-color: rgba(168, 85, 247, 0.5);
+    color: #ede9fe;
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+}
+
+/* 统计区域样式优化 - 增强辨识度 */
 .card-stats {
     display: flex;
     gap: var(--spacing-lg);
@@ -539,6 +584,42 @@
 
 .feature-card:hover .card-stats::before {
     opacity: 1;
+}
+
+/* 数据分析卡片统计区域 */
+.feature-card[data-feature="数据分析"] .card-stats {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.feature-card[data-feature="数据分析"]:hover .card-stats {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
+}
+
+/* 代码编写卡片统计区域 */
+.feature-card[data-feature="代码编写"] .card-stats {
+    background: rgba(34, 197, 94, 0.08);
+    border-color: rgba(34, 197, 94, 0.2);
+}
+
+.feature-card[data-feature="代码编写"]:hover .card-stats {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 0.3);
+    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.15);
+}
+
+/* 图表绘制卡片统计区域 */
+.feature-card[data-feature="图表绘制"] .card-stats {
+    background: rgba(168, 85, 247, 0.08);
+    border-color: rgba(168, 85, 247, 0.2);
+}
+
+.feature-card[data-feature="图表绘制"]:hover .card-stats {
+    background: rgba(168, 85, 247, 0.15);
+    border-color: rgba(168, 85, 247, 0.3);
+    box-shadow: 0 8px 20px rgba(168, 85, 247, 0.15);
 }
 
 .stat-item {
@@ -670,12 +751,13 @@
     box-shadow: 0 10px 30px rgba(79, 172, 254, 0.5);
 }
 
-/* 数据分析卡片 - 科学家风格（蓝色科技主题）增强交互 */
+/* 数据分析卡片 - 科学家风格优化 */
 .feature-card.scientist-card {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 197, 253, 0.05) 100%);
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    position: relative;
-    overflow: hidden;
+    border-color: rgba(59, 130, 246, 0.3);
+    background: linear-gradient(135deg, 
+        rgba(59, 130, 246, 0.08) 0%, 
+        rgba(255, 255, 255, 0.03) 50%,
+        rgba(59, 130, 246, 0.02) 100%);
 }
 
 .feature-card.scientist-card::before {
@@ -685,26 +767,32 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, transparent 50%, rgba(147, 197, 253, 0.05) 100%);
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+        linear-gradient(135deg, 
+            rgba(59, 130, 246, 0.05) 0%, 
+            transparent 30%, 
+            rgba(59, 130, 246, 0.03) 70%,
+            transparent 100%);
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.4s ease;
     pointer-events: none;
 }
 
-/* 数据分析卡片 - 数据流动画 */
 .feature-card.scientist-card::after {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: repeating-linear-gradient(
         45deg,
         transparent,
-        transparent 10px,
-        rgba(59, 130, 246, 0.03) 10px,
-        rgba(59, 130, 246, 0.03) 20px
+        transparent 20px,
+        rgba(59, 130, 246, 0.02) 20px,
+        rgba(59, 130, 246, 0.02) 21px
     );
     animation: dataFlow 20s linear infinite;
     opacity: 0;
@@ -713,15 +801,20 @@
 }
 
 @keyframes dataFlow {
-    0% { transform: translateX(-100%) translateY(-100%) rotate(0deg); }
-    100% { transform: translateX(100%) translateY(100%) rotate(360deg); }
+    0% { transform: translateX(-100%) translateY(-100%); }
+    100% { transform: translateX(100%) translateY(100%); }
 }
 
 .feature-card.scientist-card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(59, 130, 246, 0.4);
-    box-shadow: 0 16px 32px rgba(59, 130, 246, 0.15), 0 6px 12px rgba(0, 0, 0, 0.1);
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 197, 253, 0.08) 100%);
+    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(59, 130, 246, 0.6);
+    box-shadow: 
+        0 24px 48px rgba(59, 130, 246, 0.2),
+        0 12px 24px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, 
+        rgba(59, 130, 246, 0.12) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        rgba(59, 130, 246, 0.04) 100%);
 }
 
 .feature-card.scientist-card:hover::before {
@@ -735,26 +828,38 @@
 .feature-card[data-feature="数据分析"] .card-icon {
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
     color: white;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    animation: scientistScan 4s ease-in-out infinite;
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    animation: scientistScan 3s ease-in-out infinite;
+    position: relative;
+}
+
+.feature-card[data-feature="数据分析"] .card-icon::before {
+    content: '📊';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.8rem;
+    opacity: 0.3;
+    animation: dataPulse 2s ease-in-out infinite;
+}
+
+@keyframes dataPulse {
+    0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
 }
 
 @keyframes scientistScan {
-    0%, 100% { 
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        transform: scale(1);
-    }
-    50% { 
-        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
-        transform: scale(1.02);
-    }
+    0%, 100% { box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+    50% { box-shadow: 0 6px 25px rgba(59, 130, 246, 0.6); }
 }
 
 .feature-card[data-feature="数据分析"] .card-badge {
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
     color: white;
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    animation: badgePulse 3s ease-in-out infinite;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    animation: badgePulse 2s ease-in-out infinite;
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
 }
 
 @keyframes badgePulse {
@@ -763,33 +868,34 @@
 }
 
 .feature-card[data-feature="数据分析"]:hover {
-    border-color: rgba(59, 130, 246, 0.6);
-    box-shadow: 0 16px 32px rgba(59, 130, 246, 0.2), 0 6px 12px rgba(0, 0, 0, 0.1);
+    border-color: rgba(59, 130, 246, 0.8);
+    box-shadow: 0 24px 48px rgba(59, 130, 246, 0.25), 0 12px 24px rgba(0, 0, 0, 0.15);
 }
 
 .feature-card[data-feature="数据分析"]:hover .card-icon {
-    transform: scale(1.1);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+    transform: scale(1.15) rotate(5deg);
+    box-shadow: 0 8px 28px rgba(59, 130, 246, 0.5);
     animation: scientistScanHover 2s ease-in-out infinite;
 }
 
 @keyframes scientistScanHover {
     0%, 100% { 
-        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-        transform: scale(1.1);
+        transform: scale(1.15) rotate(5deg);
+        box-shadow: 0 8px 28px rgba(59, 130, 246, 0.5);
     }
     50% { 
-        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.5);
-        transform: scale(1.12);
+        transform: scale(1.18) rotate(5deg);
+        box-shadow: 0 10px 32px rgba(59, 130, 246, 0.7);
     }
 }
 
-/* 代码编写卡片 - 极客风格（绿色黑客主题）增强交互 */
+/* 代码编写卡片 - 极客风格优化 */
 .feature-card.geek-card {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(134, 239, 172, 0.05) 100%);
-    border: 1px solid rgba(34, 197, 94, 0.2);
-    position: relative;
-    overflow: hidden;
+    border-color: rgba(34, 197, 94, 0.3);
+    background: linear-gradient(135deg, 
+        rgba(34, 197, 94, 0.08) 0%, 
+        rgba(255, 255, 255, 0.03) 50%,
+        rgba(34, 197, 94, 0.02) 100%);
 }
 
 .feature-card.geek-card::before {
@@ -799,13 +905,19 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, transparent 50%, rgba(134, 239, 172, 0.05) 100%);
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(34, 197, 94, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(34, 197, 94, 0.08) 0%, transparent 50%),
+        linear-gradient(135deg, 
+            rgba(34, 197, 94, 0.05) 0%, 
+            transparent 30%, 
+            rgba(34, 197, 94, 0.03) 70%,
+            transparent 100%);
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.4s ease;
     pointer-events: none;
 }
 
-/* 代码编写卡片 - 矩阵雨效果 */
 .feature-card.geek-card::after {
     content: '01';
     position: absolute;
@@ -837,10 +949,15 @@
 }
 
 .feature-card.geek-card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(34, 197, 94, 0.4);
-    box-shadow: 0 16px 32px rgba(34, 197, 94, 0.15), 0 6px 12px rgba(0, 0, 0, 0.1);
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(134, 239, 172, 0.08) 100%);
+    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(34, 197, 94, 0.6);
+    box-shadow: 
+        0 24px 48px rgba(34, 197, 94, 0.2),
+        0 12px 24px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, 
+        rgba(34, 197, 94, 0.12) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        rgba(34, 197, 94, 0.04) 100%);
 }
 
 .feature-card.geek-card:hover::before {
@@ -854,7 +971,7 @@
 .feature-card[data-feature="代码编写"] .card-icon {
     background: linear-gradient(135deg, #22c55e, #16a34a);
     color: white;
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
     animation: codeGlow 2s ease-in-out infinite alternate;
     position: relative;
 }
@@ -876,50 +993,52 @@
 }
 
 @keyframes codeGlow {
-    0% { box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); }
-    100% { box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4); }
+    0% { box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4); }
+    100% { box-shadow: 0 6px 25px rgba(34, 197, 94, 0.6); }
 }
 
 .feature-card[data-feature="代码编写"] .card-badge {
     background: linear-gradient(135deg, #22c55e, #16a34a);
     color: white;
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    border: 1px solid rgba(34, 197, 94, 0.4);
     animation: terminalBlink 2s ease-in-out infinite;
+    box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4);
 }
 
 @keyframes terminalBlink {
-    0%, 90%, 100% { opacity: 1; }
-    95% { opacity: 0.7; }
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
 }
 
 .feature-card[data-feature="代码编写"]:hover {
-    border-color: rgba(34, 197, 94, 0.6);
-    box-shadow: 0 16px 32px rgba(34, 197, 94, 0.2), 0 6px 12px rgba(0, 0, 0, 0.1);
+    border-color: rgba(34, 197, 94, 0.8);
+    box-shadow: 0 24px 48px rgba(34, 197, 94, 0.25), 0 12px 24px rgba(0, 0, 0, 0.15);
 }
 
 .feature-card[data-feature="代码编写"]:hover .card-icon {
-    transform: scale(1.1);
-    box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4);
-    animation: codeGlowHover 1.5s ease-in-out infinite alternate;
+    transform: scale(1.15) rotate(5deg);
+    box-shadow: 0 8px 28px rgba(34, 197, 94, 0.5);
+    animation: codeGlowHover 2s ease-in-out infinite;
 }
 
 @keyframes codeGlowHover {
-    0% { 
-        box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4);
-        transform: scale(1.1);
+    0%, 100% { 
+        transform: scale(1.15) rotate(5deg);
+        box-shadow: 0 8px 28px rgba(34, 197, 94, 0.5);
     }
-    100% { 
-        box-shadow: 0 8px 20px rgba(34, 197, 94, 0.5);
-        transform: scale(1.12);
+    50% { 
+        transform: scale(1.18) rotate(5deg);
+        box-shadow: 0 10px 32px rgba(34, 197, 94, 0.7);
     }
 }
 
-/* 图表绘制卡片 - 艺术家风格（紫色创意主题） */
+/* 图表绘制卡片 - 艺术家风格优化 */
 .feature-card.artist-card {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(196, 181, 253, 0.05) 100%);
-    border: 1px solid rgba(168, 85, 247, 0.2);
-    position: relative;
-    overflow: hidden;
+    border-color: rgba(168, 85, 247, 0.3);
+    background: linear-gradient(135deg, 
+        rgba(168, 85, 247, 0.08) 0%, 
+        rgba(255, 255, 255, 0.03) 50%,
+        rgba(168, 85, 247, 0.02) 100%);
 }
 
 .feature-card.artist-card::before {
@@ -929,31 +1048,30 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.05) 0%, transparent 50%, rgba(196, 181, 253, 0.05) 100%);
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
+        linear-gradient(135deg, 
+            rgba(168, 85, 247, 0.05) 0%, 
+            transparent 30%, 
+            rgba(168, 85, 247, 0.03) 70%,
+            transparent 100%);
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.4s ease;
     pointer-events: none;
 }
 
-/* 生图创造卡片 - 彩虹光谱效果 */
 .feature-card.artist-card::after {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-        45deg,
-        rgba(255, 0, 0, 0.02),
-        rgba(255, 165, 0, 0.02),
-        rgba(255, 255, 0, 0.02),
-        rgba(0, 255, 0, 0.02),
-        rgba(0, 0, 255, 0.02),
-        rgba(75, 0, 130, 0.02),
-        rgba(238, 130, 238, 0.02)
-    );
-    background-size: 400% 400%;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 30% 70%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 70% 30%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
     animation: rainbowShift 8s ease-in-out infinite;
     opacity: 0;
     transition: opacity 0.5s ease;
@@ -961,15 +1079,30 @@
 }
 
 @keyframes rainbowShift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+    0%, 100% { 
+        filter: hue-rotate(0deg) brightness(1);
+        transform: scale(1);
+    }
+    33% { 
+        filter: hue-rotate(120deg) brightness(1.1);
+        transform: scale(1.02);
+    }
+    66% { 
+        filter: hue-rotate(240deg) brightness(1.05);
+        transform: scale(0.98);
+    }
 }
 
 .feature-card.artist-card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(168, 85, 247, 0.4);
-    box-shadow: 0 16px 32px rgba(168, 85, 247, 0.15), 0 6px 12px rgba(0, 0, 0, 0.1);
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(196, 181, 253, 0.08) 100%);
+    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(168, 85, 247, 0.6);
+    box-shadow: 
+        0 24px 48px rgba(168, 85, 247, 0.2),
+        0 12px 24px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, 
+        rgba(168, 85, 247, 0.12) 0%, 
+        rgba(255, 255, 255, 0.05) 50%,
+        rgba(168, 85, 247, 0.04) 100%);
 }
 
 .feature-card.artist-card:hover::before {
@@ -983,7 +1116,7 @@
 .feature-card[data-feature="图表绘制"] .card-icon {
     background: linear-gradient(135deg, #a855f7, #9333ea);
     color: white;
-    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+    box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
     animation: artistPulse 3s ease-in-out infinite;
     position: relative;
 }
@@ -994,39 +1127,47 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 1.2rem;
+    font-size: 0.8rem;
+    opacity: 0.3;
     animation: paintSplash 4s ease-in-out infinite;
 }
 
 @keyframes paintSplash {
     0%, 100% { 
         transform: translate(-50%, -50%) scale(1) rotate(0deg);
-        opacity: 1;
+        opacity: 0.3;
     }
     25% { 
         transform: translate(-50%, -50%) scale(1.1) rotate(90deg);
-        opacity: 0.8;
+        opacity: 0.5;
     }
     50% { 
         transform: translate(-50%, -50%) scale(0.9) rotate(180deg);
-        opacity: 1;
+        opacity: 0.3;
     }
     75% { 
         transform: translate(-50%, -50%) scale(1.05) rotate(270deg);
-        opacity: 0.9;
+        opacity: 0.4;
     }
 }
 
 @keyframes artistPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.02); }
+    0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+    }
+    50% { 
+        transform: scale(1.02);
+        box-shadow: 0 6px 25px rgba(168, 85, 247, 0.6);
+    }
 }
 
 .feature-card[data-feature="图表绘制"] .card-badge {
     background: linear-gradient(135deg, #a855f7, #9333ea);
     color: white;
-    border: 1px solid rgba(168, 85, 247, 0.3);
+    border: 1px solid rgba(168, 85, 247, 0.4);
     animation: creativeSparkle 3s ease-in-out infinite;
+    box-shadow: 0 6px 16px rgba(168, 85, 247, 0.4);
 }
 
 @keyframes creativeSparkle {
@@ -1041,24 +1182,24 @@
 }
 
 .feature-card[data-feature="图表绘制"]:hover {
-    border-color: rgba(168, 85, 247, 0.6);
-    box-shadow: 0 16px 32px rgba(168, 85, 247, 0.2), 0 6px 12px rgba(0, 0, 0, 0.1);
+    border-color: rgba(168, 85, 247, 0.8);
+    box-shadow: 0 24px 48px rgba(168, 85, 247, 0.25), 0 12px 24px rgba(0, 0, 0, 0.15);
 }
 
 .feature-card[data-feature="图表绘制"]:hover .card-icon {
-    transform: scale(1.1);
-    box-shadow: 0 6px 16px rgba(168, 85, 247, 0.4);
+    transform: scale(1.15) rotate(5deg);
+    box-shadow: 0 8px 28px rgba(168, 85, 247, 0.5);
     animation: artistPulseHover 2s ease-in-out infinite;
 }
 
 @keyframes artistPulseHover {
     0%, 100% { 
-        transform: scale(1.1);
-        box-shadow: 0 6px 16px rgba(168, 85, 247, 0.4);
+        transform: scale(1.15) rotate(5deg);
+        box-shadow: 0 8px 28px rgba(168, 85, 247, 0.5);
     }
     50% { 
-        transform: scale(1.12);
-        box-shadow: 0 8px 20px rgba(168, 85, 247, 0.5);
+        transform: scale(1.18) rotate(5deg);
+        box-shadow: 0 10px 32px rgba(168, 85, 247, 0.7);
     }
 }
 
