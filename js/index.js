@@ -62,17 +62,8 @@ const utils = {
 const keyboardShortcuts = {
     init() {
         document.addEventListener('keydown', (e) => {
-            // Ctrl+K 聚焦到输入框
+            // Ctrl+K 清空输入框内容
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                e.preventDefault();
-                const input = document.querySelector('#messageInput');
-                if (input) {
-                    input.focus();
-                }
-            }
-            
-            // Ctrl+L 清空输入框内容
-            if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
                 e.preventDefault();
                 const input = document.querySelector('#messageInput');
                 if (input) {
@@ -80,6 +71,15 @@ const keyboardShortcuts = {
                     input.style.height = 'auto';
                     input.focus();
                     console.log('已清空输入框内容');
+                }
+            }
+            
+            // Ctrl+L 聚焦到输入框
+            if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+                e.preventDefault();
+                const input = document.querySelector('#messageInput');
+                if (input) {
+                    input.focus();
                 }
             }
         });
