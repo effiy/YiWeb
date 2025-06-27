@@ -1,0 +1,490 @@
+/* 欢迎页面样式 */
+.welcome-section {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: calc(80px + var(--spacing-md)) 0 var(--spacing-md) 0;
+    text-align: center;
+    position: relative;
+    min-height: 100vh;
+}
+
+.welcome-content {
+    max-width: 100%;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+    padding: 0;
+}
+
+/* 合并的头部行样式 */
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-xl);
+    background: rgba(255, 255, 255, 0.03);
+    transition: all 0.3s ease;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-height: 50px;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+}
+
+.header-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.header-text {
+    flex: 0 1 auto;
+    text-align: left;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-right: var(--spacing-sm);
+    min-width: 0;
+    overflow: hidden;
+}
+
+.header-text p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-logo {
+    font-size: 1.1rem;
+    background: var(--primary-gradient);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: quantumPulse 3s ease-in-out infinite;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    flex-shrink: 0;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    width: 40px;
+    height: 35px;
+}
+
+.search-logo::after {
+    content: '';
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    background: var(--primary-gradient);
+    border-radius: 50%;
+    opacity: 0.08;
+    filter: blur(6px);
+    animation: logoGlow 4s ease-in-out infinite;
+    z-index: -1;
+}
+
+@keyframes logoGlow {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.2;
+    }
+}
+
+.welcome-content h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: var(--spacing-md);
+    letter-spacing: -0.02em;
+}
+
+.welcome-content p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-2xl);
+    line-height: 1.6;
+}
+
+.search-container {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: var(--spacing-xs);
+}
+
+.search-box {
+    width: 100%;
+    background: none;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+}
+
+.search-input-wrapper, .input-wrapper {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    margin: 0;
+    transition: none;
+    display: flex;
+    align-items: center;
+}
+
+.search-input-wrapper:focus-within, .input-wrapper:focus-within {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+#messageInput, #chatInput {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1.5;
+    padding: 0;
+    margin: 0;
+    resize: none;
+    min-height: 24px;
+    max-height: 60px;
+    font-family: inherit;
+    pointer-events: auto !important;
+    user-select: text !important;
+    cursor: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    background: transparent;
+    box-shadow: none;
+}
+
+#messageInput:focus, #chatInput:focus {
+    outline: none;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+}
+
+#messageInput::placeholder, #chatInput::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+    font-size: 1rem;
+}
+
+.search-input-wrapper:focus-within #messageInput::placeholder,
+.input-wrapper:focus-within #chatInput::placeholder {
+    color: var(--text-accent);
+    opacity: 0.7;
+}
+
+.input-wrapper:focus-within #chatInput::placeholder {
+    color: var(--text-accent);
+    opacity: 0.7;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(15, 1fr);
+    grid-template-rows: repeat(12, 1fr);
+    gap: 2px;
+    margin: var(--spacing-lg) auto;
+    max-width: 500px;
+    padding: 0 var(--spacing-lg);
+    justify-items: center;
+    align-items: center;
+    position: relative;
+    aspect-ratio: 1.2;
+    height: 350px;
+}
+
+/* 铺满大脑区域的icon */
+.quick-actions i { grid-area: unset !important; }
+
+/* 大脑轮廓效果 - 更立体 */
+.quick-actions::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(ellipse at center, rgba(6,182,212,0.05) 0%, rgba(6,182,212,0.02) 40%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    box-shadow: 
+        inset 0 0 50px rgba(6,182,212,0.1),
+        0 0 30px rgba(6,182,212,0.05);
+}
+
+/* 大脑脉动动画 - 更自然 */
+@keyframes brainPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.05;
+    }
+    50% {
+        transform: scale(1.02);
+        opacity: 0.12;
+    }
+}
+
+.quick-actions::before {
+    animation: brainPulse 6s ease-in-out infinite;
+}
+
+/* 图标脉动动画 - 更细腻 */
+@keyframes iconPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 1;
+    }
+}
+
+.quick-actions i {
+    animation: iconPulse 4s ease-in-out infinite;
+    animation-delay: var(--pulse-delay, 0s);
+}
+
+/* 大脑中心图标特殊效果 - 更突出 */
+.quick-actions i:nth-child(1) {
+    animation: iconPulse 2.5s ease-in-out infinite;
+    color: #06b6d4;
+    background: rgba(6,182,212,0.2);
+    box-shadow: 
+        0 2px 8px rgba(6,182,212,0.3),
+        0 0 20px rgba(6,182,212,0.2);
+    z-index: 3;
+}
+
+/* 随机分布的图标特殊效果 - 更自然 */
+.quick-actions i:nth-child(n+121) {
+    animation: iconPulse 5s ease-in-out infinite;
+    animation-delay: var(--animation-delay, 0s);
+    z-index: 1;
+}
+
+/* 问答卡片样式 */
+.qa-card {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+}
+
+.icon-only {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-only i {
+    font-size: 3rem;
+    color: var(--primary);
+    transition: transform 0.3s, color 0.3s;
+}
+
+.qa-card:hover .icon-only i {
+    color: var(--text-accent);
+    transform: scale(1.15) rotate(-8deg);
+}
+
+/* 卡片图片区域 */
+.card-image {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+}
+
+.card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.qa-card:hover .card-image img {
+    transform: scale(1.05);
+}
+
+/* 卡片内容区域 */
+.card-content {
+    padding: var(--spacing-lg);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 2;
+}
+
+.card-content h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-sm) 0;
+    line-height: 1.3;
+}
+
+.card-content p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+    flex: 1;
+}
+
+/* 标签样式 */
+.card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    margin-top: auto;
+}
+
+.tag {
+    background: rgba(6, 182, 212, 0.15);
+    color: var(--primary);
+    padding: var(--spacing-xs) var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    font-size: 0.65rem;
+    font-weight: 500;
+    border: 1px solid rgba(6, 182, 212, 0.2);
+    transition: all 0.3s ease;
+}
+
+.qa-card:hover .tag {
+    background: rgba(6, 182, 212, 0.25);
+    border-color: rgba(6, 182, 212, 0.3);
+    transform: translateY(-1px);
+}
+
+/* 添加分组间距 */
+.quick-actions::after {
+    content: '';
+    display: block;
+    height: 0;
+    grid-column: 1 / -1;
+}
+
+/* 每4个卡片后添加分组间距 */
+.qa-card:nth-child(4n),
+.qa-card:nth-child(8n),
+.qa-card:nth-child(12n) {
+    margin-bottom: 0;
+}
+
+.search-tips {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-xs);
+    flex-wrap: wrap;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.search-container:hover .search-tips {
+    opacity: 0.8;
+}
+
+.tip {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    transition: var(--transition-normal);
+    cursor: help;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.tip:hover {
+    color: var(--text-accent);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.tip i {
+    margin-right: 4px;
+    opacity: 0.7;
+}
+
+.quick-actions i:nth-child(6n+1) { color: #38bdf8; background: rgba(56,189,248,0.12); }
+.quick-actions i:nth-child(6n+2) { color: #34d399; background: rgba(52,211,153,0.12); }
+.quick-actions i:nth-child(6n+3) { color: #fbbf24; background: rgba(251,191,36,0.12); }
+.quick-actions i:nth-child(6n+4) { color: #f472b6; background: rgba(244,114,182,0.12); }
+.quick-actions i:nth-child(6n+5) { color: #a78bfa; background: rgba(167,139,250,0.12); }
+.quick-actions i:nth-child(6n)   { color: #fb7185; background: rgba(251,113,133,0.12); }
+
+/* 大脑中心高亮 */
+.quick-actions i:nth-child(1) {
+    color: #fbbf24 !important;
+    background: rgba(251,191,36,0.2) !important;
+    font-size: 1.2em;
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+/* 随机图标淡雅 */
+.quick-actions i:nth-child(n+121) {
+    opacity: 0.6;
+    filter: grayscale(0.3);
+} 
