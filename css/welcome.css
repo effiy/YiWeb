@@ -748,7 +748,6 @@
 
 .feature-card:hover .card-footer i {
     color: var(--text-primary);
-    transform: translateX(6px) scale(1.1) translate3d(0, 0, 0);
     opacity: 1;
 }
 
