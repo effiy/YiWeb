@@ -7,7 +7,8 @@ const globalState = {
     lastMessageTime: 0,
     typingTimeout: null,
     animationFrames: new Map(), // 存储动画帧ID
-    hoverTimeouts: new Map()    // 存储悬停超时ID
+    hoverTimeouts: new Map(),    // 存储悬停超时ID
+    isAnimating: false          // 防止动画冲突
 };
 
 // 常量配置
@@ -16,11 +17,36 @@ const CONFIG = {
         HOVER_DELAY: 100,
         CLICK_DURATION: 150,
         HOVER_DURATION: 2000,
-        TRANSITION_DURATION: 400
+        TRANSITION_DURATION: 400,
+        PARTICLE_DELAY: 80,
+        EFFECT_DELAY: 50
     },
     MOBILE_BREAKPOINT: 600,
     MAX_TEXTAREA_HEIGHT: 120,
-    DEBOUNCE_DELAY: 300
+    DEBOUNCE_DELAY: 300,
+    THROTTLE_DELAY: 100
+};
+
+// 颜色主题配置
+const THEME_COLORS = {
+    scientist: {
+        primary: '#3b82f6',
+        secondary: '#06b6d4',
+        accent: '#8b5cf6',
+        particles: ['#3b82f6', '#06b6d4', '#8b5cf6', '#06b6d4', '#3b82f6']
+    },
+    geek: {
+        primary: '#22c55e',
+        secondary: '#10b981',
+        accent: '#059669',
+        particles: ['#22c55e', '#10b981', '#059669', '#16a34a', '#22c55e']
+    },
+    artist: {
+        primary: '#ec4899',
+        secondary: '#a855f7',
+        accent: '#f59e0b',
+        particles: ['#ec4899', '#a855f7', '#f59e0b', '#10b981', '#ec4899']
+    }
 };
 
 // 工具函数
@@ -117,6 +143,31 @@ const utils = {
     // 检查是否为移动设备
     isMobile() {
         return window.innerWidth < CONFIG.MOBILE_BREAKPOINT;
+    },
+
+    // 获取随机数
+    random(min, max) {
+        return Math.random() * (max - min) + min;
+    },
+
+    // 获取随机整数
+    randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    },
+
+    // 创建CSS变量字符串
+    createCSSVars(vars) {
+        return Object.entries(vars)
+            .map(([key, value]) => `--${key}: ${value}`)
+            .join(';');
+    },
+
+    // 性能优化的动画帧请求
+    requestAnimationFrame(callback) {
+        if (globalState.isAnimating) {
+            return setTimeout(callback, 16); // 约60fps
+        }
+        return window.requestAnimationFrame(callback);
     }
 };
 
@@ -124,7 +175,8 @@ const utils = {
 const keyboardShortcuts = {
     shortcuts: new Map([
         ['k', { ctrl: true, action: 'clearInput' }],
-        ['l', { ctrl: true, action: 'focusInput' }]
+        ['l', { ctrl: true, action: 'focusInput' }],
+        ['Escape', { ctrl: false, action: 'blurInput' }]
     ]),
 
     init() {
@@ -156,6 +208,9 @@ const keyboardShortcuts = {
             case 'focusInput':
                 input.focus();
                 break;
+            case 'blurInput':
+                input.blur();
+                break;
         }
     }
 };
@@ -177,6 +232,7 @@ const inputHandler = {
     setupEventListeners(textarea) {
         textarea.addEventListener('keydown', this.handleKeydown.bind(this));
         textarea.addEventListener('input', utils.debounce(this.handleInput.bind(this), CONFIG.DEBOUNCE_DELAY));
+        textarea.addEventListener('paste', this.handlePaste.bind(this));
     },
 
     handleKeydown(e) {
@@ -188,6 +244,15 @@ const inputHandler = {
 
     handleInput() {
         // 可以在这里添加输入验证或其他处理
+    },
+
+    handlePaste(e) {
+        // 处理粘贴事件，可以添加内容清理逻辑
+        setTimeout(() => {
+            const textarea = e.target;
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, CONFIG.MAX_TEXTAREA_HEIGHT) + 'px';
+        }, 0);
     },
 
     handleSend() {
@@ -252,26 +317,30 @@ const animationManager = {
 const clickFeedbackManager = {
     feedbacks: {
         scientist: {
-            particles: { count: 8, colors: ['#3b82f6', '#06b6d4', '#8b5cf6', '#06b6d4', '#3b82f6'], size: 6 },
+            particles: { count: 8, size: 6 },
             animation: 'dataFlowAnimation 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
             effects: ['ripple', 'glow', 'connection']
         },
         geek: {
-            particles: { count: 7, colors: ['#22c55e', '#10b981', '#059669', '#16a34a', '#22c55e'], size: 5 },
+            particles: { count: 7, size: 5 },
             animation: 'codeBlockAnimation 1.0s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
             effects: ['ripple', 'glow', 'characters']
         },
         artist: {
-            particles: { count: 6, colors: ['#ec4899', '#a855f7', '#f59e0b', '#10b981', '#ec4899'], size: 7 },
+            particles: { count: 6, size: 7 },
             animation: 'artisticParticleSpin 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
             effects: ['ripple', 'glow', 'energy']
         }
     },
 
     createFeedback(card, feature) {
+        if (globalState.isAnimating) return; // 防止动画冲突
+        
         const feedback = this.feedbacks[feature];
         if (!feedback) return;
 
+        globalState.isAnimating = true;
+        
         const isMobile = utils.isMobile();
         const count = isMobile ? Math.floor(feedback.particles.count / 2) : feedback.particles.count;
 
@@ -279,20 +348,25 @@ const clickFeedbackManager = {
         this.createCardScaleEffect(card);
         
         // 创建粒子效果
-        this.createParticles(card, feedback, count);
+        this.createParticles(card, feedback, count, feature);
         
         // 创建额外特效
         this.createSpecialEffects(card, feedback, feature);
+
+        // 重置动画状态
+        setTimeout(() => {
+            globalState.isAnimating = false;
+        }, 1500);
     },
 
     createCardScaleEffect(card) {
-        requestAnimationFrame(() => {
+        utils.requestAnimationFrame(() => {
             card.style.transform = 'scale(0.95)';
             card.style.transition = `transform ${CONFIG.CLICK_DURATION}ms cubic-bezier(0.34, 1.56, 0.64, 1)`;
         });
 
         setTimeout(() => {
-            requestAnimationFrame(() => {
+            utils.requestAnimationFrame(() => {
                 card.style.transform = '';
                 card.style.transition = '';
             });
@@ -305,7 +379,7 @@ const clickFeedbackManager = {
         effects.forEach((effect, index) => {
             setTimeout(() => {
                 this.createEffect(card, effect, feature);
-            }, index * 50);
+            }, index * CONFIG.ANIMATION.EFFECT_DELAY);
         });
 
         // 添加随机闪烁效果
@@ -317,14 +391,14 @@ const clickFeedbackManager = {
 
     createRandomSparkles(card, feature) {
         const sparkleCount = 3;
-        const colors = this.getFeatureColors(feature);
+        const colors = THEME_COLORS[feature].particles;
         
         for (let i = 0; i < sparkleCount; i++) {
             setTimeout(() => {
                 const sparkle = document.createElement('div');
                 const color = colors[i % colors.length];
-                const x = (Math.random() - 0.5) * 120;
-                const y = (Math.random() - 0.5) * 120;
+                const x = utils.random(-60, 60);
+                const y = utils.random(-60, 60);
                 
                 sparkle.style.cssText = `
                     position: absolute;
@@ -448,7 +522,7 @@ const clickFeedbackManager = {
     },
 
     createDataConnections(card, feature) {
-        const colors = this.getFeatureColors(feature);
+        const colors = THEME_COLORS[feature].particles;
         for (let i = 0; i < 3; i++) {
             const connection = document.createElement('div');
             const color = colors[i % colors.length];
@@ -478,13 +552,13 @@ const clickFeedbackManager = {
 
     createCodeCharacters(card, feature) {
         const characters = ['<', '>', '/', '{', '}', ';', '=', '+'];
-        const colors = this.getFeatureColors(feature);
+        const colors = THEME_COLORS[feature].particles;
         
         for (let i = 0; i < 5; i++) {
             const char = document.createElement('div');
             const color = colors[i % colors.length];
-            const x = (Math.random() - 0.5) * 80;
-            const y = (Math.random() - 0.5) * 80;
+            const x = utils.random(-40, 40);
+            const y = utils.random(-40, 40);
             
             char.style.cssText = `
                 position: absolute;
@@ -512,31 +586,18 @@ const clickFeedbackManager = {
     },
 
     getEffectColor(feature, alpha = 0.3) {
-        const colorMap = {
-            scientist: `rgba(59, 130, 246, ${alpha})`,
-            geek: `rgba(34, 197, 94, ${alpha})`,
-            artist: `rgba(236, 72, 153, ${alpha})`
-        };
-        return colorMap[feature] || colorMap.scientist;
+        const color = THEME_COLORS[feature]?.primary || THEME_COLORS.scientist.primary;
+        return color.replace('#', '').match(/.{2}/g)
+            .map(hex => parseInt(hex, 16))
+            .join(', ');
     },
 
-    getFeatureColors(feature) {
-        const colorMap = {
-            scientist: ['#3b82f6', '#06b6d4', '#8b5cf6'],
-            geek: ['#22c55e', '#10b981', '#059669'],
-            artist: ['#ec4899', '#a855f7', '#f59e0b']
-        };
-        return colorMap[feature] || colorMap.scientist;
-    },
-
-    createParticles(card, feedback, count) {
+    createParticles(card, feedback, count, feature) {
         if (card._particleAnimating) return;
         card._particleAnimating = true;
 
         const fragment = document.createDocumentFragment();
-        const colors = Array.isArray(feedback.particles.colors) 
-            ? feedback.particles.colors 
-            : [feedback.particles.colors];
+        const colors = THEME_COLORS[feature].particles;
 
         for (let i = 0; i < count; i++) {
             const particle = this.createParticle(feedback, colors[i % colors.length], i);
@@ -547,7 +608,7 @@ const clickFeedbackManager = {
                 if (i === count - 1) {
                     card._particleAnimating = false;
                 }
-            }, 1200 + i * 80);
+            }, 1200 + i * CONFIG.ANIMATION.PARTICLE_DELAY);
         }
 
         card.appendChild(fragment);
@@ -588,8 +649,8 @@ const clickFeedbackManager = {
         }
 
         // 所有卡片类型都使用爆炸式动画效果
-        const x = (Math.random() - 0.5) * 80;
-        const y = (Math.random() - 0.5) * 80;
+        const x = utils.random(-40, 40);
+        const y = utils.random(-40, 40);
         styles += `--x: ${x}px; --y: ${y}px;`;
         particle.style.left = '50%';
         particle.style.top = '50%';
@@ -635,7 +696,7 @@ const featureCards = {
     setupEventListeners(card, feature, cardId) {
         let isHovering = false;
 
-        card.addEventListener('mouseenter', () => {
+        const handleMouseEnter = utils.throttle(() => {
             if (isHovering) return;
             isHovering = true;
 
@@ -648,32 +709,45 @@ const featureCards = {
             }, CONFIG.ANIMATION.HOVER_DELAY);
 
             globalState.hoverTimeouts.set(cardId, hoverTimeout);
-        });
+        }, CONFIG.THROTTLE_DELAY);
 
-        card.addEventListener('mouseleave', () => {
+        const handleMouseLeave = utils.throttle(() => {
             isHovering = false;
             utils.cleanupAnimation(cardId);
             animationManager.stopAnimation(card);
-        });
+        }, CONFIG.THROTTLE_DELAY);
 
-        card.addEventListener('click', (e) => {
+        const handleClick = (e) => {
             e.preventDefault();
             this.handleCardClick(card, feature);
-        });
+        };
 
-        card.addEventListener('keydown', (e) => {
+        const handleKeydown = (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 this.handleCardClick(card, feature);
             }
-        });
+        };
+
+        card.addEventListener('mouseenter', handleMouseEnter);
+        card.addEventListener('mouseleave', handleMouseLeave);
+        card.addEventListener('click', handleClick);
+        card.addEventListener('keydown', handleKeydown);
+
+        // 存储事件监听器以便后续清理
+        card._eventListeners = {
+            mouseenter: handleMouseEnter,
+            mouseleave: handleMouseLeave,
+            click: handleClick,
+            keydown: handleKeydown
+        };
     },
 
     playHoverAnimation(card, feature) {
         if (card._hoverAnimating) return;
         card._hoverAnimating = true;
 
-        const animationFrame = requestAnimationFrame(() => {
+        const animationFrame = utils.requestAnimationFrame(() => {
             const featureType = this.getFeatureType(feature);
             animationManager.playAnimation(card, featureType);
         });
@@ -707,20 +781,50 @@ const featureCards = {
         clickFeedbackManager.createFeedback(card, featureType);
 
         console.log(`选择了${feature}功能`);
+    },
+
+    // 清理资源
+    cleanup() {
+        const cards = document.querySelectorAll('.feature-card');
+        cards.forEach(card => {
+            if (card._eventListeners) {
+                Object.entries(card._eventListeners).forEach(([event, listener]) => {
+                    card.removeEventListener(event, listener);
+                });
+                delete card._eventListeners;
+            }
+        });
     }
 };
 
 // 页面初始化
 document.addEventListener('DOMContentLoaded', () => {
-    // 初始化各个模块
-    keyboardShortcuts.init();
-    inputHandler.init();
-    featureCards.init();
-    utils.detectKeyboardOpen();
+    try {
+        // 初始化各个模块
+        keyboardShortcuts.init();
+        inputHandler.init();
+        featureCards.init();
+        utils.detectKeyboardOpen();
 
-    // 自动聚焦到输入框
-    const messageInput = document.querySelector('#messageInput');
-    if (messageInput) {
-        setTimeout(() => messageInput.focus(), 100);
+        // 自动聚焦到输入框
+        const messageInput = document.querySelector('#messageInput');
+        if (messageInput) {
+            setTimeout(() => messageInput.focus(), 100);
+        }
+
+        console.log('页面初始化完成');
+    } catch (error) {
+        console.error('页面初始化失败:', error);
     }
+});
+
+// 页面卸载时清理资源
+window.addEventListener('beforeunload', () => {
+    featureCards.cleanup();
+    globalState.animationFrames.forEach(frameId => {
+        cancelAnimationFrame(frameId);
+    });
+    globalState.hoverTimeouts.forEach(timeoutId => {
+        clearTimeout(timeoutId);
+    });
 }); 
