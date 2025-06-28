@@ -153,98 +153,125 @@ const featureCards = {
             card.setAttribute('role', 'button');
             card.setAttribute('aria-label', `选择${card.getAttribute('data-feature')}功能`);
             
-            // 添加鼠标悬停效果
-            this.addHoverEffects(card);
+            // 添加优化的鼠标悬停效果
+            this.addOptimizedHoverEffects(card);
         });
     },
     
-    addHoverEffects(card) {
+    addOptimizedHoverEffects(card) {
         const feature = card.getAttribute('data-feature');
+        let hoverTimeout;
+        let isHovering = false;
         
         card.addEventListener('mouseenter', () => {
-            this.playHoverAnimation(card, feature);
+            if (isHovering) return; // 防止重复触发
+            isHovering = true;
+            
+            // 清除之前的超时
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout);
+            }
+            
+            // 延迟启动动画，避免快速移动鼠标时的频繁触发
+            hoverTimeout = setTimeout(() => {
+                if (isHovering) {
+                    this.playOptimizedHoverAnimation(card, feature);
+                }
+            }, 50);
         });
         
         card.addEventListener('mouseleave', () => {
-            this.stopHoverAnimation(card, feature);
+            isHovering = false;
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout);
+            }
+            this.stopOptimizedHoverAnimation(card, feature);
         });
     },
     
-    playHoverAnimation(card, feature) {
+    playOptimizedHoverAnimation(card, feature) {
         // 防止动画叠加
         if (card._hoverAnimating) return;
         card._hoverAnimating = true;
         
-        // 根据功能类型播放不同的悬停动画
-        switch(feature) {
-            case '数据分析':
-                this.playScientistHover(card);
-                break;
-            case '代码编写':
-                this.playGeekHover(card);
-                break;
-            case '图表绘制':
-                this.playArtistHover(card);
-                break;
-        }
+        // 使用requestAnimationFrame确保动画流畅
+        requestAnimationFrame(() => {
+            // 根据功能类型播放不同的悬停动画
+            switch(feature) {
+                case '数据分析':
+                    this.playOptimizedScientistHover(card);
+                    break;
+                case '代码编写':
+                    this.playOptimizedGeekHover(card);
+                    break;
+                case '图表绘制':
+                    this.playOptimizedArtistHover(card);
+                    break;
+            }
+        });
         
         // 动画结束后重置状态
         setTimeout(() => {
             card._hoverAnimating = false;
-        }, 2000);
+        }, 1500); // 减少动画持续时间
     },
     
-    stopHoverAnimation(card, feature) {
+    stopOptimizedHoverAnimation(card, feature) {
         // 停止悬停动画
         const icon = card.querySelector('.card-icon');
         const badge = card.querySelector('.card-badge');
         
         if (icon) {
+            icon.style.animation = 'none';
+            // 强制重绘
+            icon.offsetHeight;
             icon.style.animation = '';
         }
         if (badge) {
+            badge.style.animation = 'none';
+            badge.offsetHeight;
             badge.style.animation = '';
         }
         
         card._hoverAnimating = false;
     },
     
-    playScientistHover(card) {
-        // 科学家风格：数据扫描效果
+    playOptimizedScientistHover(card) {
+        // 科学家风格：简化的数据扫描效果
         const icon = card.querySelector('.card-icon');
         const badge = card.querySelector('.card-badge');
         
         if (icon) {
-            icon.style.animation = 'scientistScanHover 2s ease-in-out infinite';
+            icon.style.animation = 'scientistScanHover 1.5s ease-in-out infinite';
         }
         if (badge) {
             badge.style.animation = 'badgePulse 1s ease-in-out infinite';
         }
     },
     
-    playGeekHover(card) {
-        // 极客风格：代码闪烁效果
+    playOptimizedGeekHover(card) {
+        // 极客风格：简化的代码闪烁效果
         const icon = card.querySelector('.card-icon');
         const badge = card.querySelector('.card-badge');
         
         if (icon) {
-            icon.style.animation = 'codeGlowHover 1.5s ease-in-out infinite alternate';
+            icon.style.animation = 'codeGlowHover 1.5s ease-in-out infinite';
         }
         if (badge) {
             badge.style.animation = 'terminalBlink 1s ease-in-out infinite';
         }
     },
     
-    playArtistHover(card) {
-        // 艺术家风格：创意脉冲效果
+    playOptimizedArtistHover(card) {
+        // 艺术家风格：简化的创意脉冲效果
         const icon = card.querySelector('.card-icon');
         const badge = card.querySelector('.card-badge');
         
         if (icon) {
-            icon.style.animation = 'artistPulseHover 2s ease-in-out infinite';
+            icon.style.animation = 'artistPulseHover 1.5s ease-in-out infinite';
         }
         if (badge) {
-            badge.style.animation = 'creativeSparkle 1.5s ease-in-out infinite';
+            badge.style.animation = 'creativeSparkle 1s ease-in-out infinite';
         }
     },
     
@@ -269,111 +296,129 @@ const featureCards = {
             // 触发输入事件以调整高度
             messageInput.dispatchEvent(new Event('input'));
             
-            // 添加点击反馈效果
-            this.addClickFeedback(card, feature);
+            // 添加优化的点击反馈效果
+            this.addOptimizedClickFeedback(card, feature);
             
             console.log(`选择了${feature}功能`);
         }
     },
     
-    addClickFeedback(card, feature) {
+    addOptimizedClickFeedback(card, feature) {
         // 根据功能类型添加不同的点击反馈
         switch(feature) {
             case '数据分析':
-                this.addScientistClickFeedback(card);
+                this.addOptimizedScientistClickFeedback(card);
                 break;
             case '代码编写':
-                this.addGeekClickFeedback(card);
+                this.addOptimizedGeekClickFeedback(card);
                 break;
             case '图表绘制':
-                this.addArtistClickFeedback(card);
+                this.addOptimizedArtistClickFeedback(card);
                 break;
         }
     },
     
-    addScientistClickFeedback(card) {
-        // 科学家风格：数据收集效果
-        card.style.transform = 'scale(0.95)';
-        card.style.transition = 'transform 0.1s ease';
+    addOptimizedScientistClickFeedback(card) {
+        // 科学家风格：简化的数据收集效果
+        card.style.transform = 'scale(0.98)';
+        card.style.transition = 'transform 0.08s ease';
         
-        // 添加数据点动画
-        this.createDataPoints(card);
-        
-        setTimeout(() => {
-            card.style.transform = '';
-            card.style.transition = '';
-        }, 150);
-    },
-    
-    addGeekClickFeedback(card) {
-        // 极客风格：代码编译效果
-        card.style.transform = 'scale(0.95)';
-        card.style.transition = 'transform 0.1s ease';
-        
-        // 添加代码行动画
-        this.createCodeLines(card);
+        // 减少数据点数量，提高性能
+        this.createOptimizedDataPoints(card);
         
         setTimeout(() => {
             card.style.transform = '';
             card.style.transition = '';
-        }, 150);
+        }, 120);
     },
     
-    addArtistClickFeedback(card) {
-        // 艺术家风格：创意爆发效果
-        card.style.transform = 'scale(0.95)';
-        card.style.transition = 'transform 0.1s ease';
+    addOptimizedGeekClickFeedback(card) {
+        // 极客风格：简化的代码编译效果
+        card.style.transform = 'scale(0.98)';
+        card.style.transition = 'transform 0.08s ease';
         
-        // 添加色彩粒子动画
-        this.createColorParticles(card);
+        // 减少代码行数量，提高性能
+        this.createOptimizedCodeLines(card);
         
         setTimeout(() => {
             card.style.transform = '';
             card.style.transition = '';
-        }, 150);
+        }, 120);
     },
     
-    createDataPoints(card) {
-        // 创建数据点动画效果，防止叠加
+    addOptimizedArtistClickFeedback(card) {
+        // 艺术家风格：简化的创意爆发效果
+        card.style.transform = 'scale(0.98)';
+        card.style.transition = 'transform 0.08s ease';
+        
+        // 减少粒子数量，提高性能
+        this.createOptimizedColorParticles(card);
+        
+        setTimeout(() => {
+            card.style.transform = '';
+            card.style.transition = '';
+        }, 120);
+    },
+    
+    createOptimizedDataPoints(card) {
+        // 创建优化的数据点动画效果，防止叠加
         if (card._dataPointAnimating) return;
         card._dataPointAnimating = true;
+        
         const isMobile = window.innerWidth < 600;
-        const count = isMobile ? 3 : 7;
+        const count = isMobile ? 2 : 4; // 减少数量
+        
+        // 使用DocumentFragment提高性能
+        const fragment = document.createDocumentFragment();
+        
         for (let i = 0; i < count; i++) {
             const point = document.createElement('div');
             point.style.cssText = `
                 position: absolute;
-                width: 5px;
-                height: 5px;
+                width: 4px;
+                height: 4px;
                 background: #3b82f6;
                 border-radius: 50%;
                 pointer-events: none;
                 z-index: 1000;
                 will-change: transform, opacity;
-                animation: dataPointFloat 0.7s cubic-bezier(0.4,0,0.2,1) forwards;
-                opacity: 0.85;
+                animation: dataPointFloat 0.6s cubic-bezier(0.4,0,0.2,1) forwards;
+                opacity: 0.8;
             `;
+            
             // 让点从中心向四周浮动
-            const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
-            const radius = 30 + Math.random() * 20;
+            const angle = (Math.PI * 2 / count) * i + Math.random() * 0.3;
+            const radius = 25 + Math.random() * 15;
             point.style.left = `calc(50% + ${Math.cos(angle) * radius}px)`;
             point.style.top = `calc(50% + ${Math.sin(angle) * radius}px)`;
-            point.style.animationDelay = i * 0.05 + 's';
-            card.appendChild(point);
-            // 销毁动画元素
+            point.style.animationDelay = i * 0.03 + 's';
+            
+            fragment.appendChild(point);
+            
+            // 优化销毁逻辑
             setTimeout(() => {
-                if (point.parentNode) point.parentNode.removeChild(point);
-                if (i === count - 1) card._dataPointAnimating = false;
-            }, 700 + i * 50);
+                if (point.parentNode) {
+                    point.parentNode.removeChild(point);
+                }
+                if (i === count - 1) {
+                    card._dataPointAnimating = false;
+                }
+            }, 600 + i * 30);
         }
+        
+        card.appendChild(fragment);
     },
     
-    createCodeLines(card) {
-        // 创建代码行动画效果，防止叠加
+    createOptimizedCodeLines(card) {
+        // 创建优化的代码行动画效果，防止叠加
         if (card._codeLineAnimating) return;
         card._codeLineAnimating = true;
+        
         const isMobile = window.innerWidth < 600;
-        const count = isMobile ? 2 : 4;
+        const count = isMobile ? 1 : 2; // 减少数量
+        
+        const fragment = document.createDocumentFragment();
+        
         for (let i = 0; i < count; i++) {
             const line = document.createElement('div');
             line.style.cssText = `
@@ -383,56 +428,77 @@ const featureCards = {
                 pointer-events: none;
                 z-index: 1000;
                 will-change: transform, opacity;
-                animation: codeLineScan 0.6s cubic-bezier(0.4,0,0.2,1) forwards;
-                opacity: 0.8;
+                animation: codeLineScan 0.5s cubic-bezier(0.4,0,0.2,1) forwards;
+                opacity: 0.7;
             `;
             line.style.left = '0%';
-            line.style.top = (25 + i * 20) + '%';
+            line.style.top = (30 + i * 25) + '%';
             line.style.width = '100%';
-            line.style.animationDelay = i * 0.08 + 's';
-            card.appendChild(line);
+            line.style.animationDelay = i * 0.05 + 's';
+            
+            fragment.appendChild(line);
+            
             setTimeout(() => {
-                if (line.parentNode) line.parentNode.removeChild(line);
-                if (i === count - 1) card._codeLineAnimating = false;
-            }, 600 + i * 80);
+                if (line.parentNode) {
+                    line.parentNode.removeChild(line);
+                }
+                if (i === count - 1) {
+                    card._codeLineAnimating = false;
+                }
+            }, 500 + i * 50);
         }
+        
+        card.appendChild(fragment);
     },
     
-    createColorParticles(card) {
-        // 创建色彩粒子动画效果，防止叠加
+    createOptimizedColorParticles(card) {
+        // 创建优化的色彩粒子动画效果，防止叠加
         if (card._colorParticleAnimating) return;
         card._colorParticleAnimating = true;
-        const colors = ['#ff0000', '#ffa500', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#ee82ee'];
+        
         const isMobile = window.innerWidth < 600;
-        const count = isMobile ? 5 : 10;
+        const count = isMobile ? 2 : 3; // 减少数量
+        
+        const fragment = document.createDocumentFragment();
+        const colors = ['#ec4899', '#a855f7', '#f59e0b'];
+        
         for (let i = 0; i < count; i++) {
             const particle = document.createElement('div');
+            const color = colors[i % colors.length];
+            const x = (Math.random() - 0.5) * 40;
+            const y = (Math.random() - 0.5) * 40;
+            
             particle.style.cssText = `
                 position: absolute;
-                width: 7px;
-                height: 7px;
-                background: ${colors[i % colors.length]};
+                width: 6px;
+                height: 6px;
+                background: ${color};
                 border-radius: 50%;
                 pointer-events: none;
                 z-index: 1000;
                 will-change: transform, opacity;
-                animation: colorParticleExplode 0.9s cubic-bezier(0.4,0,0.2,1) forwards;
-                opacity: 0.85;
+                animation: colorParticleExplode 0.6s cubic-bezier(0.4,0,0.2,1) forwards;
+                opacity: 0.8;
+                --x: ${x}px;
+                --y: ${y}px;
             `;
-            // 粒子随机方向爆炸
-            const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
-            const dist = 30 + Math.random() * 25;
-            particle.style.setProperty('--x', `${Math.cos(angle) * dist}px`);
-            particle.style.setProperty('--y', `${Math.sin(angle) * dist}px`);
             particle.style.left = '50%';
             particle.style.top = '50%';
             particle.style.animationDelay = i * 0.04 + 's';
-            card.appendChild(particle);
+            
+            fragment.appendChild(particle);
+            
             setTimeout(() => {
-                if (particle.parentNode) particle.parentNode.removeChild(particle);
-                if (i === count - 1) card._colorParticleAnimating = false;
-            }, 900 + i * 40);
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+                if (i === count - 1) {
+                    card._colorParticleAnimating = false;
+                }
+            }, 600 + i * 40);
         }
+        
+        card.appendChild(fragment);
     }
 };
 
