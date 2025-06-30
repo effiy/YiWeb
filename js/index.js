@@ -21,7 +21,6 @@ const CONFIG = {
         PARTICLE_DELAY: 80,
         EFFECT_DELAY: 50
     },
-    MOBILE_BREAKPOINT: 600,
     MAX_TEXTAREA_HEIGHT: 120,
     DEBOUNCE_DELAY: 300,
     THROTTLE_DELAY: 100
@@ -138,11 +137,6 @@ const utils = {
         if (element && element.parentNode) {
             element.parentNode.removeChild(element);
         }
-    },
-
-    // 检查是否为移动设备
-    isMobile() {
-        return window.innerWidth < CONFIG.MOBILE_BREAKPOINT;
     },
 
     // 获取随机数
@@ -341,8 +335,7 @@ const clickFeedbackManager = {
 
         globalState.isAnimating = true;
         
-        const isMobile = utils.isMobile();
-        const count = isMobile ? Math.floor(feedback.particles.count / 2) : feedback.particles.count;
+        const count = feedback.particles.count;
 
         // 创建卡片缩放效果
         this.createCardScaleEffect(card);
