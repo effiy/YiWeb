@@ -85,7 +85,7 @@
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
-    padding: calc(80px + var(--spacing-md)) 0 var(--spacing-md) 0;
+    padding: calc(140px + var(--spacing-md)) 0 var(--spacing-md) 0;
     text-align: center;
     position: relative;
     min-height: 100vh;
@@ -103,8 +103,7 @@
 /* 头部导航栏样式 */
 .header-row {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-md);
     padding: var(--spacing-md) var(--spacing-xl);
@@ -115,7 +114,7 @@
     left: 0;
     right: 0;
     width: 100%;
-    min-height: 50px;
+    min-height: 120px;
     z-index: 1000;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -126,6 +125,25 @@
 .header-row:hover {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* 搜索行样式 */
+.search-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    width: 100%;
+}
+
+/* 筛选行样式 */
+.filter-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 /* 搜索图标样式 */
@@ -177,6 +195,8 @@
     box-shadow: none;
     margin: 0;
     padding: 0;
+    display: flex;
+    align-items: center;
 }
 
 /* 输入框样式 */

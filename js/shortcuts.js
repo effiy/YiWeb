@@ -167,68 +167,43 @@ class ShortcutsManager {
     }
 
     initFilters() {
-        // 创建分类过滤器
-        this.createCategoryFilters();
-    }
-
-    createCategoryFilters() {
-        const categories = document.querySelectorAll('.shortcut-category');
-        const filterContainer = document.createElement('div');
-        filterContainer.className = 'category-filters';
-        
-        const filterTitle = document.createElement('h4');
-        filterTitle.textContent = '快速筛选：';
-        filterContainer.appendChild(filterTitle);
-
-        const filterButtons = document.createElement('div');
-        filterButtons.className = 'filter-buttons';
-
-        const categoryNames = [
-            { name: '全部', icon: 'fas fa-th-large' },
-            { name: '基础移动', icon: 'fas fa-arrows-alt' },
-            { name: '编辑操作', icon: 'fas fa-edit' },
-            { name: '搜索替换', icon: 'fas fa-search' },
-            { name: '窗口操作', icon: 'fas fa-window-maximize' },
-            { name: '文件操作', icon: 'fas fa-file-alt' }
-        ];
-
-        categoryNames.forEach(cat => {
-            const button = document.createElement('button');
-            button.className = 'filter-btn';
-            button.innerHTML = `<i class="${cat.icon}"></i>${cat.name}`;
-            button.addEventListener('click', () => this.filterByCategory(cat.name));
-            filterButtons.appendChild(button);
+        // 绑定筛选按钮事件
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const category = button.getAttribute('data-category');
+                this.filterByCategory(category);
+                
+                // 更新按钮状态
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+            });
         });
-
-        filterContainer.appendChild(filterButtons);
-        
-        // 插入到页面中
-        const shortcutsContent = document.querySelector('.shortcuts-content');
-        if (shortcutsContent) {
-            shortcutsContent.insertBefore(filterContainer, shortcutsContent.firstChild);
-        }
     }
 
-    filterByCategory(categoryName) {
+    filterByCategory(category) {
         const categories = document.querySelectorAll('.shortcut-category');
         
-        categories.forEach(category => {
-            const header = category.querySelector('.category-header h3');
-            if (categoryName === '全部' || header.textContent === categoryName) {
-                category.style.display = 'block';
-                category.classList.add('category-active');
+        categories.forEach(cat => {
+            if (category === 'all' || cat.getAttribute('data-category') === category) {
+                cat.style.display = 'block';
+                cat.classList.add('category-active');
             } else {
-                category.style.display = 'none';
-                category.classList.remove('category-active');
+                cat.style.display = 'none';
+                cat.classList.remove('category-active');
             }
         });
 
-        // 更新过滤器按钮状态
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.textContent.includes(categoryName)) {
-                btn.classList.add('active');
-            }
+        // 添加动画效果
+        this.animateFilteredCategories();
+    }
+
+    animateFilteredCategories() {
+        const visibleCategories = document.querySelectorAll('.shortcut-category[style*="block"]');
+        visibleCategories.forEach((category, index) => {
+            setTimeout(() => {
+                category.classList.add('animate-in');
+            }, index * 100);
         });
     }
 

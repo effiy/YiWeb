@@ -27,38 +27,82 @@
 <body>
     <!-- 搜索区域 -->
     <header class="header-row" role="banner">
-        <div class="search-logo" aria-hidden="true">
-            <i class="fas fa-brain" aria-label="AI大脑图标"></i>
-        </div>
-        <div class="search-box" role="search">
-            <div class="search-input-wrapper">
-                <textarea 
-                    id="messageInput" 
-                    placeholder="Vim 快捷键大全，提升您的编辑效率，掌握Vim的强大功能..." 
-                    rows="1" 
-                    maxlength="2000"
-                    aria-label="消息输入框"
-                    aria-describedby="search-tips"
-                    autocomplete="off"
-                    spellcheck="false"></textarea>
+        <!-- 第一行：搜索框和提示 -->
+        <div class="search-row">
+            <div class="search-box" role="search">
+                <div class="search-logo" aria-hidden="true">
+                    <i class="fas fa-brain" aria-label="AI大脑图标"></i>
+                </div>
+                <div class="search-input-wrapper">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Vim 快捷键大全，提升您的编辑效率，掌握Vim的强大功能..." 
+                        rows="1" 
+                        maxlength="2000"
+                        aria-label="消息输入框"
+                        aria-describedby="search-tips"
+                        autocomplete="off"
+                        spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="search-tips" id="search-tips" role="toolbar" aria-label="搜索快捷键提示">
+                <div class="tip" role="button" tabindex="0" aria-label="Ctrl+L 聚焦输入框">
+                    <i class="fas fa-keyboard" aria-hidden="true"></i>
+                    <span>Ctrl+L 聚焦</span>
+                </div>
+                <div class="tip" role="button" tabindex="0" aria-label="Ctrl+K 清空输入框">
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                    <span>Ctrl+K 清空</span>
+                </div>
+                <div class="tip" role="button" tabindex="0" aria-label="Enter 发送消息">
+                    <i class="fas fa-arrow-up" aria-hidden="true"></i>
+                    <span>Enter 发送</span>
+                </div>
+                <div class="tip" role="button" tabindex="0" aria-label="Shift+Enter 换行">
+                    <i class="fas fa-level-down-alt" aria-hidden="true"></i>
+                    <span>Shift+Enter 换行</span>
+                </div>
             </div>
         </div>
-        <div class="search-tips" id="search-tips" role="toolbar" aria-label="搜索快捷键提示">
-            <div class="tip" role="button" tabindex="0" aria-label="Ctrl+L 聚焦输入框">
-                <i class="fas fa-keyboard" aria-hidden="true"></i>
-                <span>Ctrl+L 聚焦</span>
-            </div>
-            <div class="tip" role="button" tabindex="0" aria-label="Ctrl+K 清空输入框">
-                <i class="fas fa-trash" aria-hidden="true"></i>
-                <span>Ctrl+K 清空</span>
-            </div>
-            <div class="tip" role="button" tabindex="0" aria-label="Enter 发送消息">
-                <i class="fas fa-arrow-up" aria-hidden="true"></i>
-                <span>Enter 发送</span>
-            </div>
-            <div class="tip" role="button" tabindex="0" aria-label="Shift+Enter 换行">
-                <i class="fas fa-level-down-alt" aria-hidden="true"></i>
-                <span>Shift+Enter 换行</span>
+        
+        <!-- 第二行：快速筛选 -->
+        <div class="filter-row">
+            <div class="category-filters">
+                <h4>快速筛选：</h4>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-category="all">
+                        <i class="fas fa-th-large"></i>
+                        全部
+                    </button>
+                    <button class="filter-btn" data-category="movement">
+                        <i class="fas fa-arrows-alt"></i>
+                        移动
+                    </button>
+                    <button class="filter-btn" data-category="edit">
+                        <i class="fas fa-edit"></i>
+                        编辑
+                    </button>
+                    <button class="filter-btn" data-category="search">
+                        <i class="fas fa-search"></i>
+                        搜索
+                    </button>
+                    <button class="filter-btn" data-category="visual">
+                        <i class="fas fa-highlighter"></i>
+                        可视
+                    </button>
+                    <button class="filter-btn" data-category="window">
+                        <i class="fas fa-window-maximize"></i>
+                        窗口
+                    </button>
+                    <button class="filter-btn" data-category="file">
+                        <i class="fas fa-file-alt"></i>
+                        文件
+                    </button>
+                    <button class="filter-btn" data-category="advanced">
+                        <i class="fas fa-magic"></i>
+                        高级
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -68,7 +112,7 @@
             <div class="shortcuts-content">
                 <div class="shortcuts-grid">
                     <!-- 基础移动 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="movement">
                         <div class="category-header">
                             <i class="fas fa-arrows-alt"></i>
                             <h3>基础移动</h3>
@@ -142,7 +186,7 @@
                     </div>
 
                     <!-- 快速跳转 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="movement">
                         <div class="category-header">
                             <i class="fas fa-rocket"></i>
                             <h3>快速跳转</h3>
@@ -212,7 +256,7 @@
                     </div>
 
                     <!-- 编辑操作 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="edit">
                         <div class="category-header">
                             <i class="fas fa-edit"></i>
                             <h3>编辑操作</h3>
@@ -286,7 +330,7 @@
                     </div>
 
                     <!-- 文本对象 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="edit">
                         <div class="category-header">
                             <i class="fas fa-object-group"></i>
                             <h3>文本对象</h3>
@@ -360,7 +404,7 @@
                     </div>
 
                     <!-- 撤销重做 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="edit">
                         <div class="category-header">
                             <i class="fas fa-undo-alt"></i>
                             <h3>撤销重做</h3>
@@ -402,7 +446,7 @@
                     </div>
 
                     <!-- 搜索替换 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="search">
                         <div class="category-header">
                             <i class="fas fa-search"></i>
                             <h3>搜索替换</h3>
@@ -456,7 +500,7 @@
                     </div>
 
                     <!-- 可视模式 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="visual">
                         <div class="category-header">
                             <i class="fas fa-highlighter"></i>
                             <h3>可视模式</h3>
@@ -514,7 +558,7 @@
                     </div>
 
                     <!-- 寄存器操作 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="advanced">
                         <div class="category-header">
                             <i class="fas fa-clipboard"></i>
                             <h3>寄存器操作</h3>
@@ -560,7 +604,7 @@
                     </div>
 
                     <!-- 宏操作 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="advanced">
                         <div class="category-header">
                             <i class="fas fa-play-circle"></i>
                             <h3>宏操作</h3>
@@ -602,7 +646,7 @@
                     </div>
 
                     <!-- 折叠操作 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="advanced">
                         <div class="category-header">
                             <i class="fas fa-compress-alt"></i>
                             <h3>折叠操作</h3>
@@ -652,7 +696,7 @@
                     </div>
 
                     <!-- 窗口操作 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="window">
                         <div class="category-header">
                             <i class="fas fa-window-maximize"></i>
                             <h3>窗口操作</h3>
@@ -730,7 +774,7 @@
                     </div>
 
                     <!-- 标签页操作 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="window">
                         <div class="category-header">
                             <i class="fas fa-tabs"></i>
                             <h3>标签页操作</h3>
@@ -772,7 +816,7 @@
                     </div>
 
                     <!-- 文件操作 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="file">
                         <div class="category-header">
                             <i class="fas fa-file-alt"></i>
                             <h3>文件操作</h3>
@@ -838,7 +882,7 @@
                     </div>
 
                     <!-- 高级操作 -->
-                    <div class="shortcut-category">
+                    <div class="shortcut-category" data-category="advanced">
                         <div class="category-header">
                             <i class="fas fa-magic"></i>
                             <h3>高级操作</h3>

@@ -1,3 +1,16 @@
+/* CSS变量定义 */
+:root {
+    --primary-blue: #4facfe;
+    --primary-cyan: #00f2fe;
+    --opacity-light: 0.05;
+    --opacity-medium: 0.1;
+    --duration-fast: 0.15s;
+    --duration-normal: 0.3s;
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --font-size-sm: 0.875rem;
+}
+
 /* 快捷键区域样式 */
 .shortcuts-content {
     width: 100%;
@@ -39,59 +52,76 @@
 
 /* 分类过滤器样式 */
 .category-filters {
-    margin-bottom: var(--spacing-xl);
-    padding: var(--spacing-lg);
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    backdrop-filter: none;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-shrink: 0;
+    width: 100%;
 }
 
 .category-filters h4 {
-    margin: 0 0 var(--spacing-md) 0;
-    color: var(--text-primary);
-    font-size: var(--font-size-lg);
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
     font-weight: 600;
+    white-space: nowrap;
+    opacity: 0.6;
 }
 
 .filter-buttons {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-sm);
+    flex-wrap: nowrap;
+    gap: var(--spacing-xs);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex: 1;
+}
+
+.filter-buttons::-webkit-scrollbar {
+    display: none;
 }
 
 .filter-btn {
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius-md);
-    color: var(--text-primary);
-    font-size: var(--font-size-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(255, 255, 255, var(--opacity-light));
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-smooth);
-    backdrop-filter: blur(5px);
+    white-space: nowrap;
+    flex-shrink: 0;
+    opacity: 0.6;
 }
 
 .filter-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-light);
+    background: rgba(255, 255, 255, var(--opacity-medium));
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+    opacity: 0.8;
 }
 
 .filter-btn.active {
     background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan));
     border-color: var(--primary-blue);
     color: white;
-    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+    box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
+    opacity: 1;
 }
 
 .filter-btn i {
-    font-size: var(--font-size-sm);
+    font-size: 0.7rem;
 }
 
 /* 搜索建议样式 */
@@ -578,13 +608,13 @@
 
 /* 滚动动画 */
 .shortcut-category.animate-in {
-    animation: fadeInUp 0.8s ease-out forwards;
+    animation: fadeInUp 0.5s ease-out forwards;
 }
 
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(30px);
+        transform: translateY(20px);
     }
     to {
         opacity: 1;
@@ -634,5 +664,76 @@
 
 .shortcut-item-animated {
     animation: shortcutPulse 1s ease-in-out;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .category-filters {
+        gap: var(--spacing-sm);
+    }
+    
+    .filter-buttons {
+        gap: var(--spacing-xs);
+    }
+    
+    .filter-btn {
+        padding: var(--spacing-xs);
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .search-row {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+    
+    .search-tips {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .filter-row {
+        justify-content: center;
+    }
+    
+    .category-filters {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+    
+    .filter-buttons {
+        justify-content: center;
+    }
+    
+    .filter-btn {
+        font-size: 0.7rem;
+        padding: var(--spacing-xs);
+    }
+    
+    .category-filters h4 {
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-row {
+        padding: var(--spacing-sm);
+        min-height: 140px;
+    }
+    
+    .search-tips {
+        gap: var(--spacing-xs);
+    }
+    
+    .tip {
+        font-size: 0.7rem;
+        padding: var(--spacing-xs);
+    }
+    
+    .filter-btn {
+        font-size: 0.7rem;
+        padding: var(--spacing-xs);
+    }
 } 
 
