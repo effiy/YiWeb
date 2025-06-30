@@ -231,27 +231,6 @@
     box-shadow: 0 8px 25px rgba(79, 172, 254, 0.2);
 }
 
-/* 分类折叠状态 */
-.shortcut-category.collapsed .category-header {
-    cursor: pointer;
-}
-
-.shortcut-category.collapsed .category-header::after {
-    content: '\f078';
-    font-family: 'Font Awesome 6 Free';
-    font-weight: 900;
-    margin-left: auto;
-    transition: transform var(--duration-fast) var(--ease-smooth);
-}
-
-.shortcut-category:not(.collapsed) .category-header::after {
-    content: '\f077';
-    font-family: 'Font Awesome 6 Free';
-    font-weight: 900;
-    margin-left: auto;
-    transition: transform var(--duration-fast) var(--ease-smooth);
-}
-
 .category-header {
     display: flex;
     align-items: center;

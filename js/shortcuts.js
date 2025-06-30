@@ -24,9 +24,6 @@ class ShortcutsManager {
         // 快捷键项点击事件
         document.addEventListener('click', this.handleShortcutClick.bind(this));
         
-        // 分类切换
-        document.addEventListener('click', this.handleCategoryToggle.bind(this));
-        
         // 复制提示
         document.addEventListener('click', this.handleCopyClick.bind(this));
     }
@@ -377,17 +374,6 @@ class ShortcutsManager {
             setTimeout(() => {
                 shortcutItem.classList.remove('clicked');
             }, 300);
-        }
-    }
-
-    handleCategoryToggle(event) {
-        const categoryHeader = event.target.closest('.category-header');
-        if (categoryHeader) {
-            const category = categoryHeader.closest('.shortcut-category');
-            const shortcutList = category.querySelector('.shortcut-list');
-            
-            category.classList.toggle('collapsed');
-            shortcutList.style.display = category.classList.contains('collapsed') ? 'none' : 'grid';
         }
     }
 
