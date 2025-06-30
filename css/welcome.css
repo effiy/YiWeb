@@ -289,7 +289,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: var(--spacing-xl);
-    margin-top: var(--spacing-2xl);
 }
 
 /* 功能卡片基础样式 - 使用CSS变量优化 */
