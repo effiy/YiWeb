@@ -99,12 +99,44 @@
                                 <div class="shortcut-desc">上一个单词</div>
                             </div>
                             <div class="shortcut-item">
+                                <div class="shortcut-key">e</div>
+                                <div class="shortcut-desc">单词末尾</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">ge</div>
+                                <div class="shortcut-desc">上一个单词末尾</div>
+                            </div>
+                            <div class="shortcut-item">
                                 <div class="shortcut-key">0</div>
                                 <div class="shortcut-desc">行首</div>
                             </div>
                             <div class="shortcut-item">
+                                <div class="shortcut-key">^</div>
+                                <div class="shortcut-desc">行首非空白</div>
+                            </div>
+                            <div class="shortcut-item">
                                 <div class="shortcut-key">$</div>
                                 <div class="shortcut-desc">行尾</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">g_</div>
+                                <div class="shortcut-desc">行尾非空白</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">f字符</div>
+                                <div class="shortcut-desc">向右查找字符</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">F字符</div>
+                                <div class="shortcut-desc">向左查找字符</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">t字符</div>
+                                <div class="shortcut-desc">向右查找字符前</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">T字符</div>
+                                <div class="shortcut-desc">向左查找字符前</div>
                             </div>
                         </div>
                     </div>
@@ -148,6 +180,34 @@
                                 <div class="shortcut-key">Ctrl+o</div>
                                 <div class="shortcut-desc">返回</div>
                             </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+i</div>
+                                <div class="shortcut-desc">前进</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">H</div>
+                                <div class="shortcut-desc">屏幕顶部</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">M</div>
+                                <div class="shortcut-desc">屏幕中间</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">L</div>
+                                <div class="shortcut-desc">屏幕底部</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zt</div>
+                                <div class="shortcut-desc">当前行到顶部</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zz</div>
+                                <div class="shortcut-desc">当前行到中间</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zb</div>
+                                <div class="shortcut-desc">当前行到底部</div>
+                            </div>
                         </div>
                     </div>
 
@@ -175,8 +235,20 @@
                                 <div class="shortcut-desc">上行插入</div>
                             </div>
                             <div class="shortcut-item">
+                                <div class="shortcut-key">s</div>
+                                <div class="shortcut-desc">替换字符</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">S</div>
+                                <div class="shortcut-desc">替换整行</div>
+                            </div>
+                            <div class="shortcut-item">
                                 <div class="shortcut-key">x</div>
                                 <div class="shortcut-desc">删除字符</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">X</div>
+                                <div class="shortcut-desc">删除前字符</div>
                             </div>
                             <div class="shortcut-item" data-type="important">
                                 <div class="shortcut-key">dd</div>
@@ -189,6 +261,100 @@
                             <div class="shortcut-item" data-type="important">
                                 <div class="shortcut-key">p</div>
                                 <div class="shortcut-desc">粘贴</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">P</div>
+                                <div class="shortcut-desc">粘贴到前面</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">r</div>
+                                <div class="shortcut-desc">替换字符</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">R</div>
+                                <div class="shortcut-desc">替换模式</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">J</div>
+                                <div class="shortcut-desc">合并下一行</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">gJ</div>
+                                <div class="shortcut-desc">合并下一行(无空格)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 文本对象 -->
+                    <div class="shortcut-category">
+                        <div class="category-header">
+                            <i class="fas fa-object-group"></i>
+                            <h3>文本对象</h3>
+                        </div>
+                        <div class="shortcut-list">
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">iw</div>
+                                <div class="shortcut-desc">内词</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">aw</div>
+                                <div class="shortcut-desc">词(含空格)</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">iW</div>
+                                <div class="shortcut-desc">内大词</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">aW</div>
+                                <div class="shortcut-desc">大词(含空格)</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">is</div>
+                                <div class="shortcut-desc">内句子</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">as</div>
+                                <div class="shortcut-desc">句子</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">ip</div>
+                                <div class="shortcut-desc">内段落</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">ap</div>
+                                <div class="shortcut-desc">段落</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">i"</div>
+                                <div class="shortcut-desc">内双引号</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">a"</div>
+                                <div class="shortcut-desc">双引号</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">i'</div>
+                                <div class="shortcut-desc">内单引号</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">a'</div>
+                                <div class="shortcut-desc">单引号</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">i(</div>
+                                <div class="shortcut-desc">内括号</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">a(</div>
+                                <div class="shortcut-desc">括号</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">i{</div>
+                                <div class="shortcut-desc">内大括号</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">a{</div>
+                                <div class="shortcut-desc">大括号</div>
                             </div>
                         </div>
                     </div>
@@ -215,6 +381,22 @@
                             <div class="shortcut-item">
                                 <div class="shortcut-key">~</div>
                                 <div class="shortcut-desc">大小写切换</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">g~</div>
+                                <div class="shortcut-desc">切换大小写</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">gu</div>
+                                <div class="shortcut-desc">转小写</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">gU</div>
+                                <div class="shortcut-desc">转大写</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">g?</div>
+                                <div class="shortcut-desc">ROT13编码</div>
                             </div>
                         </div>
                     </div>
@@ -250,6 +432,26 @@
                                 <div class="shortcut-key">:%s/old/new/g</div>
                                 <div class="shortcut-desc">全局替换</div>
                             </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:s/old/new/gc</div>
+                                <div class="shortcut-desc">确认替换</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:s/old/new/i</div>
+                                <div class="shortcut-desc">忽略大小写</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:s/old/new/I</div>
+                                <div class="shortcut-desc">区分大小写</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:s/old/new/n</div>
+                                <div class="shortcut-desc">显示匹配数</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:s/old/new/p</div>
+                                <div class="shortcut-desc">打印替换行</div>
+                            </div>
                         </div>
                     </div>
 
@@ -273,6 +475,14 @@
                                 <div class="shortcut-desc">块选择</div>
                             </div>
                             <div class="shortcut-item">
+                                <div class="shortcut-key">gv</div>
+                                <div class="shortcut-desc">重新选择</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">o</div>
+                                <div class="shortcut-desc">切换端点</div>
+                            </div>
+                            <div class="shortcut-item">
                                 <div class="shortcut-key">y</div>
                                 <div class="shortcut-desc">复制选中</div>
                             </div>
@@ -283,6 +493,160 @@
                             <div class="shortcut-item">
                                 <div class="shortcut-key">c</div>
                                 <div class="shortcut-desc">修改选中</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">r</div>
+                                <div class="shortcut-desc">替换选中</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">~</div>
+                                <div class="shortcut-desc">大小写切换</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">u</div>
+                                <div class="shortcut-desc">转小写</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">U</div>
+                                <div class="shortcut-desc">转大写</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 寄存器操作 -->
+                    <div class="shortcut-category">
+                        <div class="category-header">
+                            <i class="fas fa-clipboard"></i>
+                            <h3>寄存器操作</h3>
+                        </div>
+                        <div class="shortcut-list">
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">"ayy</div>
+                                <div class="shortcut-desc">复制到寄存器a</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">"ap</div>
+                                <div class="shortcut-desc">粘贴寄存器a</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">"*yy</div>
+                                <div class="shortcut-desc">复制到系统剪贴板</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">"*p</div>
+                                <div class="shortcut-desc">粘贴系统剪贴板</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:reg</div>
+                                <div class="shortcut-desc">显示寄存器</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">"0</div>
+                                <div class="shortcut-desc">最近复制</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">"1</div>
+                                <div class="shortcut-desc">最近删除</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">"a-"z</div>
+                                <div class="shortcut-desc">命名寄存器</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">"A-"Z</div>
+                                <div class="shortcut-desc">追加到寄存器</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 宏操作 -->
+                    <div class="shortcut-category">
+                        <div class="category-header">
+                            <i class="fas fa-play-circle"></i>
+                            <h3>宏操作</h3>
+                        </div>
+                        <div class="shortcut-list">
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">qa</div>
+                                <div class="shortcut-desc">开始录制宏a</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">q</div>
+                                <div class="shortcut-desc">停止录制</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">@a</div>
+                                <div class="shortcut-desc">执行宏a</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">@@</div>
+                                <div class="shortcut-desc">重复上次宏</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">10@a</div>
+                                <div class="shortcut-desc">执行宏a 10次</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:let @a=''</div>
+                                <div class="shortcut-desc">清空宏a</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:reg a</div>
+                                <div class="shortcut-desc">查看宏a内容</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:let @a=@b</div>
+                                <div class="shortcut-desc">复制宏b到a</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 折叠操作 -->
+                    <div class="shortcut-category">
+                        <div class="category-header">
+                            <i class="fas fa-compress-alt"></i>
+                            <h3>折叠操作</h3>
+                        </div>
+                        <div class="shortcut-list">
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zf</div>
+                                <div class="shortcut-desc">创建折叠</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zo</div>
+                                <div class="shortcut-desc">打开折叠</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zc</div>
+                                <div class="shortcut-desc">关闭折叠</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">za</div>
+                                <div class="shortcut-desc">切换折叠</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zR</div>
+                                <div class="shortcut-desc">打开所有折叠</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zM</div>
+                                <div class="shortcut-desc">关闭所有折叠</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zj</div>
+                                <div class="shortcut-desc">下一个折叠</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zk</div>
+                                <div class="shortcut-desc">上一个折叠</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zd</div>
+                                <div class="shortcut-desc">删除折叠</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zE</div>
+                                <div class="shortcut-desc">删除所有折叠</div>
                             </div>
                         </div>
                     </div>
@@ -326,6 +690,84 @@
                                 <div class="shortcut-key">Ctrl+w o</div>
                                 <div class="shortcut-desc">只保留当前</div>
                             </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+w =</div>
+                                <div class="shortcut-desc">等分窗口</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+w +</div>
+                                <div class="shortcut-desc">增加高度</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+w -</div>
+                                <div class="shortcut-desc">减少高度</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+w ></div>
+                                <div class="shortcut-desc">增加宽度</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+w <</div>
+                                <div class="shortcut-desc">减少宽度</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+w H</div>
+                                <div class="shortcut-desc">移动到左</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+w J</div>
+                                <div class="shortcut-desc">移动到下</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+w K</div>
+                                <div class="shortcut-desc">移动到上</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">Ctrl+w L</div>
+                                <div class="shortcut-desc">移动到右</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 标签页操作 -->
+                    <div class="shortcut-category">
+                        <div class="category-header">
+                            <i class="fas fa-tabs"></i>
+                            <h3>标签页操作</h3>
+                        </div>
+                        <div class="shortcut-list">
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:tabnew</div>
+                                <div class="shortcut-desc">新建标签页</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:tabclose</div>
+                                <div class="shortcut-desc">关闭标签页</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">gt</div>
+                                <div class="shortcut-desc">下一个标签页</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">gT</div>
+                                <div class="shortcut-desc">上一个标签页</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">1gt</div>
+                                <div class="shortcut-desc">跳转标签页1</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:tabmove +1</div>
+                                <div class="shortcut-desc">向右移动标签页</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:tabmove -1</div>
+                                <div class="shortcut-desc">向左移动标签页</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:tabonly</div>
+                                <div class="shortcut-desc">只保留当前标签页</div>
+                            </div>
                         </div>
                     </div>
 
@@ -368,6 +810,30 @@
                                 <div class="shortcut-key">:set nonu</div>
                                 <div class="shortcut-desc">隐藏行号</div>
                             </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:set wrap</div>
+                                <div class="shortcut-desc">自动换行</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:set nowrap</div>
+                                <div class="shortcut-desc">不换行</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:set list</div>
+                                <div class="shortcut-desc">显示不可见字符</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:set nolist</div>
+                                <div class="shortcut-desc">隐藏不可见字符</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:set paste</div>
+                                <div class="shortcut-desc">粘贴模式</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:set nopaste</div>
+                                <div class="shortcut-desc">退出粘贴模式</div>
+                            </div>
                         </div>
                     </div>
 
@@ -409,6 +875,38 @@
                             <div class="shortcut-item">
                                 <div class="shortcut-key">:version</div>
                                 <div class="shortcut-desc">版本信息</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:syntax on</div>
+                                <div class="shortcut-desc">开启语法高亮</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:syntax off</div>
+                                <div class="shortcut-desc">关闭语法高亮</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:set spell</div>
+                                <div class="shortcut-desc">开启拼写检查</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">:set nospell</div>
+                                <div class="shortcut-desc">关闭拼写检查</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">]s</div>
+                                <div class="shortcut-desc">下一个拼写错误</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">[s</div>
+                                <div class="shortcut-desc">上一个拼写错误</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zg</div>
+                                <div class="shortcut-desc">添加到拼写字典</div>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-key">zw</div>
+                                <div class="shortcut-desc">从拼写字典移除</div>
                             </div>
                         </div>
                     </div>
