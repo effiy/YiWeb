@@ -184,35 +184,66 @@ class ShortcutsManager {
     }
 
     initFilters() {
+        // 初始化选中的分类
+        this.selectedCategories = new Set();
+        
         // 绑定筛选按钮事件
         const filterButtons = document.querySelectorAll('.filter-btn');
         filterButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const category = button.getAttribute('data-category');
-                this.filterByCategory(category);
-                
-                // 更新按钮状态
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
+                this.toggleCategory(category, button);
             });
         });
+        
+        // 默认显示所有分类
+        this.showAllCategories();
     }
 
-    filterByCategory(category) {
+    toggleCategory(category, button) {
+        if (this.selectedCategories.has(category)) {
+            // 如果已选中，则取消选中
+            this.selectedCategories.delete(category);
+            button.classList.remove('active');
+        } else {
+            // 如果未选中，则选中
+            this.selectedCategories.add(category);
+            button.classList.add('active');
+        }
+        
+        this.updateFilterDisplay();
+    }
+
+    updateFilterDisplay() {
         const categories = document.querySelectorAll('.shortcut-category');
         
-        categories.forEach(cat => {
-            if (category === 'all' || cat.getAttribute('data-category') === category) {
-                cat.style.display = 'block';
-                cat.classList.add('category-active');
-            } else {
-                cat.style.display = 'none';
-                cat.classList.remove('category-active');
-            }
-        });
+        if (this.selectedCategories.size === 0) {
+            // 如果没有选中任何分类，显示所有分类
+            this.showAllCategories();
+        } else {
+            // 只显示选中的分类
+            categories.forEach(cat => {
+                const catCategory = cat.getAttribute('data-category');
+                if (this.selectedCategories.has(catCategory)) {
+                    cat.style.display = 'block';
+                    cat.classList.add('category-active');
+                } else {
+                    cat.style.display = 'none';
+                    cat.classList.remove('category-active');
+                }
+            });
+        }
 
         // 添加动画效果
         this.animateFilteredCategories();
+    }
+
+    showAllCategories() {
+        const categories = document.querySelectorAll('.shortcut-category');
+        categories.forEach(cat => {
+            cat.style.display = 'block';
+            cat.classList.add('category-active');
+        });
     }
 
     animateFilteredCategories() {
@@ -312,5 +343,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 导出到全局作用域，方便调试
 window.ShortcutsManager = ShortcutsManager;
+
 
 
