@@ -8,7 +8,6 @@ class ShortcutsManager {
         this.bindEvents();
         this.initSearch();
         this.initFilters();
-        this.initCopyFeature();
         this.initAnimations();
         this.initKeyboardShortcuts();
     }
@@ -23,9 +22,16 @@ class ShortcutsManager {
 
         // 快捷键项点击事件
         document.addEventListener('click', this.handleShortcutClick.bind(this));
-        
-        // 复制提示
-        document.addEventListener('click', this.handleCopyClick.bind(this));
+
+        // 搜索结果关闭按钮事件委托
+        const shortcutsContent = document.querySelector('.shortcuts-content');
+        if (shortcutsContent) {
+            shortcutsContent.addEventListener('click', (e) => {
+                if (e.target.closest('.clear-search')) {
+                    this.clearSearch();
+                }
+            });
+        }
     }
 
     initSearch() {
@@ -146,15 +152,6 @@ class ShortcutsManager {
                     </button>
                 </div>
             `;
-            
-            // 为关闭按钮添加事件监听器
-            const clearButton = resultsContainer.querySelector('.clear-search');
-            if (clearButton) {
-                clearButton.addEventListener('click', () => {
-                    this.clearSearch();
-                });
-            }
-            
             resultsContainer.style.display = 'block';
         } else {
             resultsContainer.style.display = 'none';
@@ -166,6 +163,17 @@ class ShortcutsManager {
         if (searchInput) {
             searchInput.value = '';
             this.handleSearch({ target: searchInput });
+        }
+        // 隐藏匹配的快捷键提示行（带动画）
+        const resultsContainer = document.getElementById('search-results');
+        if (resultsContainer) {
+            // 添加关闭动画类
+            resultsContainer.classList.add('closing');
+            // 等待动画完成后隐藏元素
+            setTimeout(() => {
+                resultsContainer.style.display = 'none';
+                resultsContainer.classList.remove('closing');
+            }, 300); // 与CSS动画时长匹配
         }
     }
 
@@ -214,81 +222,6 @@ class ShortcutsManager {
                 category.classList.add('animate-in');
             }, index * 100);
         });
-    }
-
-    initCopyFeature() {
-        // 为每个快捷键项添加复制功能
-        const shortcuts = document.querySelectorAll('.shortcut-item');
-        shortcuts.forEach(item => {
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'copy-btn';
-            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-            copyBtn.title = '复制快捷键';
-            copyBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.copyShortcut(item);
-            });
-            item.appendChild(copyBtn);
-        });
-    }
-
-    copyShortcut(item) {
-        const key = item.querySelector('.shortcut-key').textContent;
-        const desc = item.querySelector('.shortcut-desc').textContent;
-        const text = `${key} - ${desc}`;
-
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(text).then(() => {
-                this.showCopySuccess(item);
-            }).catch(() => {
-                this.fallbackCopy(text);
-            });
-        } else {
-            this.fallbackCopy(text);
-        }
-    }
-
-    fallbackCopy(text) {
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        this.showCopySuccess();
-    }
-
-    showCopySuccess(item) {
-        // 创建成功提示
-        const notification = document.createElement('div');
-        notification.className = 'copy-notification';
-        notification.innerHTML = `
-            <i class="fas fa-check"></i>
-            <span>快捷键已复制到剪贴板</span>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // 动画显示
-        setTimeout(() => {
-            notification.classList.add('show');
-        }, 100);
-        
-        // 自动隐藏
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        }, 2000);
-
-        // 为点击的项添加复制动画
-        if (item) {
-            item.classList.add('copied');
-            setTimeout(() => {
-                item.classList.remove('copied');
-            }, 1000);
-        }
     }
 
     initAnimations() {
@@ -361,12 +294,6 @@ class ShortcutsManager {
         }
     }
 
-    handleCopyClick(event) {
-        if (event.target.closest('.copy-btn')) {
-            event.stopPropagation();
-        }
-    }
-
     getAllShortcuts() {
         const shortcuts = [];
         document.querySelectorAll('.shortcut-item').forEach(item => {
@@ -385,4 +312,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 导出到全局作用域，方便调试
 window.ShortcutsManager = ShortcutsManager;
+
 

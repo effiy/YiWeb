@@ -56,6 +56,7 @@
     padding: 0;
     background: none;
     border: none;
+    -webkit-backdrop-filter: none;
     backdrop-filter: none;
     display: flex;
     align-items: center;
@@ -139,6 +140,7 @@
     z-index: 1000;
     max-height: 200px;
     overflow-y: auto;
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
 }
 
@@ -166,7 +168,20 @@
     background: linear-gradient(135deg, rgba(79, 172, 254, 0.1), rgba(0, 255, 255, 0.1));
     border: 1px solid rgba(79, 172, 254, 0.2);
     border-radius: var(--radius-md);
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
+    transition: all var(--duration-normal) var(--ease-smooth);
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.search-results.closing {
+    transform: translateY(-20px);
+    opacity: 0;
+    margin-bottom: 0;
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
 }
 
 .results-info {
@@ -361,31 +376,7 @@
 }
 
 /* 复制按钮样式 */
-.copy-btn {
-    position: absolute;
-    top: var(--spacing-xs);
-    right: var(--spacing-xs);
-    background: rgba(79, 172, 254, 0.1);
-    border: 1px solid rgba(79, 172, 254, 0.2);
-    border-radius: var(--radius-sm);
-    color: var(--primary-blue);
-    padding: var(--spacing-xs);
-    font-size: var(--font-size-xs);
-    cursor: pointer;
-    opacity: 0;
-    transition: all var(--duration-fast) var(--ease-smooth);
-    backdrop-filter: blur(5px);
-}
 
-.shortcut-item:hover .copy-btn {
-    opacity: 1;
-}
-
-.copy-btn:hover {
-    background: rgba(79, 172, 254, 0.2);
-    border-color: var(--primary-blue);
-    transform: scale(1.1);
-}
 
 /* 高亮状态 */
 .shortcut-item.highlighted {
@@ -395,12 +386,7 @@
     animation: highlightPulse 2s ease-in-out infinite;
 }
 
-/* 复制成功状态 */
-.shortcut-item.copied {
-    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(139, 195, 74, 0.2));
-    border-color: #4caf50;
-    animation: copySuccess 0.6s ease-out;
-}
+
 
 /* 点击状态 */
 .shortcut-item.clicked {
@@ -464,34 +450,7 @@
     border-color: #f44336;
 }
 
-/* 复制通知样式 */
-.copy-notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: linear-gradient(135deg, #4caf50, #66bb6a);
-    color: white;
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-medium);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    z-index: 10000;
-    transform: translateX(100%);
-    opacity: 0;
-    transition: all var(--duration-normal) var(--ease-smooth);
-    backdrop-filter: blur(10px);
-}
 
-.copy-notification.show {
-    transform: translateX(0);
-    opacity: 1;
-}
-
-.copy-notification i {
-    font-size: var(--font-size-lg);
-}
 
 /* 动画效果 */
 @keyframes highlightPulse {
@@ -503,17 +462,7 @@
     }
 }
 
-@keyframes copySuccess {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.1);
-    }
-    100% {
-        transform: scale(1);
-    }
-}
+
 
 @keyframes shortcutPulse {
     0%, 100% {
@@ -698,6 +647,7 @@
         padding: var(--spacing-xs);
     }
 }
+
 
 
 
