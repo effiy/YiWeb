@@ -177,7 +177,7 @@ body::before {
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
-    padding: calc(80px + var(--spacing-md)) 0 var(--spacing-md) 0;
+    padding: calc(5rem + var(--spacing-md)) 0 var(--spacing-md) 0;
     text-align: center;
     position: relative;
     min-height: 100vh;
@@ -200,3 +200,4 @@ body::before {
         --text-secondary: #cbd5e1;
     }
 }
+

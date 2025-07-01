@@ -85,7 +85,7 @@
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
-    padding: calc(140px + var(--spacing-md)) 0 var(--spacing-md) 0;
+    padding: calc(5rem + var(--spacing-md)) 0 var(--spacing-md) 0;
     text-align: center;
     position: relative;
     min-height: 100vh;
@@ -114,7 +114,7 @@
     left: 0;
     right: 0;
     width: 100%;
-    min-height: 120px;
+    min-height: 60px;
     z-index: 1000;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -132,7 +132,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--spacing-md);
+    gap: var(--spacing-lg);
     width: 100%;
 }
 
@@ -190,7 +190,7 @@
 
 /* 搜索容器样式 */
 .search-box {
-    width: 100%;
+    flex: 1;
     background: none;
     box-shadow: none;
     margin: 0;
@@ -1286,6 +1286,20 @@
 }
 
 @media (max-width: 768px) {
+    .search-row {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+    
+    .search-box {
+        width: 100%;
+    }
+    
+    .category-filters {
+        width: 100%;
+        justify-content: center;
+    }
+    
     .feature-cards-grid {
         grid-template-columns: 1fr;
         gap: var(--spacing-lg);
@@ -1411,3 +1425,4 @@
         opacity: 1;
     }
 }
+

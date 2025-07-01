@@ -141,11 +141,20 @@ class ShortcutsManager {
                 <div class="results-info">
                     <i class="fas fa-search"></i>
                     <span>找到 ${highlightedItems.length} 个匹配的快捷键</span>
-                    <button class="clear-search" onclick="window.shortcutsManager.clearSearch()">
+                    <button class="clear-search">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
             `;
+            
+            // 为关闭按钮添加事件监听器
+            const clearButton = resultsContainer.querySelector('.clear-search');
+            if (clearButton) {
+                clearButton.addEventListener('click', () => {
+                    this.clearSearch();
+                });
+            }
+            
             resultsContainer.style.display = 'block';
         } else {
             resultsContainer.style.display = 'none';
@@ -376,3 +385,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 导出到全局作用域，方便调试
 window.ShortcutsManager = ShortcutsManager;
+
