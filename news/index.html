@@ -113,7 +113,7 @@
                                     <div class="news-category-tag">{{ getCategoryTag(item) }}</div>
                                     <div class="news-time">
                                         <i class="fas fa-clock"></i>
-                                        <span>{{ getTimeAgo(item) }}</span>
+                                        <span>{{ getTimeAgo(item.isoDate) }}</span>
                                     </div>
                                 </div>
                                 
@@ -169,7 +169,7 @@
                                         <div class="news-category-tag">{{ getCategoryTag(item) }}</div>
                                         <div class="news-time">
                                             <i class="fas fa-clock"></i>
-                                            <span>{{ getTimeAgo(item) }}</span>
+                                            <span>{{ getTimeAgo(item.isoDate) }}</span>
                                         </div>
                                     </div>
                                     
