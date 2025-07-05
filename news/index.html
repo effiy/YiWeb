@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="最新科技新闻资讯，涵盖AI、互联网、科技产品等领域的热点动态">
+    <meta name="keywords" content="科技新闻, AI新闻, 互联网资讯, 科技产品, 热点动态">
+    <meta name="author" content="YiAi">
+    <meta name="theme-color" content="#4facfe">
+    
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="/css/index.css" as="style">
+    <link rel="preload" href="/css/welcome.css" as="style">
+    <link rel="preload" href="/js/index.js" as="script">
+    
+    <!-- DNS预解析 -->
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    
+    <title>YiAi - 科技新闻资讯</title>
+    
+    <!-- 样式表 -->
+    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/css/welcome.css">
+    <link rel="stylesheet" href="/css/news.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous">
+</head>
+<body>
+    <!-- 搜索区域 -->
+    <header class="header-row" role="banner">
+        <!-- 第一行：搜索框和筛选 -->
+        <div class="search-row">
+            <div class="search-box" role="search">
+                <div class="search-logo" aria-hidden="true">
+                    <i class="fas fa-newspaper" aria-label="新闻图标"></i>
+                </div>
+                <div class="search-input-wrapper">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="搜索最新科技新闻，了解AI、互联网、科技产品等领域热点动态..." 
+                        rows="1" 
+                        maxlength="2000"
+                        aria-label="消息输入框"
+                        autocomplete="off"
+                        spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="category-filters">
+                <div class="filter-buttons">
+                    <button class="filter-btn" data-category="ai">
+                        <i class="fas fa-robot"></i>
+                        AI
+                    </button>
+                    <button class="filter-btn" data-category="internet">
+                        <i class="fas fa-globe"></i>
+                        互联网
+                    </button>
+                    <button class="filter-btn" data-category="product">
+                        <i class="fas fa-mobile-alt"></i>
+                        产品
+                    </button>
+                    <button class="filter-btn" data-category="startup">
+                        <i class="fas fa-rocket"></i>
+                        创业
+                    </button>
+                    <button class="filter-btn" data-category="finance">
+                        <i class="fas fa-chart-line"></i>
+                        财经
+                    </button>
+                    <button class="filter-btn" data-category="security">
+                        <i class="fas fa-shield-alt"></i>
+                        安全
+                    </button>
+                    <button class="filter-btn" data-category="trend">
+                        <i class="fas fa-fire"></i>
+                        热点
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="container">
+        <main class="welcome-section" id="welcomeSection" role="main">
+            <!-- 新闻区域 -->
+            <div class="news-content">
+                <div class="news-grid">
+                    <!-- 头条新闻 - 大图样式 -->
+                    <div class="news-category" data-category="ai">
+                        <div class="category-header">
+                            <i class="fas fa-robot"></i>
+                            <h3>AI 头条</h3>
+                        </div>
+                        <div class="news-list">
+                            <div class="news-item featured" data-type="featured">
+                                <div class="news-image">
+                                    <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop" alt="AI技术突破" loading="lazy">
+                                    <div class="news-badge">头条</div>
+                                </div>
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">AI</span>
+                                        <span class="news-time">2小时前</span>
+                                    </div>
+                                    <h4 class="news-title">OpenAI发布GPT-5预览版，多模态能力大幅提升</h4>
+                                    <p class="news-excerpt">OpenAI今日正式发布GPT-5预览版，新版本在图像理解、代码生成和推理能力方面都有显著提升，支持更复杂的多模态交互...</p>
+                                    <div class="news-stats">
+                                        <span><i class="fas fa-eye"></i> 12.5万</span>
+                                        <span><i class="fas fa-comment"></i> 2.3k</span>
+                                        <span><i class="fas fa-heart"></i> 8.9k</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 互联网新闻 - 三图样式 -->
+                    <div class="news-category" data-category="internet">
+                        <div class="category-header">
+                            <i class="fas fa-globe"></i>
+                            <h3>互联网动态</h3>
+                        </div>
+                        <div class="news-list">
+                            <div class="news-item" data-type="three-images">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">互联网</span>
+                                        <span class="news-time">4小时前</span>
+                                    </div>
+                                    <h4 class="news-title">字节跳动推出新一代短视频平台，挑战抖音地位</h4>
+                                    <p class="news-excerpt">字节跳动内部孵化的新短视频平台正式上线，采用全新的推荐算法和内容分发机制...</p>
+                                    <div class="news-images">
+                                        <img src="https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=200&h=150&fit=crop" alt="短视频平台界面" loading="lazy">
+                                        <img src="https://images.unsplash.com/photo-1551650975-87deedd944c3?w=200&h=150&fit=crop" alt="移动设备" loading="lazy">
+                                        <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=200&h=150&fit=crop" alt="数据分析" loading="lazy">
+                                    </div>
+                                    <div class="news-stats">
+                                        <span><i class="fas fa-eye"></i> 8.7万</span>
+                                        <span><i class="fas fa-comment"></i> 1.5k</span>
+                                        <span><i class="fas fa-heart"></i> 5.2k</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 产品新闻 - 文本样式 -->
+                    <div class="news-category" data-category="product">
+                        <div class="category-header">
+                            <i class="fas fa-mobile-alt"></i>
+                            <h3>产品资讯</h3>
+                        </div>
+                        <div class="news-list">
+                            <div class="news-item" data-type="text-only">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">产品</span>
+                                        <span class="news-time">6小时前</span>
+                                    </div>
+                                    <h4 class="news-title">苹果iPhone 16系列配置曝光，全系搭载A18芯片</h4>
+                                    <p class="news-excerpt">据供应链消息，苹果iPhone 16系列将全系搭载A18芯片，Pro版本还将配备更强大的A18 Pro芯片。新机预计将于9月发布，将带来更出色的性能和AI能力...</p>
+                                    <div class="news-stats">
+                                        <span><i class="fas fa-eye"></i> 15.3万</span>
+                                        <span><i class="fas fa-comment"></i> 3.1k</span>
+                                        <span><i class="fas fa-heart"></i> 12.7k</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="news-item" data-type="text-only">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">产品</span>
+                                        <span class="news-time">8小时前</span>
+                                    </div>
+                                    <h4 class="news-title">小米汽车SU7正式上市，售价21.59万元起</h4>
+                                    <p class="news-excerpt">小米汽车首款车型SU7正式上市，搭载小米自研电机和智能驾驶系统，续航里程可达800公里。雷军表示，小米汽车将重新定义智能电动汽车...</p>
+                                    <div class="news-stats">
+                                        <span><i class="fas fa-eye"></i> 18.9万</span>
+                                        <span><i class="fas fa-comment"></i> 4.2k</span>
+                                        <span><i class="fas fa-heart"></i> 16.5k</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 创业新闻 - 小图样式 -->
+                    <div class="news-category" data-category="startup">
+                        <div class="category-header">
+                            <i class="fas fa-rocket"></i>
+                            <h3>创业动态</h3>
+                        </div>
+                        <div class="news-list">
+                            <div class="news-item" data-type="small-image">
+                                <div class="news-image">
+                                    <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop" alt="创业团队" loading="lazy">
+                                </div>
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">创业</span>
+                                        <span class="news-time">10小时前</span>
+                                    </div>
+                                    <h4 class="news-title">AI初创公司获得10亿美元融资，估值超50亿美元</h4>
+                                    <p class="news-excerpt">专注于大语言模型训练的AI初创公司今日宣布完成10亿美元B轮融资，由红杉资本领投...</p>
+                                    <div class="news-stats">
+                                        <span><i class="fas fa-eye"></i> 6.2万</span>
+                                        <span><i class="fas fa-comment"></i> 890</span>
+                                        <span><i class="fas fa-heart"></i> 3.4k</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 财经新闻 - 图表样式 -->
+                    <div class="news-category" data-category="finance">
+                        <div class="category-header">
+                            <i class="fas fa-chart-line"></i>
+                            <h3>财经资讯</h3>
+                        </div>
+                        <div class="news-list">
+                            <div class="news-item" data-type="chart">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">财经</span>
+                                        <span class="news-time">12小时前</span>
+                                    </div>
+                                    <h4 class="news-title">科技股集体上涨，纳斯达克指数创历史新高</h4>
+                                    <p class="news-excerpt">受AI技术突破和财报超预期影响，科技股今日集体上涨，纳斯达克指数上涨2.3%，创下历史新高...</p>
+                                    <div class="news-chart">
+                                        <div class="chart-placeholder">
+                                            <i class="fas fa-chart-line"></i>
+                                            <span>纳斯达克指数走势图</span>
+                                        </div>
+                                    </div>
+                                    <div class="news-stats">
+                                        <span><i class="fas fa-eye"></i> 9.8万</span>
+                                        <span><i class="fas fa-comment"></i> 1.8k</span>
+                                        <span><i class="fas fa-heart"></i> 7.3k</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 安全新闻 - 警告样式 -->
+                    <div class="news-category" data-category="security">
+                        <div class="category-header">
+                            <i class="fas fa-shield-alt"></i>
+                            <h3>安全资讯</h3>
+                        </div>
+                        <div class="news-list">
+                            <div class="news-item" data-type="alert">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag security">安全</span>
+                                        <span class="news-time">14小时前</span>
+                                    </div>
+                                    <h4 class="news-title">新型勒索软件攻击全球企业，专家呼吁加强防护</h4>
+                                    <p class="news-excerpt">安全研究人员发现新型勒索软件正在全球范围内传播，已有多家企业受到影响。专家建议立即更新安全补丁并加强备份措施...</p>
+                                    <div class="news-alert">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <span>高危安全警告</span>
+                                    </div>
+                                    <div class="news-stats">
+                                        <span><i class="fas fa-eye"></i> 11.4万</span>
+                                        <span><i class="fas fa-comment"></i> 2.1k</span>
+                                        <span><i class="fas fa-heart"></i> 6.8k</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 热点新闻 - 视频样式 -->
+                    <div class="news-category" data-category="trend">
+                        <div class="category-header">
+                            <i class="fas fa-fire"></i>
+                            <h3>热点追踪</h3>
+                        </div>
+                        <div class="news-list">
+                            <div class="news-item" data-type="video">
+                                <div class="news-video">
+                                    <div class="video-placeholder">
+                                        <i class="fas fa-play-circle"></i>
+                                        <span>视频内容</span>
+                                    </div>
+                                    <div class="video-duration">3:45</div>
+                                </div>
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">热点</span>
+                                        <span class="news-time">16小时前</span>
+                                    </div>
+                                    <h4 class="news-title">马斯克展示特斯拉最新自动驾驶技术演示</h4>
+                                    <p class="news-excerpt">特斯拉CEO马斯克在社交媒体上分享了最新的自动驾驶技术演示视频，展示了在城市复杂路况下的表现...</p>
+                                    <div class="news-stats">
+                                        <span><i class="fas fa-eye"></i> 25.7万</span>
+                                        <span><i class="fas fa-comment"></i> 5.6k</span>
+                                        <span><i class="fas fa-heart"></i> 18.9k</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 更多新闻分类 -->
+                    <div class="news-category" data-category="ai">
+                        <div class="category-header">
+                            <i class="fas fa-brain"></i>
+                            <h3>AI 深度</h3>
+                        </div>
+                        <div class="news-list">
+                            <div class="news-item" data-type="text-only">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">AI</span>
+                                        <span class="news-time">18小时前</span>
+                                    </div>
+                                    <h4 class="news-title">谷歌发布Gemini 2.0，多模态理解能力大幅提升</h4>
+                                    <p class="news-excerpt">谷歌今日发布Gemini 2.0版本，新版本在视频理解、音频处理和跨模态推理方面都有显著提升...</p>
+                                    <div class="news-stats">
+                                        <span><i class="fas fa-eye"></i> 7.3万</span>
+                                        <span><i class="fas fa-comment"></i> 1.2k</span>
+                                        <span><i class="fas fa-heart"></i> 4.5k</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="news-category" data-category="internet">
+                        <div class="category-header">
+                            <i class="fas fa-cloud"></i>
+                            <h3>云计算</h3>
+                        </div>
+                        <div class="news-list">
+                            <div class="news-item" data-type="small-image">
+                                <div class="news-image">
+                                    <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&h=200&fit=crop" alt="云计算数据中心" loading="lazy">
+                                </div>
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">互联网</span>
+                                        <span class="news-time">20小时前</span>
+                                    </div>
+                                    <h4 class="news-title">阿里云推出新一代云原生数据库，性能提升300%</h4>
+                                    <p class="news-excerpt">阿里云今日发布新一代云原生数据库产品，采用全新的架构设计，在性能和可扩展性方面都有大幅提升...</p>
+                                    <div class="news-stats">
+                                        <span><i class="fas fa-eye"></i> 5.8万</span>
+                                        <span><i class="fas fa-comment"></i> 760</span>
+                                        <span><i class="fas fa-heart"></i> 2.9k</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 加载指示器 -->
+    <div id="loading-indicator" class="loading-indicator" aria-hidden="true">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- 错误提示 -->
+    <div id="error-message" class="error-message" role="alert" aria-live="polite" style="display: none;"></div>
+
+    <!-- JavaScript -->
+    <script src="/js/index.js"></script>
+    <script src="/js/news.js"></script>
+</body>
+</html>
