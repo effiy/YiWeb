@@ -26,53 +26,82 @@ function initCategoryFilters() {
     const filterButtons = document.querySelectorAll('.filter-btn');
     const newsCategories = document.querySelectorAll('.news-category');
     
+    // 初始化选中的分类
+    let selectedCategories = new Set();
+    
     filterButtons.forEach(button => {
         button.addEventListener('click', function() {
             const category = this.getAttribute('data-category');
-            
-            // 更新按钮状态
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            // 筛选新闻
-            filterNewsByCategory(category);
+            toggleCategory(category, this);
         });
     });
     
-    // 显示所有新闻
-    function showAllNews() {
-        newsCategories.forEach(category => {
-            category.style.display = 'block';
-            category.style.opacity = '1';
-            category.style.transform = 'translateY(0)';
+    // 切换分类选中状态
+    function toggleCategory(category, button) {
+        if (selectedCategories.has(category)) {
+            // 如果已选中，则取消选中
+            selectedCategories.delete(category);
+            button.classList.remove('active');
+        } else {
+            // 如果未选中，则选中
+            selectedCategories.add(category);
+            button.classList.add('active');
+        }
+        
+        updateFilterDisplay();
+    }
+    
+    // 更新筛选显示
+    function updateFilterDisplay() {
+        if (selectedCategories.size === 0) {
+            // 如果没有选中任何分类，显示所有分类
+            showAllCategories();
+        } else {
+            // 只显示选中的分类
+            newsCategories.forEach(cat => {
+                const catCategory = cat.getAttribute('data-category');
+                if (selectedCategories.has(catCategory)) {
+                    cat.style.display = 'block';
+                    cat.style.opacity = '1';
+                    cat.style.transform = 'translateY(0)';
+                    cat.classList.add('category-active');
+                } else {
+                    cat.style.opacity = '0';
+                    cat.style.transform = 'translateY(20px)';
+                    setTimeout(() => {
+                        cat.style.display = 'none';
+                    }, 300);
+                    cat.classList.remove('category-active');
+                }
+            });
+        }
+
+        // 添加动画效果
+        animateFilteredCategories();
+    }
+    
+    // 显示所有分类
+    function showAllCategories() {
+        newsCategories.forEach(cat => {
+            cat.style.display = 'block';
+            cat.style.opacity = '1';
+            cat.style.transform = 'translateY(0)';
+            cat.classList.add('category-active');
         });
     }
     
-    // 筛选新闻
-    function filterNewsByCategory(selectedCategory) {
-        if (selectedCategory === 'all') {
-            showAllNews();
-            return;
-        }
-        
-        newsCategories.forEach(category => {
-            const categoryType = category.getAttribute('data-category');
-            
-            if (categoryType === selectedCategory) {
-                category.style.display = 'block';
-                setTimeout(() => {
-                    category.style.opacity = '1';
-                    category.style.transform = 'translateY(0)';
-                }, 50);
-            } else {
-                category.style.opacity = '0';
-                category.style.transform = 'translateY(20px)';
-                setTimeout(() => {
-                    category.style.display = 'none';
-                }, 300);
-            }
+    // 为筛选的分类添加动画效果
+    function animateFilteredCategories() {
+        const visibleCategories = document.querySelectorAll('.news-category[style*="block"]');
+        visibleCategories.forEach((category, index) => {
+            setTimeout(() => {
+                category.classList.add('animate-in');
+            }, index * 100);
         });
     }
+    
+    // 默认显示所有分类
+    showAllCategories();
 }
 
 // 搜索功能
