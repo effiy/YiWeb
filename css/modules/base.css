@@ -1,0 +1,198 @@
+/* 基础样式模块 */
+
+/* CSS重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* CSS变量定义 */
+:root {
+    /* 量子美学主题色系统 - 科技未来感 */
+    
+    /* 主色调 - 量子蓝紫 */
+    --primary: #4f46e5;           /* 量子靛蓝 */
+    --primary-hover: #3730a3;     /* 深量子蓝 */
+    --primary-light: #6366f1;     /* 浅量子蓝 */
+    --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+    --primary-gradient-hover: linear-gradient(135deg, #3730a3 0%, #6d28d9 50%, #9333ea 100%);
+    
+    /* 量子辅助色系 */
+    --accent: #06b6d4;            /* 量子青 */
+    --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);
+    --success: #10b981;           /* 量子绿 */
+    --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+    --warning: #f59e0b;           /* 量子橙 */
+    --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+    --error: #ef4444;             /* 量子红 */
+    --error-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+    
+    /* 量子背景色系 */
+    --bg-primary: #0f172a;        /* 深空黑 */
+    --bg-secondary: #1e293b;      /* 量子灰 */
+    --bg-tertiary: #334155;       /* 中量子灰 */
+    --bg-elevated: rgba(30, 41, 59, 0.9); /* 半透明量子灰 */
+    --bg-glass: rgba(255, 255, 255, 0.03); /* 量子玻璃效果 */
+    --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #475569 75%, #64748b 100%);
+    
+    /* 量子文字色系 */
+    --text-primary: #f8fafc;      /* 量子白 */
+    --text-secondary: #cbd5e1;    /* 浅量子灰 */
+    --text-muted: #94a3b8;        /* 中量子灰 */
+    --text-inverse: #0f172a;      /* 深空黑 */
+    --text-accent: #06b6d4;       /* 量子青 */
+    
+    /* 量子边框色系 */
+    --border-primary: rgba(255, 255, 255, 0.08);    /* 量子白边框 */
+    --border-secondary: rgba(6, 182, 212, 0.2);     /* 量子青边框 */
+    --border-focus: #06b6d4;      /* 量子青聚焦 */
+    --border-glass: rgba(255, 255, 255, 0.05); /* 量子玻璃边框 */
+    
+    /* 量子阴影系统 */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.7);
+    --shadow-primary: 0 4px 20px rgba(79, 70, 229, 0.4);
+    --shadow-glow: 0 0 30px rgba(6, 182, 212, 0.4);
+    --shadow-quantum: 0 0 50px rgba(79, 70, 229, 0.3);
+    
+    /* 量子圆角系统 */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 24px;
+    --radius-full: 9999px;
+    
+    /* 精确间距系统 */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+    --spacing-3xl: 4rem;
+    
+    /* 量子过渡动画 */
+    --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* 视口高度（用于移动端） */
+    --vh: 1vh;
+}
+
+/* 基础动画定义 */
+@keyframes quantumParticles {
+    0% {
+        background-position: 0% 50%;
+        opacity: 0.2;
+    }
+    50% {
+        background-position: 100% 50%;
+        opacity: 0.6;
+    }
+    100% {
+        background-position: 0% 50%;
+        opacity: 0.2;
+    }
+}
+
+@keyframes quantumFlow {
+    0% {
+        background-position: 0% 50%;
+        filter: hue-rotate(0deg);
+    }
+    50% {
+        background-position: 100% 50%;
+        filter: hue-rotate(180deg);
+    }
+    100% {
+        background-position: 0% 50%;
+        filter: hue-rotate(360deg);
+    }
+}
+
+@keyframes quantumGlow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(6, 182, 212, 0.6);
+    }
+}
+
+@keyframes quantumPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.02);
+        opacity: 0.9;
+    }
+}
+
+/* 基础元素样式 */
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-gradient);
+    background-size: 400% 400%;
+    animation: quantumFlow 30s ease infinite;
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    font-weight: 400;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    position: relative;
+}
+
+/* 量子粒子效果 */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(79, 70, 229, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+    background-size: 200% 200%;
+    animation: quantumParticles 20s ease infinite;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* 暗色主题支持 */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+    }
+}
+
+/* 减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+} 
