@@ -18,9 +18,9 @@ const NewsApp = {
 
         // 分类配置
         const categories = ref([
+            { key: 'ai', icon: 'fas fa-robot', title: 'AI技术' },
             { key: 'data', icon: 'fas fa-chart-line', title: '数据分析' },
             { key: 'code', icon: 'fas fa-code', title: '代码开发' },
-            { key: 'ai', icon: 'fas fa-robot', title: 'AI技术' },
             { key: 'tech', icon: 'fas fa-microchip', title: '科技产品' },
             { key: 'business', icon: 'fas fa-briefcase', title: '商业资讯' },
             { key: 'other', icon: 'fas fa-ellipsis-h', title: '其他' }
