@@ -273,7 +273,7 @@ body::before {
     width: 100%;
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
+    padding: var(--spacing-lg);
 }
 
 /* 加载状态 */
@@ -606,7 +606,7 @@ body::before {
     }
     
     .news-content {
-        padding: 0 var(--spacing-md) var(--spacing-lg) var(--spacing-md);
+        padding: var(--spacing-md);
         width: 100%;
         max-width: 100%;
     }
@@ -658,7 +658,7 @@ body::before {
     }
     
     .news-content {
-        padding: 0 var(--spacing-sm) var(--spacing-lg) var(--spacing-sm);
+        padding: var(--spacing-sm);
         width: 100%;
         max-width: 100%;
     }
