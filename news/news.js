@@ -14,56 +14,130 @@ const NewsApp = {
         const searchHistory = ref([]);
 
         // API配置
-        const apiUrl = 'https://api.effiy.cn/mongodb/?cname=rss&isoDate=2025-07-03,2025-07-03';
+        const API_CONFIG = {
+            url: 'https://api.effiy.cn/mongodb/?cname=rss&isoDate=2025-07-03,2025-07-03',
+            timeout: 10000
+        };
 
         // 分类配置
-        const categories = ref([
-            { key: 'ai', icon: 'fas fa-robot', title: 'AI技术' },
-            { key: 'data', icon: 'fas fa-chart-line', title: '数据分析' },
-            { key: 'code', icon: 'fas fa-code', title: '代码开发' },
-            { key: 'tech', icon: 'fas fa-microchip', title: '科技产品' },
-            { key: 'business', icon: 'fas fa-briefcase', title: '商业资讯' },
-            { key: 'other', icon: 'fas fa-ellipsis-h', title: '其他' }
-        ]);
+        const CATEGORIES = [
+            { key: 'ai', icon: 'fas fa-robot', title: 'AI技术', keywords: ['ai', '人工智能', 'gpt', '机器学习', '深度学习'] },
+            { key: 'data', icon: 'fas fa-chart-line', title: '数据分析', keywords: ['数据', '分析', '统计', '可视化', '报表'] },
+            { key: 'code', icon: 'fas fa-code', title: '代码开发', keywords: ['代码', '开发', '编程', '软件', '框架'] },
+            { key: 'tech', icon: 'fas fa-microchip', title: '科技产品', keywords: ['产品', '手机', '芯片', '硬件', '设备'] },
+            { key: 'business', icon: 'fas fa-briefcase', title: '商业资讯', keywords: ['商业', '投资', '市场', '融资', '创业'] },
+            { key: 'other', icon: 'fas fa-ellipsis-h', title: '其他', keywords: [] }
+        ];
+
+        const categories = ref(CATEGORIES);
+
+        // 工具函数
+        const utils = {
+            // 防抖函数
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            },
+
+            // 时间格式化
+            formatTimeAgo(dateString) {
+                const pubDate = new Date(dateString);
+                const now = new Date();
+                const diffInSeconds = Math.floor((now - pubDate) / 1000);
+
+                if (diffInSeconds < 60) return '刚刚';
+                if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}分钟前`;
+                if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}小时前`;
+                if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}天前`;
+                return pubDate.toLocaleDateString('zh-CN');
+            },
+
+            // 提取摘要
+            extractExcerpt(item, maxLength = 100) {
+                const content = item.content || item.description || '';
+                const text = content.replace(/<[^>]*>/g, '').trim();
+                return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+            },
+
+            // 分类新闻项
+            categorizeNewsItem(item) {
+                const title = item.title.toLowerCase();
+                const content = (item.content || '').toLowerCase();
+                
+                for (const category of CATEGORIES) {
+                    if (category.key === 'other') continue;
+                    
+                    const hasKeyword = category.keywords.some(keyword => 
+                        title.includes(keyword) || content.includes(keyword)
+                    );
+                    
+                    if (hasKeyword) {
+                        return category.key;
+                    }
+                }
+                
+                return 'other';
+            },
+
+            // 获取新闻来源
+            getNewsSource(item) {
+                const source = item.source || '';
+                const title = item.title.toLowerCase();
+                
+                const sources = ['36氪', '虎嗅', '钛媒体', '爱范儿', '极客公园'];
+                
+                for (const src of sources) {
+                    if (source.includes(src) || title.includes(src)) {
+                        return src;
+                    }
+                }
+                
+                return source || '未知来源';
+            },
+
+            // 搜索匹配
+            isSearchMatch(item, query) {
+                if (!query) return true;
+                
+                const searchText = [
+                    item.title,
+                    this.extractExcerpt(item),
+                    this.getCategoryTag(item)
+                ].join(' ').toLowerCase();
+                
+                return searchText.includes(query.toLowerCase());
+            }
+        };
 
         // 计算属性
         const hasNewsData = computed(() => newsData.value.length > 0);
 
         const categorizedNews = computed(() => {
-            const categories = {
-                'ai': { icon: 'fas fa-robot', title: 'AI 技术', news: [] },
-                'data': { icon: 'fas fa-chart-line', title: '数据分析', news: [] },
-                'code': { icon: 'fas fa-code', title: '代码开发', news: [] },
-                'tech': { icon: 'fas fa-microchip', title: '科技产品', news: [] },
-                'business': { icon: 'fas fa-briefcase', title: '商业资讯', news: [] },
-                'other': { icon: 'fas fa-ellipsis-h', title: '其他', news: [] }
-            };
-
-            newsData.value.forEach(item => {
-                const title = item.title.toLowerCase();
-                const content = item.content.toLowerCase();
-                
-                if (title.includes('ai') || title.includes('人工智能') || title.includes('gpt') || 
-                    content.includes('ai') || content.includes('人工智能') || content.includes('gpt')) {
-                    categories.ai.news.push(item);
-                } else if (title.includes('数据') || title.includes('分析') || title.includes('统计') ||
-                           content.includes('数据') || content.includes('分析') || content.includes('统计')) {
-                    categories.data.news.push(item);
-                } else if (title.includes('代码') || title.includes('开发') || title.includes('编程') ||
-                           content.includes('代码') || content.includes('开发') || content.includes('编程')) {
-                    categories.code.news.push(item);
-                } else if (title.includes('产品') || title.includes('手机') || title.includes('芯片') ||
-                           content.includes('产品') || content.includes('手机') || content.includes('芯片')) {
-                    categories.tech.news.push(item);
-                } else if (title.includes('商业') || title.includes('投资') || title.includes('市场') ||
-                           content.includes('商业') || content.includes('投资') || content.includes('市场')) {
-                    categories.business.news.push(item);
-                } else {
-                    categories.other.news.push(item);
-                }
+            const result = {};
+            
+            // 初始化分类
+            CATEGORIES.forEach(category => {
+                result[category.key] = {
+                    icon: category.icon,
+                    title: category.title,
+                    news: []
+                };
             });
 
-            return categories;
+            // 分类新闻
+            newsData.value.forEach(item => {
+                const categoryKey = utils.categorizeNewsItem(item);
+                result[categoryKey].news.push(item);
+            });
+
+            return result;
         });
 
         const displayCategories = computed(() => {
@@ -71,309 +145,245 @@ const NewsApp = {
                 return categorizedNews.value;
             }
 
-            const filteredCategories = {};
+            const filtered = {};
+            
             Object.entries(categorizedNews.value).forEach(([key, category]) => {
-                const filteredNews = category.news.filter(item => {
-                    const title = item.title.toLowerCase();
-                    const excerpt = extractExcerpt(item).toLowerCase();
-                    const categoryTag = getCategoryTag(item).toLowerCase();
-                    return title.includes(searchQuery.value.toLowerCase()) || 
-                           excerpt.includes(searchQuery.value.toLowerCase()) || 
-                           categoryTag.includes(searchQuery.value.toLowerCase());
-                });
+                const filteredNews = category.news.filter(item => 
+                    utils.isSearchMatch(item, searchQuery.value)
+                );
 
                 if (filteredNews.length > 0) {
-                    filteredCategories[key] = {
+                    filtered[key] = {
                         ...category,
                         news: filteredNews
                     };
                 }
             });
 
-            return filteredCategories;
+            return filtered;
         });
 
         const searchResults = computed(() => {
             if (!searchQuery.value) return [];
             
-            const results = [];
-            Object.values(displayCategories.value).forEach(category => {
-                results.push(...category.news);
-            });
-            return results;
+            return Object.values(displayCategories.value)
+                .flatMap(category => category.news);
         });
 
-        // 方法
-        const loadNewsData = async () => {
-            loading.value = true;
-            error.value = null;
-            errorMessage.value = '';
+        // API相关方法
+        const api = {
+            async fetchNewsData() {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
 
-            try {
-                const response = await fetch(apiUrl);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                try {
+                    const response = await fetch(API_CONFIG.url, {
+                        signal: controller.signal,
+                        headers: {
+                            'Accept': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.status !== 200 || !data.data?.list) {
+                        throw new Error('数据格式错误');
+                    }
+
+                    return data.data.list;
+                } catch (err) {
+                    clearTimeout(timeoutId);
+                    
+                    if (err.name === 'AbortError') {
+                        throw new Error('请求超时，请检查网络连接');
+                    }
+                    
+                    throw err;
                 }
-                const data = await response.json();
-                
-                if (data.status === 200 && data.data && data.data.list) {
-                    newsData.value = data.data.list;
-                } else {
-                    throw new Error('Invalid data format');
-                }
-            } catch (err) {
-                console.error('Failed to load news data:', err);
-                error.value = '加载新闻数据失败，请稍后重试';
-                errorMessage.value = error.value;
-            } finally {
-                loading.value = false;
             }
         };
 
-        const handleSearch = (event) => {
-            const query = event.target.value.toLowerCase().trim();
-            searchQuery.value = query;
-            
-            // 搜索逻辑已在计算属性中处理
-            if (query && !searchHistory.value.includes(query)) {
-                searchHistory.value.unshift(query);
-                searchHistory.value = searchHistory.value.slice(0, 10); // 保留最近10个
-                localStorage.setItem('newsSearchHistory', JSON.stringify(searchHistory.value));
-            }
-        };
-
-        const handleSearchKeydown = (event) => {
-            if (event.key === 'Escape') {
-                event.target.value = '';
-                searchQuery.value = '';
-            }
-        };
-
-        const toggleCategory = (category) => {
-            if (selectedCategories.value.has(category)) {
-                selectedCategories.value.delete(category);
-            } else {
-                selectedCategories.value.add(category);
-            }
-        };
-
-        const shouldShowCategory = (categoryKey) => {
-            if (selectedCategories.value.size === 0) {
-                return true; // 显示所有分类
-            }
-            return selectedCategories.value.has(categoryKey);
-        };
-
-        const isHighlighted = (item) => {
-            if (!searchQuery.value) return false;
-            
-            const title = item.title.toLowerCase();
-            const excerpt = extractExcerpt(item).toLowerCase();
-            const categoryTag = getCategoryTag(item).toLowerCase();
-            const query = searchQuery.value.toLowerCase();
-            
-            return title.includes(query) || excerpt.includes(query) || categoryTag.includes(query);
-        };
-
-        const handleNewsClick = (item) => {
-            const itemKey = item.link || item.title;
-            clickedItems.value.add(itemKey);
-            
-            // 添加点击动画效果
-            setTimeout(() => {
-                clickedItems.value.delete(itemKey);
-            }, 300);
-
-            // 如果有链接，在新窗口打开
-            if (item.link) {
-                window.open(item.link, '_blank', 'noopener,noreferrer');
-            }
-        };
-
-        const getTimeAgo = (item) => {
-            const pubDate = new Date(item.pubDate || item.isoDate);
-            const now = new Date();
-            const diffInSeconds = Math.floor((now - pubDate) / 1000);
-
-            if (diffInSeconds < 60) {
-                return '刚刚';
-            } else if (diffInSeconds < 3600) {
-                return `${Math.floor(diffInSeconds / 60)}分钟前`;
-            } else if (diffInSeconds < 86400) {
-                return `${Math.floor(diffInSeconds / 3600)}小时前`;
-            } else if (diffInSeconds < 2592000) {
-                return `${Math.floor(diffInSeconds / 86400)}天前`;
-            } else {
-                return pubDate.toLocaleDateString('zh-CN');
-            }
-        };
-
-        const extractExcerpt = (item, maxLength = 100) => {
-            const content = item.content || item.description || '';
-            const text = content.replace(/<[^>]*>/g, '').trim();
-            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-        };
-
-        const getCategoryTag = (item) => {
-            const title = item.title.toLowerCase();
-            const content = item.content.toLowerCase();
-            
-            if (title.includes('ai') || title.includes('人工智能') || title.includes('gpt') || 
-                content.includes('ai') || content.includes('人工智能') || content.includes('gpt')) {
-                return 'AI技术';
-            } else if (title.includes('数据') || title.includes('分析') || title.includes('统计') ||
-                       content.includes('数据') || content.includes('分析') || content.includes('统计')) {
-                return '数据分析';
-            } else if (title.includes('代码') || title.includes('开发') || title.includes('编程') ||
-                       content.includes('代码') || content.includes('开发') || content.includes('编程')) {
-                return '代码开发';
-            } else if (title.includes('产品') || title.includes('手机') || title.includes('芯片') ||
-                       content.includes('产品') || content.includes('手机') || content.includes('芯片')) {
-                return '科技产品';
-            } else if (title.includes('商业') || title.includes('投资') || title.includes('市场') ||
-                       content.includes('商业') || content.includes('投资') || content.includes('市场')) {
-                return '商业资讯';
-            } else {
-                return '其他';
-            }
-        };
-
-        const getNewsType = (item) => {
-            const source = item.source || '';
-            const title = item.title.toLowerCase();
-            
-            if (source.includes('36氪') || title.includes('36氪')) {
-                return '36氪';
-            } else if (source.includes('虎嗅') || title.includes('虎嗅')) {
-                return '虎嗅';
-            } else if (source.includes('钛媒体') || title.includes('钛媒体')) {
-                return '钛媒体';
-            } else if (source.includes('爱范儿') || title.includes('爱范儿')) {
-                return '爱范儿';
-            } else if (source.includes('极客公园') || title.includes('极客公园')) {
-                return '极客公园';
-            } else {
-                return source || '未知来源';
-            }
-        };
-
-        const showErrorMessage = (message) => {
-            error.value = message;
-            errorMessage.value = message;
-            setTimeout(() => {
+        // 业务逻辑方法
+        const methods = {
+            async loadNewsData() {
+                loading.value = true;
                 error.value = null;
                 errorMessage.value = '';
-            }, 5000);
-        };
 
-        const initKeyboardShortcuts = () => {
-            document.addEventListener('keydown', (event) => {
-                // Ctrl+K 聚焦搜索框
-                if (event.ctrlKey && event.key === 'k') {
-                    event.preventDefault();
-                    const searchInput = document.getElementById('messageInput');
-                    if (searchInput) {
-                        searchInput.focus();
-                    }
+                try {
+                    const data = await api.fetchNewsData();
+                    newsData.value = data;
+                } catch (err) {
+                    console.error('加载新闻数据失败:', err);
+                    const message = err.message || '加载新闻数据失败，请稍后重试';
+                    methods.showErrorMessage(message);
+                } finally {
+                    loading.value = false;
                 }
+            },
+
+            handleSearch: utils.debounce((event) => {
+                const query = event.target.value.trim();
+                searchQuery.value = query;
                 
-                // Escape 清除搜索
+                if (query && !searchHistory.value.includes(query)) {
+                    searchHistory.value.unshift(query);
+                    searchHistory.value = searchHistory.value.slice(0, 10);
+                    localStorage.setItem('newsSearchHistory', JSON.stringify(searchHistory.value));
+                }
+            }, 300),
+
+            handleSearchKeydown(event) {
                 if (event.key === 'Escape') {
-                    const searchInput = document.getElementById('messageInput');
-                    if (searchInput) {
-                        searchInput.value = '';
-                        searchQuery.value = '';
+                    event.target.value = '';
+                    searchQuery.value = '';
+                }
+            },
+
+            toggleCategory(category) {
+                if (selectedCategories.value.has(category)) {
+                    selectedCategories.value.delete(category);
+                } else {
+                    selectedCategories.value.add(category);
+                }
+            },
+
+            shouldShowCategory(categoryKey) {
+                return selectedCategories.value.size === 0 || selectedCategories.value.has(categoryKey);
+            },
+
+            isHighlighted(item) {
+                return searchQuery.value && utils.isSearchMatch(item, searchQuery.value);
+            },
+
+            handleNewsClick(item) {
+                const itemKey = item.link || item.title;
+                clickedItems.value.add(itemKey);
+                
+                setTimeout(() => clickedItems.value.delete(itemKey), 300);
+
+                if (item.link) {
+                    window.open(item.link, '_blank', 'noopener,noreferrer');
+                }
+            },
+
+            showErrorMessage(message) {
+                error.value = message;
+                errorMessage.value = message;
+                setTimeout(() => {
+                    error.value = null;
+                    errorMessage.value = '';
+                }, 5000);
+            }
+        };
+
+        // 初始化功能
+        const init = {
+            keyboardShortcuts() {
+                document.addEventListener('keydown', (event) => {
+                    if (event.ctrlKey && event.key === 'k') {
+                        event.preventDefault();
+                        document.getElementById('messageInput')?.focus();
+                    }
+                    
+                    if (event.key === 'Escape') {
+                        const searchInput = document.getElementById('messageInput');
+                        if (searchInput) {
+                            searchInput.value = '';
+                            searchQuery.value = '';
+                        }
+                    }
+                });
+            },
+
+            responsiveLayout() {
+                const updateLayout = () => {
+                    const vh = window.innerHeight * 0.01;
+                    document.documentElement.style.setProperty('--vh', `${vh}px`);
+                };
+
+                updateLayout();
+                window.addEventListener('resize', updateLayout);
+                window.addEventListener('orientationchange', updateLayout);
+            },
+
+            accessibility() {
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Tab') {
+                        document.body.classList.add('keyboard-navigation');
+                    }
+                });
+
+                document.addEventListener('mousedown', () => {
+                    document.body.classList.remove('keyboard-navigation');
+                });
+            },
+
+            errorHandling() {
+                window.addEventListener('error', (event) => {
+                    console.error('全局错误:', event.error);
+                    methods.showErrorMessage('页面出现错误，请刷新重试');
+                });
+
+                window.addEventListener('unhandledrejection', (event) => {
+                    console.error('未处理的Promise拒绝:', event.reason);
+                    methods.showErrorMessage('网络请求失败，请检查网络连接');
+                });
+            },
+
+            searchHistory() {
+                const savedHistory = localStorage.getItem('newsSearchHistory');
+                if (savedHistory) {
+                    try {
+                        searchHistory.value = JSON.parse(savedHistory);
+                    } catch (e) {
+                        console.warn('解析搜索历史失败:', e);
                     }
                 }
-            });
-        };
+            },
 
-        const initResponsiveLayout = () => {
-            const updateLayout = () => {
-                const vh = window.innerHeight * 0.01;
-                document.documentElement.style.setProperty('--vh', `${vh}px`);
-            };
-
-            updateLayout();
-            window.addEventListener('resize', updateLayout);
-            window.addEventListener('orientationchange', updateLayout);
-        };
-
-        const debounce = (func, wait) => {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        };
-
-        const initAccessibility = () => {
-            // 添加键盘导航支持
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'Tab') {
-                    // 确保焦点可见
-                    document.body.classList.add('keyboard-navigation');
+            searchInput() {
+                const searchInput = document.getElementById('messageInput');
+                if (searchInput) {
+                    searchInput.addEventListener('input', methods.handleSearch);
+                    searchInput.addEventListener('keydown', methods.handleSearchKeydown);
                 }
-            });
-
-            document.addEventListener('mousedown', () => {
-                document.body.classList.remove('keyboard-navigation');
-            });
-        };
-
-        const handleErrors = () => {
-            window.addEventListener('error', (event) => {
-                console.error('Global error:', event.error);
-                showErrorMessage('页面出现错误，请刷新重试');
-            });
-
-            window.addEventListener('unhandledrejection', (event) => {
-                console.error('Unhandled promise rejection:', event.reason);
-                showErrorMessage('网络请求失败，请检查网络连接');
-            });
+            }
         };
 
         // 生命周期
         onMounted(async () => {
             try {
                 // 初始化各种功能
-                initKeyboardShortcuts();
-                initResponsiveLayout();
-                initAccessibility();
-                handleErrors();
-
-                // 绑定搜索事件
-                const searchInput = document.getElementById('messageInput');
-                if (searchInput) {
-                    searchInput.addEventListener('input', handleSearch);
-                    searchInput.addEventListener('keydown', handleSearchKeydown);
-                }
-
-                // 加载搜索历史
-                const savedHistory = localStorage.getItem('newsSearchHistory');
-                if (savedHistory) {
-                    try {
-                        searchHistory.value = JSON.parse(savedHistory);
-                    } catch (e) {
-                        console.warn('Failed to parse search history:', e);
-                    }
-                }
+                init.keyboardShortcuts();
+                init.responsiveLayout();
+                init.accessibility();
+                init.errorHandling();
+                init.searchHistory();
+                
+                // 等待DOM更新后绑定搜索事件
+                await nextTick();
+                init.searchInput();
 
                 // 加载新闻数据
-                await loadNewsData();
+                await methods.loadNewsData();
 
             } catch (error) {
-                console.error('Initialization error:', error);
-                showErrorMessage('页面初始化失败，请刷新重试');
+                console.error('初始化错误:', error);
+                methods.showErrorMessage('页面初始化失败，请刷新重试');
             }
         });
 
+        // 返回公共接口
         return {
-            // 数据
+            // 响应式数据
             newsData,
             loading,
             error,
@@ -391,21 +401,25 @@ const NewsApp = {
             searchResults,
             
             // 方法
-            loadNewsData,
-            handleSearch,
-            handleSearchKeydown,
-            toggleCategory,
-            shouldShowCategory,
-            isHighlighted,
-            handleNewsClick,
-            getTimeAgo,
-            extractExcerpt,
-            getCategoryTag,
-            getNewsType,
-            showErrorMessage
+            loadNewsData: methods.loadNewsData,
+            handleSearch: methods.handleSearch,
+            handleSearchKeydown: methods.handleSearchKeydown,
+            toggleCategory: methods.toggleCategory,
+            shouldShowCategory: methods.shouldShowCategory,
+            isHighlighted: methods.isHighlighted,
+            handleNewsClick: methods.handleNewsClick,
+            getTimeAgo: utils.formatTimeAgo,
+            extractExcerpt: utils.extractExcerpt,
+            getCategoryTag: (item) => {
+                const categoryKey = utils.categorizeNewsItem(item);
+                const category = CATEGORIES.find(cat => cat.key === categoryKey);
+                return category ? category.title : '其他';
+            },
+            getNewsType: utils.getNewsSource,
+            showErrorMessage: methods.showErrorMessage
         };
     }
 };
 
 // 创建并挂载应用
-createApp(NewsApp).mount('#app'); 
+createApp(NewsApp).mount('#app');
