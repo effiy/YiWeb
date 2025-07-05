@@ -48,31 +48,23 @@
                 <div class="filter-buttons">
                     <button class="filter-btn" data-category="ai">
                         <i class="fas fa-robot"></i>
-                        AI
+                        AI技术
                     </button>
-                    <button class="filter-btn" data-category="internet">
-                        <i class="fas fa-globe"></i>
-                        互联网
+                    <button class="filter-btn" data-category="data">
+                        <i class="fas fa-chart-line"></i>
+                        数据分析
+                    </button>
+                    <button class="filter-btn" data-category="code">
+                        <i class="fas fa-code"></i>
+                        代码开发
                     </button>
                     <button class="filter-btn" data-category="product">
                         <i class="fas fa-mobile-alt"></i>
-                        产品
+                        产品资讯
                     </button>
-                    <button class="filter-btn" data-category="finance">
-                        <i class="fas fa-chart-line"></i>
-                        财经
-                    </button>
-                    <button class="filter-btn" data-category="security">
-                        <i class="fas fa-shield-alt"></i>
-                        安全
-                    </button>
-                    <button class="filter-btn" data-category="trend">
-                        <i class="fas fa-fire"></i>
-                        热点
-                    </button>
-                    <button class="filter-btn" data-category="startup">
-                        <i class="fas fa-rocket"></i>
-                        创业
+                    <button class="filter-btn" data-category="other">
+                        <i class="fas fa-ellipsis-h"></i>
+                        其他
                     </button>
                 </div>
             </div>
@@ -83,7 +75,7 @@
             <!-- 新闻区域 -->
             <div class="news-content">
                 <div class="news-grid">
-                    <!-- AI 分类 - 包含AI、量子计算、机器人等 -->
+                    <!-- AI技术分类 -->
                     <div class="news-category" data-category="ai">
                         <div class="category-header">
                             <i class="fas fa-robot"></i>
@@ -167,17 +159,153 @@
                         </div>
                     </div>
 
-                    <!-- 互联网分类 - 包含互联网、云计算、通信等 -->
-                    <div class="news-category" data-category="internet">
+                    <!-- 数据分析分类 -->
+                    <div class="news-category" data-category="data">
                         <div class="category-header">
-                            <i class="fas fa-globe"></i>
-                            <h3>互联网技术</h3>
+                            <i class="fas fa-chart-line"></i>
+                            <h3>数据分析</h3>
+                        </div>
+                        <div class="news-list">
+                            <div class="news-item" data-type="chart">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">数据</span>
+                                        <span class="news-time">12小时前</span>
+                                    </div>
+                                    <h4 class="news-title">科技股集体上涨，纳斯达克指数创历史新高</h4>
+                                    <p class="news-excerpt">受AI技术突破和财报超预期影响，科技股今日集体上涨，纳斯达克指数上涨2.3%，创下历史新高...</p>
+                                    <div class="news-chart">
+                                        <div class="chart-placeholder">
+                                            <i class="fas fa-chart-line"></i>
+                                            <span>纳斯达克指数走势图</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="news-item" data-type="text-only">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">数据</span>
+                                        <span class="news-time">15小时前</span>
+                                    </div>
+                                    <h4 class="news-title">加密货币市场回暖，比特币突破7万美元</h4>
+                                    <p class="news-excerpt">受机构投资者入场和监管政策明朗化影响，加密货币市场今日大幅回暖，比特币价格突破7万美元大关...</p>
+                                </div>
+                            </div>
+                            <div class="news-item" data-type="text-only">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">数据</span>
+                                        <span class="news-time">32小时前</span>
+                                    </div>
+                                    <h4 class="news-title">以太坊2.0升级完成，性能提升100倍</h4>
+                                    <p class="news-excerpt">以太坊2.0升级今日正式完成，采用权益证明机制，在交易处理速度和能源效率方面都有突破性提升...</p>
+                                </div>
+                            </div>
+                            <div class="news-item" data-type="text-only">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">数据</span>
+                                        <span class="news-time">36小时前</span>
+                                    </div>
+                                    <h4 class="news-title">央行数字货币试点扩大，覆盖更多城市</h4>
+                                    <p class="news-excerpt">央行数字货币试点范围今日进一步扩大，新增多个城市参与试点，标志着数字人民币推广进入新阶段...</p>
+                                </div>
+                            </div>
+                            <div class="news-item" data-type="text-only">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">数据</span>
+                                        <span class="news-time">66小时前</span>
+                                    </div>
+                                    <h4 class="news-title">中国移动5G用户突破10亿，网络覆盖率达95%</h4>
+                                    <p class="news-excerpt">中国移动今日宣布5G用户数突破10亿，5G网络覆盖率已达95%，标志着中国5G建设进入成熟阶段...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 代码开发分类 -->
+                    <div class="news-category" data-category="code">
+                        <div class="category-header">
+                            <i class="fas fa-code"></i>
+                            <h3>代码开发</h3>
+                        </div>
+                        <div class="news-list">
+                            <div class="news-item" data-type="text-only">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">开发</span>
+                                        <span class="news-time">7小时前</span>
+                                    </div>
+                                    <h4 class="news-title">腾讯云发布新一代CDN服务，性能提升50%</h4>
+                                    <p class="news-excerpt">腾讯云今日发布新一代CDN服务，采用边缘计算技术，在内容分发速度和稳定性方面都有显著提升...</p>
+                                </div>
+                            </div>
+                            <div class="news-item" data-type="text-only">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">开发</span>
+                                        <span class="news-time">20小时前</span>
+                                    </div>
+                                    <h4 class="news-title">阿里云推出新一代云原生数据库，性能提升300%</h4>
+                                    <p class="news-excerpt">阿里云今日发布新一代云原生数据库产品，采用全新的架构设计，在性能和可扩展性方面都有大幅提升...</p>
+                                </div>
+                            </div>
+                            <div class="news-item" data-type="text-only">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">开发</span>
+                                        <span class="news-time">26小时前</span>
+                                    </div>
+                                    <h4 class="news-title">AWS发布新一代服务器实例，性价比提升40%</h4>
+                                    <p class="news-excerpt">亚马逊AWS今日发布新一代EC2实例，采用最新的处理器技术，在性能和性价比方面都有显著提升...</p>
+                                </div>
+                            </div>
+                            <div class="news-item" data-type="text-only">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">开发</span>
+                                        <span class="news-time">28小时前</span>
+                                    </div>
+                                    <h4 class="news-title">腾讯发布新一代游戏引擎，支持AI生成内容</h4>
+                                    <p class="news-excerpt">腾讯今日发布新一代游戏引擎，集成AI技术，支持自动生成游戏内容，将大幅提升游戏开发效率...</p>
+                                </div>
+                            </div>
+                            <div class="news-item" data-type="text-only">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">开发</span>
+                                        <span class="news-time">38小时前</span>
+                                    </div>
+                                    <h4 class="news-title">台积电3nm工艺量产，性能提升15%</h4>
+                                    <p class="news-excerpt">台积电今日宣布3nm工艺正式量产，相比5nm工艺，新工艺在性能和能效方面都有显著提升...</p>
+                                </div>
+                            </div>
+                            <div class="news-item" data-type="text-only">
+                                <div class="news-content">
+                                    <div class="news-meta">
+                                        <span class="news-category-tag">开发</span>
+                                        <span class="news-time">42小时前</span>
+                                    </div>
+                                    <h4 class="news-title">英特尔发布新一代处理器，AI性能大幅提升</h4>
+                                    <p class="news-excerpt">英特尔今日发布新一代处理器，集成专用AI加速单元，在AI计算性能方面有突破性提升...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 产品资讯分类 -->
+                    <div class="news-category" data-category="product">
+                        <div class="category-header">
+                            <i class="fas fa-mobile-alt"></i>
+                            <h3>产品资讯</h3>
                         </div>
                         <div class="news-list">
                             <div class="news-item" data-type="three-images">
                                 <div class="news-content">
                                     <div class="news-meta">
-                                        <span class="news-category-tag">互联网</span>
+                                        <span class="news-category-tag">产品</span>
                                         <span class="news-time">4小时前</span>
                                     </div>
                                     <h4 class="news-title">字节跳动推出新一代短视频平台，挑战抖音地位</h4>
@@ -189,66 +317,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">互联网</span>
-                                        <span class="news-time">7小时前</span>
-                                    </div>
-                                    <h4 class="news-title">腾讯云发布新一代CDN服务，性能提升50%</h4>
-                                    <p class="news-excerpt">腾讯云今日发布新一代CDN服务，采用边缘计算技术，在内容分发速度和稳定性方面都有显著提升...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">互联网</span>
-                                        <span class="news-time">20小时前</span>
-                                    </div>
-                                    <h4 class="news-title">阿里云推出新一代云原生数据库，性能提升300%</h4>
-                                    <p class="news-excerpt">阿里云今日发布新一代云原生数据库产品，采用全新的架构设计，在性能和可扩展性方面都有大幅提升...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">互联网</span>
-                                        <span class="news-time">26小时前</span>
-                                    </div>
-                                    <h4 class="news-title">AWS发布新一代服务器实例，性价比提升40%</h4>
-                                    <p class="news-excerpt">亚马逊AWS今日发布新一代EC2实例，采用最新的处理器技术，在性能和性价比方面都有显著提升...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">互联网</span>
-                                        <span class="news-time">62小时前</span>
-                                    </div>
-                                    <h4 class="news-title">华为发布6G白皮书，描绘未来通信愿景</h4>
-                                    <p class="news-excerpt">华为今日发布6G技术白皮书，详细阐述了6G网络的技术架构和应用场景，为未来通信技术发展指明方向...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">互联网</span>
-                                        <span class="news-time">66小时前</span>
-                                    </div>
-                                    <h4 class="news-title">中国移动5G用户突破10亿，网络覆盖率达95%</h4>
-                                    <p class="news-excerpt">中国移动今日宣布5G用户数突破10亿，5G网络覆盖率已达95%，标志着中国5G建设进入成熟阶段...</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 产品分类 - 包含硬件产品、游戏、芯片、新能源等 -->
-                    <div class="news-category" data-category="product">
-                        <div class="category-header">
-                            <i class="fas fa-mobile-alt"></i>
-                            <h3>产品资讯</h3>
-                        </div>
-                        <div class="news-list">
                             <div class="news-item" data-type="text-only">
                                 <div class="news-content">
                                     <div class="news-meta">
@@ -283,20 +351,10 @@
                                 <div class="news-content">
                                     <div class="news-meta">
                                         <span class="news-category-tag">产品</span>
-                                        <span class="news-time">28小时前</span>
+                                        <span class="news-time">30小时前</span>
                                     </div>
-                                    <h4 class="news-title">腾讯发布新一代游戏引擎，支持AI生成内容</h4>
-                                    <p class="news-excerpt">腾讯今日发布新一代游戏引擎，集成AI技术，支持自动生成游戏内容，将大幅提升游戏开发效率...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">产品</span>
-                                        <span class="news-time">38小时前</span>
-                                    </div>
-                                    <h4 class="news-title">台积电3nm工艺量产，性能提升15%</h4>
-                                    <p class="news-excerpt">台积电今日宣布3nm工艺正式量产，相比5nm工艺，新工艺在性能和能效方面都有显著提升...</p>
+                                    <h4 class="news-title">任天堂Switch 2配置曝光，性能大幅提升</h4>
+                                    <p class="news-excerpt">据供应链消息，任天堂Switch 2将采用最新的处理器和显示技术，在性能和画质方面都有显著提升...</p>
                                 </div>
                             </div>
                             <div class="news-item" data-type="text-only">
@@ -309,70 +367,24 @@
                                     <p class="news-excerpt">特斯拉今日发布新一代电池技术，采用全新的材料配方，在能量密度和循环寿命方面都有显著提升...</p>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- 财经分类 - 包含财经、区块链等 -->
-                    <div class="news-category" data-category="finance">
-                        <div class="category-header">
-                            <i class="fas fa-chart-line"></i>
-                            <h3>财经资讯</h3>
-                        </div>
-                        <div class="news-list">
-                            <div class="news-item" data-type="chart">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">财经</span>
-                                        <span class="news-time">12小时前</span>
-                                    </div>
-                                    <h4 class="news-title">科技股集体上涨，纳斯达克指数创历史新高</h4>
-                                    <p class="news-excerpt">受AI技术突破和财报超预期影响，科技股今日集体上涨，纳斯达克指数上涨2.3%，创下历史新高...</p>
-                                    <div class="news-chart">
-                                        <div class="chart-placeholder">
-                                            <i class="fas fa-chart-line"></i>
-                                            <span>纳斯达克指数走势图</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                             <div class="news-item" data-type="text-only">
                                 <div class="news-content">
                                     <div class="news-meta">
-                                        <span class="news-category-tag">财经</span>
-                                        <span class="news-time">15小时前</span>
+                                        <span class="news-category-tag">产品</span>
+                                        <span class="news-time">48小时前</span>
                                     </div>
-                                    <h4 class="news-title">加密货币市场回暖，比特币突破7万美元</h4>
-                                    <p class="news-excerpt">受机构投资者入场和监管政策明朗化影响，加密货币市场今日大幅回暖，比特币价格突破7万美元大关...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">财经</span>
-                                        <span class="news-time">32小时前</span>
-                                    </div>
-                                    <h4 class="news-title">以太坊2.0升级完成，性能提升100倍</h4>
-                                    <p class="news-excerpt">以太坊2.0升级今日正式完成，采用权益证明机制，在交易处理速度和能源效率方面都有突破性提升...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">财经</span>
-                                        <span class="news-time">36小时前</span>
-                                    </div>
-                                    <h4 class="news-title">央行数字货币试点扩大，覆盖更多城市</h4>
-                                    <p class="news-excerpt">央行数字货币试点范围今日进一步扩大，新增多个城市参与试点，标志着数字人民币推广进入新阶段...</p>
+                                    <h4 class="news-title">比亚迪发布新一代刀片电池，安全性大幅提升</h4>
+                                    <p class="news-excerpt">比亚迪今日发布新一代刀片电池，采用全新的结构设计，在安全性和能量密度方面都有突破性提升...</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 安全分类 -->
-                    <div class="news-category" data-category="security">
+                    <!-- 其他分类 -->
+                    <div class="news-category" data-category="other">
                         <div class="category-header">
-                            <i class="fas fa-shield-alt"></i>
-                            <h3>安全资讯</h3>
+                            <i class="fas fa-ellipsis-h"></i>
+                            <h3>其他资讯</h3>
                         </div>
                         <div class="news-list">
                             <div class="news-item" data-type="alert">
@@ -399,16 +411,6 @@
                                     <p class="news-excerpt">谷歌今日发布Chrome浏览器安全更新，修复了包括远程代码执行在内的多个高危安全漏洞，建议用户立即更新...</p>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- 热点分类 - 包含热点、创业等 -->
-                    <div class="news-category" data-category="trend">
-                        <div class="category-header">
-                            <i class="fas fa-fire"></i>
-                            <h3>热点追踪</h3>
-                        </div>
-                        <div class="news-list">
                             <div class="news-item" data-type="video">
                                 <div class="news-video">
                                     <div class="video-placeholder">
@@ -456,44 +458,14 @@
                                     <p class="news-excerpt">特斯拉今日宣布Optimus人形机器人开始量产，将首先用于特斯拉工厂的生产线，提高生产效率...</p>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- 创业分类 -->
-                    <div class="news-category" data-category="startup">
-                        <div class="category-header">
-                            <i class="fas fa-rocket"></i>
-                            <h3>创业动态</h3>
-                        </div>
-                        <div class="news-list">
                             <div class="news-item" data-type="text-only">
                                 <div class="news-content">
                                     <div class="news-meta">
-                                        <span class="news-category-tag">创业</span>
-                                        <span class="news-time">30小时前</span>
+                                        <span class="news-category-tag">通信</span>
+                                        <span class="news-time">62小时前</span>
                                     </div>
-                                    <h4 class="news-title">任天堂Switch 2配置曝光，性能大幅提升</h4>
-                                    <p class="news-excerpt">据供应链消息，任天堂Switch 2将采用最新的处理器和显示技术，在性能和画质方面都有显著提升...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">创业</span>
-                                        <span class="news-time">42小时前</span>
-                                    </div>
-                                    <h4 class="news-title">英特尔发布新一代处理器，AI性能大幅提升</h4>
-                                    <p class="news-excerpt">英特尔今日发布新一代处理器，集成专用AI加速单元，在AI计算性能方面有突破性提升...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">创业</span>
-                                        <span class="news-time">48小时前</span>
-                                    </div>
-                                    <h4 class="news-title">比亚迪发布新一代刀片电池，安全性大幅提升</h4>
-                                    <p class="news-excerpt">比亚迪今日发布新一代刀片电池，采用全新的结构设计，在安全性和能量密度方面都有突破性提升...</p>
+                                    <h4 class="news-title">华为发布6G白皮书，描绘未来通信愿景</h4>
+                                    <p class="news-excerpt">华为今日发布6G技术白皮书，详细阐述了6G网络的技术架构和应用场景，为未来通信技术发展指明方向...</p>
                                 </div>
                             </div>
                         </div>
