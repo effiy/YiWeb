@@ -1,5 +1,16 @@
 /* 新闻页面专用样式 - 现代化科技新闻界面 */
 
+/* 针对news页面的body样式 - 去除背景变色效果 */
+body {
+    background: var(--bg-primary) !important;
+    background-size: auto !important;
+    animation: none !important;
+}
+
+body::before {
+    display: none !important;
+}
+
 /* CSS变量定义 - 确保兼容性 */
 :root {
     /* 主色调 */
@@ -532,26 +543,6 @@
     color: white;
     box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
     opacity: 1;
-}
-
-/* 多选状态增强样式 */
-.filter-btn.active::before {
-    content: '✓';
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    background: var(--success);
-    color: white;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.6rem;
-    font-weight: bold;
-    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
-    animation: checkmarkAppear 0.3s ease-out;
 }
 
 @keyframes checkmarkAppear {
