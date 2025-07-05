@@ -107,7 +107,7 @@ body::before {
     width: 100%;
     max-width: 1400px;
     margin: 0 auto;
-    padding: var(--spacing-lg) var(--spacing-xl);
+    padding: 0 var(--spacing-xl) var(--spacing-xl) var(--spacing-xl);
 }
 
 .news-grid {
