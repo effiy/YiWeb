@@ -78,6 +78,9 @@ function initCategoryFilters() {
 
         // 添加动画效果
         animateFilteredCategories();
+        
+        // 更新筛选状态显示
+        updateFilterStatus();
     }
     
     // 显示所有分类
@@ -99,6 +102,36 @@ function initCategoryFilters() {
             }, index * 100);
         });
     }
+    
+    // 更新筛选状态显示
+    function updateFilterStatus() {
+        const statusText = selectedCategories.size === 0 
+            ? '显示全部分类' 
+            : `已选择 ${selectedCategories.size} 个分类`;
+        
+        // 可以在这里添加状态显示逻辑
+        console.log(statusText);
+    }
+    
+    // 添加键盘导航支持
+    filterButtons.forEach((button, index) => {
+        button.setAttribute('tabindex', '0');
+        
+        button.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.click();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                const nextButton = filterButtons[(index + 1) % filterButtons.length];
+                nextButton.focus();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                const prevButton = filterButtons[(index - 1 + filterButtons.length) % filterButtons.length];
+                prevButton.focus();
+            }
+        });
+    });
     
     // 默认显示所有分类
     showAllCategories();

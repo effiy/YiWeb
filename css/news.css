@@ -751,6 +751,7 @@ body::before {
     scrollbar-width: none;
     -ms-overflow-style: none;
     flex: 1;
+    max-width: 100%;
 }
 
 .filter-buttons::-webkit-scrollbar {
@@ -774,6 +775,7 @@ body::before {
     flex-shrink: 0;
     opacity: 0.6;
     position: relative;
+    min-width: 80px;
 }
 
 .filter-btn:hover {
@@ -830,6 +832,74 @@ body::before {
 
 .filter-btn i {
     font-size: 0.7rem;
+}
+
+/* 响应式筛选按钮优化 */
+@media (max-width: 1400px) {
+    .filter-buttons {
+        gap: var(--spacing-xs);
+    }
+    
+    .filter-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.7rem;
+        min-width: 70px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .filter-buttons {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+    }
+    
+    .filter-btn {
+        min-width: 65px;
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .category-filters {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .filter-buttons {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+        max-width: 100%;
+    }
+    
+    .filter-btn {
+        min-width: 60px;
+        font-size: 0.6rem;
+        padding: var(--spacing-xs);
+    }
+    
+    .filter-btn i {
+        font-size: 0.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .filter-buttons {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+    }
+    
+    .filter-btn {
+        min-width: 55px;
+        font-size: 0.55rem;
+        padding: 2px var(--spacing-xs);
+    }
+    
+    .filter-btn i {
+        font-size: 0.55rem;
+    }
 }
 
 /* 搜索框样式 - 与shortcuts页面保持一致 */
