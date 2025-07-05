@@ -139,13 +139,9 @@ const NewsApp = {
             }
         };
 
-        const clearSearch = () => {
-            searchQuery.value = '';
-        };
-
         const handleSearchKeydown = (event) => {
             if (event.key === 'Escape') {
-                clearSearch();
+                searchQuery.value = '';
             }
         };
 
@@ -279,7 +275,7 @@ const NewsApp = {
                 
                 // Escape 清除搜索
                 if (event.key === 'Escape') {
-                    clearSearch();
+                    searchQuery.value = '';
                 }
             });
         };
@@ -390,7 +386,6 @@ const NewsApp = {
             // 方法
             loadNewsData,
             handleSearch,
-            clearSearch,
             handleSearchKeydown,
             toggleCategory,
             shouldShowCategory,
