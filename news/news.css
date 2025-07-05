@@ -357,6 +357,9 @@ body::before {
 /* 新闻内容区域 */
 .news-content {
     flex: 1;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
     padding: 0 var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
 }
 
@@ -449,11 +452,13 @@ body::before {
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: var(--spacing-lg);
     margin-bottom: var(--spacing-2xl);
+    width: 100%;
 }
 
 /* 新闻分类 */
 .news-category {
     margin-bottom: var(--spacing-2xl);
+    width: 100%;
 }
 
 /* 新闻项目 */
@@ -593,6 +598,7 @@ body::before {
 /* 搜索结果 */
 .search-results {
     margin-bottom: var(--spacing-2xl);
+    width: 100%;
 }
 
 .search-results-header {
@@ -604,6 +610,7 @@ body::before {
     background: var(--bg-elevated);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-glass);
+    width: 100%;
 }
 
 .search-results-count {
@@ -663,6 +670,7 @@ body::before {
     .search-row {
         flex-direction: column;
         gap: var(--spacing-md);
+        width: 100%;
     }
     
     .search-box {
@@ -676,6 +684,7 @@ body::before {
     
     .filter-buttons {
         gap: var(--spacing-xs);
+        width: 100%;
     }
     
     .filter-btn {
@@ -685,15 +694,19 @@ body::before {
     
     .news-content {
         padding: 0 var(--spacing-md) var(--spacing-lg) var(--spacing-md);
+        width: 100%;
+        max-width: 100%;
     }
     
     .news-grid {
         grid-template-columns: 1fr;
         gap: var(--spacing-md);
+        width: 100%;
     }
     
     .news-item {
         padding: var(--spacing-md);
+        width: 100%;
     }
     
     .news-header {
@@ -712,10 +725,12 @@ body::before {
     
     .search-row {
         padding: 0 var(--spacing-sm);
+        width: 100%;
     }
     
     .search-box {
         padding: var(--spacing-sm);
+        width: 100%;
     }
     
     .search-logo {
@@ -726,18 +741,23 @@ body::before {
     
     #messageInput {
         font-size: 0.9rem;
+        width: 100%;
     }
     
     .news-content {
         padding: 0 var(--spacing-sm) var(--spacing-lg) var(--spacing-sm);
+        width: 100%;
+        max-width: 100%;
     }
     
     .news-item {
         padding: var(--spacing-sm);
+        width: 100%;
     }
     
     .filter-buttons {
         gap: 6px;
+        width: 100%;
     }
     
     .filter-btn {
