@@ -284,6 +284,7 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
     transition: all var(--duration-fast) var(--ease-smooth);
     white-space: nowrap;
+    cursor: pointer;
 }
 
 .tip:hover {
