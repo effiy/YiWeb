@@ -110,11 +110,11 @@
                                 </div>
                                 
                                 <div class="news-meta">
+                                    <div class="news-category-tag">{{ getCategoryTag(item) }}</div>
                                     <div class="news-time">
                                         <i class="fas fa-clock"></i>
                                         <span>{{ getTimeAgo(item) }}</span>
                                     </div>
-                                    <div class="news-category-tag">{{ getCategoryTag(item) }}</div>
                                 </div>
                                 
                                 <div class="news-excerpt">{{ extractExcerpt(item) }}</div>
@@ -122,7 +122,7 @@
                                 <div class="news-footer">
                                     <div class="news-source">
                                         <i class="fas fa-newspaper"></i>
-                                        <span>{{ item.source || '未知来源' }}</span>
+                                        <span>{{ item.creator || '未知来源' }}</span>
                                     </div>
                                     <div v-if="item.link" class="news-link">
                                         <span>阅读原文</span>
@@ -166,11 +166,11 @@
                                     </div>
                                     
                                     <div class="news-meta">
+                                        <div class="news-category-tag">{{ getCategoryTag(item) }}</div>
                                         <div class="news-time">
                                             <i class="fas fa-clock"></i>
                                             <span>{{ getTimeAgo(item) }}</span>
                                         </div>
-                                        <div class="news-category-tag">{{ getCategoryTag(item) }}</div>
                                     </div>
                                     
                                     <div class="news-excerpt">{{ extractExcerpt(item) }}</div>
@@ -178,7 +178,7 @@
                                     <div class="news-footer">
                                         <div class="news-source">
                                             <i class="fas fa-newspaper"></i>
-                                            <span>{{ item.source || '未知来源' }}</span>
+                                            <span>{{ item.creator || '未知来源' }}</span>
                                         </div>
                                         <div v-if="item.link" class="news-link">
                                             <span>阅读原文</span>
