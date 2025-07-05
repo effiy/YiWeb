@@ -30,33 +30,6 @@
     --text-muted: #94a3b8;
 }
 
-/* 头部区域样式 - 与主页面保持一致 */
-.header-row {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-md);
-    padding: var(--spacing-md) var(--spacing-xl);
-    background: rgba(255, 255, 255, var(--opacity-light));
-    transition: all var(--duration-normal) var(--ease-smooth);
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    min-height: 60px;
-    z-index: 1000;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: var(--shadow-light);
-}
-
-.header-row:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.12);
-}
-
 /* 搜索行样式 - 与主页面保持一致 */
 .search-row {
     display: flex;
@@ -844,10 +817,6 @@
 }
 
 @media (max-width: 480px) {
-    .header-row {
-        padding: var(--spacing-sm) var(--spacing-md);
-    }
-    
     .search-box {
         padding: var(--spacing-sm);
     }
