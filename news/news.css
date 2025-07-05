@@ -248,7 +248,7 @@ body::before {
 }
 
 /* 搜索输入框 */
-.search-input {
+#messageInput {
     width: 100%;
     background: transparent;
     border: none;
@@ -263,12 +263,12 @@ body::before {
     overflow-y: auto;
 }
 
-.search-input::placeholder {
+#messageInput::placeholder {
     color: var(--text-muted);
     opacity: 0.7;
 }
 
-.search-input:focus {
+#messageInput:focus {
     outline: none;
 }
 
@@ -764,7 +764,7 @@ body::before {
         font-size: 0.9rem;
     }
     
-    .search-input {
+    #messageInput {
         font-size: 0.9rem;
     }
     
@@ -823,7 +823,7 @@ body::before {
         border: 2px solid var(--border-primary);
     }
     
-    .search-input {
+    #messageInput {
         border: 2px solid var(--border-primary);
     }
     
@@ -849,11 +849,11 @@ body::before {
         color: var(--text-secondary);
     }
     
-    .search-input {
+    #messageInput {
         color: var(--text-primary);
     }
     
-    .search-input::placeholder {
+    #messageInput::placeholder {
         color: var(--text-muted);
     }
 } 

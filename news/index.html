@@ -32,17 +32,13 @@
                     </div>
                     <div class="search-input-wrapper">
                         <textarea 
-                            v-model="searchQuery"
-                            @input="handleSearch"
-                            @keydown="handleSearchKeydown"
-                            class="search-input"
-                            placeholder="搜索最新科技新闻，了解AI、互联网、科技产品等领域热点动态..."
-                            rows="1"
+                            id="messageInput"
+                            placeholder="搜索最新科技新闻，了解AI、互联网、科技产品等领域热点动态..." 
+                            rows="1" 
                             maxlength="2000"
                             aria-label="消息输入框"
                             autocomplete="off"
-                            spellcheck="false"
-                        ></textarea>
+                            spellcheck="false"></textarea>
                     </div>
                 </div>
                 <div class="category-filters">

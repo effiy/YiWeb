@@ -130,10 +130,13 @@ const NewsApp = {
             }
         };
 
-        const handleSearch = () => {
+        const handleSearch = (event) => {
+            const query = event.target.value.toLowerCase().trim();
+            searchQuery.value = query;
+            
             // 搜索逻辑已在计算属性中处理
-            if (searchQuery.value && !searchHistory.value.includes(searchQuery.value)) {
-                searchHistory.value.unshift(searchQuery.value);
+            if (query && !searchHistory.value.includes(query)) {
+                searchHistory.value.unshift(query);
                 searchHistory.value = searchHistory.value.slice(0, 10); // 保留最近10个
                 localStorage.setItem('newsSearchHistory', JSON.stringify(searchHistory.value));
             }
@@ -141,6 +144,7 @@ const NewsApp = {
 
         const handleSearchKeydown = (event) => {
             if (event.key === 'Escape') {
+                event.target.value = '';
                 searchQuery.value = '';
             }
         };
@@ -267,7 +271,7 @@ const NewsApp = {
                 // Ctrl+K 聚焦搜索框
                 if (event.ctrlKey && event.key === 'k') {
                     event.preventDefault();
-                    const searchInput = document.querySelector('.search-input');
+                    const searchInput = document.getElementById('messageInput');
                     if (searchInput) {
                         searchInput.focus();
                     }
@@ -275,7 +279,11 @@ const NewsApp = {
                 
                 // Escape 清除搜索
                 if (event.key === 'Escape') {
-                    searchQuery.value = '';
+                    const searchInput = document.getElementById('messageInput');
+                    if (searchInput) {
+                        searchInput.value = '';
+                        searchQuery.value = '';
+                    }
                 }
             });
         };
@@ -338,6 +346,13 @@ const NewsApp = {
                 initAccessibility();
                 handleErrors();
 
+                // 绑定搜索事件
+                const searchInput = document.getElementById('messageInput');
+                if (searchInput) {
+                    searchInput.addEventListener('input', handleSearch);
+                    searchInput.addEventListener('keydown', handleSearchKeydown);
+                }
+
                 // 加载搜索历史
                 const savedHistory = localStorage.getItem('newsSearchHistory');
                 if (savedHistory) {
@@ -350,14 +365,6 @@ const NewsApp = {
 
                 // 加载新闻数据
                 await loadNewsData();
-
-                // 自动聚焦搜索框（可选）
-                nextTick(() => {
-                    const searchInput = document.querySelector('.search-input');
-                    if (searchInput) {
-                        // searchInput.focus();
-                    }
-                });
 
             } catch (error) {
                 console.error('Initialization error:', error);
