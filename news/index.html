@@ -3,538 +3,222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="最新科技新闻资讯，涵盖AI、互联网、科技产品等领域的热点动态">
-    <meta name="keywords" content="科技新闻, AI新闻, 互联网资讯, 科技产品, 热点动态">
-    <meta name="author" content="YiAi">
-    <meta name="theme-color" content="#4facfe">
+    <title>新闻聚合 - Vue3版本</title>
+    <meta name="description" content="实时新闻聚合，涵盖AI技术、数据分析、代码开发、科技产品、商业资讯等领域">
+    <meta name="keywords" content="新闻,AI,数据分析,代码开发,科技,商业">
+    
+    <!-- Font Awesome 图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Vue3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="news.css">
     
     <!-- 预加载关键资源 -->
-    <link rel="preload" href="/css/index.css" as="style">
-    <link rel="preload" href="/css/welcome.css" as="style">
-    <link rel="preload" href="/js/index.js" as="script">
-    
-    <!-- DNS预解析 -->
-    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
-    
-    <title>YiAi - 科技新闻资讯</title>
-    
-    <!-- 样式表 -->
-    <link rel="stylesheet" href="/css/index.css">
-    <link rel="stylesheet" href="/css/welcome.css">
-    <link rel="stylesheet" href="/news/news.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous">
+    <link rel="preconnect" href="https://api.effiy.cn">
+    <link rel="dns-prefetch" href="https://api.effiy.cn">
 </head>
 <body>
-    <!-- 搜索区域 -->
-    <header class="header-row" role="banner">
-        <!-- 第一行：搜索框和筛选 -->
-        <div class="search-row">
-            <div class="search-box" role="search">
-                <div class="search-logo" aria-hidden="true">
-                    <i class="fas fa-brain" aria-label="AI大脑图标"></i>
+    <div id="app">
+        <!-- 搜索区域 -->
+        <header class="header-row" role="banner">
+            <!-- 第一行：搜索框和筛选 -->
+            <div class="search-row">
+                <div class="search-box" role="search">
+                    <div class="search-logo" aria-hidden="true">
+                        <i class="fas fa-brain" aria-label="AI大脑图标"></i>
+                    </div>
+                    <div class="search-input-wrapper">
+                        <textarea 
+                            v-model="searchQuery"
+                            @input="handleSearch"
+                            @keydown="handleSearchKeydown"
+                            class="search-input"
+                            placeholder="搜索最新科技新闻，了解AI、互联网、科技产品等领域热点动态..."
+                            rows="1"
+                            maxlength="2000"
+                            aria-label="消息输入框"
+                            autocomplete="off"
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+                    <button 
+                        v-if="searchQuery" 
+                        @click="clearSearch" 
+                        class="search-clear"
+                        title="清除搜索"
+                        aria-label="清除搜索内容"
+                    >
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="search-input-wrapper">
-                    <textarea 
-                        id="messageInput" 
-                        placeholder="搜索最新科技新闻，了解AI、互联网、科技产品等领域热点动态..." 
-                        rows="1" 
-                        maxlength="2000"
-                        aria-label="消息输入框"
-                        autocomplete="off"
-                        spellcheck="false"></textarea>
+                <div class="category-filters">
+                    <div class="filter-buttons">
+                        <button 
+                            v-for="category in categories" 
+                            :key="category.key"
+                            @click="toggleCategory(category.key)"
+                            :class="['filter-btn', { active: selectedCategories.has(category.key) }]"
+                            :data-category="category.key"
+                            :title="category.title"
+                        >
+                            <i :class="category.icon"></i>
+                            {{ category.title }}
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="category-filters">
-                <div class="filter-buttons">
-                    <button class="filter-btn" data-category="data">
-                        <i class="fas fa-chart-line"></i>
-                        数据分析
-                    </button>
-                    <button class="filter-btn" data-category="code">
-                        <i class="fas fa-code"></i>
-                        代码开发
-                    </button>
-                    <button class="filter-btn" data-category="ai">
-                        <i class="fas fa-robot"></i>
-                        AI技术
-                    </button>
-                    <button class="filter-btn" data-category="tech">
-                        <i class="fas fa-microchip"></i>
-                        科技产品
-                    </button>
-                    <button class="filter-btn" data-category="business">
-                        <i class="fas fa-briefcase"></i>
-                        商业资讯
-                    </button>
-                    <button class="filter-btn" data-category="other">
-                        <i class="fas fa-ellipsis-h"></i>
-                        其他
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
-    <div class="container">
-        <main class="welcome-section" id="welcomeSection" role="main">
-            <!-- 新闻区域 -->
-            <div class="news-content">
-                <div class="news-grid">
-                    <!-- AI技术分类 -->
-                    <div class="news-category" data-category="ai">
-                        <div class="category-header">
-                            <i class="fas fa-robot"></i>
-                            <h3>AI 技术</h3>
+        </header>
+
+        <div class="container">
+            <main class="welcome-section" id="welcomeSection" role="main">
+                <!-- 新闻内容区域 -->
+                <div class="news-content">
+                    <!-- 加载状态 -->
+                    <div v-if="loading" class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">正在加载新闻数据...</div>
+                        <div class="loading-subtext">请稍候，我们正在为您获取最新资讯</div>
+                    </div>
+
+                    <!-- 错误状态 -->
+                    <div v-else-if="error" class="error-container">
+                        <div class="error-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
                         </div>
-                        <div class="news-list">
-                            <div class="news-item" data-type="featured">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">AI</span>
-                                        <span class="news-time">2小时前</span>
-                                    </div>
-                                    <h4 class="news-title">OpenAI发布GPT-5预览版，多模态能力大幅提升</h4>
-                                    <p class="news-excerpt">OpenAI今日正式发布GPT-5预览版，新版本在图像理解、代码生成和推理能力方面都有显著提升，支持更复杂的多模态交互...</p>
-                                    <div class="news-image">
-                                        <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=100&fit=crop" 
-                                             alt="AI技术突破 - OpenAI GPT-5多模态能力展示" 
-                                             loading="lazy"
-                                             data-fallback="/images/placeholder-ai.jpg">
-                                    </div>
+                        <div class="error-message">{{ error }}</div>
+                        <div class="error-submessage">网络连接可能存在问题，请检查后重试</div>
+                        <button @click="loadNewsData" class="retry-button">
+                            <i class="fas fa-redo"></i>
+                            重新加载
+                        </button>
+                    </div>
+
+                    <!-- 搜索结果显示 -->
+                    <div v-else-if="searchQuery && searchResults.length > 0" class="search-results">
+                        <div class="search-results-header">
+                            <span class="search-results-count">找到 {{ searchResults.length }} 条相关新闻</span>
+                            <span class="search-query">"{{ searchQuery }}"</span>
+                        </div>
+                        
+                        <div class="news-grid">
+                            <div 
+                                v-for="item in searchResults" 
+                                :key="item.link || item.title"
+                                @click="handleNewsClick(item)"
+                                :class="['news-item', { 
+                                    highlighted: isHighlighted(item),
+                                    clicked: clickedItems.has(item.link || item.title)
+                                }]"
+                                :title="item.title"
+                            >
+                                <div class="news-header">
+                                    <h3 class="news-title">{{ item.title }}</h3>
                                 </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">AI</span>
-                                        <span class="news-time">5小时前</span>
+                                
+                                <div class="news-meta">
+                                    <div class="news-time">
+                                        <i class="fas fa-clock"></i>
+                                        <span>{{ getTimeAgo(item) }}</span>
                                     </div>
-                                    <h4 class="news-title">微软推出Copilot Pro+，集成最新AI模型</h4>
-                                    <p class="news-excerpt">微软今日发布Copilot Pro+服务，集成最新的AI模型，提供更强大的代码生成、文档编写和数据分析能力...</p>
+                                    <div class="news-category-tag">{{ getCategoryTag(item) }}</div>
                                 </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">AI</span>
-                                        <span class="news-time">18小时前</span>
+                                
+                                <div class="news-excerpt">{{ extractExcerpt(item) }}</div>
+                                
+                                <div class="news-footer">
+                                    <div class="news-source">
+                                        <i class="fas fa-newspaper"></i>
+                                        <span>{{ item.source || '未知来源' }}</span>
                                     </div>
-                                    <h4 class="news-title">谷歌发布Gemini 2.0，多模态理解能力大幅提升</h4>
-                                    <p class="news-excerpt">谷歌今日发布Gemini 2.0版本，新版本在视频理解、音频处理和跨模态推理方面都有显著提升...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">AI</span>
-                                        <span class="news-time">22小时前</span>
+                                    <div v-if="item.link" class="news-link">
+                                        <span>阅读原文</span>
+                                        <i class="fas fa-external-link-alt"></i>
                                     </div>
-                                    <h4 class="news-title">Meta发布新一代AI芯片，性能提升300%</h4>
-                                    <p class="news-excerpt">Meta今日发布新一代AI芯片，采用7nm工艺制程，在AI推理和训练性能方面都有显著提升，将用于元宇宙和AI应用...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">AI</span>
-                                        <span class="news-time">24小时前</span>
-                                    </div>
-                                    <h4 class="news-title">百度发布文心一言4.0，中文理解能力大幅提升</h4>
-                                    <p class="news-excerpt">百度今日发布文心一言4.0版本，新版本在中文理解、知识推理和创意生成方面都有突破性提升...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">AI</span>
-                                        <span class="news-time">50小时前</span>
-                                    </div>
-                                    <h4 class="news-title">IBM发布1000量子比特处理器，计算能力突破</h4>
-                                    <p class="news-excerpt">IBM今日发布1000量子比特处理器，在量子计算能力方面实现重大突破，将为AI和密码学带来革命性变化...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">AI</span>
-                                        <span class="news-time">56小时前</span>
-                                    </div>
-                                    <h4 class="news-title">波士顿动力发布新一代人形机器人，动作更自然</h4>
-                                    <p class="news-excerpt">波士顿动力今日发布新一代人形机器人，采用先进的AI算法，在动作协调性和自然度方面都有显著提升...</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 数据分析分类 -->
-                    <div class="news-category" data-category="data">
-                        <div class="category-header">
-                            <i class="fas fa-chart-line"></i>
-                            <h3>数据分析</h3>
+                    <!-- 空搜索结果 -->
+                    <div v-else-if="searchQuery && searchResults.length === 0" class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-search"></i>
                         </div>
-                        <div class="news-list">
-                            <div class="news-item" data-type="chart">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">数据</span>
-                                        <span class="news-time">12小时前</span>
+                        <div class="empty-title">未找到相关新闻</div>
+                        <div class="empty-subtitle">尝试使用其他关键词搜索</div>
+                    </div>
+
+                    <!-- 分类新闻显示 -->
+                    <div v-else-if="hasNewsData">
+                        <div 
+                            v-for="(category, categoryKey) in displayCategories" 
+                            :key="categoryKey"
+                            v-show="shouldShowCategory(categoryKey)"
+                            class="news-category"
+                        >
+                            <div class="category-header">
+                                <div class="category-icon">
+                                    <i :class="category.icon"></i>
+                                </div>
+                                <h2 class="category-title">{{ category.title }}</h2>
+                                <div class="category-count">{{ category.news.length }}</div>
+                            </div>
+                            
+                            <div class="news-grid">
+                                <div 
+                                    v-for="item in category.news" 
+                                    :key="item.link || item.title"
+                                    @click="handleNewsClick(item)"
+                                    :class="['news-item', { 
+                                        highlighted: isHighlighted(item),
+                                        clicked: clickedItems.has(item.link || item.title)
+                                    }]"
+                                    :title="item.title"
+                                >
+                                    <div class="news-header">
+                                        <h3 class="news-title">{{ item.title }}</h3>
                                     </div>
-                                    <h4 class="news-title">科技股集体上涨，纳斯达克指数创历史新高</h4>
-                                    <p class="news-excerpt">受AI技术突破和财报超预期影响，科技股今日集体上涨，纳斯达克指数上涨2.3%，创下历史新高...</p>
-                                    <div class="news-chart">
-                                        <div class="chart-placeholder">
-                                            <i class="fas fa-chart-line"></i>
-                                            <span>纳斯达克指数走势图</span>
+                                    
+                                    <div class="news-meta">
+                                        <div class="news-time">
+                                            <i class="fas fa-clock"></i>
+                                            <span>{{ getTimeAgo(item) }}</span>
+                                        </div>
+                                        <div class="news-category-tag">{{ getCategoryTag(item) }}</div>
+                                    </div>
+                                    
+                                    <div class="news-excerpt">{{ extractExcerpt(item) }}</div>
+                                    
+                                    <div class="news-footer">
+                                        <div class="news-source">
+                                            <i class="fas fa-newspaper"></i>
+                                            <span>{{ item.source || '未知来源' }}</span>
+                                        </div>
+                                        <div v-if="item.link" class="news-link">
+                                            <span>阅读原文</span>
+                                            <i class="fas fa-external-link-alt"></i>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">数据</span>
-                                        <span class="news-time">15小时前</span>
-                                    </div>
-                                    <h4 class="news-title">大数据分析平台性能提升300%，处理速度突破极限</h4>
-                                    <p class="news-excerpt">新一代大数据分析平台采用分布式计算架构，在数据处理速度和准确性方面都有突破性提升，支持实时数据分析...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">数据</span>
-                                        <span class="news-time">32小时前</span>
-                                    </div>
-                                    <h4 class="news-title">机器学习算法优化，预测准确率提升至99.9%</h4>
-                                    <p class="news-excerpt">最新机器学习算法在多个领域测试中表现优异，预测准确率大幅提升，为智能决策提供更可靠的数据支持...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">数据</span>
-                                        <span class="news-time">36小时前</span>
-                                    </div>
-                                    <h4 class="news-title">数据可视化工具更新，支持3D交互式图表</h4>
-                                    <p class="news-excerpt">新一代数据可视化工具支持3D交互式图表展示，让复杂数据更直观易懂，提升数据分析效率...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">数据</span>
-                                        <span class="news-time">66小时前</span>
-                                    </div>
-                                    <h4 class="news-title">实时数据流处理技术突破，延迟降低至毫秒级</h4>
-                                    <p class="news-excerpt">实时数据流处理技术取得重大突破，数据处理延迟降低至毫秒级，为实时业务决策提供有力支撑...</p>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
-                    <!-- 代码开发分类 -->
-                    <div class="news-category" data-category="code">
-                        <div class="category-header">
-                            <i class="fas fa-code"></i>
-                            <h3>代码开发</h3>
+                    <!-- 空状态 -->
+                    <div v-else class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-newspaper"></i>
                         </div>
-                        <div class="news-list">
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">开发</span>
-                                        <span class="news-time">7小时前</span>
-                                    </div>
-                                    <h4 class="news-title">GitHub发布Copilot Workspace，AI编程助手全面升级</h4>
-                                    <p class="news-excerpt">GitHub今日发布Copilot Workspace，全新的AI编程工作空间，支持从需求分析到代码部署的全流程AI辅助开发...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">开发</span>
-                                        <span class="news-time">20小时前</span>
-                                    </div>
-                                    <h4 class="news-title">新一代编程语言发布，性能提升50%</h4>
-                                    <p class="news-excerpt">全新编程语言正式发布，采用现代化语法设计，在性能和开发效率方面都有显著提升，支持并发编程...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">开发</span>
-                                        <span class="news-time">26小时前</span>
-                                    </div>
-                                    <h4 class="news-title">云原生开发平台更新，支持一键部署</h4>
-                                    <p class="news-excerpt">云原生开发平台发布重大更新，新增一键部署功能，简化了从开发到生产的全流程，提升开发效率...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">开发</span>
-                                        <span class="news-time">28小时前</span>
-                                    </div>
-                                    <h4 class="news-title">代码质量检测工具升级，支持AI智能分析</h4>
-                                    <p class="news-excerpt">代码质量检测工具发布新版本，集成AI智能分析功能，能够自动识别代码问题并提供优化建议...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">开发</span>
-                                        <span class="news-time">38小时前</span>
-                                    </div>
-                                    <h4 class="news-title">微服务架构最佳实践指南发布</h4>
-                                    <p class="news-excerpt">业界权威发布微服务架构最佳实践指南，涵盖设计原则、部署策略和运维管理，为开发者提供标准参考...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">开发</span>
-                                        <span class="news-time">42小时前</span>
-                                    </div>
-                                    <h4 class="news-title">DevOps工具链整合平台上线</h4>
-                                    <p class="news-excerpt">新一代DevOps工具链整合平台正式上线，支持多种开发工具的无缝集成，提升团队协作效率...</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 科技产品分类 -->
-                    <div class="news-category" data-category="tech">
-                        <div class="category-header">
-                            <i class="fas fa-microchip"></i>
-                            <h3>科技产品</h3>
-                        </div>
-                        <div class="news-list">
-                            <div class="news-item" data-type="three-images">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">产品</span>
-                                        <span class="news-time">4小时前</span>
-                                    </div>
-                                    <h4 class="news-title">苹果iPhone 16系列配置曝光，全系搭载A18芯片</h4>
-                                    <p class="news-excerpt">据供应链消息，苹果iPhone 16系列将全系搭载A18芯片，Pro版本还将配备更强大的A18 Pro芯片。新机预计将于9月发布，将带来更出色的性能和AI能力...</p>
-                                    <div class="news-images">
-                                        <img src="https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=200&h=150&fit=crop" 
-                                             alt="iPhone 16概念图" 
-                                             loading="lazy"
-                                             data-fallback="/images/placeholder-iphone.jpg">
-                                        <img src="https://images.unsplash.com/photo-1551650975-87deedd944c3?w=200&h=150&fit=crop" 
-                                             alt="A18芯片展示" 
-                                             loading="lazy"
-                                             data-fallback="/images/placeholder-chip.jpg">
-                                        <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=200&h=150&fit=crop" 
-                                             alt="性能测试数据" 
-                                             loading="lazy"
-                                             data-fallback="/images/placeholder-test.jpg">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">产品</span>
-                                        <span class="news-time">6小时前</span>
-                                    </div>
-                                    <h4 class="news-title">小米汽车SU7正式上市，售价21.59万元起</h4>
-                                    <p class="news-excerpt">小米汽车首款车型SU7正式上市，搭载小米自研电机和智能驾驶系统，续航里程可达800公里。雷军表示，小米汽车将重新定义智能电动汽车...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">产品</span>
-                                        <span class="news-time">8小时前</span>
-                                    </div>
-                                    <h4 class="news-title">华为发布新一代折叠屏手机Mate X6</h4>
-                                    <p class="news-excerpt">华为今日发布新一代折叠屏手机Mate X6，采用全新的铰链设计和屏幕技术，在耐用性和显示效果方面都有突破性提升...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">产品</span>
-                                        <span class="news-time">10小时前</span>
-                                    </div>
-                                    <h4 class="news-title">任天堂Switch 2配置曝光，性能大幅提升</h4>
-                                    <p class="news-excerpt">据供应链消息，任天堂Switch 2将采用最新的处理器和显示技术，在性能和画质方面都有显著提升...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">产品</span>
-                                        <span class="news-time">30小时前</span>
-                                    </div>
-                                    <h4 class="news-title">特斯拉发布新一代电池技术，续航提升50%</h4>
-                                    <p class="news-excerpt">特斯拉今日发布新一代电池技术，采用全新的材料配方，在能量密度和循环寿命方面都有显著提升...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">产品</span>
-                                        <span class="news-time">44小时前</span>
-                                    </div>
-                                    <h4 class="news-title">比亚迪发布新一代刀片电池，安全性大幅提升</h4>
-                                    <p class="news-excerpt">比亚迪今日发布新一代刀片电池，采用全新的结构设计，在安全性和能量密度方面都有突破性提升...</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 商业资讯分类 -->
-                    <div class="news-category" data-category="business">
-                        <div class="category-header">
-                            <i class="fas fa-briefcase"></i>
-                            <h3>商业资讯</h3>
-                        </div>
-                        <div class="news-list">
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">商业</span>
-                                        <span class="news-time">12小时前</span>
-                                    </div>
-                                    <h4 class="news-title">科技股集体上涨，纳斯达克指数创历史新高</h4>
-                                    <p class="news-excerpt">受AI技术突破和财报超预期影响，科技股今日集体上涨，纳斯达克指数上涨2.3%，创下历史新高...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">商业</span>
-                                        <span class="news-time">15小时前</span>
-                                    </div>
-                                    <h4 class="news-title">加密货币市场回暖，比特币突破7万美元</h4>
-                                    <p class="news-excerpt">受机构投资者入场和监管政策明朗化影响，加密货币市场今日大幅回暖，比特币价格突破7万美元大关...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">商业</span>
-                                        <span class="news-time">32小时前</span>
-                                    </div>
-                                    <h4 class="news-title">以太坊2.0升级完成，性能提升100倍</h4>
-                                    <p class="news-excerpt">以太坊2.0升级今日正式完成，采用权益证明机制，在交易处理速度和能源效率方面都有突破性提升...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">商业</span>
-                                        <span class="news-time">36小时前</span>
-                                    </div>
-                                    <h4 class="news-title">央行数字货币试点扩大，覆盖更多城市</h4>
-                                    <p class="news-excerpt">央行数字货币试点范围今日进一步扩大，新增多个城市参与试点，标志着数字人民币推广进入新阶段...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">商业</span>
-                                        <span class="news-time">66小时前</span>
-                                    </div>
-                                    <h4 class="news-title">中国移动5G用户突破10亿，网络覆盖率达95%</h4>
-                                    <p class="news-excerpt">中国移动今日宣布5G用户数突破10亿，5G网络覆盖率已达95%，标志着中国5G建设进入成熟阶段...</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 其他分类 -->
-                    <div class="news-category" data-category="other">
-                        <div class="category-header">
-                            <i class="fas fa-ellipsis-h"></i>
-                            <h3>其他</h3>
-                        </div>
-                        <div class="news-list">
-                            <div class="news-item" data-type="alert">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag security">安全</span>
-                                        <span class="news-time">14小时前</span>
-                                    </div>
-                                    <h4 class="news-title">新型勒索软件攻击全球企业，专家呼吁加强防护</h4>
-                                    <p class="news-excerpt">安全研究人员发现新型勒索软件正在全球范围内传播，已有多家企业受到影响。专家建议立即更新安全补丁并加强备份措施...</p>
-                                    <div class="news-alert">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                        <span>高危安全警告</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">通信</span>
-                                        <span class="news-time">18小时前</span>
-                                    </div>
-                                    <h4 class="news-title">华为发布6G白皮书，描绘未来通信愿景</h4>
-                                    <p class="news-excerpt">华为今日发布6G技术白皮书，详细阐述了6G网络的技术架构和应用场景，为未来通信技术发展指明方向...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">量子</span>
-                                        <span class="news-time">22小时前</span>
-                                    </div>
-                                    <h4 class="news-title">量子计算技术突破，解决经典计算机无法解决的问题</h4>
-                                    <p class="news-excerpt">量子计算技术取得重大突破，成功解决了经典计算机无法在合理时间内解决的复杂问题，为未来计算技术发展奠定基础...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">太空</span>
-                                        <span class="news-time">26小时前</span>
-                                    </div>
-                                    <h4 class="news-title">SpaceX成功发射新一代星链卫星</h4>
-                                    <p class="news-excerpt">SpaceX今日成功发射新一代星链卫星，新卫星采用更先进的技术，将为全球用户提供更快的互联网服务...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">机器人</span>
-                                        <span class="news-time">30小时前</span>
-                                    </div>
-                                    <h4 class="news-title">波士顿动力发布新一代人形机器人，动作更自然</h4>
-                                    <p class="news-excerpt">波士顿动力今日发布新一代人形机器人，采用先进的AI算法，在动作协调性和自然度方面都有显著提升...</p>
-                                </div>
-                            </div>
-                            <div class="news-item" data-type="text-only">
-                                <div class="news-content">
-                                    <div class="news-meta">
-                                        <span class="news-category-tag">生物</span>
-                                        <span class="news-time">34小时前</span>
-                                    </div>
-                                    <h4 class="news-title">基因编辑技术突破，治疗遗传疾病取得进展</h4>
-                                    <p class="news-excerpt">基因编辑技术在治疗遗传疾病方面取得重大进展，为多种难治性疾病的治疗提供了新的可能性...</p>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="empty-title">暂无新闻数据</div>
+                        <div class="empty-subtitle">请稍后重试或联系管理员</div>
                     </div>
                 </div>
-            </div>
-        </main>
+            </main>
+        </div>
     </div>
-
-    <!-- 加载指示器 -->
-    <div id="loading-indicator" class="loading-indicator" aria-hidden="true">
-        <div class="loading-spinner"></div>
-    </div>
-
-    <!-- 错误提示 -->
-    <div id="error-message" class="error-message" role="alert" aria-live="polite" style="display: none;"></div>
-
-    <!-- JavaScript -->
-    <script src="/js/index.js"></script>
-    <script src="/news/news.js"></script>
+    <script src="news.js"></script>
 </body>
-</html>
-
-
+</html> 
