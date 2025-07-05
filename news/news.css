@@ -456,46 +456,6 @@ body::before {
     margin-bottom: var(--spacing-2xl);
 }
 
-.category-header {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
-    padding: var(--spacing-md);
-    background: var(--bg-elevated);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-glass);
-}
-
-.category-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: var(--primary-gradient);
-    border-radius: var(--radius-md);
-    color: white;
-    font-size: 1.2rem;
-}
-
-.category-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0;
-}
-
-.category-count {
-    margin-left: auto;
-    padding: 4px 12px;
-    background: var(--accent-gradient);
-    border-radius: var(--radius-full);
-    color: white;
-    font-size: 0.875rem;
-    font-weight: 500;
-}
-
 /* 新闻项目 */
 .news-item {
     background: var(--bg-elevated);

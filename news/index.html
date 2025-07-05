@@ -146,14 +146,6 @@
                             v-show="shouldShowCategory(categoryKey)"
                             class="news-category"
                         >
-                            <div class="category-header">
-                                <div class="category-icon">
-                                    <i :class="category.icon"></i>
-                                </div>
-                                <h2 class="category-title">{{ category.title }}</h2>
-                                <div class="category-count">{{ category.news.length }}</div>
-                            </div>
-                            
                             <div class="news-grid">
                                 <div 
                                     v-for="item in category.news" 
