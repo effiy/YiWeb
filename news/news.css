@@ -178,11 +178,47 @@ body::before {
 .container {
     min-height: 100vh;
     min-height: calc(var(--vh, 1vh) * 100);
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 
+        "news sidebar";
+    gap: var(--spacing-xl);
     position: relative;
     width: 100%;
     max-width: 100%;
+    padding: 0 var(--spacing-lg);
+}
+
+/* 主要内容区域 */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: calc(5rem + var(--spacing-md)) 0 var(--spacing-md) 0;
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+}
+
+/* 新闻内容区域 */
+.news-section {
+    grid-area: news;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+    max-width: 100%;
+    width: 100%;
+}
+
+/* 侧边栏导航 */
+.sidebar-navigation {
+    grid-area: sidebar;
+    position: sticky;
+    top: calc(5rem + var(--spacing-md));
+    align-self: flex-start;
+    z-index: 10;
+    width: 320px;
+    min-width: 320px;
 }
 
 /* 分类过滤器 */
@@ -204,14 +240,16 @@ body::before {
 .date-navigation {
     display: flex;
     align-items: center;
-    gap: var(--spacing-xs);
+    gap: var(--spacing-sm);
     background: transparent;
     border: none;
     border-radius: var(--radius-sm);
-    padding: 2px 6px;
+    padding: 4px 8px;
     box-shadow: none;
     transition: all var(--transition-fast);
     flex-shrink: 0;
+    width: 100%;
+    justify-content: space-between;
 }
 
 .date-navigation:hover {
@@ -226,16 +264,17 @@ body::before {
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.05);
     border-radius: var(--radius-sm);
-    padding: 2px 10px;
+    padding: 4px 12px;
     color: var(--text-secondary);
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition-fast);
-    min-width: 60px;
+    min-width: 80px;
     justify-content: center;
     opacity: 0.7;
     box-shadow: none;
+    flex-shrink: 0;
 }
 
 .date-nav-btn:hover:not(:disabled) {
@@ -270,8 +309,8 @@ body::before {
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-width: 120px;
-    padding: 2px 10px;
+    min-width: 140px;
+    padding: 4px 12px;
     background: rgba(255,255,255,0.05);
     border-radius: var(--radius-sm);
     border: 1px solid rgba(255,255,255,0.05);
@@ -281,6 +320,8 @@ body::before {
     font-size: 0.85rem;
     color: var(--primary);
     opacity: 0.9;
+    flex: 1;
+    margin: 0 var(--spacing-xs);
 }
 
 .current-date-display:hover {
@@ -375,29 +416,6 @@ body::before {
 
 .filter-btn i {
     font-size: 0.7rem;
-}
-
-/* 欢迎页面区域 */
-.welcome-section {
-    flex: 1;
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-start;
-    padding: calc(5rem + var(--spacing-md)) 0 var(--spacing-md) 0;
-    text-align: center;
-    position: relative;
-    min-height: 100vh;
-    min-height: calc(var(--vh, 1vh) * 100);
-    width: 100%;
-}
-
-/* 新闻内容区域 */
-.news-content {
-    flex: 1;
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: var(--spacing-lg);
 }
 
 /* 加载状态 */
@@ -713,8 +731,23 @@ body::before {
 
 /* 响应式布局 */
 @media (max-width: 1200px) {
+    .container {
+        grid-template-columns: 1fr 320px;
+        gap: var(--spacing-lg);
+        padding: 0 var(--spacing-md);
+    }
+    
+    .sidebar-navigation {
+        width: 320px;
+        min-width: 320px;
+    }
+    
     .news-grid {
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+    
+    .main-content {
+        padding: calc(4rem + var(--spacing-md)) 0 var(--spacing-md) 0;
     }
 }
 
@@ -722,6 +755,30 @@ body::before {
     #app {
         min-height: 100vh;
         min-height: calc(var(--vh, 1vh) * 100);
+    }
+    
+    .container {
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+            "news"
+            "sidebar";
+        gap: var(--spacing-lg);
+        padding: 0 var(--spacing-sm);
+    }
+    
+    .main-content {
+        padding: calc(3rem + var(--spacing-md)) 0 var(--spacing-md) 0;
+    }
+    
+    .news-section {
+        gap: var(--spacing-lg);
+    }
+    
+    .sidebar-navigation {
+        position: static;
+        order: 2;
+        width: 100%;
+        min-width: auto;
     }
     
     .search-row {
@@ -786,12 +843,6 @@ body::before {
         padding: var(--spacing-xs);
     }
     
-    .news-content {
-        padding: var(--spacing-md);
-        width: 100%;
-        max-width: 100%;
-    }
-    
     .news-grid {
         grid-template-columns: 1fr;
         gap: var(--spacing-md);
@@ -815,6 +866,19 @@ body::before {
 @media (max-width: 480px) {
     .header-row {
         padding: var(--spacing-sm) 0;
+    }
+    
+    .container {
+        padding: 0 var(--spacing-xs);
+        gap: var(--spacing-md);
+    }
+    
+    .main-content {
+        padding: calc(2.5rem + var(--spacing-md)) 0 var(--spacing-md) 0;
+    }
+    
+    .news-section {
+        gap: var(--spacing-md);
     }
     
     .search-row {
@@ -876,25 +940,17 @@ body::before {
         right: -5px;
     }
     
-    .news-content {
-        padding: var(--spacing-sm);
-        width: 100%;
-        max-width: 100%;
-    }
-    
     .news-item {
         padding: var(--spacing-sm);
-        width: 100%;
     }
     
     .filter-buttons {
-        gap: 6px;
-        width: 100%;
+        gap: 2px;
     }
     
     .filter-btn {
-        padding: 6px 10px;
         font-size: 0.75rem;
+        padding: 4px 6px;
     }
 }
 
