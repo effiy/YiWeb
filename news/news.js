@@ -14,8 +14,16 @@ const NewsApp = {
         const searchHistory = ref([]);
 
         // API配置
+        const getTodayDate = () => {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
         const API_CONFIG = {
-            url: 'https://api.effiy.cn/mongodb/?cname=rss&isoDate=2025-07-03,2025-07-03',
+            url: `https://api.effiy.cn/mongodb/?cname=rss&isoDate=${getTodayDate()},${getTodayDate()}`,
             timeout: 10000
         };
 
