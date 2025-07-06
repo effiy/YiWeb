@@ -498,6 +498,24 @@ body::before {
     width: 100%;
 }
 
+/* 空分类不占用空间 - 基础处理 */
+.news-category:empty {
+    display: none;
+    margin: 0;
+    padding: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+/* 确保分类容器在没有内容时完全隐藏 */
+.news-category[style*="display: none"] {
+    margin: 0;
+    padding: 0;
+    height: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
 /* 新闻项目 */
 .news-item {
     background: var(--bg-elevated);

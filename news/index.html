@@ -178,7 +178,7 @@
                         <div 
                             v-for="(category, categoryKey) in displayCategories" 
                             :key="categoryKey"
-                            v-show="shouldShowCategory(categoryKey)"
+                            v-show="shouldShowCategory(categoryKey) && category.news.length > 0"
                             class="news-category"
                         >
                             <div class="news-grid">
