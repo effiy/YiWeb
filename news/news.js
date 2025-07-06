@@ -12,18 +12,27 @@ const NewsApp = {
         const selectedCategories = ref(new Set());
         const clickedItems = ref(new Set());
         const searchHistory = ref([]);
+        
+        // 日期管理
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const currentDate = ref(new Date(today));
 
         // API配置
-        const getTodayDate = () => {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
+        const getDateString = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         };
 
+        const getApiUrl = (date) => {
+            const dateStr = getDateString(date);
+            return `https://api.effiy.cn/mongodb/?cname=rss&isoDate=${dateStr},${dateStr}`;
+        };
+
         const API_CONFIG = {
-            url: `https://api.effiy.cn/mongodb/?cname=rss&isoDate=${getTodayDate()},${getTodayDate()}`,
+            getUrl: getApiUrl,
             timeout: 10000
         };
 
@@ -52,6 +61,14 @@ const NewsApp = {
                     clearTimeout(timeout);
                     timeout = setTimeout(later, wait);
                 };
+            },
+
+            // 更新URL参数
+            updateUrlParams(date) {
+                const url = new URL(window.location);
+                const dateStr = getDateString(date);
+                url.searchParams.set('date', dateStr);
+                window.history.pushState({ date: dateStr }, '', url);
             },
 
             // 时间格式化
@@ -127,6 +144,58 @@ const NewsApp = {
         // 计算属性
         const hasNewsData = computed(() => newsData.value.length > 0);
 
+        // 日期相关计算属性
+        const currentDateDisplay = computed(() => {
+            const date = currentDate.value;
+            const todayStr = getDateString(today);
+            const currentStr = getDateString(date);
+            
+            if (currentStr === todayStr) {
+                return '今天';
+            }
+            
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = getDateString(yesterday);
+            
+            if (currentStr === yesterdayStr) {
+                return '昨天';
+            }
+            
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = getDateString(tomorrow);
+            
+            if (currentStr === tomorrowStr) {
+                return '明天';
+            }
+            
+            return date.toLocaleDateString('zh-CN', { 
+                month: 'long', 
+                day: 'numeric',
+                weekday: 'long'
+            });
+        });
+
+        const currentDateSubtitle = computed(() => {
+            const date = currentDate.value;
+            return getDateString(date);
+        });
+
+        const isToday = computed(() => {
+            const date = currentDate.value;
+            const todayStr = getDateString(today);
+            const currentStr = getDateString(date);
+            return currentStr === todayStr;
+        });
+
+        const isFutureDate = computed(() => {
+            const date = currentDate.value;
+            const todayStr = getDateString(today);
+            const currentStr = getDateString(date);
+            return currentStr > todayStr;
+        });
+
         const categorizedNews = computed(() => {
             const result = {};
             
@@ -185,7 +254,7 @@ const NewsApp = {
                 const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
 
                 try {
-                    const response = await fetch(API_CONFIG.url, {
+                    const response = await fetch(API_CONFIG.getUrl(currentDate.value), {
                         signal: controller.signal,
                         headers: {
                             'Accept': 'application/json',
@@ -289,6 +358,56 @@ const NewsApp = {
                     error.value = null;
                     errorMessage.value = '';
                 }, 5000);
+            },
+
+            // 日期导航方法
+            goToPreviousDay() {
+                const newDate = new Date(currentDate.value);
+                newDate.setDate(newDate.getDate() - 1);
+                currentDate.value = newDate;
+                
+                // 更新URL
+                utils.updateUrlParams(newDate);
+                
+                // 清空搜索和分类筛选
+                searchQuery.value = '';
+                selectedCategories.value.clear();
+                
+                // 显示加载状态并重新加载数据
+                loading.value = true;
+                methods.loadNewsData();
+            },
+
+            goToNextDay() {
+                const newDate = new Date(currentDate.value);
+                newDate.setDate(newDate.getDate() + 1);
+                currentDate.value = newDate;
+                
+                // 更新URL
+                utils.updateUrlParams(newDate);
+                
+                // 清空搜索和分类筛选
+                searchQuery.value = '';
+                selectedCategories.value.clear();
+                
+                // 显示加载状态并重新加载数据
+                loading.value = true;
+                methods.loadNewsData();
+            },
+
+            goToToday() {
+                currentDate.value = new Date(today);
+                
+                // 更新URL
+                utils.updateUrlParams(today);
+                
+                // 清空搜索和分类筛选
+                searchQuery.value = '';
+                selectedCategories.value.clear();
+                
+                // 显示加载状态并重新加载数据
+                loading.value = true;
+                methods.loadNewsData();
             }
         };
 
@@ -296,11 +415,31 @@ const NewsApp = {
         const init = {
             keyboardShortcuts() {
                 document.addEventListener('keydown', (event) => {
+                    // 搜索快捷键
                     if (event.ctrlKey && event.key === 'k') {
                         event.preventDefault();
                         document.getElementById('messageInput')?.focus();
                     }
                     
+                    // 日期导航快捷键
+                    if (!event.ctrlKey && !event.altKey && !event.metaKey) {
+                        switch (event.key) {
+                            case 'ArrowLeft':
+                                event.preventDefault();
+                                methods.goToPreviousDay();
+                                break;
+                            case 'ArrowRight':
+                                event.preventDefault();
+                                methods.goToNextDay();
+                                break;
+                            case 'Home':
+                                event.preventDefault();
+                                methods.goToToday();
+                                break;
+                        }
+                    }
+                    
+                    // 清除搜索
                     if (event.key === 'Escape') {
                         const searchInput = document.getElementById('messageInput');
                         if (searchInput) {
@@ -363,6 +502,56 @@ const NewsApp = {
                     searchInput.addEventListener('input', methods.handleSearch);
                     searchInput.addEventListener('keydown', methods.handleSearchKeydown);
                 }
+            },
+
+            handleUrlParams() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const dateParam = urlParams.get('date');
+
+                if (dateParam) {
+                    const date = new Date(dateParam);
+                    if (!isNaN(date.getTime())) {
+                        // 确保日期时间被重置为0点
+                        date.setHours(0, 0, 0, 0);
+                        currentDate.value = date;
+                        // 清空搜索和分类筛选
+                        searchQuery.value = '';
+                        selectedCategories.value.clear();
+                        // 显示加载状态并重新加载数据
+                        loading.value = true;
+                        methods.loadNewsData();
+                    } else {
+                        console.warn('无效的日期参数:', dateParam);
+                    }
+                } else {
+                    // 如果没有日期参数，更新URL为今天
+                    utils.updateUrlParams(currentDate.value);
+                }
+            },
+
+            handleBrowserHistory() {
+                window.addEventListener('popstate', (event) => {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const dateParam = urlParams.get('date');
+                    
+                    if (dateParam) {
+                        const date = new Date(dateParam);
+                        if (!isNaN(date.getTime())) {
+                            // 确保日期时间被重置为0点
+                            date.setHours(0, 0, 0, 0);
+                            currentDate.value = date;
+                            // 清空搜索和分类筛选
+                            searchQuery.value = '';
+                            selectedCategories.value.clear();
+                            // 显示加载状态并重新加载数据
+                            loading.value = true;
+                            methods.loadNewsData();
+                        }
+                    } else {
+                        // 如果没有日期参数，回到今天
+                        methods.goToToday();
+                    }
+                });
             }
         };
 
@@ -375,6 +564,10 @@ const NewsApp = {
                 init.accessibility();
                 init.errorHandling();
                 init.searchHistory();
+                init.handleBrowserHistory(); // 添加浏览器历史记录支持
+                
+                // 处理URL参数
+                init.handleUrlParams();
                 
                 // 等待DOM更新后绑定搜索事件
                 await nextTick();
@@ -407,6 +600,10 @@ const NewsApp = {
             categorizedNews,
             displayCategories,
             searchResults,
+            currentDateDisplay,
+            currentDateSubtitle,
+            isToday,
+            isFutureDate,
             
             // 方法
             loadNewsData: methods.loadNewsData,
@@ -424,7 +621,10 @@ const NewsApp = {
                 return category ? category.title : '其他';
             },
             getNewsType: utils.getNewsSource,
-            showErrorMessage: methods.showErrorMessage
+            showErrorMessage: methods.showErrorMessage,
+            goToPreviousDay: methods.goToPreviousDay,
+            goToNextDay: methods.goToNextDay,
+            goToToday: methods.goToToday
         };
     }
 };

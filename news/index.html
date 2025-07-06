@@ -45,6 +45,39 @@
                             spellcheck="false"></textarea>
                     </div>
                 </div>
+                
+                <!-- 日期导航 -->
+                <div class="date-navigation">
+                    <button 
+                        @click="goToPreviousDay"
+                        class="date-nav-btn prev-day"
+                        title="查看上一天的新闻"
+                        aria-label="查看上一天的新闻"
+                    >
+                        <i class="fas fa-chevron-left"></i>
+                        <span>上一天</span>
+                    </button>
+                    
+                    <div class="current-date-display" @click="goToToday" :title="isToday ? '当前已是今天' : '点击回到今天'">
+                        <div class="date-main">{{ currentDateDisplay }}</div>
+                        <div class="date-subtitle">{{ currentDateSubtitle }}</div>
+                        <div v-if="!isToday" class="date-today-hint">
+                            <i class="fas fa-home"></i>
+                        </div>
+                    </div>
+                    
+                    <button 
+                        @click="goToNextDay"
+                        class="date-nav-btn next-day"
+                        :disabled="isFutureDate"
+                        :title="isFutureDate ? '无法查看未来日期' : '查看下一天的新闻'"
+                        aria-label="查看下一天的新闻"
+                    >
+                        <span>下一天</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                
                 <div class="category-filters">
                     <div class="filter-buttons">
                         <button 
@@ -71,7 +104,7 @@
                     <div v-if="loading" class="loading-container">
                         <div class="loading-spinner"></div>
                         <div class="loading-text">正在加载新闻数据...</div>
-                        <div class="loading-subtext">请稍候，我们正在为您获取最新资讯</div>
+                        <div class="loading-subtext">正在获取 {{ currentDateDisplay }} 的新闻资讯</div>
                     </div>
 
                     <!-- 错误状态 -->
