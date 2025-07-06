@@ -45,7 +45,21 @@
                             spellcheck="false"></textarea>
                     </div>
                 </div>
-                
+                <div class="category-filters">
+                    <div class="filter-buttons">
+                        <button 
+                            v-for="category in categories" 
+                            :key="category.key"
+                            @click="toggleCategory(category.key)"
+                            :class="['filter-btn', { active: selectedCategories.has(category.key) }]"
+                            :data-category="category.key"
+                            :title="category.title"
+                        >
+                            <i :class="category.icon"></i>
+                            {{ category.title }}
+                        </button>
+                    </div>
+                </div>
                 <!-- 日期导航 -->
                 <div class="date-navigation">
                     <button 
@@ -76,22 +90,6 @@
                         <span>下一天</span>
                         <i class="fas fa-chevron-right"></i>
                     </button>
-                </div>
-                
-                <div class="category-filters">
-                    <div class="filter-buttons">
-                        <button 
-                            v-for="category in categories" 
-                            :key="category.key"
-                            @click="toggleCategory(category.key)"
-                            :class="['filter-btn', { active: selectedCategories.has(category.key) }]"
-                            :data-category="category.key"
-                            :title="category.title"
-                        >
-                            <i :class="category.icon"></i>
-                            {{ category.title }}
-                        </button>
-                    </div>
                 </div>
             </div>
         </header>
