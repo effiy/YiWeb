@@ -13,6 +13,9 @@ const NewsApp = {
         const clickedItems = ref(new Set());
         const searchHistory = ref([]);
         
+        // 侧边栏收缩状态
+        const sidebarCollapsed = ref(false);
+        
         // 日期管理
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -170,11 +173,12 @@ const NewsApp = {
                 return '明天';
             }
             
-            return date.toLocaleDateString('zh-CN', { 
-                month: 'long', 
-                day: 'numeric',
-                weekday: 'long'
-            });
+            // 自定义日期格式化，确保月份和日位都用阿拉伯数字
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const weekday = date.toLocaleDateString('zh-CN', { weekday: 'long' });
+            
+            return `${month}月${day}日 ${weekday}`;
         });
 
         const currentDateSubtitle = computed(() => {
@@ -408,6 +412,19 @@ const NewsApp = {
                 // 显示加载状态并重新加载数据
                 loading.value = true;
                 methods.loadNewsData();
+            },
+
+            // 侧边栏收缩切换
+            toggleSidebar() {
+                sidebarCollapsed.value = !sidebarCollapsed.value;
+                
+                // 保存状态到本地存储
+                localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value.toString());
+                
+                // 触发重新布局
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('resize'));
+                }, 300);
             }
         };
 
@@ -496,6 +513,13 @@ const NewsApp = {
                 }
             },
 
+            sidebarState() {
+                const savedState = localStorage.getItem('sidebarCollapsed');
+                if (savedState !== null) {
+                    sidebarCollapsed.value = savedState === 'true';
+                }
+            },
+
             searchInput() {
                 const searchInput = document.getElementById('messageInput');
                 if (searchInput) {
@@ -564,6 +588,7 @@ const NewsApp = {
                 init.accessibility();
                 init.errorHandling();
                 init.searchHistory();
+                init.sidebarState();
                 init.handleBrowserHistory(); // 添加浏览器历史记录支持
                 
                 // 处理URL参数
@@ -594,6 +619,7 @@ const NewsApp = {
             clickedItems,
             searchHistory,
             categories,
+            sidebarCollapsed,
             
             // 计算属性
             hasNewsData,
@@ -624,7 +650,8 @@ const NewsApp = {
             showErrorMessage: methods.showErrorMessage,
             goToPreviousDay: methods.goToPreviousDay,
             goToNextDay: methods.goToNextDay,
-            goToToday: methods.goToToday
+            goToToday: methods.goToToday,
+            toggleSidebar: methods.toggleSidebar
         };
     }
 };
