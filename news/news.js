@@ -239,16 +239,47 @@ const NewsApp = {
             
             // 检查哪些日期有新闻数据
             const hasNewsData = (date) => {
-                // 这里可以根据实际需求实现新闻数据检查
-                // 目前简单实现：检查日期是否在过去30天内
+                // 改进的新闻数据检查逻辑
+                const dateStr = getDateString(date);
+                const todayStr = getDateString(today);
+                
+                // 未来日期没有新闻数据
+                if (dateStr > todayStr) {
+                    return false;
+                }
+                
+                // 检查日期是否在过去90天内（更合理的范围）
+                const ninetyDaysAgo = new Date(today);
+                ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+                
+                if (date < ninetyDaysAgo) {
+                    return false;
+                }
+                
+                // 可以根据实际需求添加更精确的新闻数据检查
+                // 例如：检查本地存储的新闻数据缓存
+                const cachedNewsKey = `news_cache_${dateStr}`;
+                const cachedNews = localStorage.getItem(cachedNewsKey);
+                
+                if (cachedNews) {
+                    try {
+                        const newsData = JSON.parse(cachedNews);
+                        return newsData && newsData.length > 0;
+                    } catch (e) {
+                        // 缓存数据损坏，删除它
+                        localStorage.removeItem(cachedNewsKey);
+                    }
+                }
+                
+                // 默认：过去30天内的日期都可能有新闻
                 const thirtyDaysAgo = new Date(today);
                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                return date >= thirtyDaysAgo && date <= today;
+                return date >= thirtyDaysAgo;
             };
             
             const days = [];
             
-            // 添加上个月的日期
+            // 添加上个月的日期（填充第一行）
             for (let i = firstDayWeekday - 1; i >= 0; i--) {
                 const day = daysInPrevMonth - i;
                 const date = new Date(year, month - 1, day);
@@ -287,8 +318,10 @@ const NewsApp = {
                 });
             }
             
-            // 添加下个月的日期
-            const remainingDays = 42 - days.length; // 保持6行7列的布局
+            // 添加下个月的日期（确保6行7列 = 42个格子的布局）
+            const totalDays = days.length;
+            const remainingDays = 42 - totalDays; // 保持6行7列的布局
+            
             for (let day = 1; day <= remainingDays; day++) {
                 const date = new Date(year, month + 1, day);
                 const dateStr = getDateString(date);
@@ -385,6 +418,15 @@ const NewsApp = {
                     
                     if (data.status !== 200 || !data.data?.list) {
                         throw new Error('数据格式错误');
+                    }
+
+                    // 缓存新闻数据
+                    const dateStr = getDateString(currentDate.value);
+                    const cacheKey = `news_cache_${dateStr}`;
+                    try {
+                        localStorage.setItem(cacheKey, JSON.stringify(data.data.list));
+                    } catch (e) {
+                        console.warn('缓存新闻数据失败:', e);
                     }
 
                     return data.data.list;
@@ -552,19 +594,19 @@ const NewsApp = {
             },
 
             // 日历导航方法
-            previousMonth() {
+            previousMonth: utils.debounce(() => {
                 const newMonth = new Date(calendarMonth.value);
                 newMonth.setMonth(newMonth.getMonth() - 1);
                 calendarMonth.value = newMonth;
-            },
+            }, 100),
 
-            nextMonth() {
+            nextMonth: utils.debounce(() => {
                 if (isCurrentMonth.value) return;
                 
                 const newMonth = new Date(calendarMonth.value);
                 newMonth.setMonth(newMonth.getMonth() + 1);
                 calendarMonth.value = newMonth;
-            },
+            }, 100),
 
             selectDate(date) {
                 // 检查日期是否可点击（不能是未来日期）
@@ -572,7 +614,15 @@ const NewsApp = {
                 const todayStr = getDateString(today);
                 
                 if (dateStr > todayStr) {
+                    // 显示提示信息
+                    methods.showErrorMessage('无法查看未来日期的新闻');
                     return; // 未来日期不可点击
+                }
+                
+                // 如果选择的日期已经是当前日期，不需要重新加载
+                const currentDateStr = getDateString(currentDate.value);
+                if (dateStr === currentDateStr) {
+                    return;
                 }
                 
                 // 更新当前日期
@@ -587,7 +637,13 @@ const NewsApp = {
                 
                 // 显示加载状态并重新加载数据
                 loading.value = true;
-                methods.loadNewsData();
+                error.value = null; // 清除之前的错误
+                
+                // 异步加载数据
+                methods.loadNewsData().catch(err => {
+                    console.error('加载新闻数据失败:', err);
+                    methods.showErrorMessage('加载新闻数据失败，请重试');
+                });
                 
                 // 如果选择的日期不在当前显示的月份，更新日历月份
                 const selectedYear = date.getFullYear();
@@ -598,6 +654,21 @@ const NewsApp = {
                 if (selectedYear !== calendarYear || selectedMonth !== calendarMonthNum) {
                     calendarMonth.value = new Date(selectedYear, selectedMonth, 1);
                 }
+                
+                // 添加点击反馈
+                const dayElement = document.querySelector(`[data-date="${dateStr}"]`);
+                if (dayElement) {
+                    dayElement.classList.add('clicked');
+                    setTimeout(() => {
+                        dayElement.classList.remove('clicked');
+                    }, 300);
+                }
+                
+                // 更新日历的新闻数据指示器
+                nextTick(() => {
+                    // 重新计算日历天数以更新新闻指示器
+                    // Vue的响应式系统会自动处理
+                });
             }
         };
 
@@ -625,6 +696,16 @@ const NewsApp = {
                             case 'Home':
                                 event.preventDefault();
                                 methods.goToToday();
+                                break;
+                            case 'PageUp':
+                                event.preventDefault();
+                                methods.previousMonth();
+                                break;
+                            case 'PageDown':
+                                event.preventDefault();
+                                if (!isCurrentMonth.value) {
+                                    methods.nextMonth();
+                                }
                                 break;
                         }
                     }
@@ -829,6 +910,7 @@ const NewsApp = {
             handleNewsClick: methods.handleNewsClick,
             getTimeAgo: utils.formatTimeAgo,
             extractExcerpt: utils.extractExcerpt,
+            getDateString: getDateString,
             getCategoryTag: (item) => {
                 const categoryKey = utils.categorizeNewsItem(item);
                 const category = CATEGORIES.find(cat => cat.key === categoryKey);

@@ -256,30 +256,34 @@
                                 class="calendar-nav-btn"
                                 title="上个月"
                                 aria-label="上个月"
+                                :aria-disabled="false"
                             >
-                                <i class="fas fa-chevron-left"></i>
+                                <i class="fas fa-chevron-left" aria-hidden="true"></i>
                             </button>
-                            <div class="calendar-title">{{ calendarTitle }}</div>
+                            <div class="calendar-title" role="heading" aria-level="3">{{ calendarTitle }}</div>
                             <button 
                                 @click="nextMonth"
                                 class="calendar-nav-btn"
                                 :disabled="isCurrentMonth"
                                 :title="isCurrentMonth ? '当前已是本月' : '下个月'"
-                                aria-label="下个月"
+                                :aria-label="isCurrentMonth ? '当前已是本月' : '下个月'"
+                                :aria-disabled="isCurrentMonth"
                             >
-                                <i class="fas fa-chevron-right"></i>
+                                <i class="fas fa-chevron-right" aria-hidden="true"></i>
                             </button>
                         </div>
                         
-                        <div class="calendar-weekdays">
-                            <div class="weekday" v-for="day in weekdays" :key="day">{{ day }}</div>
+                        <div class="calendar-weekdays" role="rowgroup">
+                            <div class="weekday" v-for="day in weekdays" :key="day" role="columnheader">{{ day }}</div>
                         </div>
                         
-                        <div class="calendar-days">
+                        <div class="calendar-days" role="grid" :aria-label="`${calendarTitle}日历`">
                             <div 
                                 v-for="day in calendarDays" 
                                 :key="day.key"
                                 @click="selectDate(day.date)"
+                                @keydown.enter="selectDate(day.date)"
+                                @keydown.space="selectDate(day.date)"
                                 :class="[
                                     'calendar-day',
                                     {
@@ -292,6 +296,11 @@
                                 ]"
                                 :title="day.tooltip"
                                 :aria-label="day.ariaLabel"
+                                :data-date="getDateString(day.date)"
+                                :tabindex="day.isClickable ? 0 : -1"
+                                role="gridcell"
+                                :aria-selected="day.isSelected"
+                                :aria-current="day.isToday ? 'date' : undefined"
                             >
                                 <span class="day-number">{{ day.dayNumber }}</span>
                                 <div v-if="day.hasNews" class="news-indicator" aria-hidden="true"></div>
