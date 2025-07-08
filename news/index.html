@@ -247,6 +247,69 @@
                             <i class="fas fa-chevron-right"></i>
                         </button>
                     </nav>
+                    
+                    <!-- 小日历模块 -->
+                    <div class="mini-calendar" v-show="!sidebarCollapsed" role="region" aria-label="日历导航">
+                        <div class="calendar-header">
+                            <button 
+                                @click="previousMonth"
+                                class="calendar-nav-btn"
+                                title="上个月"
+                                aria-label="上个月"
+                            >
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <div class="calendar-title">{{ calendarTitle }}</div>
+                            <button 
+                                @click="nextMonth"
+                                class="calendar-nav-btn"
+                                :disabled="isCurrentMonth"
+                                :title="isCurrentMonth ? '当前已是本月' : '下个月'"
+                                aria-label="下个月"
+                            >
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="calendar-weekdays">
+                            <div class="weekday" v-for="day in weekdays" :key="day">{{ day }}</div>
+                        </div>
+                        
+                        <div class="calendar-days">
+                            <div 
+                                v-for="day in calendarDays" 
+                                :key="day.key"
+                                @click="selectDate(day.date)"
+                                :class="[
+                                    'calendar-day',
+                                    {
+                                        'other-month': !day.isCurrentMonth,
+                                        'today': day.isToday,
+                                        'selected': day.isSelected,
+                                        'has-news': day.hasNews,
+                                        'clickable': day.isClickable
+                                    }
+                                ]"
+                                :title="day.tooltip"
+                                :aria-label="day.ariaLabel"
+                            >
+                                <span class="day-number">{{ day.dayNumber }}</span>
+                                <div v-if="day.hasNews" class="news-indicator" aria-hidden="true"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="calendar-footer">
+                            <button 
+                                @click="goToToday"
+                                class="today-btn"
+                                :disabled="isToday"
+                                :title="isToday ? '当前已是今天' : '回到今天'"
+                            >
+                                <i class="fas fa-home"></i>
+                                <span>今天</span>
+                            </button>
+                        </div>
+                    </div>
                 </aside>
             </div>
         </main>

@@ -20,6 +20,10 @@ const NewsApp = {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const currentDate = ref(new Date(today));
+        
+        // 日历相关数据
+        const calendarMonth = ref(new Date(today.getFullYear(), today.getMonth(), 1));
+        const weekdays = ref(['日', '一', '二', '三', '四', '五', '六']);
 
         // API配置
         const getDateString = (date) => {
@@ -200,6 +204,111 @@ const NewsApp = {
             return currentStr > todayStr;
         });
 
+        // 日历相关计算属性
+        const calendarTitle = computed(() => {
+            const year = calendarMonth.value.getFullYear();
+            const month = calendarMonth.value.getMonth() + 1;
+            return `${year}年${month}月`;
+        });
+
+        const isCurrentMonth = computed(() => {
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth();
+            const calendarYear = calendarMonth.value.getFullYear();
+            const calendarMonthNum = calendarMonth.value.getMonth();
+            return currentYear === calendarYear && currentMonth === calendarMonthNum;
+        });
+
+        const calendarDays = computed(() => {
+            const year = calendarMonth.value.getFullYear();
+            const month = calendarMonth.value.getMonth();
+            
+            // 获取当月第一天和最后一天
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            
+            // 获取第一天是星期几（0-6，0是星期日）
+            const firstDayWeekday = firstDay.getDay();
+            
+            // 获取当月天数
+            const daysInMonth = lastDay.getDate();
+            
+            // 获取上个月的天数
+            const prevMonth = new Date(year, month, 0);
+            const daysInPrevMonth = prevMonth.getDate();
+            
+            // 检查哪些日期有新闻数据
+            const hasNewsData = (date) => {
+                // 这里可以根据实际需求实现新闻数据检查
+                // 目前简单实现：检查日期是否在过去30天内
+                const thirtyDaysAgo = new Date(today);
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                return date >= thirtyDaysAgo && date <= today;
+            };
+            
+            const days = [];
+            
+            // 添加上个月的日期
+            for (let i = firstDayWeekday - 1; i >= 0; i--) {
+                const day = daysInPrevMonth - i;
+                const date = new Date(year, month - 1, day);
+                const dateStr = getDateString(date);
+                days.push({
+                    key: `prev-${day}`,
+                    dayNumber: day,
+                    date: date,
+                    isCurrentMonth: false,
+                    isToday: dateStr === getDateString(today),
+                    isSelected: dateStr === getDateString(currentDate.value),
+                    hasNews: hasNewsData(date),
+                    isClickable: dateStr <= getDateString(today),
+                    tooltip: `${date.getFullYear()}年${date.getMonth() + 1}月${day}日`,
+                    ariaLabel: `${date.getFullYear()}年${date.getMonth() + 1}月${day}日`
+                });
+            }
+            
+            // 添加当月的日期
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dateStr = getDateString(date);
+                const todayStr = getDateString(today);
+                
+                days.push({
+                    key: `current-${day}`,
+                    dayNumber: day,
+                    date: date,
+                    isCurrentMonth: true,
+                    isToday: dateStr === todayStr,
+                    isSelected: dateStr === getDateString(currentDate.value),
+                    hasNews: hasNewsData(date),
+                    isClickable: dateStr <= todayStr,
+                    tooltip: `${year}年${month + 1}月${day}日`,
+                    ariaLabel: `${year}年${month + 1}月${day}日`
+                });
+            }
+            
+            // 添加下个月的日期
+            const remainingDays = 42 - days.length; // 保持6行7列的布局
+            for (let day = 1; day <= remainingDays; day++) {
+                const date = new Date(year, month + 1, day);
+                const dateStr = getDateString(date);
+                days.push({
+                    key: `next-${day}`,
+                    dayNumber: day,
+                    date: date,
+                    isCurrentMonth: false,
+                    isToday: dateStr === getDateString(today),
+                    isSelected: dateStr === getDateString(currentDate.value),
+                    hasNews: hasNewsData(date),
+                    isClickable: dateStr <= getDateString(today),
+                    tooltip: `${date.getFullYear()}年${date.getMonth() + 1}月${day}日`,
+                    ariaLabel: `${date.getFullYear()}年${date.getMonth() + 1}月${day}日`
+                });
+            }
+            
+            return days;
+        });
+
         const categorizedNews = computed(() => {
             const result = {};
             
@@ -373,6 +482,11 @@ const NewsApp = {
                 // 更新URL
                 utils.updateUrlParams(newDate);
                 
+                // 更新日历月份以匹配选择的日期
+                const selectedYear = newDate.getFullYear();
+                const selectedMonth = newDate.getMonth();
+                calendarMonth.value = new Date(selectedYear, selectedMonth, 1);
+                
                 // 清空搜索和分类筛选
                 searchQuery.value = '';
                 selectedCategories.value.clear();
@@ -390,6 +504,11 @@ const NewsApp = {
                 // 更新URL
                 utils.updateUrlParams(newDate);
                 
+                // 更新日历月份以匹配选择的日期
+                const selectedYear = newDate.getFullYear();
+                const selectedMonth = newDate.getMonth();
+                calendarMonth.value = new Date(selectedYear, selectedMonth, 1);
+                
                 // 清空搜索和分类筛选
                 searchQuery.value = '';
                 selectedCategories.value.clear();
@@ -404,6 +523,11 @@ const NewsApp = {
                 
                 // 更新URL
                 utils.updateUrlParams(today);
+                
+                // 更新日历月份以匹配选择的日期
+                const selectedYear = today.getFullYear();
+                const selectedMonth = today.getMonth();
+                calendarMonth.value = new Date(selectedYear, selectedMonth, 1);
                 
                 // 清空搜索和分类筛选
                 searchQuery.value = '';
@@ -425,6 +549,55 @@ const NewsApp = {
                 setTimeout(() => {
                     window.dispatchEvent(new Event('resize'));
                 }, 300);
+            },
+
+            // 日历导航方法
+            previousMonth() {
+                const newMonth = new Date(calendarMonth.value);
+                newMonth.setMonth(newMonth.getMonth() - 1);
+                calendarMonth.value = newMonth;
+            },
+
+            nextMonth() {
+                if (isCurrentMonth.value) return;
+                
+                const newMonth = new Date(calendarMonth.value);
+                newMonth.setMonth(newMonth.getMonth() + 1);
+                calendarMonth.value = newMonth;
+            },
+
+            selectDate(date) {
+                // 检查日期是否可点击（不能是未来日期）
+                const dateStr = getDateString(date);
+                const todayStr = getDateString(today);
+                
+                if (dateStr > todayStr) {
+                    return; // 未来日期不可点击
+                }
+                
+                // 更新当前日期
+                currentDate.value = new Date(date);
+                
+                // 更新URL
+                utils.updateUrlParams(date);
+                
+                // 清空搜索和分类筛选
+                searchQuery.value = '';
+                selectedCategories.value.clear();
+                
+                // 显示加载状态并重新加载数据
+                loading.value = true;
+                methods.loadNewsData();
+                
+                // 如果选择的日期不在当前显示的月份，更新日历月份
+                const selectedYear = date.getFullYear();
+                const selectedMonth = date.getMonth();
+                const calendarYear = calendarMonth.value.getFullYear();
+                const calendarMonthNum = calendarMonth.value.getMonth();
+                
+                if (selectedYear !== calendarYear || selectedMonth !== calendarMonthNum) {
+                    calendarMonth.value = new Date(selectedYear, selectedMonth, 1);
+                }
             }
         };
 
@@ -538,6 +711,12 @@ const NewsApp = {
                         // 确保日期时间被重置为0点
                         date.setHours(0, 0, 0, 0);
                         currentDate.value = date;
+                        
+                        // 更新日历月份以匹配选择的日期
+                        const selectedYear = date.getFullYear();
+                        const selectedMonth = date.getMonth();
+                        calendarMonth.value = new Date(selectedYear, selectedMonth, 1);
+                        
                         // 清空搜索和分类筛选
                         searchQuery.value = '';
                         selectedCategories.value.clear();
@@ -564,6 +743,12 @@ const NewsApp = {
                             // 确保日期时间被重置为0点
                             date.setHours(0, 0, 0, 0);
                             currentDate.value = date;
+                            
+                            // 更新日历月份以匹配选择的日期
+                            const selectedYear = date.getFullYear();
+                            const selectedMonth = date.getMonth();
+                            calendarMonth.value = new Date(selectedYear, selectedMonth, 1);
+                            
                             // 清空搜索和分类筛选
                             searchQuery.value = '';
                             selectedCategories.value.clear();
@@ -630,6 +815,9 @@ const NewsApp = {
             currentDateSubtitle,
             isToday,
             isFutureDate,
+            calendarTitle,
+            isCurrentMonth,
+            calendarDays,
             
             // 方法
             loadNewsData: methods.loadNewsData,
@@ -651,7 +839,10 @@ const NewsApp = {
             goToPreviousDay: methods.goToPreviousDay,
             goToNextDay: methods.goToNextDay,
             goToToday: methods.goToToday,
-            toggleSidebar: methods.toggleSidebar
+            toggleSidebar: methods.toggleSidebar,
+            previousMonth: methods.previousMonth,
+            nextMonth: methods.nextMonth,
+            selectDate: methods.selectDate
         };
     }
 };
