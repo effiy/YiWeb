@@ -491,17 +491,7 @@ body::before {
 }
 
 .calendar-day.has-news::after {
-    content: '';
-    position: absolute;
-    bottom: 2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;
-    height: 4px;
-    background: var(--success);
-    border-radius: 50%;
-    box-shadow: 0 0 4px rgba(16, 185, 129, 0.6);
-    animation: quantumPulse 2s ease-in-out infinite;
+    display: none; /* 隐藏新闻指示器小点点 */
 }
 
 .calendar-day.clickable {
@@ -542,15 +532,7 @@ body::before {
 }
 
 .news-indicator {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 6px;
-    height: 6px;
-    background: var(--success);
-    border-radius: 50%;
-    box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
-    animation: quantumPulse 2s ease-in-out infinite;
+    display: none; /* 隐藏新闻指示器 */
 }
 
 /* 响应式设计 - 小日历 */
@@ -604,12 +586,6 @@ body::before {
         height: 24px;
         font-size: 9px;
     }
-    
-    .calendar-day.has-news::after {
-        width: 3px;
-        height: 3px;
-        bottom: 1px;
-    }
 }
 
 @media (max-width: 480px) {
@@ -635,19 +611,6 @@ body::before {
     
     .calendar-title {
         font-size: 11px;
-    }
-    
-    .calendar-day.has-news::after {
-        width: 2px;
-        height: 2px;
-        bottom: 1px;
-    }
-    
-    .news-indicator {
-        width: 4px;
-        height: 4px;
-        top: 1px;
-        right: 1px;
     }
 }
 
@@ -797,7 +760,7 @@ body::before {
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-width: 140px;
+    min-width: 142px;
     padding: 4px 12px;
     background: rgba(255,255,255,0.05);
     border-radius: var(--radius-sm);
@@ -813,7 +776,7 @@ body::before {
 }
 
 .sidebar-navigation.collapsed .current-date-display {
-    min-width: 86px;
+    min-width: 88px;
     padding: 4px 8px;
     margin: 0 2px;
     text-align: center;
@@ -1335,7 +1298,7 @@ body::before {
     }
     
     .current-date-display {
-        min-width: 120px;
+        min-width: 142px;
         padding: 6px 10px;
     }
     
@@ -1457,7 +1420,7 @@ body::before {
     }
     
     .current-date-display {
-        min-width: 120px;
+        min-width: 142px;
         padding: 4px 6px;
     }
     
