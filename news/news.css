@@ -451,42 +451,6 @@ body::before {
     animation: quantumPulse 2s ease-in-out infinite;
 }
 
-.calendar-footer {
-    padding: var(--spacing-sm);
-    background: var(--bg-tertiary);
-    border-top: 1px solid var(--border-glass);
-    text-align: center;
-}
-
-.today-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border: none;
-    background: var(--bg-glass);
-    color: var(--text-secondary);
-    border-radius: var(--radius-sm);
-    font-size: 11px;
-    cursor: pointer;
-    transition: var(--transition-fast);
-}
-
-.today-btn:hover:not(:disabled) {
-    background: var(--primary-gradient);
-    color: var(--text-inverse);
-    transform: scale(1.05);
-}
-
-.today-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.today-btn i {
-    font-size: 10px;
-}
-
 /* 响应式设计 - 小日历 */
 @media (max-width: 1200px) {
     .mini-calendar {
@@ -531,15 +495,6 @@ body::before {
     .weekday {
         height: 24px;
         font-size: 9px;
-    }
-    
-    .today-btn {
-        padding: var(--spacing-xs);
-        font-size: 10px;
-    }
-    
-    .today-btn span {
-        display: none;
     }
 }
 
