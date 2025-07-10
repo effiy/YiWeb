@@ -1,5 +1,5 @@
 // Vue3 新闻页面应用
-const { createApp, ref, computed, onMounted, nextTick } = Vue;
+const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
 
 const NewsApp = {
     setup() {
@@ -103,6 +103,30 @@ const NewsApp = {
                 const title = item.title.toLowerCase();
                 const content = (item.content || '').toLowerCase();
                 
+                // 首先检查 item.categories 中的标签
+                if (item.categories) {
+                    let categoriesText = '';
+                    if (Array.isArray(item.categories)) {
+                        categoriesText = item.categories.join(' ').toLowerCase();
+                    } else if (typeof item.categories === 'string') {
+                        categoriesText = item.categories.toLowerCase();
+                    }
+                    
+                    // 根据 categories 标签进行分类
+                    for (const category of CATEGORIES) {
+                        if (category.key === 'other') continue;
+                        
+                        const hasKeyword = category.keywords.some(keyword => 
+                            categoriesText.includes(keyword)
+                        );
+                        
+                        if (hasKeyword) {
+                            return category.key;
+                        }
+                    }
+                }
+                
+                // 如果没有 categories 或 categories 中没有匹配的关键词，则基于标题和内容分类
                 for (const category of CATEGORIES) {
                     if (category.key === 'other') continue;
                     
@@ -138,12 +162,28 @@ const NewsApp = {
             isSearchMatch(item, query) {
                 if (!query) return true;
                 
-                const searchText = [
+                // 构建搜索文本，包括 categories 中的所有标签
+                let searchTextParts = [
                     item.title,
-                    this.extractExcerpt(item),
-                    this.getCategoryTag(item)
-                ].join(' ').toLowerCase();
+                    utils.extractExcerpt(item)
+                ];
                 
+                // 添加 categories 标签
+                if (item.categories) {
+                    if (Array.isArray(item.categories)) {
+                        searchTextParts = searchTextParts.concat(item.categories);
+                    } else if (typeof item.categories === 'string') {
+                        searchTextParts.push(item.categories);
+                    }
+                }
+                
+                // 添加自动分类标签作为后备
+                const categoryKey = utils.categorizeNewsItem(item);
+                const category = CATEGORIES.find(cat => cat.key === categoryKey);
+                const categoryTitle = category ? category.title : '其他';
+                searchTextParts.push(categoryTitle);
+                
+                const searchText = searchTextParts.join(' ').toLowerCase();
                 return searchText.includes(query.toLowerCase());
             }
         };
@@ -393,6 +433,16 @@ const NewsApp = {
                 .flatMap(category => category.news);
         });
 
+        // 监听搜索查询变化
+        watch(searchQuery, (newQuery) => {
+            // 添加到搜索历史
+            if (newQuery && !searchHistory.value.includes(newQuery)) {
+                searchHistory.value.unshift(newQuery);
+                searchHistory.value = searchHistory.value.slice(0, 10);
+                localStorage.setItem('newsSearchHistory', JSON.stringify(searchHistory.value));
+            }
+        }, { immediate: false });
+
         // API相关方法
         const api = {
             async fetchNewsData() {
@@ -465,17 +515,39 @@ const NewsApp = {
                 const query = event.target.value.trim();
                 searchQuery.value = query;
                 
+                // 添加到搜索历史
                 if (query && !searchHistory.value.includes(query)) {
                     searchHistory.value.unshift(query);
                     searchHistory.value = searchHistory.value.slice(0, 10);
                     localStorage.setItem('newsSearchHistory', JSON.stringify(searchHistory.value));
                 }
-            }, 300),
+            }, 100),
+
+            handleSearchInput(event) {
+                const query = event.target.value.trim();
+                searchQuery.value = query;
+                
+                // 添加到搜索历史
+                if (query && !searchHistory.value.includes(query)) {
+                    searchHistory.value.unshift(query);
+                    searchHistory.value = searchHistory.value.slice(0, 10);
+                    localStorage.setItem('newsSearchHistory', JSON.stringify(searchHistory.value));
+                }
+            },
 
             handleSearchKeydown(event) {
                 if (event.key === 'Escape') {
                     event.target.value = '';
                     searchQuery.value = '';
+                } else if (event.key === 'Enter') {
+                    // 回车时聚焦到结果区域
+                    event.preventDefault();
+                    const query = searchQuery.value.trim();
+                    if (query && !searchHistory.value.includes(query)) {
+                        searchHistory.value.unshift(query);
+                        searchHistory.value = searchHistory.value.slice(0, 10);
+                        localStorage.setItem('newsSearchHistory', JSON.stringify(searchHistory.value));
+                    }
                 }
             },
 
@@ -669,6 +741,10 @@ const NewsApp = {
                     // 重新计算日历天数以更新新闻指示器
                     // Vue的响应式系统会自动处理
                 });
+            },
+
+            clearSearch() {
+                searchQuery.value = '';
             }
         };
 
@@ -773,15 +849,6 @@ const NewsApp = {
                     sidebarCollapsed.value = savedState === 'true';
                 }
             },
-
-            searchInput() {
-                const searchInput = document.getElementById('messageInput');
-                if (searchInput) {
-                    searchInput.addEventListener('input', methods.handleSearch);
-                    searchInput.addEventListener('keydown', methods.handleSearchKeydown);
-                }
-            },
-
             handleUrlParams() {
                 const urlParams = new URLSearchParams(window.location.search);
                 const dateParam = urlParams.get('date');
@@ -860,10 +927,6 @@ const NewsApp = {
                 // 处理URL参数
                 init.handleUrlParams();
                 
-                // 等待DOM更新后绑定搜索事件
-                await nextTick();
-                init.searchInput();
-
                 // 加载新闻数据
                 await methods.loadNewsData();
 
@@ -903,6 +966,7 @@ const NewsApp = {
             // 方法
             loadNewsData: methods.loadNewsData,
             handleSearch: methods.handleSearch,
+            handleSearchInput: methods.handleSearchInput,
             handleSearchKeydown: methods.handleSearchKeydown,
             toggleCategory: methods.toggleCategory,
             shouldShowCategory: methods.shouldShowCategory,
@@ -912,9 +976,22 @@ const NewsApp = {
             extractExcerpt: utils.extractExcerpt,
             getDateString: getDateString,
             getCategoryTag: (item) => {
+                // 优先显示 item.categories 中的标签
+                if (item.categories && item.categories.length > 0) {
+                    // 如果 categories 是数组，返回数组
+                    if (Array.isArray(item.categories)) {
+                        return item.categories;
+                    }
+                    // 如果 categories 是字符串，返回包含该字符串的数组
+                    if (typeof item.categories === 'string') {
+                        return [item.categories];
+                    }
+                }
+                
+                // 如果没有 categories，则使用自动分类
                 const categoryKey = utils.categorizeNewsItem(item);
                 const category = CATEGORIES.find(cat => cat.key === categoryKey);
-                return category ? category.title : '其他';
+                return category ? [category.title] : ['其他'];
             },
             getNewsType: utils.getNewsSource,
             showErrorMessage: methods.showErrorMessage,
@@ -924,10 +1001,12 @@ const NewsApp = {
             toggleSidebar: methods.toggleSidebar,
             previousMonth: methods.previousMonth,
             nextMonth: methods.nextMonth,
-            selectDate: methods.selectDate
+            selectDate: methods.selectDate,
+            clearSearch: methods.clearSearch
         };
     }
 };
 
 // 创建并挂载应用
 createApp(NewsApp).mount('#app');
+

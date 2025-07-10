@@ -37,12 +37,16 @@
                     <div class="search-input-wrapper">
                         <textarea 
                             id="messageInput"
+                            v-model="searchQuery"
                             placeholder="搜索最新科技新闻，了解AI、互联网、科技产品等领域热点动态..." 
                             rows="1" 
                             maxlength="2000"
                             aria-label="消息输入框"
                             autocomplete="off"
-                            spellcheck="false"></textarea>
+                            spellcheck="false"
+                            @keydown.enter="handleSearchKeydown"
+                            @keydown.esc="clearSearch"
+                        ></textarea>
                     </div>
                 </div>
                 <div class="category-filters">
@@ -123,7 +127,15 @@
                                 </header>
                                 
                                 <div class="news-meta">
-                                    <div class="news-category-tag">{{ getCategoryTag(item) }}</div>
+                                    <div class="news-category-tags">
+                                        <span 
+                                            v-for="tag in getCategoryTag(item)" 
+                                            :key="tag"
+                                            class="news-category-tag"
+                                        >
+                                            {{ tag }}
+                                        </span>
+                                    </div>
                                     <time class="news-time" :datetime="item.isoDate">
                                         <i class="fas fa-clock"></i>
                                         <span>{{ getTimeAgo(item.isoDate) }}</span>
@@ -180,13 +192,21 @@
                                         <h3 class="news-title">{{ item.title }}</h3>
                                     </header>
                                     
-                                    <div class="news-meta">
-                                        <div class="news-category-tag">{{ getCategoryTag(item) }}</div>
-                                        <time class="news-time" :datetime="item.isoDate">
-                                            <i class="fas fa-clock"></i>
-                                            <span>{{ getTimeAgo(item.isoDate) }}</span>
-                                        </time>
+                                                                    <div class="news-meta">
+                                    <div class="news-category-tags">
+                                        <span 
+                                            v-for="tag in getCategoryTag(item)" 
+                                            :key="tag"
+                                            class="news-category-tag"
+                                        >
+                                            {{ tag }}
+                                        </span>
                                     </div>
+                                    <time class="news-time" :datetime="item.isoDate">
+                                        <i class="fas fa-clock"></i>
+                                        <span>{{ getTimeAgo(item.isoDate) }}</span>
+                                    </time>
+                                </div>
                                     
                                     <div class="news-excerpt">{{ extractExcerpt(item) }}</div>
                                     
@@ -314,3 +334,4 @@
     <script src="news.js"></script>
 </body>
 </html> 
+

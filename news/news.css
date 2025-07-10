@@ -1103,6 +1103,11 @@ body::before {
     color: white;
     font-size: 0.75rem;
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    display: inline-block;
 }
 
 .news-excerpt {
@@ -1547,3 +1552,11 @@ body::before {
     outline: none;
     box-shadow: none;
 }  
+
+.news-category-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 2px;
+}  
+
