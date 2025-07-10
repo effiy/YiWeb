@@ -439,8 +439,7 @@ body::before {
 .tag-statistics-content {
     padding: var(--spacing-md);
     flex: 1;
-    min-height: 160px;
-    max-height: 800px;
+    max-height: 228px;
     overflow-y: auto;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 50%);
 }
@@ -486,7 +485,6 @@ body::before {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: 8px;
     padding: 4px;
-    padding-bottom: var(--spacing-xl);
 }
 
 /* 大屏幕优化 */
@@ -505,7 +503,7 @@ body::before {
     }
     
     .tag-statistics-content {
-        min-height: 200px;
+      max-height: 228px;
     }
 }
 
@@ -516,7 +514,7 @@ body::before {
     }
     
     .tag-statistics-content {
-        min-height: 220px;
+      max-height: 228px;
     }
     
     .tag-list {
@@ -1015,7 +1013,7 @@ body::before {
     }
     
     .tag-statistics-content {
-        min-height: 150px;
+      max-height: 228px;
     }
 }
 
@@ -1077,7 +1075,7 @@ body::before {
     }
     
     .tag-statistics-content {
-        min-height: 130px;
+      max-height: 228px;
     }
 }
 
@@ -1138,7 +1136,7 @@ body::before {
     }
     
     .tag-statistics-content {
-        min-height: 120px;
+        max-height: 228px;
     }
 }
 
@@ -2147,6 +2145,7 @@ body::before {
     gap: 4px;
     margin-bottom: 2px;
 }  
+
 
 
 
