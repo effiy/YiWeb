@@ -10,6 +10,7 @@ const NewsApp = {
         const errorMessage = ref('');
         const searchQuery = ref('');
         const selectedCategories = ref(new Set());
+        const selectedTags = ref(new Set());
         const clickedItems = ref(new Set());
         const searchHistory = ref([]);
         
@@ -404,26 +405,65 @@ const NewsApp = {
         });
 
         const displayCategories = computed(() => {
-            if (!searchQuery.value) {
-                return categorizedNews.value;
+            let baseCategories = categorizedNews.value;
+            
+            // 如果有搜索查询，先根据搜索过滤
+            if (searchQuery.value) {
+                const filtered = {};
+                
+                Object.entries(baseCategories).forEach(([key, category]) => {
+                    const filteredNews = category.news.filter(item => 
+                        utils.isSearchMatch(item, searchQuery.value)
+                    );
+
+                    if (filteredNews.length > 0) {
+                        filtered[key] = {
+                            ...category,
+                            news: filteredNews
+                        };
+                    }
+                });
+                
+                baseCategories = filtered;
+            }
+            
+            // 如果有标签筛选，再根据标签过滤
+            if (selectedTags.value.size > 0) {
+                const tagFiltered = {};
+                
+                Object.entries(baseCategories).forEach(([key, category]) => {
+                    const filteredNews = category.news.filter(item => {
+                        // 获取新闻项的真实标签（与标签统计逻辑保持一致）
+                        let tags = [];
+                        
+                        if (item.categories && item.categories.length > 0) {
+                            if (Array.isArray(item.categories)) {
+                                tags = item.categories;
+                            } else if (typeof item.categories === 'string') {
+                                tags = [item.categories];
+                            }
+                            
+                            // 过滤掉与分类按钮重复的标签
+                            const duplicateTags = new Set(CATEGORIES.map(cat => cat.title));
+                            tags = tags.filter(tag => !duplicateTags.has(tag) && tag && tag.trim().length > 1);
+                        }
+                        
+                        // 检查是否有选中的标签
+                        return tags.some(tag => selectedTags.value.has(tag.trim()));
+                    });
+
+                    if (filteredNews.length > 0) {
+                        tagFiltered[key] = {
+                            ...category,
+                            news: filteredNews
+                        };
+                    }
+                });
+                
+                baseCategories = tagFiltered;
             }
 
-            const filtered = {};
-            
-            Object.entries(categorizedNews.value).forEach(([key, category]) => {
-                const filteredNews = category.news.filter(item => 
-                    utils.isSearchMatch(item, searchQuery.value)
-                );
-
-                if (filteredNews.length > 0) {
-                    filtered[key] = {
-                        ...category,
-                        news: filteredNews
-                    };
-                }
-            });
-
-            return filtered;
+            return baseCategories;
         });
 
         const searchResults = computed(() => {
@@ -431,6 +471,134 @@ const NewsApp = {
             
             return Object.values(displayCategories.value)
                 .flatMap(category => category.news);
+        });
+
+        // 可用标签计算属性（基于所有新闻数据，固定不变）
+        const availableTags = computed(() => {
+            // 始终基于所有新闻数据计算，不受筛选影响
+            const allNews = newsData.value;
+            
+            // 创建重复标签集合（与顶部分类按钮重复的标签）
+            const duplicateTags = new Set(CATEGORIES.map(cat => cat.title));
+            
+            // 统计所有标签
+            const tagCount = new Map();
+            const tagColors = new Map();
+            
+            allNews.forEach(item => {
+                // 只使用 item.categories 中的真实标签，不使用自动分类
+                let tags = [];
+                
+                if (item.categories && item.categories.length > 0) {
+                    // 如果 categories 是数组，使用数组
+                    if (Array.isArray(item.categories)) {
+                        tags = item.categories;
+                    }
+                    // 如果 categories 是字符串，转换为数组
+                    else if (typeof item.categories === 'string') {
+                        tags = [item.categories];
+                    }
+                    
+                    // 过滤掉与分类按钮重复的标签
+                    tags = tags.filter(tag => !duplicateTags.has(tag));
+                }
+                
+                if (Array.isArray(tags) && tags.length > 0) {
+                    tags.forEach(tag => {
+                        // 过滤掉空标签和过短的标签
+                        if (tag && tag.trim().length > 1) {
+                            const cleanTag = tag.trim();
+                            const count = tagCount.get(cleanTag) || 0;
+                            tagCount.set(cleanTag, count + 1);
+                            
+                            // 为标签分配颜色（基于内容哈希）
+                            if (!tagColors.has(cleanTag)) {
+                                const hash = cleanTag.split('').reduce((a, b) => {
+                                    a = ((a << 5) - a) + b.charCodeAt(0);
+                                    return a & a;
+                                }, 0);
+                                const hue = Math.abs(hash) % 360;
+                                tagColors.set(cleanTag, `hsl(${hue}, 70%, 50%)`);
+                            }
+                        }
+                    });
+                }
+            });
+            
+            // 转换为数组并按频次排序，只显示出现次数>=2的标签
+            const sortedTags = Array.from(tagCount.entries())
+                .filter(([tag, count]) => count >= 2) // 只显示出现2次以上的标签
+                .map(([tag, count]) => ({
+                    name: tag,
+                    count: count,
+                    color: tagColors.get(tag)
+                }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 20); // 最多显示20个标签
+            
+            return sortedTags;
+        });
+
+        // 标签统计计算属性（用于显示统计信息）
+        const tagStatistics = computed(() => {
+            let currentNews = [];
+            
+            // 获取当前显示的新闻（用于计算当前筛选下的标签统计）
+            if (searchQuery.value && searchResults.value.length > 0) {
+                currentNews = searchResults.value;
+            } else if (!searchQuery.value) {
+                const categoriesToShow = Object.entries(displayCategories.value)
+                    .filter(([categoryKey]) => {
+                        return selectedCategories.value.size === 0 || selectedCategories.value.has(categoryKey);
+                    });
+                currentNews = categoriesToShow.flatMap(([, category]) => category.news);
+            }
+            
+            // 计算每个固定标签在当前筛选结果中的数量
+            const duplicateTags = new Set(CATEGORIES.map(cat => cat.title));
+            const currentTagCount = new Map();
+            
+            currentNews.forEach(item => {
+                let tags = [];
+                
+                if (item.categories && item.categories.length > 0) {
+                    if (Array.isArray(item.categories)) {
+                        tags = item.categories;
+                    } else if (typeof item.categories === 'string') {
+                        tags = [item.categories];
+                    }
+                    
+                    tags = tags.filter(tag => !duplicateTags.has(tag));
+                }
+                
+                if (Array.isArray(tags) && tags.length > 0) {
+                    tags.forEach(tag => {
+                        if (tag && tag.trim().length > 1) {
+                            const cleanTag = tag.trim();
+                            const count = currentTagCount.get(cleanTag) || 0;
+                            currentTagCount.set(cleanTag, count + 1);
+                        }
+                    });
+                }
+            });
+            
+            // 为固定标签添加当前筛选下的统计信息
+            const tagsWithCurrentStats = availableTags.value.map(tag => ({
+                name: tag.name,
+                totalCount: tag.count, // 总数量（基于所有新闻）
+                currentCount: currentTagCount.get(tag.name) || 0, // 当前筛选下的数量
+                percentage: currentNews.length > 0 ? Math.round(((currentTagCount.get(tag.name) || 0) / currentNews.length) * 100) : 0,
+                color: tag.color
+            }));
+            
+            const maxCurrentCount = Math.max(...tagsWithCurrentStats.map(tag => tag.currentCount), 0);
+            
+            return {
+                tags: tagsWithCurrentStats,
+                totalTags: availableTags.value.length,
+                totalNews: currentNews.length,
+                maxCount: maxCurrentCount
+            };
         });
 
         // 监听搜索查询变化
@@ -559,8 +727,20 @@ const NewsApp = {
                 }
             },
 
+            toggleTag(tagName) {
+                if (selectedTags.value.has(tagName)) {
+                    selectedTags.value.delete(tagName);
+                } else {
+                    selectedTags.value.add(tagName);
+                }
+            },
+
             shouldShowCategory(categoryKey) {
                 return selectedCategories.value.size === 0 || selectedCategories.value.has(categoryKey);
+            },
+
+            shouldShowTag(tagName) {
+                return selectedTags.value.size === 0 || selectedTags.value.has(tagName);
             },
 
             isHighlighted(item) {
@@ -604,6 +784,7 @@ const NewsApp = {
                 // 清空搜索和分类筛选
                 searchQuery.value = '';
                 selectedCategories.value.clear();
+                selectedTags.value.clear();
                 
                 // 显示加载状态并重新加载数据
                 loading.value = true;
@@ -626,6 +807,7 @@ const NewsApp = {
                 // 清空搜索和分类筛选
                 searchQuery.value = '';
                 selectedCategories.value.clear();
+                selectedTags.value.clear();
                 
                 // 显示加载状态并重新加载数据
                 loading.value = true;
@@ -646,6 +828,7 @@ const NewsApp = {
                 // 清空搜索和分类筛选
                 searchQuery.value = '';
                 selectedCategories.value.clear();
+                selectedTags.value.clear();
                 
                 // 显示加载状态并重新加载数据
                 loading.value = true;
@@ -706,6 +889,7 @@ const NewsApp = {
                 // 清空搜索和分类筛选
                 searchQuery.value = '';
                 selectedCategories.value.clear();
+                selectedTags.value.clear();
                 
                 // 显示加载状态并重新加载数据
                 loading.value = true;
@@ -868,6 +1052,7 @@ const NewsApp = {
                         // 清空搜索和分类筛选
                         searchQuery.value = '';
                         selectedCategories.value.clear();
+                        selectedTags.value.clear();
                         // 显示加载状态并重新加载数据
                         loading.value = true;
                         methods.loadNewsData();
@@ -900,6 +1085,7 @@ const NewsApp = {
                             // 清空搜索和分类筛选
                             searchQuery.value = '';
                             selectedCategories.value.clear();
+                            selectedTags.value.clear();
                             // 显示加载状态并重新加载数据
                             loading.value = true;
                             methods.loadNewsData();
@@ -945,6 +1131,7 @@ const NewsApp = {
             errorMessage,
             searchQuery,
             selectedCategories,
+            selectedTags,
             clickedItems,
             searchHistory,
             categories,
@@ -955,6 +1142,7 @@ const NewsApp = {
             categorizedNews,
             displayCategories,
             searchResults,
+            tagStatistics,
             currentDateDisplay,
             currentDateSubtitle,
             isToday,
@@ -962,6 +1150,7 @@ const NewsApp = {
             calendarTitle,
             isCurrentMonth,
             calendarDays,
+            weekdays,
             
             // 方法
             loadNewsData: methods.loadNewsData,
@@ -969,7 +1158,9 @@ const NewsApp = {
             handleSearchInput: methods.handleSearchInput,
             handleSearchKeydown: methods.handleSearchKeydown,
             toggleCategory: methods.toggleCategory,
+            toggleTag: methods.toggleTag,
             shouldShowCategory: methods.shouldShowCategory,
+            shouldShowTag: methods.shouldShowTag,
             isHighlighted: methods.isHighlighted,
             handleNewsClick: methods.handleNewsClick,
             getTimeAgo: utils.formatTimeAgo,
@@ -1009,4 +1200,5 @@ const NewsApp = {
 
 // 创建并挂载应用
 createApp(NewsApp).mount('#app');
+
 
