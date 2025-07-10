@@ -1202,3 +1202,4 @@ const NewsApp = {
 createApp(NewsApp).mount('#app');
 
 
+

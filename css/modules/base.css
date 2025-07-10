@@ -145,7 +145,7 @@ body {
     font-family: 'Inter', 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg-gradient);
     background-size: 400% 400%;
-    animation: quantumFlow 30s ease infinite;
+    /* 移除影响fixed定位的filter动画 */
     min-height: 100vh;
     min-height: calc(var(--vh, 1vh) * 100);
     color: var(--text-primary);
@@ -155,6 +155,22 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     position: relative;
+}
+
+/* 将动画效果移到独立的伪元素上，避免影响fixed定位 */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-gradient);
+    background-size: 400% 400%;
+    animation: quantumFlow 30s ease infinite;
+    pointer-events: none;
+    z-index: -2;
+    opacity: 0.8;
 }
 
 /* 量子粒子效果 */
