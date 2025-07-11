@@ -1,5 +1,4 @@
 // 搜索头部组件 - 包含搜索框和分类过滤器
-// 作者: lixuan
 
 const SearchHeader = {
     name: 'SearchHeader',

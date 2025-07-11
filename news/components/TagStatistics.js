@@ -1,5 +1,4 @@
 // 标签统计组件 - 负责标签统计和筛选功能
-// 作者: lixuan
 
 const TagStatistics = {
     name: 'TagStatistics',

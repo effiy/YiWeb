@@ -1,5 +1,4 @@
 // 侧边栏组件 - 整合日历和标签统计功能
-// 作者: lixuan
 
 const Sidebar = {
     name: 'Sidebar',

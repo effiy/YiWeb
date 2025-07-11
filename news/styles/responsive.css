@@ -16,7 +16,7 @@
     }
     
     .tag-statistics-content {
-        max-height: 228px;
+        max-height: 20vh;
     }
 }
 
@@ -27,7 +27,7 @@
     }
     
     .tag-statistics-content {
-        max-height: 228px;
+        max-height: 20vh;
     }
     
     .tag-list {
@@ -111,7 +111,7 @@
     }
     
     .tag-statistics-content {
-        max-height: 228px;
+        max-height: 20vh;
     }
 }
 
@@ -322,7 +322,7 @@
     }
     
     .tag-statistics-content {
-        max-height: 228px;
+        max-height: 20vh;
     }
 }
 
@@ -492,7 +492,7 @@
     }
     
     .tag-statistics-content {
-        max-height: 228px;
+        max-height: 20vh;
     }
 }
 

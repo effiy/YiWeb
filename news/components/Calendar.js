@@ -1,5 +1,4 @@
 // 日历组件 - 负责日期导航和小日历显示
-// 作者: lixuan
 
 const Calendar = {
     name: 'Calendar',

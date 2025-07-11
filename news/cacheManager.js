@@ -1,5 +1,4 @@
 // 新闻缓存管理器 - 智能管理LocalStorage缓存
-// 作者: lixuan
 
 class NewsCacheManager {
     constructor() {

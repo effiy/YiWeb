@@ -1,5 +1,4 @@
 // Vue组件调试工具
-// 作者: lixuan
 
 window.DebugTool = {
     // 检查Vue是否正确加载

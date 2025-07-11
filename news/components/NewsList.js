@@ -1,5 +1,4 @@
 // 新闻列表组件 - 负责新闻内容的展示
-// 作者: lixuan
 
 const NewsList = {
     name: 'NewsList',
