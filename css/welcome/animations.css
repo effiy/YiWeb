@@ -1,0 +1,354 @@
+/* 动画效果定义 */
+
+/* 点击反馈动画 */
+@keyframes dataPointFloat {
+    0% {
+        transform: scale(0.3) translateY(0);
+        opacity: 0.8;
+    }
+    60% {
+        transform: scale(1.0) translateY(-15px);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.6) translateY(-30px);
+        opacity: 0;
+    }
+}
+
+@keyframes codeLineScan {
+    0% {
+        transform: translateX(-80%) scaleX(0.7);
+        opacity: 0.2;
+    }
+    40% {
+        opacity: 1;
+    }
+    80% {
+        transform: translateX(60%) scaleX(1.1);
+        opacity: 0.7;
+    }
+    100% {
+        transform: translateX(100%) scaleX(0.8);
+        opacity: 0;
+    }
+}
+
+@keyframes colorParticleExplode {
+    0% {
+        transform: scale(0.5) translateX(0) translateY(0);
+        opacity: 0.7;
+    }
+    60% {
+        transform: scale(1.1) translateX(var(--x, 0)) translateY(var(--y, 0));
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.6) translateX(calc(var(--x, 0) * 1.5)) translateY(calc(var(--y, 0) * 1.5));
+        opacity: 0;
+    }
+}
+
+/* 新增：数据分析卡片的数据流动画 */
+@keyframes dataFlowAnimation {
+    0% {
+        transform: scale(0.4) translateX(0) translateY(0) rotate(0deg);
+        opacity: 0.6;
+    }
+    30% {
+        transform: scale(0.8) translateX(var(--x, 0)) translateY(var(--y, 0)) rotate(45deg);
+        opacity: 1;
+    }
+    70% {
+        transform: scale(1.2) translateX(calc(var(--x, 0) * 1.2)) translateY(calc(var(--y, 0) * 1.2)) rotate(90deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(0.5) translateX(calc(var(--x, 0) * 1.8)) translateY(calc(var(--y, 0) * 1.8)) rotate(135deg);
+        opacity: 0;
+    }
+}
+
+/* 新增：代码编写卡片的代码块动画 */
+@keyframes codeBlockAnimation {
+    0% {
+        transform: scale(0.3) translateX(0) translateY(0) rotate(0deg);
+        opacity: 0.5;
+    }
+    25% {
+        transform: scale(0.7) translateX(var(--x, 0)) translateY(var(--y, 0)) rotate(15deg);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.0) translateX(calc(var(--x, 0) * 1.1)) translateY(calc(var(--y, 0) * 1.1)) rotate(30deg);
+        opacity: 0.9;
+    }
+    75% {
+        transform: scale(0.8) translateX(calc(var(--x, 0) * 1.4)) translateY(calc(var(--y, 0) * 1.4)) rotate(45deg);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(0.4) translateX(calc(var(--x, 0) * 1.6)) translateY(calc(var(--y, 0) * 1.6)) rotate(60deg);
+        opacity: 0;
+    }
+}
+
+/* 新增：点击波纹效果 */
+@keyframes rippleEffect {
+    0% {
+        transform: scale(0);
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 0.4;
+    }
+    100% {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* 新增：光晕脉冲效果 */
+@keyframes glowPulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.3;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+/* 新增：数据点连接线动画 */
+@keyframes dataConnection {
+    0% {
+        transform: scaleX(0);
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        transform: scaleX(1);
+        opacity: 0;
+    }
+}
+
+/* 新增：代码字符飘散动画 */
+@keyframes codeCharacterFloat {
+    0% {
+        transform: translateY(0) rotate(0deg) scale(1);
+        opacity: 0.8;
+    }
+    50% {
+        transform: translateY(-20px) rotate(180deg) scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-40px) rotate(360deg) scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* 新增：艺术粒子旋转动画 */
+@keyframes artisticParticleSpin {
+    0% {
+        transform: scale(0.3) translateX(0) translateY(0) rotate(0deg);
+        opacity: 0.6;
+    }
+    25% {
+        transform: scale(0.8) translateX(var(--x, 0)) translateY(var(--y, 0)) rotate(90deg);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1) translateX(calc(var(--x, 0) * 1.3)) translateY(calc(var(--y, 0) * 1.3)) rotate(180deg);
+        opacity: 0.9;
+    }
+    75% {
+        transform: scale(0.9) translateX(calc(var(--x, 0) * 1.6)) translateY(calc(var(--y, 0) * 1.6)) rotate(270deg);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(0.4) translateX(calc(var(--x, 0) * 2)) translateY(calc(var(--y, 0) * 2)) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* 新增：能量爆发效果 */
+@keyframes energyBurst {
+    0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 1;
+    }
+    30% {
+        transform: scale(1.5) rotate(120deg);
+        opacity: 0.8;
+    }
+    60% {
+        transform: scale(2.2) rotate(240deg);
+        opacity: 0.4;
+    }
+    100% {
+        transform: scale(3) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* 新增：闪烁效果 */
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 0;
+        transform: scale(0) rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1) rotate(180deg);
+    }
+}
+
+/* 新增：代码块闪烁效果 */
+@keyframes codeBlockFlicker {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    25% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    75% {
+        opacity: 0.7;
+        transform: scale(0.95);
+    }
+}
+
+/* 新增：音波效果 */
+@keyframes soundWave {
+    0% {
+        transform: scale(0.5);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+/* 新增：高性能浮动动画 */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px) translate3d(0, 0, 0);
+    }
+    50% {
+        transform: translateY(-10px) translate3d(0, 0, 0);
+    }
+}
+
+/* 新增：弹性缩放动画 */
+@keyframes elasticScale {
+    0% {
+        transform: scale(1) translate3d(0, 0, 0);
+    }
+    50% {
+        transform: scale(1.1) translate3d(0, 0, 0);
+    }
+    100% {
+        transform: scale(1) translate3d(0, 0, 0);
+    }
+}
+
+/* 新增：渐变背景动画 */
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* 新增：高性能粒子轨迹 */
+@keyframes particleTrail {
+    0% {
+        transform: scale(0) translateX(0) translateY(0) translate3d(0, 0, 0);
+        opacity: 0;
+    }
+    20% {
+        opacity: 1;
+    }
+    80% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1.5) translateX(var(--x, 0)) translateY(var(--y, 0)) translate3d(0, 0, 0);
+        opacity: 0;
+    }
+}
+
+/* 新增：高性能光晕效果 */
+@keyframes glowEffect {
+    0% {
+        box-shadow: 0 0 5px currentColor;
+        opacity: 0.5;
+    }
+    50% {
+        box-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
+        opacity: 1;
+    }
+    100% {
+        box-shadow: 0 0 5px currentColor;
+        opacity: 0.5;
+    }
+}
+
+/* 新增：高性能旋转动画 */
+@keyframes smoothRotate {
+    0% {
+        transform: rotate(0deg) translate3d(0, 0, 0);
+    }
+    100% {
+        transform: rotate(360deg) translate3d(0, 0, 0);
+    }
+}
+
+/* 新增：高性能弹跳动画 */
+@keyframes bounce {
+    0%, 20%, 53%, 80%, 100% {
+        transform: translate3d(0, 0, 0);
+    }
+    40%, 43% {
+        transform: translate3d(0, -8px, 0);
+    }
+    70% {
+        transform: translate3d(0, -4px, 0);
+    }
+    90% {
+        transform: translate3d(0, -2px, 0);
+    }
+}
+
+/* 加载指示器动画 */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 错误提示动画 */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+} 

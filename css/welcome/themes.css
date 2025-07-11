@@ -1,0 +1,171 @@
+/* 主题卡片样式 - 使用CSS变量 */
+.feature-card.detective-card {
+    background: linear-gradient(135deg, 
+        rgba(79, 172, 254, var(--opacity-medium)) 0%, 
+        rgba(0, 242, 254, 0.04) 50%,
+        rgba(79, 172, 254, 0.02) 100%);
+    border: 1px solid rgba(79, 172, 254, 0.15);
+}
+
+.feature-card.scientist-card {
+    border-color: rgba(147, 51, 234, 0.3);
+    background: linear-gradient(135deg, 
+        rgba(147, 51, 234, var(--opacity-medium)) 0%, 
+        rgba(6, 182, 212, 0.06) 50%,
+        rgba(147, 51, 234, 0.02) 100%);
+}
+
+.feature-card.geek-card {
+    border-color: rgba(34, 197, 94, 0.3);
+    background: linear-gradient(135deg, 
+        rgba(34, 197, 94, var(--opacity-medium)) 0%, 
+        rgba(16, 185, 129, 0.06) 50%,
+        rgba(34, 197, 94, 0.02) 100%);
+}
+
+.feature-card.artist-card {
+    border-color: rgba(168, 85, 247, 0.3);
+    background: linear-gradient(135deg, 
+        rgba(168, 85, 247, var(--opacity-medium)) 0%, 
+        rgba(236, 72, 153, 0.06) 50%,
+        rgba(168, 85, 247, 0.02) 100%);
+}
+
+/* 悬停效果 */
+.feature-card.detective-card:hover {
+    border-color: rgba(79, 172, 254, 0.4);
+    box-shadow: 
+        0 32px 64px rgba(0, 0, 0, 0.2),
+        0 16px 32px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(79, 172, 254, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.feature-card.scientist-card:hover {
+    border-color: rgba(147, 51, 234, 0.6);
+    box-shadow: 
+        0 20px 40px rgba(147, 51, 234, 0.2),
+        0 8px 16px rgba(6, 182, 212, 0.15);
+}
+
+.feature-card.geek-card:hover {
+    border-color: rgba(34, 197, 94, 0.6);
+    box-shadow: 
+        0 20px 40px rgba(34, 197, 94, 0.2),
+        0 8px 16px rgba(16, 185, 129, 0.15);
+}
+
+.feature-card.artist-card:hover {
+    border-color: rgba(168, 85, 247, 0.6);
+    box-shadow: 
+        0 20px 40px rgba(168, 85, 247, 0.2),
+        0 8px 16px rgba(236, 72, 153, 0.15);
+}
+
+/* 图标样式 */
+.feature-card[data-feature="问答"] .card-icon {
+    background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan));
+    color: white;
+    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+}
+
+.feature-card[data-feature="数据分析"] .card-icon {
+    background: linear-gradient(135deg, var(--scientist-purple), var(--scientist-cyan));
+    color: white;
+    box-shadow: 
+        0 6px 20px rgba(147, 51, 234, 0.4),
+        0 4px 12px rgba(6, 182, 212, 0.3);
+}
+
+.feature-card[data-feature="代码编写"] .card-icon {
+    background: linear-gradient(135deg, var(--geek-green), var(--geek-teal));
+    color: white;
+    box-shadow: 
+        0 6px 20px rgba(34, 197, 94, 0.4),
+        0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.feature-card[data-feature="图表绘制"] .card-icon {
+    background: linear-gradient(135deg, var(--artist-purple), var(--artist-pink));
+    color: white;
+    box-shadow: 
+        0 6px 20px rgba(168, 85, 247, 0.4),
+        0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+/* 徽章样式 */
+.feature-card[data-feature="问答"] .card-badge {
+    background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan));
+    box-shadow: 0 4px 16px rgba(79, 172, 254, 0.4);
+}
+
+.feature-card[data-feature="数据分析"] .card-badge {
+    background: linear-gradient(135deg, var(--scientist-purple), var(--scientist-cyan));
+    border: 1px solid rgba(147, 51, 234, 0.4);
+    box-shadow: 
+        0 6px 16px rgba(147, 51, 234, 0.4),
+        0 4px 8px rgba(6, 182, 212, 0.3);
+}
+
+.feature-card[data-feature="代码编写"] .card-badge {
+    background: linear-gradient(135deg, var(--geek-green), var(--geek-teal));
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    box-shadow: 
+        0 6px 16px rgba(34, 197, 94, 0.4),
+        0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.feature-card[data-feature="图表绘制"] .card-badge {
+    background: linear-gradient(135deg, var(--artist-purple), var(--artist-pink));
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    box-shadow: 
+        0 6px 16px rgba(168, 85, 247, 0.4),
+        0 4px 8px rgba(236, 72, 153, 0.3);
+}
+
+/* 功能标签主题样式 */
+.feature-card[data-feature="数据分析"] .feature-tag {
+    background: rgba(147, 51, 234, 0.15);
+    border-color: rgba(147, 51, 234, 0.3);
+    color: #c4b5fd;
+}
+
+.feature-card[data-feature="代码编写"] .feature-tag {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 0.3);
+    color: #86efac;
+}
+
+.feature-card[data-feature="图表绘制"] .feature-tag {
+    background: rgba(168, 85, 247, 0.15);
+    border-color: rgba(168, 85, 247, 0.3);
+    color: #c4b5fd;
+}
+
+/* 悬停时的功能标签 */
+.feature-card[data-feature="数据分析"]:hover .feature-tag {
+    background: rgba(147, 51, 234, 0.25);
+    border-color: rgba(147, 51, 234, 0.5);
+    color: #e9d5ff;
+    box-shadow: 
+        0 4px 12px rgba(147, 51, 234, 0.2),
+        0 2px 6px rgba(6, 182, 212, 0.15);
+}
+
+.feature-card[data-feature="代码编写"]:hover .feature-tag {
+    background: rgba(34, 197, 94, 0.25);
+    border-color: rgba(34, 197, 94, 0.5);
+    color: #dcfce7;
+    box-shadow: 
+        0 4px 12px rgba(34, 197, 94, 0.2),
+        0 2px 6px rgba(16, 185, 129, 0.15);
+}
+
+.feature-card[data-feature="图表绘制"]:hover .feature-tag {
+    background: rgba(168, 85, 247, 0.25);
+    border-color: rgba(168, 85, 247, 0.5);
+    color: #ede9fe;
+    box-shadow: 
+        0 4px 12px rgba(168, 85, 247, 0.2),
+        0 2px 6px rgba(236, 72, 153, 0.15);
+} 

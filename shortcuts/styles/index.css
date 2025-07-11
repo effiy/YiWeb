@@ -1,0 +1,20 @@
+/* 
+ * 快捷键页面样式 - 主文件
+ * 说明: 导入所有样式模块文件
+ */
+
+/* 基础样式 */
+@import url('./variables.css');
+
+/* 组件样式 */
+@import url('./search.css');
+@import url('./filters.css');
+@import url('./shortcuts-grid.css');
+@import url('./shortcuts-item.css');
+
+/* 布局样式 */
+@import url('./layout.css');
+
+/* 效果样式 */
+@import url('./animations.css');
+@import url('./responsive.css'); 

@@ -1,0 +1,147 @@
+/* 动画效果 */
+@keyframes highlightPulse {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 25px rgba(79, 172, 254, 0.5);
+    }
+}
+
+@keyframes shortcutPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+}
+
+@keyframes shortcutGlow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(79, 172, 254, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(79, 172, 254, 0.6);
+    }
+}
+
+@keyframes shortcutRipple {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes gradientShift {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes bounce {
+    0%, 20%, 53%, 80%, 100% {
+        transform: translate3d(0, 0, 0);
+    }
+    40%, 43% {
+        transform: translate3d(0, -8px, 0);
+    }
+    70% {
+        transform: translate3d(0, -4px, 0);
+    }
+    90% {
+        transform: translate3d(0, -2px, 0);
+    }
+}
+
+@keyframes smoothRotate {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(5deg);
+    }
+    75% {
+        transform: rotate(-5deg);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes logoGlow {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.2;
+    }
+}
+
+@keyframes quantumPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.02);
+        opacity: 0.9;
+    }
+}
+
+/* 无障碍优化 */
+@media (prefers-reduced-motion: reduce) {
+    .shortcut-category,
+    .shortcut-item,
+    .filter-btn {
+        animation: none;
+        transition: none;
+    }
+
+    .shortcut-category:hover,
+    .shortcut-item:hover,
+    .filter-btn:hover {
+        transform: none;
+    }
+} 

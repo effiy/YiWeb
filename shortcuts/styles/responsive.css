@@ -1,0 +1,76 @@
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .category-filters {
+        min-width: 150px;
+    }
+    
+    .filter-buttons {
+        gap: var(--spacing-xs);
+    }
+    
+    .filter-btn {
+        padding: var(--spacing-xs);
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .search-row {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+    
+    .search-box {
+        width: 100%;
+    }
+    
+    .category-filters {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .filter-buttons {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .filter-btn {
+        font-size: 0.7rem;
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+    
+    .shortcuts-content {
+        padding: var(--spacing-md);
+    }
+    
+    .shortcuts-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+}
+
+@media (max-width: 480px) {
+    .search-box {
+        padding: var(--spacing-sm);
+    }
+    
+    .search-logo {
+        width: 35px;
+        height: 30px;
+        font-size: 1rem;
+    }
+    
+    #messageInput {
+        font-size: 0.9rem;
+        min-height: 20px;
+    }
+    
+    .filter-btn {
+        font-size: 0.65rem;
+        padding: var(--spacing-xs);
+    }
+    
+    .shortcuts-content {
+        padding: var(--spacing-sm);
+    }
+} 

@@ -1,0 +1,38 @@
+/* 快捷键区域样式 */
+.shortcuts-content {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--spacing-lg) var(--spacing-lg);
+    min-height: calc(100vh - 200px);
+}
+
+.shortcuts-title {
+    font-size: var(--font-size-3xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradientShift 3s ease-in-out infinite;
+}
+
+.shortcuts-title i {
+    font-size: var(--font-size-2xl);
+    color: var(--primary-blue);
+    -webkit-text-fill-color: var(--primary-blue);
+    animation: bounce 2s ease-in-out infinite;
+}
+
+.shortcuts-subtitle {
+    font-size: var(--font-size-lg);
+    color: var(--text-secondary);
+    opacity: 0.8;
+    font-weight: 400;
+} 
