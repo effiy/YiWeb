@@ -1,101 +1,107 @@
-import { globalState, CONFIG } from './state.js';
-import { utils } from './utils.js';
-import { AnimationManager } from './animations.js';
+// 功能卡片处理模块
 
-// 卡片管理模块
-export class CardManager {
-    constructor() {
-        this.animationManager = new AnimationManager();
-        this.cards = new Map();
-    }
+import { utils } from './utils.js';
+import { CONFIG } from './config.js';
+import { globalState } from './state.js';
+import { animationManager } from './animations.js';
+import { clickFeedbackManager } from './clickFeedback.js';
+
+// 功能卡片处理
+export const featureCards = {
+    prompts: {
+        '数据分析': '请帮我进行智能数据分析，我想了解：',
+        '代码编写': '请帮我编写智能代码，具体需求是：',
+        '图表绘制': '请帮我创作AI艺术作品，我想看到：'
+    },
 
     init() {
-        this.setupCards();
-        this.setupAccessibility();
-    }
-
-    setupCards() {
-        const cards = document.querySelectorAll('.feature-card');
-        cards.forEach(card => {
-            const feature = card.dataset.feature;
-            const cardId = `card-${feature}`;
-            
-            this.cards.set(cardId, card);
-            this.setupCard(card, feature, cardId);
-        });
-    }
-
-    setupCard(card, feature, cardId) {
-        card.style.position = 'relative';
-        card.style.overflow = 'hidden';
+        const cards = document.querySelectorAll('.feature-card.scientist-card, .feature-card.geek-card, .feature-card.artist-card');
         
+        cards.forEach(card => {
+            this.setupCard(card);
+        });
+    },
+
+    setupCard(card) {
+        const feature = card.getAttribute('data-feature');
+        const cardId = `${feature}-${Date.now()}`;
+        card.dataset.cardId = cardId;
+
+        this.setupAccessibility(card, feature);
         this.setupEventListeners(card, feature, cardId);
-    }
+    },
 
     setupAccessibility(card, feature) {
-        card.setAttribute('role', 'button');
         card.setAttribute('tabindex', '0');
-        card.setAttribute('aria-label', `点击使用${feature}功能`);
-        card.setAttribute('aria-describedby', `${feature}-description`);
-    }
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', `选择${feature}功能`);
+    },
 
     setupEventListeners(card, feature, cardId) {
-        let hoverTimeout;
         let isHovering = false;
+
+        const handleMouseEnter = utils.throttle(() => {
+            if (isHovering) return;
+            isHovering = true;
+
+            utils.cleanupAnimation(cardId, globalState);
+
+            const hoverTimeout = setTimeout(() => {
+                if (isHovering) {
+                    this.playHoverAnimation(card, feature);
+                }
+            }, CONFIG.ANIMATION.HOVER_DELAY);
+
+            globalState.hoverTimeouts.set(cardId, hoverTimeout);
+        }, CONFIG.THROTTLE_DELAY);
+
+        const handleMouseLeave = utils.throttle(() => {
+            isHovering = false;
+            utils.cleanupAnimation(cardId, globalState);
+            animationManager.stopAnimation(card);
+        }, CONFIG.THROTTLE_DELAY);
 
         const handleClick = (e) => {
             e.preventDefault();
-            e.stopPropagation();
-            
-            this.animationManager.createCardScaleEffect(card);
             this.handleCardClick(card, feature);
         };
 
         const handleKeydown = (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                handleClick(e);
+                this.handleCardClick(card, feature);
             }
         };
 
-        const handleMouseEnter = () => {
-            if (isHovering) return;
-            isHovering = true;
-            
-            hoverTimeout = setTimeout(() => {
-                this.playHoverAnimation(card, feature);
-            }, CONFIG.ANIMATION.HOVER_DELAY);
-            
-            globalState.hoverTimeouts.set(cardId, hoverTimeout);
-        };
-
-        const handleMouseLeave = () => {
-            isHovering = false;
-            
-            if (hoverTimeout) {
-                clearTimeout(hoverTimeout);
-                globalState.hoverTimeouts.delete(cardId);
-            }
-            
-            this.animationManager.stopAnimation(card);
-        };
-
-        // 事件监听器
-        card.addEventListener('click', handleClick);
-        card.addEventListener('keydown', handleKeydown);
         card.addEventListener('mouseenter', handleMouseEnter);
         card.addEventListener('mouseleave', handleMouseLeave);
-        
-        // 触摸设备支持
-        card.addEventListener('touchstart', handleMouseEnter, { passive: true });
-        card.addEventListener('touchend', handleMouseLeave, { passive: true });
-    }
+        card.addEventListener('click', handleClick);
+        card.addEventListener('keydown', handleKeydown);
+
+        // 存储事件监听器以便后续清理
+        card._eventListeners = {
+            mouseenter: handleMouseEnter,
+            mouseleave: handleMouseLeave,
+            click: handleClick,
+            keydown: handleKeydown
+        };
+    },
 
     playHoverAnimation(card, feature) {
-        if (globalState.isAnimating) return;
-        
-        this.animationManager.playAnimation(card, feature);
-    }
+        if (card._hoverAnimating) return;
+        card._hoverAnimating = true;
+
+        const animationFrame = utils.requestAnimationFrame(() => {
+            const featureType = this.getFeatureType(feature);
+            animationManager.playAnimation(card, featureType);
+        }, globalState);
+
+        globalState.animationFrames.set(card.dataset.cardId, animationFrame);
+
+        setTimeout(() => {
+            card._hoverAnimating = false;
+        }, CONFIG.ANIMATION.HOVER_DURATION);
+    },
 
     getFeatureType(feature) {
         const featureMap = {
@@ -104,78 +110,33 @@ export class CardManager {
             '图表绘制': 'artist'
         };
         return featureMap[feature] || 'scientist';
-    }
+    },
 
     handleCardClick(card, feature) {
-        const currentTime = Date.now();
-        
-        // 防止重复点击
-        if (currentTime - globalState.lastMessageTime < 500) {
-            return;
-        }
-        
-        globalState.lastMessageTime = currentTime;
-        
-        // 根据功能类型执行不同操作
-        switch (feature) {
-            case '数据分析':
-                this.handleDataAnalysis();
-                break;
-            case '代码编写':
-                this.handleCodeWriting();
-                break;
-            case '图表绘制':
-                this.handleChartCreation();
-                break;
-            default:
-                this.handleDefaultAction(feature);
-        }
-    }
+        const messageInput = document.querySelector('#messageInput');
+        if (!messageInput) return;
 
-    handleDataAnalysis() {
-        const input = document.querySelector('#messageInput');
-        if (input) {
-            input.value = '请帮我分析以下数据：';
-            input.focus();
-            utils.autoResizeTextarea(input);
-        }
-        console.log('数据分析功能已激活');
-    }
+        const prompt = this.prompts[feature] || `请帮我处理${feature}相关的问题：`;
+        messageInput.value = prompt;
+        messageInput.focus();
+        messageInput.dispatchEvent(new Event('input'));
 
-    handleCodeWriting() {
-        const input = document.querySelector('#messageInput');
-        if (input) {
-            input.value = '请帮我编写以下代码：';
-            input.focus();
-            utils.autoResizeTextarea(input);
-        }
-        console.log('代码编写功能已激活');
-    }
+        const featureType = this.getFeatureType(feature);
+        clickFeedbackManager.createFeedback(card, featureType);
 
-    handleChartCreation() {
-        const input = document.querySelector('#messageInput');
-        if (input) {
-            input.value = '请帮我创建以下图表：';
-            input.focus();
-            utils.autoResizeTextarea(input);
-        }
-        console.log('图表绘制功能已激活');
-    }
+        console.log(`选择了${feature}功能`);
+    },
 
-    handleDefaultAction(feature) {
-        const input = document.querySelector('#messageInput');
-        if (input) {
-            input.value = `请帮我使用${feature}功能：`;
-            input.focus();
-            utils.autoResizeTextarea(input);
-        }
-        console.log(`${feature}功能已激活`);
-    }
-
+    // 清理资源
     cleanup() {
-        this.cards.forEach((card, cardId) => {
-            utils.cleanupAnimation(cardId);
+        const cards = document.querySelectorAll('.feature-card');
+        cards.forEach(card => {
+            if (card._eventListeners) {
+                Object.entries(card._eventListeners).forEach(([event, listener]) => {
+                    card.removeEventListener(event, listener);
+                });
+                delete card._eventListeners;
+            }
         });
-        this.cards.clear();
     }
-} 
+}; 

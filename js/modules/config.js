@@ -1,17 +1,6 @@
-// 状态管理模块
+// 配置模块 - 常量和主题配置
 
-// 全局状态管理
-export const globalState = {
-    isTyping: false,
-    messageIdCounter: 0,
-    lastMessageTime: 0,
-    typingTimeout: null,
-    animationFrames: new Map(), // 存储动画帧ID
-    hoverTimeouts: new Map(),    // 存储悬停超时ID
-    isAnimating: false          // 防止动画冲突
-};
-
-// 常量配置
+// 动画和交互配置
 export const CONFIG = {
     ANIMATION: {
         HOVER_DELAY: 100,

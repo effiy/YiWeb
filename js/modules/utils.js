@@ -1,6 +1,8 @@
-import { CONFIG, globalState } from './state.js';
-
 // 工具函数模块
+
+import { CONFIG } from './config.js';
+
+// 工具函数集合
 export const utils = {
     // 防抖函数
     debounce(func, wait) {
@@ -50,7 +52,7 @@ export const utils = {
         
         if (!inputSection) return;
         
-        const handleResize = utils.debounce(() => {
+        const handleResize = this.debounce(() => {
             const currentViewport = window.innerHeight;
             const isKeyboardOpen = currentViewport < initialViewport * 0.8;
             
@@ -61,7 +63,7 @@ export const utils = {
     },
 
     // 清理动画资源
-    cleanupAnimation(cardId) {
+    cleanupAnimation(cardId, globalState) {
         const animationFrame = globalState.animationFrames.get(cardId);
         const hoverTimeout = globalState.hoverTimeouts.get(cardId);
         
@@ -109,7 +111,7 @@ export const utils = {
     },
 
     // 性能优化的动画帧请求
-    requestAnimationFrame(callback) {
+    requestAnimationFrame(callback, globalState) {
         if (globalState.isAnimating) {
             return setTimeout(callback, 16); // 约60fps
         }
