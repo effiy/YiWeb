@@ -26,352 +26,81 @@
 </head>
 <body>
     <div id="app">
-        <!-- 搜索区域 -->
-        <header class="header-row" role="banner">
-            <!-- 第一行：搜索框和筛选 -->
-            <div class="search-row">
-                <div class="search-box" role="search">
-                    <div class="search-logo" aria-hidden="true">
-                        <i class="fas fa-brain" aria-label="AI大脑图标"></i>
-                    </div>
-                    <div class="search-input-wrapper">
-                        <textarea 
-                            id="messageInput"
-                            v-model="searchQuery"
-                            placeholder="搜索最新科技新闻，了解AI、互联网、科技产品等领域热点动态..." 
-                            rows="1" 
-                            maxlength="2000"
-                            aria-label="消息输入框"
-                            autocomplete="off"
-                            spellcheck="false"
-                            @keydown.enter="handleSearchKeydown"
-                            @keydown.esc="clearSearch"
-                        ></textarea>
-                    </div>
-                </div>
-                <div class="category-filters">
-                    <div class="filter-buttons">
-                        <button 
-                            v-for="category in categories" 
-                            :key="category.key"
-                            @click="toggleCategory(category.key)"
-                            :class="['filter-btn', { active: selectedCategories.has(category.key) }]"
-                            :data-category="category.key"
-                            :title="category.title"
-                        >
-                            <i :class="category.icon"></i>
-                            {{ category.title }}
-                        </button>
-                    </div>
-                    <!-- 收缩按钮 -->
-                    <button 
-                        @click="toggleSidebar"
-                        class="sidebar-toggle-btn"
-                        :title="sidebarCollapsed ? '展开侧边栏' : '收缩侧边栏'"
-                        :aria-label="sidebarCollapsed ? '展开侧边栏' : '收缩侧边栏'"
-                        :aria-expanded="!sidebarCollapsed"
-                    >
-                        <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" aria-hidden="true"></i>
-                        <span class="sr-only">{{ sidebarCollapsed ? '展开侧边栏' : '收缩侧边栏' }}</span>
-                    </button>
-                </div>
-            </div>
-        </header>
+        <!-- 搜索头部组件 -->
+        <search-header
+            v-model:search-query="searchQuery"
+            :categories="categories"
+            :selected-categories="selectedCategories"
+            :sidebar-collapsed="sidebarCollapsed"
+            @search-keydown="handleSearchKeydown"
+            @clear-search="clearSearch"
+            @toggle-category="toggleCategory"
+            @toggle-sidebar="toggleSidebar"
+        ></search-header>
         
         <!-- 主要内容区域 -->
         <main class="main-content" role="main">
             <div class="container">
-                <!-- 新闻内容区域 -->
-                <section class="news-section" aria-label="新闻内容">
-                    <!-- 加载状态 -->
-                    <div v-if="loading" class="loading-container" role="status" aria-live="polite">
-                        <div class="loading-spinner" aria-hidden="true"></div>
-                        <div class="loading-text">正在加载新闻数据...</div>
-                        <div class="loading-subtext">正在获取 {{ currentDateDisplay }} 的新闻资讯</div>
-                    </div>
-
-                    <!-- 错误状态 -->
-                    <div v-else-if="error" class="error-container" role="alert">
-                        <div class="error-icon" aria-hidden="true">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div class="error-message">{{ error }}</div>
-                        <div class="error-submessage">网络连接可能存在问题，请检查后重试</div>
-                        <button @click="loadNewsData" class="retry-button">
-                            <i class="fas fa-redo"></i>
-                            重新加载
-                        </button>
-                    </div>
-
-                    <!-- 搜索结果显示 -->
-                    <div v-else-if="searchQuery && searchResults.length > 0" class="search-results">
-                        <header class="search-results-header">
-                            <span class="search-results-count">找到 {{ searchResults.length }} 条相关新闻</span>
-                            <span class="search-query">"{{ searchQuery }}"</span>
-                        </header>
-                        
-                        <div class="news-grid" role="list">
-                            <article 
-                                v-for="item in searchResults" 
-                                :key="item.link || item.title"
-                                @click="handleNewsClick(item)"
-                                :class="['news-item', { 
-                                    highlighted: isHighlighted(item),
-                                    clicked: clickedItems.has(item.link || item.title)
-                                }]"
-                                :title="item.title"
-                                role="listitem"
-                            >
-                                <header class="news-header">
-                                    <h3 class="news-title">{{ item.title }}</h3>
-                                </header>
-                                
-                                <div class="news-meta">
-                                    <div class="news-category-tags">
-                                        <span 
-                                            v-for="tag in getCategoryTag(item)" 
-                                            :key="tag"
-                                            class="news-category-tag"
-                                        >
-                                            {{ tag }}
-                                        </span>
-                                    </div>
-                                    <time class="news-time" :datetime="item.isoDate">
-                                        <i class="fas fa-clock"></i>
-                                        <span>{{ getTimeAgo(item.isoDate) }}</span>
-                                    </time>
-                                </div>
-                                
-                                <div class="news-excerpt">{{ extractExcerpt(item) }}</div>
-                                
-                                <footer class="news-footer">
-                                    <div class="news-source">
-                                        <i class="fas fa-newspaper"></i>
-                                        <span>{{ item.creator || '未知来源' }}</span>
-                                    </div>
-                                    <div v-if="item.link" class="news-link">
-                                        <span>阅读原文</span>
-                                        <i class="fas fa-external-link-alt"></i>
-                                    </div>
-                                </footer>
-                            </article>
-                        </div>
-                    </div>
-
-                    <!-- 空搜索结果 -->
-                    <div v-else-if="searchQuery && searchResults.length === 0" class="empty-state" role="status">
-                        <div class="empty-icon" aria-hidden="true">
-                            <i class="fas fa-search"></i>
-                        </div>
-                        <div class="empty-title">未找到相关新闻</div>
-                        <div class="empty-subtitle">尝试使用其他关键词搜索</div>
-                    </div>
-
-                    <!-- 分类新闻显示 -->
-                    <div v-else-if="hasNewsData">
-                        <section 
-                            v-for="(category, categoryKey) in displayCategories" 
-                            :key="categoryKey"
-                            v-show="shouldShowCategory(categoryKey) && category.news.length > 0"
-                            class="news-category"
-                            :aria-label="`${category.title || categoryKey}分类新闻`"
-                        >
-                            <div class="news-grid" role="list">
-                                <article 
-                                    v-for="item in category.news" 
-                                    :key="item.link || item.title"
-                                    @click="handleNewsClick(item)"
-                                    :class="['news-item', { 
-                                        highlighted: isHighlighted(item),
-                                        clicked: clickedItems.has(item.link || item.title)
-                                    }]"
-                                    :title="item.title"
-                                    role="listitem"
-                                >
-                                    <header class="news-header">
-                                        <h3 class="news-title">{{ item.title }}</h3>
-                                    </header>
-                                    
-                                                                    <div class="news-meta">
-                                    <div class="news-category-tags">
-                                        <span 
-                                            v-for="tag in getCategoryTag(item)" 
-                                            :key="tag"
-                                            class="news-category-tag"
-                                        >
-                                            {{ tag }}
-                                        </span>
-                                    </div>
-                                    <time class="news-time" :datetime="item.isoDate">
-                                        <i class="fas fa-clock"></i>
-                                        <span>{{ getTimeAgo(item.isoDate) }}</span>
-                                    </time>
-                                </div>
-                                    
-                                    <div class="news-excerpt">{{ extractExcerpt(item) }}</div>
-                                    
-                                    <footer class="news-footer">
-                                        <div class="news-source">
-                                            <i class="fas fa-newspaper"></i>
-                                            <span>{{ item.creator || '未知来源' }}</span>
-                                        </div>
-                                        <div v-if="item.link" class="news-link">
-                                            <span>阅读原文</span>
-                                            <i class="fas fa-external-link-alt"></i>
-                                        </div>
-                                    </footer>
-                                </article>
-                            </div>
-                        </section>
-                    </div>
-
-                    <!-- 空状态 -->
-                    <div v-else class="empty-state" role="status">
-                        <div class="empty-icon" aria-hidden="true">
-                            <i class="fas fa-newspaper"></i>
-                        </div>
-                        <div class="empty-title">暂无新闻数据</div>
-                        <div class="empty-subtitle">请稍后重试或联系管理员</div>
-                    </div>
-                </section>
+                <!-- 新闻列表组件 -->
+                <news-list
+                    :loading="loading"
+                    :error="error"
+                    :current-date-display="currentDateDisplay"
+                    :search-query="searchQuery"
+                    :search-results="searchResults"
+                    :display-categories="displayCategories"
+                    :selected-categories="selectedCategories"
+                    :clicked-items="clickedItems"
+                    :has-news-data="hasNewsData"
+                    @load-news-data="loadNewsData"
+                    @news-click="handleNewsClick"
+                ></news-list>
                 
-                <!-- 侧边栏：日期导航 -->
-                <aside class="sidebar-navigation" :class="{ collapsed: sidebarCollapsed }" role="complementary" aria-label="日期导航">
-                    <nav class="date-navigation" aria-label="日期导航">
-                        <button 
-                            @click="goToPreviousDay"
-                            class="date-nav-btn prev-day"
-                            title="查看上一天的新闻"
-                            aria-label="查看上一天的新闻"
-                        >
-                            <i class="fas fa-chevron-left"></i>
-                            <span v-show="!sidebarCollapsed">上一天</span>
-                        </button>
-                        
-                        <div class="current-date-display" @click="goToToday" :title="isToday ? '当前已是今天' : '点击回到今天'">
-                            <div class="date-main">{{ currentDateDisplay }}</div>
-                            <div class="date-subtitle" v-show="!sidebarCollapsed">{{ currentDateSubtitle }}</div>
-                            <div v-if="!isToday" class="date-today-hint">
-                                <i class="fas fa-home"></i>
-                            </div>
-                        </div>
-                        
-                        <button 
-                            @click="goToNextDay"
-                            class="date-nav-btn next-day"
-                            :disabled="isFutureDate"
-                            :title="isFutureDate ? '无法查看未来日期' : '查看下一天的新闻'"
-                            aria-label="查看下一天的新闻"
-                        >
-                            <span v-show="!sidebarCollapsed">下一天</span>
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </nav>
-                    
-                    <!-- 小日历模块 -->
-                    <div class="mini-calendar" v-show="!sidebarCollapsed" role="region" aria-label="日历导航">
-                        <div class="calendar-header">
-                            <button 
-                                @click="previousMonth"
-                                class="calendar-nav-btn"
-                                title="上个月"
-                                aria-label="上个月"
-                                :aria-disabled="false"
-                            >
-                                <i class="fas fa-chevron-left" aria-hidden="true"></i>
-                            </button>
-                            <div class="calendar-title" role="heading" aria-level="3">{{ calendarTitle }}</div>
-                            <button 
-                                @click="nextMonth"
-                                class="calendar-nav-btn"
-                                :disabled="isCurrentMonth"
-                                :title="isCurrentMonth ? '当前已是本月' : '下个月'"
-                                :aria-label="isCurrentMonth ? '当前已是本月' : '下个月'"
-                                :aria-disabled="isCurrentMonth"
-                            >
-                                <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                        
-                        <div class="calendar-weekdays" role="rowgroup">
-                            <div class="weekday" v-for="day in weekdays" :key="day" role="columnheader">{{ day }}</div>
-                        </div>
-                        
-                        <div class="calendar-days" role="grid" :aria-label="`${calendarTitle}日历`">
-                            <div 
-                                v-for="day in calendarDays" 
-                                :key="day.key"
-                                @click="selectDate(day.date)"
-                                @keydown.enter="selectDate(day.date)"
-                                @keydown.space="selectDate(day.date)"
-                                :class="[
-                                    'calendar-day',
-                                    {
-                                        'other-month': !day.isCurrentMonth,
-                                        'today': day.isToday,
-                                        'selected': day.isSelected,
-                                        'has-news': day.hasNews,
-                                        'clickable': day.isClickable
-                                    }
-                                ]"
-                                :title="day.tooltip"
-                                :aria-label="day.ariaLabel"
-                                :data-date="getDateString(day.date)"
-                                :tabindex="day.isClickable ? 0 : -1"
-                                role="gridcell"
-                                :aria-selected="day.isSelected"
-                                :aria-current="day.isToday ? 'date' : undefined"
-                            >
-                                <span class="day-number">{{ day.dayNumber }}</span>
-                            </div>
-                        </div>
-                        
-                    </div>
-                    
-                    <!-- 标签统计模块 -->
-                    <div class="tag-statistics" v-show="!sidebarCollapsed && hasNewsData" role="region" aria-label="标签统计">
-                        
-                        <div class="tag-statistics-content">
-                            <div v-if="tagStatistics.tags.length === 0" class="tag-empty-state">
-                                <i class="fas fa-info-circle" aria-hidden="true"></i>
-                                <span>暂无标签数据</span>
-                            </div>
-                            
-                            <div v-else class="tag-list" role="list">
-                                <div 
-                                    v-for="tag in tagStatistics.tags" 
-                                    :key="tag.name"
-                                    @click="toggleTag(tag.name)"
-                                    :class="['tag-item', { active: selectedTags.has(tag.name) }]"
-                                    :title="`${tag.name}: ${tag.currentCount}条新闻 (${tag.percentage}%) - 点击筛选`"
-                                    role="listitem"
-                                    tabindex="0"
-                                    @keydown.enter="toggleTag(tag.name)"
-                                    @keydown.space="toggleTag(tag.name)"
-                                >
-                                    <div class="tag-info">
-                                        <span class="tag-name">{{ tag.name }}</span>
-                                        <span class="tag-stats">
-                                            <span class="tag-count">{{ tag.currentCount }}</span>
-                                        </span>
-                                    </div>
-                                    <div class="tag-progress-bar">
-                                        <div 
-                                            class="tag-progress-fill"
-                                            :style="{ 
-                                                width: `${tagStatistics.maxCount > 0 ? (tag.currentCount / tagStatistics.maxCount) * 100 : 0}%`,
-                                                backgroundColor: tag.color
-                                            }"
-                                        ></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </aside>
+                <!-- 侧边栏组件 -->
+                <sidebar
+                    :sidebar-collapsed="sidebarCollapsed"
+                    :current-date="currentDate"
+                    :current-date-display="currentDateDisplay"
+                    :current-date-subtitle="currentDateSubtitle"
+                    :is-today="isToday"
+                    :is-future-date="isFutureDate"
+                    :calendar-date="currentDate"
+                    :calendar-title="calendarTitle"
+                    :is-current-month="isCurrentMonth"
+                    :calendar-days="calendarDays"
+                    :selected-date="currentDate"
+                    :tag-statistics="tagStatistics"
+                    :selected-tags="selectedTags"
+                    :has-news-data="hasNewsData"
+                    @go-to-previous-day="goToPreviousDay"
+                    @go-to-next-day="goToNextDay"
+                    @go-to-today="goToToday"
+                    @previous-month="previousMonth"
+                    @next-month="nextMonth"
+                    @select-date="selectDate"
+                    @toggle-tag="toggleTag"
+                ></sidebar>
             </div>
         </main>
     </div>
+
+    <!-- 调试工具 -->
+    <script src="debug.js"></script>
+    
+    <!-- 缓存管理器 -->
+    <script src="cacheManager.js"></script>
+    
+    <!-- 组件管理器 -->
+    <script src="components/ComponentManager.js"></script>
+    
+    <!-- 组件文件 -->
+    <script src="components/Calendar.js"></script>
+    <script src="components/TagStatistics.js"></script>
+    <script src="components/Sidebar.js"></script>
+    <script src="components/NewsList.js"></script>
+    <script src="components/SearchHeader.js"></script>
+    
+    <!-- 主应用逻辑 -->
     <script src="news.js"></script>
 </body>
 </html> 

@@ -58,6 +58,47 @@ const NewsApp = {
 
         // 工具函数
         const utils = {
+            // 安全的localStorage存储
+            safeSetItem(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                    return true;
+                } catch (e) {
+                    console.warn(`LocalStorage存储失败 (${key}):`, e.message);
+                    
+                    // 如果是配额超出，尝试清理一些数据
+                    if (e.name === 'QuotaExceededError') {
+                        console.warn('LocalStorage配额超出，尝试清理数据...');
+                        
+                        // 清理搜索历史（保留最近5条）
+                        if (key === 'newsSearchHistory') {
+                            try {
+                                const history = JSON.parse(value);
+                                const reduced = history.slice(0, 5);
+                                localStorage.setItem(key, JSON.stringify(reduced));
+                                console.log('搜索历史已减少到5条');
+                                return true;
+                            } catch (retryError) {
+                                console.error('减少搜索历史失败:', retryError);
+                            }
+                        }
+                        
+                        // 清理新闻缓存
+                        if (window.NewsCacheManager) {
+                            window.NewsCacheManager.cleanOldestCache(5);
+                            try {
+                                localStorage.setItem(key, value);
+                                console.log('清理缓存后重新存储成功');
+                                return true;
+                            } catch (retryError) {
+                                console.error('清理缓存后仍然存储失败:', retryError);
+                            }
+                        }
+                    }
+                    
+                    return false;
+                }
+            },
             // 防抖函数
             debounce(func, wait) {
                 let timeout;
@@ -297,18 +338,11 @@ const NewsApp = {
                     return false;
                 }
                 
-                // 可以根据实际需求添加更精确的新闻数据检查
-                // 例如：检查本地存储的新闻数据缓存
-                const cachedNewsKey = `news_cache_${dateStr}`;
-                const cachedNews = localStorage.getItem(cachedNewsKey);
-                
-                if (cachedNews) {
-                    try {
-                        const newsData = JSON.parse(cachedNews);
-                        return newsData && newsData.length > 0;
-                    } catch (e) {
-                        // 缓存数据损坏，删除它
-                        localStorage.removeItem(cachedNewsKey);
+                // 使用智能缓存管理器检查新闻数据
+                if (window.NewsCacheManager) {
+                    const cachedNews = window.NewsCacheManager.getCache(dateStr);
+                    if (cachedNews && cachedNews.length > 0) {
+                        return true;
                     }
                 }
                 
@@ -607,13 +641,26 @@ const NewsApp = {
             if (newQuery && !searchHistory.value.includes(newQuery)) {
                 searchHistory.value.unshift(newQuery);
                 searchHistory.value = searchHistory.value.slice(0, 10);
-                localStorage.setItem('newsSearchHistory', JSON.stringify(searchHistory.value));
+                utils.safeSetItem('newsSearchHistory', JSON.stringify(searchHistory.value));
             }
         }, { immediate: false });
 
         // API相关方法
         const api = {
             async fetchNewsData() {
+                const dateStr = getDateString(currentDate.value);
+                
+                // 优先从缓存读取数据
+                if (window.NewsCacheManager) {
+                    const cachedData = window.NewsCacheManager.getCache(dateStr);
+                    if (cachedData && cachedData.length > 0) {
+                        console.log(`从缓存加载数据: ${dateStr} (${cachedData.length}条新闻)`);
+                        return cachedData;
+                    }
+                }
+
+                // 缓存没有数据，从网络获取
+                console.log(`从网络获取数据: ${dateStr}`);
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
 
@@ -638,13 +685,14 @@ const NewsApp = {
                         throw new Error('数据格式错误');
                     }
 
-                    // 缓存新闻数据
-                    const dateStr = getDateString(currentDate.value);
-                    const cacheKey = `news_cache_${dateStr}`;
-                    try {
-                        localStorage.setItem(cacheKey, JSON.stringify(data.data.list));
-                    } catch (e) {
-                        console.warn('缓存新闻数据失败:', e);
+                    // 使用智能缓存管理器缓存新闻数据
+                    if (window.NewsCacheManager) {
+                        const cacheSuccess = window.NewsCacheManager.setCache(dateStr, data.data.list);
+                        if (!cacheSuccess) {
+                            console.warn('智能缓存失败，数据仍然可以正常使用');
+                        }
+                    } else {
+                        console.warn('缓存管理器未加载，跳过缓存');
                     }
 
                     return data.data.list;
@@ -687,7 +735,7 @@ const NewsApp = {
                 if (query && !searchHistory.value.includes(query)) {
                     searchHistory.value.unshift(query);
                     searchHistory.value = searchHistory.value.slice(0, 10);
-                    localStorage.setItem('newsSearchHistory', JSON.stringify(searchHistory.value));
+                    utils.safeSetItem('newsSearchHistory', JSON.stringify(searchHistory.value));
                 }
             }, 100),
 
@@ -699,7 +747,7 @@ const NewsApp = {
                 if (query && !searchHistory.value.includes(query)) {
                     searchHistory.value.unshift(query);
                     searchHistory.value = searchHistory.value.slice(0, 10);
-                    localStorage.setItem('newsSearchHistory', JSON.stringify(searchHistory.value));
+                    utils.safeSetItem('newsSearchHistory', JSON.stringify(searchHistory.value));
                 }
             },
 
@@ -714,7 +762,7 @@ const NewsApp = {
                     if (query && !searchHistory.value.includes(query)) {
                         searchHistory.value.unshift(query);
                         searchHistory.value = searchHistory.value.slice(0, 10);
-                        localStorage.setItem('newsSearchHistory', JSON.stringify(searchHistory.value));
+                        utils.safeSetItem('newsSearchHistory', JSON.stringify(searchHistory.value));
                     }
                 }
             },
@@ -840,7 +888,7 @@ const NewsApp = {
                 sidebarCollapsed.value = !sidebarCollapsed.value;
                 
                 // 保存状态到本地存储
-                localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value.toString());
+                utils.safeSetItem('sidebarCollapsed', sidebarCollapsed.value.toString());
                 
                 // 触发重新布局
                 setTimeout(() => {
@@ -1136,6 +1184,7 @@ const NewsApp = {
             searchHistory,
             categories,
             sidebarCollapsed,
+            currentDate,
             
             // 计算属性
             hasNewsData,
@@ -1199,7 +1248,27 @@ const NewsApp = {
 };
 
 // 创建并挂载应用
-createApp(NewsApp).mount('#app');
+const app = createApp(NewsApp);
+
+// 注册组件（确保组件已经加载）
+if (typeof SearchHeader !== 'undefined') {
+    app.component('SearchHeader', SearchHeader);
+}
+if (typeof NewsList !== 'undefined') {
+    app.component('NewsList', NewsList);
+}
+if (typeof Calendar !== 'undefined') {
+    app.component('Calendar', Calendar);
+}
+if (typeof TagStatistics !== 'undefined') {
+    app.component('TagStatistics', TagStatistics);
+}
+if (typeof Sidebar !== 'undefined') {
+    app.component('Sidebar', Sidebar);
+}
+
+// 挂载应用
+app.mount('#app');
 
 
 
