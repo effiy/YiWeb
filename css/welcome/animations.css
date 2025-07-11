@@ -351,4 +351,139 @@
         transform: translateX(0);
         opacity: 1;
     }
+}
+
+/* 新增：JavaScript中引用的动画定义 */
+
+/* 科学家卡片悬停动画 */
+@keyframes scientistScanHover {
+    0% {
+        transform: scale(1) rotate(0deg);
+        filter: hue-rotate(0deg);
+    }
+    25% {
+        transform: scale(1.1) rotate(5deg);
+        filter: hue-rotate(90deg);
+    }
+    50% {
+        transform: scale(1.05) rotate(0deg);
+        filter: hue-rotate(180deg);
+    }
+    75% {
+        transform: scale(1.1) rotate(-5deg);
+        filter: hue-rotate(270deg);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        filter: hue-rotate(360deg);
+    }
+}
+
+/* 徽章脉冲动画 */
+@keyframes badgePulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+}
+
+/* 极客卡片代码发光动画 */
+@keyframes codeGlowHover {
+    0% {
+        transform: scale(1);
+        text-shadow: 0 0 5px currentColor;
+        filter: brightness(1);
+    }
+    33% {
+        transform: scale(1.05);
+        text-shadow: 0 0 10px currentColor, 0 0 15px currentColor;
+        filter: brightness(1.2);
+    }
+    66% {
+        transform: scale(1.1);
+        text-shadow: 0 0 15px currentColor, 0 0 20px currentColor;
+        filter: brightness(1.1);
+    }
+    100% {
+        transform: scale(1);
+        text-shadow: 0 0 5px currentColor;
+        filter: brightness(1);
+    }
+}
+
+/* 终端闪烁动画 */
+@keyframes terminalBlink {
+    0% {
+        opacity: 1;
+        background-color: transparent;
+    }
+    50% {
+        opacity: 0.7;
+        background-color: rgba(34, 197, 94, 0.1);
+    }
+    100% {
+        opacity: 1;
+        background-color: transparent;
+    }
+}
+
+/* 艺术家卡片脉冲动画 */
+@keyframes artistPulseHover {
+    0% {
+        transform: scale(1) rotate(0deg);
+        filter: hue-rotate(0deg) saturate(1);
+    }
+    25% {
+        transform: scale(1.08) rotate(2deg);
+        filter: hue-rotate(90deg) saturate(1.2);
+    }
+    50% {
+        transform: scale(1.05) rotate(0deg);
+        filter: hue-rotate(180deg) saturate(1.1);
+    }
+    75% {
+        transform: scale(1.08) rotate(-2deg);
+        filter: hue-rotate(270deg) saturate(1.2);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        filter: hue-rotate(360deg) saturate(1);
+    }
+}
+
+/* 创意闪烁动画 */
+@keyframes creativeSparkle {
+    0% {
+        transform: scale(1);
+        opacity: 0.9;
+        box-shadow: 0 0 5px currentColor;
+    }
+    25% {
+        transform: scale(1.1);
+        opacity: 1;
+        box-shadow: 0 0 10px currentColor, 0 0 15px currentColor;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+        box-shadow: 0 0 8px currentColor, 0 0 12px currentColor;
+    }
+    75% {
+        transform: scale(1.1);
+        opacity: 1;
+        box-shadow: 0 0 12px currentColor, 0 0 18px currentColor;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 0.9;
+        box-shadow: 0 0 5px currentColor;
+    }
 } 

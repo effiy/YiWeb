@@ -277,9 +277,10 @@ export const clickFeedbackManager = {
 
     getEffectColor(feature, alpha = 0.3) {
         const color = THEME_COLORS[feature]?.primary || THEME_COLORS.scientist.primary;
-        return color.replace('#', '').match(/.{2}/g)
+        const rgb = color.replace('#', '').match(/.{2}/g)
             .map(hex => parseInt(hex, 16))
             .join(', ');
+        return `rgba(${rgb}, ${alpha})`;
     },
 
     createParticles(card, feedback, count, feature) {
