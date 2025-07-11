@@ -1,0 +1,125 @@
+/* 动画定义模块 */
+
+/* 量子粒子背景动画 */
+@keyframes quantumParticles {
+    0% {
+        background-position: 0% 50%;
+        opacity: 0.2;
+    }
+    50% {
+        background-position: 100% 50%;
+        opacity: 0.6;
+    }
+    100% {
+        background-position: 0% 50%;
+        opacity: 0.2;
+    }
+}
+
+@keyframes quantumFlow {
+    0% {
+        background-position: 0% 50%;
+        filter: hue-rotate(0deg);
+    }
+    50% {
+        background-position: 100% 50%;
+        filter: hue-rotate(180deg);
+    }
+    100% {
+        background-position: 0% 50%;
+        filter: hue-rotate(360deg);
+    }
+}
+
+@keyframes quantumGlow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(6, 182, 212, 0.6);
+    }
+}
+
+@keyframes quantumPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.02);
+        opacity: 0.9;
+    }
+}
+
+@keyframes buttonPulse {
+    0%, 100% {
+        box-shadow: var(--shadow-sm);
+    }
+    50% {
+        box-shadow: var(--shadow-sm), 0 0 15px rgba(79, 70, 229, 0.4);
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes clickEffect {
+    0%, 100% { 
+        transform: scale(1); 
+    }
+    50% { 
+        transform: scale(0.98); 
+    }
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes tagStatisticsFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes tagItemSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Vue过渡动画 */
+.fade-enter-active, .fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.fade-enter-from, .fade-leave-to {
+    opacity: 0;
+}
+
+.slide-enter-active, .slide-leave-active {
+    transition: all 0.3s ease;
+}
+
+.slide-enter-from {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.slide-leave-to {
+    opacity: 0;
+    transform: translateY(-20px);
+} 

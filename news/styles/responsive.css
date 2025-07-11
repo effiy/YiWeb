@@ -1,0 +1,528 @@
+/* 响应式设计模块 */
+
+/* 大屏幕优化 */
+@media (min-width: 1400px) {
+    .tag-list {
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    }
+    
+    .tag-item {
+        height: 50px;
+        padding: 8px;
+    }
+    
+    .tag-statistics {
+        max-height: calc(100vh - 480px);
+    }
+    
+    .tag-statistics-content {
+        max-height: 228px;
+    }
+}
+
+/* 超大屏幕优化 */
+@media (min-width: 1920px) {
+    .tag-statistics {
+        max-height: calc(100vh - 500px);
+    }
+    
+    .tag-statistics-content {
+        max-height: 228px;
+    }
+    
+    .tag-list {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+}
+
+/* 中等屏幕优化 */
+@media (max-width: 1200px) {
+    html body #app .header-row,
+    html body #app header.header-row,
+    body #app .header-row,
+    body #app header.header-row,
+    #app .header-row,
+    #app header.header-row,
+    .header-row,
+    header.header-row {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 1000 !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    .container {
+        grid-template-columns: 1fr 320px;
+        gap: var(--spacing-lg);
+        padding: 0 var(--spacing-md);
+    }
+    
+    .sidebar-navigation {
+        width: 320px;
+        min-width: 320px;
+    }
+    
+    .news-grid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+    
+    .main-content {
+        padding: calc(4rem + var(--spacing-md)) 0 var(--spacing-md) 0;
+    }
+    
+    .mini-calendar {
+        margin-top: var(--spacing-md);
+    }
+    
+    .calendar-day {
+        height: 28px;
+        font-size: 11px;
+    }
+    
+    .weekday {
+        height: 28px;
+        font-size: 10px;
+    }
+    
+    .calendar-nav-btn {
+        width: 26px;
+        height: 26px;
+        font-size: 11px;
+    }
+    
+    .tag-list {
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    }
+    
+    .tag-item {
+        height: 44px;
+        padding: 7px;
+    }
+    
+    .tag-statistics {
+        max-height: calc(100vh - 380px);
+    }
+    
+    .tag-statistics-content {
+        max-height: 228px;
+    }
+}
+
+/* 平板设备适配 */
+@media (max-width: 768px) {
+    html body #app .header-row,
+    html body #app header.header-row,
+    body #app .header-row,
+    body #app header.header-row,
+    #app .header-row,
+    #app header.header-row,
+    .header-row,
+    header.header-row {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 1000 !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    #app {
+        min-height: 100vh;
+        min-height: calc(var(--vh, 1vh) * 100);
+    }
+    
+    .container {
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+            "news"
+            "sidebar";
+        gap: var(--spacing-lg);
+        padding: 0 var(--spacing-sm);
+    }
+    
+    .main-content {
+        padding: 0 0 var(--spacing-md) 0;
+    }
+
+    .news-section {
+        padding-top: calc(3rem + var(--spacing-md));
+        gap: var(--spacing-lg);
+    }
+    
+    .sidebar-navigation {
+        position: static;
+        order: 2;
+        width: 100%;
+        min-width: auto;
+    }
+
+    .sidebar-toggle-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.8rem;
+        margin-left: var(--spacing-xs);
+        min-width: 26px;
+        min-height: 26px;
+    }
+    
+    .search-row {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+        width: 100%;
+    }
+    
+    .search-box {
+        width: 100%;
+        order: 1;
+    }
+    
+    .date-navigation {
+        order: 2;
+        width: 100%;
+        justify-content: center;
+        padding: var(--spacing-xs);
+    }
+    
+    .date-nav-btn {
+        min-width: 70px;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .current-date-display {
+        min-width: 142px;
+        padding: 6px 10px;
+    }
+    
+    .date-main {
+        font-size: 0.85rem;
+    }
+    
+    .date-subtitle {
+        font-size: 0.65rem;
+    }
+    
+    .date-today-hint {
+        width: 16px;
+        height: 16px;
+        font-size: 0.6rem;
+        top: -6px;
+        right: -6px;
+    }
+    
+    .category-filters {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .filter-buttons {
+        gap: var(--spacing-xs);
+        width: 100%;
+    }
+    
+    .filter-btn {
+        font-size: 0.8rem;
+        padding: var(--spacing-xs);
+    }
+
+    .sidebar-toggle-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.75rem;
+        margin-left: var(--spacing-xs);
+        min-width: 24px;
+        min-height: 24px;
+    }
+    
+    .news-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+        width: 100%;
+    }
+    
+    .news-item {
+        padding: var(--spacing-md);
+        width: 100%;
+    }
+    
+    .news-header {
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .news-title {
+        font-size: 1rem;
+    }
+    
+    .mini-calendar {
+        margin-top: var(--spacing-sm);
+    }
+    
+    .calendar-header {
+        padding: var(--spacing-sm);
+    }
+    
+    .calendar-nav-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+    
+    .calendar-title {
+        font-size: 12px;
+    }
+    
+    .calendar-day {
+        height: 24px;
+        font-size: 10px;
+    }
+    
+    .weekday {
+        height: 24px;
+        font-size: 9px;
+    }
+    
+    .tag-list {
+        grid-template-columns: repeat(auto-fit, minmax(75px, 1fr));
+    }
+    
+    .tag-item {
+        height: 40px;
+        padding: 6px;
+    }
+    
+    .tag-name {
+        font-size: 10px;
+        -webkit-line-clamp: 2;
+    }
+    
+    .tag-stats {
+        font-size: 8px;
+    }
+    
+    .tag-count {
+        padding: 2px 4px;
+        font-size: 8px;
+        min-width: 18px;
+    }
+    
+    .tag-statistics {
+        max-height: calc(100vh - 340px);
+    }
+    
+    .tag-statistics-content {
+        max-height: 228px;
+    }
+}
+
+/* 手机设备适配 */
+@media (max-width: 480px) {
+    html body #app .header-row,
+    html body #app header.header-row,
+    body #app .header-row,
+    body #app header.header-row,
+    #app .header-row,
+    #app header.header-row,
+    .header-row,
+    header.header-row {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 1000 !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        padding: var(--spacing-sm) 0 !important;
+    }
+    
+    .container {
+        padding: 0 var(--spacing-xs);
+        gap: var(--spacing-md);
+    }
+    
+    .main-content {
+        padding: 0 0 var(--spacing-md) 0;
+    }
+    
+    .news-section {
+        gap: var(--spacing-md);
+        padding-top: calc(2.5rem + var(--spacing-md));
+    }
+    
+    .search-row {
+        padding: 0 var(--spacing-sm);
+        width: 100%;
+        gap: var(--spacing-sm);
+    }
+    
+    .search-box {
+        padding: var(--spacing-sm);
+        width: 100%;
+    }
+    
+    .search-logo {
+        width: 20px;
+        height: 20px;
+        font-size: 0.9rem;
+    }
+    
+    #messageInput {
+        font-size: 0.9rem;
+        width: 100%;
+    }
+    
+    .date-navigation {
+        padding: 4px;
+        gap: var(--spacing-sm);
+    }
+    
+    .date-nav-btn {
+        min-width: 60px;
+        padding: 4px 6px;
+        font-size: 0.75rem;
+        gap: 4px;
+    }
+    
+    .date-nav-btn span {
+        display: none;
+    }
+    
+    .current-date-display {
+        min-width: 142px;
+        padding: 4px 6px;
+    }
+    
+    .date-main {
+        font-size: 0.75rem;
+    }
+    
+    .date-subtitle {
+        font-size: 0.6rem;
+    }
+    
+    .date-today-hint {
+        width: 14px;
+        height: 14px;
+        font-size: 0.55rem;
+        top: -5px;
+        right: -5px;
+    }
+    
+    .news-item {
+        padding: var(--spacing-sm);
+    }
+    
+    .filter-buttons {
+        gap: 2px;
+    }
+    
+    .filter-btn {
+        font-size: 0.75rem;
+        padding: 4px 6px;
+    }
+    
+    .mini-calendar {
+        margin-top: var(--spacing-xs);
+    }
+    
+    .calendar-day {
+        height: 20px;
+        font-size: 9px;
+    }
+    
+    .weekday {
+        height: 20px;
+        font-size: 8px;
+    }
+    
+    .calendar-nav-btn {
+        width: 20px;
+        height: 20px;
+        font-size: 8px;
+    }
+    
+    .calendar-title {
+        font-size: 11px;
+    }
+    
+    .tag-list {
+        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    }
+    
+    .tag-item {
+        height: 36px;
+        padding: 5px;
+    }
+    
+    .tag-name {
+        font-size: 9px;
+        -webkit-line-clamp: 2;
+        max-height: 20px;
+    }
+    
+    .tag-stats {
+        font-size: 7px;
+    }
+    
+    .tag-count {
+        padding: 2px 3px;
+        font-size: 7px;
+        min-width: 16px;
+    }
+    
+    .tag-statistics {
+        max-height: calc(100vh - 320px);
+        min-height: calc(25vh);
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .tag-statistics-content {
+        max-height: 228px;
+    }
+}
+
+/* 侧边栏响应式收缩状态 */
+@media (max-width: 1200px) {
+    .sidebar-navigation.collapsed .current-date-display {
+        min-width: 88px;
+        padding: 4px 8px;
+        margin: 0 2px;
+        text-align: center;
+    }
+
+    .sidebar-navigation.collapsed .date-navigation {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        align-items: center;
+    }
+
+    .sidebar-navigation.collapsed .date-nav-btn {
+        min-width: 60px;
+        padding: 4px 8px;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .sidebar-navigation.collapsed .date-nav-btn span {
+        display: none;
+    }
+
+    .sidebar-navigation.collapsed .date-nav-btn i {
+        font-size: 0.8rem;
+    }
+} 
