@@ -12,7 +12,7 @@ export const BASE_CONFIG = {
     // 项目信息
     PROJECT_NAME: 'YiWeb',
     PROJECT_VERSION: '1.1.0',
-    PROJECT_AUTHOR: 'lixuan',
+    PROJECT_AUTHOR: 'liangliang',
     
     // 环境配置
     NODE_ENV: 'development',

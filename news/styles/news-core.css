@@ -1,0 +1,375 @@
+/**
+ * 新闻模块核心样式
+ * author: liangliang
+ * 
+ * 合并了variables.css、base.css和accessibility.css
+ * 提供统一的样式基础，减少HTTP请求
+ */
+
+/* ========== CSS变量和主题色系统 ========== */
+:root {
+    /* 量子美学主题色系统 - 科技未来感 */
+    
+    /* 主色调 - 量子蓝紫 */
+    --primary: #4f46e5;           /* 量子靛蓝 */
+    --primary-hover: #3730a3;     /* 深量子蓝 */
+    --primary-light: #6366f1;     /* 浅量子蓝 */
+    --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+    --primary-gradient-hover: linear-gradient(135deg, #3730a3 0%, #6d28d9 50%, #9333ea 100%);
+    
+    /* 量子辅助色系 */
+    --accent: #06b6d4;            /* 量子青 */
+    --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);
+    --success: #10b981;           /* 量子绿 */
+    --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+    --warning: #f59e0b;           /* 量子橙 */
+    --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+    --error: #ef4444;             /* 量子红 */
+    --error-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+    
+    /* 量子背景色系 */
+    --bg-primary: #0f172a;        /* 深空黑 */
+    --bg-secondary: #1e293b;      /* 量子灰 */
+    --bg-tertiary: #334155;       /* 中量子灰 */
+    --bg-elevated: rgba(30, 41, 59, 0.9); /* 半透明量子灰 */
+    --bg-glass: rgba(255, 255, 255, 0.03); /* 量子玻璃效果 */
+    --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #475569 75%, #64748b 100%);
+    
+    /* 量子文字色系 */
+    --text-primary: #f8fafc;      /* 量子白 */
+    --text-secondary: #cbd5e1;    /* 浅量子灰 */
+    --text-muted: #94a3b8;        /* 中量子灰 */
+    --text-inverse: #0f172a;      /* 深空黑 */
+    --text-accent: #06b6d4;       /* 量子青 */
+    
+    /* 量子边框色系 */
+    --border-primary: rgba(255, 255, 255, 0.08);    /* 量子白边框 */
+    --border-secondary: rgba(6, 182, 212, 0.2);     /* 量子青边框 */
+    --border-focus: #06b6d4;      /* 量子青聚焦 */
+    --border-glass: rgba(255, 255, 255, 0.05); /* 量子玻璃边框 */
+    
+    /* 量子阴影系统 */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.7);
+    --shadow-primary: 0 4px 20px rgba(79, 70, 229, 0.4);
+    --shadow-glow: 0 0 30px rgba(6, 182, 212, 0.4);
+    --shadow-quantum: 0 0 50px rgba(79, 70, 229, 0.3);
+    
+    /* 量子圆角系统 */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 24px;
+    --radius-full: 9999px;
+    
+    /* 精确间距系统 */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+    --spacing-3xl: 4rem;
+    
+    /* 量子过渡动画 */
+    --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========== 基础样式和布局模块 ========== */
+
+/* 基础重置样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 屏幕阅读器专用样式 */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* 主体样式 */
+body {
+    font-family: 'Inter', 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-gradient);
+    background-size: 400% 400%;
+    min-height: 100vh;
+    color: var(--text-primary);
+    overflow-x: hidden;
+    font-weight: 400;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    position: relative;
+}
+
+/* 背景动画效果 */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-gradient);
+    background-size: 400% 400%;
+    animation: quantumFlow 30s ease infinite;
+    pointer-events: none;
+    z-index: -2;
+    opacity: 0.8;
+}
+
+/* 量子粒子效果 */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(79, 70, 229, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+    background-size: 200% 200%;
+    animation: quantumParticles 20s ease infinite;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Vue应用容器 */
+#app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* 主容器布局 */
+.container {
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 
+        "news sidebar";
+    gap: var(--spacing-xl);
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    padding: 0 var(--spacing-lg);
+}
+
+/* 主要内容区域 */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 var(--spacing-md) 0;
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+}
+
+/* 新闻内容区域 */
+.news-section {
+    grid-area: news;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+    max-width: 100%;
+    width: 100%;
+    padding-top: calc(5rem + var(--spacing-md));
+}
+
+/* 加载状态 */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--bg-tertiary);
+    border-top: 4px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+.loading-text {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+.loading-subtext {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* 错误状态 */
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.error-icon {
+    font-size: 3rem;
+    color: var(--error);
+    margin-bottom: 20px;
+}
+
+.error-message {
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.error-submessage {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.retry-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--primary-gradient);
+    border: none;
+    border-radius: var(--radius-md);
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.retry-button:hover {
+    background: var(--primary-gradient-hover);
+    transform: translateY(-2px);
+}
+
+/* 空状态 */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
+
+.empty-title {
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.empty-subtitle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* ========== 无障碍支持 ========== */
+
+/* 高对比度模式 */
+@media (prefers-contrast: high) {
+    :root {
+        --text-primary: #ffffff;
+        --text-secondary: #e0e0e0;
+        --text-muted: #cccccc;
+        --border-primary: rgba(255, 255, 255, 0.3);
+        --border-secondary: rgba(255, 255, 255, 0.5);
+    }
+}
+
+/* 减少动画 */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* 焦点可见性 */
+.focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* 跳过链接 */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--primary);
+    color: white;
+    padding: 8px;
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    z-index: 1000;
+    transition: var(--transition-fast);
+}
+
+.skip-link:focus {
+    top: 6px;
+}
+
+/* 键盘导航增强 */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* 屏幕阅读器友好的隐藏 */
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+} 

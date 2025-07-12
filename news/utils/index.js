@@ -1,8 +1,8 @@
 /**
- * 新闻工具函数统一入口
- 
+ * 新闻模块工具函数入口
+ * author: liangliang
  * 
- * 重构后的新闻工具函数，整合所有子模块
+ * 专注于新闻特有功能，通用功能使用共享工具
  */
 
 // 导入子模块
@@ -29,30 +29,26 @@ import {
 } from '../../shared/utils/common.js';
 
 /**
- * 统一的工具函数对象
- * 保持与原有接口的兼容性
+ * 新闻工具函数对象
+ * 重构后只保留新闻特有的功能
  */
 export const utils = {
-    // 存储相关
-    safeSetItem: (key, value) => safeSetItem(key, value),
-    safeGetItem: (key, defaultValue = null) => safeGetItem(key, defaultValue),
+    // 存储相关 - 使用共享函数
+    safeSetItem,
+    safeGetItem,
     
-    // 时间格式化
+    // 时间格式化 - 使用共享函数
     formatTimeAgo: (dateString) => formatTime(dateString, 'ago'),
     
-    // 文本处理
+    // 文本处理 - 使用共享函数
     extractExcerpt: (item, maxLength = 100) => extractExcerpt(item.content || item.description || '', maxLength),
     
-    // 分类处理
+    // 新闻特有功能
     categorizeNewsItem: (item) => newsFormatterManager.categorizeNewsItem(item),
-    
-    // 来源处理
     getNewsSource: (item) => newsFormatterManager.getNewsSource(item),
-    
-    // 搜索匹配
     isSearchMatch: (item, query) => newsSearchManager.isNewsMatch(item, query),
     
-    // URL参数处理
+    // URL处理 - 使用共享函数
     updateUrlParams: (date) => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -61,164 +57,40 @@ export const utils = {
         updateUrlParams({ date: dateStr });
     },
     
-    // 防抖函数
-    debounce: (func, wait) => debounce(func, wait),
+    // 工具函数 - 使用共享函数
+    debounce,
+    throttle,
+    getUrlParam,
     
-    // 节流函数
-    throttle: (func, limit) => throttle(func, limit),
+    // 新闻特有的便捷方法
+    formatNewsItem: (item, options = {}) => newsFormatterManager.formatNewsItem(item, options),
+    formatNewsItems: (items, options = {}) => newsFormatterManager.formatNewsItems(items, options),
+    searchNews: (items, query, options = {}) => newsSearchManager.searchNews(items, query, options),
+    advancedSearch: (items, criteria) => newsSearchManager.advancedSearch(items, criteria),
+    getSearchSuggestions: (items, query, limit = 5) => newsSearchManager.getSearchSuggestions(items, query, limit),
+    getSearchStats: (items, query) => newsSearchManager.getSearchStats(items, query),
     
-    // 获取URL参数
-    getUrlParam: (key) => getUrlParam(key),
+    // 缓存管理 - 新闻特有
+    setCacheItem: (key, value) => newsStorageManager.setCacheItem(key, value),
+    getCacheItem: (key, defaultValue = null) => newsStorageManager.getCacheItem(key, defaultValue),
+    cleanExpiredCache: () => newsStorageManager.cleanExpiredCache(),
     
-    // 新增的便捷方法
-    
-    /**
-     * 格式化新闻项
-     * @param {Object} item - 新闻项
-     * @param {Object} options - 格式化选项
-     * @returns {Object} 格式化后的新闻项
-     */
-    formatNewsItem: (item, options = {}) => {
-        return newsFormatterManager.formatNewsItem(item, options);
-    },
-    
-    /**
-     * 批量格式化新闻项
-     * @param {Array} items - 新闻项数组
-     * @param {Object} options - 格式化选项
-     * @returns {Array} 格式化后的新闻项数组
-     */
-    formatNewsItems: (items, options = {}) => {
-        return newsFormatterManager.formatNewsItems(items, options);
-    },
-    
-    /**
-     * 搜索新闻
-     * @param {Array} items - 新闻项数组
-     * @param {string} query - 搜索查询
-     * @param {Object} options - 搜索选项
-     * @returns {Array} 搜索结果数组
-     */
-    searchNews: (items, query, options = {}) => {
-        return newsSearchManager.searchNews(items, query, options);
-    },
-    
-    /**
-     * 高级搜索
-     * @param {Array} items - 新闻项数组
-     * @param {Object} criteria - 搜索条件
-     * @returns {Array} 搜索结果数组
-     */
-    advancedSearch: (items, criteria) => {
-        return newsSearchManager.advancedSearch(items, criteria);
-    },
-    
-    /**
-     * 获取搜索建议
-     * @param {Array} items - 新闻项数组
-     * @param {string} query - 搜索查询
-     * @param {number} limit - 建议数量限制
-     * @returns {Array} 搜索建议数组
-     */
-    getSearchSuggestions: (items, query, limit = 5) => {
-        return newsSearchManager.getSearchSuggestions(items, query, limit);
-    },
-    
-    /**
-     * 获取搜索统计信息
-     * @param {Array} items - 新闻项数组
-     * @param {string} query - 搜索查询
-     * @returns {Object} 统计信息
-     */
-    getSearchStats: (items, query) => {
-        return newsSearchManager.getSearchStats(items, query);
-    },
-    
-    /**
-     * 缓存管理
-     * @param {string} key - 缓存键
-     * @param {*} value - 缓存值
-     * @returns {boolean} 是否成功
-     */
-    setCacheItem: (key, value) => {
-        return newsStorageManager.setCacheItem(key, value);
-    },
-    
-    /**
-     * 获取缓存
-     * @param {string} key - 缓存键
-     * @param {*} defaultValue - 默认值
-     * @returns {*} 缓存值
-     */
-    getCacheItem: (key, defaultValue = null) => {
-        return newsStorageManager.getCacheItem(key, defaultValue);
-    },
-    
-    /**
-     * 清理过期缓存
-     */
-    cleanExpiredCache: () => {
-        return newsStorageManager.cleanExpiredCache();
-    },
-    
-    /**
-     * 获取分类标签
-     * @param {Object} item - 新闻项
-     * @returns {Array} 分类标签数组
-     */
-    getCategoryTags: (item) => {
-        return newsFormatterManager.getCategoryTags(item);
-    },
-    
-    /**
-     * 分页处理
-     * @param {Array} items - 新闻项数组
-     * @param {number} page - 页码
-     * @param {number} pageSize - 每页大小
-     * @returns {Object} 分页结果
-     */
-    paginate: (items, page = 1, pageSize = 20) => {
-        return newsSearchManager.paginate(items, page, pageSize);
-    },
-    
-    /**
-     * 去重新闻项
-     * @param {Array} items - 新闻项数组
-     * @returns {Array} 去重后的新闻数组
-     */
-    deduplicateNews: (items) => {
-        return newsSearchManager.deduplicateNews(items);
-    },
-    
-    /**
-     * 验证新闻项
-     * @param {Object} item - 新闻项
-     * @returns {boolean} 是否有效
-     */
-    validateNewsItem: (item) => {
-        return newsFormatterManager.validateNewsItem(item);
-    },
-    
-    /**
-     * 清理新闻项数据
-     * @param {Object} item - 新闻项
-     * @returns {Object} 清理后的新闻项
-     */
-    sanitizeNewsItem: (item) => {
-        return newsFormatterManager.sanitizeNewsItem(item);
-    }
+    // 数据处理 - 新闻特有
+    getCategoryTags: (item) => newsFormatterManager.getCategoryTags(item),
+    paginate: (items, page = 1, pageSize = 20) => newsSearchManager.paginate(items, page, pageSize),
+    deduplicateNews: (items) => newsSearchManager.deduplicateNews(items),
+    validateNewsItem: (item) => newsFormatterManager.validateNewsItem(item),
+    sanitizeNewsItem: (item) => newsFormatterManager.sanitizeNewsItem(item)
 };
 
-// 导出管理器实例，供高级用户使用
+// 导出管理器实例和类
 export { newsStorageManager, newsFormatterManager, newsSearchManager };
-
-// 导出管理器类，供自定义实例使用
 export { NewsStorageManager, NewsFormatterManager, NewsSearchManager };
 
-// 默认导出工具函数对象
+// 默认导出
 export default utils;
 
-// 为了兼容性，将utils挂载到全局
+// 全局挂载（兼容性）
 if (typeof window !== 'undefined') {
     window.NewsUtils = utils;
 } 

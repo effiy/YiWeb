@@ -1,29 +1,37 @@
-// 工具函数模块 - 重构后使用共享模块
+/**
+ * 主页面工具函数模块
+ * author: liangliang
+ * 
+ * 使用共享工具函数，避免代码重复
+ */
 
 import { CONFIG } from './config.js';
-import { debounce, throttle } from '../../shared/utils/common.js';
+import { 
+    debounce, 
+    throttle, 
+    random, 
+    createCSSVars,
+    safeGetItem,
+    safeSetItem
+} from '../../shared/utils/common.js';
 import { autoResizeTextarea } from '../../shared/utils/dom.js';
 
 // 工具函数集合
 export const utils = {
-    // 使用共享的防抖函数
+    // 使用共享的通用函数
     debounce,
-    
-    // 使用共享的节流函数
     throttle,
+    random,
+    createCSSVars,
+    safeGetItem,
+    safeSetItem,
 
     // 自动调整文本框高度
     autoResizeTextarea(textarea) {
-        const resize = () => {
-            textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, CONFIG.MAX_TEXTAREA_HEIGHT) + 'px';
-        };
-        
-        textarea.addEventListener('input', resize);
-        textarea.addEventListener('focus', resize);
-        
-        // 初始化
-        resize();
+        // 使用DOM工具函数
+        autoResizeTextarea(textarea, {
+            maxHeight: CONFIG.MAX_TEXTAREA_HEIGHT
+        });
     },
 
     // 检测键盘弹出
@@ -76,21 +84,9 @@ export const utils = {
         }
     },
 
-    // 获取随机数
-    random(min, max) {
-        return Math.random() * (max - min) + min;
-    },
-
     // 获取随机整数
     randomInt(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    },
-
-    // 创建CSS变量字符串
-    createCSSVars(vars) {
-        return Object.entries(vars)
-            .map(([key, value]) => `--${key}: ${value}`)
-            .join(';');
+        return Math.floor(this.random(min, max));
     },
 
     // 性能优化的动画帧请求

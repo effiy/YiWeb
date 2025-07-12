@@ -8,9 +8,16 @@
 /**
  * 自动调整文本框高度
  * @param {HTMLTextAreaElement} textarea - 文本框元素
- * @param {number} maxHeight - 最大高度
+ * @param {Object|number} options - 选项对象或最大高度
  */
-export function autoResizeTextarea(textarea, maxHeight = 200) {
+export function autoResizeTextarea(textarea, options = {}) {
+    // 支持传入数字（向后兼容）
+    if (typeof options === 'number') {
+        options = { maxHeight: options };
+    }
+    
+    const { maxHeight = 200 } = options;
+    
     const resize = () => {
         textarea.style.height = 'auto';
         textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
