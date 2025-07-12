@@ -1,38 +1,37 @@
-// 配置模块 - 常量和主题配置
+/**
+ * 主页面配置模块
+ * author: liangliang
+ * 
+ * 使用共享配置系统，避免重复定义
+ */
 
-// 动画和交互配置
+// 导入统一的配置管理
+import { 
+    UI_CONFIG, 
+    ANIMATION_CONFIG, 
+    THEME_COLORS,
+    BASE_CONFIG 
+} from '../../shared/config/index.js';
+
+// 主页面特定配置
 export const CONFIG = {
-    ANIMATION: {
-        HOVER_DELAY: 100,
-        CLICK_DURATION: 150,
-        HOVER_DURATION: 2000,
-        TRANSITION_DURATION: 400,
-        PARTICLE_DELAY: 80,
-        EFFECT_DELAY: 50
-    },
-    MAX_TEXTAREA_HEIGHT: 120,
-    DEBOUNCE_DELAY: 300,
-    THROTTLE_DELAY: 100
+    // 动画和交互配置 - 使用共享配置
+    ANIMATION: ANIMATION_CONFIG.HOMEPAGE,
+    
+    // 文本框配置 - 使用共享配置
+    MAX_TEXTAREA_HEIGHT: UI_CONFIG.HOMEPAGE_MAX_TEXTAREA_HEIGHT,
+    
+    // 防抖和节流配置 - 使用共享配置
+    DEBOUNCE_DELAY: BASE_CONFIG.DEBOUNCE_DELAY,
+    THROTTLE_DELAY: BASE_CONFIG.THROTTLE_DELAY
 };
 
-// 颜色主题配置
-export const THEME_COLORS = {
-    scientist: {
-        primary: '#3b82f6',
-        secondary: '#06b6d4',
-        accent: '#8b5cf6',
-        particles: ['#3b82f6', '#06b6d4', '#8b5cf6', '#06b6d4', '#3b82f6']
-    },
-    geek: {
-        primary: '#22c55e',
-        secondary: '#10b981',
-        accent: '#059669',
-        particles: ['#22c55e', '#10b981', '#059669', '#16a34a', '#22c55e']
-    },
-    artist: {
-        primary: '#ec4899',
-        secondary: '#a855f7',
-        accent: '#f59e0b',
-        particles: ['#ec4899', '#a855f7', '#f59e0b', '#10b981', '#ec4899']
-    }
+// 颜色主题配置 - 直接导出共享配置
+export { THEME_COLORS };
+
+// 便捷访问对象
+export const HOMEPAGE_CONFIG = {
+    ...CONFIG,
+    COLORS: THEME_COLORS,
+    ANIMATIONS: ANIMATION_CONFIG
 }; 

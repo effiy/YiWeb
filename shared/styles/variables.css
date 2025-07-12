@@ -1,0 +1,225 @@
+/**
+ * 统一CSS变量系统
+ * author: liangliang
+ * 
+ * 整合项目中所有模块的CSS变量，避免重复定义
+ * 使用量子美学主题色系统，体现科技未来感
+ */
+
+:root {
+    /* ========== 量子美学主题色系统 ========== */
+    
+    /* 主色调 - 量子蓝紫 */
+    --primary: #4f46e5;           /* 量子靛蓝 */
+    --primary-hover: #3730a3;     /* 深量子蓝 */
+    --primary-light: #6366f1;     /* 浅量子蓝 */
+    --primary-blue: #4facfe;      /* 量子蓝 */
+    --primary-cyan: #00f2fe;      /* 量子青 */
+    --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+    --primary-gradient-hover: linear-gradient(135deg, #3730a3 0%, #6d28d9 50%, #9333ea 100%);
+    
+    /* 量子辅助色系 */
+    --accent: #06b6d4;            /* 量子青 */
+    --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);
+    --success: #10b981;           /* 量子绿 */
+    --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+    --warning: #f59e0b;           /* 量子橙 */
+    --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+    --error: #ef4444;             /* 量子红 */
+    --error-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+    
+    /* 功能卡片专用色系 */
+    --scientist-purple: #9333ea;  /* 科学家紫 */
+    --scientist-cyan: #06b6d4;    /* 科学家青 */
+    --geek-green: #22c55e;        /* 极客绿 */
+    --geek-teal: #10b981;         /* 极客蓝绿 */
+    --artist-purple: #a855f7;     /* 艺术家紫 */
+    --artist-pink: #ec4899;       /* 艺术家粉 */
+    --artist-orange: #f59e0b;     /* 艺术家橙 */
+    --artist-emerald: #10b981;    /* 艺术家翠绿 */
+    
+    /* 中性色系 */
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    
+    /* 量子背景色系 */
+    --bg-primary: #0f172a;        /* 深空黑 */
+    --bg-secondary: #1e293b;      /* 量子灰 */
+    --bg-tertiary: #334155;       /* 中量子灰 */
+    --bg-elevated: rgba(30, 41, 59, 0.9); /* 半透明量子灰 */
+    --bg-glass: rgba(255, 255, 255, 0.03); /* 量子玻璃效果 */
+    --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #475569 75%, #64748b 100%);
+    
+    /* 量子文字色系 */
+    --text-primary: #f8fafc;      /* 量子白 */
+    --text-secondary: #cbd5e1;    /* 浅量子灰 */
+    --text-muted: #94a3b8;        /* 中量子灰 */
+    --text-inverse: #0f172a;      /* 深空黑 */
+    --text-accent: #06b6d4;       /* 量子青 */
+    
+    /* 量子边框色系 */
+    --border-primary: rgba(255, 255, 255, 0.08);    /* 量子白边框 */
+    --border-secondary: rgba(6, 182, 212, 0.2);     /* 量子青边框 */
+    --border-focus: #06b6d4;      /* 量子青聚焦 */
+    --border-glass: rgba(255, 255, 255, 0.05);      /* 量子玻璃边框 */
+    
+    /* 量子阴影系统 */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.7);
+    --shadow-2xl: 0 32px 128px rgba(0, 0, 0, 0.8);
+    --shadow-primary: 0 4px 20px rgba(79, 70, 229, 0.4);
+    --shadow-glow: 0 0 30px rgba(6, 182, 212, 0.4);
+    --shadow-quantum: 0 0 50px rgba(79, 70, 229, 0.3);
+    --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.15);
+    --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.2);
+    
+    /* 量子圆角系统 */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 24px;
+    --radius-full: 9999px;
+    
+    /* 精确间距系统 */
+    --spacing-xs: 0.25rem;        /* 4px */
+    --spacing-sm: 0.5rem;         /* 8px */
+    --spacing-md: 1rem;           /* 16px */
+    --spacing-lg: 1.5rem;         /* 24px */
+    --spacing-xl: 2rem;           /* 32px */
+    --spacing-2xl: 3rem;          /* 48px */
+    --spacing-3xl: 4rem;          /* 64px */
+    
+    /* 兼容性间距（保持向后兼容） */
+    --spacing-2: 0.5rem;
+    --spacing-3: 0.75rem;
+    --spacing-4: 1rem;
+    --spacing-6: 1.5rem;
+    --spacing-8: 2rem;
+    
+    /* 量子过渡动画 */
+    --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* 透明度系统 */
+    --opacity-light: 0.03;
+    --opacity-medium: 0.08;
+    --opacity-heavy: 0.15;
+    --opacity-hover: 0.25;
+    --opacity-overlay: 0.1;
+    
+    /* 动画缓动函数 */
+    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --ease-fast: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    
+    /* 动画持续时间 */
+    --duration-fast: 0.15s;
+    --duration-normal: 0.25s;
+    --duration-slow: 0.4s;
+    --duration-hover: 0.6s;
+    --duration-long: 1.2s;
+    
+    /* 字体系统 */
+    --font-family-sans: 'Inter', 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-family-mono: 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+    
+    --font-size-xs: 0.75rem;      /* 12px */
+    --font-size-sm: 0.875rem;     /* 14px */
+    --font-size-base: 1rem;       /* 16px */
+    --font-size-lg: 1.125rem;     /* 18px */
+    --font-size-xl: 1.25rem;      /* 20px */
+    --font-size-2xl: 1.5rem;      /* 24px */
+    --font-size-3xl: 1.875rem;    /* 30px */
+    --font-size-4xl: 2.25rem;     /* 36px */
+    
+    --font-weight-light: 300;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+    
+    --line-height-tight: 1.25;
+    --line-height-snug: 1.375;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.625;
+    --line-height-loose: 2;
+    
+    /* Z-index系统 */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+    --z-toast: 1080;
+    
+    /* 响应式断点 */
+    --breakpoint-mobile: 768px;
+    --breakpoint-tablet: 1024px;
+    --breakpoint-desktop: 1200px;
+    --breakpoint-wide: 1440px;
+    
+    /* 内容宽度 */
+    --max-width-xs: 20rem;        /* 320px */
+    --max-width-sm: 24rem;        /* 384px */
+    --max-width-md: 28rem;        /* 448px */
+    --max-width-lg: 32rem;        /* 512px */
+    --max-width-xl: 36rem;        /* 576px */
+    --max-width-2xl: 42rem;       /* 672px */
+    --max-width-3xl: 48rem;       /* 768px */
+    --max-width-4xl: 56rem;       /* 896px */
+    --max-width-5xl: 64rem;       /* 1024px */
+    --max-width-6xl: 72rem;       /* 1152px */
+    --max-width-7xl: 80rem;       /* 1280px */
+    --max-width-screen: 100vw;
+}
+
+/* ========== 暗色主题支持 ========== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* 暗色主题已经是默认配置 */
+    }
+}
+
+/* ========== 高对比度支持 ========== */
+@media (prefers-contrast: high) {
+    :root {
+        --text-primary: #ffffff;
+        --text-secondary: #e0e0e0;
+        --text-muted: #cccccc;
+        --border-primary: rgba(255, 255, 255, 0.3);
+        --border-secondary: rgba(255, 255, 255, 0.5);
+        --bg-elevated: rgba(30, 41, 59, 0.95);
+    }
+}
+
+/* ========== 减少动画支持 ========== */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --transition-fast: 0.01s;
+        --transition-normal: 0.01s;
+        --transition-slow: 0.01s;
+        --duration-fast: 0.01s;
+        --duration-normal: 0.01s;
+        --duration-slow: 0.01s;
+        --duration-hover: 0.01s;
+        --duration-long: 0.01s;
+    }
+} 

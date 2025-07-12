@@ -77,6 +77,9 @@ export const UI_CONFIG = {
     MIN_TEXTAREA_HEIGHT: 40,
     MAX_TEXTAREA_HEIGHT: 200,
     
+    // 主页面特定配置（从js/modules/config.js合并）
+    HOMEPAGE_MAX_TEXTAREA_HEIGHT: 120,
+    
     // 模态框配置
     MODAL_Z_INDEX: 1000,
     OVERLAY_OPACITY: 0.5,
@@ -248,6 +251,40 @@ export const ANIMATION_CONFIG = {
     LOADING: {
         duration: 1000,
         easing: 'linear'
+    },
+    
+    // 主页面特定动画配置（从js/modules/config.js合并）
+    HOMEPAGE: {
+        HOVER_DELAY: 100,
+        CLICK_DURATION: 150,
+        HOVER_DURATION: 2000,
+        TRANSITION_DURATION: 400,
+        PARTICLE_DELAY: 80,
+        EFFECT_DELAY: 50
+    }
+};
+
+/**
+ * 主题颜色配置（从js/modules/config.js合并）
+ */
+export const THEME_COLORS = {
+    scientist: {
+        primary: '#3b82f6',
+        secondary: '#06b6d4',
+        accent: '#8b5cf6',
+        particles: ['#3b82f6', '#06b6d4', '#8b5cf6', '#06b6d4', '#3b82f6']
+    },
+    geek: {
+        primary: '#22c55e',
+        secondary: '#10b981',
+        accent: '#059669',
+        particles: ['#22c55e', '#10b981', '#059669', '#16a34a', '#22c55e']
+    },
+    artist: {
+        primary: '#ec4899',
+        secondary: '#a855f7',
+        accent: '#f59e0b',
+        particles: ['#ec4899', '#a855f7', '#f59e0b', '#10b981', '#ec4899']
     }
 };
 
