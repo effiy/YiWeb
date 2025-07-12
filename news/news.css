@@ -1,7 +1,7 @@
 /* 新闻页面样式 - 模块化版本 */
 
 /* 导入模块化的样式文件 */
-@import url('./styles/index.css');
+@import url('../css/news/index.css');
 
 /* 
 这个文件现在使用模块化的CSS结构：
