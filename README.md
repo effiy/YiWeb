@@ -94,6 +94,12 @@ css/
 ├── global.css         # 全局样式
 ├── modules/           # 模块化样式
 └── welcome/           # 欢迎页面样式
+    ├── welcome.css    # 欢迎页面主样式文件
+    ├── welcome-core.css    # 核心样式
+    ├── feature-cards.css   # 功能卡片样式
+    ├── themes.css          # 主题样式
+    ├── animations.css      # 动画效果
+    └── responsive.css      # 响应式设计
 ```
 
 ## 开发指南
@@ -157,6 +163,7 @@ css/
 - 完善新闻资讯模块
 - 建立统一的样式系统
 - 优化响应式设计
+- 完成样式架构重构：将 welcome.css 移动到 css/welcome 目录下，实现更清晰的模块化组织
 
 ### 计划功能
 
