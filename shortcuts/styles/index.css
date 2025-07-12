@@ -12,7 +12,6 @@
 @import url('./shortcuts-core.css');
 
 /* 导入组件样式 */
-@import url('./search.css');
 @import url('./shortcuts-grid.css');
 @import url('./shortcuts-item.css');
 

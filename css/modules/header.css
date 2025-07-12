@@ -195,7 +195,7 @@ header.header-row *,
     align-items: center;
     justify-content: flex-end;
     opacity: 0.6;
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity var(--duration-normal, 0.3s) var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1));
     flex-shrink: 0;
 }
 
@@ -211,15 +211,15 @@ header.header-row *,
     color: var(--text-secondary);
     padding: var(--spacing-xs) var(--spacing-sm);
     border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, var(--opacity-light, 0.05));
     border: 1px solid rgba(255, 255, 255, 0.05);
-    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-fast, 0.15s) var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1));
     white-space: nowrap;
     cursor: pointer;
 }
 
 .tip:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, var(--opacity-medium, 0.1));
     border-color: rgba(255, 255, 255, 0.1);
     transform: translateY(-1px);
 }
@@ -227,6 +227,40 @@ header.header-row *,
 .tip i {
     font-size: 0.7rem;
     opacity: 0.8;
+}
+
+/* 搜索建议样式 */
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-medium);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+.suggestion-item {
+    padding: var(--spacing-sm) var(--spacing-md);
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-smooth);
+    color: var(--text-primary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.suggestion-item:hover {
+    background: rgba(79, 172, 254, 0.1);
+    color: var(--primary-blue);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
 }
 
 /* 分类过滤器统一样式 */
@@ -309,8 +343,26 @@ header.header-row *,
 
 /* 搜索结果样式 */
 .search-results {
-    margin-bottom: var(--spacing-2xl);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: linear-gradient(135deg, rgba(79, 172, 254, 0.1), rgba(0, 255, 255, 0.1));
+    border: 1px solid rgba(79, 172, 254, 0.2);
+    border-radius: var(--radius-md);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    transition: all var(--duration-normal) var(--ease-smooth);
+    transform: translateY(0);
+    opacity: 1;
     width: 100%;
+}
+
+.search-results.closing {
+    transform: translateY(-20px);
+    opacity: 0;
+    margin-bottom: 0;
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
 }
 
 .search-results-header {
@@ -338,6 +390,35 @@ header.header-row *,
     color: white;
     font-size: 0.875rem;
     font-weight: 500;
+}
+
+.results-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.results-info i {
+    color: var(--primary-blue);
+}
+
+.clear-search {
+    margin-left: auto;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.clear-search:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
 }
 
 /* 响应式设计 */
@@ -409,43 +490,13 @@ header.header-row *,
         background: rgba(255, 255, 255, 0.08);
         border-color: rgba(255, 255, 255, 0.06);
     }
+    
+    .search-suggestions {
+        background: rgba(0, 0, 0, 0.9);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .suggestion-item {
+        border-bottom-color: rgba(255, 255, 255, 0.05);
+    }
 }
-
-/* ===== 以下样式来自 search.css - 作者：lixuan ===== */
-
-/* 搜索提示样式增强 - 使用CSS变量优化 */
-.search-tips {
-    display: flex;
-    gap: var(--spacing-md);
-    align-items: center;
-    justify-content: flex-end;
-    opacity: 0.6;
-    transition: opacity var(--duration-normal, 0.3s) var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1));
-    flex-shrink: 0;
-}
-
-.tip {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, var(--opacity-light, 0.05));
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    transition: all var(--duration-fast, 0.15s) var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1));
-    white-space: nowrap;
-    cursor: pointer;
-}
-
-.tip:hover {
-    background: rgba(255, 255, 255, var(--opacity-medium, 0.1));
-    border-color: rgba(255, 255, 255, 0.1);
-    transform: translateY(-1px);
-}
-
-.tip i {
-    font-size: 0.7rem;
-    opacity: 0.8;
-} 

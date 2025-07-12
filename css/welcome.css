@@ -4,7 +4,6 @@
 @import url('./welcome/welcome-core.css');
 
 /* 引入功能特定样式 */
-@import url('./welcome/search.css');
 @import url('./welcome/feature-cards.css');
 @import url('./welcome/themes.css');
 @import url('./welcome/animations.css');
