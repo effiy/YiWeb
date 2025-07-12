@@ -1,42 +1,34 @@
-// 主要JavaScript文件 - 欢迎页面功能
+/**
+ * 共享模块统一入口
+ * author: liangliang
+ * 
+ * 提供所有共享资源的统一导出，简化其他模块的导入过程
+ */
 
-// 导入模块
-import { utils } from './modules/utils.js';
-import { keyboardShortcuts } from './modules/keyboard.js';
-import { inputHandler } from './modules/inputManager.js';
-import { featureCards } from './modules/cardManager.js';
-import { globalState } from './modules/state.js';
+// 导入工具函数
+export * from './utils/common.js';
+export * from './utils/dom.js';
+export * from './utils/events.js';
 
-// 页面初始化
-document.addEventListener('DOMContentLoaded', () => {
-    try {
-        // 初始化各个模块
-        keyboardShortcuts.init();
-        inputHandler.init();
-        featureCards.init();
-        utils.detectKeyboardOpen();
+// 导入配置管理
+export * from './config/index.js';
 
-        // 自动聚焦到输入框
-        const messageInput = document.querySelector('#messageInput');
-        if (messageInput) {
-            setTimeout(() => messageInput.focus(), 100);
-        }
+// 导入UI组件
+export * from './components/index.js';
 
-        console.log('页面初始化完成');
-    } catch (error) {
-        console.error('页面初始化失败:', error);
-    }
-});
+// 默认导出常用功能
+export { default as utils } from './utils/common.js';
+export { default as domUtils } from './utils/dom.js';
+export { default as config } from './config/index.js';
+export { default as components } from './components/index.js';
 
-// 页面卸载时清理资源
-window.addEventListener('beforeunload', () => {
-    featureCards.cleanup();
-    // 清理全局状态中的定时器和动画帧
-    globalState.animationFrames.forEach(frameId => {
-        cancelAnimationFrame(frameId);
-    });
-    globalState.hoverTimeouts.forEach(timeoutId => {
-        clearTimeout(timeoutId);
-    });
-}); 
+// 创建便捷访问对象
+const Shared = {
+    utils: () => import('./utils/common.js'),
+    dom: () => import('./utils/dom.js'),
+    events: () => import('./utils/events.js'),
+    config: () => import('./config/index.js'),
+    components: () => import('./components/index.js')
+};
 
+export default Shared; 
