@@ -5,8 +5,8 @@
  * 从news/utils/index.js中提取的搜索相关功能
  */
 
-import { isSearchMatch } from '../../js/utils/common.js';
-import { getConfig } from '../../js/config/index.js';
+import { isSearchMatch } from '../../utils/common.js';
+import { getConfig } from '../../config/index.js';
 import newsFormatterManager from './formatter.js';
 
 /**
