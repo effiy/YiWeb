@@ -2,7 +2,8 @@
  * 快捷键模块核心样式
  * author: liangliang
  * 
- * 合并了layout.css和filters.css，减少文件数量
+ * 主要包含快捷键页面的布局和动画样式
+ * 过滤器相关样式已迁移到 modules/header.css 中统一管理
  */
 
 /* ========== 布局样式 ========== */
@@ -44,84 +45,6 @@
     color: var(--text-secondary);
     opacity: 0.8;
     font-weight: 400;
-}
-
-/* ========== 分类过滤器样式 ========== */
-
-.category-filters {
-    margin: 0;
-    padding: 0;
-    background: none;
-    border: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    flex-shrink: 0;
-    width: auto;
-    min-width: 200px;
-}
-
-.category-filters h4 {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 0.75rem;
-    font-weight: 600;
-    white-space: nowrap;
-    opacity: 0.6;
-}
-
-.filter-buttons {
-    display: flex;
-    justify-content: end;
-    flex-wrap: nowrap;
-    gap: var(--spacing-xs);
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    flex: 1;
-}
-
-.filter-buttons::-webkit-scrollbar {
-    display: none;
-}
-
-.filter-btn {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background: rgba(255, 255, 255, var(--opacity-light));
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-smooth);
-    white-space: nowrap;
-    flex-shrink: 0;
-    opacity: 0.6;
-}
-
-.filter-btn:hover {
-    background: rgba(255, 255, 255, var(--opacity-medium));
-    border-color: rgba(255, 255, 255, 0.1);
-    transform: translateY(-1px);
-    opacity: 0.8;
-}
-
-.filter-btn.active {
-    background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan));
-    border-color: var(--primary-blue);
-    color: white;
-    box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
-    opacity: 1;
-}
-
-.filter-btn i {
-    font-size: 0.7rem;
 }
 
 /* ========== 动画定义 ========== */

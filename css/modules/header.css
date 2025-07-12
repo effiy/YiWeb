@@ -280,6 +280,15 @@ header.header-row *,
     position: relative;
 }
 
+.category-filters h4 {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0.6;
+}
+
 .filter-buttons {
     display: flex;
     justify-content: end;
@@ -300,40 +309,31 @@ header.header-row *,
     align-items: center;
     gap: var(--spacing-xs);
     padding: var(--spacing-xs) var(--spacing-sm);
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, var(--opacity-light));
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
     font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-fast) var(--ease-smooth);
     white-space: nowrap;
     flex-shrink: 0;
     opacity: 0.6;
 }
 
 .filter-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, var(--opacity-medium));
     border-color: rgba(255, 255, 255, 0.1);
     transform: translateY(-1px);
     opacity: 0.8;
 }
 
 .filter-btn.active {
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
-    border-color: #4facfe;
+    background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan));
+    border-color: var(--primary-blue);
     color: white;
     box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
-    opacity: 1;
-}
-
-/* 支持CSS变量的激活状态 */
-.filter-btn.active {
-    background: linear-gradient(135deg, var(--primary, #4facfe), var(--accent, #00f2fe));
-    border-color: var(--primary, #4facfe);
-    color: white;
-    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
     opacity: 1;
 }
 
