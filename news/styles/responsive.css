@@ -52,10 +52,6 @@
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     }
     
-    .main-content {
-        padding: calc(4rem + var(--spacing-md)) 0 var(--spacing-md) 0;
-    }
-    
     .mini-calendar {
         margin-top: var(--spacing-md);
     }
@@ -108,10 +104,6 @@
             "sidebar";
         gap: var(--spacing-lg);
         padding: 0 var(--spacing-sm);
-    }
-    
-    .main-content {
-        padding: 0 0 var(--spacing-md) 0;
     }
 
     .news-section {
@@ -207,86 +199,6 @@
     
     .tag-statistics {
         max-height: calc(100vh - 340px);
-    }
-    
-    .tag-statistics-content {
-        max-height: 20vh;
-    }
-}
-
-/* 手机设备适配 */
-@media (max-width: 480px) {
-    .container {
-        padding: 0 var(--spacing-xs);
-        gap: var(--spacing-md);
-    }
-    
-    .main-content {
-        padding: 0 0 var(--spacing-md) 0;
-    }
-    
-    .news-section {
-        gap: var(--spacing-md);
-        padding-top: calc(2.5rem + var(--spacing-md));
-    }
-    
-    .news-item {
-        padding: var(--spacing-sm);
-    }
-    
-    .mini-calendar {
-        margin-top: var(--spacing-xs);
-    }
-    
-    .calendar-day {
-        height: 20px;
-        font-size: 9px;
-    }
-    
-    .weekday {
-        height: 20px;
-        font-size: 8px;
-    }
-    
-    .calendar-nav-btn {
-        width: 20px;
-        height: 20px;
-        font-size: 8px;
-    }
-    
-    .calendar-title {
-        font-size: 11px;
-    }
-    
-    .tag-list {
-        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
-    }
-    
-    .tag-item {
-        height: 36px;
-        padding: 5px;
-    }
-    
-    .tag-name {
-        font-size: 9px;
-        -webkit-line-clamp: 2;
-        max-height: 20px;
-    }
-    
-    .tag-stats {
-        font-size: 7px;
-    }
-    
-    .tag-count {
-        padding: 2px 3px;
-        font-size: 7px;
-        min-width: 16px;
-    }
-    
-    .tag-statistics {
-        max-height: calc(100vh - 320px);
-        min-height: calc(25vh);
-        margin-bottom: var(--spacing-md);
     }
     
     .tag-statistics-content {

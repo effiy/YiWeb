@@ -11,28 +11,6 @@
     max-width: 100%;
 }
 
-/* 欢迎页面区域 */
-.welcome-section {
-    flex: 1;
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-start;
-    padding: calc(5rem + var(--spacing-md)) 0 var(--spacing-md) 0;
-    text-align: center;
-    position: relative;
-    min-height: 100vh;
-    min-height: calc(var(--vh, 1vh) * 100);
-    width: 100%;
-}
-
-.welcome-content {
-    max-width: 100%;
-    width: 100%;
-    position: relative;
-    z-index: 1;
-    padding: 0;
-}
-
 /* 功能卡片容器 */
 .feature-cards-container {
     max-width: 1200px;
@@ -60,17 +38,6 @@
     }
 }
 
-@media (max-width: 480px) {
-    .welcome-section {
-        padding: calc(4rem + var(--spacing-sm)) 0 var(--spacing-sm) 0;
-    }
-}
-
-/* 移动端键盘弹出时的布局调整 */
-.keyboard-open .welcome-section {
-    padding-top: calc(3rem + var(--spacing-sm));
-}
-
 .keyboard-open .feature-cards-grid {
     margin-top: var(--spacing-lg);
 }
@@ -81,10 +48,3 @@
         border-width: 2px;
     }
 }
-
-/* 打印样式 */
-@media print {
-    .welcome-section {
-        padding-top: var(--spacing-md);
-    }
-} 

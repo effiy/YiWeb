@@ -13,9 +13,3 @@
         gap: var(--spacing-md);
     }
 }
-
-@media (max-width: 480px) {
-    .shortcuts-content {
-        padding: var(--spacing-sm);
-    }
-} 
