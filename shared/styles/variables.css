@@ -80,6 +80,7 @@
     --shadow-primary: 0 4px 20px rgba(79, 70, 229, 0.4);
     --shadow-glow: 0 0 30px rgba(6, 182, 212, 0.4);
     --shadow-quantum: 0 0 50px rgba(79, 70, 229, 0.3);
+    /* 兼容性阴影命名 */
     --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.1);
     --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.12);
     --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.15);
@@ -189,6 +190,20 @@
     --max-width-6xl: 72rem;       /* 1152px */
     --max-width-7xl: 80rem;       /* 1280px */
     --max-width-screen: 100vw;
+    
+    /* 性能优化变量 */
+    --gpu-accelerated: translate3d(0, 0, 0);
+    --will-change-transform: will-change: transform;
+    --will-change-opacity: will-change: opacity;
+    --backface-hidden: backface-visibility: hidden;
+    --perspective: perspective: 1000px;
+    
+    /* 动画性能优化 */
+    --animation-performance: 
+        will-change: transform, opacity;
+        transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+        perspective: 1000px;
 }
 
 /* ========== 高对比度支持 ========== */

@@ -2,90 +2,12 @@
  * 欢迎页面核心样式
  * author: liangliang
  * 
- * 合并了variables.css、welcome-base.css和ui-components.css
+ * 导入统一的CSS变量系统，提供欢迎页面特定的样式
  * 减少HTTP请求，提升加载性能
  */
 
-/* ========== CSS变量定义 - 统一管理颜色和尺寸 ========== */
-:root {
-    /* 颜色系统 */
-    --primary-blue: #4facfe;
-    --primary-cyan: #00f2fe;
-    --scientist-purple: #9333ea;
-    --scientist-cyan: #06b6d4;
-    --geek-green: #22c55e;
-    --geek-teal: #10b981;
-    --artist-purple: #a855f7;
-    --artist-pink: #ec4899;
-    --artist-orange: #f59e0b;
-    --artist-emerald: #10b981;
-    
-    /* 透明度系统 */
-    --opacity-light: 0.03;
-    --opacity-medium: 0.08;
-    --opacity-heavy: 0.15;
-    --opacity-hover: 0.25;
-    --opacity-overlay: 0.1;
-    
-    /* 动画缓动函数 */
-    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    --ease-fast: cubic-bezier(0.4, 0, 0.2, 1);
-    --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    
-    /* 阴影系统 */
-    --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.1);
-    --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.12);
-    --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.15);
-    --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.2);
-    --shadow-glow: 0 0 20px rgba(255, 255, 255, 0.1);
-    
-    /* 边框半径 */
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 24px;
-    --radius-2xl: 32px;
-    
-    /* 间距系统 */
-    --spacing-xs: 4px;
-    --spacing-sm: 8px;
-    --spacing-md: 16px;
-    --spacing-lg: 24px;
-    --spacing-xl: 32px;
-    --spacing-2xl: 48px;
-    --spacing-3xl: 64px;
-    
-    /* 动画持续时间 */
-    --duration-fast: 0.15s;
-    --duration-normal: 0.25s;
-    --duration-slow: 0.4s;
-    --duration-hover: 0.6s;
-    --duration-long: 1.2s;
-    
-    /* 字体系统 */
-    --font-size-xs: 0.75rem;
-    --font-size-sm: 0.875rem;
-    --font-size-base: 1rem;
-    --font-size-lg: 1.125rem;
-    --font-size-xl: 1.25rem;
-    --font-size-2xl: 1.5rem;
-    --font-size-3xl: 1.875rem;
-    
-    /* 性能优化 */
-    --gpu-accelerated: translate3d(0, 0, 0);
-    --will-change-transform: will-change: transform;
-    --will-change-opacity: will-change: opacity;
-    --backface-hidden: backface-visibility: hidden;
-    --perspective: perspective: 1000px;
-    
-    /* 动画性能 */
-    --animation-performance: 
-        will-change: transform, opacity;
-        transform: translate3d(0, 0, 0);
-        backface-visibility: hidden;
-        perspective: 1000px;
-}
+/* 导入统一的CSS变量系统 */
+@import url('../../shared/styles/variables.css');
 
 /* 功能卡片容器样式 */
 .feature-cards-container {
