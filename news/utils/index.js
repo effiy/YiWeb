@@ -1,180 +1,224 @@
-// 工具函数集合
+/**
+ * 新闻工具函数统一入口
+ 
+ * 
+ * 重构后的新闻工具函数，整合所有子模块
+ */
 
-import { CATEGORIES } from '../config/constants.js';
+// 导入子模块
+import newsStorageManager from './storage.js';
+import newsFormatterManager from './formatter.js';
+import newsSearchManager from './search.js';
 
+// 导入类（从类声明的export获取）
+import { NewsStorageManager } from './storage.js';
+import { NewsFormatterManager } from './formatter.js';  
+import { NewsSearchManager } from './search.js';
+
+// 导入共享工具函数
+import { 
+    debounce, 
+    throttle, 
+    safeSetItem, 
+    safeGetItem, 
+    formatTime, 
+    extractExcerpt,
+    isSearchMatch,
+    updateUrlParams,
+    getUrlParam
+} from '../../shared/utils/common.js';
+
+/**
+ * 统一的工具函数对象
+ * 保持与原有接口的兼容性
+ */
 export const utils = {
-    // 安全的localStorage存储
-    safeSetItem(key, value) {
-        try {
-            localStorage.setItem(key, value);
-            return true;
-        } catch (e) {
-            console.warn(`LocalStorage存储失败 (${key}):`, e.message);
-            
-            // 如果是配额超出，尝试清理一些数据
-            if (e.name === 'QuotaExceededError') {
-                console.warn('LocalStorage配额超出，尝试清理数据...');
-                
-                // 清理搜索历史（保留最近5条）
-                if (key === 'newsSearchHistory') {
-                    try {
-                        const history = JSON.parse(value);
-                        const reduced = history.slice(0, 5);
-                        localStorage.setItem(key, JSON.stringify(reduced));
-                        console.log('搜索历史已减少到5条');
-                        return true;
-                    } catch (retryError) {
-                        console.error('减少搜索历史失败:', retryError);
-                    }
-                }
-                
-                // 清理新闻缓存
-                if (window.NewsCacheManager) {
-                    window.NewsCacheManager.cleanOldestCache(5);
-                    try {
-                        localStorage.setItem(key, value);
-                        console.log('清理缓存后重新存储成功');
-                        return true;
-                    } catch (retryError) {
-                        console.error('清理缓存后仍然存储失败:', retryError);
-                    }
-                }
-            }
-            
-            return false;
-        }
-    },
-
-    // 防抖函数
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    },
-
-    // 更新URL参数
-    updateUrlParams(date) {
-        const url = new URL(window.location);
+    // 存储相关
+    safeSetItem: (key, value) => safeSetItem(key, value),
+    safeGetItem: (key, defaultValue = null) => safeGetItem(key, defaultValue),
+    
+    // 时间格式化
+    formatTimeAgo: (dateString) => formatTime(dateString, 'ago'),
+    
+    // 文本处理
+    extractExcerpt: (item, maxLength = 100) => extractExcerpt(item.content || item.description || '', maxLength),
+    
+    // 分类处理
+    categorizeNewsItem: (item) => newsFormatterManager.categorizeNewsItem(item),
+    
+    // 来源处理
+    getNewsSource: (item) => newsFormatterManager.getNewsSource(item),
+    
+    // 搜索匹配
+    isSearchMatch: (item, query) => newsSearchManager.isNewsMatch(item, query),
+    
+    // URL参数处理
+    updateUrlParams: (date) => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         const dateStr = `${year}-${month}-${day}`;
-        url.searchParams.set('date', dateStr);
-        window.history.pushState({ date: dateStr }, '', url);
+        updateUrlParams({ date: dateStr });
     },
-
-    // 时间格式化
-    formatTimeAgo(dateString) {
-        const pubDate = new Date(dateString);
-        const now = new Date();
-        const diffInSeconds = Math.floor((now - pubDate) / 1000);
-
-        if (diffInSeconds < 60) return '刚刚';
-        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}分钟前`;
-        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}小时前`;
-        if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}天前`;
-        return pubDate.toLocaleDateString('zh-CN');
+    
+    // 防抖函数
+    debounce: (func, wait) => debounce(func, wait),
+    
+    // 节流函数
+    throttle: (func, limit) => throttle(func, limit),
+    
+    // 获取URL参数
+    getUrlParam: (key) => getUrlParam(key),
+    
+    // 新增的便捷方法
+    
+    /**
+     * 格式化新闻项
+     * @param {Object} item - 新闻项
+     * @param {Object} options - 格式化选项
+     * @returns {Object} 格式化后的新闻项
+     */
+    formatNewsItem: (item, options = {}) => {
+        return newsFormatterManager.formatNewsItem(item, options);
     },
-
-    // 提取摘要
-    extractExcerpt(item, maxLength = 100) {
-        const content = item.content || item.description || '';
-        const text = content.replace(/<[^>]*>/g, '').trim();
-        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    
+    /**
+     * 批量格式化新闻项
+     * @param {Array} items - 新闻项数组
+     * @param {Object} options - 格式化选项
+     * @returns {Array} 格式化后的新闻项数组
+     */
+    formatNewsItems: (items, options = {}) => {
+        return newsFormatterManager.formatNewsItems(items, options);
     },
-
-    // 分类新闻项
-    categorizeNewsItem(item) {
-        const title = item.title.toLowerCase();
-        const content = (item.content || '').toLowerCase();
-        
-        // 首先检查 item.categories 中的标签
-        if (item.categories) {
-            let categoriesText = '';
-            if (Array.isArray(item.categories)) {
-                categoriesText = item.categories.join(' ').toLowerCase();
-            } else if (typeof item.categories === 'string') {
-                categoriesText = item.categories.toLowerCase();
-            }
-            
-            // 根据 categories 标签进行分类
-            for (const category of CATEGORIES) {
-                if (category.key === 'other') continue;
-                
-                const hasKeyword = category.keywords.some(keyword => 
-                    categoriesText.includes(keyword)
-                );
-                
-                if (hasKeyword) {
-                    return category.key;
-                }
-            }
-        }
-        
-        // 如果没有 categories 或 categories 中没有匹配的关键词，则基于标题和内容分类
-        for (const category of CATEGORIES) {
-            if (category.key === 'other') continue;
-            
-            const hasKeyword = category.keywords.some(keyword => 
-                title.includes(keyword) || content.includes(keyword)
-            );
-            
-            if (hasKeyword) {
-                return category.key;
-            }
-        }
-        
-        return 'other';
+    
+    /**
+     * 搜索新闻
+     * @param {Array} items - 新闻项数组
+     * @param {string} query - 搜索查询
+     * @param {Object} options - 搜索选项
+     * @returns {Array} 搜索结果数组
+     */
+    searchNews: (items, query, options = {}) => {
+        return newsSearchManager.searchNews(items, query, options);
     },
-
-    // 获取新闻来源
-    getNewsSource(item) {
-        const source = item.source || '';
-        const title = item.title.toLowerCase();
-        
-        const sources = ['36氪', '虎嗅', '钛媒体', '爱范儿', '极客公园'];
-        
-        for (const src of sources) {
-            if (source.includes(src) || title.includes(src)) {
-                return src;
-            }
-        }
-        
-        return source || '未知来源';
+    
+    /**
+     * 高级搜索
+     * @param {Array} items - 新闻项数组
+     * @param {Object} criteria - 搜索条件
+     * @returns {Array} 搜索结果数组
+     */
+    advancedSearch: (items, criteria) => {
+        return newsSearchManager.advancedSearch(items, criteria);
     },
-
-    // 搜索匹配
-    isSearchMatch(item, query) {
-        if (!query) return true;
-        
-        // 构建搜索文本，包括 categories 中的所有标签
-        let searchTextParts = [
-            item.title,
-            utils.extractExcerpt(item)
-        ];
-        
-        // 添加 categories 标签
-        if (item.categories) {
-            if (Array.isArray(item.categories)) {
-                searchTextParts = searchTextParts.concat(item.categories);
-            } else if (typeof item.categories === 'string') {
-                searchTextParts.push(item.categories);
-            }
-        }
-        
-        // 添加自动分类标签作为后备
-        const categoryKey = utils.categorizeNewsItem(item);
-        const category = CATEGORIES.find(cat => cat.key === categoryKey);
-        const categoryTitle = category ? category.title : '其他';
-        searchTextParts.push(categoryTitle);
-        
-        const searchText = searchTextParts.join(' ').toLowerCase();
-        return searchText.includes(query.toLowerCase());
+    
+    /**
+     * 获取搜索建议
+     * @param {Array} items - 新闻项数组
+     * @param {string} query - 搜索查询
+     * @param {number} limit - 建议数量限制
+     * @returns {Array} 搜索建议数组
+     */
+    getSearchSuggestions: (items, query, limit = 5) => {
+        return newsSearchManager.getSearchSuggestions(items, query, limit);
+    },
+    
+    /**
+     * 获取搜索统计信息
+     * @param {Array} items - 新闻项数组
+     * @param {string} query - 搜索查询
+     * @returns {Object} 统计信息
+     */
+    getSearchStats: (items, query) => {
+        return newsSearchManager.getSearchStats(items, query);
+    },
+    
+    /**
+     * 缓存管理
+     * @param {string} key - 缓存键
+     * @param {*} value - 缓存值
+     * @returns {boolean} 是否成功
+     */
+    setCacheItem: (key, value) => {
+        return newsStorageManager.setCacheItem(key, value);
+    },
+    
+    /**
+     * 获取缓存
+     * @param {string} key - 缓存键
+     * @param {*} defaultValue - 默认值
+     * @returns {*} 缓存值
+     */
+    getCacheItem: (key, defaultValue = null) => {
+        return newsStorageManager.getCacheItem(key, defaultValue);
+    },
+    
+    /**
+     * 清理过期缓存
+     */
+    cleanExpiredCache: () => {
+        return newsStorageManager.cleanExpiredCache();
+    },
+    
+    /**
+     * 获取分类标签
+     * @param {Object} item - 新闻项
+     * @returns {Array} 分类标签数组
+     */
+    getCategoryTags: (item) => {
+        return newsFormatterManager.getCategoryTags(item);
+    },
+    
+    /**
+     * 分页处理
+     * @param {Array} items - 新闻项数组
+     * @param {number} page - 页码
+     * @param {number} pageSize - 每页大小
+     * @returns {Object} 分页结果
+     */
+    paginate: (items, page = 1, pageSize = 20) => {
+        return newsSearchManager.paginate(items, page, pageSize);
+    },
+    
+    /**
+     * 去重新闻项
+     * @param {Array} items - 新闻项数组
+     * @returns {Array} 去重后的新闻数组
+     */
+    deduplicateNews: (items) => {
+        return newsSearchManager.deduplicateNews(items);
+    },
+    
+    /**
+     * 验证新闻项
+     * @param {Object} item - 新闻项
+     * @returns {boolean} 是否有效
+     */
+    validateNewsItem: (item) => {
+        return newsFormatterManager.validateNewsItem(item);
+    },
+    
+    /**
+     * 清理新闻项数据
+     * @param {Object} item - 新闻项
+     * @returns {Object} 清理后的新闻项
+     */
+    sanitizeNewsItem: (item) => {
+        return newsFormatterManager.sanitizeNewsItem(item);
     }
-}; 
+};
+
+// 导出管理器实例，供高级用户使用
+export { newsStorageManager, newsFormatterManager, newsSearchManager };
+
+// 导出管理器类，供自定义实例使用
+export { NewsStorageManager, NewsFormatterManager, NewsSearchManager };
+
+// 默认导出工具函数对象
+export default utils;
+
+// 为了兼容性，将utils挂载到全局
+if (typeof window !== 'undefined') {
+    window.NewsUtils = utils;
+} 

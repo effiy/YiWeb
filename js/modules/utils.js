@@ -1,33 +1,16 @@
-// 工具函数模块
+// 工具函数模块 - 重构后使用共享模块
 
 import { CONFIG } from './config.js';
+import { debounce, throttle } from '../../shared/utils/common.js';
+import { autoResizeTextarea } from '../../shared/utils/dom.js';
 
 // 工具函数集合
 export const utils = {
-    // 防抖函数
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    },
-
-    // 节流函数
-    throttle(func, limit) {
-        let inThrottle;
-        return function(...args) {
-            if (!inThrottle) {
-                func.apply(this, args);
-                inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
-            }
-        };
-    },
+    // 使用共享的防抖函数
+    debounce,
+    
+    // 使用共享的节流函数
+    throttle,
 
     // 自动调整文本框高度
     autoResizeTextarea(textarea) {

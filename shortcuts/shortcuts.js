@@ -1,16 +1,20 @@
-// 快捷键页面交互功能
-class ShortcutsManager {
-    constructor() {
-        this.init();
-    }
+// 快捷键页面交互功能 - 重构后使用模块化管理器
+import shortcutsManager from './js/shortcuts-manager.js';
 
-    init() {
-        this.bindEvents();
-        this.initSearch();
-        this.initFilters();
-        this.initAnimations();
-        this.initKeyboardShortcuts();
+// 页面加载完成后初始化（保持与原有代码的兼容性）
+document.addEventListener('DOMContentLoaded', () => {
+    // 重构后的管理器会自动初始化
+    console.log('快捷键页面已加载，使用新的模块化管理器');
+});
+
+// 导出到全局作用域，保持兼容性
+window.shortcutsManager = shortcutsManager;
+window.ShortcutsManager = class ShortcutsManager {
+    constructor() {
+        // 返回重构后的管理器实例
+        return shortcutsManager;
     }
+};
 
     bindEvents() {
         // 搜索功能

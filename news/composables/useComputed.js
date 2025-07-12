@@ -204,7 +204,21 @@ export const useComputed = (store) => {
 
         newsData.value.forEach(item => {
             const categoryKey = utils.categorizeNewsItem(item);
-            result[categoryKey].news.push(item);
+            
+            // 确保分类键存在，如果不存在则使用'other'分类
+            if (!result[categoryKey]) {
+                console.warn(`未知的分类键: ${categoryKey}，使用'other'分类`);
+                if (!result['other']) {
+                    result['other'] = {
+                        icon: 'fas fa-ellipsis-h',
+                        title: '其他',
+                        news: []
+                    };
+                }
+                result['other'].news.push(item);
+            } else {
+                result[categoryKey].news.push(item);
+            }
         });
 
         return result;
@@ -217,15 +231,18 @@ export const useComputed = (store) => {
             const filtered = {};
             
             Object.entries(baseCategories).forEach(([key, category]) => {
-                const filteredNews = category.news.filter(item => 
-                    utils.isSearchMatch(item, searchQuery.value)
-                );
+                // 确保category和category.news存在
+                if (category && category.news && Array.isArray(category.news)) {
+                    const filteredNews = category.news.filter(item => 
+                        utils.isSearchMatch(item, searchQuery.value)
+                    );
 
-                if (filteredNews.length > 0) {
-                    filtered[key] = {
-                        ...category,
-                        news: filteredNews
-                    };
+                    if (filteredNews.length > 0) {
+                        filtered[key] = {
+                            ...category,
+                            news: filteredNews
+                        };
+                    }
                 }
             });
             
@@ -236,28 +253,31 @@ export const useComputed = (store) => {
             const tagFiltered = {};
             
             Object.entries(baseCategories).forEach(([key, category]) => {
-                const filteredNews = category.news.filter(item => {
-                    let tags = [];
-                    
-                    if (item.categories && item.categories.length > 0) {
-                        if (Array.isArray(item.categories)) {
-                            tags = item.categories;
-                        } else if (typeof item.categories === 'string') {
-                            tags = [item.categories];
+                // 确保category和category.news存在
+                if (category && category.news && Array.isArray(category.news)) {
+                    const filteredNews = category.news.filter(item => {
+                        let tags = [];
+                        
+                        if (item.categories && item.categories.length > 0) {
+                            if (Array.isArray(item.categories)) {
+                                tags = item.categories;
+                            } else if (typeof item.categories === 'string') {
+                                tags = [item.categories];
+                            }
+                            
+                            const duplicateTags = new Set(CATEGORIES.map(cat => cat.title));
+                            tags = tags.filter(tag => !duplicateTags.has(tag) && tag && tag.trim().length > 1);
                         }
                         
-                        const duplicateTags = new Set(CATEGORIES.map(cat => cat.title));
-                        tags = tags.filter(tag => !duplicateTags.has(tag) && tag && tag.trim().length > 1);
-                    }
-                    
-                    return tags.some(tag => selectedTags.value.has(tag.trim()));
-                });
+                        return tags.some(tag => selectedTags.value.has(tag.trim()));
+                    });
 
-                if (filteredNews.length > 0) {
-                    tagFiltered[key] = {
-                        ...category,
-                        news: filteredNews
-                    };
+                    if (filteredNews.length > 0) {
+                        tagFiltered[key] = {
+                            ...category,
+                            news: filteredNews
+                        };
+                    }
                 }
             });
             
@@ -271,6 +291,7 @@ export const useComputed = (store) => {
         if (!searchQuery.value) return [];
         
         return Object.values(displayCategories.value)
+            .filter(category => category && category.news && Array.isArray(category.news))
             .flatMap(category => category.news);
     });
 
@@ -335,7 +356,8 @@ export const useComputed = (store) => {
             const categoriesToShow = Object.entries(displayCategories.value)
                 .filter(([categoryKey]) => {
                     return selectedCategories.value.size === 0 || selectedCategories.value.has(categoryKey);
-                });
+                })
+                .filter(([, category]) => category && category.news && Array.isArray(category.news));
             currentNews = categoriesToShow.flatMap(([, category]) => category.news);
         }
         
