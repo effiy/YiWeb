@@ -1,5 +1,20 @@
 /* 新闻页面主样式文件 - 模块化导入 */
 
+/* 
+模块化CSS结构说明：
+- news-core.css        - 核心样式（合并了variables、base、accessibility）
+- animations.css       - 动画定义
+- date-navigation.css  - 日期导航组件独立样式
+- sidebar.css         - 侧边栏（布局容器和切换按钮）
+- calendar.css        - 日历组件独立样式
+- tag-statistics.css  - 标签统计组件独立样式
+- news-content.css    - 新闻内容展示
+- responsive.css      - 响应式设计
+
+原有文件已备份为：news-backup.css
+如需恢复原有结构，可重命名备份文件。
+*/
+
 /* 导入核心样式（合并了variables、base、accessibility） */
 @import url('./news-core.css');
 
