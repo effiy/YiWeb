@@ -1,11 +1,14 @@
 // 业务逻辑方法组合函数
 
-import { getDateString } from '../config/constants.js';
+import { getConfig, NEWS_CONFIG } from '../../shared/config/index.js';
 import { utils } from '../utils/index.js';
 import { newsApi } from '../api/newsApi.js';
 
 // 从全局Vue对象中解构需要的函数
 const { nextTick, watch } = Vue;
+
+// 使用NEWS_CONFIG中的getDateString函数
+const getDateString = NEWS_CONFIG.getDateString;
 
 export const useMethods = (store) => {
     const {
@@ -233,8 +236,9 @@ export const useMethods = (store) => {
     }, 100);
 
     const selectDate = (date) => {
-        const dateStr = getDateString(date);
-        const todayStr = getDateString(today);
+                    const newsConfig = getConfig('news');
+            const dateStr = newsConfig.getDateString(date);
+            const todayStr = newsConfig.getDateString(today);
         
         if (dateStr > todayStr) {
             showErrorMessage('无法查看未来日期的新闻');

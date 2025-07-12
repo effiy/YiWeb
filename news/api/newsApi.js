@@ -1,10 +1,11 @@
 // API相关函数
 
-import { API_CONFIG, getDateString } from '../config/constants.js';
+import { getConfig } from '../../shared/config/index.js';
 
 export const newsApi = {
     async fetchNewsData(currentDate) {
-        const dateStr = getDateString(currentDate);
+        const newsConfig = getConfig('news');
+        const dateStr = newsConfig.getDateString(currentDate);
         
         // 优先从缓存读取数据
         if (window.NewsCacheManager) {
@@ -18,10 +19,10 @@ export const newsApi = {
         // 缓存没有数据，从网络获取
         console.log(`从网络获取数据: ${dateStr}`);
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
+        const timeoutId = setTimeout(() => controller.abort(), newsConfig.API_TIMEOUT);
 
         try {
-            const response = await fetch(API_CONFIG.getUrl(currentDate), {
+            const response = await fetch(newsConfig.getApiUrl(currentDate), {
                 signal: controller.signal,
                 headers: {
                     'Accept': 'application/json',

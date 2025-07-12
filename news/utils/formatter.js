@@ -6,15 +6,14 @@
 
 import { formatTime, extractExcerpt } from '../../shared/utils/common.js';
 import { getConfig } from '../../shared/config/index.js';
-import { CATEGORIES } from '../config/constants.js';
 
 /**
  * 新闻格式化管理器
  */
 export class NewsFormatterManager {
     constructor() {
-        // 使用本地的分类配置，而不是共享配置，确保一致性
-        this.categories = CATEGORIES;
+        // 使用共享配置中的分类数据
+        this.categories = getConfig('news.CATEGORIES', []);
         this.excerptLength = getConfig('news.EXCERPT_LENGTH', 150);
         this.titleMaxLength = getConfig('news.TITLE_MAX_LENGTH', 100);
         this.dateFormat = getConfig('news.DATE_FORMAT', 'YYYY-MM-DD');

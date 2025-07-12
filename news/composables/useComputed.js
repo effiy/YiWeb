@@ -1,10 +1,13 @@
 // 计算属性组合函数
 
-import { CATEGORIES, getDateString } from '../config/constants.js';
+import { getConfig, NEWS_CONFIG } from '../../shared/config/index.js';
 import { utils } from '../utils/index.js';
 
 // 从全局Vue对象中解构需要的函数
 const { computed } = Vue;
+
+// 使用NEWS_CONFIG中的getDateString函数
+const getDateString = NEWS_CONFIG.getDateString;
 
 export const useComputed = (store) => {
     const {
@@ -194,7 +197,7 @@ export const useComputed = (store) => {
     const categorizedNews = computed(() => {
         const result = {};
         
-        CATEGORIES.forEach(category => {
+        getConfig('news.CATEGORIES', []).forEach(category => {
             result[category.key] = {
                 icon: category.icon,
                 title: category.title,
@@ -265,7 +268,7 @@ export const useComputed = (store) => {
                                 tags = [item.categories];
                             }
                             
-                            const duplicateTags = new Set(CATEGORIES.map(cat => cat.title));
+                            const duplicateTags = new Set(getConfig('news.CATEGORIES', []).map(cat => cat.title));
                             tags = tags.filter(tag => !duplicateTags.has(tag) && tag && tag.trim().length > 1);
                         }
                         
@@ -297,7 +300,7 @@ export const useComputed = (store) => {
 
     const availableTags = computed(() => {
         const allNews = newsData.value;
-        const duplicateTags = new Set(CATEGORIES.map(cat => cat.title));
+        const duplicateTags = new Set(getConfig('news.CATEGORIES', []).map(cat => cat.title));
         const tagCount = new Map();
         const tagColors = new Map();
         
@@ -361,7 +364,7 @@ export const useComputed = (store) => {
             currentNews = categoriesToShow.flatMap(([, category]) => category.news);
         }
         
-        const duplicateTags = new Set(CATEGORIES.map(cat => cat.title));
+        const duplicateTags = new Set(getConfig('news.CATEGORIES', []).map(cat => cat.title));
         const currentTagCount = new Map();
         
         currentNews.forEach(item => {

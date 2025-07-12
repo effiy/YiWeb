@@ -1,6 +1,6 @@
 // Vue3 新闻页面应用主文件
 
-import { CATEGORIES, getDateString } from './config/constants.js';
+import { getConfig, NEWS_CONFIG } from '../shared/config/index.js';
 import { utils } from './utils/index.js';
 import { createNewsStore } from './store/newsStore.js';
 import { useComputed } from './composables/useComputed.js';
@@ -61,7 +61,7 @@ const NewsApp = {
             // 工具函数
             getTimeAgo: utils.formatTimeAgo,
             extractExcerpt: utils.extractExcerpt,
-            getDateString: getDateString,
+            getDateString: NEWS_CONFIG.getDateString,
             getCategoryTag: (item) => {
                 // 优先显示 item.categories 中的标签
                 if (item.categories && item.categories.length > 0) {
@@ -75,7 +75,8 @@ const NewsApp = {
                 
                 // 如果没有 categories，则使用自动分类
                 const categoryKey = utils.categorizeNewsItem(item);
-                const category = CATEGORIES.find(cat => cat.key === categoryKey);
+                const categories = getConfig('news.CATEGORIES', []);
+                const category = categories.find(cat => cat.key === categoryKey);
                 return category ? [category.title] : ['其他'];
             },
             getNewsType: utils.getNewsSource

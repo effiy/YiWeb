@@ -1,6 +1,6 @@
 // 状态管理
 
-import { CATEGORIES } from '../config/constants.js';
+import { getConfig } from '../../shared/config/index.js';
 
 // 从全局Vue对象中解构需要的函数
 const { ref } = Vue;
@@ -31,7 +31,7 @@ export const createNewsStore = () => {
     const weekdays = ref(['日', '一', '二', '三', '四', '五', '六']);
     
     // 分类数据
-    const categories = ref(CATEGORIES);
+    const categories = ref(getConfig('news.CATEGORIES', []));
 
     return {
         // 响应式数据

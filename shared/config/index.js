@@ -122,6 +122,11 @@ export const SEARCH_CONFIG = {
 export const NEWS_CONFIG = {
     // API配置
     API_ENDPOINT: '/api/news',
+    API_URL: 'https://api.effiy.cn/mongodb/',
+    API_PARAMS: {
+        cname: 'rss'
+    },
+    API_TIMEOUT: 10000,
     RSS_ENDPOINTS: [
         'https://feeds.36kr.com/api/feed',
         'https://www.huxiu.com/rss/0.xml',
@@ -139,13 +144,12 @@ export const NEWS_CONFIG = {
     
     // 分类配置
     CATEGORIES: [
-        { key: 'tech', title: '科技', keywords: ['科技', '技术', '互联网', 'AI', '人工智能'] },
-        { key: 'business', title: '商业', keywords: ['商业', '企业', '投资', '融资', '创业'] },
-        { key: 'finance', title: '财经', keywords: ['财经', '金融', '股市', '经济', '银行'] },
-        { key: 'startup', title: '创业', keywords: ['创业', '创新', '孵化', '天使', '风投'] },
-        { key: 'mobile', title: '移动', keywords: ['移动', '手机', 'APP', '应用', '移动互联网'] },
-        { key: 'game', title: '游戏', keywords: ['游戏', '电竞', '手游', '网游', '娱乐'] },
-        { key: 'other', title: '其他', keywords: [] }
+        { key: 'ai', icon: 'fas fa-robot', title: 'AI技术', keywords: ['ai', '人工智能', 'gpt', '机器学习', '深度学习'] },
+        { key: 'data', icon: 'fas fa-chart-line', title: '数据分析', keywords: ['数据', '分析', '统计', '可视化', '报表'] },
+        { key: 'code', icon: 'fas fa-code', title: '代码开发', keywords: ['代码', '开发', '编程', '软件', '框架'] },
+        { key: 'tech', icon: 'fas fa-microchip', title: '科技产品', keywords: ['产品', '手机', '芯片', '硬件', '设备'] },
+        { key: 'business', icon: 'fas fa-briefcase', title: '商业资讯', keywords: ['商业', '投资', '市场', '融资', '创业'] },
+        { key: 'other', icon: 'fas fa-ellipsis-h', title: '其他', keywords: [] }
     ],
     
     // 时间格式
@@ -159,7 +163,20 @@ export const NEWS_CONFIG = {
     
     // 更新频率
     UPDATE_INTERVAL: 5 * 60 * 1000, // 5分钟
-    RETRY_INTERVAL: 30 * 1000 // 30秒
+    RETRY_INTERVAL: 30 * 1000, // 30秒
+    
+    // 工具函数 - 使用函数而不是箭头函数避免this引用问题
+    getDateString(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    },
+    
+    getApiUrl(date) {
+        const dateStr = this.getDateString(date);
+        return `${this.API_URL}?cname=${this.API_PARAMS.cname}&isoDate=${dateStr},${dateStr}`;
+    }
 };
 
 /**

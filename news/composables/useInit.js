@@ -1,6 +1,6 @@
 // 初始化功能组合函数
 
-import { getDateString } from '../config/constants.js';
+import { getConfig } from '../../shared/config/index.js';
 import { utils } from '../utils/index.js';
 
 export const useInit = (store, methods) => {
