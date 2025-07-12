@@ -5,8 +5,8 @@
  * 从shortcuts.js中提取的筛选功能，实现分类筛选、显示控制等功能
  */
 
-import { getConfig } from '../../../config/index.js';
-import { addEventDelegate } from '../../../utils/dom.js';
+import { getConfig } from '../../../js/config/index.js';
+import { addEventDelegate } from '../../../js/utils/dom.js';
 
 /**
  * 筛选管理器类

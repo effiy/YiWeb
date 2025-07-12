@@ -5,8 +5,8 @@
  * 重构后的快捷键管理器，整合所有功能模块
  */
 
-import { getConfig } from '../../config/index.js';
-import { keyboardHandler } from '../../utils/events.js';
+import { getConfig } from '../../js/config/index.js';
+import { keyboardHandler } from '../../js/utils/events.js';
 import { SearchManager } from './modules/search.js';
 import { FilterManager } from './modules/filter.js';
 import { AnimationManager } from './modules/animation.js';

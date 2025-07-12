@@ -13,8 +13,8 @@ import {
     createCSSVars,
     safeGetItem,
     safeSetItem
-} from '../../utils/common.js';
-import { autoResizeTextarea } from '../../utils/dom.js';
+} from '../utils/common.js';
+import { autoResizeTextarea } from '../utils/dom.js';
 
 // 工具函数集合
 export const utils = {

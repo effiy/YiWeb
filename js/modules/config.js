@@ -11,7 +11,7 @@ import {
     ANIMATION_CONFIG, 
     THEME_COLORS,
     BASE_CONFIG 
-} from '../../config/index.js';
+} from '../config/index.js';
 
 // 主页面特定配置
 export const CONFIG = {

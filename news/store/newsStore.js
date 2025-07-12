@@ -1,6 +1,6 @@
 // 状态管理
 
-import { getConfig } from '../../config/index.js';
+import { getConfig } from '../../js/config/index.js';
 
 // 从全局Vue对象中解构需要的函数
 const { ref } = Vue;

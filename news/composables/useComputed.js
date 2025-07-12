@@ -1,6 +1,6 @@
 // 计算属性组合函数
 
-import { getConfig, NEWS_CONFIG } from '../../config/index.js';
+import { getConfig, NEWS_CONFIG } from '../../js/config/index.js';
 import { utils } from '../utils/index.js';
 
 // 从全局Vue对象中解构需要的函数

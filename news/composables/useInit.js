@@ -1,6 +1,6 @@
 // 初始化功能组合函数
 
-import { getConfig } from '../../config/index.js';
+import { getConfig } from '../../js/config/index.js';
 import { utils } from '../utils/index.js';
 
 export const useInit = (store, methods) => {
