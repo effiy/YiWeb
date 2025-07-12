@@ -10,7 +10,7 @@
  */
 
 // 导入模块化管理器
-import shortcutsManager from './js/shortcuts-manager.js';
+import shortcutsManager from './shortcuts-manager.js';
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {

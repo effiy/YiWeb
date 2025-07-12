@@ -3,7 +3,7 @@
  * 功能：动态生成快捷键内容和筛选按钮
  */
 
-import { shortcutsData } from '../data/shortcuts-data.js';
+import { shortcutsData } from './data/shortcuts-data.js';
 
 class ShortcutsRenderer {
     constructor() {
