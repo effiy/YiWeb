@@ -19,7 +19,7 @@
 @import url('./news-core.css');
 
 /* 导入功能模块 */
-@import url('./animations.css');     /* 动画定义 */
+@import url('../animations.css');     /* 统一动画定义 */
 @import url('./date-navigation.css'); /* 日期导航组件独立样式 */
 @import url('./sidebar.css');       /* 侧边栏（布局容器和切换按钮） */
 @import url('./calendar.css');      /* 日历组件独立样式 */

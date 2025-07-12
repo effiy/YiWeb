@@ -16,5 +16,5 @@
 @import url('./shortcuts-item.css');
 
 /* 导入效果样式 */
-@import url('./animations.css');
+@import url('../animations.css');
 @import url('./responsive.css'); 

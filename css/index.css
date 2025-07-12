@@ -1,62 +1,12 @@
 /* 导入统一的CSS变量和全局样式 */
 @import url('./variables.css');
+@import url('./animations.css');
 
 /* 基础样式重置 */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-}
-
-/* 量子动画定义 */
-@keyframes quantumParticles {
-    0% {
-        background-position: 0% 50%;
-        opacity: 0.2;
-    }
-    50% {
-        background-position: 100% 50%;
-        opacity: 0.6;
-    }
-    100% {
-        background-position: 0% 50%;
-        opacity: 0.2;
-    }
-}
-
-@keyframes quantumFlow {
-    0% {
-        background-position: 0% 50%;
-        filter: hue-rotate(0deg);
-    }
-    50% {
-        background-position: 100% 50%;
-        filter: hue-rotate(180deg);
-    }
-    100% {
-        background-position: 0% 50%;
-        filter: hue-rotate(360deg);
-    }
-}
-
-@keyframes quantumGlow {
-    0%, 100% {
-        box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
-    }
-    50% {
-        box-shadow: 0 0 40px rgba(6, 182, 212, 0.6);
-    }
-}
-
-@keyframes quantumPulse {
-    0%, 100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    50% {
-        transform: scale(1.02);
-        opacity: 0.9;
-    }
 }
 
 /* 主体样式 */

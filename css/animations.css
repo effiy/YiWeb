@@ -1,6 +1,313 @@
-/* 动画效果定义 */
+/* =============================================================================
+   动画定义文件 - 统一的动画效果库
+   作者: liangliang
+   版本: 1.0.0
+   描述: 包含所有模块的动画效果，提供统一的动画管理
+   ============================================================================= */
 
-/* 点击反馈动画 */
+/* 基础量子动画定义 */
+@keyframes quantumParticles {
+    0% {
+        background-position: 0% 50%;
+        opacity: 0.2;
+    }
+    50% {
+        background-position: 100% 50%;
+        opacity: 0.6;
+    }
+    100% {
+        background-position: 0% 50%;
+        opacity: 0.2;
+    }
+}
+
+@keyframes quantumFlow {
+    0% {
+        background-position: 0% 50%;
+        filter: hue-rotate(0deg);
+    }
+    50% {
+        background-position: 100% 50%;
+        filter: hue-rotate(180deg);
+    }
+    100% {
+        background-position: 0% 50%;
+        filter: hue-rotate(360deg);
+    }
+}
+
+@keyframes quantumGlow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(6, 182, 212, 0.6);
+    }
+}
+
+@keyframes quantumPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.02);
+        opacity: 0.9;
+    }
+}
+
+/* 通用动画效果 */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+    0%, 20%, 53%, 80%, 100% {
+        transform: translate3d(0, 0, 0);
+    }
+    40%, 43% {
+        transform: translate3d(0, -8px, 0);
+    }
+    70% {
+        transform: translate3d(0, -4px, 0);
+    }
+    90% {
+        transform: translate3d(0, -2px, 0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes gradientShift {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes smoothRotate {
+    0%, 100% {
+        transform: rotate(0deg) translate3d(0, 0, 0);
+    }
+    25% {
+        transform: rotate(5deg);
+    }
+    75% {
+        transform: rotate(-5deg);
+    }
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px) translate3d(0, 0, 0);
+    }
+    50% {
+        transform: translateY(-10px) translate3d(0, 0, 0);
+    }
+}
+
+@keyframes elasticScale {
+    0% {
+        transform: scale(1) translate3d(0, 0, 0);
+    }
+    50% {
+        transform: scale(1.1) translate3d(0, 0, 0);
+    }
+    100% {
+        transform: scale(1) translate3d(0, 0, 0);
+    }
+}
+
+/* 按钮和交互动画 */
+@keyframes buttonPulse {
+    0%, 100% {
+        box-shadow: var(--shadow-sm);
+    }
+    50% {
+        box-shadow: var(--shadow-sm), 0 0 15px rgba(79, 70, 229, 0.4);
+    }
+}
+
+@keyframes clickEffect {
+    0%, 100% { 
+        transform: scale(1); 
+    }
+    50% { 
+        transform: scale(0.98); 
+    }
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes rippleEffect {
+    0% {
+        transform: scale(0);
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 0.4;
+    }
+    100% {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* 光晕和发光效果 */
+@keyframes glowPulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.3;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+@keyframes glowEffect {
+    0% {
+        box-shadow: 0 0 5px currentColor;
+        opacity: 0.5;
+    }
+    50% {
+        box-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
+        opacity: 1;
+    }
+    100% {
+        box-shadow: 0 0 5px currentColor;
+        opacity: 0.5;
+    }
+}
+
+@keyframes logoGlow {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.2;
+    }
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 0;
+        transform: scale(0) rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1) rotate(180deg);
+    }
+}
+
+/* 新闻模块特定动画 */
+@keyframes tagStatisticsFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes tagItemSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 快捷键模块特定动画 */
+@keyframes highlightPulse {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 25px rgba(79, 172, 254, 0.5);
+    }
+}
+
+@keyframes shortcutPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+}
+
+@keyframes shortcutGlow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(79, 172, 254, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(79, 172, 254, 0.6);
+    }
+}
+
+@keyframes shortcutRipple {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* 欢迎页面特定动画 */
 @keyframes dataPointFloat {
     0% {
         transform: scale(0.3) translateY(0);
@@ -49,7 +356,6 @@
     }
 }
 
-/* 新增：数据分析卡片的数据流动画 */
 @keyframes dataFlowAnimation {
     0% {
         transform: scale(0.4) translateX(0) translateY(0) rotate(0deg);
@@ -69,7 +375,6 @@
     }
 }
 
-/* 新增：代码编写卡片的代码块动画 */
 @keyframes codeBlockAnimation {
     0% {
         transform: scale(0.3) translateX(0) translateY(0) rotate(0deg);
@@ -93,38 +398,6 @@
     }
 }
 
-/* 新增：点击波纹效果 */
-@keyframes rippleEffect {
-    0% {
-        transform: scale(0);
-        opacity: 0.8;
-    }
-    50% {
-        opacity: 0.4;
-    }
-    100% {
-        transform: scale(4);
-        opacity: 0;
-    }
-}
-
-/* 新增：光晕脉冲效果 */
-@keyframes glowPulse {
-    0% {
-        transform: scale(1);
-        opacity: 0.6;
-    }
-    50% {
-        transform: scale(1.2);
-        opacity: 0.3;
-    }
-    100% {
-        transform: scale(1.5);
-        opacity: 0;
-    }
-}
-
-/* 新增：数据点连接线动画 */
 @keyframes dataConnection {
     0% {
         transform: scaleX(0);
@@ -139,7 +412,6 @@
     }
 }
 
-/* 新增：代码字符飘散动画 */
 @keyframes codeCharacterFloat {
     0% {
         transform: translateY(0) rotate(0deg) scale(1);
@@ -155,7 +427,6 @@
     }
 }
 
-/* 新增：艺术粒子旋转动画 */
 @keyframes artisticParticleSpin {
     0% {
         transform: scale(0.3) translateX(0) translateY(0) rotate(0deg);
@@ -179,7 +450,6 @@
     }
 }
 
-/* 新增：能量爆发效果 */
 @keyframes energyBurst {
     0% {
         transform: scale(0) rotate(0deg);
@@ -199,35 +469,6 @@
     }
 }
 
-/* 新增：闪烁效果 */
-@keyframes sparkle {
-    0%, 100% {
-        opacity: 0;
-        transform: scale(0) rotate(0deg);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1) rotate(180deg);
-    }
-}
-
-/* 新增：代码块闪烁效果 */
-@keyframes codeBlockFlicker {
-    0%, 100% {
-        opacity: 0.3;
-        transform: scale(1);
-    }
-    25% {
-        opacity: 1;
-        transform: scale(1.1);
-    }
-    75% {
-        opacity: 0.7;
-        transform: scale(0.95);
-    }
-}
-
-/* 新增：音波效果 */
 @keyframes soundWave {
     0% {
         transform: scale(0.5);
@@ -239,43 +480,6 @@
     }
 }
 
-/* 新增：高性能浮动动画 */
-@keyframes float {
-    0%, 100% {
-        transform: translateY(0px) translate3d(0, 0, 0);
-    }
-    50% {
-        transform: translateY(-10px) translate3d(0, 0, 0);
-    }
-}
-
-/* 新增：弹性缩放动画 */
-@keyframes elasticScale {
-    0% {
-        transform: scale(1) translate3d(0, 0, 0);
-    }
-    50% {
-        transform: scale(1.1) translate3d(0, 0, 0);
-    }
-    100% {
-        transform: scale(1) translate3d(0, 0, 0);
-    }
-}
-
-/* 新增：渐变背景动画 */
-@keyframes gradientShift {
-    0% {
-        background-position: 0% 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-    }
-    100% {
-        background-position: 0% 50%;
-    }
-}
-
-/* 新增：高性能粒子轨迹 */
 @keyframes particleTrail {
     0% {
         transform: scale(0) translateX(0) translateY(0) translate3d(0, 0, 0);
@@ -293,69 +497,7 @@
     }
 }
 
-/* 新增：高性能光晕效果 */
-@keyframes glowEffect {
-    0% {
-        box-shadow: 0 0 5px currentColor;
-        opacity: 0.5;
-    }
-    50% {
-        box-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
-        opacity: 1;
-    }
-    100% {
-        box-shadow: 0 0 5px currentColor;
-        opacity: 0.5;
-    }
-}
-
-/* 新增：高性能旋转动画 */
-@keyframes smoothRotate {
-    0% {
-        transform: rotate(0deg) translate3d(0, 0, 0);
-    }
-    100% {
-        transform: rotate(360deg) translate3d(0, 0, 0);
-    }
-}
-
-/* 新增：高性能弹跳动画 */
-@keyframes bounce {
-    0%, 20%, 53%, 80%, 100% {
-        transform: translate3d(0, 0, 0);
-    }
-    40%, 43% {
-        transform: translate3d(0, -8px, 0);
-    }
-    70% {
-        transform: translate3d(0, -4px, 0);
-    }
-    90% {
-        transform: translate3d(0, -2px, 0);
-    }
-}
-
-/* 加载指示器动画 */
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* 错误提示动画 */
-@keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-/* 新增：JavaScript中引用的动画定义 */
-
-/* 科学家卡片悬停动画 */
+/* 卡片特定动画 */
 @keyframes scientistScanHover {
     0% {
         transform: scale(1) rotate(0deg);
@@ -379,7 +521,6 @@
     }
 }
 
-/* 徽章脉冲动画 */
 @keyframes badgePulse {
     0% {
         transform: scale(1);
@@ -395,7 +536,6 @@
     }
 }
 
-/* 极客卡片代码发光动画 */
 @keyframes codeGlowHover {
     0% {
         transform: scale(1);
@@ -419,7 +559,6 @@
     }
 }
 
-/* 终端闪烁动画 */
 @keyframes terminalBlink {
     0% {
         opacity: 1;
@@ -435,7 +574,6 @@
     }
 }
 
-/* 艺术家卡片脉冲动画 */
 @keyframes artistPulseHover {
     0% {
         transform: scale(1) rotate(0deg);
@@ -459,7 +597,6 @@
     }
 }
 
-/* 创意闪烁动画 */
 @keyframes creativeSparkle {
     0% {
         transform: scale(1);
@@ -485,5 +622,69 @@
         transform: scale(1);
         opacity: 0.9;
         box-shadow: 0 0 5px currentColor;
+    }
+}
+
+@keyframes codeBlockFlicker {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    25% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    75% {
+        opacity: 0.7;
+        transform: scale(0.95);
+    }
+}
+
+/* Vue过渡动画 */
+.fade-enter-active, .fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.fade-enter-from, .fade-leave-to {
+    opacity: 0;
+}
+
+.slide-enter-active, .slide-leave-active {
+    transition: all 0.3s ease;
+}
+
+.slide-enter-from {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.slide-leave-to {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+/* 无障碍优化 - 减少动画选项 */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .shortcut-category,
+    .shortcut-item,
+    .filter-btn,
+    .feature-card {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .shortcut-category:hover,
+    .shortcut-item:hover,
+    .filter-btn:hover,
+    .feature-card:hover {
+        transform: none !important;
     }
 } 

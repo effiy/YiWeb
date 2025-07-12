@@ -6,7 +6,7 @@
 /* 引入功能特定样式 */
 @import url('./feature-cards.css');
 @import url('./themes.css');
-@import url('./animations.css');
+@import url('../animations.css');
 @import url('./responsive.css');
 
 
