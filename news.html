@@ -8,8 +8,8 @@
     <meta name="keywords" content="新闻,AI,数据分析,代码开发,科技,商业">
     
     <!-- 预加载关键资源 -->
-    <link rel="preload" href="../css/index.css" as="style">
-    <link rel="preload" href="../css/modules/header.css" as="style">
+    <link rel="preload" href="./css/index.css" as="style">
+    <link rel="preload" href="./css/modules/header.css" as="style">
     <link rel="preconnect" href="https://api.effiy.cn">
     <link rel="dns-prefetch" href="https://api.effiy.cn">
     
@@ -20,9 +20,9 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     
     <!-- 自定义样式 -->
-    <link rel="stylesheet" href="../css/index.css">
-    <link rel="stylesheet" href="../css/modules/header.css">
-    <link rel="stylesheet" href="../css/news/index.css">
+    <link rel="stylesheet" href="./css/index.css">
+    <link rel="stylesheet" href="./css/modules/header.css">
+    <link rel="stylesheet" href="./css/news/index.css">
 </head>
 <body>
     <div id="app">
@@ -85,29 +85,29 @@
     </div>
 
     <!-- 调试工具 -->
-    <script src="debug.js"></script>
+    <script src="./news/debug.js"></script>
     
     <!-- 缓存管理器 -->
-    <script src="cacheManager.js"></script>
+    <script src="./news/cacheManager.js"></script>
     
     <!-- 组件管理器 -->
-    <script src="components/ComponentManager.js"></script>
+    <script src="./news/components/ComponentManager.js"></script>
     
     <!-- 组件文件 -->
-    <script src="components/Calendar.js"></script>
-    <script src="components/TagStatistics.js"></script>
-    <script src="components/Sidebar.js"></script>
-    <script src="components/NewsList.js"></script>
-    <script src="components/SearchHeader.js"></script>
+    <script src="./news/components/Calendar.js"></script>
+    <script src="./news/components/TagStatistics.js"></script>
+    <script src="./news/components/Sidebar.js"></script>
+    <script src="./news/components/NewsList.js"></script>
+    <script src="./news/components/SearchHeader.js"></script>
     
     <!-- 模块化主应用逻辑 -->
-    <script type="module" src="utils/index.js"></script>
-    <script type="module" src="api/newsApi.js"></script>
-    <script type="module" src="store/newsStore.js"></script>
-    <script type="module" src="composables/useComputed.js"></script>
-    <script type="module" src="composables/useMethods.js"></script>
-    <script type="module" src="composables/useInit.js"></script>
-    <script type="module" src="main.js"></script>
+    <script type="module" src="./news/utils/index.js"></script>
+    <script type="module" src="./news/api/newsApi.js"></script>
+    <script type="module" src="./news/store/newsStore.js"></script>
+    <script type="module" src="./news/composables/useComputed.js"></script>
+    <script type="module" src="./news/composables/useMethods.js"></script>
+    <script type="module" src="./news/composables/useInit.js"></script>
+    <script type="module" src="./news/main.js"></script>
 </body>
 </html> 
 
