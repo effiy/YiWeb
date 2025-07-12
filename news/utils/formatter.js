@@ -4,8 +4,8 @@
  * 从news/utils/index.js中提取的格式化相关功能
  */
 
-import { formatTime, extractExcerpt } from '../../shared/utils/common.js';
-import { getConfig } from '../../shared/config/index.js';
+import { formatTime, extractExcerpt } from '../../utils/common.js';
+import { getConfig } from '../../config/index.js';
 
 /**
  * 新闻格式化管理器

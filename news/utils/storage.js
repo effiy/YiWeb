@@ -5,8 +5,8 @@
  * 从news/utils/index.js中提取的存储相关功能
  */
 
-import { safeSetItem, safeGetItem } from '../../shared/utils/common.js';
-import { getConfig } from '../../shared/config/index.js';
+import { safeSetItem, safeGetItem } from '../../utils/common.js';
+import { getConfig } from '../../config/index.js';
 
 /**
  * 新闻存储管理器

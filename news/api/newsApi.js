@@ -1,6 +1,6 @@
 // API相关函数
 
-import { getConfig } from '../../shared/config/index.js';
+import { getConfig } from '../../config/index.js';
 
 export const newsApi = {
     async fetchNewsData(currentDate) {

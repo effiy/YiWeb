@@ -1,6 +1,6 @@
 // Vue3 新闻页面应用主文件
 
-import { getConfig, NEWS_CONFIG } from '../shared/config/index.js';
+import { getConfig, NEWS_CONFIG } from '../config/index.js';
 import { utils } from './utils/index.js';
 import { createNewsStore } from './store/newsStore.js';
 import { useComputed } from './composables/useComputed.js';

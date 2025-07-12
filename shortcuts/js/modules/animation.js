@@ -5,8 +5,8 @@
  * 从shortcuts.js中提取的动画功能，实现页面加载、滚动、交互等动画效果
  */
 
-import { getConfig } from '../../../shared/config/index.js';
-import { createIntersectionObserver } from '../../../shared/utils/dom.js';
+import { getConfig } from '../../../config/index.js';
+import { createIntersectionObserver } from '../../../utils/dom.js';
 
 /**
  * 动画管理器类

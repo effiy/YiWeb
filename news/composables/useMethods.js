@@ -1,6 +1,6 @@
 // 业务逻辑方法组合函数
 
-import { getConfig, NEWS_CONFIG } from '../../shared/config/index.js';
+import { getConfig, NEWS_CONFIG } from '../../config/index.js';
 import { utils } from '../utils/index.js';
 import { newsApi } from '../api/newsApi.js';
 

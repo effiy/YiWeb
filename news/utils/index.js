@@ -26,7 +26,7 @@ import {
     isSearchMatch,
     updateUrlParams,
     getUrlParam
-} from '../../shared/utils/common.js';
+} from '../../utils/common.js';
 
 /**
  * 新闻工具函数对象

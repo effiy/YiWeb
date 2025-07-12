@@ -5,9 +5,9 @@
  * 从shortcuts.js中提取的搜索功能，实现搜索、高亮、历史记录等功能
  */
 
-import { getConfig } from '../../../shared/config/index.js';
-import { debounce, safeSetItem, safeGetItem } from '../../../shared/utils/common.js';
-import { addEventDelegate, createElement } from '../../../shared/utils/dom.js';
+import { getConfig } from '../../../config/index.js';
+import { debounce, safeSetItem, safeGetItem } from '../../../utils/common.js';
+import { addEventDelegate, createElement } from '../../../utils/dom.js';
 
 /**
  * 搜索管理器类
