@@ -115,14 +115,4 @@ body::before {
     z-index: -1;
 }
 
-/* 主容器样式 */
-.container {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    width: 100%;
-    max-width: 100%;
-}
-
 
