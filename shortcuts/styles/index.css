@@ -6,7 +6,7 @@
  */
 
 /* 导入全局共享样式 */
-@import url('../../shared/styles/global.css');
+@import url('../../css/global.css');
 
 /* 导入核心样式（合并了variables、layout、filters） */
 @import url('./shortcuts-core.css');

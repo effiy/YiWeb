@@ -7,7 +7,7 @@
  */
 
 /* 导入统一的CSS变量系统 */
-@import url('../../shared/styles/variables.css');
+@import url('../variables.css');
 
 /* 功能卡片容器样式 */
 .feature-cards-container {

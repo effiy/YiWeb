@@ -1,12 +1,5 @@
-/* 
- * 主页面样式文件
- * author: liangliang
- * 
- * 导入统一的样式系统，减少重复代码
- */
-
 /* 导入统一的CSS变量和全局样式 */
-@import url('../shared/styles/variables.css');
+@import url('./variables.css');
 
 /* 基础样式重置 */
 * {

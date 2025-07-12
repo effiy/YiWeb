@@ -7,7 +7,7 @@
  */
 
 /* 导入统一的CSS变量系统 */
-@import url('../../shared/styles/variables.css');
+@import url('../../css/variables.css');
 
 /* ========== 基础样式和布局模块 ========== */
 
