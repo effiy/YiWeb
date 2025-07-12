@@ -367,31 +367,6 @@ header.header-row *,
     }
 }
 
-@media (max-width: 480px) {
-    .header-row {
-        padding: var(--spacing-sm) var(--spacing-md);
-    }
-    
-    .search-box {
-        width: 100%;
-    }
-    
-    .search-logo {
-        width: 32px;
-        height: 28px;
-        font-size: 1rem;
-    }
-    
-    #messageInput {
-        font-size: 0.9rem;
-    }
-    
-    .filter-btn {
-        padding: 6px 10px;
-        font-size: 0.75rem;
-    }
-}
-
 /* 性能优化 */
 @media (prefers-reduced-motion: reduce) {
     .header-row,
@@ -434,4 +409,43 @@ header.header-row *,
         background: rgba(255, 255, 255, 0.08);
         border-color: rgba(255, 255, 255, 0.06);
     }
+}
+
+/* ===== 以下样式来自 search.css - 作者：lixuan ===== */
+
+/* 搜索提示样式增强 - 使用CSS变量优化 */
+.search-tips {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    justify-content: flex-end;
+    opacity: 0.6;
+    transition: opacity var(--duration-normal, 0.3s) var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1));
+    flex-shrink: 0;
+}
+
+.tip {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, var(--opacity-light, 0.05));
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all var(--duration-fast, 0.15s) var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1));
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.tip:hover {
+    background: rgba(255, 255, 255, var(--opacity-medium, 0.1));
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+.tip i {
+    font-size: 0.7rem;
+    opacity: 0.8;
 } 
