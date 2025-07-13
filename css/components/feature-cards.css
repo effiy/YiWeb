@@ -1,14 +1,27 @@
 /* 功能卡片容器 */
 .feature-cards-container {
     width: 100%;
-    max-width: 1400px;
+    max-width: 1400px; /* 从1600px调回到1400px */
     margin: 0 auto;
     padding: var(--spacing-xl) var(--spacing-lg);
 }
 
+/* 响应式容器padding调整 */
+@media (max-width: 1024px) {
+    .feature-cards-container {
+        padding: var(--spacing-lg) var(--spacing-md);
+    }
+}
+
+@media (max-width: 768px) {
+    .feature-cards-container {
+        padding: var(--spacing-md) var(--spacing-sm);
+    }
+}
+
 .feature-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(3, minmax(400px, 1fr)); /* 三列布局，最小宽度400px */
     gap: var(--spacing-xl);
 }
 
@@ -472,21 +485,38 @@
 }
 
 /* 响应式布局 */
+@media (min-width: 1400px) {
+    .feature-cards-grid {
+        grid-template-columns: repeat(3, minmax(400px, 1fr)); /* 大屏幕三列，最小400px */
+        gap: var(--spacing-xl);
+    }
+}
+
+@media (max-width: 1399px) and (min-width: 1201px) {
+    .feature-cards-grid {
+        grid-template-columns: repeat(3, minmax(400px, 1fr)); /* 中大屏幕三列，最小400px */
+        gap: var(--spacing-lg);
+    }
+}
+
 @media (max-width: 1200px) {
     .feature-cards-grid {
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        grid-template-columns: repeat(2, minmax(400px, 1fr)); /* 中等屏幕两列，最小400px */
         gap: var(--spacing-lg);
+    }
+}
+
+@media (max-width: 1024px) {
+    .feature-cards-grid {
+        grid-template-columns: repeat(2, minmax(400px, 1fr)); /* 小屏幕两列，最小400px */
+        gap: var(--spacing-md);
     }
 }
 
 @media (max-width: 768px) {
     .feature-cards-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr; /* 移动端单列布局 */
         gap: var(--spacing-lg);
-    }
-    
-    .feature-cards-container {
-        padding: var(--spacing-lg);
     }
     
     .feature-card {
