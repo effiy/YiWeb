@@ -30,10 +30,11 @@ header.header-row,
     display: flex !important;
     flex-direction: column !important;
     gap: var(--spacing-md, 1rem) !important;
-    min-height: 60px !important;
+    min-height: 80px !important; /* 增加最小高度 */
     max-height: none !important;
     overflow: visible !important;
     transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box !important; /* 确保padding包含在高度内 */
 }
 
 /* 移除任何可能影响fixed定位的过渡动画 */
@@ -63,6 +64,7 @@ header.header-row *,
     justify-content: space-between;
     gap: var(--spacing-lg);
     width: 100%;
+    min-height: 50px; /* 确保搜索行有最小高度 */
 }
 
 /* 搜索框统一样式 */
@@ -74,6 +76,7 @@ header.header-row *,
     padding: 0;
     display: flex;
     align-items: center;
+    min-height: 40px; /* 确保搜索框有最小高度 */
 }
 
 /* 分类过滤器统一样式 */
@@ -218,6 +221,7 @@ header.header-row *,
         -webkit-backdrop-filter: blur(10px) !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        min-height: 70px !important; /* 中等屏幕调整高度 */
     }
     
     /* 分类过滤器 - 中等屏幕优化 */
@@ -250,98 +254,77 @@ header.header-row *,
         -webkit-backdrop-filter: blur(10px) !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        min-height: 60px !important; /* 移动端减小高度 */
+        padding: var(--spacing-sm, 0.5rem) var(--spacing-md, 1rem) !important; /* 移动端减小padding */
     }
     
-    /* 搜索行 - 统一响应式布局 */
     .search-row {
-        flex-direction: column;
-        gap: var(--spacing-md);
-        padding: var(--spacing-md);
-        width: 100%;
+        min-height: 40px; /* 移动端减小搜索行高度 */
     }
     
-    /* 搜索框 - 统一响应式样式 */
     .search-box {
-        width: 100%;
-        order: 1;
+        min-height: 35px; /* 移动端减小搜索框高度 */
     }
     
     .date-navigation {
-        order: 2;
-        width: 100%;
-        justify-content: center;
-        padding: var(--spacing-xs);
+        display: none !important; /* 移动端隐藏日期导航 */
     }
     
     .date-nav-btn {
-        min-width: 70px;
-        padding: 6px 10px;
-        font-size: 0.8rem;
+        display: none !important;
     }
     
     .current-date-display {
-        min-width: 142px;
-        padding: 6px 10px;
+        display: none !important;
     }
     
     .date-main {
-        font-size: 0.85rem;
+        display: none !important;
     }
     
     .date-subtitle {
-        font-size: 0.65rem;
+        display: none !important;
     }
     
     .date-today-hint {
-        width: 16px;
-        height: 16px;
-        font-size: 0.6rem;
-        top: -6px;
-        right: -6px;
+        display: none !important;
     }
     
-    /* 分类过滤器 - 统一响应式样式 */
     .category-filters {
-        order: 3;
-        width: 100%;
-        justify-content: center;
+        min-width: 120px; /* 移动端减小最小宽度 */
+        gap: var(--spacing-xs);
     }
     
     .filter-buttons {
         gap: var(--spacing-xs);
-        width: 100%;
-        justify-content: center;
-        flex-wrap: wrap;
+        min-width: 100px;
     }
-
+    
     .sidebar-toggle-btn {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        font-size: 0.75rem;
-        margin-left: var(--spacing-xs);
-        min-width: 24px;
-        min-height: 24px;
+        padding: var(--spacing-xs) !important;
+        min-width: 32px !important;
+        height: 32px !important;
     }
 }
 
-/* 深色模式支持 */
 @media (prefers-color-scheme: dark) {
     .header-row {
-        background: rgba(0, 0, 0, 0.3);
-        border-bottom-color: rgba(255, 255, 255, 0.05);
+        background: rgba(0, 0, 0, 0.05) !important;
+        border-color: rgba(255, 255, 255, 0.05) !important;
     }
     
     .header-row:hover {
-        background: rgba(0, 0, 0, 0.4);
-        border-bottom-color: rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.08) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
     }
     
     .search-suggestions {
-        background: rgba(0, 0, 0, 0.9);
-        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.8) !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
     }
     
     .suggestion-item {
-        border-bottom-color: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary) !important;
     }
 }
 

@@ -29,15 +29,20 @@
     max-width: 100%;
 }
 
-/* 主要内容区域 */
+/* 主要内容区域 - 为固定头部留出空间 */
 .main-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 0 0 var(--spacing-md) 0;
+    padding: 120px 0 var(--spacing-md) 0; /* 为固定头部留出空间 */
     position: relative;
     min-height: 100vh;
     width: 100%;
+}
+
+/* 当头部存在时的内容调整 */
+body:has(.header-row) .main-content {
+    padding-top: 120px; /* 为固定头部留出空间 */
 }
 
 /* 网格系统 */
@@ -70,6 +75,15 @@
     .grid-3,
     .grid-4 {
         grid-template-columns: 1fr;
+    }
+    
+    /* 移动端头部高度调整 */
+    .main-content {
+        padding-top: 100px; /* 移动端头部较小 */
+    }
+    
+    body:has(.header-row) .main-content {
+        padding-top: 100px;
     }
 }
 
