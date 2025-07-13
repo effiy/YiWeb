@@ -339,19 +339,16 @@
 
 /* 减少动画选项 */
 @media (prefers-reduced-motion: reduce) {
-    .shortcut-item,
-    .shortcut-item-highlight,
-    .shortcut-item-glow,
-    .shortcut-item-ripple,
-    .shortcut-item.search-match {
-        animation: none !important;
+    body .shortcut-item,
+    body .shortcut-icon {
+        animation: none;
     }
     
-    .shortcut-item:hover {
-        transform: none !important;
+    body .shortcut-item:hover {
+        transform: none;
     }
     
-    .shortcut-item-ripple::after {
-        animation: none !important;
+    body .shortcut-item:active {
+        animation: none;
     }
 } 

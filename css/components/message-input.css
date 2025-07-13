@@ -66,12 +66,6 @@
     min-height: 24px;
     max-height: 60px;
     font-family: inherit;
-    pointer-events: auto !important;
-    user-select: text !important;
-    cursor: text !important;
-    -webkit-user-select: text !important;
-    -moz-user-select: text !important;
-    -ms-user-select: text !important;
 }
 
 #messageInput:focus {
@@ -187,12 +181,23 @@
     }
 }
 
-/* 性能优化 */
+/* 输入框激活状态 */
+.message-input:focus,
+.message-input:active {
+    pointer-events: auto;
+    user-select: text;
+    cursor: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+}
+
+/* 减少动画选项 */
 @media (prefers-reduced-motion: reduce) {
-    .search-logo,
-    .tip {
-        animation: none !important;
-        transition: none !important;
+    body .message-input,
+    body .message-input-wrapper {
+        animation: none;
+        transition: none;
     }
 }
 

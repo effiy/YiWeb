@@ -49,20 +49,20 @@
 
 /* 减少动画选项 */
 @media (prefers-reduced-motion: reduce) {
-    .welcome-data-point,
-    .welcome-code-line,
-    .welcome-color-particle,
-    .welcome-data-flow,
-    .welcome-code-block,
-    .welcome-data-connection,
-    .welcome-code-character,
-    .welcome-artistic-particle,
-    .welcome-energy-burst {
-        animation: none !important;
+    body .welcome-data-point,
+    body .welcome-code-line,
+    body .welcome-color-particle,
+    body .welcome-data-flow,
+    body .welcome-code-block,
+    body .welcome-data-connection,
+    body .welcome-code-character,
+    body .welcome-artistic-particle,
+    body .welcome-energy-burst {
+        animation: none;
     }
     
-    .welcome-bg-animation .particle {
-        animation: none !important;
+    body .welcome-bg-animation .particle {
+        animation: none;
     }
 }
 

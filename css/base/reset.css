@@ -24,15 +24,15 @@ html {
 /* 无障碍支持 - 屏幕阅读器专用 */
 .sr-only,
 .visually-hidden {
-    position: absolute !important;
-    width: 1px !important;
-    height: 1px !important;
-    padding: 0 !important;
-    margin: -1px !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* 焦点可见性 */
@@ -90,13 +90,13 @@ a:focus-visible {
     .no-print { display: none; }
     
     body {
-        background: white !important;
-        color: black !important;
+        background: white;
+        color: black;
     }
     
     .card {
-        border: 1px solid #ccc !important;
-        box-shadow: none !important;
+        border: 1px solid #ccc;
+        box-shadow: none;
     }
 }
 

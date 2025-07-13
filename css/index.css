@@ -3,24 +3,24 @@
    Author: liangliang
    ======================================== */
 
-/* 基础样式导入 - 按加载顺序排列 */
+/* 基础样式导入 - 按加载顺序和优先级排列 */
 @import url('./base/variables.css');
 @import url('./base/reset.css');
 @import url('./base/base.css');
 @import url('./base/typography.css');
 @import url('./base/accessibility.css');
 
-/* 工具类样式 */
+/* 工具类样式 - 低优先级 */
 @import url('./utils/spacing.css');
 @import url('./utils/display.css');
 @import url('./utils/animations.css');
 @import url('./utils/responsive.css');
 
-/* 布局样式 */
+/* 布局样式 - 中等优先级 */
 @import url('./layout/container.css');
 @import url('./layout/header.css');
 
-/* 组件样式 */
+/* 组件样式 - 高优先级 */
 @import url('./components/buttons.css');
 @import url('./components/input.css');
 @import url('./components/card.css');
@@ -36,12 +36,12 @@
 @import url('./components/tag-statistics.css');
 @import url('./components/category-filters.css');
 
-/* 页面样式 */
+/* 页面样式 - 最高优先级 */
 @import url('./pages/welcome.css');
 @import url('./pages/news.css');
 @import url('./pages/shortcuts.css');
 
-/* 主题样式 */
+/* 主题样式 - 覆盖样式 */
 @import url('./themes/colors.css');
 
 /* 全局样式覆盖和优化 */
@@ -120,14 +120,14 @@ body::before {
     font-display: swap;
 }
 
-/* 媒体查询优化 */
+/* 媒体查询优化 - 移除!important，使用更具体的选择器 */
 @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+    body *,
+    body *::before,
+    body *::after {
+        animation-duration: 0.01ms;
+        animation-iteration-count: 1;
+        transition-duration: 0.01ms;
     }
 }
 

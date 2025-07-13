@@ -401,17 +401,12 @@
 
 /* 减少动画选项 */
 @media (prefers-reduced-motion: reduce) {
-    .card-scientist-scan,
-    .card-badge-pulse,
-    .card-code-glow,
-    .card-terminal-blink,
-    .card-artist-pulse,
-    .card-creative-sparkle,
-    .card-code-flicker {
-        animation: none !important;
+    body .card,
+    body .card-content {
+        animation: none;
     }
     
-    .card-interactive:hover {
-        transform: none !important;
+    body .card:hover {
+        transform: none;
     }
 } 

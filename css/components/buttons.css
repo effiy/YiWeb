@@ -157,8 +157,8 @@
 
 /* 减少动画选项 */
 @media (prefers-reduced-motion: reduce) {
-    .filter-btn {
-        transition: none !important;
+    body .filter-btn {
+        transition: none;
     }
 }
 

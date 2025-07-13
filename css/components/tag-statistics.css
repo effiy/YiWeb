@@ -376,17 +376,17 @@
 
 /* 减少动画选项 */
 @media (prefers-reduced-motion: reduce) {
-    .tag-statistics,
-    .tag-item {
-        animation: none !important;
+    body .tag-statistics,
+    body .tag-item {
+        animation: none;
     }
     
-    .tag-item:hover {
-        transform: none !important;
+    body .tag-item:hover {
+        transform: none;
     }
     
-    .tag-progress-fill::after {
-        animation: none !important;
+    body .tag-progress-fill::after {
+        animation: none;
     }
 }
 

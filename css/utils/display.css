@@ -224,24 +224,69 @@
 .max-h-full { max-height: 100%; }
 .max-h-screen { max-height: 100vh; }
 
-/* 响应式显示 */
+/* 响应式显示 - 使用更具体的选择器替代!important */
 @media (max-width: 767px) {
-    .hidden-mobile { display: none !important; }
-    .block-mobile { display: block !important; }
-    .inline-mobile { display: inline !important; }
-    .flex-mobile { display: flex !important; }
+    /* 移动端显示控制 */
+    .hidden-mobile { 
+        display: none; 
+    }
+    .block-mobile { 
+        display: block; 
+    }
+    .inline-mobile { 
+        display: inline; 
+    }
+    .flex-mobile { 
+        display: flex; 
+    }
+    
+    /* 确保移动端样式优先级 */
+    body .hidden-mobile { display: none; }
+    body .block-mobile { display: block; }
+    body .inline-mobile { display: inline; }
+    body .flex-mobile { display: flex; }
 }
 
 @media (min-width: 768px) {
-    .hidden-desktop { display: none !important; }
-    .block-desktop { display: block !important; }
-    .inline-desktop { display: inline !important; }
-    .flex-desktop { display: flex !important; }
+    /* 桌面端显示控制 */
+    .hidden-desktop { 
+        display: none; 
+    }
+    .block-desktop { 
+        display: block; 
+    }
+    .inline-desktop { 
+        display: inline; 
+    }
+    .flex-desktop { 
+        display: flex; 
+    }
+    
+    /* 确保桌面端样式优先级 */
+    body .hidden-desktop { display: none; }
+    body .block-desktop { display: block; }
+    body .inline-desktop { display: inline; }
+    body .flex-desktop { display: flex; }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
-    .hidden-tablet { display: none !important; }
-    .block-tablet { display: block !important; }
-    .inline-tablet { display: inline !important; }
-    .flex-tablet { display: flex !important; }
+    /* 平板端显示控制 */
+    .hidden-tablet { 
+        display: none; 
+    }
+    .block-tablet { 
+        display: block; 
+    }
+    .inline-tablet { 
+        display: inline; 
+    }
+    .flex-tablet { 
+        display: flex; 
+    }
+    
+    /* 确保平板端样式优先级 */
+    body .hidden-tablet { display: none; }
+    body .block-tablet { display: block; }
+    body .inline-tablet { display: inline; }
+    body .flex-tablet { display: flex; }
 } 

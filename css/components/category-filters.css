@@ -287,14 +287,14 @@
 
 /* ========== 无障碍支持 ========== */
 @media (prefers-reduced-motion: reduce) {
-    .filter-btn,
-    .category-filters {
-        animation: none !important;
-        transition: none !important;
+    body .filter-btn,
+    body .category-filters {
+        animation: none;
+        transition: none;
     }
     
-    .filter-btn:hover {
-        transform: none !important;
+    body .filter-btn:hover {
+        transform: none;
     }
 }
 

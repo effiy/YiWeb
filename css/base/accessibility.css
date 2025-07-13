@@ -50,27 +50,27 @@
 
 /* 屏幕阅读器文本 */
 .sr-only {
-    position: absolute !important;
-    width: 1px !important;
-    height: 1px !important;
-    padding: 0 !important;
-    margin: -1px !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* 屏幕阅读器可见文本 */
 .sr-only-focusable:focus {
-    position: static !important;
-    width: auto !important;
-    height: auto !important;
-    padding: revert !important;
-    margin: revert !important;
-    overflow: visible !important;
-    clip: auto !important;
-    white-space: normal !important;
+    position: static;
+    width: auto;
+    height: auto;
+    padding: revert;
+    margin: revert;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
 }
 
 /* 高对比度模式支持 */
@@ -90,13 +90,13 @@
 
 /* 减少动画运动 */
 @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
+    body *,
+    body *::before,
+    body *::after {
+        animation-duration: 0.01ms;
+        animation-iteration-count: 1;
+        transition-duration: 0.01ms;
+        scroll-behavior: auto;
     }
     
     .loading-spinner {
@@ -288,28 +288,28 @@
 
 /* 打印样式 */
 @media print {
-    .no-print {
-        display: none !important;
+    body .no-print {
+        display: none;
     }
     
-    .print-only {
-        display: block !important;
+    body .print-only {
+        display: block;
     }
     
     body {
-        background: white !important;
-        color: black !important;
+        background: white;
+        color: black;
     }
     
-    .card {
-        border: 1px solid #000 !important;
-        box-shadow: none !important;
+    body .card {
+        border: 1px solid #000;
+        box-shadow: none;
     }
     
-    .btn {
-        border: 1px solid #000 !important;
-        background: white !important;
-        color: black !important;
+    body .btn {
+        border: 1px solid #000;
+        background: white;
+        color: black;
     }
 }
 
