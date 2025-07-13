@@ -1,0 +1,61 @@
+/* 欢迎页面样式 */
+
+/* 欢迎页面背景动画 */
+.welcome-bg-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.welcome-bg-animation .particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(79, 172, 254, 0.3);
+    border-radius: 50%;
+}
+
+.welcome-bg-animation .particle:nth-child(odd) {
+    background: rgba(139, 92, 246, 0.3);
+}
+
+.welcome-bg-animation .particle:nth-child(3n) {
+    background: rgba(34, 197, 94, 0.3);
+}
+
+/* 欢迎页面响应式设计 */
+@media (max-width: 768px) {
+    .feature-cards-container {
+        padding: var(--spacing-lg) var(--spacing-md);
+    }
+    
+    .feature-cards-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-lg);
+    }
+}
+
+/* 减少动画选项 */
+@media (prefers-reduced-motion: reduce) {
+    .welcome-data-point,
+    .welcome-code-line,
+    .welcome-color-particle,
+    .welcome-data-flow,
+    .welcome-code-block,
+    .welcome-data-connection,
+    .welcome-code-character,
+    .welcome-artistic-particle,
+    .welcome-energy-burst {
+        animation: none !important;
+    }
+    
+    .welcome-bg-animation .particle {
+        animation: none !important;
+    }
+}
+

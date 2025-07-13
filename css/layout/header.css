@@ -1,0 +1,347 @@
+/* 统一头部布局样式模块 - 确保所有页面的header-row样式和交互保持一致 */
+
+/* 固定头部的强制定位样式 - 确保在所有页面中都能正确定位 */
+html body div#app header.header-row,
+html body div#app .header-row,
+body div#app header.header-row,
+body div#app .header-row,
+div#app header.header-row,
+div#app .header-row,
+#app header.header-row,
+#app .header-row,
+header.header-row,
+.header-row {
+    position: fixed !important;
+    top: 0px !important;
+    left: 0px !important;
+    right: 0px !important;
+    width: 100vw !important;
+    z-index: 9999 !important;
+    transform: none !important;
+    will-change: auto !important;
+    contain: none !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    margin: 0 !important;
+    padding: var(--spacing-md, 1rem) var(--spacing-xl, 2rem) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--spacing-md, 1rem) !important;
+    min-height: 60px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 移除任何可能影响fixed定位的过渡动画 */
+html body div#app header.header-row *,
+html body div#app .header-row *,
+body div#app header.header-row *,
+body div#app .header-row *,
+div#app header.header-row *,
+div#app .header-row *,
+#app header.header-row *,
+#app .header-row *,
+header.header-row *,
+.header-row * {
+    will-change: auto !important;
+    contain: none !important;
+}
+
+.header-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* 搜索行统一样式 */
+.search-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-lg);
+    width: 100%;
+}
+
+/* 搜索框统一样式 */
+.search-box {
+    flex: 1;
+    background: none;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+/* 分类过滤器统一样式 */
+.category-filters {
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-shrink: 0;
+    width: auto;
+    min-width: 200px;
+    position: relative;
+}
+
+.category-filters h4 {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0.6;
+}
+
+.filter-buttons {
+    display: flex;
+    justify-content: end;
+    flex-wrap: nowrap;
+    gap: var(--spacing-xs);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex: 1;
+}
+
+.filter-buttons::-webkit-scrollbar {
+    display: none;
+}
+
+/* 搜索结果样式 */
+.search-results {
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: linear-gradient(135deg, rgba(79, 172, 254, 0.1), rgba(0, 255, 255, 0.1));
+    border: 1px solid rgba(79, 172, 254, 0.2);
+    border-radius: var(--radius-md);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    transition: all var(--duration-normal) var(--ease-smooth);
+    transform: translateY(0);
+    opacity: 1;
+    width: 100%;
+}
+
+.search-results.closing {
+    transform: translateY(-20px);
+    opacity: 0;
+    margin-bottom: 0;
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+}
+
+.search-results-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: var(--bg-elevated);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-glass);
+    width: 100%;
+}
+
+.search-results-count {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.search-query {
+    padding: 4px 12px;
+    background: var(--primary-gradient);
+    border-radius: var(--radius-full);
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.results-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.results-info i {
+    color: var(--primary-blue);
+}
+
+.clear-search {
+    margin-left: auto;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.clear-search:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    html body #app .header-row,
+    html body #app header.header-row,
+    body #app .header-row,
+    body #app header.header-row,
+    #app .header-row,
+    #app header.header-row,
+    .header-row,
+    header.header-row {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 1000 !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    /* 分类过滤器 - 中等屏幕优化 */
+    .category-filters {
+        min-width: 150px;
+    }
+    
+    .filter-buttons {
+        gap: var(--spacing-xs);
+    }
+}
+
+@media (max-width: 768px) {
+    html body #app .header-row,
+    html body #app header.header-row,
+    body #app .header-row,
+    body #app header.header-row,
+    #app .header-row,
+    #app header.header-row,
+    .header-row,
+    header.header-row {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 1000 !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    /* 搜索行 - 统一响应式布局 */
+    .search-row {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+        width: 100%;
+    }
+    
+    /* 搜索框 - 统一响应式样式 */
+    .search-box {
+        width: 100%;
+        order: 1;
+    }
+    
+    .date-navigation {
+        order: 2;
+        width: 100%;
+        justify-content: center;
+        padding: var(--spacing-xs);
+    }
+    
+    .date-nav-btn {
+        min-width: 70px;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .current-date-display {
+        min-width: 142px;
+        padding: 6px 10px;
+    }
+    
+    .date-main {
+        font-size: 0.85rem;
+    }
+    
+    .date-subtitle {
+        font-size: 0.65rem;
+    }
+    
+    .date-today-hint {
+        width: 16px;
+        height: 16px;
+        font-size: 0.6rem;
+        top: -6px;
+        right: -6px;
+    }
+    
+    /* 分类过滤器 - 统一响应式样式 */
+    .category-filters {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .filter-buttons {
+        gap: var(--spacing-xs);
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .sidebar-toggle-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.75rem;
+        margin-left: var(--spacing-xs);
+        min-width: 24px;
+        min-height: 24px;
+    }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+    .header-row {
+        background: rgba(0, 0, 0, 0.3);
+        border-bottom-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .header-row:hover {
+        background: rgba(0, 0, 0, 0.4);
+        border-bottom-color: rgba(255, 255, 255, 0.08);
+    }
+    
+    .search-suggestions {
+        background: rgba(0, 0, 0, 0.9);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .suggestion-item {
+        border-bottom-color: rgba(255, 255, 255, 0.05);
+    }
+}
+

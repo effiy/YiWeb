@@ -145,7 +145,7 @@ export class Button {
 // CSS样式（如果需要扩展基础样式）
 const buttonStyles = `
 .btn {
-    /* 基础样式已在global.css中定义 */
+    /* 基础样式已在组件样式文件中定义 */
 }
 
 /* 尺寸变体 */

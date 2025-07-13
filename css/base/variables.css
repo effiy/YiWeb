@@ -1,0 +1,16 @@
+/**
+ * 主要 CSS 变量集合
+ * 统一导入所有变量模块
+ */
+
+/* 导入基础变量 */
+@import url('./typography.css');
+
+/* 导入主题变量 */
+@import url('../themes/colors.css');
+
+/* 导入工具变量 */
+@import url('../utils/spacing.css');
+@import url('../utils/animations.css');
+@import url('../utils/responsive.css');
+@import url('../utils/display.css'); 
