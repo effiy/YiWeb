@@ -1,7 +1,7 @@
 // 输入框处理模块
 
 import { utils } from '../utils/utils.js';
-import { CONFIG } from '../config/index.js';
+import { BASE_CONFIG, UI_CONFIG } from '../config/index.js';
 
 // 输入框处理
 export const inputHandler = {
@@ -19,7 +19,7 @@ export const inputHandler = {
 
     setupEventListeners(textarea) {
         textarea.addEventListener('keydown', this.handleKeydown.bind(this));
-        textarea.addEventListener('input', utils.debounce(this.handleInput.bind(this), CONFIG.DEBOUNCE_DELAY));
+        textarea.addEventListener('input', utils.debounce(this.handleInput.bind(this), BASE_CONFIG.DEBOUNCE_DELAY));
         textarea.addEventListener('paste', this.handlePaste.bind(this));
     },
 
@@ -39,7 +39,7 @@ export const inputHandler = {
         setTimeout(() => {
             const textarea = e.target;
             textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, CONFIG.MAX_TEXTAREA_HEIGHT) + 'px';
+            textarea.style.height = Math.min(textarea.scrollHeight, UI_CONFIG.MAX_TEXTAREA_HEIGHT) + 'px';
         }, 0);
     },
 

@@ -5,7 +5,7 @@
  * 使用共享工具函数，避免代码重复
  */
 
-import { CONFIG } from '../config/index.js';
+import { UI_CONFIG } from '../config/index.js';
 import { 
     debounce, 
     throttle, 
@@ -30,7 +30,7 @@ export const utils = {
     autoResizeTextarea(textarea) {
         // 使用DOM工具函数
         autoResizeTextarea(textarea, {
-            maxHeight: CONFIG.MAX_TEXTAREA_HEIGHT
+            maxHeight: UI_CONFIG.MAX_TEXTAREA_HEIGHT
         });
     },
 

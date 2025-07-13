@@ -1,7 +1,7 @@
 // 功能卡片处理模块
 
 import { utils } from '../utils/utils.js';
-import { CONFIG } from '../config/index.js';
+import { ANIMATION_CONFIG, BASE_CONFIG } from '../config/index.js';
 import { globalState } from './state.js';
 import { animationManager } from './animations.js';
 import { clickFeedbackManager } from './clickFeedback.js';
@@ -50,16 +50,16 @@ export const featureCards = {
                 if (isHovering) {
                     this.playHoverAnimation(card, feature);
                 }
-            }, CONFIG.ANIMATION.HOVER_DELAY);
+            }, ANIMATION_CONFIG.HOVER_DELAY);
 
             globalState.hoverTimeouts.set(cardId, hoverTimeout);
-        }, CONFIG.THROTTLE_DELAY);
+        }, BASE_CONFIG.THROTTLE_DELAY);
 
         const handleMouseLeave = utils.throttle(() => {
             isHovering = false;
             utils.cleanupAnimation(cardId, globalState);
             animationManager.stopAnimation(card);
-        }, CONFIG.THROTTLE_DELAY);
+        }, BASE_CONFIG.THROTTLE_DELAY);
 
         const handleClick = (e) => {
             e.preventDefault();
@@ -100,7 +100,7 @@ export const featureCards = {
 
         setTimeout(() => {
             card._hoverAnimating = false;
-        }, CONFIG.ANIMATION.HOVER_DURATION);
+        }, ANIMATION_CONFIG.HOVER_DURATION);
     },
 
     getFeatureType(feature) {

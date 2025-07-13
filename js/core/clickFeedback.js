@@ -1,6 +1,6 @@
 // 点击反馈管理模块
 
-import { CONFIG, THEME_COLORS } from '../config/index.js';
+import { ANIMATION_CONFIG, THEME_COLORS } from '../config/index.js';
 import { utils } from '../utils/utils.js';
 import { globalState } from './state.js';
 
@@ -52,7 +52,7 @@ export const clickFeedbackManager = {
     createCardScaleEffect(card) {
         utils.requestAnimationFrame(() => {
             card.style.transform = 'scale(0.95)';
-            card.style.transition = `transform ${CONFIG.ANIMATION.CLICK_DURATION}ms cubic-bezier(0.34, 1.56, 0.64, 1)`;
+            card.style.transition = `transform ${ANIMATION_CONFIG.CLICK_DURATION}ms cubic-bezier(0.34, 1.56, 0.64, 1)`;
         }, globalState);
 
         setTimeout(() => {
@@ -60,7 +60,7 @@ export const clickFeedbackManager = {
                 card.style.transform = '';
                 card.style.transition = '';
             }, globalState);
-        }, CONFIG.ANIMATION.CLICK_DURATION);
+        }, ANIMATION_CONFIG.CLICK_DURATION);
     },
 
     createSpecialEffects(card, feedback, feature) {
@@ -69,7 +69,7 @@ export const clickFeedbackManager = {
         effects.forEach((effect, index) => {
             setTimeout(() => {
                 this.createEffect(card, effect, feature);
-            }, index * CONFIG.ANIMATION.EFFECT_DELAY);
+            }, index * ANIMATION_CONFIG.EFFECT_DELAY);
         });
 
         // 添加随机闪烁效果
@@ -198,7 +198,7 @@ export const clickFeedbackManager = {
                     left: 50%;
                     top: 50%;
                     transform: translate(-50%, -50%);
-                    animation: energyBurst 1.0s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                    animation: energyPulse 1.0s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
                 `;
                 break;
         }
@@ -212,31 +212,38 @@ export const clickFeedbackManager = {
     },
 
     createDataConnections(card, feature) {
+        const connectionCount = 4;
         const colors = THEME_COLORS[feature].particles;
-        for (let i = 0; i < 3; i++) {
-            const connection = document.createElement('div');
-            const color = colors[i % colors.length];
-            
-            connection.style.cssText = `
-                position: absolute;
-                height: 2px;
-                width: 40px;
-                background: ${color};
-                left: 50%;
-                top: 50%;
-                transform: translate(-50%, -50%) rotate(${i * 60}deg);
-                animation: dataConnection 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-                animation-delay: ${i * 0.1}s;
-                pointer-events: none;
-                z-index: 998;
-                opacity: 0.8;
-            `;
-            
-            card.appendChild(connection);
-            
+        
+        for (let i = 0; i < connectionCount; i++) {
             setTimeout(() => {
-                utils.safeRemoveElement(connection);
-            }, 800 + i * 100);
+                const connection = document.createElement('div');
+                const color = colors[i % colors.length];
+                const angle = (i * 90) * (Math.PI / 180);
+                const distance = 80;
+                const x = Math.cos(angle) * distance;
+                const y = Math.sin(angle) * distance;
+                
+                connection.style.cssText = `
+                    position: absolute;
+                    width: 2px;
+                    height: 20px;
+                    background: ${color};
+                    left: calc(50% + ${x}px);
+                    top: calc(50% + ${y}px);
+                    transform: translate(-50%, -50%) rotate(${angle}rad);
+                    animation: dataConnection 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                    pointer-events: none;
+                    z-index: 997;
+                    box-shadow: 0 0 4px ${color};
+                `;
+                
+                card.appendChild(connection);
+                
+                setTimeout(() => {
+                    utils.safeRemoveElement(connection);
+                }, 800);
+            }, i * ANIMATION_CONFIG.PARTICLE_DELAY);
         }
     },
 
@@ -244,111 +251,88 @@ export const clickFeedbackManager = {
         const characters = ['<', '>', '/', '{', '}', ';', '=', '+'];
         const colors = THEME_COLORS[feature].particles;
         
-        for (let i = 0; i < 5; i++) {
-            const char = document.createElement('div');
-            const color = colors[i % colors.length];
-            const x = utils.random(-40, 40);
-            const y = utils.random(-40, 40);
-            
-            char.style.cssText = `
-                position: absolute;
-                color: ${color};
-                font-size: 14px;
-                font-weight: bold;
-                font-family: 'Courier New', monospace;
-                left: calc(50% + ${x}px);
-                top: calc(50% + ${y}px);
-                transform: translate(-50%, -50%);
-                animation: codeCharacterFloat 1.0s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-                animation-delay: ${i * 0.08}s;
-                pointer-events: none;
-                z-index: 997;
-                opacity: 0.9;
-            `;
-            char.textContent = characters[i % characters.length];
-            
-            card.appendChild(char);
-            
+        characters.forEach((char, i) => {
             setTimeout(() => {
-                utils.safeRemoveElement(char);
-            }, 1000 + i * 80);
-        }
+                const element = document.createElement('div');
+                const color = colors[i % colors.length];
+                const x = utils.random(-50, 50);
+                const y = utils.random(-50, 50);
+                
+                element.style.cssText = `
+                    position: absolute;
+                    font-family: monospace;
+                    font-size: 12px;
+                    color: ${color};
+                    left: calc(50% + ${x}px);
+                    top: calc(50% + ${y}px);
+                    transform: translate(-50%, -50%);
+                    animation: codeCharacter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                    pointer-events: none;
+                    z-index: 998;
+                    text-shadow: 0 0 4px ${color};
+                `;
+                element.textContent = char;
+                
+                card.appendChild(element);
+                
+                setTimeout(() => {
+                    utils.safeRemoveElement(element);
+                }, 600);
+            }, i * ANIMATION_CONFIG.PARTICLE_DELAY);
+        });
     },
 
     getEffectColor(feature, alpha = 0.3) {
-        const color = THEME_COLORS[feature]?.primary || THEME_COLORS.scientist.primary;
-        const rgb = color.replace('#', '').match(/.{2}/g)
-            .map(hex => parseInt(hex, 16))
-            .join(', ');
-        return `rgba(${rgb}, ${alpha})`;
+        const colors = THEME_COLORS[feature];
+        if (!colors) return `rgba(79, 172, 254, ${alpha})`;
+        
+        const primaryColor = colors.primary;
+        const hex = primaryColor.replace('#', '');
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+        
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     },
 
     createParticles(card, feedback, count, feature) {
-        if (card._particleAnimating) return;
-        card._particleAnimating = true;
-
-        const fragment = document.createDocumentFragment();
         const colors = THEME_COLORS[feature].particles;
-
+        
         for (let i = 0; i < count; i++) {
-            const particle = this.createParticle(feedback, colors[i % colors.length], i);
-            fragment.appendChild(particle);
-
             setTimeout(() => {
-                utils.safeRemoveElement(particle);
-                if (i === count - 1) {
-                    card._particleAnimating = false;
-                }
-            }, 1200 + i * CONFIG.ANIMATION.PARTICLE_DELAY);
+                const particle = this.createParticle(feedback, colors[i % colors.length], i);
+                card.appendChild(particle);
+                
+                setTimeout(() => {
+                    utils.safeRemoveElement(particle);
+                }, 1200 + i * ANIMATION_CONFIG.PARTICLE_DELAY);
+            }, i * ANIMATION_CONFIG.PARTICLE_DELAY);
         }
-
-        card.appendChild(fragment);
     },
 
     createParticle(feedback, color, index) {
         const particle = document.createElement('div');
         const size = feedback.particles.size;
+        const angle = (index * 45) * (Math.PI / 180);
+        const distance = 60;
+        const x = Math.cos(angle) * distance;
+        const y = Math.sin(angle) * distance;
         
-        // 随机选择粒子形状
-        const shapes = ['circle', 'square', 'diamond'];
-        const shape = shapes[index % shapes.length];
-        
-        let styles = `
+        particle.style.cssText = `
             position: absolute;
             width: ${size}px;
             height: ${size}px;
             background: ${color};
-            pointer-events: none;
-            z-index: 1000;
-            will-change: transform, opacity;
+            border-radius: 50%;
+            left: calc(50% + ${x}px);
+            top: calc(50% + ${y}px);
+            transform: translate(-50%, -50%);
             animation: ${feedback.animation};
-            opacity: 0.9;
-            box-shadow: 0 0 8px ${color}40;
+            pointer-events: none;
+            z-index: 999;
+            box-shadow: 0 0 8px ${color};
         `;
-
-        // 根据形状设置不同的样式
-        switch (shape) {
-            case 'circle':
-                styles += 'border-radius: 50%;';
-                break;
-            case 'square':
-                styles += 'border-radius: 2px;';
-                break;
-            case 'diamond':
-                styles += 'border-radius: 0; transform: rotate(45deg);';
-                break;
-        }
-
-        // 所有卡片类型都使用爆炸式动画效果
-        const x = utils.random(-40, 40);
-        const y = utils.random(-40, 40);
-        styles += `--x: ${x}px; --y: ${y}px;`;
-        particle.style.left = '50%';
-        particle.style.top = '50%';
-
-        particle.style.cssText = styles;
-        particle.style.animationDelay = index * 0.1 + 's';
-
+        
         return particle;
     }
 }; 
