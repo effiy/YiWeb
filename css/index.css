@@ -34,6 +34,7 @@
 @import url('./components/calendar.css');
 @import url('./components/date-navigation.css');
 @import url('./components/tag-statistics.css');
+@import url('./components/category-filters.css');
 
 /* 页面样式 */
 @import url('./pages/welcome.css');

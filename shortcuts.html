@@ -47,9 +47,9 @@
                         spellcheck="false"></textarea>
                 </div>
             </div>
-            <div class="category-filters">
-                <div class="filter-buttons" id="filterButtons">
-                    <!-- 筛选按钮将通过JavaScript动态生成 -->
+            <div class="category-filters" role="group" aria-label="快捷键分类筛选">
+                <h4>分类</h4>
+                <div class="filter-buttons" id="filterButtons" role="tablist" aria-label="快捷键分类">
                 </div>
             </div>
         </div>
@@ -60,7 +60,7 @@
             <div class="container">
                 <!-- 快捷键区域 -->
                 <div class="shortcuts-content">
-                    <div class="shortcuts-grid" id="shortcutsGrid">
+                    <div class="shortcuts-grid" id="shortcutsGrid" role="tabpanel" aria-label="快捷键内容">
                         <!-- 快捷键内容将通过JavaScript动态生成 -->
                     </div>
                 </div>

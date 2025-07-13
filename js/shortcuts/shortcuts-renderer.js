@@ -47,9 +47,13 @@ class ShortcutsRenderer {
         const button = document.createElement('button');
         button.className = 'filter-btn';
         button.setAttribute('data-category', categoryId);
+        button.setAttribute('role', 'tab');
+        button.setAttribute('aria-selected', categoryId === 'all' ? 'true' : 'false');
+        button.setAttribute('aria-controls', 'shortcutsGrid');
+        button.setAttribute('tabindex', categoryId === 'all' ? '0' : '-1');
         button.innerHTML = `
-            <i class="${icon}"></i>
-            ${name}
+            <i class="${icon}" aria-hidden="true"></i>
+            <span>${name}</span>
         `;
         return button;
     }
@@ -142,6 +146,48 @@ class ShortcutsRenderer {
             }
         });
 
+        // 键盘导航支持
+        document.addEventListener('keydown', (e) => {
+            const activeButton = document.querySelector('.filter-btn[aria-selected="true"]');
+            if (!activeButton) return;
+
+            const buttons = Array.from(document.querySelectorAll('.filter-btn'));
+            const currentIndex = buttons.indexOf(activeButton);
+
+            switch (e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    const prevIndex = currentIndex > 0 ? currentIndex - 1 : buttons.length - 1;
+                    this.handleFilterClick(
+                        buttons[prevIndex].getAttribute('data-category'),
+                        buttons[prevIndex]
+                    );
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    const nextIndex = currentIndex < buttons.length - 1 ? currentIndex + 1 : 0;
+                    this.handleFilterClick(
+                        buttons[nextIndex].getAttribute('data-category'),
+                        buttons[nextIndex]
+                    );
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    this.handleFilterClick(
+                        buttons[0].getAttribute('data-category'),
+                        buttons[0]
+                    );
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    this.handleFilterClick(
+                        buttons[buttons.length - 1].getAttribute('data-category'),
+                        buttons[buttons.length - 1]
+                    );
+                    break;
+            }
+        });
+
         // 搜索功能
         const searchInput = document.getElementById('messageInput');
         if (searchInput) {
@@ -155,11 +201,15 @@ class ShortcutsRenderer {
      * 处理筛选点击
      */
     handleFilterClick(category, button) {
-        // 更新按钮状态
+        // 更新按钮状态和可访问性属性
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.classList.remove('active');
+            btn.setAttribute('aria-selected', 'false');
+            btn.setAttribute('tabindex', '-1');
         });
         button.classList.add('active');
+        button.setAttribute('aria-selected', 'true');
+        button.setAttribute('tabindex', '0');
 
         // 更新筛选状态
         this.currentFilter = category;
@@ -167,6 +217,20 @@ class ShortcutsRenderer {
 
         // 添加点击反馈
         this.addClickFeedback(button);
+        
+        // 更新快捷键网格的可访问性
+        const shortcutsGrid = document.getElementById('shortcutsGrid');
+        if (shortcutsGrid) {
+            shortcutsGrid.setAttribute('aria-label', `显示${category === 'all' ? '全部' : this.getCategoryName(category)}快捷键`);
+        }
+    }
+    
+    /**
+     * 获取分类名称
+     */
+    getCategoryName(categoryId) {
+        const category = this.data.categories.find(cat => cat.id === categoryId);
+        return category ? category.name : '未知分类';
     }
 
     /**
