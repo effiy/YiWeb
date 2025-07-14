@@ -555,9 +555,7 @@
 
 /* 高对比度模式支持 */
 @media (prefers-contrast: high) {
-    .tip {
-        border-width: 2px;
-    }
+    /* 高对比度模式样式 */
 }
 
 /* 性能优化 */
@@ -587,4 +585,5 @@
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     }
 }
+
 

@@ -26,7 +26,8 @@
 @import url('./components/card.css');
 @import url('./components/loading.css');
 @import url('./components/feature-cards.css');
-@import url('./components/message-input.css');
+@import url('./components/search-row.css');
+
 @import url('./components/sidebar.css');
 @import url('./components/news-content.css');
 @import url('./components/shortcuts-grid.css');
@@ -153,6 +154,7 @@ body::before {
         page-break-inside: avoid;
     }
 }
+
 
 
 

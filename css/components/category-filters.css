@@ -13,18 +13,13 @@
     min-width: 200px;
     position: relative;
     padding: var(--spacing-xs);
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: all var(--duration-normal) var(--ease-smooth);
+    background: transparent;
+    border: none;
+    transition: all var(--duration-fast) var(--ease-smooth);
 }
 
 .category-filters:hover {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: transparent;
 }
 
 /* 过滤器标题 */
@@ -34,13 +29,12 @@
     font-size: 0.75rem;
     font-weight: 600;
     white-space: nowrap;
-    opacity: 0.7;
+    opacity: 0.8;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     padding: var(--spacing-xs) var(--spacing-sm);
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--radius-sm);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+    border: none;
 }
 
 /* ========== 筛选按钮容器 ========== */
@@ -48,9 +42,8 @@
     display: flex;
     justify-content: flex-end;
     flex-wrap: nowrap;
-    gap: var(--spacing-xs);
+    gap: var(--spacing-sm);
     overflow-x: auto;
-    scrollbar-width: none;
     -ms-overflow-style: none;
     flex: 1;
     padding: var(--spacing-xs);
@@ -61,96 +54,64 @@
     display: none;
 }
 
-/* 滚动指示器 */
-.filter-buttons::before,
-.filter-buttons::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 20px;
-    pointer-events: none;
-    z-index: 1;
-    transition: opacity var(--duration-fast) var(--ease-smooth);
-}
-
-.filter-buttons::before {
-    left: 0;
-    background: linear-gradient(to right, rgba(255, 255, 255, 0.1), transparent);
-    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-}
-
-.filter-buttons::after {
-    right: 0;
-    background: linear-gradient(to left, rgba(255, 255, 255, 0.1), transparent);
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-}
-
 /* ========== 筛选按钮样式 ========== */
 .filter-btn {
     display: inline-flex;
     align-items: center;
-    gap: var(--spacing-xs);
+    gap: var(--spacing-sm);
     padding: var(--spacing-2) var(--spacing-4);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-sm);
     color: var(--text-secondary);
     text-decoration: none;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     transition: all var(--duration-fast) var(--ease-smooth);
     cursor: pointer;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     position: relative;
     overflow: hidden;
     white-space: nowrap;
-    min-width: fit-content;
+    -webkit-user-select: none;
     user-select: none;
 }
 
 /* 按钮悬停效果 */
 .filter-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
     color: var(--text-primary);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* 按钮激活状态 */
 .filter-btn.active {
-    background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan));
+    background: var(--primary-blue);
     border-color: var(--primary-blue);
     color: white;
-    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
-    transform: translateY(-1px);
 }
 
 .filter-btn.active:hover {
-    background: linear-gradient(135deg, var(--primary-cyan), var(--primary-blue));
-    box-shadow: 0 6px 16px rgba(79, 172, 254, 0.5);
-    transform: translateY(-2px);
+    background: var(--primary-cyan);
+    border-color: var(--primary-cyan);
 }
 
 /* 按钮图标 */
 .filter-btn i {
     font-size: var(--font-size-sm);
-    transition: transform var(--duration-fast) var(--ease-smooth);
+    transition: color var(--duration-fast) var(--ease-smooth);
 }
 
 .filter-btn:hover i {
-    transform: scale(1.1);
+    color: var(--text-primary);
 }
 
 .filter-btn.active i {
-    transform: scale(1.1);
+    color: white;
 }
 
 /* 按钮点击效果 */
 .filter-btn:active {
-    transform: translateY(0);
+    transform: scale(0.98);
     transition: transform var(--duration-fast) var(--ease-smooth);
 }
 
@@ -160,24 +121,11 @@
     box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.3);
 }
 
-/* ========== 动画效果 ========== */
-@keyframes filterButtonPulse {
-    0%, 100% {
-        box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
-    }
-    50% {
-        box-shadow: 0 4px 12px rgba(79, 172, 254, 0.6), 0 0 20px rgba(79, 172, 254, 0.3);
-    }
-}
-
-.filter-btn.active {
-    animation: filterButtonPulse 2s ease-in-out infinite;
-}
-
+/* ========== 简化动画效果 ========== */
 @keyframes filterButtonSlideIn {
     from {
         opacity: 0;
-        transform: translateX(-10px);
+        transform: translateX(-5px);
     }
     to {
         opacity: 1;
@@ -186,142 +134,5 @@
 }
 
 .filter-btn {
-    animation: filterButtonSlideIn 0.3s ease-out;
+    animation: filterButtonSlideIn 0.2s ease-out;
 }
-
-/* ========== 响应式设计 ========== */
-@media (max-width: 1200px) {
-    .category-filters {
-        min-width: 180px;
-        gap: var(--spacing-sm);
-    }
-    
-    .filter-btn {
-        padding: var(--spacing-1) var(--spacing-3);
-        font-size: var(--font-size-xs);
-        gap: var(--spacing-xs);
-    }
-    
-    .filter-btn i {
-        font-size: var(--font-size-xs);
-    }
-}
-
-@media (max-width: 768px) {
-    .category-filters {
-        min-width: 140px;
-        padding: var(--spacing-xs);
-        gap: var(--spacing-xs);
-    }
-    
-    .category-filters h4 {
-        display: none; /* 移动端隐藏标题 */
-    }
-    
-    .filter-buttons {
-        gap: var(--spacing-xs);
-        min-width: 120px;
-        padding: var(--spacing-xs);
-    }
-    
-    .filter-btn {
-        padding: var(--spacing-2) var(--spacing-3);
-        font-size: var(--font-size-sm);
-        gap: var(--spacing-xs);
-        min-width: auto;
-    }
-    
-    .filter-btn i {
-        font-size: var(--font-size-sm);
-    }
-}
-
-@media (max-width: 480px) {
-    .category-filters {
-        min-width: 120px;
-        max-width: 200px;
-    }
-    
-    .filter-buttons {
-        min-width: 100px;
-        max-width: 180px;
-    }
-    
-    .filter-btn {
-        padding: var(--spacing-1) var(--spacing-2);
-        font-size: var(--font-size-xs);
-    }
-    
-    .filter-btn span {
-        display: none; /* 移动端只显示图标 */
-    }
-}
-
-/* ========== 暗色模式适配 ========== */
-@media (prefers-color-scheme: dark) {
-    .category-filters {
-        background: rgba(0, 0, 0, 0.2);
-        border-color: rgba(255, 255, 255, 0.1);
-    }
-    
-    .category-filters:hover {
-        background: rgba(0, 0, 0, 0.3);
-        border-color: rgba(255, 255, 255, 0.15);
-    }
-    
-    .category-filters h4 {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.1);
-    }
-    
-    .filter-btn {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.1);
-    }
-    
-    .filter-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: rgba(255, 255, 255, 0.2);
-    }
-}
-
-/* ========== 无障碍支持 ========== */
-@media (prefers-reduced-motion: reduce) {
-    body .filter-btn,
-    body .category-filters {
-        animation: none;
-        transition: none;
-    }
-    
-    body .filter-btn:hover {
-        transform: none;
-    }
-}
-
-@media (prefers-contrast: high) {
-    .filter-btn {
-        border-width: 2px;
-    }
-    
-    .filter-btn.active {
-        border-width: 3px;
-    }
-}
-
-/* ========== 高对比度模式 ========== */
-@media (prefers-contrast: high) {
-    .category-filters {
-        border-width: 2px;
-        background: rgba(255, 255, 255, 0.1);
-    }
-    
-    .filter-btn {
-        border-width: 2px;
-        background: rgba(255, 255, 255, 0.15);
-    }
-    
-    .filter-btn.active {
-        border-width: 3px;
-        background: var(--primary-blue);
-    }
-} 
