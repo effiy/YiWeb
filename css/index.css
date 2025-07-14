@@ -101,26 +101,6 @@ body::before {
     z-index: -1;
 }
 
-/* 性能优化：减少重绘和回流 */
-.container,
-.feature-cards-container,
-.search-box {
-    will-change: transform;
-    transform: translateZ(0);
-}
-
-/* 关键渲染路径优化 */
-.search-input-wrapper textarea,
-.feature-card {
-    contain: layout style paint;
-}
-
-/* 字体加载优化 */
-@font-face {
-    font-family: 'FontAwesome';
-    font-display: swap;
-}
-
 /* 媒体查询优化 - 移除!important，使用更具体的选择器 */
 @media (prefers-reduced-motion: reduce) {
     body *,
@@ -142,18 +122,6 @@ body::before {
     }
 }
 
-/* 打印样式优化 */
-@media print {
-    body::before,
-    body::after {
-        display: none;
-    }
-    
-    .feature-card {
-        break-inside: avoid;
-        page-break-inside: avoid;
-    }
-}
 
 
 

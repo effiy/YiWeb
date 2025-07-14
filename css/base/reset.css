@@ -16,9 +16,6 @@
 html {
     font-size: 16px;
     line-height: var(--line-height-normal);
-    -webkit-text-size-adjust: 100%;
-    -moz-text-size-adjust: 100%;
-    text-size-adjust: 100%;
 }
 
 /* 无障碍支持 - 屏幕阅读器专用 */
@@ -85,18 +82,4 @@ a:focus-visible {
     outline-offset: 2px;
 }
 
-/* 打印样式 */
-@media print {
-    .no-print { display: none; }
-    
-    body {
-        background: white;
-        color: black;
-    }
-    
-    .card {
-        border: 1px solid #ccc;
-        box-shadow: none;
-    }
-}
 

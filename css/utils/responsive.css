@@ -301,18 +301,6 @@
     }
 }
 
-/* 功能卡片响应式 */
-@media (max-width: 768px) {
-    .feature-cards-container {
-        padding: var(--spacing-md) var(--spacing-sm);
-    }
-    
-    .feature-cards-grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-lg);
-    }
-}
-
 /* 减少动画偏好 */
 @media (prefers-reduced-motion: reduce) {
     body *,
@@ -346,9 +334,6 @@
 }
 
 @media (max-width: 768px) {
-    .shortcuts-content {
-        padding: var(--spacing-md);
-    }
     
     .shortcuts-grid {
         grid-template-columns: 1fr;
@@ -587,3 +572,4 @@
         font-size: var(--font-size-xs);
     }
 } 
+

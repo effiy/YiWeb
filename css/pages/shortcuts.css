@@ -7,7 +7,6 @@
     width: 100%;
     max-width: 1400px;
     margin: 0 auto;
-    padding: var(--spacing-lg) var(--spacing-lg);
     min-height: calc(100vh - 200px);
 }
 
@@ -64,9 +63,3 @@
     }
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-    .shortcuts-content {
-        padding: var(--spacing-md);
-    }
-} 

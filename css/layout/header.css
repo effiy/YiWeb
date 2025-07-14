@@ -1,61 +1,35 @@
-/* 统一头部布局样式模块 - 确保所有页面的header-row样式和交互保持一致 */
-
-/* 固定头部的强制定位样式 - 确保在所有页面中都能正确定位 */
-html body div#app header.header-row,
-html body div#app .header-row,
-body div#app header.header-row,
-body div#app .header-row,
-div#app header.header-row,
-div#app .header-row,
-#app header.header-row,
-#app .header-row,
-header.header-row,
 .header-row {
-    position: fixed;
-    top: 0px;
-    left: 0px;
-    right: 0px;
-    width: 100vw;
-    z-index: 9999;
-    transform: none;
-    will-change: auto;
-    contain: none;
-    background: rgba(255, 255, 255, 0.05);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    margin: 0;
-    padding: var(--spacing-md, 1rem) var(--spacing-xl, 2rem);
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md, 1rem);
-    min-height: 80px; /* 增加最小高度 */
-    max-height: none;
-    overflow: visible;
-    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-sizing: border-box; /* 确保padding包含在高度内 */
-}
-
-/* 移除任何可能影响fixed定位的过渡动画 */
-html body div#app header.header-row *,
-html body div#app .header-row *,
-body div#app header.header-row *,
-body div#app .header-row *,
-div#app header.header-row *,
-div#app .header-row *,
-#app header.header-row *,
-#app .header-row *,
-header.header-row *,
-.header-row * {
-    will-change: auto;
-    contain: none;
+  position: sticky;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  width: 100vw;
+  z-index: 9999;
+  transform: none;
+  will-change: auto;
+  contain: none;
+  background: rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  margin: 0;
+  padding: var(--spacing-md, 1rem) var(--spacing-xl, 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md, 1rem);
+  min-height: 80px; /* 增加最小高度 */
+  max-height: none;
+  overflow: visible;
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box; /* 确保padding包含在高度内 */
 }
 
 .header-row:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
 }
+
 
 
 

@@ -49,13 +49,13 @@
           </div>
           <div class="category-filters" id="category-filters" role="toolbar" aria-label="功能分类过滤器">
             <div class="filter-buttons">
-                <button class="filter-btn" role="button" tabindex="0" aria-label="新闻博客" onclick="window.open('news.html', '_blank')">
-                    <i class="fas fa-newspaper" aria-hidden="true"></i>
-                    <span>新闻博客</span>
-                </button>
                 <button class="filter-btn" role="button" tabindex="0" aria-label="快捷键" onclick="window.open('shortcuts.html', '_blank')">
                     <i class="fas fa-keyboard" aria-hidden="true"></i>
                     <span>快捷键</span>
+                </button>
+                <button class="filter-btn" role="button" tabindex="0" aria-label="新闻博客" onclick="window.open('news.html', '_blank')">
+                    <i class="fas fa-newspaper" aria-hidden="true"></i>
+                    <span>新闻博客</span>
                 </button>
                 <button class="filter-btn" role="button" tabindex="0" aria-label="Enter 发送消息">
                     <i class="fas fa-arrow-up" aria-hidden="true"></i>
@@ -69,131 +69,129 @@
           </div>
       </div>
     </header>
-    <div class="container">
-        <main class="main-content" role="main">
-            <!-- 功能卡片区域 -->
-            <div class="container">
-                <div class="feature-cards-container">
-                    <div class="feature-cards-grid" role="grid" aria-label="功能卡片网格">
-                        <!-- 数据分析卡片 - 科学家风格 -->
-                        <div role="row">
-                            <article class="feature-card scientist-card" data-feature="数据分析" role="gridcell">
-                                <div class="card-header">
-                                    <div class="card-icon" aria-hidden="true">
-                                        <i class="fas fa-chart-line" aria-label="数据分析图标"></i>
-                                    </div>
-                                    <div class="card-badge" onclick="window.open('https://www.youtube.com', '_blank')">数据分析</div>
+    <main class="main-content" role="main">
+        <!-- 功能卡片区域 -->
+        <div class="container">
+            <div class="feature-cards-container">
+                <div class="feature-cards-grid" role="grid" aria-label="功能卡片网格">
+                    <!-- 数据分析卡片 - 科学家风格 -->
+                    <div role="row">
+                        <article class="feature-card scientist-card" data-feature="数据分析" role="gridcell">
+                            <div class="card-header">
+                                <div class="card-icon" aria-hidden="true">
+                                    <i class="fas fa-chart-line" aria-label="数据分析图标"></i>
                                 </div>
-                                <div class="card-content">
-                                    <h3 class="card-title"><i class="fas fa-microscope" aria-hidden="true"></i> 智能数据分析</h3>
-                                    <p class="card-description">运用先进的AI算法，将海量数据转化为精准洞察。从趋势预测到异常检测，让数据为您讲述完整的故事，助力科学决策。</p>
-                                    <div class="card-features" role="list" aria-label="功能特性">
-                                        <span class="feature-tag" role="listitem">🧠 知识问答</span>
-                                        <span class="feature-tag" role="listitem">📈 智能统计</span>
-                                        <span class="feature-tag" role="listitem">🔮 趋势预测</span>
+                                <div class="card-badge" onclick="window.open('https://www.youtube.com', '_blank')">数据分析</div>
+                            </div>
+                            <div class="card-content">
+                                <h3 class="card-title"><i class="fas fa-microscope" aria-hidden="true"></i> 智能数据分析</h3>
+                                <p class="card-description">运用先进的AI算法，将海量数据转化为精准洞察。从趋势预测到异常检测，让数据为您讲述完整的故事，助力科学决策。</p>
+                                <div class="card-features" role="list" aria-label="功能特性">
+                                    <span class="feature-tag" role="listitem">🧠 知识问答</span>
+                                    <span class="feature-tag" role="listitem">📈 智能统计</span>
+                                    <span class="feature-tag" role="listitem">🔮 趋势预测</span>
+                                </div>
+                                <div class="card-stats" role="list" aria-label="统计数据">
+                                    <div class="stat-item" role="listitem" onclick="window.open('https://n8n.effiy.cn', '_blank')">
+                                        <span class="stat-number">100+</span>
+                                        <span class="stat-label">工作流程</span>
                                     </div>
-                                    <div class="card-stats" role="list" aria-label="统计数据">
-                                        <div class="stat-item" role="listitem" onclick="window.open('https://n8n.effiy.cn', '_blank')">
-                                            <span class="stat-number">100+</span>
-                                            <span class="stat-label">工作流程</span>
-                                        </div>
-                                        <div class="stat-item" role="listitem">
-                                            <span class="stat-number">∞</span>
-                                            <span class="stat-label">生活场景</span>
-                                        </div>
-                                        <div class="stat-item" role="listitem">
-                                            <span class="stat-number">99.9%</span>
-                                            <span class="stat-label">学习效率</span>
-                                        </div>
+                                    <div class="stat-item" role="listitem">
+                                        <span class="stat-number">∞</span>
+                                        <span class="stat-label">生活场景</span>
+                                    </div>
+                                    <div class="stat-item" role="listitem">
+                                        <span class="stat-number">99.9%</span>
+                                        <span class="stat-label">学习效率</span>
                                     </div>
                                 </div>
-                                <div class="card-footer">
-                                    <span class="card-hint">🧪 上传数据开始智能分析</span>
-                                    <i class="fas fa-flask" aria-hidden="true"></i>
+                            </div>
+                            <div class="card-footer">
+                                <span class="card-hint">🧪 上传数据开始智能分析</span>
+                                <i class="fas fa-flask" aria-hidden="true"></i>
+                            </div>
+                        </article>
+                    </div>
+                    <!-- 代码编写卡片 - 极客风格 -->
+                    <div role="row">
+                        <article class="feature-card geek-card" data-feature="代码编写" role="gridcell">
+                            <div class="card-header">
+                                <div class="card-icon" aria-hidden="true">
+                                    <i class="fas fa-code" aria-label="代码编写图标"></i>
                                 </div>
-                            </article>
-                        </div>
-                        <!-- 代码编写卡片 - 极客风格 -->
-                        <div role="row">
-                            <article class="feature-card geek-card" data-feature="代码编写" role="gridcell">
-                                <div class="card-header">
-                                    <div class="card-icon" aria-hidden="true">
-                                        <i class="fas fa-code" aria-label="代码编写图标"></i>
-                                    </div>
-                                    <div class="card-badge">代码编写</div>
+                                <div class="card-badge">代码编写</div>
+                            </div>
+                            <div class="card-content">
+                                <h3 class="card-title"><i class="fas fa-code-branch" aria-hidden="true"></i> 智能代码助手</h3>
+                                <p class="card-description">从命令脚本到规范制度，AI助您快速生成高质量代码和文档。提供最佳实践指导和详细注释，让开发工作更加规范高效。</p>
+                                <div class="card-features" role="list" aria-label="功能特性">
+                                    <span class="feature-tag" role="listitem" onclick="window.open('shortcuts.html', '_blank')">💻 命令脚本</span>
+                                    <span class="feature-tag" role="listitem">📋 规范制度</span>
+                                    <span class="feature-tag" role="listitem">✨ 最佳实践</span>
                                 </div>
-                                <div class="card-content">
-                                    <h3 class="card-title"><i class="fas fa-code-branch" aria-hidden="true"></i> 智能代码助手</h3>
-                                    <p class="card-description">从命令脚本到规范制度，AI助您快速生成高质量代码和文档。提供最佳实践指导和详细注释，让开发工作更加规范高效。</p>
-                                    <div class="card-features" role="list" aria-label="功能特性">
-                                        <span class="feature-tag" role="listitem" onclick="window.open('shortcuts.html', '_blank')">💻 命令脚本</span>
-                                        <span class="feature-tag" role="listitem">📋 规范制度</span>
-                                        <span class="feature-tag" role="listitem">✨ 最佳实践</span>
+                                <div class="card-stats" role="list" aria-label="统计数据">
+                                    <div class="stat-item" role="listitem">
+                                        <span class="stat-number">100%</span>
+                                        <span class="stat-label">规范制度</span>
                                     </div>
-                                    <div class="card-stats" role="list" aria-label="统计数据">
-                                        <div class="stat-item" role="listitem">
-                                            <span class="stat-number">100%</span>
-                                            <span class="stat-label">规范制度</span>
-                                        </div>
-                                        <div class="stat-item" role="listitem">
-                                            <span class="stat-number">∞</span>
-                                            <span class="stat-label">脚本生成</span>
-                                        </div>
-                                        <div class="stat-item" role="listitem">
-                                            <span class="stat-number">100+</span>
-                                            <span class="stat-label">最佳实践</span>
-                                        </div>
+                                    <div class="stat-item" role="listitem">
+                                        <span class="stat-number">∞</span>
+                                        <span class="stat-label">脚本生成</span>
                                     </div>
-                                </div>
-                                <div class="card-footer">
-                                    <span class="card-hint">⚡ 描述需求开始智能编码</span>
-                                    <i class="fas fa-terminal" aria-hidden="true"></i>
-                                </div>
-                            </article>
-                        </div>
-                        <!-- 生图创造卡片 - 艺术家风格 -->
-                        <div role="row">
-                            <article class="feature-card artist-card" data-feature="图表绘制" role="gridcell">
-                                <div class="card-header">
-                                    <div class="card-icon" aria-hidden="true">
-                                        <i class="fas fa-palette" aria-label="生图创造图标"></i>
-                                    </div>
-                                    <div class="card-badge">生图创造</div>
-                                </div>
-                                <div class="card-content">
-                                    <h3 class="card-title"><i class="fas fa-palette" aria-hidden="true"></i> AI艺术创作</h3>
-                                    <p class="card-description">释放您的创意潜能，通过AI技术将文字描述转化为精美视觉作品。从文本生成图像到图像风格转换，为您提供全方位的AI艺术体验。</p>
-                                    <div class="card-features" role="list" aria-label="功能特性">
-                                        <span class="feature-tag" role="listitem">🖼️ 文字生图</span>
-                                        <span class="feature-tag" role="listitem">🎭 图像生图</span>
-                                        <span class="feature-tag" role="listitem">🎬 视频生成</span>
-                                    </div>
-                                    <div class="card-stats" role="list" aria-label="统计数据">
-                                        <div class="stat-item" role="listitem">
-                                            <span class="stat-number">100+</span>
-                                            <span class="stat-label">艺术风格</span>
-                                        </div>
-                                        <div class="stat-item" role="listitem">
-                                            <span class="stat-number">∞</span>
-                                            <span class="stat-label">生成速度</span>
-                                        </div>
-                                        <div class="stat-item" role="listitem">
-                                            <span class="stat-number">4K</span>
-                                            <span class="stat-label">高清画质</span>
-                                        </div>
+                                    <div class="stat-item" role="listitem">
+                                        <span class="stat-number">100+</span>
+                                        <span class="stat-label">最佳实践</span>
                                     </div>
                                 </div>
-                                <div class="card-footer">
-                                    <span class="card-hint">🎨 描述创意开始艺术创作</span>
-                                    <i class="fas fa-magic" aria-hidden="true"></i>
+                            </div>
+                            <div class="card-footer">
+                                <span class="card-hint">⚡ 描述需求开始智能编码</span>
+                                <i class="fas fa-terminal" aria-hidden="true"></i>
+                            </div>
+                        </article>
+                    </div>
+                    <!-- 生图创造卡片 - 艺术家风格 -->
+                    <div role="row">
+                        <article class="feature-card artist-card" data-feature="图表绘制" role="gridcell">
+                            <div class="card-header">
+                                <div class="card-icon" aria-hidden="true">
+                                    <i class="fas fa-palette" aria-label="生图创造图标"></i>
                                 </div>
-                            </article>
-                        </div>
+                                <div class="card-badge">生图创造</div>
+                            </div>
+                            <div class="card-content">
+                                <h3 class="card-title"><i class="fas fa-palette" aria-hidden="true"></i> AI艺术创作</h3>
+                                <p class="card-description">释放您的创意潜能，通过AI技术将文字描述转化为精美视觉作品。从文本生成图像到图像风格转换，为您提供全方位的AI艺术体验。</p>
+                                <div class="card-features" role="list" aria-label="功能特性">
+                                    <span class="feature-tag" role="listitem">🖼️ 文字生图</span>
+                                    <span class="feature-tag" role="listitem">🎭 图像生图</span>
+                                    <span class="feature-tag" role="listitem">🎬 视频生成</span>
+                                </div>
+                                <div class="card-stats" role="list" aria-label="统计数据">
+                                    <div class="stat-item" role="listitem">
+                                        <span class="stat-number">100+</span>
+                                        <span class="stat-label">艺术风格</span>
+                                    </div>
+                                    <div class="stat-item" role="listitem">
+                                        <span class="stat-number">∞</span>
+                                        <span class="stat-label">生成速度</span>
+                                    </div>
+                                    <div class="stat-item" role="listitem">
+                                        <span class="stat-number">4K</span>
+                                        <span class="stat-label">高清画质</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <span class="card-hint">🎨 描述创意开始艺术创作</span>
+                                <i class="fas fa-magic" aria-hidden="true"></i>
+                            </div>
+                        </article>
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
     <!-- 加载指示器 -->
     <div id="loading-indicator" class="loading-indicator" aria-hidden="true">
@@ -229,5 +227,6 @@
     </script>
 </body>
 </html>
+
 
 
