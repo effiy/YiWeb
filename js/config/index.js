@@ -500,6 +500,7 @@ export default {
     NEWS_CONFIG,
     SHORTCUTS_CONFIG,
     ANIMATION_CONFIG,
+    THEME_COLORS,
     ERROR_CONFIG,
     ConfigManager,
     configManager,

@@ -20,8 +20,8 @@
     transition: all var(--duration-normal) var(--ease-smooth);
     position: relative;
     overflow: hidden;
-    backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
     box-shadow: var(--shadow-medium);
     
     /* 硬件加速优化 */
@@ -217,3 +217,4 @@
             rgba(0, 0, 0, 0.05) 100%);
     }
 } 
+

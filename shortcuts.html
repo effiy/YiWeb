@@ -16,7 +16,7 @@
     <link rel="preload" href="./css/pages/shortcuts.css" as="style">
     <link rel="preload" href="./css/components/shortcuts-grid.css" as="style">
     <link rel="preload" href="./css/components/shortcuts-item.css" as="style">
-    <link rel="preload" href="./js/pages/shortcuts/shortcuts-renderer.js" as="script" crossorigin>
+    <link rel="preload" href="./js/features/shortcuts/components/shortcuts-renderer.js" as="script" crossorigin>
     
     <!-- DNS预解析 -->
     <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
@@ -70,13 +70,17 @@
     </div>
 
     <!-- 错误提示 -->
-    <div id="error-message" class="error-message" role="alert" aria-live="polite" style="display: none;"></div>
+    <div id="error-message" class="error-container" role="alert" aria-live="assertive" hidden>
+        <span class="error-icon" aria-hidden="true"><i class="fas fa-exclamation-triangle"></i></span>
+        <span class="error-message-text" id="error-message-text"></span>
+    </div>
 
     <!-- JavaScript -->
-    <script type="module" src="./js/pages/shortcuts/shortcuts-renderer.js"></script>
-<script type="module" src="./js/pages/shortcuts/shortcuts.js"></script>
+    <script type="module" src="./js/features/shortcuts/components/shortcuts-renderer.js"></script>
+<script type="module" src="./js/features/shortcuts/shortcuts.js"></script>
 </body>
 </html> 
+
 
 
 

@@ -39,10 +39,10 @@
     contain: layout style paint;
     
     /* 交互优化 */
-    user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    user-select: none;
     
     /* 焦点样式 */
     outline: none;
@@ -263,8 +263,8 @@
     border: 1px solid rgba(255, 255, 255, 0.18);
     transition: all var(--duration-slow) var(--ease-smooth);
     font-weight: 600;
-    backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
+    backdrop-filter: blur(15px);
     text-align: center;
     white-space: nowrap;
     width: 100%;
@@ -318,8 +318,8 @@
     background: rgba(255, 255, 255, var(--opacity-medium));
     border-radius: var(--radius-lg);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
+    backdrop-filter: blur(15px);
     transition: all var(--duration-normal) var(--ease-smooth);
     position: relative;
     overflow: hidden;
@@ -508,8 +508,8 @@
         padding: var(--spacing-lg);
         min-height: 260px;
         /* 移动端性能优化 */
-        backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
     }
     
     .card-title {
@@ -570,6 +570,7 @@
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     }
 }
+
 
 
 
