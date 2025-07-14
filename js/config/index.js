@@ -1,6 +1,5 @@
 /**
  * 统一配置管理系统
- 
  * 
  * 整合项目中所有模块的配置，提供统一的配置接口
  */
@@ -130,11 +129,7 @@ export const NEWS_CONFIG = {
         cname: 'rss'
     },
     API_TIMEOUT: 10000,
-    RSS_ENDPOINTS: [
-        'https://feeds.36kr.com/api/feed',
-        'https://www.huxiu.com/rss/0.xml',
-        'https://www.tmtpost.com/rss.xml'
-    ],
+    RSS_ENDPOINTS: [],
     
     // 缓存配置
     CACHE_KEY: 'newsCache',
@@ -268,7 +263,7 @@ export const ANIMATION_CONFIG = {
     // 粒子延迟（添加顶层属性以保持向后兼容性）
     PARTICLE_DELAY: 80,
     
-    // 主页面特定动画配置（从js/modules/config.js合并）
+    // 主页面特定动画配置
     HOMEPAGE: {
         HOVER_DELAY: 100,
         CLICK_DURATION: 150,
@@ -280,7 +275,7 @@ export const ANIMATION_CONFIG = {
 };
 
 /**
- * 主题颜色配置（从js/modules/config.js合并）
+ * 主题颜色配置
  */
 export const THEME_COLORS = {
     scientist: {

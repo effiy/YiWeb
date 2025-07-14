@@ -1,7 +1,3 @@
-import { globalState } from '../state/state.js';
-import { CONFIG, THEME_COLORS } from '../../config/index.js';
-import { utils } from '../../shared/utils/utils.js';
-
 // 动画管理模块
 
 // 动画管理器
