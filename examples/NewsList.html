@@ -1,1 +1,454 @@
- 
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewsList 组件演示</title>
+    
+    <!-- 引入Font Awesome图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- 引入Vue.js -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- 引入项目基础样式 -->
+    <link rel="stylesheet" href="../css/index.css">
+    
+    <style>
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+        }
+        
+        .test-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .test-header p {
+            opacity: 0.9;
+        }
+        
+        .component-wrapper {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 0;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+            min-height: 400px;
+        }
+        
+        .loading-indicator {
+            text-align: center;
+            padding: 2rem;
+            color: white;
+        }
+        
+        .loading-indicator i {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .status-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .status-panel h3 {
+            margin-bottom: 1rem;
+            color: #4facfe;
+        }
+        
+        .status-item {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .control-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .control-panel h3 {
+            margin-bottom: 1rem;
+            color: #4facfe;
+        }
+        
+        .control-group {
+            margin-bottom: 1rem;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .control-group input,
+        .control-group select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        .control-group input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .control-button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            background: rgba(79, 172, 254, 0.8);
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .control-button:hover {
+            background: rgba(79, 172, 254, 1);
+        }
+        
+        .control-button.danger {
+            background: rgba(255, 107, 107, 0.8);
+        }
+        
+        .control-button.danger:hover {
+            background: rgba(255, 107, 107, 1);
+        }
+        
+        .control-button.success {
+            background: rgba(76, 175, 80, 0.8);
+        }
+        
+        .control-button.success:hover {
+            background: rgba(76, 175, 80, 1);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="test-container">
+            <div class="test-header">
+                <h1><i class="fas fa-newspaper"></i> NewsList 组件演示</h1>
+                <p>测试 NewsList 组件的各种状态和功能</p>
+            </div>
+            
+            <div class="control-panel">
+                <h3><i class="fas fa-cogs"></i> 控制面板</h3>
+                
+                <div class="control-group">
+                    <label>组件状态:</label>
+                    <select v-model="componentState">
+                        <option value="loading">加载中</option>
+                        <option value="error">错误状态</option>
+                        <option value="search">搜索状态</option>
+                        <option value="empty">空状态</option>
+                        <option value="normal">正常显示</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>搜索关键词:</label>
+                    <input 
+                        v-model="searchQuery" 
+                        placeholder="输入搜索关键词..."
+                        :disabled="componentState !== 'search'"
+                    >
+                </div>
+                
+                <div class="control-group">
+                    <label>错误信息:</label>
+                    <input 
+                        v-model="errorMessage" 
+                        placeholder="输入错误信息..."
+                        :disabled="componentState !== 'error'"
+                    >
+                </div>
+                
+                <div class="button-group">
+                    <button @click="toggleLoading" class="control-button">
+                        <i class="fas fa-spinner"></i>
+                        {{ loading ? '停止加载' : '开始加载' }}
+                    </button>
+                    <button @click="loadNewsData" class="control-button success">
+                        <i class="fas fa-download"></i>
+                        加载新闻数据
+                    </button>
+                    <button @click="clearData" class="control-button danger">
+                        <i class="fas fa-trash"></i>
+                        清空数据
+                    </button>
+                </div>
+            </div>
+            
+            <div class="component-wrapper">
+                <div v-if="!componentLoaded" class="loading-indicator">
+                    <i class="fas fa-spinner"></i>
+                    <p>正在加载组件...</p>
+                </div>
+                
+                <news-list
+                    v-if="componentLoaded"
+                    :loading="loading"
+                    :error="errorMessage"
+                    :current-date-display="currentDateDisplay"
+                    :search-query="searchQuery"
+                    :search-results="searchResults"
+                    :display-categories="displayCategories"
+                    :selected-categories="selectedCategories"
+                    :clicked-items="clickedItems"
+                    :has-news-data="hasNewsData"
+                    @load-news-data="loadNewsData"
+                    @news-click="handleNewsClick"
+                ></news-list>
+            </div>
+            
+            <div class="status-panel">
+                <h3><i class="fas fa-info-circle"></i> 组件状态</h3>
+                <div class="status-item">组件加载状态: {{ componentLoaded ? '✅ 已加载' : '⏳ 加载中...' }}</div>
+                <div class="status-item">模板来源: {{ templateSource }}</div>
+                <div class="status-item">当前状态: {{ componentState }}</div>
+                <div class="status-item">加载状态: {{ loading ? '加载中' : '已加载' }}</div>
+                <div class="status-item">搜索关键词: {{ searchQuery || '（空）' }}</div>
+                <div class="status-item">新闻数据: {{ hasNewsData ? '有数据' : '无数据' }}</div>
+                <div class="status-item">分类数量: {{ Object.keys(displayCategories).length }}</div>
+                <div class="status-item">搜索结果: {{ searchResults.length }} 条</div>
+                <div class="status-item">点击项目: {{ clickedItems.size }} 个</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入NewsList组件 -->
+    <script src="/components/NewsList/index.js"></script>
+    
+    <script>
+        const { createApp } = Vue;
+        
+        const app = createApp({
+            data() {
+                return {
+                    componentLoaded: false,
+                    templateSource: '未知',
+                    componentState: 'normal',
+                    loading: false,
+                    errorMessage: '',
+                    currentDateDisplay: '2024年1月15日',
+                    searchQuery: '',
+                    searchResults: [],
+                    displayCategories: {
+                        ai: {
+                            title: 'AI技术',
+                            news: [
+                                {
+                                    title: 'OpenAI发布GPT-5，性能大幅提升',
+                                    content: 'OpenAI今日发布了GPT-5模型，相比GPT-4在多个基准测试中都有显著提升...',
+                                    creator: 'TechCrunch',
+                                    isoDate: '2024-01-15T10:30:00Z',
+                                    link: 'https://example.com/news1',
+                                    categories: ['AI技术']
+                                },
+                                {
+                                    title: '谷歌推出新一代AI芯片TPU v5',
+                                    content: '谷歌宣布推出新一代AI芯片TPU v5，专门为大规模AI训练和推理优化...',
+                                    creator: 'The Verge',
+                                    isoDate: '2024-01-15T09:15:00Z',
+                                    link: 'https://example.com/news2',
+                                    categories: ['AI技术']
+                                }
+                            ]
+                        },
+                        tech: {
+                            title: '科技产品',
+                            news: [
+                                {
+                                    title: '苹果发布iPhone 16，搭载A18芯片',
+                                    content: '苹果今日发布iPhone 16系列，搭载全新的A18芯片，性能提升30%...',
+                                    creator: 'Apple Insider',
+                                    isoDate: '2024-01-15T08:45:00Z',
+                                    link: 'https://example.com/news3',
+                                    categories: ['科技产品']
+                                }
+                            ]
+                        }
+                    },
+                    selectedCategories: new Set(),
+                    clickedItems: new Set(),
+                    hasNewsData: true
+                };
+            },
+            watch: {
+                componentState(newState) {
+                    this.updateComponentState(newState);
+                }
+            },
+            methods: {
+                updateComponentState(state) {
+                    switch (state) {
+                        case 'loading':
+                            this.loading = true;
+                            this.errorMessage = '';
+                            this.searchQuery = '';
+                            break;
+                        case 'error':
+                            this.loading = false;
+                            this.errorMessage = this.errorMessage || '网络连接失败，请检查网络设置';
+                            this.searchQuery = '';
+                            break;
+                        case 'search':
+                            this.loading = false;
+                            this.errorMessage = '';
+                            this.searchQuery = this.searchQuery || 'AI技术';
+                            this.searchResults = [
+                                {
+                                    title: '搜索结果：AI技术最新发展',
+                                    content: '这是搜索"AI技术"的结果，展示了相关新闻内容...',
+                                    creator: '搜索结果',
+                                    isoDate: '2024-01-15T10:00:00Z',
+                                    link: 'https://example.com/search1',
+                                    categories: ['AI技术']
+                                }
+                            ];
+                            break;
+                        case 'empty':
+                            this.loading = false;
+                            this.errorMessage = '';
+                            this.searchQuery = '';
+                            this.searchResults = [];
+                            this.displayCategories = {};
+                            this.hasNewsData = false;
+                            break;
+                        case 'normal':
+                            this.loading = false;
+                            this.errorMessage = '';
+                            this.searchQuery = '';
+                            this.searchResults = [];
+                            this.hasNewsData = true;
+                            this.displayCategories = {
+                                ai: {
+                                    title: 'AI技术',
+                                    news: [
+                                        {
+                                            title: 'OpenAI发布GPT-5，性能大幅提升',
+                                            content: 'OpenAI今日发布了GPT-5模型，相比GPT-4在多个基准测试中都有显著提升...',
+                                            creator: 'TechCrunch',
+                                            isoDate: '2024-01-15T10:30:00Z',
+                                            link: 'https://example.com/news1',
+                                            categories: ['AI技术']
+                                        }
+                                    ]
+                                }
+                            };
+                            break;
+                    }
+                },
+                
+                toggleLoading() {
+                    this.loading = !this.loading;
+                    if (this.loading) {
+                        this.componentState = 'loading';
+                    } else {
+                        this.componentState = 'normal';
+                    }
+                },
+                
+                loadNewsData() {
+                    console.log('加载新闻数据');
+                    this.loading = true;
+                    setTimeout(() => {
+                        this.loading = false;
+                        this.componentState = 'normal';
+                    }, 2000);
+                },
+                
+                clearData() {
+                    this.displayCategories = {};
+                    this.searchResults = [];
+                    this.clickedItems.clear();
+                    this.hasNewsData = false;
+                    this.componentState = 'empty';
+                },
+                
+                handleNewsClick(item) {
+                    console.log('新闻点击:', item);
+                    this.clickedItems.add(item.link || item.title);
+                    this.clickedItems = new Set(this.clickedItems);
+                }
+            }
+        });
+        
+        // 等待组件加载完成
+        window.addEventListener('NewsListLoaded', (event) => {
+            const NewsList = event.detail;
+            console.log('NewsList 组件加载完成');
+            
+            // 检测模板来源
+            if (NewsList.template && NewsList.template.includes('fetch')) {
+                app.templateSource = '外部HTML文件';
+            } else {
+                app.templateSource = NewsList.template && NewsList.template.length > 1000 ? '外部HTML文件' : '内联模板（回退）';
+            }
+            
+            app.config.globalProperties.componentLoaded = true;
+            app.config.globalProperties.templateSource = app.templateSource;
+            
+            // 注册组件
+            app.component('NewsList', NewsList);
+            
+            // 更新数据
+            const appInstance = app.mount('#app');
+            appInstance.componentLoaded = true;
+            appInstance.templateSource = app.templateSource;
+        });
+        
+        // 超时处理
+        setTimeout(() => {
+            if (!window.NewsList) {
+                console.error('组件加载超时');
+                const appInstance = app.mount('#app');
+                appInstance.templateSource = '加载失败';
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
