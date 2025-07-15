@@ -4,9 +4,7 @@
 // 自动加载相关的CSS文件
 (function loadCSS() {
     const cssFiles = [
-        '/components/SearchHeader/header-row.css',
-        '/components/SearchHeader/category-filters.css',
-        '/components/SearchHeader/search-row.css'
+        '/components/SearchHeader/index.css'
     ];
     
     cssFiles.forEach(cssFile => {

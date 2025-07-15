@@ -24,7 +24,6 @@
 @import url('./components/input.css');
 @import url('./components/card.css');
 @import url('./components/loading.css');
-@import url('./components/feature-cards.css');
 
 @import url('./components/sidebar.css');
 @import url('./components/news-content.css');
@@ -118,6 +117,7 @@ body::before {
         --border-color: #000000;
     }
 }
+
 
 
 
