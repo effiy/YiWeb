@@ -28,8 +28,6 @@
 @import url('./components/sidebar.css');
 @import url('./components/shortcuts-grid.css');
 @import url('./components/shortcuts-item.css');
-@import url('./components/calendar.css');
-@import url('./components/date-navigation.css');
 @import url('./components/tag-statistics.css');
 
 /* 页面样式 - 最高优先级 */
