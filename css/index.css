@@ -26,8 +26,6 @@
 @import url('./components/loading.css');
 
 @import url('./components/sidebar.css');
-@import url('./components/shortcuts-grid.css');
-@import url('./components/shortcuts-item.css');
 
 /* 页面样式 - 最高优先级 */
 @import url('./pages/welcome.css');
@@ -113,6 +111,7 @@ body::before {
         --border-color: #000000;
     }
 }
+
 
 
 

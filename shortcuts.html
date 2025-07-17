@@ -5,26 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="AI智能助手，为您提供问答、数据分析和代码编写等服务">
     <meta name="keywords" content="AI, 智能助手, 数据分析, 代码编写, 生图创造">
-    <meta name="theme-color" content="#4facfe">
-    
-    <!-- 预加载关键资源 -->
-    <link rel="preload" href="./css/index.css" as="style">
-    <link rel="preload" href="./css/layout/header.css" as="style">
 
-    <link rel="preload" href="./css/components/buttons.css" as="style">
-    <link rel="preload" href="./css/utils/animations.css" as="style">
-    <link rel="preload" href="./css/pages/shortcuts.css" as="style">
-    <link rel="preload" href="./css/components/shortcuts-grid.css" as="style">
-    <link rel="preload" href="./css/components/shortcuts-item.css" as="style">
-    <link rel="preload" href="./js/features/shortcuts/components/shortcuts-renderer.js" as="script" crossorigin>
-    
     <!-- DNS预解析 -->
     <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
     
     <title>YiAi - 智能AI助手</title>
     
     <!-- 统一样式表 - 优化后的CSS导入 -->
-    <link rel="stylesheet" href="./css/index.css">
+    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/components/SearchHeader/index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous">
 </head>
 <body>
@@ -76,10 +65,11 @@
     </div>
 
     <!-- JavaScript -->
-    <script type="module" src="./js/features/shortcuts/components/shortcuts-renderer.js"></script>
-<script type="module" src="./js/features/shortcuts/shortcuts.js"></script>
+    <script type="module" src="/components/ShortcutsRender/index.js"></script>
+    <script type="module" src="/js/features/shortcuts/shortcuts.js"></script>
 </body>
 </html> 
+
 
 
 

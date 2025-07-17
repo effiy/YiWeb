@@ -3,7 +3,25 @@
  * 功能：动态生成快捷键内容和筛选按钮
  */
 
-import { shortcutsData } from '../shortcuts-data.js';
+import { shortcutsData } from '/mock/shortcuts-data.js';
+
+// 自动加载相关的CSS文件
+(function loadCSS() {
+  const cssFiles = [
+      '/components/ShortcutsRender/index.css'
+  ];
+  
+  cssFiles.forEach(cssFile => {
+      // 检查是否已经加载过该CSS文件
+      if (!document.querySelector(`link[href*="${cssFile}"]`)) {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = cssFile;
+          link.type = 'text/css';
+          document.head.appendChild(link);
+      }
+  });
+})();
 
 class ShortcutsRenderer {
     constructor() {
@@ -308,3 +326,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 export default ShortcutsRenderer; 
+
