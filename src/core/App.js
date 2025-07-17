@@ -1,7 +1,8 @@
 /**
- * 核心应用类
+ * 核心应用类 - 重构版本
  * @author liangliang
- * @version 1.0.0
+ * @version 2.0.0
+ * @description 采用现代架构，支持依赖注入、生命周期管理和错误处理
  */
 
 import { ComponentManager } from './ComponentManager.js';
@@ -9,124 +10,153 @@ import { EventManager } from './EventManager.js';
 import { PerformanceMonitor } from './PerformanceMonitor.js';
 
 /**
- * 主应用类
+ * 应用生命周期状态
+ */
+export const AppState = {
+    INITIALIZING: 'initializing',
+    READY: 'ready',
+    RUNNING: 'running',
+    PAUSED: 'paused',
+    STOPPING: 'stopping',
+    STOPPED: 'stopped',
+    ERROR: 'error'
+};
+
+/**
+ * 主应用类 - 重构版本
  */
 export class App {
     constructor(options = {}) {
+        // 依赖注入
         this.config = options.config;
         this.router = options.router;
         this.store = options.store;
         this.utils = options.utils;
+        this.logger = options.logger;
+        this.performanceMonitor = options.performanceMonitor;
         
-        // 初始化管理器
+        // 管理器
         this.componentManager = new ComponentManager();
         this.eventManager = new EventManager();
-        this.performanceMonitor = new PerformanceMonitor();
         
         // 应用状态
-        this.isRunning = false;
+        this.state = AppState.INITIALIZING;
         this.isInitialized = false;
+        this.isRunning = false;
+        
+        // 生命周期钩子
+        this.lifecycleHooks = {
+            beforeInit: [],
+            afterInit: [],
+            beforeStart: [],
+            afterStart: [],
+            beforeStop: [],
+            afterStop: []
+        };
+        
+        // 错误处理
+        this.errorHandlers = [];
+        this.recoveryStrategies = [];
+        
+        // 性能监控
+        this.performanceMetrics = new Map();
+        
+        // 初始化
+        this._init();
     }
 
     /**
-     * 启动应用
+     * 初始化应用
+     * @private
      */
-    async start() {
+    _init() {
         try {
-            // 性能监控开始
-            this.performanceMonitor.start('app-start');
+            this.logger?.info('App initialization started');
             
-            // 初始化应用
-            await this.initialize();
+            // 执行初始化前钩子
+            this._executeHooks('beforeInit');
             
-            // 注册事件监听
-            this.registerEventListeners();
+            // 初始化基础功能
+            this._initBaseFeatures();
             
-            // 初始化组件
-            await this.initializeComponents();
+            // 初始化错误处理
+            this._initErrorHandling();
             
-            // 启动路由
-            await this.router.start();
+            // 初始化性能监控
+            this._initPerformanceMonitoring();
             
-            // 标记应用已启动
-            this.isRunning = true;
+            // 标记为已初始化
             this.isInitialized = true;
+            this.state = AppState.READY;
             
-            // 性能监控结束
-            this.performanceMonitor.end('app-start');
+            // 执行初始化后钩子
+            this._executeHooks('afterInit');
             
-            // 触发应用启动事件
-            this.eventManager.emit('app:started');
-            
-            console.log('应用启动完成');
+            this.logger?.info('App initialization completed');
         } catch (error) {
-            console.error('应用启动失败:', error);
+            this.logger?.error('App initialization failed:', error);
+            this.state = AppState.ERROR;
+            this._handleError(error);
             throw error;
         }
     }
 
     /**
-     * 初始化应用
+     * 初始化基础功能
+     * @private
      */
-    async initialize() {
-        // 初始化基础配置
-        await this.initializeConfig();
-        
+    _initBaseFeatures() {
         // 初始化主题
-        this.initializeTheme();
+        this._initTheme();
         
         // 初始化无障碍功能
-        this.initializeAccessibility();
+        this._initAccessibility();
         
-        // 初始化错误处理
-        this.initializeErrorHandling();
-    }
-
-    /**
-     * 初始化配置
-     */
-    async initializeConfig() {
-        // 加载用户配置
-        const userConfig = await this.config.getUserConfig();
+        // 初始化键盘快捷键
+        this._initKeyboardShortcuts();
         
-        // 应用配置到全局
-        window.YiWebConfig = userConfig;
-        
-        // 更新主题配置
-        this.updateThemeConfig(userConfig.theme);
+        // 初始化搜索功能
+        this._initSearchFeatures();
     }
 
     /**
      * 初始化主题
+     * @private
      */
-    initializeTheme() {
-        const theme = this.config.get('theme', 'light');
+    _initTheme() {
+        const theme = this.config?.get('theme', 'light');
         document.documentElement.setAttribute('data-theme', theme);
         
         // 监听主题变化
         this.eventManager.on('theme:changed', (newTheme) => {
             document.documentElement.setAttribute('data-theme', newTheme);
+            this.logger?.info('Theme changed', { theme: newTheme });
         });
     }
 
     /**
      * 初始化无障碍功能
+     * @private
      */
-    initializeAccessibility() {
+    _initAccessibility() {
         // 设置页面标题
-        document.title = this.config.get('app.title', 'YiWeb - 智能AI助手');
+        document.title = this.config?.get('app.title', 'YiWeb - 智能AI助手');
         
         // 设置语言
-        document.documentElement.lang = this.config.get('app.language', 'zh-CN');
+        document.documentElement.lang = this.config?.get('app.language', 'zh-CN');
         
         // 添加无障碍属性
-        this.addAccessibilityAttributes();
+        this._addAccessibilityAttributes();
+        
+        // 监听无障碍偏好设置
+        this._listenToAccessibilityPreferences();
     }
 
     /**
      * 添加无障碍属性
+     * @private
      */
-    addAccessibilityAttributes() {
+    _addAccessibilityAttributes() {
         // 为搜索框添加无障碍属性
         const searchInput = document.getElementById('messageInput');
         if (searchInput) {
@@ -144,44 +174,143 @@ export class App {
     }
 
     /**
-     * 初始化错误处理
+     * 监听无障碍偏好设置
+     * @private
      */
-    initializeErrorHandling() {
-        // 全局错误处理
-        window.addEventListener('error', (event) => {
-            this.handleError(event.error);
+    _listenToAccessibilityPreferences() {
+        // 监听减少动画偏好
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        prefersReducedMotion.addEventListener('change', (e) => {
+            document.documentElement.setAttribute('data-reduced-motion', e.matches);
+            this.logger?.info('Reduced motion preference changed', { reduced: e.matches });
         });
         
-        // Promise 错误处理
-        window.addEventListener('unhandledrejection', (event) => {
-            this.handleError(event.reason);
+        // 监听高对比度偏好
+        const prefersHighContrast = window.matchMedia('(prefers-contrast: high)');
+        prefersHighContrast.addEventListener('change', (e) => {
+            document.documentElement.setAttribute('data-high-contrast', e.matches);
+            this.logger?.info('High contrast preference changed', { highContrast: e.matches });
         });
     }
 
     /**
-     * 注册事件监听
+     * 初始化键盘快捷键
+     * @private
      */
-    registerEventListeners() {
-        // 键盘快捷键
+    _initKeyboardShortcuts() {
         this.eventManager.on('keyboard:shortcut', (shortcut) => {
-            this.handleKeyboardShortcut(shortcut);
+            this._handleKeyboardShortcut(shortcut);
         });
-        
-        // 搜索事件
+    }
+
+    /**
+     * 初始化搜索功能
+     * @private
+     */
+    _initSearchFeatures() {
         this.eventManager.on('search:submit', (query) => {
-            this.handleSearch(query);
+            this._handleSearch(query);
         });
         
+        this.eventManager.on('search:input', (query) => {
+            this._handleSearchInput(query);
+        });
+    }
+
+    /**
+     * 初始化错误处理
+     * @private
+     */
+    _initErrorHandling() {
+        // 全局错误处理
+        window.addEventListener('error', (event) => {
+            this._handleError(event.error);
+        });
+        
+        // Promise 错误处理
+        window.addEventListener('unhandledrejection', (event) => {
+            this._handleError(event.reason);
+        });
+    }
+
+    /**
+     * 初始化性能监控
+     * @private
+     */
+    _initPerformanceMonitoring() {
+        // 监控页面加载性能
+        window.addEventListener('load', () => {
+            if ('performance' in window) {
+                const perfData = performance.getEntriesByType('navigation')[0];
+                const loadTime = perfData.loadEventEnd - perfData.loadEventStart;
+                this.performanceMetrics.set('pageLoadTime', loadTime);
+                this.logger?.info('Page load performance', { loadTime });
+            }
+        });
+    }
+
+    /**
+     * 启动应用
+     */
+    async start() {
+        try {
+            this.logger?.info('App starting');
+            this.performanceMonitor?.start('app-start');
+            
+            // 执行启动前钩子
+            await this._executeHooks('beforeStart');
+            
+            // 注册事件监听
+            this._registerEventListeners();
+            
+            // 初始化组件
+            await this._initializeComponents();
+            
+            // 启动路由
+            await this.router?.start();
+            
+            // 标记应用已启动
+            this.isRunning = true;
+            this.state = AppState.RUNNING;
+            
+            // 执行启动后钩子
+            await this._executeHooks('afterStart');
+            
+            this.performanceMonitor?.end('app-start');
+            this.logger?.info('App started successfully');
+            
+            // 触发应用启动事件
+            this.eventManager.emit('app:started');
+            
+        } catch (error) {
+            this.logger?.error('App start failed:', error);
+            this.state = AppState.ERROR;
+            await this._handleError(error);
+            throw error;
+        }
+    }
+
+    /**
+     * 注册事件监听
+     * @private
+     */
+    _registerEventListeners() {
         // 组件事件
         this.eventManager.on('component:loaded', (component) => {
-            console.log('组件加载完成:', component);
+            this.logger?.info('Component loaded', { component });
+        });
+        
+        // 性能事件
+        this.eventManager.on('performance:measure', (measure) => {
+            this.performanceMetrics.set(measure.name, measure.duration);
         });
     }
 
     /**
      * 初始化组件
+     * @private
      */
-    async initializeComponents() {
+    async _initializeComponents() {
         // 注册基础组件
         await this.componentManager.registerComponents([
             'SearchHeader',
@@ -196,38 +325,52 @@ export class App {
 
     /**
      * 处理键盘快捷键
+     * @private
      */
-    handleKeyboardShortcut(shortcut) {
+    _handleKeyboardShortcut(shortcut) {
         switch (shortcut) {
             case 'ctrl+k':
-                this.focusSearch();
+                this._focusSearch();
                 break;
             case 'ctrl+n':
-                this.openNewsPage();
+                this._openNewsPage();
                 break;
             case 'ctrl+s':
-                this.openShortcutsPage();
+                this._openShortcutsPage();
                 break;
             default:
-                console.log('未处理的快捷键:', shortcut);
+                this.logger?.debug('Unhandled keyboard shortcut', { shortcut });
         }
     }
 
     /**
      * 处理搜索
+     * @private
      */
-    handleSearch(query) {
+    _handleSearch(query) {
         // 更新搜索历史
-        this.store.dispatch('search/addHistory', query);
+        this.store?.dispatch('search/addHistory', query);
         
         // 执行搜索逻辑
-        this.router.navigate('/search', { query });
+        this.router?.navigate('/search', { query });
+        
+        this.logger?.info('Search submitted', { query });
+    }
+
+    /**
+     * 处理搜索输入
+     * @private
+     */
+    _handleSearchInput(query) {
+        // 实时搜索建议
+        this.eventManager.emit('search:suggestions', query);
     }
 
     /**
      * 聚焦搜索框
+     * @private
      */
-    focusSearch() {
+    _focusSearch() {
         const searchInput = document.getElementById('messageInput');
         if (searchInput) {
             searchInput.focus();
@@ -236,59 +379,149 @@ export class App {
 
     /**
      * 打开新闻页面
+     * @private
      */
-    openNewsPage() {
+    _openNewsPage() {
         window.open('pages/news/index.html', '_blank');
     }
 
     /**
      * 打开快捷键页面
+     * @private
      */
-    openShortcutsPage() {
+    _openShortcutsPage() {
         window.open('pages/shortcuts/index.html', '_blank');
     }
 
     /**
      * 处理错误
+     * @private
      */
-    handleError(error) {
-        console.error('应用错误:', error);
+    async _handleError(error) {
+        this.logger?.error('Application error:', error);
         
-        // 显示错误信息
-        const errorElement = document.getElementById('error-message');
-        if (errorElement) {
-            errorElement.textContent = '应用出现错误，请刷新页面重试';
-            errorElement.style.display = 'block';
+        // 执行错误处理器
+        for (const handler of this.errorHandlers) {
+            try {
+                await handler(error);
+            } catch (handlerError) {
+                this.logger?.error('Error handler failed:', handlerError);
+            }
         }
         
-        // 发送错误报告
-        this.utils.reportError(error);
+        // 尝试恢复策略
+        await this._attemptRecovery(error);
     }
 
     /**
-     * 更新主题配置
+     * 尝试恢复
+     * @private
      */
-    updateThemeConfig(theme) {
-        this.config.set('theme', theme);
-        this.eventManager.emit('theme:changed', theme);
+    async _attemptRecovery(error) {
+        for (const strategy of this.recoveryStrategies) {
+            try {
+                const recovered = await strategy(error);
+                if (recovered) {
+                    this.logger?.info('Recovery successful');
+                    return;
+                }
+            } catch (strategyError) {
+                this.logger?.error('Recovery strategy failed:', strategyError);
+            }
+        }
+        
+        this.logger?.error('All recovery strategies failed');
+    }
+
+    /**
+     * 执行生命周期钩子
+     * @private
+     */
+    async _executeHooks(hookName) {
+        const hooks = this.lifecycleHooks[hookName] || [];
+        for (const hook of hooks) {
+            try {
+                await hook();
+            } catch (error) {
+                this.logger?.error(`Lifecycle hook failed: ${hookName}`, error);
+            }
+        }
+    }
+
+    /**
+     * 添加生命周期钩子
+     */
+    addLifecycleHook(hookName, hook) {
+        if (this.lifecycleHooks[hookName]) {
+            this.lifecycleHooks[hookName].push(hook);
+        }
+    }
+
+    /**
+     * 添加错误处理器
+     */
+    addErrorHandler(handler) {
+        this.errorHandlers.push(handler);
+    }
+
+    /**
+     * 添加恢复策略
+     */
+    addRecoveryStrategy(strategy) {
+        this.recoveryStrategies.push(strategy);
+    }
+
+    /**
+     * 暂停应用
+     */
+    pause() {
+        this.state = AppState.PAUSED;
+        this.isRunning = false;
+        this.eventManager.emit('app:paused');
+        this.logger?.info('App paused');
+    }
+
+    /**
+     * 恢复应用
+     */
+    resume() {
+        this.state = AppState.RUNNING;
+        this.isRunning = true;
+        this.eventManager.emit('app:resumed');
+        this.logger?.info('App resumed');
     }
 
     /**
      * 停止应用
      */
     async stop() {
-        this.isRunning = false;
-        
-        // 停止路由
-        await this.router.stop();
-        
-        // 清理事件监听
-        this.eventManager.clear();
-        
-        // 清理组件
-        await this.componentManager.destroy();
-        
-        console.log('应用已停止');
+        try {
+            this.logger?.info('App stopping');
+            this.state = AppState.STOPPING;
+            
+            // 执行停止前钩子
+            await this._executeHooks('beforeStop');
+            
+            // 停止路由
+            await this.router?.stop();
+            
+            // 销毁组件
+            await this.componentManager?.destroy();
+            
+            // 清理事件监听
+            this.eventManager?.destroy();
+            
+            this.isRunning = false;
+            this.state = AppState.STOPPED;
+            
+            // 执行停止后钩子
+            await this._executeHooks('afterStop');
+            
+            this.logger?.info('App stopped');
+        } catch (error) {
+            this.logger?.error('App stop failed:', error);
+            throw error;
+        }
     }
 
     /**
@@ -296,10 +529,21 @@ export class App {
      */
     getStatus() {
         return {
-            isRunning: this.isRunning,
+            state: this.state,
             isInitialized: this.isInitialized,
-            config: this.config.getAll(),
-            components: this.componentManager.getStatus()
+            isRunning: this.isRunning,
+            performanceMetrics: Object.fromEntries(this.performanceMetrics),
+            componentManager: this.componentManager?.getStatus(),
+            eventManager: this.eventManager?.getStatus()
         };
+    }
+
+    /**
+     * 更新主题配置
+     */
+    updateThemeConfig(theme) {
+        this.config?.set('theme', theme);
+        document.documentElement.setAttribute('data-theme', theme);
+        this.eventManager.emit('theme:changed', theme);
     }
 } 

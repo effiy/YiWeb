@@ -1,57 +1,174 @@
 /**
- * 组件管理类
+ * 组件管理类 - 重构版本
  * @author liangliang
- * @version 1.0.0
+ * @version 2.0.0
+ * @description 采用现代架构，支持懒加载、生命周期管理和错误处理
  */
 
 /**
- * 组件管理类
+ * 组件状态枚举
+ */
+export const ComponentState = {
+    UNLOADED: 'unloaded',
+    LOADING: 'loading',
+    LOADED: 'loaded',
+    INITIALIZING: 'initializing',
+    READY: 'ready',
+    ERROR: 'error',
+    DESTROYED: 'destroyed'
+};
+
+/**
+ * 组件管理类 - 重构版本
  */
 export class ComponentManager {
-    constructor() {
+    constructor(options = {}) {
+        // 配置选项
+        this.options = {
+            enableLazyLoading: true,
+            enableCaching: true,
+            maxCacheSize: 50,
+            retryAttempts: 3,
+            retryDelay: 1000,
+            ...options
+        };
+        
+        // 组件注册表
         this.components = new Map();
         this.loadedComponents = new Set();
         this.componentCache = new Map();
         this.loadingPromises = new Map();
+        
+        // 组件状态
+        this.componentStates = new Map();
+        this.componentInstances = new Map();
+        
+        // 生命周期钩子
+        this.lifecycleHooks = {
+            beforeLoad: [],
+            afterLoad: [],
+            beforeInit: [],
+            afterInit: [],
+            beforeDestroy: [],
+            afterDestroy: []
+        };
+        
+        // 错误处理
+        this.errorHandlers = [];
+        this.retryStrategies = new Map();
+        
+        // 性能监控
+        this.loadTimes = new Map();
+        this.errorCounts = new Map();
+        
+        // 初始化
+        this._init();
+    }
+
+    /**
+     * 初始化组件管理器
+     * @private
+     */
+    _init() {
+        // 设置默认重试策略
+        this._setupDefaultRetryStrategies();
+        
+        // 监听组件相关事件
+        this._setupEventListeners();
+    }
+
+    /**
+     * 设置默认重试策略
+     * @private
+     */
+    _setupDefaultRetryStrategies() {
+        // 网络错误重试策略
+        this.retryStrategies.set('network', {
+            maxAttempts: 3,
+            delay: 1000,
+            backoff: 2
+        });
+        
+        // 资源加载错误重试策略
+        this.retryStrategies.set('resource', {
+            maxAttempts: 2,
+            delay: 500,
+            backoff: 1.5
+        });
+    }
+
+    /**
+     * 设置事件监听器
+     * @private
+     */
+    _setupEventListeners() {
+        // 监听组件加载事件
+        document.addEventListener('component:load', (event) => {
+            this._handleComponentLoad(event.detail);
+        });
+        
+        // 监听组件错误事件
+        document.addEventListener('component:error', (event) => {
+            this._handleComponentError(event.detail);
+        });
     }
 
     /**
      * 注册组件
+     * @param {string} name 组件名称
+     * @param {Object} component 组件定义
      */
     registerComponent(name, component) {
+        if (this.components.has(name)) {
+            console.warn(`Component ${name} is already registered`);
+            return;
+        }
+        
         this.components.set(name, component);
-        console.log(`组件注册成功: ${name}`);
+        this.componentStates.set(name, ComponentState.UNLOADED);
+        this.errorCounts.set(name, 0);
+        
+        console.log(`Component registered: ${name}`);
     }
 
     /**
      * 注册多个组件
+     * @param {Array} componentNames 组件名称数组
      */
     async registerComponents(componentNames) {
         const promises = componentNames.map(name => this.registerComponentByName(name));
-        await Promise.all(promises);
+        await Promise.allSettled(promises);
     }
 
     /**
      * 根据名称注册组件
+     * @param {string} name 组件名称
      */
     async registerComponentByName(name) {
         try {
+            this.componentStates.set(name, ComponentState.LOADING);
+            
             // 动态导入组件
             const component = await this.loadComponent(name);
             this.registerComponent(name, component);
+            
+            this.componentStates.set(name, ComponentState.LOADED);
             return component;
         } catch (error) {
-            console.error(`组件加载失败: ${name}`, error);
+            this.componentStates.set(name, ComponentState.ERROR);
+            this._handleComponentError({ name, error });
             throw error;
         }
     }
 
     /**
      * 加载组件
+     * @param {string} name 组件名称
+     * @returns {Promise<Object>}
      */
     async loadComponent(name) {
         // 检查缓存
-        if (this.componentCache.has(name)) {
+        if (this.options.enableCaching && this.componentCache.has(name)) {
             return this.componentCache.get(name);
         }
 
@@ -61,13 +178,21 @@ export class ComponentManager {
         }
 
         // 创建加载Promise
-        const loadPromise = this.createComponent(name);
+        const loadPromise = this._createComponent(name);
         this.loadingPromises.set(name, loadPromise);
 
         try {
+            const startTime = performance.now();
             const component = await loadPromise;
+            const loadTime = performance.now() - startTime;
+            
+            this.loadTimes.set(name, loadTime);
             this.componentCache.set(name, component);
             this.loadingPromises.delete(name);
+            
+            // 执行加载后钩子
+            await this._executeHooks('afterLoad', { name, component, loadTime });
+            
             return component;
         } catch (error) {
             this.loadingPromises.delete(name);
@@ -77,33 +202,40 @@ export class ComponentManager {
 
     /**
      * 创建组件
+     * @param {string} name 组件名称
+     * @returns {Promise<Object>}
      */
-    async createComponent(name) {
+    async _createComponent(name) {
+        // 执行加载前钩子
+        await this._executeHooks('beforeLoad', { name });
+        
         // 根据组件名称创建对应的组件
         switch (name) {
             case 'SearchHeader':
-                return this.createSearchHeader();
+                return this._createSearchHeader();
             case 'FeatureCards':
-                return this.createFeatureCards();
+                return this._createFeatureCards();
             case 'NewsList':
-                return this.createNewsList();
+                return this._createNewsList();
             case 'Shortcuts':
-                return this.createShortcuts();
+                return this._createShortcuts();
             case 'Calendar':
-                return this.createCalendar();
+                return this._createCalendar();
             case 'Sidebar':
-                return this.createSidebar();
+                return this._createSidebar();
             default:
-                throw new Error(`未知组件: ${name}`);
+                throw new Error(`Unknown component: ${name}`);
         }
     }
 
     /**
      * 创建搜索头部组件
+     * @private
      */
-    createSearchHeader() {
+    _createSearchHeader() {
         return {
             name: 'SearchHeader',
+            version: '2.0.0',
             template: `
                 <header class="header-row" role="banner">
                     <div class="search-row">
@@ -141,18 +273,19 @@ export class ComponentManager {
             methods: {
                 init() {
                     this.bindEvents();
+                    this._setupAccessibility();
                 },
                 bindEvents() {
                     const searchInput = document.getElementById('messageInput');
                     if (searchInput) {
                         searchInput.addEventListener('input', this.handleInput.bind(this));
                         searchInput.addEventListener('keydown', this.handleKeydown.bind(this));
+                        searchInput.addEventListener('focus', this.handleFocus.bind(this));
+                        searchInput.addEventListener('blur', this.handleBlur.bind(this));
                     }
                 },
                 handleInput(event) {
-                    // 处理输入事件
                     const value = event.target.value;
-                    // 触发搜索事件
                     this.emit('search:input', value);
                 },
                 handleKeydown(event) {
@@ -162,8 +295,20 @@ export class ComponentManager {
                         this.emit('search:submit', value);
                     }
                 },
+                handleFocus(event) {
+                    event.target.parentElement.classList.add('focused');
+                },
+                handleBlur(event) {
+                    event.target.parentElement.classList.remove('focused');
+                },
+                _setupAccessibility() {
+                    const searchInput = document.getElementById('messageInput');
+                    if (searchInput) {
+                        searchInput.setAttribute('aria-label', '消息输入框');
+                        searchInput.setAttribute('aria-describedby', 'category-filters');
+                    }
+                },
                 emit(event, data) {
-                    // 触发自定义事件
                     const customEvent = new CustomEvent(event, { detail: data });
                     document.dispatchEvent(customEvent);
                 }
@@ -173,10 +318,12 @@ export class ComponentManager {
 
     /**
      * 创建功能卡片组件
+     * @private
      */
-    createFeatureCards() {
+    _createFeatureCards() {
         return {
             name: 'FeatureCards',
+            version: '2.0.0',
             template: `
                 <div class="feature-cards-container">
                     <div class="feature-cards-grid" role="grid" aria-label="功能卡片网格">
@@ -204,12 +351,15 @@ export class ComponentManager {
             methods: {
                 init() {
                     this.bindEvents();
+                    this._setupAnimations();
                 },
                 bindEvents() {
                     const cards = document.querySelectorAll('.feature-card');
                     cards.forEach(card => {
                         card.addEventListener('click', this.handleCardClick.bind(this));
                         card.addEventListener('keydown', this.handleCardKeydown.bind(this));
+                        card.addEventListener('mouseenter', this.handleCardHover.bind(this));
+                        card.addEventListener('mouseleave', this.handleCardLeave.bind(this));
                     });
                 },
                 handleCardClick(event) {
@@ -223,6 +373,20 @@ export class ComponentManager {
                         this.emit('card:click', feature);
                     }
                 },
+                handleCardHover(event) {
+                    event.currentTarget.classList.add('hovered');
+                },
+                handleCardLeave(event) {
+                    event.currentTarget.classList.remove('hovered');
+                },
+                _setupAnimations() {
+                    // 添加进入动画
+                    const cards = document.querySelectorAll('.feature-card');
+                    cards.forEach((card, index) => {
+                        card.style.animationDelay = `${index * 0.1}s`;
+                        card.classList.add('animate-in');
+                    });
+                },
                 emit(event, data) {
                     const customEvent = new CustomEvent(event, { detail: data });
                     document.dispatchEvent(customEvent);
@@ -233,10 +397,12 @@ export class ComponentManager {
 
     /**
      * 创建新闻列表组件
+     * @private
      */
-    createNewsList() {
+    _createNewsList() {
         return {
             name: 'NewsList',
+            version: '2.0.0',
             template: `
                 <div class="news-list-container">
                     <div class="news-list" role="list" aria-label="新闻列表">
@@ -245,29 +411,26 @@ export class ComponentManager {
                 </div>
             `,
             methods: {
-                init() {
-                    this.loadNews();
+                async init() {
+                    await this.loadNews();
+                    this.bindEvents();
                 },
                 async loadNews() {
                     try {
-                        // 模拟加载新闻数据
                         const news = await this.fetchNews();
                         this.renderNews(news);
                     } catch (error) {
-                        console.error('加载新闻失败:', error);
+                        console.error('Failed to load news:', error);
+                        this.showError('新闻加载失败');
                     }
                 },
                 async fetchNews() {
-                    // 模拟API调用
+                    // 模拟新闻数据获取
                     return new Promise(resolve => {
                         setTimeout(() => {
                             resolve([
-                                {
-                                    id: 1,
-                                    title: 'AI技术最新发展',
-                                    content: '人工智能技术正在快速发展...',
-                                    date: new Date()
-                                }
+                                { title: 'AI技术发展', content: '人工智能技术的最新发展...' },
+                                { title: '科技创新', content: '科技创新推动社会发展...' }
                             ]);
                         }, 1000);
                     });
@@ -279,10 +442,29 @@ export class ComponentManager {
                             <div class="news-item" role="listitem">
                                 <h3>${item.title}</h3>
                                 <p>${item.content}</p>
-                                <time>${item.date.toLocaleDateString()}</time>
                             </div>
                         `).join('');
                     }
+                },
+                showError(message) {
+                    const container = document.querySelector('.news-list');
+                    if (container) {
+                        container.innerHTML = `<div class="error-message">${message}</div>`;
+                    }
+                },
+                bindEvents() {
+                    const newsItems = document.querySelectorAll('.news-item');
+                    newsItems.forEach(item => {
+                        item.addEventListener('click', this.handleNewsClick.bind(this));
+                    });
+                },
+                handleNewsClick(event) {
+                    const title = event.currentTarget.querySelector('h3').textContent;
+                    this.emit('news:click', { title });
+                },
+                emit(event, data) {
+                    const customEvent = new CustomEvent(event, { detail: data });
+                    document.dispatchEvent(customEvent);
                 }
             }
         };
@@ -290,39 +472,56 @@ export class ComponentManager {
 
     /**
      * 创建快捷键组件
+     * @private
      */
-    createShortcuts() {
+    _createShortcuts() {
         return {
             name: 'Shortcuts',
+            version: '2.0.0',
             template: `
                 <div class="shortcuts-container">
                     <div class="shortcuts-grid" role="grid" aria-label="快捷键网格">
-                        <!-- 快捷键将通过JavaScript动态生成 -->
+                        <!-- 快捷键项目将通过JavaScript动态生成 -->
                     </div>
                 </div>
             `,
             methods: {
                 init() {
                     this.loadShortcuts();
+                    this.bindEvents();
                 },
                 loadShortcuts() {
                     const shortcuts = [
-                        { key: 'Ctrl+K', action: '聚焦搜索框' },
-                        { key: 'Ctrl+N', action: '打开新闻页面' },
-                        { key: 'Ctrl+S', action: '打开快捷键页面' }
+                        { key: 'Ctrl+K', description: '搜索' },
+                        { key: 'Ctrl+N', description: '新闻' },
+                        { key: 'Ctrl+S', description: '快捷键' }
                     ];
                     this.renderShortcuts(shortcuts);
                 },
                 renderShortcuts(shortcuts) {
                     const container = document.querySelector('.shortcuts-grid');
                     if (container) {
-                        container.innerHTML = shortcuts.map(item => `
+                        container.innerHTML = shortcuts.map(shortcut => `
                             <div class="shortcut-item" role="gridcell">
-                                <kbd>${item.key}</kbd>
-                                <span>${item.action}</span>
+                                <kbd>${shortcut.key}</kbd>
+                                <span>${shortcut.description}</span>
                             </div>
                         `).join('');
                     }
+                },
+                bindEvents() {
+                    const shortcutItems = document.querySelectorAll('.shortcut-item');
+                    shortcutItems.forEach(item => {
+                        item.addEventListener('click', this.handleShortcutClick.bind(this));
+                    });
+                },
+                handleShortcutClick(event) {
+                    const key = event.currentTarget.querySelector('kbd').textContent;
+                    this.emit('shortcut:click', { key });
+                },
+                emit(event, data) {
+                    const customEvent = new CustomEvent(event, { detail: data });
+                    document.dispatchEvent(customEvent);
                 }
             }
         };
@@ -330,10 +529,12 @@ export class ComponentManager {
 
     /**
      * 创建日历组件
+     * @private
      */
-    createCalendar() {
+    _createCalendar() {
         return {
             name: 'Calendar',
+            version: '2.0.0',
             template: `
                 <div class="calendar-container">
                     <div class="calendar-header">
@@ -342,9 +543,7 @@ export class ComponentManager {
                         <button class="calendar-nav next" aria-label="下个月">›</button>
                     </div>
                     <div class="calendar-body">
-                        <div class="calendar-grid" role="grid" aria-label="日历网格">
-                            <!-- 日历内容将通过JavaScript动态生成 -->
-                        </div>
+                        <div class="calendar-days"></div>
                     </div>
                 </div>
             `,
@@ -368,7 +567,7 @@ export class ComponentManager {
                     }
                 },
                 renderDays() {
-                    // 实现日历渲染逻辑
+                    // 日历渲染逻辑
                 },
                 bindEvents() {
                     const prevBtn = document.querySelector('.calendar-nav.prev');
@@ -395,24 +594,20 @@ export class ComponentManager {
 
     /**
      * 创建侧边栏组件
+     * @private
      */
-    createSidebar() {
+    _createSidebar() {
         return {
             name: 'Sidebar',
+            version: '2.0.0',
             template: `
                 <aside class="sidebar" role="complementary" aria-label="侧边栏">
                     <div class="sidebar-header">
-                        <h3>导航菜单</h3>
-                        <button class="sidebar-close" aria-label="关闭侧边栏">×</button>
+                        <button class="sidebar-toggle" aria-label="切换侧边栏">☰</button>
                     </div>
-                    <nav class="sidebar-nav" role="navigation">
-                        <ul class="sidebar-menu">
-                            <li><a href="/" class="sidebar-link">首页</a></li>
-                            <li><a href="/news" class="sidebar-link">新闻</a></li>
-                            <li><a href="/shortcuts" class="sidebar-link">快捷键</a></li>
-                            <li><a href="/settings" class="sidebar-link">设置</a></li>
-                        </ul>
-                    </nav>
+                    <div class="sidebar-content">
+                        <!-- 侧边栏内容 -->
+                    </div>
                 </aside>
             `,
             methods: {
@@ -420,22 +615,20 @@ export class ComponentManager {
                     this.bindEvents();
                 },
                 bindEvents() {
-                    const closeBtn = document.querySelector('.sidebar-close');
-                    if (closeBtn) {
-                        closeBtn.addEventListener('click', this.close.bind(this));
+                    const toggleBtn = document.querySelector('.sidebar-toggle');
+                    if (toggleBtn) {
+                        toggleBtn.addEventListener('click', this.toggle.bind(this));
                     }
                 },
                 open() {
-                    const sidebar = document.querySelector('.sidebar');
-                    if (sidebar) {
-                        sidebar.classList.add('open');
-                    }
+                    document.querySelector('.sidebar')?.classList.add('open');
                 },
                 close() {
+                    document.querySelector('.sidebar')?.classList.remove('open');
+                },
+                toggle() {
                     const sidebar = document.querySelector('.sidebar');
-                    if (sidebar) {
-                        sidebar.classList.remove('open');
-                    }
+                    sidebar?.classList.toggle('open');
                 }
             }
         };
@@ -445,39 +638,50 @@ export class ComponentManager {
      * 初始化组件
      */
     async initialize() {
-        const promises = Array.from(this.components.keys()).map(name => {
-            return this.initializeComponent(name);
-        });
+        const promises = Array.from(this.components.keys()).map(name => 
+            this.initializeComponent(name)
+        );
         
-        await Promise.all(promises);
-        console.log('所有组件初始化完成');
+        await Promise.allSettled(promises);
     }
 
     /**
      * 初始化单个组件
+     * @param {string} name 组件名称
      */
     async initializeComponent(name) {
         try {
+            this.componentStates.set(name, ComponentState.INITIALIZING);
+            
             const component = this.components.get(name);
             if (component && component.methods && component.methods.init) {
                 await component.methods.init();
-                this.loadedComponents.add(name);
-                console.log(`组件初始化完成: ${name}`);
             }
+            
+            this.componentStates.set(name, ComponentState.READY);
+            this.loadedComponents.add(name);
+            
+            console.log(`Component initialized: ${name}`);
         } catch (error) {
-            console.error(`组件初始化失败: ${name}`, error);
+            this.componentStates.set(name, ComponentState.ERROR);
+            this._handleComponentError({ name, error });
+            throw error;
         }
     }
 
     /**
      * 获取组件
+     * @param {string} name 组件名称
+     * @returns {Object|null}
      */
     getComponent(name) {
-        return this.components.get(name);
+        return this.components.get(name) || null;
     }
 
     /**
      * 检查组件是否已加载
+     * @param {string} name 组件名称
+     * @returns {boolean}
      */
     isComponentLoaded(name) {
         return this.loadedComponents.has(name);
@@ -485,25 +689,115 @@ export class ComponentManager {
 
     /**
      * 获取组件状态
+     * @param {string} name 组件名称
+     * @returns {string}
+     */
+    getComponentState(name) {
+        return this.componentStates.get(name) || ComponentState.UNLOADED;
+    }
+
+    /**
+     * 处理组件加载事件
+     * @private
+     */
+    _handleComponentLoad(detail) {
+        console.log('Component loaded:', detail);
+    }
+
+    /**
+     * 处理组件错误
+     * @private
+     */
+    _handleComponentError(detail) {
+        const { name, error } = detail;
+        const errorCount = this.errorCounts.get(name) || 0;
+        this.errorCounts.set(name, errorCount + 1);
+        
+        console.error(`Component error: ${name}`, error);
+        
+        // 执行错误处理器
+        this.errorHandlers.forEach(handler => {
+            try {
+                handler(detail);
+            } catch (handlerError) {
+                console.error('Error handler failed:', handlerError);
+            }
+        });
+    }
+
+    /**
+     * 执行生命周期钩子
+     * @private
+     */
+    async _executeHooks(hookName, context) {
+        const hooks = this.lifecycleHooks[hookName] || [];
+        for (const hook of hooks) {
+            try {
+                await hook(context);
+            } catch (error) {
+                console.error(`Lifecycle hook failed: ${hookName}`, error);
+            }
+        }
+    }
+
+    /**
+     * 添加生命周期钩子
+     */
+    addLifecycleHook(hookName, hook) {
+        if (this.lifecycleHooks[hookName]) {
+            this.lifecycleHooks[hookName].push(hook);
+        }
+    }
+
+    /**
+     * 添加错误处理器
+     */
+    addErrorHandler(handler) {
+        this.errorHandlers.push(handler);
+    }
+
+    /**
+     * 获取状态信息
      */
     getStatus() {
         return {
             totalComponents: this.components.size,
             loadedComponents: this.loadedComponents.size,
-            cachedComponents: this.componentCache.size,
-            loadingComponents: this.loadingPromises.size
+            componentStates: Object.fromEntries(this.componentStates),
+            loadTimes: Object.fromEntries(this.loadTimes),
+            errorCounts: Object.fromEntries(this.errorCounts),
+            cacheSize: this.componentCache.size
         };
     }
 
     /**
-     * 销毁组件
+     * 销毁组件管理器
      */
     async destroy() {
-        // 清理组件缓存
-        this.componentCache.clear();
-        this.loadedComponents.clear();
-        this.loadingPromises.clear();
+        // 执行销毁前钩子
+        await this._executeHooks('beforeDestroy');
         
-        console.log('组件管理器已销毁');
+        // 清理组件实例
+        for (const [name, instance] of this.componentInstances) {
+            if (instance && instance.methods && instance.methods.destroy) {
+                try {
+                    await instance.methods.destroy();
+                } catch (error) {
+                    console.error(`Failed to destroy component: ${name}`, error);
+                }
+            }
+        }
+        
+        // 清理缓存
+        this.componentCache.clear();
+        this.loadingPromises.clear();
+        this.componentStates.clear();
+        this.componentInstances.clear();
+        this.loadedComponents.clear();
+        
+        // 执行销毁后钩子
+        await this._executeHooks('afterDestroy');
+        
+        console.log('ComponentManager destroyed');
     }
 } 
