@@ -1,0 +1,71 @@
+/**
+ * 全局重置样式
+ * 统一浏览器默认样式，建立一致的基础
+ */
+
+/* 盒模型重置 */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* HTML 根元素 */
+html {
+    font-size: 16px;
+    line-height: var(--line-height-normal);
+}
+
+/* 焦点可见性 */
+.focus-visible,
+*:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* 禁用选择 */
+.no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* GPU加速 */
+.gpu-accelerated {
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+/* 跳过链接 */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--primary);
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-md);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    z-index: var(--z-tooltip);
+    transition: var(--transition-fast);
+}
+
+.skip-link:focus {
+    top: 6px;
+}
+
+/* 键盘导航增强 */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+

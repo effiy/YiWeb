@@ -1,0 +1,50 @@
+[
+  {
+    "title": "智能数据分析",
+    "description": "运用先进的AI算法，将海量数据转化为精准洞察。从趋势预测到异常检测，让数据为您讲述完整的故事，助力科学决策。",
+    "icon": "fas fa-chart-line",
+    "badge": "数据分析",
+    "features": ["🧠 知识问答", "📈 智能统计", "🔮 趋势预测"],
+    "stats": [
+      {"number": "100+", "label": "工作流程"},
+      {"number": "∞", "label": "生活场景"},
+      {"number": "99.9%", "label": "学习效率"}
+    ],
+    "hint": "🧪 上传数据开始智能分析",
+    "footerIcon": "fas fa-flask",
+    "style": "scientist-card",
+    "link": "https://www.youtube.com"
+  },
+  {
+    "title": "智能代码助手",
+    "description": "从命令脚本到规范制度，AI助您快速生成高质量代码和文档。提供最佳实践指导和详细注释，让开发工作更加规范高效。",
+    "icon": "fas fa-code",
+    "badge": "代码编写",
+    "features": ["💻 命令脚本", "📋 规范制度", "✨ 最佳实践"],
+    "stats": [
+      {"number": "100%", "label": "规范制度"},
+      {"number": "∞", "label": "脚本生成"},
+      {"number": "100+", "label": "最佳实践"}
+    ],
+    "hint": "⚡ 描述需求开始智能编码",
+    "footerIcon": "fas fa-terminal",
+    "style": "geek-card",
+    "link": "shortcuts.html"
+  },
+  {
+    "title": "AI艺术创作",
+    "description": "释放您的创意潜能，通过AI技术将文字描述转化为精美视觉作品。从文本生成图像到图像风格转换，为您提供全方位的AI艺术体验。",
+    "icon": "fas fa-palette",
+    "badge": "生图创造",
+    "features": ["🖼️ 文字生图", "🎭 图像生图", "🎬 视频生成"],
+    "stats": [
+      {"number": "100+", "label": "艺术风格"},
+      {"number": "∞", "label": "生成速度"},
+      {"number": "4K", "label": "高清画质"}
+    ],
+    "hint": "🎨 描述创意开始艺术创作",
+    "footerIcon": "fas fa-magic",
+    "style": "artist-card",
+    "link": null
+  }
+] 

@@ -1,0 +1,141 @@
+/* ========== Welcome页面样式 ========== */
+
+/* 加载状态样式 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 2rem;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(147, 51, 234, 0.1);
+  border-top: 4px solid rgba(147, 51, 234, 0.8);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-container p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* 错误状态样式 */
+.error-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 2rem;
+}
+
+.error-message {
+  text-align: center;
+  max-width: 500px;
+  padding: 2rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  color: var(--text-primary);
+}
+
+.error-message i {
+  font-size: 2rem;
+  color: #ef4444;
+  margin-bottom: 1rem;
+}
+
+.error-message p {
+  margin: 1rem 0;
+  color: var(--text-secondary);
+}
+
+.retry-btn {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
+}
+
+/* 功能卡片容器 */
+.feature-cards-container {
+  padding: 2rem 0;
+}
+
+.feature-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* 统计信息样式 */
+.cards-info {
+  text-align: center;
+  padding: 2rem;
+  margin-top: 2rem;
+  background: rgba(147, 51, 234, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(147, 51, 234, 0.1);
+}
+
+.cards-info p {
+  margin: 0.5rem 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .feature-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 0 0.5rem;
+  }
+  
+  .loading-container,
+  .error-container {
+    min-height: 300px;
+    padding: 1rem;
+  }
+  
+  .error-message {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .feature-cards-grid {
+    gap: 1rem;
+  }
+  
+  .cards-info {
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+}
