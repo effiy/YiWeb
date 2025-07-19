@@ -8,10 +8,8 @@
 .container {
     width: 100%;
     max-width: var(--max-width-7xl);
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: var(--spacing-xl);
-    padding-right: var(--spacing-xl);
+    margin: 0 auto;
+    padding: var(--spacing-2xl);
     box-sizing: border-box;
 }
 

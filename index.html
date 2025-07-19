@@ -97,7 +97,9 @@
                                     </h3>
                                     <p class="card-description">{{ card.description }}</p>
                                     <ul class="card-features" aria-label="功能特性">
-                                        <li class="feature-tag" v-for="(feature, fidx) in card.features" :key="fidx">{{ feature }}</li>
+                                        <li class="feature-tag" v-for="(feature, fidx) in card.features" :key="fidx">
+                                            {{ feature.icon }} {{ feature.name }}
+                                        </li>
                                     </ul>
                                     <ul class="card-stats" aria-label="统计数据">
                                         <li 
