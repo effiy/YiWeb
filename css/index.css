@@ -7,6 +7,7 @@
 /* 基础重置和主题 */
 @import url('/css/reset.css');
 @import url('/css/theme.css');
+@import url('/css/animations.css');
 
 /* 通用工具类 */
 @import url('/css/spacing.css');
