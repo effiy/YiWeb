@@ -29,45 +29,170 @@ export const useInit = (store, methods) => {
     };
 
     /**
+     * 事件处理器集合
+     * 集中管理所有事件处理逻辑
+     */
+    const eventHandlers = {
+        /**
+         * 处理过滤器按钮点击事件
+         * @param {string} category - 分类ID
+         */
+        handleFilterClick: (category) => {
+            if (!category) {
+                console.warn('[事件处理] 过滤器按钮点击：分类ID为空');
+                return;
+            }
+            
+            console.log(`[事件处理] 过滤器按钮点击：${category}`);
+            methods.switchCategory(category);
+        },
+
+        /**
+         * 处理快捷键项点击事件（复制功能）
+         * @param {string} shortcut - 快捷键文本
+         */
+        handleShortcutClick: (shortcut) => {
+            if (!shortcut) {
+                console.warn('[事件处理] 快捷键点击：快捷键为空');
+                return;
+            }
+            
+            console.log(`[事件处理] 快捷键点击：${shortcut}`);
+            methods.copyShortcut(shortcut);
+        },
+
+        /**
+         * 处理搜索输入事件
+         * @param {Event} event - 输入事件对象
+         */
+        handleSearchInput: (event) => {
+            const keyword = event.target.value;
+            console.log(`[事件处理] 搜索输入：${keyword}`);
+            
+            // 更新搜索关键词
+            store.setSearchKeyword(keyword);
+            
+            // 执行搜索（如果需要实时搜索）
+            if (keyword.trim()) {
+                const searchResults = methods.searchShortcuts(keyword);
+                console.log('[搜索结果]', searchResults);
+            }
+        },
+
+        /**
+         * 处理搜索框键盘事件
+         * @param {KeyboardEvent} event - 键盘事件对象
+         */
+        handleSearchKeydown: (event) => {
+            const { key, ctrlKey, metaKey } = event;
+            
+            // ESC键清空搜索
+            if (key === 'Escape') {
+                console.log('[事件处理] 按下ESC键，清空搜索');
+                methods.clearSearch();
+                event.preventDefault();
+                return;
+            }
+            
+            // Ctrl/Cmd + K 聚焦搜索框
+            if ((ctrlKey || metaKey) && key === 'k') {
+                console.log('[事件处理] 按下Ctrl+K，聚焦搜索框');
+                const messageInput = document.getElementById('messageInput');
+                if (messageInput) {
+                    messageInput.focus();
+                    event.preventDefault();
+                }
+                return;
+            }
+            
+            // Enter键执行搜索（可选）
+            if (key === 'Enter') {
+                console.log('[事件处理] 按下Enter键');
+                event.preventDefault();
+                // 可以在这里添加额外的搜索逻辑
+            }
+        },
+
+        /**
+         * 处理清空搜索按钮点击
+         */
+        handleClearSearch: () => {
+            console.log('[事件处理] 清空搜索按钮点击');
+            methods.clearSearch();
+        },
+
+        /**
+         * 处理页面可见性变化
+         */
+        handleVisibilityChange: () => {
+            if (document.hidden) {
+                console.log('[事件处理] 页面隐藏');
+            } else {
+                console.log('[事件处理] 页面显示');
+                // 可以在这里添加页面重新显示时的逻辑
+            }
+        },
+
+        /**
+         * 处理窗口大小变化
+         */
+        handleResize: () => {
+            console.log(`[事件处理] 窗口大小变化：${window.innerWidth}x${window.innerHeight}`);
+            // 可以在这里添加响应式布局调整逻辑
+        }
+    };
+
+    /**
      * 绑定事件监听器
+     * 使用更清晰的事件绑定方式，适配Vue框架
      */
     const bindEventListeners = () => {
-        // 绑定过滤器按钮点击事件
-        document.addEventListener('click', (event) => {
-            const filterBtn = event.target.closest('.filter-btn');
-            if (filterBtn) {
-                const category = filterBtn.getAttribute('data-category');
-                if (category) {
-                    methods.switchCategory(category);
-                }
+        console.log('🔗 [事件绑定] 开始绑定事件监听器...');
+        
+        try {
+            // 绑定全局事件监听器（仅用于非Vue管理的元素）
+            window.addEventListener('visibilitychange', eventHandlers.handleVisibilityChange);
+            window.addEventListener('resize', eventHandlers.handleResize);
+            
+            // 绑定搜索框事件（如果存在且不在Vue管理范围内）
+            const messageInput = document.getElementById('messageInput');
+            if (messageInput && !messageInput.hasAttribute('v-model')) {
+                messageInput.addEventListener('input', eventHandlers.handleSearchInput);
+                messageInput.addEventListener('keydown', eventHandlers.handleSearchKeydown);
             }
-        });
-
-        // 绑定快捷键项点击事件（复制功能）
-        document.addEventListener('click', (event) => {
-            const shortcutKey = event.target.closest('.shortcut-key');
-            if (shortcutKey) {
-                const shortcut = shortcutKey.textContent;
-                if (shortcut) {
-                    methods.copyShortcut(shortcut);
-                }
-            }
-        });
-
-        // 绑定搜索功能
-        const messageInput = document.getElementById('messageInput');
-        if (messageInput) {
-            messageInput.addEventListener('input', (event) => {
-                const keyword = event.target.value;
-                if (keyword) {
-                    const searchResults = methods.searchShortcuts(keyword);
-                    console.log('搜索结果:', searchResults);
-                    // 这里可以实现搜索结果的显示逻辑
-                }
-            });
+            
+            console.log('✅ [事件绑定] 事件监听器绑定完成');
+            
+        } catch (err) {
+            console.error('❌ [事件绑定] 事件监听器绑定失败:', err);
+            methods.showError('事件绑定失败: ' + (err && err.message ? err.message : '未知错误'));
         }
+    };
 
-        console.log('✅ [事件绑定] 事件监听器绑定完成');
+    /**
+     * 解绑事件监听器
+     * 用于清理事件监听器，防止内存泄漏
+     */
+    const unbindEventListeners = () => {
+        console.log('🔗 [事件解绑] 开始解绑事件监听器...');
+        
+        try {
+            // 解绑全局事件监听器
+            window.removeEventListener('visibilitychange', eventHandlers.handleVisibilityChange);
+            window.removeEventListener('resize', eventHandlers.handleResize);
+            
+            // 解绑搜索框事件
+            const messageInput = document.getElementById('messageInput');
+            if (messageInput) {
+                messageInput.removeEventListener('input', eventHandlers.handleSearchInput);
+                messageInput.removeEventListener('keydown', eventHandlers.handleSearchKeydown);
+            }
+            
+            console.log('✅ [事件解绑] 事件监听器解绑完成');
+            
+        } catch (err) {
+            console.error('❌ [事件解绑] 事件监听器解绑失败:', err);
+        }
     };
 
     /**
@@ -78,6 +203,15 @@ export const useInit = (store, methods) => {
         bindEventListeners();
     };
 
+    /**
+     * 清理函数
+     * 用于组件卸载时清理资源
+     */
+    const cleanup = () => {
+        unbindEventListeners();
+        console.log('🧹 [清理] 应用资源清理完成');
+    };
+
     // 页面加载完成后执行初始化
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', runInit);
@@ -85,9 +219,15 @@ export const useInit = (store, methods) => {
         runInit();
     }
 
+    // 页面卸载时清理资源
+    window.addEventListener('beforeunload', cleanup);
+
     return {
         init,
         bindEventListeners,
-        runInit
+        unbindEventListeners,
+        runInit,
+        cleanup,
+        eventHandlers
     };
 }; 
