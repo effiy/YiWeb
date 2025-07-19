@@ -29,7 +29,7 @@
     ],
     "hint": "🧪 上传数据，立即体验智能分析",
     "footerIcon": "fas fa-flask",
-    "style": "scientist-card",
+    "cardClass": "scientist-card",
     "link": "https://www.youtube.com"
   },
   {
@@ -62,7 +62,7 @@
     ],
     "hint": "⚡ 输入需求，立即生成代码",
     "footerIcon": "fas fa-terminal",
-    "style": "geek-card",
+    "cardClass": "geek-card",
     "link": "shortcuts.html"
   },
   {
@@ -95,7 +95,7 @@
     ],
     "hint": "🎨 输入创意，开启AI艺术之旅",
     "footerIcon": "fas fa-magic",
-    "style": "artist-card",
+    "cardClass": "artist-card",
     "link": null
   }
 ]
