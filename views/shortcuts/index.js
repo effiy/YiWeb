@@ -5,7 +5,6 @@
 import { createStore } from '/views/shortcuts/data/store/index.js';
 import { useComputed } from '/views/shortcuts/hooks/useComputed.js';
 import { useMethods } from '/views/shortcuts/hooks/useMethods.js';
-import { useInit } from '/views/shortcuts/hooks/useInit.js';
 
 const App = {
   setup() {
@@ -18,13 +17,10 @@ const App = {
     // 3. 组合常用方法
     const methods = useMethods(store);
 
-    // 4. 初始化逻辑
-    useInit(store, methods);
-
-    // 5. 组件挂载时自动初始化（useInit内部已处理，无需重复调用）
+    // 4. 组件挂载时自动初始化
     // 这里可以根据需要添加额外的生命周期逻辑
 
-    // 6. 返回所有需要暴露给模板的数据和方法
+    // 5. 返回所有需要暴露给模板的数据和方法
     return {
       ...store,         // 响应式数据
       ...computedProps, // 计算属性
