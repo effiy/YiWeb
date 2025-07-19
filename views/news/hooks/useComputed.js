@@ -19,6 +19,43 @@ export const useComputed = (store) => {
         tagStatistics
     } = store;
 
+    // 先定义 categorizedNews 计算属性
+    const categorizedNews = computed(() => {
+        const result = {};
+        const categoriesConfig = getCategoriesConfig();
+        
+        categoriesConfig.forEach(category => {
+            result[category.key] = {
+                icon: category.icon,
+                title: category.title,
+                news: []
+            };
+        });
+
+        // 直接使用 newsData 而不是 filteredNewsData 来避免循环依赖
+        const dataToProcess = newsData.value || [];
+        
+        dataToProcess.forEach(item => {
+            const categoryKey = categorizeNewsItem(item);
+            
+            if (!result[categoryKey]) {
+                console.warn(`未知的分类键: ${categoryKey}，使用'other'分类`);
+                if (!result['other']) {
+                    result['other'] = {
+                        icon: 'fas fa-ellipsis-h',
+                        title: '其他',
+                        news: []
+                    };
+                }
+                result['other'].news.push(item);
+            } else {
+                result[categoryKey].news.push(item);
+            }
+        });
+
+        return result;
+    });
+
     return {
         /**
          * 是否有新闻数据
@@ -259,41 +296,7 @@ export const useComputed = (store) => {
         /**
          * 分类后的新闻数据
          */
-        categorizedNews: computed(() => {
-            const result = {};
-            const categoriesConfig = getCategoriesConfig();
-            
-            categoriesConfig.forEach(category => {
-                result[category.key] = {
-                    icon: category.icon,
-                    title: category.title,
-                    news: []
-                };
-            });
-
-            // 直接使用 newsData 而不是 filteredNewsData 来避免循环依赖
-            const dataToProcess = newsData.value || [];
-            
-            dataToProcess.forEach(item => {
-                const categoryKey = categorizeNewsItem(item);
-                
-                if (!result[categoryKey]) {
-                    console.warn(`未知的分类键: ${categoryKey}，使用'other'分类`);
-                    if (!result['other']) {
-                        result['other'] = {
-                            icon: 'fas fa-ellipsis-h',
-                            title: '其他',
-                            news: []
-                        };
-                    }
-                    result['other'].news.push(item);
-                } else {
-                    result[categoryKey].news.push(item);
-                }
-            });
-
-            return result;
-        }),
+        categorizedNews, // 直接返回上面定义的 computed
 
         /**
          * 显示的分类数据
@@ -495,4 +498,3 @@ function categorizeNewsItem(item) {
     return categoryMap[item.category] || 'other';
 }
 
- 
