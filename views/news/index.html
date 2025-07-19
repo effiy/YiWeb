@@ -29,9 +29,9 @@
             :selected-categories="selectedCategories"
             :sidebar-collapsed="sidebarCollapsed"
             @search-keydown="handleSearchKeydown"
-            @clear-search="clearSearch"
-            @toggle-category="toggleCategory"
-            @toggle-sidebar="toggleSidebar"
+            @clear-search="handleClearSearch"
+            @toggle-category="handleToggleCategory"
+            @toggle-sidebar="handleToggleSidebar"
         ></search-header>
         
         <main class="main-content" role="main">
@@ -43,12 +43,12 @@
                     :error="error"
                     :current-date-display="currentDateDisplay"
                     :search-query="searchQuery"
-                    :search-results="searchResults"
+                    :search-results="filteredNewsData"
                     :display-categories="displayCategories"
                     :selected-categories="selectedCategories"
                     :clicked-items="clickedItems"
                     :has-news-data="hasNewsData"
-                    @load-news-data="loadNewsData"
+                    @load-news-data="handleLoadNewsData"
                     @news-click="handleNewsClick"
                 ></news-list>
                 <aside class="sidebar-navigation" :class="{ collapsed: sidebarCollapsed }" role="complementary" aria-label="日期导航">
@@ -77,7 +77,7 @@
                         :selected-tags="selectedTags"
                         :has-news-data="hasNewsData"
                         :sidebar-collapsed="sidebarCollapsed"
-                        @toggle-tag="toggleTag"
+                        @toggle-tag="handleToggleTag"
                     ></tag-statistics>
                 </aside>
             </section>

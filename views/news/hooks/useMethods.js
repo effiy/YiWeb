@@ -1,287 +1,492 @@
-// 业务逻辑方法组合函数
-
-import { utils } from '/utils/common.js';
-
-// 从全局Vue对象中解构需要的函数
-const { nextTick, watch } = Vue;
-
-// 日期格式化函数
-const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
-
+/**
+ * 方法函数组合式
+ * 提供与新闻相关的常用操作方法
+ * author: liangliang
+ * 
+ * @param {Object} store - 状态存储对象
+ * @returns {Object} 方法集合
+ */
 export const useMethods = (store) => {
-    const {
-        newsData,
+    const { 
+        newsData, 
+        searchQuery, 
+        selectedCategories, 
+        selectedTags, 
+        currentDate, 
+        calendarMonth, 
+        today,
         loading,
         error,
         errorMessage,
-        searchQuery,
-        selectedCategories,
-        selectedTags,
         clickedItems,
         searchHistory,
         sidebarCollapsed,
-        currentDate,
-        calendarMonth,
-        today
+        tagStatistics,
+        loadNewsData,
+        setSearchQuery,
+        toggleCategory,
+        toggleTag,
+        setCurrentDate,
+        setCalendarMonth,
+        toggleSidebar,
+        addClickedItem,
+        addSearchHistory,
+        clearSearch,
+        clearError,
+        formatDate
     } = store;
 
-    // 监听搜索查询变化
-    watch(searchQuery, (newQuery) => {
-        if (newQuery && !searchHistory.value.includes(newQuery)) {
-            searchHistory.value.unshift(newQuery);
-            searchHistory.value = searchHistory.value.slice(0, 10);
-            utils.safeSetItem('newsSearchHistory', JSON.stringify(searchHistory.value));
-        }
-    }, { immediate: false });
+    /**
+     * 显示错误信息（可扩展为UI弹窗/Toast）
+     * @param {string} message - 错误信息
+     */
+    const showError = (message) => {
+        if (!message) return;
+        // 这里建议后续集成UI组件替换alert
+        alert(`❌ ${message}`);
+        console.error('[错误]', message);
+    };
 
-    // 搜索相关方法
-    const handleSearch = utils.debounce((event) => {
-        const query = event.target.value.trim();
-        searchQuery.value = query;
-        
-        if (query && !searchHistory.value.includes(query)) {
-            searchHistory.value.unshift(query);
-            searchHistory.value = searchHistory.value.slice(0, 10);
-            utils.safeSetItem('newsSearchHistory', JSON.stringify(searchHistory.value));
-        }
-    }, 100);
+    /**
+     * 显示成功信息（可扩展为UI弹窗/Toast）
+     * @param {string} message - 成功信息
+     */
+    const showSuccess = (message) => {
+        if (!message) return;
+        // 这里建议后续集成UI组件替换alert
+        console.log('[成功]', message);
+    };
 
+    /**
+     * 处理搜索输入
+     * @param {Event} event - 输入事件
+     */
     const handleSearchInput = (event) => {
-        const query = event.target.value.trim();
-        searchQuery.value = query;
+        const value = event.target.value;
+        setSearchQuery(value);
         
-        if (query && !searchHistory.value.includes(query)) {
-            searchHistory.value.unshift(query);
-            searchHistory.value = searchHistory.value.slice(0, 10);
-            utils.safeSetItem('newsSearchHistory', JSON.stringify(searchHistory.value));
+        // 记录搜索行为
+        if (value.trim()) {
+            console.log(`[搜索] 关键词: ${value}`);
         }
     };
 
+    /**
+     * 处理搜索键盘事件
+     * @param {Event} event - 键盘事件
+     */
     const handleSearchKeydown = (event) => {
         if (event.key === 'Escape') {
             event.target.value = '';
-            searchQuery.value = '';
+            setSearchQuery('');
         } else if (event.key === 'Enter') {
             event.preventDefault();
             const query = searchQuery.value.trim();
-            if (query && !searchHistory.value.includes(query)) {
-                searchHistory.value.unshift(query);
-                searchHistory.value = searchHistory.value.slice(0, 10);
-                utils.safeSetItem('newsSearchHistory', JSON.stringify(searchHistory.value));
+            if (query) {
+                addSearchHistory(query);
             }
         }
     };
 
-    const clearSearch = () => {
-        searchQuery.value = '';
+    /**
+     * 清空搜索
+     */
+    const handleClearSearch = () => {
+        setSearchQuery('');
+        selectedCategories.value.clear();
+        selectedTags.value.clear();
+        // 聚焦到输入框
+        const messageInput = document.getElementById('messageInput');
+        if (messageInput) {
+            messageInput.focus();
+        }
+        showSuccess('已清空搜索');
     };
 
-    // 筛选相关方法
-    const toggleCategory = (category) => {
-        if (selectedCategories.value.has(category)) {
-            selectedCategories.value.delete(category);
-        } else {
-            selectedCategories.value.add(category);
+    /**
+     * 切换分类选择
+     * @param {string} category - 分类名称
+     */
+    const handleToggleCategory = (category) => {
+        if (!category || typeof category !== 'string') {
+            showError('分类参数无效');
+            return;
+        }
+
+        try {
+            toggleCategory(category);
+            showSuccess(`已切换分类: ${category}`);
+            console.log(`[分类切换] 切换到: ${category}`);
+        } catch (err) {
+            showError('切换分类失败: ' + (err && err.message ? err.message : '未知错误'));
         }
     };
 
-    const toggleTag = (tagName) => {
-        if (selectedTags.value.has(tagName)) {
-            selectedTags.value.delete(tagName);
-        } else {
-            selectedTags.value.add(tagName);
+    /**
+     * 切换标签选择
+     * @param {string} tag - 标签名称
+     */
+    const handleToggleTag = (tag) => {
+        if (!tag || typeof tag !== 'string') {
+            showError('标签参数无效');
+            return;
+        }
+
+        try {
+            toggleTag(tag);
+            showSuccess(`已切换标签: ${tag}`);
+            console.log(`[标签切换] 切换到: ${tag}`);
+        } catch (err) {
+            showError('切换标签失败: ' + (err && err.message ? err.message : '未知错误'));
         }
     };
 
+    /**
+     * 处理新闻点击
+     * @param {Object} item - 新闻项
+     */
+    const handleNewsClick = (item) => {
+        if (!item) {
+            showError('新闻项无效');
+            return;
+        }
+
+        try {
+            const itemKey = item.link || item.title;
+            addClickedItem(itemKey);
+            
+            setTimeout(() => clickedItems.value.delete(itemKey), 300);
+
+            if (item.link) {
+                window.open(item.link, '_blank', 'noopener,noreferrer');
+                showSuccess('已打开新闻链接');
+            } else {
+                showError('新闻链接无效');
+            }
+        } catch (err) {
+            showError('处理新闻点击失败: ' + (err && err.message ? err.message : '未知错误'));
+        }
+    };
+
+    /**
+     * 打开链接的统一方法
+     * @param {string} link - 链接地址
+     */
+    const openLink = (link) => {
+        if (!link) {
+            showError('链接地址为空');
+            return;
+        }
+        try {
+            if (/^https?:\/\//.test(link)) {
+                window.open(link, '_blank');
+            } else {
+                window.location.href = link;
+            }
+            showSuccess('已打开链接');
+        } catch (err) {
+            showError('打开链接失败: ' + (err && err.message ? err.message : '未知错误'));
+        }
+    };
+
+    /**
+     * 日期导航方法
+     */
+    const goToPreviousDay = () => {
+        try {
+            const newDate = new Date(currentDate.value);
+            newDate.setDate(newDate.getDate() - 1);
+            setCurrentDate(newDate);
+            
+            updateUrlParams(newDate);
+            
+            const selectedYear = newDate.getFullYear();
+            const selectedMonth = newDate.getMonth();
+            setCalendarMonth(new Date(selectedYear, selectedMonth, 1));
+            
+            handleClearSearch();
+            loading.value = true;
+            
+            showSuccess('已切换到前一天');
+        } catch (err) {
+            showError('切换日期失败: ' + (err && err.message ? err.message : '未知错误'));
+        }
+    };
+
+    const goToNextDay = () => {
+        try {
+            const newDate = new Date(currentDate.value);
+            newDate.setDate(newDate.getDate() + 1);
+            
+            const todayStr = formatDate(today.value);
+            const newDateStr = formatDate(newDate);
+            
+            if (newDateStr > todayStr) {
+                showError('无法查看未来日期的新闻');
+                return;
+            }
+            
+            setCurrentDate(newDate);
+            updateUrlParams(newDate);
+            
+            const selectedYear = newDate.getFullYear();
+            const selectedMonth = newDate.getMonth();
+            setCalendarMonth(new Date(selectedYear, selectedMonth, 1));
+            
+            handleClearSearch();
+            loading.value = true;
+            
+            showSuccess('已切换到后一天');
+        } catch (err) {
+            showError('切换日期失败: ' + (err && err.message ? err.message : '未知错误'));
+        }
+    };
+
+    const goToToday = () => {
+        try {
+            setCurrentDate(new Date(today.value));
+            updateUrlParams(today.value);
+            
+            const selectedYear = today.value.getFullYear();
+            const selectedMonth = today.value.getMonth();
+            setCalendarMonth(new Date(selectedYear, selectedMonth, 1));
+            
+            handleClearSearch();
+            loading.value = true;
+            
+            showSuccess('已切换到今天');
+        } catch (err) {
+            showError('切换日期失败: ' + (err && err.message ? err.message : '未知错误'));
+        }
+    };
+
+    /**
+     * 日历导航方法
+     */
+    const previousMonth = () => {
+        try {
+            const newMonth = new Date(calendarMonth.value);
+            newMonth.setMonth(newMonth.getMonth() - 1);
+            setCalendarMonth(newMonth);
+            showSuccess('已切换到上个月');
+        } catch (err) {
+            showError('切换月份失败: ' + (err && err.message ? err.message : '未知错误'));
+        }
+    };
+
+    const nextMonth = () => {
+        try {
+            const currentYear = today.value.getFullYear();
+            const currentMonth = today.value.getMonth();
+            const calendarYear = calendarMonth.value.getFullYear();
+            const calendarMonthNum = calendarMonth.value.getMonth();
+            const isCurrentMonth = currentYear === calendarYear && currentMonth === calendarMonthNum;
+            
+            if (isCurrentMonth) {
+                showError('已经是当前月份');
+                return;
+            }
+            
+            const newMonth = new Date(calendarMonth.value);
+            newMonth.setMonth(newMonth.getMonth() + 1);
+            setCalendarMonth(newMonth);
+            showSuccess('已切换到下个月');
+        } catch (err) {
+            showError('切换月份失败: ' + (err && err.message ? err.message : '未知错误'));
+        }
+    };
+
+    const selectDate = (date) => {
+        try {
+            const dateStr = formatDate(date);
+            const todayStr = formatDate(today.value);
+        
+            if (dateStr > todayStr) {
+                showError('无法查看未来日期的新闻');
+                return;
+            }
+            
+            const currentDateStr = formatDate(currentDate.value);
+            if (dateStr === currentDateStr) {
+                return;
+            }
+            
+            setCurrentDate(new Date(date));
+            updateUrlParams(date);
+            
+            handleClearSearch();
+            loading.value = true;
+            clearError();
+            
+            const selectedYear = date.getFullYear();
+            const selectedMonth = date.getMonth();
+            const calendarYear = calendarMonth.value.getFullYear();
+            const calendarMonthNum = calendarMonth.value.getMonth();
+            
+            if (selectedYear !== calendarYear || selectedMonth !== calendarMonthNum) {
+                setCalendarMonth(new Date(selectedYear, selectedMonth, 1));
+            }
+            
+            showSuccess(`已切换到 ${dateStr}`);
+        } catch (err) {
+            showError('选择日期失败: ' + (err && err.message ? err.message : '未知错误'));
+        }
+    };
+
+    /**
+     * 切换侧边栏
+     */
+    const handleToggleSidebar = () => {
+        try {
+            toggleSidebar();
+            showSuccess(sidebarCollapsed.value ? '已展开侧边栏' : '已收缩侧边栏');
+            
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 300);
+        } catch (err) {
+            showError('切换侧边栏失败: ' + (err && err.message ? err.message : '未知错误'));
+        }
+    };
+
+    /**
+     * 加载新闻数据
+     * @param {Date} date - 日期对象
+     */
+    const handleLoadNewsData = async (date) => {
+        try {
+            await loadNewsData(date);
+            showSuccess('新闻数据加载完成');
+        } catch (err) {
+            showError('加载新闻数据失败: ' + (err && err.message ? err.message : '未知错误'));
+        }
+    };
+
+    /**
+     * 更新URL参数
+     * @param {Date} date - 日期对象
+     */
+    const updateUrlParams = (date) => {
+        try {
+            const dateStr = formatDate(date);
+            const url = new URL(window.location);
+            url.searchParams.set('date', dateStr);
+            window.history.pushState({}, '', url);
+        } catch (err) {
+            console.error('更新URL参数失败:', err);
+        }
+    };
+
+    /**
+     * 获取分类标签
+     * @param {Object} item - 新闻项
+     * @returns {Array} 分类标签数组
+     */
+    const getCategoryTag = (item) => {
+        const tags = [];
+        if (item.category) {
+            tags.push(item.category);
+        }
+        if (item.tags && Array.isArray(item.tags)) {
+            tags.push(...item.tags);
+        }
+        return tags;
+    };
+
+    /**
+     * 获取时间差
+     * @param {string} isoDate - ISO日期字符串
+     * @returns {string} 时间差描述
+     */
+    const getTimeAgo = (isoDate) => {
+        if (!isoDate) return '未知时间';
+        
+        try {
+            const date = new Date(isoDate);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            
+            if (diffMins < 1) return '刚刚';
+            if (diffMins < 60) return `${diffMins}分钟前`;
+            if (diffHours < 24) return `${diffHours}小时前`;
+            if (diffDays < 7) return `${diffDays}天前`;
+            
+            return date.toLocaleDateString('zh-CN');
+        } catch (err) {
+            return '未知时间';
+        }
+    };
+
+    /**
+     * 提取新闻摘要
+     * @param {Object} item - 新闻项
+     * @returns {string} 新闻摘要
+     */
+    const extractExcerpt = (item) => {
+        if (item.content) {
+            return item.content.length > 100 ? 
+                item.content.substring(0, 100) + '...' : 
+                item.content;
+        }
+        if (item.description) {
+            return item.description.length > 100 ? 
+                item.description.substring(0, 100) + '...' : 
+                item.description;
+        }
+        return item.title || '暂无摘要';
+    };
+
+    /**
+     * 检查是否应该显示分类
+     * @param {string} categoryKey - 分类键
+     * @returns {boolean} 是否显示
+     */
     const shouldShowCategory = (categoryKey) => {
         return selectedCategories.value.size === 0 || selectedCategories.value.has(categoryKey);
     };
 
-    const shouldShowTag = (tagName) => {
-        return selectedTags.value.size === 0 || selectedTags.value.has(tagName);
-    };
-
-    const isHighlighted = (item) => {
-        return searchQuery.value && utils.isSearchMatch(item, searchQuery.value);
-    };
-
-    // 新闻点击处理
-    const handleNewsClick = (item) => {
-        const itemKey = item.link || item.title;
-        clickedItems.value.add(itemKey);
+            return {
+        // 错误处理
+        showError,
+        showSuccess,
         
-        setTimeout(() => clickedItems.value.delete(itemKey), 300);
-
-        if (item.link) {
-            window.open(item.link, '_blank', 'noopener,noreferrer');
-        }
-    };
-
-    // 错误处理
-    const showErrorMessage = (message) => {
-        error.value = message;
-        errorMessage.value = message;
-        setTimeout(() => {
-            error.value = null;
-            errorMessage.value = '';
-        }, 5000);
-    };
-
-    // 日期导航方法
-    const goToPreviousDay = () => {
-        const newDate = new Date(currentDate.value);
-        newDate.setDate(newDate.getDate() - 1);
-        currentDate.value = newDate;
-        
-        utils.updateUrlParams(newDate);
-        
-        const selectedYear = newDate.getFullYear();
-        const selectedMonth = newDate.getMonth();
-        calendarMonth.value = new Date(selectedYear, selectedMonth, 1);
-        
-        searchQuery.value = '';
-        selectedCategories.value.clear();
-        selectedTags.value.clear();
-        
-        loading.value = true;
-    };
-
-    const goToNextDay = () => {
-        const newDate = new Date(currentDate.value);
-        newDate.setDate(newDate.getDate() + 1);
-        currentDate.value = newDate;
-        
-        utils.updateUrlParams(newDate);
-        
-        const selectedYear = newDate.getFullYear();
-        const selectedMonth = newDate.getMonth();
-        calendarMonth.value = new Date(selectedYear, selectedMonth, 1);
-        
-        searchQuery.value = '';
-        selectedCategories.value.clear();
-        selectedTags.value.clear();
-        
-        loading.value = true;
-    };
-
-    const goToToday = () => {
-        currentDate.value = new Date(today);
-        
-        utils.updateUrlParams(today);
-        
-        const selectedYear = today.getFullYear();
-        const selectedMonth = today.getMonth();
-        calendarMonth.value = new Date(selectedYear, selectedMonth, 1);
-        
-        searchQuery.value = '';
-        selectedCategories.value.clear();
-        selectedTags.value.clear();
-        
-        loading.value = true;
-    };
-
-    // 侧边栏收缩切换
-    const toggleSidebar = () => {
-        sidebarCollapsed.value = !sidebarCollapsed.value;
-        
-        utils.safeSetItem('sidebarCollapsed', sidebarCollapsed.value.toString());
-        
-        setTimeout(() => {
-            window.dispatchEvent(new Event('resize'));
-        }, 300);
-    };
-
-    // 日历导航方法
-    const previousMonth = utils.debounce(() => {
-        const newMonth = new Date(calendarMonth.value);
-        newMonth.setMonth(newMonth.getMonth() - 1);
-        calendarMonth.value = newMonth;
-    }, 100);
-
-    const nextMonth = utils.debounce(() => {
-        const currentYear = today.getFullYear();
-        const currentMonth = today.getMonth();
-        const calendarYear = calendarMonth.value.getFullYear();
-        const calendarMonthNum = calendarMonth.value.getMonth();
-        const isCurrentMonth = currentYear === calendarYear && currentMonth === calendarMonthNum;
-        
-        if (isCurrentMonth) return;
-        
-        const newMonth = new Date(calendarMonth.value);
-        newMonth.setMonth(newMonth.getMonth() + 1);
-        calendarMonth.value = newMonth;
-    }, 100);
-
-    const selectDate = (date) => {
-        const dateStr = formatDate(date);
-        const todayStr = formatDate(today);
-    
-        if (dateStr > todayStr) {
-            showErrorMessage('无法查看未来日期的新闻');
-            return;
-        }
-        
-        const currentDateStr = formatDate(currentDate.value);
-        if (dateStr === currentDateStr) {
-            return;
-        }
-        
-        currentDate.value = new Date(date);
-        
-        utils.updateUrlParams(date);
-        
-        searchQuery.value = '';
-        selectedCategories.value.clear();
-        selectedTags.value.clear();
-        
-        loading.value = true;
-        error.value = null;
-        
-        const selectedYear = date.getFullYear();
-        const selectedMonth = date.getMonth();
-        const calendarYear = calendarMonth.value.getFullYear();
-        const calendarMonthNum = calendarMonth.value.getMonth();
-        
-        if (selectedYear !== calendarYear || selectedMonth !== calendarMonthNum) {
-            calendarMonth.value = new Date(selectedYear, selectedMonth, 1);
-        }
-        
-        const dayElement = document.querySelector(`[data-date="${dateStr}"]`);
-        if (dayElement) {
-            dayElement.classList.add('clicked');
-            setTimeout(() => {
-                dayElement.classList.remove('clicked');
-            }, 300);
-        }
-        
-        nextTick(() => {
-            // 重新计算日历天数以更新新闻指示器
-        });
-    };
-
-    return {
-        handleSearch,
+        // 搜索相关
         handleSearchInput,
         handleSearchKeydown,
-        clearSearch,
-        toggleCategory,
-        toggleTag,
-        shouldShowCategory,
-        shouldShowTag,
-        isHighlighted,
+        handleClearSearch,
+        
+        // 分类和标签
+        handleToggleCategory,
+        handleToggleTag,
+        
+        // 新闻操作
         handleNewsClick,
-        showErrorMessage,
+        openLink,
+        
+        // 日期导航
         goToPreviousDay,
         goToNextDay,
         goToToday,
-        toggleSidebar,
+        
+        // 日历导航
         previousMonth,
         nextMonth,
-        selectDate
+        selectDate,
+        
+        // 界面操作
+        handleToggleSidebar,
+        
+        // 数据操作
+        handleLoadNewsData,
+        updateUrlParams,
+        
+        // 辅助方法
+        getCategoryTag,
+        getTimeAgo,
+        extractExcerpt,
+        shouldShowCategory
     };
 }; 
