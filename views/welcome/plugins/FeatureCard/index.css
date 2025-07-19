@@ -7,7 +7,7 @@
 
 .feature-cards-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(400px, 1fr)); /* 三列布局，最小宽度400px */
+    grid-template-columns: repeat(3, minmax(420px, 1fr)); /* 三列布局，最小宽度420px */
     gap: var(--spacing-xl);
 }
 
@@ -507,28 +507,28 @@
 /* 响应式布局 */
 @media (min-width: 1400px) {
     .feature-cards-grid {
-        grid-template-columns: repeat(3, minmax(400px, 1fr)); /* 大屏幕三列，最小400px */
+        grid-template-columns: repeat(3, minmax(420px, 1fr)); /* 大屏幕三列，最小420px */
         gap: var(--spacing-xl);
     }
 }
 
 @media (max-width: 1399px) and (min-width: 1201px) {
     .feature-cards-grid {
-        grid-template-columns: repeat(3, minmax(400px, 1fr)); /* 中大屏幕三列，最小400px */
+        grid-template-columns: repeat(3, minmax(420px, 1fr)); /* 中大屏幕三列，最小420px */
         gap: var(--spacing-lg);
     }
 }
 
 @media (max-width: 1200px) {
     .feature-cards-grid {
-        grid-template-columns: repeat(2, minmax(400px, 1fr)); /* 中等屏幕两列，最小400px */
+        grid-template-columns: repeat(2, minmax(420px, 1fr)); /* 中等屏幕两列，最小420px */
         gap: var(--spacing-lg);
     }
 }
 
 @media (max-width: 1024px) {
     .feature-cards-grid {
-        grid-template-columns: repeat(2, minmax(400px, 1fr)); /* 小屏幕两列，最小400px */
+        grid-template-columns: repeat(2, minmax(420px, 1fr)); /* 小屏幕两列，最小420px */
         gap: var(--spacing-md);
     }
 }

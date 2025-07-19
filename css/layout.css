@@ -7,7 +7,6 @@
 /* ========== 响应式容器 ========== */
 .container {
     width: 100%;
-    max-width: var(--max-width-7xl);
     margin: 0 auto;
     padding: var(--spacing-2xl);
     box-sizing: border-box;
