@@ -4,7 +4,7 @@
 // 自动加载相关的CSS文件
 (function loadCSS() {
     const cssFiles = [
-        '/plugins/SearchHeader/index.css'
+        '/plugins/searchHeader/index.css'
     ];
     
     cssFiles.forEach(cssFile => {
@@ -22,7 +22,7 @@
 // 异步加载HTML模板
 async function loadTemplate() {
     try {
-        const response = await fetch('/plugins/SearchHeader/index.html');
+        const response = await fetch('/plugins/searchHeader/index.html');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
