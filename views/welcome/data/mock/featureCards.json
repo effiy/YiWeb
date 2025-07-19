@@ -23,7 +23,7 @@
       }
     ],
     "stats": [
-      {"number": "100+", "label": "工作流程"},
+      {"number": "100+", "label": "工作流程", "link": "https://n8n.effiy.cn"},
       {"number": "∞", "label": "生活场景"},
       {"number": "99.9%", "label": "学习效率"}
     ],
