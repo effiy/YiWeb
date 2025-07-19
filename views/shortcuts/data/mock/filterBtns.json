@@ -1,0 +1,44 @@
+[
+  {
+    "id": "movement",
+    "name": "移动",
+    "icon": "fas fa-arrows-alt",
+    "active": true
+  },
+  {
+    "id": "edit",
+    "name": "编辑",
+    "icon": "fas fa-edit",
+    "active": false
+  },
+  {
+    "id": "search",
+    "name": "搜索",
+    "icon": "fas fa-search",
+    "active": false
+  },
+  {
+    "id": "visual",
+    "name": "可视",
+    "icon": "fas fa-highlighter",
+    "active": false
+  },
+  {
+    "id": "window",
+    "name": "窗口",
+    "icon": "fas fa-window-maximize",
+    "active": false
+  },
+  {
+    "id": "file",
+    "name": "文件",
+    "icon": "fas fa-file-alt",
+    "active": false
+  },
+  {
+    "id": "advanced",
+    "name": "高级",
+    "icon": "fas fa-magic",
+    "active": false
+  }
+]
