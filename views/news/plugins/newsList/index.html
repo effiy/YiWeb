@@ -21,15 +21,15 @@
     </div>
 
     <!-- 搜索结果显示 -->
-    <div v-else-if="searchQuery && filteredNewsData.length > 0" class="search-results">
+    <div v-else-if="searchQuery && searchResults.length > 0" class="search-results">
         <header class="search-results-header">
-            <span class="search-results-count">找到 {{ filteredNewsData.length }} 条相关新闻</span>
+            <span class="search-results-count">找到 {{ searchResults.length }} 条相关新闻</span>
             <span class="search-query">"{{ searchQuery }}"</span>
         </header>
         
         <div class="news-grid" role="list">
             <article 
-                v-for="item in filteredNewsData" 
+                v-for="item in searchResults" 
                 :key="item.link || item.title"
                 @click="handleNewsClick(item)"
                 :class="['news-item', { 
@@ -76,7 +76,7 @@
     </div>
 
     <!-- 空搜索结果 -->
-    <div v-else-if="searchQuery && filteredNewsData.length === 0" class="empty-state" role="status">
+    <div v-else-if="searchQuery && searchResults.length === 0" class="empty-state" role="status">
         <div class="empty-icon" aria-hidden="true">
             <i class="fas fa-search"></i>
         </div>

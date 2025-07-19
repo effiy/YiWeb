@@ -61,7 +61,7 @@ export const createStore = () => {
             }
             
             // 支持本地mock和远程接口切换
-            const data = await getData(`/views/news/data/mock/news-${dateStr}.json`);
+            const data = await getData(`https://api.effiy.cn/mongodb/?cname=rss&isoDate=${dateStr},${dateStr}`);
             if (Array.isArray(data)) {
                 newsData.value = data;
                 updateTagStatistics(data);
