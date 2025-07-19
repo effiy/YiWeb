@@ -7,7 +7,7 @@
  * @returns {Object} 方法集合
  */
 export const useMethods = (store) => {
-    const { shortcuts, filterBtns, currentCategory, loading, error } = store;
+    const { shortcuts, filterBtns, currentCategory, loading, error, searchKeyword } = store;
 
     /**
      * 显示错误信息（可扩展为UI弹窗/Toast）
@@ -152,6 +152,51 @@ export const useMethods = (store) => {
         }
     };
 
+    /**
+     * 处理搜索输入
+     * @param {Event} event - 输入事件
+     */
+    const handleSearchInput = (event) => {
+        const value = event.target.value;
+        store.setSearchKeyword(value);
+        
+        // 记录搜索行为
+        if (value.trim()) {
+            console.log(`[搜索] 关键词: ${value}`);
+        }
+    };
+
+    /**
+     * 清空搜索
+     */
+    const clearSearch = () => {
+        store.setSearchKeyword('');
+        // 聚焦到输入框
+        const messageInput = document.getElementById('messageInput');
+        if (messageInput) {
+            messageInput.focus();
+        }
+        showSuccess('已清空搜索');
+    };
+
+    /**
+     * 处理搜索框键盘事件
+     * @param {KeyboardEvent} event - 键盘事件
+     */
+    const handleSearchKeydown = (event) => {
+        // ESC键清空搜索
+        if (event.key === 'Escape') {
+            clearSearch();
+            event.preventDefault();
+        }
+        
+        // Enter键执行搜索（可选，当前是实时搜索）
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            // 可以在这里添加额外的搜索逻辑
+        }
+    };
+
     return {
         showError,
         showSuccess,
@@ -159,6 +204,9 @@ export const useMethods = (store) => {
         openLink,
         copyShortcut,
         searchShortcuts,
-        refreshData
+        refreshData,
+        handleSearchInput,
+        clearSearch,
+        handleSearchKeydown
     };
 }; 

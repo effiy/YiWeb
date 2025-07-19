@@ -39,7 +39,19 @@
                             aria-label="消息输入框"
                             aria-describedby="category-filters"
                             autocomplete="off"
-                            spellcheck="false"></textarea>
+                            spellcheck="false"
+                            :value="searchKeyword"
+                            @input="handleSearchInput"
+                            @keydown="handleSearchKeydown"></textarea>
+                        <!-- 搜索状态指示器 -->
+                        <div v-if="hasSearchKeyword" class="search-indicator">
+                            <button 
+                                class="clear-search-btn" 
+                                @click="clearSearch"
+                                aria-label="清空搜索">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
                     </div>
                 </form>
                 <nav class="category-filters" id="category-filters" role="toolbar" aria-label="功能分类过滤器">
@@ -70,6 +82,24 @@
                 <!-- 错误状态 -->
                 <div v-if="error" class="error-message">
                     {{ error }}
+                </div>
+                
+                <!-- 搜索结果显示 -->
+                <div v-if="hasSearchKeyword && !loading && !error" class="search-results">
+                    <div class="search-results-header">
+                        <div class="results-info">
+                            <i class="fas fa-search"></i>
+                            <span>搜索结果</span>
+                        </div>
+                        <div class="search-query">{{ searchKeyword }}</div>
+                        <div class="search-results-count">
+                            找到 {{ filteredShortcuts.length }} 个分类
+                        </div>
+                        <button class="clear-search" @click="clearSearch">
+                            <i class="fas fa-times"></i>
+                            清空搜索
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- 快捷键网格 -->

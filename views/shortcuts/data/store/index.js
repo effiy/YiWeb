@@ -20,6 +20,8 @@ export const createStore = () => {
     const filterBtns = vueRef([]);
     // 当前选中的分类
     const currentCategory = vueRef('all');
+    // 搜索关键词
+    const searchKeyword = vueRef('');
     // 加载状态
     const loading = vueRef(false);
     // 错误信息
@@ -76,6 +78,16 @@ export const createStore = () => {
         }
     };
 
+    /**
+     * 设置搜索关键词
+     * @param {string} keyword - 搜索关键词
+     */
+    const setSearchKeyword = (keyword) => {
+        if (typeof keyword === 'string') {
+            searchKeyword.value = keyword.trim();
+        }
+    };
+
     // 自动初始化加载
     loadShortcuts();
     loadFilterBtns();
@@ -85,10 +97,12 @@ export const createStore = () => {
         shortcuts,           // 快捷键数据
         filterBtns,         // 过滤器按钮数据
         currentCategory,    // 当前选中的分类
+        searchKeyword,      // 搜索关键词
         loading,            // 加载状态
         error,              // 错误信息
         loadShortcuts,      // 手动刷新快捷键数据方法
         loadFilterBtns,     // 手动刷新过滤器数据方法
-        setCurrentCategory  // 切换分类方法
+        setCurrentCategory, // 切换分类方法
+        setSearchKeyword    // 设置搜索关键词方法
     };
 }; 

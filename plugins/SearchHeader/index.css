@@ -95,6 +95,7 @@
   box-shadow: none;
   margin: 0;
   transition: none;
+  position: relative;
 }
 .search-input-wrapper:focus-within {
   border: none;
@@ -130,6 +131,51 @@
 }
 .search-input-wrapper:focus-within #messageInput::placeholder {
   opacity: 0.5;
+}
+
+/* 搜索指示器 */
+.search-indicator {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* 清空搜索按钮 */
+.clear-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-smooth);
+  pointer-events: auto;
+  font-size: 0.75rem;
+}
+
+.clear-search-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+.clear-search-btn:active {
+  transform: scale(0.95);
+}
+
+.clear-search-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.3);
 }
 
 /* 搜索建议下拉 */

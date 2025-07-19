@@ -8,22 +8,44 @@
  */
 export const useComputed = (store) => {
     const { computed } = Vue;
-    const { shortcuts, filterBtns, currentCategory } = store;
+    const { shortcuts, filterBtns, currentCategory, searchKeyword } = store;
 
     return {
         /**
-         * 根据当前分类过滤的快捷键数据
+         * 根据当前分类和搜索关键词过滤的快捷键数据
          */
         filteredShortcuts: computed(() => {
-            if (!shortcuts.value || !currentCategory.value) return [];
+            if (!shortcuts.value) return [];
             
-            // 如果选择"全部"，显示所有分类的快捷键
-            if (currentCategory.value === 'all') {
-                return shortcuts.value;
+            let filteredData = shortcuts.value;
+            
+            // 1. 先按分类过滤
+            if (currentCategory.value && currentCategory.value !== 'all') {
+                filteredData = filteredData.filter(item => item.category === currentCategory.value);
             }
             
-            // 否则按原逻辑过滤特定分类
-            return shortcuts.value.filter(item => item.category === currentCategory.value);
+            // 2. 再按搜索关键词过滤
+            if (searchKeyword.value && searchKeyword.value.trim()) {
+                const keyword = searchKeyword.value.toLowerCase().trim();
+                filteredData = filteredData.filter(category => {
+                    // 搜索分类名称
+                    if (category.name && category.name.toLowerCase().includes(keyword)) {
+                        return true;
+                    }
+                    
+                    // 搜索快捷键描述
+                    if (category.shortcuts && Array.isArray(category.shortcuts)) {
+                        return category.shortcuts.some(shortcut => 
+                            (shortcut.desc && shortcut.desc.toLowerCase().includes(keyword)) ||
+                            (shortcut.key && shortcut.key.toLowerCase().includes(keyword))
+                        );
+                    }
+                    
+                    return false;
+                });
+            }
+            
+            return filteredData;
         }),
 
         /**
@@ -53,6 +75,13 @@ export const useComputed = (store) => {
          */
         currentCategoryCount: computed(() => {
             return filteredShortcuts.value.length;
+        }),
+
+        /**
+         * 是否有搜索关键词
+         */
+        hasSearchKeyword: computed(() => {
+            return searchKeyword.value && searchKeyword.value.trim().length > 0;
         })
     };
 }; 
