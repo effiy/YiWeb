@@ -135,24 +135,6 @@ export const useMethods = (store) => {
     };
 
     /**
-     * 刷新数据
-     */
-    const refreshData = async () => {
-        try {
-            loading.value = true;
-            await Promise.all([
-                store.loadShortcuts(),
-                store.loadFilterBtns()
-            ]);
-            showSuccess('数据刷新成功');
-        } catch (err) {
-            showError('数据刷新失败: ' + (err && err.message ? err.message : '未知错误'));
-        } finally {
-            loading.value = false;
-        }
-    };
-
-    /**
      * 处理搜索输入
      * @param {Event} event - 输入事件
      */
@@ -204,7 +186,6 @@ export const useMethods = (store) => {
         openLink,
         copyShortcut,
         searchShortcuts,
-        refreshData,
         handleSearchInput,
         clearSearch,
         handleSearchKeydown
