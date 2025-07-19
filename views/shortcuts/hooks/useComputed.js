@@ -16,6 +16,13 @@ export const useComputed = (store) => {
          */
         filteredShortcuts: computed(() => {
             if (!shortcuts.value || !currentCategory.value) return [];
+            
+            // 如果选择"全部"，显示所有分类的快捷键
+            if (currentCategory.value === 'all') {
+                return shortcuts.value;
+            }
+            
+            // 否则按原逻辑过滤特定分类
             return shortcuts.value.filter(item => item.category === currentCategory.value);
         }),
 

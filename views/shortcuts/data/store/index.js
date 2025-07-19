@@ -19,7 +19,7 @@ export const createStore = () => {
     // 过滤器按钮数据
     const filterBtns = vueRef([]);
     // 当前选中的分类
-    const currentCategory = vueRef('movement');
+    const currentCategory = vueRef('all');
     // 加载状态
     const loading = vueRef(false);
     // 错误信息

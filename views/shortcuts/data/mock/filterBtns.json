@@ -1,9 +1,15 @@
 [
   {
+    "id": "all",
+    "name": "全部",
+    "icon": "fas fa-th-large",
+    "active": true
+  },
+  {
     "id": "movement",
     "name": "移动",
     "icon": "fas fa-arrows-alt",
-    "active": true
+    "active": false
   },
   {
     "id": "edit",
