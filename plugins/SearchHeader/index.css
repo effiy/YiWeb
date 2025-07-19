@@ -339,21 +339,6 @@
   border: none;
 }
 
-/* 响应式优化 */
-@media (max-width: 1200px) {
-  .filter-btn {
-    padding: var(--spacing-1) var(--spacing-3);
-    font-size: var(--font-size-xs);
-  }
-}
-@media (max-width: 768px) {
-  .filter-btn {
-    padding: var(--spacing-2) var(--spacing-3);
-    font-size: var(--font-size-sm);
-    gap: var(--spacing-xs);
-  }
-}
-
 /* 暗色模式适配 */
 @media (prefers-color-scheme: dark) {
   .filter-btn {
