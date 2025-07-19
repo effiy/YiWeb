@@ -75,7 +75,7 @@
                                     <button 
                                         class="card-badge" 
                                         type="button" 
-                                        @click="card.link && window.open(card.link, '_blank')" 
+                                        @click="openLink(card.link)" 
                                         :disabled="!card.link"
                                     >{{ card.badge }}</button>
                                 </header>
@@ -94,7 +94,7 @@
                                             class="stat-item" 
                                             v-for="(stat, sidx) in card.stats" 
                                             :key="sidx"
-                                            @click="stat.link ? window.open(stat.link, '_blank') : null"
+                                            @click="openLink(stat.link)"
                                             :style="stat.link ? 'cursor:pointer;' : ''"
                                         >
                                             <span class="stat-number">{{ stat.number }}</span>

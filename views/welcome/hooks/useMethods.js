@@ -117,6 +117,26 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 打开链接的统一方法
+     * @param {string} link - 链接地址
+     */
+    const openLink = (link) => {
+        if (!link) {
+            showError('链接地址为空');
+            return;
+        }
+        try {
+            if (/^https?:\/\//.test(link)) {
+                window.open(link, '_blank');
+            } else {
+                window.location.href = link;
+            }
+        } catch (err) {
+            showError('打开链接失败: ' + (err && err.message ? err.message : '未知错误'));
+        }
+    };
+
+    /**
      * 获取功能卡片统计信息
      * @returns {Object} 统计信息对象
      */
@@ -152,6 +172,7 @@ export const useMethods = (store) => {
         findCardByTitle,
         findCardsByStyle,
         navigateToCard,
+        openLink,
         getCardsStatistics
     };
 };
