@@ -71,14 +71,6 @@
                         @next-month="nextMonth"
                         @select-date="selectDate"
                     ></calendar>
-                    
-                    <tag-statistics
-                        :tag-statistics="tagStatistics"
-                        :selected-tags="selectedTags"
-                        :has-news-data="hasNewsData"
-                        :sidebar-collapsed="sidebarCollapsed"
-                        @toggle-tag="handleToggleTag"
-                    ></tag-statistics>
                 </aside>
             </section>
         </main>
@@ -98,9 +90,9 @@
     <!-- 主功能脚本 -->
     <script type="module" src="/plugins/searchHeader/index.js"></script>
     <script type="module" src="/plugins/calendar/index.js"></script>
-    <script type="module" src="/views/news/index.js" defer></script>
     <script type="module" src="/views/news/plugins/newsList/index.js"></script>
     <script type="module" src="/views/news/plugins/tagStatistics/index.js"></script>
+    <script type="module" src="/views/news/index.js"></script>
     <!-- 性能监控脚本 -->
     <script type="module" src="/utils/performance.js"></script>
 </body>
