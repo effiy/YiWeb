@@ -3,11 +3,11 @@
  * 提供与shortcuts相关的常用操作方法
  * author: liangliang
  * 
- * @param {Object} store - 状态存储对象（包含shortcuts, filterBtns, currentCategory, loading, error等）
+ * @param {Object} store - 状态存储对象
  * @returns {Object} 方法集合
  */
 export const useMethods = (store) => {
-    const { shortcuts, filterBtns, currentCategory, loading, error, searchKeyword } = store;
+    const { shortcuts, filterBtns } = store;
 
     /**
      * 显示错误信息（可扩展为UI弹窗/Toast）
@@ -161,24 +161,6 @@ export const useMethods = (store) => {
         showSuccess('已清空搜索');
     };
 
-    /**
-     * 处理搜索框键盘事件
-     * @param {KeyboardEvent} event - 键盘事件
-     */
-    const handleSearchKeydown = (event) => {
-        // ESC键清空搜索
-        if (event.key === 'Escape') {
-            clearSearch();
-            event.preventDefault();
-        }
-        
-        // Enter键执行搜索（可选，当前是实时搜索）
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            // 可以在这里添加额外的搜索逻辑
-        }
-    };
-
     return {
         showError,
         showSuccess,
@@ -187,7 +169,6 @@ export const useMethods = (store) => {
         copyShortcut,
         searchShortcuts,
         handleSearchInput,
-        clearSearch,
-        handleSearchKeydown
+        clearSearch
     };
 }; 
