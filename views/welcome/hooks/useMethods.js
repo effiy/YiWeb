@@ -205,7 +205,8 @@ export const useMethods = (store) => {
             // 发送消息请求到API
             const response = await createData(`${window.API_URL}/prompt`, {
                 fromSystem: store.fromSystem.value,
-                fromUser: message
+                fromUser: message,
+                model: 'qwen3:latest'
             });
             
             console.log('[API响应] 收到服务器响应:', response);
