@@ -1,4 +1,4 @@
-const ENV = 'local';
+const ENV = 'prod';
 
 window.DATA_URL = {
     local: 'http://localhost:9000',

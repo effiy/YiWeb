@@ -66,37 +66,7 @@ export function parseUrlParams(url) {
   }
 }
 
-/**
- * 重试机制
- * @param {Function} fn - 要重试的函数
- * @param {number} maxRetries - 最大重试次数
- * @param {number} delay - 重试延迟（毫秒）
- * @returns {Promise} - 重试结果
- */
-export async function retry(fn, maxRetries = 3, delay = 1000) {
-  let lastError;
-  
-  for (let i = 0; i <= maxRetries; i++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-      
-      if (i === maxRetries) {
-        console.error(`重试 ${maxRetries} 次后仍然失败：`, error);
-        throw error;
-      }
-      
-      console.log(`第 ${i + 1} 次重试，延迟 ${delay}ms`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      
-      // 指数退避
-      delay *= 2;
-    }
-  }
-  
-  throw lastError;
-}
+
 
 /**
  * 防抖函数

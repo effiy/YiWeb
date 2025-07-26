@@ -144,37 +144,7 @@ createApp({
             }
         },
         
-        /**
-         * 测试重试请求
-         */
-        async testRetryRequest() {
-            try {
-                let attemptCount = 0;
-                
-                const result = await withApiLoading(async () => {
-                    attemptCount++;
-                    
-                    // 模拟前两次失败，第三次成功
-                    if (attemptCount < 3) {
-                        throw new Error(`模拟失败，第${attemptCount}次尝试`);
-                    }
-                    
-                    await this.delay(1000);
-                    return { success: true, attempts: attemptCount };
-                }, {
-                    message: '正在重试请求...',
-                    timeout: 30000,
-                    showProgress: true,
-                    showCancel: true,
-                    retries: 3,
-                    details: '模拟网络不稳定情况下的重试机制'
-                });
-                
-                this.showSuccess('重试请求测试成功！', result);
-            } catch (error) {
-                this.showError('重试请求测试失败', error.message);
-            }
-        },
+
         
         /**
          * 测试API接口

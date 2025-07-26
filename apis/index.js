@@ -11,7 +11,7 @@ export * from '/apis/modules/crud.js';
 
 // 导出常用组合函数
 import { getData, createData, updateData, patchData, deleteData, batchOperations, CacheManager } from '/apis/modules/crud.js';
-import { buildUrl, retry, debounce, throttle, isOnline } from '/apis/helper/apiUtils.js';
+import { buildUrl, debounce, throttle, isOnline } from '/apis/helper/apiUtils.js';
 
 /**
  * 简化的 API 客户端
@@ -32,7 +32,7 @@ export const apiClient = {
   
   // 工具函数
   buildUrl,
-  retry,
+
   debounce,
   throttle,
   isOnline

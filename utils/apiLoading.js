@@ -12,7 +12,7 @@ class ApiLoadingManager {
         this.loadingStates = new Map(); // 存储各个请求的加载状态
         this.globalLoading = false;
         this.defaultTimeout = 30000; // 30秒默认超时
-        this.retryAttempts = 3; // 默认重试次数
+
         this.init();
     }
 
@@ -273,7 +273,6 @@ class ApiLoadingManager {
             timeout = this.defaultTimeout,
             showProgress = true,
             // showCancel = true, // 取消相关已移除
-            retries = this.retryAttempts,
             autoProgress = true // 自动进度更新
         } = options;
 
@@ -285,29 +284,19 @@ class ApiLoadingManager {
                 this.startAutoProgress(requestId);
             }
             
-            let lastAttempt = 0;
-            while (lastAttempt <= retries) {
-                try {
-                    const result = await asyncFunction();
-                    
-                    // 完成时设置进度为100%
-                    if (showProgress) {
-                        this.updateProgress(requestId, 100, '处理完成');
-                    }
-                    
-                    this.hide(requestId);
-                    return result;
-                } catch (error) {
-                    lastAttempt++;
-                    
-                    if (lastAttempt > retries) {
-                        this.showError(requestId, `请求失败: ${error.message}`);
-                        throw error;
-                    } else {
-                        this.updateDetails(requestId, `第${lastAttempt}次重试中...`);
-                        await this.delay(1000 * lastAttempt); // 递增延迟
-                    }
+            try {
+                const result = await asyncFunction();
+                
+                // 完成时设置进度为100%
+                if (showProgress) {
+                    this.updateProgress(requestId, 100, '处理完成');
                 }
+                
+                this.hide(requestId);
+                return result;
+            } catch (error) {
+                this.showError(requestId, `请求失败: ${error.message}`);
+                throw error;
             }
         } catch (error) {
             this.hide(requestId);
