@@ -27,6 +27,99 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 复制卡片对象到剪贴板
+     * @param {Object} card - 卡片对象
+     * @param {Event} event - 点击事件对象
+     */
+    const copyCardToClipboard = async (card, event) => {
+        // 阻止事件冒泡
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // 获取按钮元素
+        const button = event.target;
+        
+        try {
+            // 创建要复制的卡片信息对象
+            const cardInfo = {
+                title: card.title,
+                description: card.description,
+                icon: card.icon,
+                badge: card.badge,
+                link: card.link,
+                features: card.features || [],
+                stats: card.stats || [],
+                hint: card.hint,
+                footerIcon: card.footerIcon,
+                timestamp: new Date().toISOString(),
+                source: 'YiWeb功能卡片'
+            };
+            
+            // 转换为格式化的JSON字符串
+            const cardJson = JSON.stringify(cardInfo, null, 2);
+            
+            // 使用现代Clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(cardJson);
+                
+                // 添加复制成功动画
+                button.classList.add('copy-success');
+                setTimeout(() => {
+                    button.classList.remove('copy-success');
+                }, 600);
+                
+                showSuccess(`已复制"${card.title}"卡片信息到剪贴板`);
+                console.log('[剪贴板] 成功复制卡片信息:', cardInfo);
+            } else {
+                // 降级方案：使用传统的document.execCommand
+                const textArea = document.createElement('textarea');
+                textArea.value = cardJson;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (successful) {
+                    // 添加复制成功动画
+                    button.classList.add('copy-success');
+                    setTimeout(() => {
+                        button.classList.remove('copy-success');
+                    }, 600);
+                    
+                    showSuccess(`已复制"${card.title}"卡片信息到剪贴板`);
+                    console.log('[剪贴板] 成功复制卡片信息(降级方案):', cardInfo);
+                } else {
+                    throw new Error('复制失败');
+                }
+            }
+        } catch (error) {
+            console.error('[剪贴板] 复制卡片信息失败:', error);
+            showError('复制失败，请手动复制');
+            
+            // 备用方案：显示卡片信息供用户手动复制
+            const cardInfo = {
+                title: card.title,
+                description: card.description,
+                icon: card.icon,
+                badge: card.badge,
+                link: card.link,
+                features: card.features || [],
+                stats: card.stats || [],
+                hint: card.hint,
+                footerIcon: card.footerIcon
+            };
+            
+            const cardJson = JSON.stringify(cardInfo, null, 2);
+            alert(`卡片信息（请手动复制）：\n\n${cardJson}`);
+        }
+    };
+
+    /**
      * 处理输入法开始事件
      * @param {Event} event - 输入法事件对象
      */
@@ -139,6 +232,7 @@ export const useMethods = (store) => {
 
     return {
         openLink,
+        copyCardToClipboard,
         handleMessageInput,
         handleCompositionStart,
         handleCompositionEnd

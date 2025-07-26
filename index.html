@@ -89,7 +89,6 @@
                 </nav>
             </section>
         </header>
-        
         <main class="main-content" role="main">
             <!-- 功能卡片区域 -->
             <section class="container">
@@ -103,9 +102,9 @@
                                     </span>
                                     <button 
                                         class="card-badge" 
-                                        type="button" 
-                                        @click="openLink(card.link)"
-                                        :disabled="!card.link"
+                                        type="button"
+                                        @click="copyCardToClipboard(card, $event)"
+                                        :title="'复制卡片信息到剪贴板'"
                                     >{{ card.badge }}</button>
                                 </header>
                                 <section class="card-content">
