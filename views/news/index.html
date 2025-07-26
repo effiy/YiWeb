@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI智能助手，为您提供问答、数据分析、代码编写等多种智能服务">
+    <meta name="keywords" content="AI, 智能助手, 数据分析, 代码编写, 生图创造, YiWeb">
+    <meta name="author" content="liangliang">
+    
+    <!-- DNS 预解析优化 -->
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    
+    <title>YiWeb - 智能新闻助手</title>
+    
+    <!-- 页面样式 -->
+    <link rel="stylesheet" href="/views/news/index.css">
+    <!-- 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous">
+
+    <!-- Vue3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部搜索与分类区域 -->
+        <search-header
+            v-model:search-query="searchQuery"
+            :categories="categories"
+            :selected-categories="selectedCategories"
+            :sidebar-collapsed="sidebarCollapsed"
+            @search-keydown="handleSearchKeydown"
+            @clear-search="handleClearSearch"
+            @toggle-category="handleToggleCategory"
+            @toggle-sidebar="handleToggleSidebar"
+        ></search-header>
+        
+        <main class="main-content" role="main">
+            <!-- 功能卡片区域 -->
+            <section class="container">
+                <!-- 新闻列表组件模板 -->
+                <news-list
+                    :loading="loading"
+                    :error="error"
+                    :current-date-display="currentDateDisplay"
+                    :search-query="searchQuery"
+                    :search-results="filteredNewsData"
+                    :display-categories="displayCategories"
+                    :selected-categories="selectedCategories"
+                    :clicked-items="clickedItems"
+                    :has-news-data="hasNewsData"
+                    @load-news-data="handleLoadNewsData"
+                    @news-click="handleNewsClick"
+                ></news-list>
+                <aside class="sidebar-navigation" :class="{ collapsed: sidebarCollapsed }" role="complementary" aria-label="日期导航">
+                    <calendar
+                        :current-date="currentDate"
+                        :current-date-display="currentDateDisplay"
+                        :current-date-subtitle="currentDateSubtitle"
+                        :is-today="isToday"
+                        :is-future-date="isFutureDate"
+                        :sidebar-collapsed="sidebarCollapsed"
+                        :calendar-date="calendarMonth"
+                        :calendar-title="calendarTitle"
+                        :is-current-month="isCurrentMonth"
+                        :calendar-days="calendarDays"
+                        :selected-date="selectedDate"
+                        @go-to-previous-day="goToPreviousDay"
+                        @go-to-next-day="goToNextDay"
+                        @go-to-today="goToToday"
+                        @previous-month="previousMonth"
+                        @next-month="nextMonth"
+                        @select-date="selectDate"
+                    ></calendar>
+                </aside>
+            </section>
+        </main>
+    </div>
+
+    <!-- 加载指示器 -->
+    <section id="loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="加载中">
+        <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+    </section>
+
+    <!-- 错误提示 -->
+    <section id="error-message" class="error-message" role="alert" aria-live="assertive" hidden></section>
+
+    <!-- 通知容器 -->
+    <section id="notifications" class="notifications-container" role="region" aria-label="通知区域"></section>
+
+    <!-- 主功能脚本 -->
+    <script type="module" src="/plugins/searchHeader/index.js"></script>
+    <script type="module" src="/plugins/calendar/index.js"></script>
+    <script type="module" src="/views/news/plugins/newsList/index.js"></script>
+    <script type="module" src="/views/news/plugins/tagStatistics/index.js"></script>
+    <script type="module" src="/views/news/index.js"></script>
+    <!-- 性能监控脚本 -->
+    <script type="module" src="/utils/performance.js"></script>
+</body>
+</html>

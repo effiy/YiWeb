@@ -1,0 +1,175 @@
+@import url('/css/index.css');
+
+/* 主容器布局 */
+.container {
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 
+        "news sidebar";
+    gap: var(--spacing-xl);
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* 侧边栏组件样式 */
+
+/* 侧边栏导航主容器 */
+.sidebar-navigation {
+    grid-area: sidebar;
+    position: sticky;
+    top: calc(5rem + var(--spacing-md));
+    align-self: flex-start;
+    z-index: 10;
+    width: 320px;
+    min-width: 320px;
+    transition: all var(--transition-normal);
+    margin-top: 0;
+}
+
+/* 侧边栏收缩状态 */
+.sidebar-navigation.collapsed {
+    width: 60px;
+    min-width: 60px;
+}
+
+.sidebar-navigation.collapsed .date-navigation {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.sidebar-navigation.collapsed .date-nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+}
+
+.sidebar-navigation.collapsed .date-nav-btn span {
+    display: none;
+}
+
+.sidebar-navigation.collapsed .date-nav-btn i {
+    font-size: 14px;
+}
+
+.sidebar-navigation.collapsed .mini-calendar {
+    display: none;
+}
+
+.sidebar-navigation.collapsed .tag-statistics {
+    display: none;
+}
+
+/* 侧边栏切换按钮 */
+.sidebar-toggle-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--primary-gradient);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+    font-size: 0.75rem;
+    margin-left: var(--spacing-sm);
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    min-width: 26px;
+    min-height: 26px;
+}
+
+.sidebar-toggle-btn:hover {
+    background: var(--primary-gradient-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+}
+
+.sidebar-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+.sidebar-toggle-btn:focus {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+    box-shadow: var(--shadow-md), 0 0 0 2px var(--border-focus);
+}
+
+.sidebar-toggle-btn:focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: var(--shadow-sm);
+}
+
+.sidebar-toggle-btn i {
+    transition: transform var(--transition-fast);
+    font-size: 0.7rem;
+    opacity: 0.9;
+}
+
+.sidebar-toggle-btn:hover i {
+    transform: scale(1.1);
+    opacity: 1;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .sidebar-navigation {
+        width: 320px;
+        min-width: 320px;
+    }
+    
+    .sidebar-toggle-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.8rem;
+        margin-left: var(--spacing-xs);
+        min-width: 26px;
+        min-height: 26px;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar-navigation {
+        position: static;
+        order: 2;
+        width: 100%;
+        min-width: auto;
+    }
+}
+
+/* 侧边栏收缩状态响应式 */
+@media (max-width: 1200px) {
+    .sidebar-navigation.collapsed .current-date-display {
+        min-width: 88px;
+        padding: 4px 8px;
+        margin: 0 2px;
+        text-align: center;
+    }
+
+    .sidebar-navigation.collapsed .date-navigation {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        align-items: center;
+    }
+
+    .sidebar-navigation.collapsed .date-nav-btn {
+        min-width: 60px;
+        padding: 4px 8px;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .sidebar-navigation.collapsed .date-nav-btn span {
+        display: none;
+    }
+
+    .sidebar-navigation.collapsed .date-nav-btn i {
+        font-size: 0.8rem;
+    }
+} 
+

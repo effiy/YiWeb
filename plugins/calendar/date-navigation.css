@@ -1,0 +1,187 @@
+/* 日期导航组件样式 */
+
+/* 日期导航主容器 */
+.date-navigation {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 4px 8px;
+    box-shadow: none;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.date-navigation:hover {
+    border-color: transparent;
+    background: transparent;
+}
+
+/* 日期导航按钮 */
+.date-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: var(--radius-sm);
+    padding: 4px 12px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-width: 80px;
+    justify-content: center;
+    opacity: 0.7;
+    box-shadow: none;
+    flex-shrink: 0;
+}
+
+.date-nav-btn:hover:not(:disabled) {
+    background: rgba(255,255,255,0.10);
+    border-color: var(--primary);
+    color: var(--primary);
+    opacity: 1;
+    transform: translateY(-1px);
+}
+
+.date-nav-btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.date-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: var(--bg-tertiary);
+    border-color: var(--border-primary);
+}
+
+.date-nav-btn i {
+    font-size: 0.75rem;
+    transition: transform var(--transition-fast);
+}
+
+.date-nav-btn:hover:not(:disabled) i {
+    transform: scale(1.1);
+}
+
+/* 当前日期显示 */
+.current-date-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 142px;
+    padding: 4px 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: all var(--transition-fast);
+    position: relative;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--primary);
+    opacity: 0.9;
+    flex: 1;
+    margin: 0 var(--spacing-xs);
+}
+
+.current-date-display:hover {
+    background: rgba(255,255,255,0.10);
+    border-color: var(--primary);
+    color: var(--primary-hover);
+    opacity: 1;
+}
+
+.current-date-display:active {
+    transform: scale(0.98);
+}
+
+.date-main {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: inherit;
+    line-height: 1.2;
+}
+
+.date-subtitle {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-weight: 400;
+}
+
+.date-today-hint {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: var(--accent-gradient);
+    color: var(--text-primary);
+    border-radius: var(--radius-full);
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    box-shadow: var(--shadow-sm);
+    animation: quantumPulse 2s ease-in-out infinite;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .date-nav-btn {
+        min-width: 70px;
+        padding: 4px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .current-date-display {
+        min-width: 120px;
+        padding: 4px 10px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .date-navigation {
+        gap: var(--spacing-xs);
+        padding: 2px 6px;
+    }
+    
+    .date-nav-btn {
+        min-width: 60px;
+        padding: 3px 8px;
+        font-size: 0.75rem;
+    }
+    
+    .current-date-display {
+        min-width: 100px;
+        padding: 3px 8px;
+        font-size: 0.75rem;
+    }
+    
+    .date-main {
+        font-size: 0.8rem;
+    }
+    
+    .date-subtitle {
+        font-size: 0.65rem;
+    }
+}
+
+/* 无障碍优化 */
+.date-nav-btn:focus,
+.current-date-display:focus {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+
+.date-nav-btn:focus:not(:focus-visible),
+.current-date-display:focus:not(:focus-visible) {
+    outline: none;
+} 

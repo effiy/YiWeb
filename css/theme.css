@@ -1,0 +1,100 @@
+/**
+ * 量子美学主题变量
+ * author: liangliang
+ * 说明：本文件定义了全局主题色、辅助色、中性色、背景色、文字色、边框色、阴影、透明度等变量，便于统一管理和维护。
+ */
+:root {
+  /* ===== 主色调（量子蓝紫） ===== */
+  --primary: #4f46e5;                /* 主色：量子靛蓝 */
+  --primary-hover: #3730a3;          /* 悬停：深量子蓝 */
+  --primary-light: #6366f1;          /* 浅量子蓝 */
+  --primary-blue: #4facfe;           /* 量子蓝 */
+  --primary-cyan: #00f2fe;           /* 量子青 */
+  --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+  --primary-gradient-hover: linear-gradient(135deg, #3730a3 0%, #6d28d9 50%, #9333ea 100%);
+
+  /* ===== 辅助色系 ===== */
+  --accent: #06b6d4;                 /* 量子青 */
+  --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);
+  --success: #10b981;                /* 量子绿 */
+  --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  --warning: #f59e0b;                /* 量子橙 */
+  --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  --error: #ef4444;                  /* 量子红 */
+  --error-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+  --danger-color: #ef4444;           /* 危险色（兼容性） */
+  --danger-color-alpha: rgba(239, 68, 68, 0.1); /* 危险色透明 */
+
+  /* ===== 功能卡片专用色 ===== */
+  --scientist-purple: #9333ea;       /* 科学家紫 */
+  --scientist-cyan: #06b6d4;         /* 科学家青 */
+  --geek-green: #22c55e;             /* 极客绿 */
+  --geek-teal: #10b981;              /* 极客蓝绿 */
+  --artist-purple: #a855f7;          /* 艺术家紫 */
+  --artist-pink: #ec4899;            /* 艺术家粉 */
+  --artist-orange: #f59e0b;          /* 艺术家橙 */
+  --artist-emerald: #10b981;         /* 艺术家翠绿 */
+
+  /* ===== 中性色（灰阶） ===== */
+  --gray-50:  #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  /* ===== 背景色 ===== */
+  --bg-primary: #0f172a;             /* 深空黑 */
+  --bg-secondary: #1e293b;           /* 量子灰 */
+  --bg-tertiary: #334155;            /* 中量子灰 */
+  --bg-elevated: rgba(30,41,59,0.9); /* 半透明量子灰 */
+  --bg-glass: rgba(255,255,255,0.03);/* 量子玻璃 */
+  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #475569 75%, #64748b 100%);
+
+  /* ===== 文字色 ===== */
+  --text-primary: #f8fafc;           /* 量子白 */
+  --text-secondary: #cbd5e1;         /* 浅量子灰 */
+  --text-muted: #94a3b8;             /* 中量子灰 */
+  --text-inverse: #0f172a;           /* 深空黑 */
+  --text-accent: #06b6d4;            /* 量子青 */
+  --text-tertiary: #64748b;          /* 第三级文字色 */
+
+  /* ===== 边框色 ===== */
+  --border-primary: rgba(255,255,255,0.08);   /* 量子白边框 */
+  --border-secondary: rgba(6,182,212,0.2);    /* 量子青边框 */
+  --border-focus: #06b6d4;                    /* 量子青聚焦 */
+  --border-glass: rgba(255,255,255,0.05);     /* 量子玻璃边框 */
+  --border-color: rgba(255,255,255,0.08);     /* 边框色（兼容性） */
+
+  /* ===== 阴影系统 ===== */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
+  --shadow-xl: 0 16px 64px rgba(0,0,0,0.7);
+  --shadow-2xl: 0 32px 128px rgba(0,0,0,0.8);
+  --shadow-primary: 0 4px 20px rgba(79,70,229,0.4);
+  --shadow-glow: 0 0 30px rgba(6,182,212,0.4);
+  --shadow-quantum: 0 0 50px rgba(79,70,229,0.3);
+  /* 兼容性命名 */
+  --shadow-light: 0 2px 8px rgba(0,0,0,0.1);
+  --shadow-medium: 0 4px 16px rgba(0,0,0,0.12);
+  --shadow-heavy: 0 8px 32px rgba(0,0,0,0.15);
+  --shadow-hover: 0 20px 40px rgba(0,0,0,0.2);
+
+  /* ===== 透明度系统 ===== */
+  --opacity-light: 0.03;
+  --opacity-medium: 0.08;
+  --opacity-heavy: 0.15;
+  --opacity-hover: 0.25;
+  --opacity-overlay: 0.1;
+  
+  /* ===== 兼容性变量 ===== */
+  --primary-color: var(--primary);
+  --primary-hover: var(--primary-hover);
+  --primary-color-alpha: rgba(79, 70, 229, 0.1);
+  --bg-hover: rgba(255, 255, 255, 0.05);
+}

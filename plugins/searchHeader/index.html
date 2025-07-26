@@ -1,0 +1,51 @@
+<header class="header-row" role="banner">
+    <!-- 第一行：搜索框和筛选 -->
+    <div class="search-row">
+        <div class="search-box" role="search">
+            <div class="search-logo" aria-hidden="true" @click="goHome()">
+                <i class="fas fa-brain" aria-label="AI大脑图标"></i>
+            </div>
+            <div class="search-input-wrapper">
+                <textarea 
+                    id="messageInput"
+                    :value="searchQuery"
+                    @input="$emit('update:searchQuery', $event.target.value)"
+                    placeholder="搜索最新科技新闻，了解AI、互联网、科技产品等领域热点动态..." 
+                    rows="1" 
+                    maxlength="2000"
+                    aria-label="消息输入框"
+                    autocomplete="off"
+                    spellcheck="false"
+                    @keydown.enter="$emit('search-keydown', $event)"
+                    @keydown.esc="$emit('clear-search')"
+                ></textarea>
+            </div>
+        </div>
+        <div class="category-filters">
+            <div class="filter-buttons">
+                <button 
+                    v-for="category in categories" 
+                    :key="category.key"
+                    @click="$emit('toggle-category', category.key)"
+                    :class="['filter-btn', { active: selectedCategories.has(category.key) }]"
+                    :data-category="category.key"
+                    :title="category.title"
+                >
+                    <i :class="category.icon"></i>
+                    {{ category.title }}
+                </button>
+            </div>
+            <!-- 收缩按钮 -->
+            <button 
+                @click="$emit('toggle-sidebar')"
+                class="sidebar-toggle-btn"
+                :title="sidebarCollapsed ? '展开侧边栏' : '收缩侧边栏'"
+                :aria-label="sidebarCollapsed ? '展开侧边栏' : '收缩侧边栏'"
+                :aria-expanded="!sidebarCollapsed"
+            >
+                <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" aria-hidden="true"></i>
+                <span class="sr-only">{{ sidebarCollapsed ? '展开侧边栏' : '收缩侧边栏' }}</span>
+            </button>
+        </div>
+    </div>
+</header> 

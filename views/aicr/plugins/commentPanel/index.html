@@ -1,0 +1,148 @@
+<!-- 代码评审评论面板组件模板 -->
+<aside class="comment-panel-container" role="complementary" aria-label="代码评审评论面板">
+    
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container" role="status" aria-live="polite">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <div class="loading-text">正在加载评论...</div>
+    </div>
+
+    <!-- 错误状态 -->
+    <div v-else-if="error" class="error-container" role="alert" aria-live="polite">
+        <div class="error-icon" aria-hidden="true">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="error-text">{{ error }}</div>
+    </div>
+
+    <!-- 评论内容 -->
+    <div v-else class="comment-panel-content">
+        <!-- 评论统计 -->
+        <div v-if="comments.length > 0" class="comment-stats">
+            <div class="stats-item stats-item-total">
+                <span class="stats-number">{{ commentStats.total }}</span>
+                <span class="stats-label">评论</span>
+            </div>
+            <div class="stats-item stats-item-resolved">
+                <span class="stats-number">{{ commentStats.resolved }}</span>
+                <span class="stats-label">已解决</span>
+            </div>
+            <div class="stats-item stats-item-pending">
+                <span class="stats-number">{{ commentStats.pending }}</span>
+                <span class="stats-label">待处理</span>
+            </div>
+        </div>
+
+        <!-- 评论列表 -->
+        <div v-if="comments.length > 0" class="comment-list" role="list">
+            <article 
+                v-for="comment in comments" 
+                :key="comment.id"
+                class="comment-item"
+                :class="getCommentStatusClass(comment.status)"
+                role="listitem"
+            >
+                <!-- 评论头部 -->
+                <div class="comment-header-section">
+                    <div class="comment-meta">
+                        <div class="comment-author-info">
+                            <div class="comment-avatar" :style="getAuthorAvatar(comment.author)">
+                                {{ getAuthorAvatar(comment.author).text }}
+                            </div>
+                            <div class="comment-author-details">
+                                <span class="comment-author">{{ comment.author }}</span>
+                                <time class="comment-time" :datetime="comment.timestamp">
+                                    {{ formatTime(comment.timestamp) }}
+                                </time>
+                            </div>
+                        </div>
+                        
+                        <!-- 评论类型和状态 -->
+                        <div class="comment-badges">
+                            <span v-if="comment.type" class="comment-type" :class="`type-${comment.type}`">
+                                {{ getCommentTypeLabel(comment.type) }}
+                            </span>
+                            <span v-if="comment.status" class="comment-status" :class="`status-${comment.status}`">
+                                {{ getCommentStatusLabel(comment.status) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 代码位置信息 -->
+                <div v-if="comment.rangeInfo" class="code-location">
+                    <div class="location-header">
+                        <i class="fas fa-code"></i>
+                        <span class="location-text">
+                            第 {{ comment.rangeInfo.startLine }}{{ comment.rangeInfo.endLine !== comment.rangeInfo.startLine ? `-${comment.rangeInfo.endLine}` : '' }} 行
+                        </span>
+                    </div>
+                    
+                </div>
+
+                <!-- 评论内容 -->
+                <div class="comment-body">
+                    <div v-if="comment.text" class="comment-quote">
+                        <div class="quote-header">
+                            <i class="fas fa-quote-left"></i>
+                            <span>引用代码</span>
+                        </div>
+                        <pre class="quote-code" @click="highlightCode(comment.rangeInfo)">{{ comment.text }}</pre>
+                    </div>
+                    <div class="comment-content">{{ comment.content }}</div>
+                    <!-- 改进代码展示区域，仅当有改进代码时显示 -->
+                    <div v-if="comment.improvementText" class="comment-improvement">
+                        <div class="improvement-header">
+                            <i class="fas fa-magic"></i>
+                            <span>改进代码</span>
+                        </div>
+                        <pre class="improvement-code">{{ comment.improvementText }}</pre>
+                    </div>
+                    
+                    <!-- 评论操作 -->
+                    <div class="comment-actions">
+                        <button 
+                            v-if="comment.status === 'pending'"
+                            @click="resolveComment(comment.id)"
+                            class="action-button resolve-button"
+                            title="标记为已解决"
+                        >
+                            <i class="fas fa-check"></i>
+                            解决
+                        </button>
+                        
+                        <button 
+                            v-if="comment.status === 'resolved'"
+                            @click="reopenComment(comment.id)"
+                            class="action-button reopen-button"
+                            title="重新打开"
+                        >
+                            <i class="fas fa-undo"></i>
+                            重开
+                        </button>
+                        
+                        <button 
+                            @click="deleteComment(comment.id)"
+                            class="action-button delete-button"
+                            title="删除评论"
+                        >
+                            <i class="fas fa-trash"></i>
+                            删除
+                        </button>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <!-- 无评论状态 -->
+        <div v-else class="no-comments-state" role="status">
+            <div class="no-comments-icon" aria-hidden="true">
+                <i class="fas fa-comment-slash"></i>
+            </div>
+            <div class="no-comments-title">暂无评论</div>
+            <div class="no-comments-subtitle">开始代码评审，添加第一个评论</div>
+        </div>
+    </div>
+</aside>
+
+

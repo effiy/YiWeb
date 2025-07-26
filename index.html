@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI智能助手，为您提供问答、数据分析、代码编写等多种智能服务">
+    <meta name="keywords" content="AI, 智能助手, 数据分析, 代码编写, 生图创造, YiWeb">
+    <meta name="author" content="liangliang">
+    
+    <!-- DNS 预解析优化 -->
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    
+    <title>YiWeb - 智能AI助手</title>
+    
+    <!-- 页面样式 -->
+    <link rel="stylesheet" href="/views/welcome/index.css">
+    <!-- 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous">
+
+    <!-- Vue3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部搜索与分类区域 -->
+        <header class="header-row" role="banner">
+            <section class="search-row">
+                <form class="search-box" role="search" aria-label="智能助手搜索">
+                    <span class="search-logo" aria-hidden="true">
+                        <i class="fas fa-brain" aria-label="AI大脑图标"></i>
+                    </span>
+                    <div class="search-input-wrapper">
+                        <label for="messageInput" class="visually-hidden">消息输入框</label>
+                        <textarea 
+                            id="messageInput" 
+                            placeholder="我可以帮助您分析数据、编写代码、生图创造..." 
+                            rows="1" 
+                            maxlength="2000"
+                            aria-label="消息输入框"
+                            aria-describedby="category-filters"
+                            autocomplete="off"
+                            spellcheck="false"
+                            @keydown="handleMessageInput"
+                            @compositionstart="handleCompositionStart"
+                            @compositionend="handleCompositionEnd"></textarea>
+                    </div>
+                </form>
+                <nav class="category-filters" id="category-filters" role="toolbar" aria-label="功能分类过滤器">
+                    <ul class="filter-buttons">
+                      <li>
+                        <button class="filter-btn" type="button" aria-label="接口管理" data-action="aicr" @click="openLink('/views/apis/index.html')">
+                            <i class="fas fa-globe" aria-hidden="true"></i>
+                            <span>apis</span>
+                        </button>
+                    </li>
+                        <li>
+                            <button class="filter-btn" type="button" aria-label="网址管理" data-action="aicr" @click="openLink('/views/aicr/index.html')">
+                                <i class="fas fa-globe" aria-hidden="true"></i>
+                                <span>aicr</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="filter-btn" type="button" aria-label="新闻博客" data-action="news" @click="openLink('/views/news/index.html')">
+                                <i class="fas fa-newspaper" aria-hidden="true"></i>
+                                <span>news</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="filter-btn" type="button" aria-label="快捷键" data-action="shortcuts" @click="openLink('/views/shortcuts/index.html')">
+                                <i class="fas fa-keyboard" aria-hidden="true"></i>
+                                <span>shortcuts</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="filter-btn" type="button" aria-label="命令行" data-action="websites" @click="openLink('/views/commands/index.html')">
+                                <i class="fas fa-terminal" aria-hidden="true"></i>
+                                <span>commands</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="filter-btn" type="button" aria-label="网址管理" data-action="websites" @click="openLink('/views/websites/index.html')">
+                                <i class="fas fa-globe" aria-hidden="true"></i>
+                                <span>websites</span>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </section>
+        </header>
+        
+        <main class="main-content" role="main">
+            <!-- 功能卡片区域 -->
+            <section class="container">
+                <section class="feature-cards-container">
+                    <section class="feature-cards-grid" role="grid" aria-label="功能卡片网格">
+                        <section role="row" v-for="(card, index) in featureCards" :key="index">
+                            <article class="feature-card" :data-feature="card.title" role="gridcell">
+                                <header class="card-header">
+                                    <span class="card-icon" aria-hidden="true">
+                                        <i :class="card.icon" :aria-label="card.title + '图标'"></i>
+                                    </span>
+                                    <button 
+                                        class="card-badge" 
+                                        type="button" 
+                                        @click="openLink(card.link)"
+                                        :disabled="!card.link"
+                                    >{{ card.badge }}</button>
+                                </header>
+                                <section class="card-content">
+                                    <h3 class="card-title">
+                                        <i :class="card.icon" aria-hidden="true"></i> {{ card.title }}
+                                    </h3>
+                                    <p class="card-description">{{ card.description }}</p>
+                                    <ul class="card-features" aria-label="功能特性">
+                                        <li class="feature-tag" v-for="(feature, fidx) in card.features" :key="fidx">
+                                            {{ feature.icon }} {{ feature.name }}
+                                        </li>
+                                    </ul>
+                                    <ul class="card-stats" aria-label="统计数据">
+                                        <li 
+                                            class="stat-item" 
+                                            v-for="(stat, sidx) in card.stats" 
+                                            :key="sidx"
+                                            @click="openLink(stat.link)"
+                                            :style="stat.link ? 'cursor:pointer;' : ''"
+                                        >
+                                            <span class="stat-number">{{ stat.number }}</span>
+                                            <span class="stat-label">{{ stat.label }}</span>
+                                        </li>
+                                    </ul>
+                                </section>
+                                <footer class="card-footer">
+                                    <span class="card-hint">{{ card.hint }}</span>
+                                    <i :class="card.footerIcon" aria-hidden="true"></i>
+                                </footer>
+                            </article>
+                        </section>
+                    </section>
+                </section>
+            </section>
+        </main>
+    </div>
+
+    <!-- 加载指示器 -->
+    <section id="loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="加载中">
+        <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+    </section>
+
+    <!-- 错误提示 -->
+    <section id="error-message" class="error-message" role="alert" aria-live="assertive" hidden></section>
+
+    <!-- 通知容器 -->
+    <section id="notifications" class="notifications-container" role="region" aria-label="通知区域"></section>
+
+    <!-- 性能监控脚本 -->
+    <script type="module" src="/config.js"></script>
+    <!-- 功能卡片主题管理器 -->
+    <script src="/views/welcome/plugins/featureCard/index.js"></script>
+    <!-- 主功能脚本 -->
+    <script type="module" src="/views/welcome/index.js" defer></script>
+    <!-- 性能监控脚本 -->
+    <script type="module" src="/utils/performance.js"></script>
+</body>
+</html>
+

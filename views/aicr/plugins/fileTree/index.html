@@ -1,0 +1,202 @@
+<!-- 文件树组件模板 -->
+<aside class="file-tree-container" role="navigation" aria-label="文件目录树">
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container" role="status" aria-live="polite">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <div class="loading-text">正在加载文件树...</div>
+    </div>
+
+    <!-- 错误状态 -->
+    <div v-else-if="error" class="error-container" role="alert">
+        <div class="error-icon" aria-hidden="true">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="error-message">{{ error }}</div>
+        <button @click="$emit('reload')" class="retry-button">
+            <i class="fas fa-redo"></i>
+            重新加载
+        </button>
+    </div>
+
+    <!-- 文件树内容 -->
+    <div v-else-if="tree.length > 0" class="file-tree-content">
+        <ul class="file-tree" role="tree">
+            <template v-for="item in tree" :key="item.id">
+                <li 
+                    class="file-tree-node"
+                    role="treeitem"
+                    :aria-expanded="item.type === 'folder' ? isFolderExpanded(item.id) : undefined"
+                >
+                    <!-- 文件夹 -->
+                    <div 
+                        v-if="item.type === 'folder'"
+                        :class="['file-tree-item', 'folder-item', { 
+                            expanded: isFolderExpanded(item.id)
+                        }]"
+                        @click="toggleFolder(item.id)"
+                        :title="`文件夹: ${item.name}`"
+                        tabindex="0"
+                        @keydown.enter="toggleFolder(item.id)"
+                        @keydown.space="toggleFolder(item.id)"
+                    >
+                        <span class="folder-toggle" aria-hidden="true">
+                            <i :class="['fas', isFolderExpanded(item.id) ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
+                        </span>
+                        <span class="file-icon" aria-hidden="true">{{ getFileIcon(item) }}</span>
+                        <span class="file-name">{{ item.name }}</span>
+                        <span v-if="item.children" class="folder-count">({{ item.children.length }})</span>
+                    </div>
+                    <!-- 文件 -->
+                    <div 
+                        v-else
+                        :class="['file-tree-item', 'file-item', { 
+                            selected: isFileSelected(item.id)
+                        }]"
+                        @click="selectFile(item.id)"
+                        :title="`文件: ${item.name}`"
+                        tabindex="0"
+                        @keydown.enter="selectFile(item.id)"
+                        @keydown.space="selectFile(item.id)"
+                    >
+                        <span class="folder-toggle file-toggle-placeholder" aria-hidden="true"></span>
+                        <span class="file-icon" aria-hidden="true">{{ getFileIcon(item) }}</span>
+                        <span class="file-name">{{ item.name }}</span>
+                        <span v-if="getFileSizeDisplay(item)" class="file-size">{{ getFileSizeDisplay(item) }}</span>
+                        <span v-if="getCommentCount(item.id) > 0" class="comment-count" :title="`${getCommentCount(item.id)} 条评论`">
+                            💬 {{ getCommentCount(item.id) }}
+                        </span>
+                    </div>
+                    <!-- 递归渲染子节点 -->
+                    <ul 
+                        v-if="item.type === 'folder' && item.children && isFolderExpanded(item.id)"
+                        class="file-tree-children"
+                        role="group"
+                    >
+                        <template v-for="child in item.children" :key="child.id">
+                            <li 
+                                class="file-tree-node"
+                                role="treeitem"
+                                :aria-expanded="child.type === 'folder' ? isFolderExpanded(child.id) : undefined"
+                            >
+                                <!-- 子文件夹/文件递归复用 -->
+                                <div 
+                                    v-if="child.type === 'folder'"
+                                    :class="['file-tree-item', 'folder-item', { 
+                                        expanded: isFolderExpanded(child.id)
+                                    }]"
+                                    @click="toggleFolder(child.id)"
+                                    :title="`文件夹: ${child.name}`"
+                                    tabindex="0"
+                                    @keydown.enter="toggleFolder(child.id)"
+                                    @keydown.space="toggleFolder(child.id)"
+                                >
+                                    <span class="folder-toggle" aria-hidden="true">
+                                        <i :class="['fas', isFolderExpanded(child.id) ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
+                                    </span>
+                                    <span class="file-icon" aria-hidden="true">{{ getFileIcon(child) }}</span>
+                                    <span class="file-name">{{ child.name }}</span>
+                                    <span v-if="child.children" class="folder-count">({{ child.children.length }})</span>
+                                </div>
+                                <div
+                                    v-else
+                                    :class="['file-tree-item', 'file-item', { 
+                                        selected: isFileSelected(child.id)
+                                    }]"
+                                    @click="selectFile(child.id)"
+                                    :title="`文件: ${child.name}`"
+                                    tabindex="0"
+                                    @keydown.enter="selectFile(child.id)"
+                                    @keydown.space="selectFile(child.id)"
+                                >
+                                    <span class="folder-toggle file-toggle-placeholder" aria-hidden="true"></span>
+                                    <span class="file-icon" aria-hidden="true">{{ getFileIcon(child) }}</span>
+                                    <span class="file-name">{{ child.name }}</span>
+                                    <span v-if="getFileSizeDisplay(child)" class="file-size">{{ getFileSizeDisplay(child) }}</span>
+                                    <span v-if="getCommentCount(child.id) > 0" class="comment-count" :title="`${getCommentCount(child.id)} 条评论`">
+                                        💬 {{ getCommentCount(child.id) }}
+                                    </span>
+                                </div>
+                                <!-- 递归：如果有子节点继续渲染 -->
+                                <ul 
+                                    v-if="child.type === 'folder' && child.children && isFolderExpanded(child.id)"
+                                    class="file-tree-children"
+                                    role="group"
+                                >
+                                    <template v-for="grand in child.children" :key="grand.id">
+                                        <!-- 递归 li -->
+                                        <li
+                                            class="file-tree-node"
+                                            role="treeitem"
+                                            :aria-expanded="grand.type === 'folder' ? isFolderExpanded(grand.id) : undefined"
+                                        >
+                                            <!-- 递归内容同上 -->
+                                            <div 
+                                                v-if="grand.type === 'folder'"
+                                                :class="['file-tree-item', 'folder-item', { 
+                                                    expanded: isFolderExpanded(grand.id)
+                                                }]"
+                                                @click="toggleFolder(grand.id)"
+                                                :title="`文件夹: ${grand.name}`"
+                                                tabindex="0"
+                                                @keydown.enter="toggleFolder(grand.id)"
+                                                @keydown.space="toggleFolder(grand.id)"
+                                            >
+                                                <span class="folder-toggle" aria-hidden="true">
+                                                    <i :class="['fas', isFolderExpanded(grand.id) ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
+                                                </span>
+                                                <span class="file-icon" aria-hidden="true">{{ getFileIcon(grand) }}</span>
+                                                <span class="file-name">{{ grand.name }}</span>
+                                                <span v-if="grand.children" class="folder-count">({{ grand.children.length }})</span>
+                                            </div>
+                                            <div
+                                                v-else
+                                                :class="['file-tree-item', 'file-item', { 
+                                                    selected: isFileSelected(grand.id)
+                                                }]"
+                                                @click="selectFile(grand.id)"
+                                                :title="`文件: ${grand.name}`"
+                                                tabindex="0"
+                                                @keydown.enter="selectFile(grand.id)"
+                                                @keydown.space="selectFile(grand.id)"
+                                            >
+                                                <span class="folder-toggle file-toggle-placeholder" aria-hidden="true"></span>
+                                                <span class="file-icon" aria-hidden="true">{{ getFileIcon(grand) }}</span>
+                                                <span class="file-name">{{ grand.name }}</span>
+                                                <span v-if="getFileSizeDisplay(grand)" class="file-size">{{ getFileSizeDisplay(grand) }}</span>
+                                                <span v-if="getCommentCount(grand.id) > 0" class="comment-count" :title="`${getCommentCount(grand.id)} 条评论`">
+                                                    💬 {{ getCommentCount(grand.id) }}
+                                                </span>
+                                            </div>
+                                            <!-- 继续递归... -->
+                                            <ul 
+                                                v-if="grand.type === 'folder' && grand.children && isFolderExpanded(grand.id)"
+                                                class="file-tree-children"
+                                                role="group"
+                                            >
+                                                <template v-for="g in grand.children">
+                                                    <!-- 递归 li，依次类推... -->
+                                                    <!-- 可以继续复制上面内容，或考虑用递归组件优化 -->
+                                                </template>
+                                            </ul>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </li>
+                        </template>
+                    </ul>
+                </li>
+            </template>
+        </ul>
+    </div>
+
+    <!-- 空状态 -->
+    <div v-else class="empty-state" role="status">
+        <div class="empty-icon" aria-hidden="true">
+            <i class="fas fa-folder-open"></i>
+        </div>
+        <div class="empty-title">暂无文件</div>
+        <div class="empty-subtitle">请检查文件目录或联系管理员</div>
+    </div>
+</aside>
+
+

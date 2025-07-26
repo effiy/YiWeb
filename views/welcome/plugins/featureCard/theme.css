@@ -1,0 +1,159 @@
+/* ========== 功能卡片主题样式 ========== */
+/* author: liangliang */
+
+/* ===== 随机主题色变量定义 ===== */
+:root {
+    /* 主题色系 - 用于随机生成 */
+    --theme-colors: #9333ea, #06b6d4, #22c55e, #10b981, #a855f7, #ec4899, #f59e0b, #ef4444, #8b5cf6, #06d6a0, #f97316, #e11d48;
+    
+    /* 默认主题色 */
+    --card-primary: #4f46e5;
+    --card-secondary: #7c3aed;
+    --card-accent: #06b6d4;
+    
+    /* 透明度变量 */
+    --card-opacity-light: 0.06;
+    --card-opacity-medium: 0.12;
+    --card-opacity-heavy: 0.2;
+}
+
+/* ===== 通用卡片主题样式 ===== */
+.feature-card {
+    /* 使用CSS变量实现动态主题色 */
+    background: linear-gradient(135deg, 
+        rgba(var(--card-primary-rgb), var(--card-opacity-medium)) 0%, 
+        rgba(var(--card-secondary-rgb), var(--card-opacity-light)) 50%,
+        rgba(var(--card-primary-rgb), 0.02) 100%);
+    border: 1px solid rgba(var(--card-primary-rgb), var(--card-opacity-heavy));
+    box-shadow: 
+        0 8px 32px rgba(var(--card-primary-rgb), 0.1),
+        0 4px 16px rgba(var(--card-secondary-rgb), 0.08);
+    transition: all var(--duration-normal) var(--ease-smooth);
+}
+
+.feature-card:hover {
+    border-color: rgba(var(--card-primary-rgb), 0.4);
+    box-shadow: 
+        0 20px 40px rgba(var(--card-primary-rgb), 0.15),
+        0 8px 16px rgba(var(--card-secondary-rgb), 0.12),
+        0 0 0 1px rgba(var(--card-primary-rgb), 0.3);
+    transform: translateY(-8px) scale(1.02);
+}
+
+/* 卡片图标主题样式 */
+.feature-card .card-icon {
+    background: linear-gradient(135deg, var(--card-primary), var(--card-secondary));
+    color: white;
+    box-shadow: 
+        0 8px 24px rgba(var(--card-primary-rgb), 0.3),
+        0 4px 12px rgba(var(--card-secondary-rgb), 0.2);
+    transition: all var(--duration-normal) var(--ease-smooth);
+}
+
+.feature-card:hover .card-icon {
+    background: linear-gradient(135deg, var(--card-primary), var(--card-secondary));
+    box-shadow: 
+        0 12px 32px rgba(var(--card-primary-rgb), 0.4),
+        0 6px 16px rgba(var(--card-secondary-rgb), 0.3);
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* 卡片徽章主题样式 */
+.feature-card .card-badge {
+    background: linear-gradient(135deg, var(--card-primary), var(--card-secondary));
+    border: 1px solid rgba(var(--card-primary-rgb), 0.3);
+    box-shadow: 
+        0 6px 16px rgba(var(--card-primary-rgb), 0.3),
+        0 4px 8px rgba(var(--card-secondary-rgb), 0.2);
+    transition: all var(--duration-normal) var(--ease-smooth);
+}
+
+.feature-card:hover .card-badge {
+    background: linear-gradient(135deg, var(--card-primary), var(--card-secondary));
+    border-color: rgba(var(--card-primary-rgb), 0.5);
+    box-shadow: 
+        0 8px 20px rgba(var(--card-primary-rgb), 0.4),
+        0 6px 12px rgba(var(--card-secondary-rgb), 0.3);
+}
+
+/* 功能标签主题样式 */
+.feature-card .feature-tag {
+    background: rgba(var(--card-primary-rgb), var(--card-opacity-medium));
+    border: 1px solid rgba(var(--card-primary-rgb), 0.25);
+    color: rgba(var(--card-primary-rgb), 0.8);
+    transition: all var(--duration-normal) var(--ease-smooth);
+}
+
+.feature-card:hover .feature-tag {
+    background: rgba(var(--card-primary-rgb), var(--card-opacity-heavy));
+    border-color: rgba(var(--card-primary-rgb), 0.4);
+    color: rgba(var(--card-primary-rgb), 0.9);
+    box-shadow: 
+        0 4px 12px rgba(var(--card-primary-rgb), 0.15),
+        0 2px 6px rgba(var(--card-secondary-rgb), 0.1);
+    transform: translateY(-2px);
+}
+
+/* 卡片标题主题样式 */
+.feature-card .card-title {
+    background: linear-gradient(135deg, var(--card-primary), var(--card-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transition: all var(--duration-slow) var(--ease-smooth);
+}
+
+/* 卡片底部主题样式 */
+.feature-card .card-footer {
+    border-top: 1px solid rgba(var(--card-primary-rgb), 0.15);
+    transition: all var(--duration-normal) var(--ease-smooth);
+}
+
+.feature-card .card-footer i {
+    color: var(--card-primary);
+    transition: all var(--duration-normal) var(--ease-smooth);
+}
+
+/* ===== 响应式主题适配 ===== */
+@media (max-width: 768px) {
+    .feature-card {
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, var(--opacity-medium)) 0%, 
+            rgba(255, 255, 255, var(--opacity-light)) 50%,
+            rgba(255, 255, 255, 0.01) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    
+    .feature-card:hover {
+        border-color: rgba(255, 255, 255, 0.3);
+        box-shadow: var(--shadow-hover);
+    }
+}
+
+/* ===== 高对比度支持 ===== */
+@media (prefers-contrast: high) {
+    .feature-card {
+        border-width: 2px;
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .feature-card .card-icon {
+        border: 2px solid rgba(255, 255, 255, 0.8);
+    }
+    
+    .feature-card .card-badge {
+        border: 2px solid rgba(255, 255, 255, 0.8);
+    }
+}
+
+/* ===== 减少动画支持 ===== */
+@media (prefers-reduced-motion: reduce) {
+    .feature-card,
+    .feature-card .card-icon,
+    .feature-card .card-badge,
+    .feature-card .feature-tag,
+    .feature-card .stat-item {
+        transition: none;
+        transform: none;
+    }
+} 

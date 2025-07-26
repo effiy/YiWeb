@@ -1,0 +1,95 @@
+/**
+ * @author liangliang
+ * 错误提示与错误页面样式
+ * 统一管理错误状态容器和全局错误消息弹窗的视觉效果
+ */
+
+/* 错误状态页面容器 */
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 320px;
+    padding: var(--spacing-xl) var(--spacing-lg);
+    background: var(--bg-secondary, #f8fafc);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    box-sizing: border-box;
+}
+
+/* 全局错误消息弹窗 */
+.error-message {
+    position: fixed;
+    top: var(--spacing-lg);
+    right: var(--spacing-lg);
+    min-width: 240px;
+    max-width: 90vw;
+    background: rgba(239, 68, 68, 0.98);
+    color: #fff;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 9999;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-20px);
+    transition: opacity 0.25s, transform 0.25s;
+}
+
+/* 显示错误消息时添加 .show 类 */
+.error-message.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+/* 错误消息文本 */
+.error-message p {
+    margin: 0;
+    color: #fff;
+    font-size: var(--font-size-base);
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+/* 可选：错误消息关闭按钮 */
+.error-message .error-close {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 1.25rem;
+    cursor: pointer;
+    margin-left: var(--spacing-xs);
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.error-message .error-close:hover {
+    opacity: 1;
+}
+
+/* 错误图标样式（如有） */
+.error-message .error-icon {
+    font-size: 1.5rem;
+    margin-right: var(--spacing-xs);
+    flex-shrink: 0;
+    color: #fff;
+}
+
+/* 动画效果 */
+@keyframes error-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.error-message.show {
+    animation: error-slide-in 0.3s cubic-bezier(0.4,0,0.2,1);
+}

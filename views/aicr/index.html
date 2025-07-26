@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YiWeb - 代码审查</title>
+    <link rel="stylesheet" href="/views/aicr/index.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+      <!-- 顶部搜索与分类区域 -->
+      <header class="header-row" role="banner">
+        <section class="search-row">
+            <form class="search-box" role="search" aria-label="代码审查搜索">
+                <span class="search-logo" aria-hidden="true" @click="openLink('/index.html')">
+                    <i class="fas fa-globe" aria-label="代码审查图标"></i>
+                </span>
+                <div class="search-input-wrapper">
+                    <label for="messageInput" class="visually-hidden">搜索输入框</label>
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="搜索网站、标签或描述..." 
+                        rows="1" 
+                        maxlength="2000"
+                        aria-label="搜索输入框"
+                        aria-describedby="category-filters"
+                        autocomplete="off"
+                        spellcheck="false"></textarea>
+                </div>
+            </form>
+            <div class="collapse-btns">
+              <button type="button" @click="toggleSidebar">{{ sidebarCollapsed ? '展开文件目录树' : '收起文件目录树' }}</button>
+              <button type="button" @click="toggleComments">{{ commentsCollapsed ? '展开评论区' : '收起评论区' }}</button>
+            </div>
+        </section>
+        </header>
+        <main class="aicr-main">
+            <aside class="aicr-sidebar" aria-label="文件目录树" v-show="!sidebarCollapsed">
+                <file-tree :tree="fileTree" :selected-file-id="selectedFileId" :expanded-folders="expandedFolders" :loading="loading" :error="errorMessage" :comments="currentComments" @file-select="handleFileSelect" @folder-toggle="handleFolderToggle"></file-tree>
+            </aside>
+            <section class="aicr-code" aria-label="代码区">
+                <code-view :file="currentFile" :loading="loading" :error="errorMessage"></code-view>
+            </section>
+            <aside class="aicr-comments" aria-label="评论区" v-show="!commentsCollapsed">
+                <comment-panel :comments="currentComments" :new-comment="newComment" :loading="loading" :error="errorMessage" @comment-submit="handleCommentSubmit" @comment-input="handleCommentInput"></comment-panel>
+            </aside>
+        </main>
+    </div>
+    <script type="module" src="/views/aicr/plugins/fileTree/index.js"></script>
+    <script type="module" src="/views/aicr/plugins/codeView/index.js"></script>
+    <script type="module" src="/views/aicr/plugins/commentPanel/index.js"></script>
+    <script type="module" src="/views/aicr/index.js"></script>
+    <script type="module" src="/utils/performance.js"></script>
+</body>
+</html> 
+
+
+

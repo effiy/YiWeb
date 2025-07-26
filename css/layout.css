@@ -1,0 +1,110 @@
+/**
+ * @author liangliang
+ * 容器与布局样式
+ * 统一管理响应式容器、网格系统、弹性布局及常用对齐方式
+ */
+
+/* ========== 响应式容器 ========== */
+.container {
+    width: 100%;
+    margin: 0 auto;
+    padding: var(--spacing-2xl);
+    box-sizing: border-box;
+}
+
+.container-sm { max-width: var(--max-width-2xl); }
+.container-lg { max-width: var(--max-width-screen); }
+
+/* 移动端容器内边距优化 */
+@media (max-width: 767px) {
+    .container {
+        padding-left: var(--spacing-sm);
+        padding-right: var(--spacing-sm);
+    }
+}
+
+/* ========== 页面结构容器 ========== */
+.page-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.main-content {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* ========== 网格系统 ========== */
+.grid {
+    display: grid;
+    gap: var(--spacing-md);
+}
+
+.grid-1 { grid-template-columns: 1fr; }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* 自适应网格 */
+.grid-auto      { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.grid-auto-sm   { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.grid-auto-lg   { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+/* 响应式网格断点优化 */
+@media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .grid-auto, .grid-auto-sm, .grid-auto-lg { grid-template-columns: 1fr; }
+}
+@media (min-width: 769px) and (max-width: 1024px) {
+    .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ========== 弹性布局 ========== */
+.flex { display: flex; }
+.flex-col, .flex-col-mobile { flex-direction: column; }
+.flex-row, .flex-row-mobile { flex-direction: row; }
+.flex-wrap { flex-wrap: wrap; }
+.flex-nowrap { flex-wrap: nowrap; }
+
+/* 桌面端弹性方向 */
+@media (min-width: 768px) {
+    .flex-col-desktop { flex-direction: column; }
+    .flex-row-desktop { flex-direction: row; }
+}
+
+/* ========== 对齐方式 ========== */
+.items-start     { align-items: flex-start; }
+.items-center    { align-items: center; }
+.items-end       { align-items: flex-end; }
+.items-stretch   { align-items: stretch; }
+.items-baseline  { align-items: baseline; }
+
+.justify-start   { justify-content: flex-start; }
+.justify-center  { justify-content: center; }
+.justify-end     { justify-content: flex-end; }
+.justify-between { justify-content: space-between; }
+.justify-around  { justify-content: space-around; }
+.justify-evenly  { justify-content: space-evenly; }
+
+/* ========== 弹性项目 ========== */
+.flex-1        { flex: 1 1 0%; }
+.flex-auto     { flex: auto; }
+.flex-none     { flex: none; }
+.flex-shrink-0 { flex-shrink: 0; }
+.flex-grow     { flex-grow: 1; }
+
+/* ========== 响应式弹性方向 ========== */
+@media (max-width: 767px) {
+    .flex-col-mobile { flex-direction: column !important; }
+    .flex-row-mobile { flex-direction: row !important; }
+}

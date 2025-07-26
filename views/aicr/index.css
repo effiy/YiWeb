@@ -1,0 +1,233 @@
+@import url('/css/index.css');
+@import url('/plugins/searchHeader/index.css');
+
+/**
+ * 代码审查页面样式
+ * 使用统一的设计系统变量，优化三栏布局
+ */
+
+/* ========== 主容器 ========== */
+.aicr-main {
+    display: flex;
+    height: calc(100vh - 80px);
+    background: var(--bg-primary);
+    min-width: 320px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ========== 侧边栏（文件树） ========== */
+.aicr-sidebar {
+    width: 280px;
+    min-width: 200px;
+    max-width: 350px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-sm);
+    overflow-y: auto;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    position: relative;
+}
+
+.aicr-sidebar:hover {
+    box-shadow: var(--shadow-md);
+    border-right-color: var(--border-secondary);
+}
+
+/* ========== 代码区域 ========== */
+.aicr-code {
+    flex: 1;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: auto;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    min-width: 0;
+    position: relative;
+}
+
+.aicr-code::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.02) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+/* ========== 评论区域 ========== */
+.aicr-comments {
+    width: 360px;
+    min-width: 240px;
+    max-width: 450px;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-sm);
+    overflow-y: auto;
+    padding: var(--spacing-md);
+    z-index: 10;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.aicr-comments:hover {
+    box-shadow: var(--shadow-md);
+    border-left-color: var(--border-secondary);
+}
+
+/* ========== 响应式设计 ========== */
+
+/* 中等屏幕 */
+@media (max-width: 1200px) {
+    .aicr-sidebar {
+        width: 240px;
+        min-width: 180px;
+    }
+    .aicr-comments {
+        width: 300px;
+        min-width: 220px;
+    }
+    .aicr-code {
+        font-size: 13px;
+    }
+}
+
+/* 小屏幕平板 */
+@media (max-width: 950px) {
+    .aicr-main {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100vh - 80px);
+    }
+    
+    .aicr-sidebar, 
+    .aicr-comments {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        height: 40vh;
+        max-height: 300px;
+        border: none;
+        box-shadow: none;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .aicr-sidebar {
+        border-bottom: 1px solid var(--border-primary);
+        order: 1;
+    }
+    
+    .aicr-code {
+        font-size: 13px;
+        order: 2;
+        min-height: 60vh;
+    }
+    
+    .aicr-comments {
+        border-top: 1px solid var(--border-primary);
+        order: 3;
+    }
+}
+
+/* 手机屏幕 */
+@media (max-width: 640px) {
+    .aicr-main {
+        flex-direction: column;
+    }
+    
+    .aicr-sidebar, 
+    .aicr-comments {
+        height: 35vh;
+        max-height: 250px;
+        padding: var(--spacing-xs);
+    }
+    
+    .aicr-code {
+        font-size: 12px;
+        min-height: 50vh;
+    }
+}
+
+/* ========== 滚动条样式 ========== */
+.aicr-sidebar::-webkit-scrollbar,
+.aicr-comments::-webkit-scrollbar,
+.aicr-code::-webkit-scrollbar {
+    width: 6px;
+}
+
+.aicr-sidebar::-webkit-scrollbar-track,
+.aicr-comments::-webkit-scrollbar-track,
+.aicr-code::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.aicr-sidebar::-webkit-scrollbar-thumb,
+.aicr-comments::-webkit-scrollbar-thumb,
+.aicr-code::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+.aicr-sidebar::-webkit-scrollbar-thumb:hover,
+.aicr-comments::-webkit-scrollbar-thumb:hover,
+.aicr-code::-webkit-scrollbar-thumb:hover {
+    background: var(--border-secondary);
+}
+
+/* ========== 面板切换动画 ========== */
+.aicr-sidebar,
+.aicr-comments {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+@media (max-width: 950px) {
+    .aicr-sidebar.collapsed {
+        transform: translateY(-100%);
+        opacity: 0;
+        height: 0;
+        min-height: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+    
+    .aicr-comments.collapsed {
+        transform: translateY(100%);
+        opacity: 0;
+        height: 0;
+        min-height: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+} 
+
+/* ========== 折叠按钮样式 ========== */
+.collapse-btns {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-left: 16px;
+}
+.collapse-btns button {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 4px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.collapse-btns button:hover {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+} 
+
+

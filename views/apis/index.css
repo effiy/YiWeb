@@ -1,0 +1,281 @@
+/* HTTP API大全页面样式 */
+@import url('/css/index.css');
+@import url('/plugins/searchHeader/index.css');
+
+.search-logo { 
+  color: var(--primary); 
+  cursor: pointer; 
+}
+
+.api-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.1rem 1.1rem 0.8rem 1.1rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    min-height: 120px;
+}
+
+.api-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    transform: translateY(-2px);
+}
+
+.api-header {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.api-info {
+    width: 100%;
+}
+
+.api-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.api-name {
+  flex: 1;
+  font-size: 1.1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.api-method {
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0.1rem 0.7rem;
+  margin-left: 0.5rem;
+  cursor: pointer;
+  background: #e0f7e9;
+  color: #16a34a;
+  border: 1px solid #16a34a;
+}
+.api-method.method-post { background: #e0e7ff; color: #2563eb; border-color: #2563eb; }
+.api-method.method-put { background: #fef9c3; color: #ca8a04; border-color: #ca8a04; }
+.api-method.method-delete { background: #fee2e2; color: #dc2626; border-color: #dc2626; }
+.api-path {
+  font-family: 'SF Mono', 'Monaco', monospace;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0.3rem 0 0.2rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.api-description {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0 0 0.5rem 0;
+}
+.api-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+.tag {
+    padding: 0.25rem 0.75rem;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-radius: 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.tag:hover {
+    background: var(--bg-hover);
+    border-color: var(--primary-color);
+}
+
+.tag.active {
+    background: var(--primary-color);
+    color: white;
+}
+.tag.tag-more {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: default;
+}
+.api-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 0.5rem;
+}
+.api-category {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: var(--bg-secondary);
+    padding: 0.15rem 0.6rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.api-tester-btn { 
+  background: var(--primary); 
+  color: var(--text-primary); 
+  border: none; 
+  border-radius: 4px; 
+  padding: 4px 12px; 
+  cursor: pointer; 
+  font-size: 0.95em; 
+  transition: background-color 0.2s ease;
+}
+
+.api-tester-btn:hover { 
+  background: var(--primary-hover); 
+}
+
+.loading-indicator { 
+  text-align: center; 
+  margin: 32px 0; 
+}
+
+.loading-spinner { 
+  border: 4px solid var(--gray-300); 
+  border-top: 4px solid var(--primary); 
+  border-radius: 50%; 
+  width: 32px; 
+  height: 32px; 
+  animation: spin 1s linear infinite; 
+  margin: 0 auto; 
+}
+
+@keyframes spin { 
+  100% { 
+    transform: rotate(360deg); 
+  } 
+}
+
+.error-message { 
+  color: var(--error); 
+  background: rgba(239, 68, 68, 0.1); 
+  border: 1px solid rgba(239, 68, 68, 0.3); 
+  border-radius: 4px; 
+  padding: 8px; 
+  margin: 16px 0; 
+}
+
+.empty-state { 
+  text-align: center; 
+  color: var(--text-muted); 
+  margin: 32px 0; 
+}
+
+.apis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+} 
+
+.api-examples {
+  margin: 1rem 0 0.5rem 0;
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+.examples-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.examples-title i {
+  color: var(--primary-color);
+  font-size: 0.8rem;
+}
+.examples-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.example-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.example-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+.example-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+.example-number {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.copy-example-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.copy-example-btn:hover {
+  background: var(--bg-hover);
+  color: var(--primary-color);
+}
+.example-content {
+  padding: 0.75rem;
+}
+.example-code {
+  display: block;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  padding: 0.5rem;
+  border-radius: 4px;
+  line-height: 1.4;
+  word-break: break-all;
+  white-space: pre-wrap;
+  margin-bottom: 0.5rem;
+}
+.example-description {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+  font-style: italic;
+  min-width: 0;
+} 

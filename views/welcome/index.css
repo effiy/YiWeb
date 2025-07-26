@@ -1,0 +1,7 @@
+/* author: liangliang */
+/* ========== 全局样式导入 ========== */
+@import url('/css/index.css');
+
+@import url('/plugins/searchHeader/index.css');
+
+@import url('/views/welcome/plugins/featureCard/index.css');

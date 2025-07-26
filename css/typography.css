@@ -1,0 +1,116 @@
+/**
+ * @author liangliang
+ * 字体与排版变量及工具类
+ * 统一管理字体、字号、粗细、行高、文本对齐、装饰、溢出等常用排版样式
+ */
+
+:root {
+    /* 字体族 */
+    --font-family-sans: 'Inter', 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-family-mono: 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+
+    /* 字号 */
+    --font-size-xs: 0.75rem;      /* 12px */
+    --font-size-sm: 0.875rem;     /* 14px */
+    --font-size-base: 1rem;       /* 16px */
+    --font-size-lg: 1.125rem;     /* 18px */
+    --font-size-xl: 1.25rem;      /* 20px */
+    --font-size-2xl: 1.5rem;      /* 24px */
+    --font-size-3xl: 1.875rem;    /* 30px */
+    --font-size-4xl: 2.25rem;     /* 36px */
+
+    /* 字重 */
+    --font-weight-light: 300;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+
+    /* 行高 */
+    --line-height-none: 1;
+    --line-height-tight: 1.25;
+    --line-height-snug: 1.375;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.625;
+    --line-height-loose: 2;
+}
+
+/* ========== 字体对齐 ========== */
+.text-left    { text-align: left !important; }
+.text-center  { text-align: center !important; }
+.text-right   { text-align: right !important; }
+
+/* ========== 字号 ========== */
+.text-xs   { font-size: var(--font-size-xs) !important; }
+.text-sm   { font-size: var(--font-size-sm) !important; }
+.text-base { font-size: var(--font-size-base) !important; }
+.text-lg   { font-size: var(--font-size-lg) !important; }
+.text-xl   { font-size: var(--font-size-xl) !important; }
+.text-2xl  { font-size: var(--font-size-2xl) !important; }
+.text-3xl  { font-size: var(--font-size-3xl) !important; }
+.text-4xl  { font-size: var(--font-size-4xl) !important; }
+
+/* ========== 字重 ========== */
+.font-light     { font-weight: var(--font-weight-light) !important; }
+.font-normal    { font-weight: var(--font-weight-normal) !important; }
+.font-medium    { font-weight: var(--font-weight-medium) !important; }
+.font-semibold  { font-weight: var(--font-weight-semibold) !important; }
+.font-bold      { font-weight: var(--font-weight-bold) !important; }
+.font-extrabold { font-weight: var(--font-weight-extrabold) !important; }
+
+/* ========== 行高 ========== */
+.leading-none    { line-height: var(--line-height-none) !important; }
+.leading-tight   { line-height: var(--line-height-tight) !important; }
+.leading-snug    { line-height: var(--line-height-snug) !important; }
+.leading-normal  { line-height: var(--line-height-normal) !important; }
+.leading-relaxed { line-height: var(--line-height-relaxed) !important; }
+.leading-loose   { line-height: var(--line-height-loose) !important; }
+
+/* ========== 文本颜色（需在:root定义色值） ========== */
+.text-primary   { color: var(--text-primary) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+.text-muted     { color: var(--text-muted) !important; }
+.text-accent    { color: var(--text-accent) !important; }
+
+/* ========== 文本装饰 ========== */
+.underline    { text-decoration: underline !important; }
+.no-underline { text-decoration: none !important; }
+
+/* ========== 文本变换 ========== */
+.uppercase   { text-transform: uppercase !important; }
+.lowercase   { text-transform: lowercase !important; }
+.capitalize  { text-transform: capitalize !important; }
+
+/* ========== 文本溢出 ========== */
+.truncate {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+/* 多行文本截断（需配合最大宽度使用） */
+.line-clamp-2, .line-clamp-3, .line-clamp-4, .line-clamp-5 {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+}
+.line-clamp-2 { -webkit-line-clamp: 2 !important; }
+.line-clamp-3 { -webkit-line-clamp: 3 !important; }
+.line-clamp-4 { -webkit-line-clamp: 4 !important; }
+.line-clamp-5 { -webkit-line-clamp: 5 !important; }
+
+/* ========== 文本换行与断词 ========== */
+.break-normal { word-break: normal !important; }
+.break-words  { word-break: break-word !important; }
+.break-all    { word-break: break-all !important; }
+
+/* ========== 空白处理 ========== */
+.whitespace-normal    { white-space: normal !important; }
+.whitespace-nowrap    { white-space: nowrap !important; }
+.whitespace-pre       { white-space: pre !important; }
+.whitespace-pre-wrap  { white-space: pre-wrap !important; }
+
+/* ========== 字体族工具类 ========== */
+.font-sans { font-family: var(--font-family-sans) !important; }
+.font-mono { font-family: var(--font-family-mono) !important; }
