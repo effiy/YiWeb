@@ -3,138 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="HTTP API大全，便捷查询、测试和管理API接口">
-    <meta name="keywords" content="HTTP API, 接口文档, 在线测试, RESTful, 请求示例">
-    <title>YiWeb - HTTP API大全</title>
+    <meta name="description" content="API接口管理页面，展示接口等待交互功能">
+    <meta name="keywords" content="API, 接口管理, 等待交互, YiWeb">
+    <meta name="author" content="liangliang">
+    
+    <title>API接口管理 - YiWeb</title>
+    
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="/css/apiLoading.css">
     <link rel="stylesheet" href="/views/apis/index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous">
+    
+    <!-- Vue3 CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
     <div id="app">
-        <header class="header-row" role="banner">
-            <section class="search-row">
-                <form class="search-box" role="search" aria-label="API搜索">
-                    <span class="search-logo" aria-hidden="true" @click="openLink('/index.html')">
-                        <i class="fas fa-network-wired" aria-label="API图标"></i>
-                    </span>
-                    <div class="search-input-wrapper">
-                        <label for="messageInput" class="visually-hidden">消息输入框</label>
-                        <textarea 
-                            id="messageInput" 
-                            placeholder="搜索API名称、路径或描述..." 
-                            rows="1" 
-                            maxlength="2000"
-                            aria-label="搜索API"
-                            autocomplete="off"
-                            spellcheck="false"
-                            :value="searchKeyword"
-                            @input="handleSearchInput"
-                            @keydown="handleSearchKeydown"></textarea>
-                        <div v-if="hasSearchKeyword" class="search-indicator">
-                            <button type="button" class="clear-search-btn" @click="clearSearch" aria-label="清空搜索">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-                <nav class="category-filters" id="category-filters" role="toolbar" aria-label="API分组过滤器">
-                    <ul class="filter-buttons">
-                        <li v-for="btn in filterBtns" :key="btn.id">
-                            <button 
-                                class="filter-btn" 
-                                :class="{ active: btn.id === currentCategory }"
-                                :data-category="btn.id"
-                                @click="switchCategory(btn.id)">
-                                <i :class="btn.icon"></i>
-                                {{ btn.name }}
-                            </button>
-                        </li>
-                    </ul>
-                </nav>
-            </section>
+        <!-- 页面头部 -->
+        <header class="page-header">
+            <div class="header-content">
+                <h1 class="page-title">
+                    <i class="fas fa-globe"></i>
+                    API接口管理
+                </h1>
+                <p class="page-description">管理和测试API接口，体验接口等待交互功能</p>
+            </div>
         </header>
-        <main class="main-content" role="main">
-            <section class="container">
-                <div v-if="loading" class="loading-indicator">
-                    <div class="loading-spinner"></div>
-                </div>
-                <div v-if="error" class="error-message">{{ error }}</div>
-                <div v-if="hasSearchKeyword && !loading && !error" class="search-results">
-                    <div class="search-results-header">
-                        <div class="results-info">
-                            <i class="fas fa-search"></i>
-                            <span>搜索结果</span>
+
+        <!-- 主要内容 -->
+        <main class="main-content">
+            <!-- 功能演示区域 -->
+            <section class="demo-section">
+                <h2 class="section-title">接口等待交互演示</h2>
+                
+                <div class="demo-cards">
+                    <!-- 基础请求演示 -->
+                    <div class="demo-card">
+                        <div class="card-header">
+                            <i class="fas fa-rocket"></i>
+                            <h3>基础请求</h3>
                         </div>
-                        <div class="search-query">{{ searchKeyword }}</div>
-                        <div class="search-results-count">
-                            找到 {{ filteredApis.length }} 个API
-                        </div>
-                        <button class="clear-search" @click="clearSearch">
-                            <i class="fas fa-times"></i>
-                            清空搜索
-                        </button>
-                    </div>
-                </div>
-                <div v-if="!loading && !error" class="apis-grid">
-                    <div 
-                        v-for="api in filteredApis" 
-                        :key="api.id"
-                        class="api-card" 
-                        :data-category="api.category">
-                        <div class="api-header">
-                            <div class="api-title-row">
-                                <h3 class="api-name" :title="api.name">{{ api.name }}</h3>
-                                <span class="api-method" :class="'method-' + api.method.toLowerCase()" @click="filterByMethod(api.method)">{{ api.method }}</span>
-                            </div>
-                            <div class="api-path" :title="api.path">{{ api.path }}</div>
-                            <p class="api-description" :title="api.description">{{ api.description }}</p>
-                        </div>
-                        <div class="api-tags">
-                            <span v-for="(tag, idx) in api.tags.slice(0, 3)" :key="tag" class="tag" :class="{ active: selectedTags.includes(tag) }" @click="toggleTag(tag)">{{ tag }}</span>
-                            <span v-if="api.tags.length > 3" class="tag tag-more" :title="api.tags.join(', ')">…</span>
-                        </div>
-                        <div v-if="api.examples && api.examples.length > 0" class="api-examples">
-                            <h4 class="examples-title">
-                                <i class="fas fa-code"></i>
-                                使用示例
-                            </h4>
-                            <div class="examples-list">
-                                <div v-for="(example, index) in api.examples" :key="index" class="example-item">
-                                    <div class="example-header">
-                                        <span class="example-number">#{{ index + 1 }}</span>
-                                        <p class="example-description">{{ example.description }}</p>
-                                        <button class="copy-example-btn" @click="copyExample(example.command)" title="复制示例">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
-                                    </div>
-                                    <div class="example-content">
-                                        <code class="example-code">{{ example.command }}</code>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="api-footer">
-                            <span class="api-category">{{ api.category }}</span>
+                        <div class="card-content">
+                            <p>演示基本的API请求等待交互</p>
+                            <button class="demo-btn" @click="testBasicRequest">
+                                <i class="fas fa-play"></i>
+                                测试基础请求
+                            </button>
                         </div>
                     </div>
-                </div>
-                <div v-if="!loading && !error && filteredApis.length === 0" class="empty-state">
-                    <i class="fas fa-network-wired"></i>
-                    <p>暂无API数据</p>
+
+                    <!-- 进度显示演示 -->
+                    <div class="demo-card">
+                        <div class="card-header">
+                            <i class="fas fa-chart-line"></i>
+                            <h3>进度显示</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>演示带进度条的请求等待</p>
+                            <button class="demo-btn" @click="testProgressRequest">
+                                <i class="fas fa-play"></i>
+                                测试进度请求
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 超时处理演示 -->
+                    <div class="demo-card">
+                        <div class="card-header">
+                            <i class="fas fa-clock"></i>
+                            <h3>超时处理</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>演示请求超时的处理机制</p>
+                            <button class="demo-btn" @click="testTimeoutRequest">
+                                <i class="fas fa-play"></i>
+                                测试超时请求
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 错误重试演示 -->
+                    <div class="demo-card">
+                        <div class="card-header">
+                            <i class="fas fa-redo"></i>
+                            <h3>错误重试</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>演示请求失败时的重试机制</p>
+                            <button class="demo-btn" @click="testRetryRequest">
+                                <i class="fas fa-play"></i>
+                                测试重试请求
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </section>
-            <!-- 插件区域：API测试器 -->
-            <section id="api-tester-plugin"></section>
+
+            <!-- API接口列表 -->
+            <section class="api-section">
+                <h2 class="section-title">API接口列表</h2>
+                
+                <div class="api-controls">
+                    <button class="add-api-btn" @click="showAddApiModal">
+                        <i class="fas fa-plus"></i>
+                        添加接口
+                    </button>
+                    <button class="refresh-btn" @click="refreshApiList">
+                        <i class="fas fa-sync-alt"></i>
+                        刷新列表
+                    </button>
+                </div>
+
+                <div class="api-list">
+                    <div v-for="api in apiList" :key="api.id" class="api-item">
+                        <div class="api-info">
+                            <div class="api-method" :class="api.method.toLowerCase()">
+                                {{ api.method }}
+                            </div>
+                            <div class="api-details">
+                                <h4 class="api-name">{{ api.name }}</h4>
+                                <p class="api-url">{{ api.url }}</p>
+                                <p class="api-description">{{ api.description }}</p>
+                            </div>
+                        </div>
+                        <div class="api-actions">
+                            <button class="action-btn test-btn" @click="testApi(api)">
+                                <i class="fas fa-play"></i>
+                                测试
+                            </button>
+                            <button class="action-btn edit-btn" @click="editApi(api)">
+                                <i class="fas fa-edit"></i>
+                                编辑
+                            </button>
+                            <button class="action-btn delete-btn" @click="deleteApi(api)">
+                                <i class="fas fa-trash"></i>
+                                删除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
+
+        <!-- 添加API模态框 -->
+        <div v-if="showModal" class="modal-overlay" @click="hideModal">
+            <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                    <h3>{{ editingApi ? '编辑接口' : '添加接口' }}</h3>
+                    <button class="close-btn" @click="hideModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form @submit.prevent="saveApi">
+                        <div class="form-group">
+                            <label for="apiName">接口名称</label>
+                            <input 
+                                id="apiName" 
+                                v-model="apiForm.name" 
+                                type="text" 
+                                required
+                                placeholder="请输入接口名称"
+                            >
+                        </div>
+                        <div class="form-group">
+                            <label for="apiUrl">接口地址</label>
+                            <input 
+                                id="apiUrl" 
+                                v-model="apiForm.url" 
+                                type="url" 
+                                required
+                                placeholder="https://api.example.com/endpoint"
+                            >
+                        </div>
+                        <div class="form-group">
+                            <label for="apiMethod">请求方法</label>
+                            <select id="apiMethod" v-model="apiForm.method" required>
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="DELETE">DELETE</option>
+                                <option value="PATCH">PATCH</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="apiDescription">接口描述</label>
+                            <textarea 
+                                id="apiDescription" 
+                                v-model="apiForm.description" 
+                                rows="3"
+                                placeholder="请输入接口描述"
+                            ></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="cancel-btn" @click="hideModal">取消</button>
+                            <button type="submit" class="save-btn">保存</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-    <section id="global-loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="全局加载中">
-        <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
-    </section>
-    <section id="error-message" class="error-message" role="alert" aria-live="assertive" hidden></section>
-    <section id="notifications" class="notifications-container" role="region" aria-label="通知区域"></section>
-    <script type="module" src="/views/apis/index.js" defer></script>
-    <script type="module" src="/utils/performance.js"></script>
-    <script type="module" src="/utils/loading.js"></script>
+
+    <!-- 脚本文件 -->
+    <script type="module" src="/views/apis/index.js"></script>
 </body>
 </html> 

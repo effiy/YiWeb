@@ -2,6 +2,7 @@
 // 作者：liangliang
 
 import { checkStatus, isJsonResponse } from '/apis/helper/checkStatus.js';
+import { apiLoading } from '/utils/apiLoading.js';
 
 /**
  * 默认请求配置
@@ -77,47 +78,61 @@ export async function sendRequest(url, options = {}) {
     url
   };
   
-  // 应用请求拦截器
-  const interceptedConfig = requestInterceptor(config);
+  // 生成请求ID
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
-  try {
-    // 创建请求 Promise
-    const requestPromise = fetch(url, {
-      method: config.method || 'GET',
-      headers: config.headers,
-      body: config.body,
-      ...config.fetchOptions
-    });
+  // 显示加载界面
+  const loadingOptions = {
+    message: `正在请求 ${new URL(url).hostname}...`,
+    timeout: config.timeout,
+    showProgress: true,
+    showCancel: true,
+    details: `请求地址: ${url}\n请求方法: ${config.method || 'GET'}`
+  };
+  
+  return apiLoading.withLoading(async () => {
+    // 应用请求拦截器
+    const interceptedConfig = requestInterceptor(config);
     
-    // 创建超时 Promise
-    const timeoutPromise = createTimeoutPromise(config.timeout);
-    
-    // 竞争：请求 vs 超时
-    const response = await Promise.race([requestPromise, timeoutPromise]);
-    
-    // 应用响应拦截器
-    const interceptedResponse = responseInterceptor(response, interceptedConfig);
-    
-    // 检查状态
-    await checkStatus(interceptedResponse);
-    
-    // 根据响应类型返回数据
-    if (isJsonResponse(interceptedResponse)) {
-      return interceptedResponse.json();
-    } else {
-      return interceptedResponse.text();
+    try {
+      // 创建请求 Promise
+      const requestPromise = fetch(url, {
+        method: config.method || 'GET',
+        headers: config.headers,
+        body: config.body,
+        ...config.fetchOptions
+      });
+      
+      // 创建超时 Promise
+      const timeoutPromise = createTimeoutPromise(config.timeout);
+      
+      // 竞争：请求 vs 超时
+      const response = await Promise.race([requestPromise, timeoutPromise]);
+      
+      // 应用响应拦截器
+      const interceptedResponse = responseInterceptor(response, interceptedConfig);
+      
+      // 检查状态
+      await checkStatus(interceptedResponse);
+      
+      // 根据响应类型返回数据
+      if (isJsonResponse(interceptedResponse)) {
+        return interceptedResponse.json();
+      } else {
+        return interceptedResponse.text();
+      }
+      
+    } catch (error) {
+      // 监控错误
+      console.error('请求错误：', {
+        url,
+        method: config.method,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+      throw error;
     }
-    
-  } catch (error) {
-    // 监控错误
-    console.error('请求错误：', {
-      url,
-      method: config.method,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-    throw error;
-  }
+  }, loadingOptions);
 }
 
 /**
