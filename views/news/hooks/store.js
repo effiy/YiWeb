@@ -65,7 +65,7 @@ export const createStore = () => {
             
             console.log(`[loadNewsData] 正在加载 ${dateStr} 的新闻数据...`);
             
-            const response = await getData(`https://api.effiy.cn/mongodb/?cname=rss&isoDate=${dateStr},${dateStr}`);
+            const response = await getData(`${window.API_URL}/mongodb/?cname=rss&isoDate=${dateStr},${dateStr}`);
             const data = response.data.list;
             
             if (!Array.isArray(data)) {
