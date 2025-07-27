@@ -206,7 +206,7 @@ export const useMethods = (store) => {
             const response = await createData(`${window.API_URL}/prompt`, {
                 fromSystem: store.fromSystem.value,
                 fromUser: message,
-                model: 'qwen3:latest'
+                model: 'qwq'
             });
             
             console.log('[API响应] 收到服务器响应:', response);
