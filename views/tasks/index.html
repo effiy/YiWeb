@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="任务管理助手，为您提供任务规划、进度跟踪、时间管理等多种智能服务">
+    <meta name="keywords" content="任务管理, 项目管理, 时间管理, 进度跟踪, YiWeb">
+    <meta name="author" content="liangliang">
+    
+    <!-- DNS 预解析优化 -->
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    
+    <title>YiWeb - 智能任务助手</title>
+    
+    <!-- 页面样式 -->
+    <link rel="stylesheet" href="/views/tasks/index.css">
+    <!-- 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous">
+
+    <!-- Vue3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部搜索与分类区域 -->
+        <search-header
+            v-model:search-query="searchQuery"
+            :categories="categories"
+            :selected-categories="selectedCategories"
+            @search-keydown="handleSearchKeydown"
+            @clear-search="handleClearSearch"
+            @toggle-category="handleToggleCategory"
+        ></search-header>
+        
+        <main class="main-content" role="main">
+            <!-- 功能卡片区域 -->
+            <section class="container">
+                <!-- 任务列表组件模板 -->
+                <task-list
+                    :loading="loading"
+                    :error="error"
+                    :search-query="searchQuery"
+                    :search-results="filteredTasksData"
+                    :display-categories="displayCategories"
+                    :selected-categories="selectedCategories"
+                    :clicked-items="clickedItems"
+                    :has-tasks-data="hasTasksData"
+                    :selected-task="selectedTask"
+                    :is-detail-visible="isDetailVisible"
+                    @load-tasks-data="handleLoadTasksData"
+                    @task-click="handleTaskClick"
+                ></task-list>
+                
+                <!-- 任务详情组件 -->
+                <task-detail
+                    :selected-task="selectedTask"
+                    :is-detail-visible="isDetailVisible"
+                    @close-detail="handleCloseDetail"
+                    @step-toggle="handleStepToggle"
+                ></task-detail>
+            </section>
+        </main>
+    </div>
+
+    <!-- 加载指示器 -->
+    <section id="global-loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="加载中">
+        <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+    </section>
+
+    <!-- 错误提示 -->
+    <section id="error-message" class="error-message" role="alert" aria-live="assertive" hidden></section>
+
+    <!-- 通知容器 -->
+    <section id="notifications" class="notifications-container" role="region" aria-label="通知区域"></section>
+
+    <script type="module" src="/config.js"></script>
+
+    <!-- 主功能脚本 -->
+    <script type="module" src="/plugins/searchHeader/index.js"></script>
+    <script type="module" src="/views/tasks/plugins/taskList/index.js"></script>
+    <script type="module" src="/views/tasks/plugins/taskDetail/index.js"></script>
+    <script type="module" src="/views/tasks/index.js"></script>
+    <!-- 性能监控脚本 -->
+    <script type="module" src="/utils/performance.js"></script>
+</body>
+</html> 

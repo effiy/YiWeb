@@ -1,0 +1,128 @@
+<div 
+    v-if="showDetail"
+    class="task-detail-container"
+    :class="{ visible: showDetail }"
+    role="dialog"
+    aria-label="任务详情"
+    aria-modal="true"
+>
+    <div class="task-detail-content">
+        <!-- 详情头部 -->
+        <div class="task-detail-header">
+            <h2 class="task-detail-title">{{ selectedTask.title }}</h2>
+            <button 
+                @click="handleCloseDetail"
+                class="close-detail-btn"
+                title="关闭详情"
+                aria-label="关闭任务详情"
+            >
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+        </div>
+        
+        <!-- 任务时间 -->
+        <div class="task-detail-time">
+            <i class="fas fa-clock" aria-hidden="true"></i>
+            <span>{{ formattedTime }}</span>
+        </div>
+        
+        <!-- 任务描述 -->
+        <div class="task-description" v-if="selectedTask.description">
+            <h4>
+                <i class="fas fa-info-circle" aria-hidden="true"></i>
+                任务描述
+            </h4>
+            <div class="task-description-content">
+                <p class="task-description-text">{{ selectedTask.description }}</p>
+            </div>
+        </div>
+        
+        <!-- 任务步骤详情 -->
+        <div class="task-steps-detail">
+            <h4>
+                <i class="fas fa-list-ol" aria-hidden="true"></i>
+                执行步骤
+                <span class="steps-progress" v-if="stepsProgress.total > 0">
+                    ({{ stepsProgress.completed }}/{{ stepsProgress.total }})
+                </span>
+            </h4>
+            <div class="task-steps-list" role="list">
+                <div 
+                    v-for="step in taskSteps" 
+                    :key="step.number"
+                    class="step-detail-item"
+                    :class="{ 'completed': step.completed }"
+                    role="listitem"
+                >
+                    <div class="step-detail-content">
+                        <label class="step-checkbox-wrapper">
+                            <input 
+                                type="checkbox" 
+                                :checked="step.completed"
+                                @change="handleStepToggle(step)"
+                                class="step-checkbox"
+                                :aria-label="`标记步骤 ${step.number} 为${step.completed ? '未完成' : '已完成'}`"
+                            >
+                            <span class="step-checkbox-custom"></span>
+                        </label>
+                        <div class="step-detail-number">{{ step.number }}</div>
+                        <p class="step-detail-text" :class="{ 'completed-text': step.completed }">{{ step.text }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 任务输入输出 -->
+        <div class="task-input-output">
+            <div class="task-input">
+                <h5>
+                    <i class="fas fa-arrow-down" aria-hidden="true"></i>
+                    输入
+                </h5>
+                <div class="task-content-wrapper">
+                    <p class="task-content-text">{{ selectedTask.input || '无输入信息' }}</p>
+                </div>
+            </div>
+            <div class="task-output">
+                <h5>
+                    <i class="fas fa-arrow-up" aria-hidden="true"></i>
+                    输出
+                </h5>
+                <div class="task-content-wrapper">
+                    <p class="task-content-text">{{ selectedTask.output || '无输出信息' }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="task-detail-actions">
+            <button 
+                @click="handleCopyTask"
+                class="btn btn-secondary"
+                title="复制任务信息"
+                aria-label="复制任务信息到剪贴板"
+            >
+                <i class="fas fa-copy" aria-hidden="true"></i>
+                复制
+            </button>
+            <button 
+                @click="handleShareTask"
+                class="btn btn-secondary"
+                title="分享任务"
+                aria-label="分享任务"
+            >
+                <i class="fas fa-share" aria-hidden="true"></i>
+                分享
+            </button>
+            <button 
+                @click="handleExportTask"
+                class="btn btn-primary"
+                title="导出任务"
+                aria-label="导出任务为JSON文件"
+            >
+                <i class="fas fa-download" aria-hidden="true"></i>
+                导出
+            </button>
+        </div>
+    </div>
+</div> 
