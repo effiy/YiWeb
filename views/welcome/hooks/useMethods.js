@@ -910,10 +910,6 @@ export const useMethods = (store) => {
 
         console.log('[生成任务] 生成任务:', card, feature);
 
-        // 先打开一个空白窗口，防止后续异步操作被浏览器拦截
-        const taskUrl = `/views/tasks/index.html?featureName=${encodeURIComponent(feature.name)}&cardTitle=${encodeURIComponent(card.title)}`;
-        const newWindow = window.open('about:blank', '_blank');
-
         const target = feature.name + '-' + feature.desc;
         const description = card.title + '-' + card.description;
 
@@ -944,18 +940,9 @@ export const useMethods = (store) => {
                 );
             }
 
-            // 跳转到任务页面
-            if (newWindow) {
-                newWindow.location.href = taskUrl;
-            } else {
-                // 如果窗口被拦截，降级为当前页面跳转
-                window.location.href = taskUrl;
-            }
+            window.open(`/views/tasks/index.html?featureName=${feature.name}&cardTitle=${card.title}`, '_blank');
+
         } catch (err) {
-            // 如果有异常，关闭已打开的空白窗口并提示错误
-            if (newWindow) {
-                newWindow.close();
-            }
             showError('生成任务失败，请稍后重试');
             console.error('[生成任务] 生成任务失败:', err);
         }
