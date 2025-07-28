@@ -191,25 +191,6 @@
     }
 }
 
-/* 长按文字提示 */
-.feature-card.long-pressing .card-title::after {
-    content: '长按删除中...';
-    position: absolute;
-    top: -30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(239, 68, 68, 0.9);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    white-space: nowrap;
-    animation: longPressText 0.5s ease-in-out;
-    z-index: 20;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
 @keyframes longPressText {
     0% {
         opacity: 0;
