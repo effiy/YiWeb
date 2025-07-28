@@ -91,6 +91,33 @@
         rgba(6, 182, 212, 0.08) 100%);
 }
 
+/* 长按删除状态样式 */
+.feature-card.long-pressing {
+    transform: scale(0.95) translate3d(0, 0, 0);
+    border-color: rgba(239, 68, 68, 0.6);
+    box-shadow: 
+        0 0 0 2px rgba(239, 68, 68, 0.3),
+        0 0 20px rgba(239, 68, 68, 0.2);
+    background: linear-gradient(135deg, 
+        rgba(239, 68, 68, 0.1) 0%, 
+        rgba(239, 68, 68, 0.05) 50%,
+        rgba(239, 68, 68, 0.1) 100%);
+    animation: longPressPulse 1s ease-in-out infinite;
+}
+
+@keyframes longPressPulse {
+    0%, 100% {
+        box-shadow: 
+            0 0 0 2px rgba(239, 68, 68, 0.3),
+            0 0 20px rgba(239, 68, 68, 0.2);
+    }
+    50% {
+        box-shadow: 
+            0 0 0 4px rgba(239, 68, 68, 0.4),
+            0 0 30px rgba(239, 68, 68, 0.3);
+    }
+}
+
 .feature-card:hover::before {
     opacity: 1;
     background: linear-gradient(135deg, 

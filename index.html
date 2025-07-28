@@ -101,7 +101,17 @@
                 <section class="feature-cards-container">
                     <section class="feature-cards-grid" role="grid" aria-label="功能卡片网格">
                         <section role="row" v-for="(card, index) in featureCards" :key="index">
-                            <article class="feature-card" :data-feature="card.title" role="gridcell">
+                            <article 
+                                class="feature-card" 
+                                :data-feature="card.title" 
+                                role="gridcell"
+                                @touchstart="startLongPress(card, $event)"
+                                @touchend="endLongPress"
+                                @touchcancel="endLongPress"
+                                @mousedown="startLongPress(card, $event)"
+                                @mouseup="endLongPress"
+                                @mouseleave="endLongPress"
+                            >
                                 <header class="card-header">
                                     <span class="card-icon" aria-hidden="true">
                                         <i :class="card.icon" :aria-label="card.title + '图标'"></i>
@@ -113,17 +123,7 @@
                                             @click="copyCardToClipboard(card, $event)"
                                             :title="'复制卡片信息到剪贴板'"
                                         >{{ card.badge }}</button>
-                                        <!-- 只对MongoDB数据（有key字段）显示删除按钮 -->
-                                        <button 
-                                            v-if="card.key"
-                                            class="card-delete-btn" 
-                                            type="button"
-                                            @click="deleteCard(card, $event)"
-                                            :title="'删除卡片'"
-                                            aria-label="删除卡片"
-                                        >
-                                            <i class="fas fa-trash" aria-hidden="true"></i>
-                                        </button>
+                                        <!-- 长按3秒删除功能已移除删除按钮 -->
                                     </div>
                                 </header>
                                 <section class="card-content">

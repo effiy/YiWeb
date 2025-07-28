@@ -36,6 +36,11 @@ export const useMethods = (store) => {
     
     // 延迟处理标记，避免快速连续触发
     let isProcessing = false;
+    
+    // 长按删除相关变量
+    let longPressTimer = null;
+    let longPressCard = null;
+    const LONG_PRESS_DURATION = 3000; // 3秒
 
     /**
      * 打开链接的统一方法
@@ -46,15 +51,68 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 开始长按计时
+     * @param {Object} card - 卡片对象
+     * @param {Event} event - 事件对象
+     */
+    const startLongPress = (card, event) => {
+        // 只对MongoDB数据（有key字段）启用长按删除
+        if (!card.key) {
+            return;
+        }
+        
+        // 清除之前的计时器
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+        }
+        
+        longPressCard = card;
+        
+        // 添加长按视觉反馈
+        const cardElement = event.target.closest('.feature-card');
+        if (cardElement) {
+            cardElement.classList.add('long-pressing');
+        }
+        
+        // 设置3秒后执行删除
+        longPressTimer = setTimeout(() => {
+            if (longPressCard && longPressCard.key) {
+                deleteCard(longPressCard);
+            }
+            // 移除长按样式
+            if (cardElement) {
+                cardElement.classList.remove('long-pressing');
+            }
+        }, LONG_PRESS_DURATION);
+        
+        console.log('[长按删除] 开始计时，3秒后将删除卡片:', card.title);
+    };
+    
+    /**
+     * 结束长按计时
+     */
+    const endLongPress = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+            longPressCard = null;
+            
+            // 移除所有卡片的长按样式
+            const longPressingCards = document.querySelectorAll('.feature-card.long-pressing');
+            longPressingCards.forEach(card => {
+                card.classList.remove('long-pressing');
+            });
+            
+            console.log('[长按删除] 取消删除操作');
+        }
+    };
+    
+    /**
      * 删除卡片
      * @param {Object} card - 卡片对象
-     * @param {Event} event - 点击事件对象
+     * @param {Event} event - 点击事件对象（可选）
      */
     const deleteCard = async (card, event) => {
-        // 阻止事件冒泡
-        event.preventDefault();
-        event.stopPropagation();
-        
         // 检查是否为MongoDB数据（有key字段）
         if (!card.key) {
             showError('只能删除来自数据库的卡片');
@@ -332,6 +390,8 @@ export const useMethods = (store) => {
         openLink,
         copyCardToClipboard,
         deleteCard,
+        startLongPress,
+        endLongPress,
         generateTask,
         handleMessageInput,
         handleCompositionStart,
