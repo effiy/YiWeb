@@ -57,6 +57,12 @@ export const createStore = () => {
             // 支持本地mock和远程接口切换
             const featureCardsData = await getData(`${window.DATA_URL}/mock/welcome/featureCards.json`);
             const systemPromptData = await getData(`${window.DATA_URL}/prompts/welcome/featureCards.txt`);
+
+            const mongoResponse = await getData(`${window.API_URL}/mongodb/?cname=goals`);
+
+            const mongoData = mongoResponse.data.list;
+
+            console.log('[Store] 加载到的mongo数据:', mongoData);
             
             // 设置系统提示
             if (systemPromptData) {
@@ -67,7 +73,7 @@ export const createStore = () => {
                 fromSystem.value = null;
             }
             // 使用更新方法设置数据
-            updateFeatureCards(featureCardsData);
+            updateFeatureCards(featureCardsData.concat(mongoData));
             console.log('[Store] 加载到的功能卡片数据:', featureCardsData);
             console.log('[Store] 加载到的系统提示数据:', systemPromptData);
         } catch (err) {
@@ -98,3 +104,4 @@ export const createStore = () => {
         updateFeatureCards  // 更新方法
     };
 }
+

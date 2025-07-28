@@ -52,8 +52,25 @@ export const createStore = () => {
             const tasksResponseData = await getData(`${window.DATA_URL}/mock/tasks/tasks.json`);
 
             console.log('[loadTasksData] 加载到的任务数据:', tasksResponseData);
+
+            // 根据浏览器请求参数拼接featureName和cardTitle进行条件查询
+            const urlParams = new URLSearchParams(window.location.search);
+            let queryUrl = `${window.API_URL}/mongodb/?cname=tasks`;
+            const featureName = urlParams.get('featureName');
+            const cardTitle = urlParams.get('cardTitle');
+            if (featureName) {
+                queryUrl += `&featureName=${encodeURIComponent(featureName)}`;
+            }
+            if (cardTitle) {
+                queryUrl += `&cardTitle=${encodeURIComponent(cardTitle)}`;
+            }
+            const mongoResponse = await getData(queryUrl);
+
+            const mongoData = mongoResponse.data.list;
+
+            console.log('[loadTasksData] 加载到的mongo数据:', mongoData);
             
-            tasksData.value = tasksResponseData;
+            tasksData.value = tasksResponseData.concat(mongoData);
             console.log(`[loadTasksData] 成功加载 ${tasksResponseData.length} 条任务数据`);
             
             return tasksResponseData;
@@ -212,4 +229,5 @@ export function categorizeTask(task) {
     
     return 'development'; // 默认分类
 } 
+
 

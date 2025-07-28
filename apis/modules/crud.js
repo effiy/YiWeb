@@ -7,7 +7,7 @@ import {
   putRequest, 
   patchRequest, 
   deleteRequest 
-} from '../helper/requestHelper.js';
+} from '/apis/helper/requestHelper.js';
 
 /**
  * 简单的内存缓存
@@ -325,4 +325,5 @@ export async function batchOperations(operations) {
 
 // 导出缓存管理器
 export { CacheManager };
+
 

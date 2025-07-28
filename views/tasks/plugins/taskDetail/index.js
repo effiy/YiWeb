@@ -72,17 +72,17 @@ const createTaskDetail = async () => {
          * 任务步骤详情
          */
         taskSteps() {
-            if (!this.selectedTask || !this.selectedTask.steps || !this.selectedTask.steps[0]) {
+            if (!this.selectedTask || !this.selectedTask.steps) {
                 return [];
             }
 
-            const steps = this.selectedTask.steps[0];
+            const steps = this.selectedTask.steps;
             const detailSteps = [];
             
             Object.keys(steps).forEach(key => {
                 detailSteps.push({
                     number: key,
-                    text: steps[key],
+                    text: '' + steps[key],
                     completed: this.completedSteps.has(key)
                 });
             });
@@ -320,3 +320,4 @@ ${this.taskSteps.map(step => `${step.number}. ${step.text}`).join('\n')}
       console.error('TaskDetail 组件初始化失败:', error);
   }
 })(); 
+
