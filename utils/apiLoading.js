@@ -104,7 +104,8 @@ class ApiLoadingManager {
             showProgress = true,
             // showCancel = true, // 取消相关已移除
             details = '',
-            position = this.defaultPosition // 新增位置选项
+            position = this.defaultPosition, // 新增位置选项
+            delayShow = 3000 // 新增：延迟显示时间，默认3秒
         } = options;
 
         // 设置位置
@@ -120,11 +121,31 @@ class ApiLoadingManager {
             details,
             progress: 0, // 初始化进度为0
             cancelled: false,
-            position // 保存位置信息
+            position, // 保存位置信息
+            delayShow, // 保存延迟显示时间
+            delayedShowTimer: null // 延迟显示定时器
         });
 
         this.globalLoading = true;
-        this.updateUI(requestId);
+
+        // 延迟显示loading界面
+        if (delayShow > 0) {
+            const delayedShowTimer = setTimeout(() => {
+                const state = this.loadingStates.get(requestId);
+                if (state && !state.cancelled) {
+                    this.updateUI(requestId);
+                }
+            }, delayShow);
+            
+            // 保存定时器ID
+            const state = this.loadingStates.get(requestId);
+            if (state) {
+                state.delayedShowTimer = delayedShowTimer;
+            }
+        } else {
+            // 立即显示
+            this.updateUI(requestId);
+        }
 
         // 设置超时
         if (timeout > 0) {
@@ -146,6 +167,11 @@ class ApiLoadingManager {
             // 清理进度更新定时器
             if (state.progressInterval) {
                 clearInterval(state.progressInterval);
+            }
+            
+            // 清理延迟显示定时器
+            if (state.delayedShowTimer) {
+                clearTimeout(state.delayedShowTimer);
             }
         }
         
@@ -308,11 +334,12 @@ class ApiLoadingManager {
             showProgress = true,
             // showCancel = true, // 取消相关已移除
             autoProgress = true, // 自动进度更新
-            position = this.defaultPosition // 新增位置选项
+            position = this.defaultPosition, // 新增位置选项
+            delayShow = 3000 // 新增：延迟显示时间，默认3秒
         } = options;
 
         try {
-            this.show(requestId, { message, timeout, showProgress, position });
+            this.show(requestId, { message, timeout, showProgress, position, delayShow });
             
             // 如果启用自动进度，开始进度动画
             if (autoProgress && showProgress) {

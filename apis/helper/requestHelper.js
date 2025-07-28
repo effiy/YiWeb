@@ -86,7 +86,8 @@ export async function sendRequest(url, options = {}) {
     timeout: config.timeout,
     showProgress: true,
     showCancel: true,
-    details: `请求地址: ${url}\n请求方法: ${config.method || 'GET'}`
+    details: `请求地址: ${url}\n请求方法: ${config.method || 'GET'}`,
+    delayShow: 3000 // 3秒内完成不显示loading
   };
   
   return apiLoading.withLoading(async () => {
