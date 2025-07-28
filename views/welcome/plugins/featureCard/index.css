@@ -7,8 +7,11 @@
 
 .feature-cards-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(420px, 1fr)); /* 三列布局，最小宽度420px */
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); /* 自适应列数，最小宽度420px */
     gap: var(--spacing-xl);
+    align-items: start;
+    justify-items: center;
+    grid-auto-flow: row dense; /* 自动填充空白位置 */
 }
 
 /* 功能卡片基础样式 - 使用CSS变量优化 */
@@ -102,7 +105,38 @@
         rgba(239, 68, 68, 0.1) 0%, 
         rgba(239, 68, 68, 0.05) 50%,
         rgba(239, 68, 68, 0.1) 100%);
-    animation: longPressPulse 1s ease-in-out infinite;
+    animation: longPressPulse 1s ease-in-out infinite, longPressShake 0.5s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 长按进度条 */
+.feature-card.long-pressing::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 4px;
+    background: linear-gradient(90deg, #ef4444, #dc2626, #b91c1c);
+    animation: longPressProgress 3s linear forwards;
+    z-index: 10;
+    border-radius: 0 0 2px 0;
+}
+
+/* 长按粒子效果 */
+.feature-card.long-pressing::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, transparent 70%);
+    animation: longPressParticles 2s ease-in-out infinite;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 1;
 }
 
 @keyframes longPressPulse {
@@ -115,6 +149,182 @@
         box-shadow: 
             0 0 0 4px rgba(239, 68, 68, 0.4),
             0 0 30px rgba(239, 68, 68, 0.3);
+    }
+}
+
+@keyframes longPressProgress {
+    0% {
+        width: 0%;
+    }
+    100% {
+        width: 100%;
+    }
+}
+
+@keyframes longPressShake {
+    0%, 100% {
+        transform: scale(0.95) translate3d(0, 0, 0);
+    }
+    25% {
+        transform: scale(0.95) translate3d(-1px, -1px, 0);
+    }
+    50% {
+        transform: scale(0.95) translate3d(1px, 1px, 0);
+    }
+    75% {
+        transform: scale(0.95) translate3d(-1px, 1px, 0);
+    }
+}
+
+@keyframes longPressParticles {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.5);
+    }
+}
+
+/* 长按文字提示 */
+.feature-card.long-pressing .card-title::after {
+    content: '长按删除中...';
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    animation: longPressText 0.5s ease-in-out;
+    z-index: 20;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+@keyframes longPressText {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* 长按图标特效 */
+.feature-card.long-pressing .card-icon {
+    animation: longPressIcon 1s ease-in-out infinite;
+}
+
+@keyframes longPressIcon {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+    }
+    25% {
+        transform: scale(1.1) rotate(-5deg);
+    }
+    75% {
+        transform: scale(1.1) rotate(5deg);
+    }
+}
+
+/* 长按徽章特效 */
+.feature-card.long-pressing .card-badge {
+    animation: longPressBadge 0.8s ease-in-out infinite;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+}
+
+@keyframes longPressBadge {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* 长按内容区域特效 */
+.feature-card.long-pressing .card-content {
+    animation: longPressContent 1.2s ease-in-out infinite;
+}
+
+@keyframes longPressContent {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-2px);
+    }
+    75% {
+        transform: translateX(2px);
+    }
+}
+
+/* 长按删除确认动画 */
+.feature-card.deleting {
+    animation: deleteConfirm 0.5s ease-in-out forwards;
+    pointer-events: none;
+}
+
+@keyframes deleteConfirm {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(0) rotate(180deg);
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+/* 网格重排动画 */
+.feature-cards-grid {
+    transition: all 0.3s ease-in-out;
+}
+
+/* 卡片进入动画 */
+.feature-card {
+    animation: cardEnter 0.3s ease-out;
+}
+
+@keyframes cardEnter {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 删除后重排动画 */
+.feature-cards-grid.reflowing {
+    animation: gridReflow 0.3s ease-in-out;
+}
+
+@keyframes gridReflow {
+    0% {
+        opacity: 0.8;
+    }
+    100% {
+        opacity: 1;
     }
 }
 
@@ -379,14 +589,77 @@
 @keyframes copySuccess {
     0% {
         transform: scale(1);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    25% {
+        transform: scale(1.1);
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     }
     50% {
-        transform: scale(1.1);
+        transform: scale(1.05);
         background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     }
     100% {
         transform: scale(1);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
+}
+
+/* 复制按钮加载状态 */
+.card-badge.copying {
+    animation: copyLoading 1s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes copyLoading {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* 模态框动画 */
+@keyframes modalFadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes modalSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 复制按钮悬停效果增强 */
+.card-badge:hover {
+    transform: translateY(-2px) scale(1.05) translate3d(0, 0, 0);
+    box-shadow: 
+        0 8px 20px rgba(6, 182, 212, 0.4),
+        0 4px 12px rgba(79, 70, 229, 0.3),
+        0 0 0 1px rgba(6, 182, 212, 0.3);
+}
+
+.card-badge:active {
+    transform: translateY(0px) scale(0.95) translate3d(0, 0, 0);
+    transition-duration: var(--duration-fast);
+}
+
+/* 复制按钮焦点状态 */
+.card-badge:focus-visible {
+    outline: 2px solid rgba(6, 182, 212, 0.6);
+    outline-offset: 2px;
+    transform: translateY(-1px) scale(1.02);
 }
 
 /* 卡片内容样式 */

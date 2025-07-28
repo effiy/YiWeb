@@ -25,17 +25,21 @@ export const createStore = () => {
      */
     const updateFeatureCards = (newData) => {
         if (Array.isArray(newData)) {
+            // 过滤掉无效的数据
+            const validData = newData.filter(item => item && typeof item === 'object');
+            console.log('[Store更新] 过滤后的有效数据数量:', validData.length);
+            
             // 使用Vue的响应式更新方法
             if (Vue && Vue.nextTick) {
                 Vue.nextTick(() => {
-                    featureCards.value = [...newData];
+                    featureCards.value = [...validData];
                     console.log('[Store更新] 使用nextTick更新featureCards');
                 });
             } else {
                 // 备用方法：先清空再赋值
                 featureCards.value = [];
                 setTimeout(() => {
-                    featureCards.value = [...newData];
+                    featureCards.value = [...validData];
                     console.log('[Store更新] 使用setTimeout更新featureCards');
                 }, 0);
             }
@@ -52,15 +56,35 @@ export const createStore = () => {
      */
     const deleteCard = async (cardKey) => {
         console.log('[Store] 开始删除卡片:', cardKey);
+        
+        // 检查cardKey是否存在
+        if (!cardKey) {
+            console.error('[Store] cardKey为空');
+            return { success: false, error: new Error('卡片ID为空') };
+        }
+        
         try {
             // 从MongoDB中删除数据
             await deleteData(`${window.API_URL}/mongodb/?cname=goals&key=${cardKey}`);
             
             // 从本地状态中移除卡片
-            const updatedCards = featureCards.value.filter(card => card.key !== cardKey);
-            updateFeatureCards(updatedCards);
+            const updatedCards = featureCards.value.filter(card => card && card.key !== cardKey);
             
-            console.log('[Store] 卡片删除成功:', cardKey);
+            console.log('[Store] 删除前卡片数量:', featureCards.value.length);
+            console.log('[Store] 删除后卡片数量:', updatedCards.length);
+            console.log('[Store] 被删除的卡片key:', cardKey);
+            
+            // 强制更新数组，确保Vue检测到变化
+            featureCards.value = [...updatedCards];
+            
+            // 立即触发DOM更新
+            if (Vue && Vue.nextTick) {
+                Vue.nextTick(() => {
+                    console.log('[Store] DOM更新完成，剩余卡片:', updatedCards.length);
+                });
+            }
+            
+            console.log('[Store] 卡片删除成功:', cardKey, '剩余卡片数量:', updatedCards.length);
             return { success: true };
         } catch (err) {
             console.error('[Store] 删除卡片失败:', err);
@@ -84,9 +108,13 @@ export const createStore = () => {
 
             const mongoResponse = await getData(`${window.API_URL}/mongodb/?cname=goals`);
 
-            const mongoData = mongoResponse.data.list;
+            const mongoData = mongoResponse.data.list || [];
 
             console.log('[Store] 加载到的mongo数据:', mongoData);
+            
+            // 过滤掉无效的数据
+            const validMongoData = mongoData.filter(item => item && item.key);
+            console.log('[Store] 有效的mongo数据:', validMongoData);
             
             // 设置系统提示
             if (systemPromptData) {
@@ -97,7 +125,7 @@ export const createStore = () => {
                 fromSystem.value = null;
             }
             // 使用更新方法设置数据
-            updateFeatureCards(featureCardsData.concat(mongoData));
+            updateFeatureCards(featureCardsData.concat(validMongoData));
             console.log('[Store] 加载到的功能卡片数据:', featureCardsData);
             console.log('[Store] 加载到的系统提示数据:', systemPromptData);
         } catch (err) {

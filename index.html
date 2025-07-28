@@ -121,7 +121,8 @@
                                             class="card-badge" 
                                             type="button"
                                             @click="copyCardToClipboard(card, $event)"
-                                            :title="'复制卡片信息到剪贴板'"
+                                            :title="'点击复制卡片信息到剪贴板'"
+                                            aria-label="复制卡片信息"
                                         >{{ card.badge }}</button>
                                         <!-- 长按3秒删除功能已移除删除按钮 -->
                                     </div>
