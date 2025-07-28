@@ -29,13 +29,13 @@
             <article 
                 v-for="(task, index) in searchResults" 
                 :key="task.title"
-                @click="handleTaskClick(task)"
                 @touchstart="startLongPress(task, $event)"
                 @touchend="endLongPress"
                 @touchcancel="endLongPress"
                 @mousedown="startLongPress(task, $event)"
                 @mouseup="endLongPress"
                 @mouseleave="endLongPress"
+                @click="handleTaskClick(task, $event)"
                 :class="['task-item', { 
                     active: clickedItems.has(task.title),
                     clicked: clickedItems.has(task.title),
@@ -44,8 +44,8 @@
                 :title="getTaskTitle(task)"
                 role="listitem"
                 tabindex="0"
-                @keydown.enter="handleTaskClick(task)"
-                @keydown.space="handleTaskClick(task)"
+                @keydown.enter="handleTaskClick(task, $event)"
+                @keydown.space="handleTaskClick(task, $event)"
                 :aria-label="`任务 ${index + 1}: ${task.title}`"
                 :aria-describedby="`task-${index}-description`"
             >

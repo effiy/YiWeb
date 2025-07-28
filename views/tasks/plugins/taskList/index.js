@@ -95,7 +95,12 @@ const createTaskList = async () => {
             longPressStartPosition: null,
             isDeleting: false, // 防止重复删除
             LONG_PRESS_DURATION: 3000, // 3秒
-            LONG_PRESS_MOVE_THRESHOLD: 10 // 移动阈值（像素）
+            LONG_PRESS_MOVE_THRESHOLD: 10, // 移动阈值（像素）
+            // 新增：短按检测相关变量
+            shortPressTimer: null,
+            SHORT_PRESS_DELAY: 200, // 短按延迟，用于区分短按和长按
+            hasMoved: false, // 是否发生了移动
+            currentTaskElement: null // 当前操作的任务元素
         };
     },
     
@@ -133,21 +138,12 @@ const createTaskList = async () => {
         /**
          * 处理任务点击
          * @param {Object} task - 任务对象
+         * @param {Event} event - 事件对象（可选）
          */
-        handleTaskClick(task) {
-            // 检查是否为短按（非长按）
-            const pressDuration = Date.now() - this.longPressStartTime;
-            const isShortPress = pressDuration < this.LONG_PRESS_DURATION && pressDuration > 0;
-            
-            // 如果正在进行长按，忽略点击
-            if (this.longPressTimer && isShortPress) {
-                console.log('[任务点击] 正在进行长按，忽略点击事件');
-                return;
-            }
-            
+        handleTaskClick(task, event) {
             // 检查是否点击在可交互元素上
-            const target = event?.target;
-            if (target) {
+            if (event) {
+                const target = event.target;
                 const isInteractiveElement = target.closest('button, a, [role="button"]');
                 
                 if (isInteractiveElement) {
@@ -156,6 +152,53 @@ const createTaskList = async () => {
                 }
             }
             
+            // 如果正在进行长按或删除操作，忽略点击
+            if (this.longPressTimer || this.isDeleting) {
+                console.log('[任务点击] 正在进行长按或删除操作，忽略点击事件');
+                return;
+            }
+            
+            // 如果发生了移动，忽略点击
+            if (this.hasMoved) {
+                console.log('[任务点击] 发生了移动，忽略点击事件');
+                return;
+            }
+            
+            // 检查是否为短按（非长按）
+            const pressDuration = Date.now() - this.longPressStartTime;
+            const isShortPress = pressDuration < this.LONG_PRESS_DURATION && pressDuration > 0;
+            
+            // 如果长按计时器存在且时间很短，可能是误触，延迟处理
+            if (this.longPressStartTime > 0 && isShortPress) {
+                console.log('[任务点击] 检测到可能的短按，延迟处理:', pressDuration + 'ms');
+                
+                // 清除之前的短按计时器
+                if (this.shortPressTimer) {
+                    clearTimeout(this.shortPressTimer);
+                }
+                
+                // 延迟处理点击，给长按更多时间
+                this.shortPressTimer = setTimeout(() => {
+                    // 再次检查是否正在进行长按
+                    if (this.longPressTimer || this.isDeleting) {
+                        console.log('[任务点击] 延迟后检测到长按，取消点击');
+                        return;
+                    }
+                    
+                    // 再次检查是否发生了移动
+                    if (this.hasMoved) {
+                        console.log('[任务点击] 延迟后检测到移动，取消点击');
+                        return;
+                    }
+                    
+                    console.log('[任务点击] 延迟后确认短按，触发任务点击:', task.title);
+                    this.$emit('task-click', task);
+                }, this.SHORT_PRESS_DELAY);
+                
+                return;
+            }
+            
+            console.log('[任务点击] 触发任务点击:', task.title);
             this.$emit('task-click', task);
         },
         
@@ -193,6 +236,10 @@ const createTaskList = async () => {
                     return;
                 }
                 
+                // 重置状态
+                this.hasMoved = false;
+                this.currentTaskElement = event.target.closest('.task-item');
+                
                 // 记录长按开始时间和位置
                 this.longPressStartTime = Date.now();
                 this.longPressStartPosition = {
@@ -218,9 +265,8 @@ const createTaskList = async () => {
                 });
                 
                 // 添加长按视觉反馈
-                const taskElement = event.target.closest('.task-item');
-                if (taskElement) {
-                    taskElement.classList.add('long-pressing');
+                if (this.currentTaskElement) {
+                    this.currentTaskElement.classList.add('long-pressing');
                     
                     // 添加触觉反馈（如果支持）
                     if (navigator.vibrate) {
@@ -262,19 +308,19 @@ const createTaskList = async () => {
                     
                     if (currentTask && currentTask.title) {
                         // 添加删除确认动画
-                        if (taskElement) {
-                            taskElement.classList.remove('long-pressing');
-                            taskElement.classList.add('deleting');
+                        if (this.currentTaskElement) {
+                            this.currentTaskElement.classList.remove('long-pressing');
+                            this.currentTaskElement.classList.add('deleting');
                             
                             // 等待动画完成后执行删除
                             setTimeout(() => {
                                 // 再次检查task是否仍然有效
                                 if (currentTask && currentTask.title) {
-                                    this.deleteTask(currentTask, null, taskElement);
+                                    this.deleteTask(currentTask, null, this.currentTaskElement);
                                 } else {
                                     console.warn('[长按删除] 任务数据已失效，取消删除');
-                                    if (taskElement) {
-                                        taskElement.classList.remove('deleting');
+                                    if (this.currentTaskElement) {
+                                        this.currentTaskElement.classList.remove('deleting');
                                     }
                                     this.isDeleting = false;
                                 }
@@ -290,8 +336,8 @@ const createTaskList = async () => {
                         }
                     } else {
                         // 移除长按样式
-                        if (taskElement) {
-                            taskElement.classList.remove('long-pressing');
+                        if (this.currentTaskElement) {
+                            this.currentTaskElement.classList.remove('long-pressing');
                         }
                         console.log('[长按删除] longPressTask无效，取消删除');
                         this.isDeleting = false;
@@ -315,6 +361,24 @@ const createTaskList = async () => {
                 event.stopPropagation();
             }
             
+            // 检查是否发生了移动
+            if (this.longPressStartPosition) {
+                const currentPosition = {
+                    x: event?.clientX || event?.touches?.[0]?.clientX || 0,
+                    y: event?.clientY || event?.touches?.[0]?.clientY || 0
+                };
+                
+                const moveDistance = Math.sqrt(
+                    Math.pow(currentPosition.x - this.longPressStartPosition.x, 2) +
+                    Math.pow(currentPosition.y - this.longPressStartPosition.y, 2)
+                );
+                
+                if (moveDistance > this.LONG_PRESS_MOVE_THRESHOLD) {
+                    this.hasMoved = true;
+                    console.log('[长按删除] 检测到移动，标记为已移动:', moveDistance);
+                }
+            }
+            
             if (this.longPressTimer) {
                 clearTimeout(this.longPressTimer);
                 this.longPressTimer = null;
@@ -336,8 +400,15 @@ const createTaskList = async () => {
                 console.log('[长按删除] 取消删除操作');
             }
             
+            // 清理短按计时器
+            if (this.shortPressTimer) {
+                clearTimeout(this.shortPressTimer);
+                this.shortPressTimer = null;
+            }
+            
             // 确保删除状态被重置
             this.isDeleting = false;
+            this.currentTaskElement = null;
         },
         
         /**
@@ -452,6 +523,11 @@ const createTaskList = async () => {
         // 清理长按计时器
         if (this.longPressTimer) {
             clearTimeout(this.longPressTimer);
+        }
+        
+        // 清理短按计时器
+        if (this.shortPressTimer) {
+            clearTimeout(this.shortPressTimer);
         }
     },
     
