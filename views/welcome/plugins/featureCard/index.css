@@ -1058,3 +1058,42 @@
         padding: var(--spacing-sm);
     }
 }
+
+/* 长按冲突解决样式 */
+.feature-card {
+    position: relative;
+}
+
+/* 交互元素层级提升 */
+.feature-card button,
+.feature-card .feature-tag,
+.feature-card .stat-item {
+    position: relative;
+    z-index: 10;
+}
+
+/* 长按区域提示 */
+.feature-card .card-content {
+    position: relative;
+    z-index: 1;
+}
+
+.feature-card:hover .card-content::before {
+    opacity: 1;
+}
+
+/* 防止长按冲突的样式 */
+.feature-card button:active,
+.feature-card .feature-tag:active,
+.feature-card .stat-item:active {
+    transform: scale(0.95);
+    transition-duration: var(--duration-fast);
+}
+
+/* 长按状态下的交互元素样式 */
+.feature-card.long-pressing button,
+.feature-card.long-pressing .feature-tag,
+.feature-card.long-pressing .stat-item {
+    pointer-events: none;
+    opacity: 0.7;
+}

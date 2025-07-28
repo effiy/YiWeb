@@ -40,7 +40,10 @@ export const useMethods = (store) => {
     // 长按删除相关变量
     let longPressTimer = null;
     let longPressCard = null;
+    let longPressStartTime = 0;
+    let longPressStartPosition = null;
     const LONG_PRESS_DURATION = 3000; // 3秒
+    const LONG_PRESS_MOVE_THRESHOLD = 10; // 移动阈值（像素）
     
     // 声音效果相关
     let audioContext = null;
@@ -349,8 +352,46 @@ export const useMethods = (store) => {
      * 打开链接的统一方法
      * @param {string} link - 链接地址
      */
-    const openLink = (link) => {
+    const openLink = (link, event) => {
+        // 阻止事件冒泡，防止触发长按
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
         window.location.href = link;
+    };
+    
+    /**
+     * 处理卡片点击事件
+     * @param {Object} card - 卡片对象
+     * @param {Event} event - 事件对象
+     */
+    const handleCardClick = (card, event) => {
+        // 检查是否为短按（非长按）
+        const pressDuration = Date.now() - longPressStartTime;
+        const isShortPress = pressDuration < LONG_PRESS_DURATION && pressDuration > 0;
+        
+        // 如果正在进行长按，忽略点击
+        if (longPressTimer && isShortPress) {
+            console.log('[卡片点击] 正在进行长按，忽略点击事件');
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
+        
+        // 检查是否点击在可交互元素上
+        const target = event.target;
+        const isInteractiveElement = target.closest('button, a, [role="button"], .feature-tag, .stat-item');
+        
+        if (isInteractiveElement) {
+            console.log('[卡片点击] 点击在交互元素上，允许正常点击:', target.tagName, target.className);
+            return; // 允许正常的点击事件
+        }
+        
+        // 对于卡片本身的点击，可以添加默认行为
+        console.log('[卡片点击] 卡片被点击:', card.title);
+        // 这里可以添加卡片点击的默认行为，比如显示详情等
     };
 
     /**
@@ -360,6 +401,15 @@ export const useMethods = (store) => {
      */
     const startLongPress = (card, event) => {
         try {
+            // 检查是否点击在可交互元素上
+            const target = event.target;
+            const isInteractiveElement = target.closest('button, a, [role="button"], .feature-tag, .stat-item');
+            
+            if (isInteractiveElement) {
+                console.log('[长按删除] 点击在交互元素上，跳过长按:', target.tagName, target.className);
+                return;
+            }
+            
             // 检查card是否存在
             if (!card) {
                 console.warn('[长按删除] card参数为空');
@@ -372,18 +422,24 @@ export const useMethods = (store) => {
                 return;
             }
             
-            console.log('[长按删除] 开始长按卡片:', {
-                title: card.title,
-                key: card.key,
-                hasIcon: !!card.icon,
-                hasDescription: !!card.description
-            });
-            
             // 只对MongoDB数据（有key字段）启用长按删除
             if (!card.key) {
                 console.log('[长按删除] 卡片没有key字段，跳过删除:', card.title);
                 return;
             }
+            
+            // 记录长按开始时间和位置
+            longPressStartTime = Date.now();
+            longPressStartPosition = {
+                x: event.clientX || event.touches?.[0]?.clientX || 0,
+                y: event.clientY || event.touches?.[0]?.clientY || 0
+            };
+            
+            console.log('[长按删除] 开始长按卡片:', {
+                title: card.title,
+                key: card.key,
+                position: longPressStartPosition
+            });
         
         // 清除之前的计时器
         if (longPressTimer) {
@@ -414,6 +470,23 @@ export const useMethods = (store) => {
         
         // 设置3秒后执行删除
         longPressTimer = setTimeout(() => {
+            // 检查是否移动过大
+            const currentPosition = {
+                x: event.clientX || event.touches?.[0]?.clientX || 0,
+                y: event.clientY || event.touches?.[0]?.clientY || 0
+            };
+            
+            const moveDistance = Math.sqrt(
+                Math.pow(currentPosition.x - longPressStartPosition.x, 2) +
+                Math.pow(currentPosition.y - longPressStartPosition.y, 2)
+            );
+            
+            if (moveDistance > LONG_PRESS_MOVE_THRESHOLD) {
+                console.log('[长按删除] 移动距离过大，取消删除:', moveDistance);
+                endLongPress();
+                return;
+            }
+            
             // 保存当前card的引用，避免异步操作中的问题
             const currentCard = longPressCard;
             
@@ -466,6 +539,8 @@ export const useMethods = (store) => {
             clearTimeout(longPressTimer);
             longPressTimer = null;
             longPressCard = null;
+            longPressStartTime = 0;
+            longPressStartPosition = null;
             
             // 移除所有卡片的长按样式
             const longPressingCards = document.querySelectorAll('.feature-card.long-pressing');
@@ -594,6 +669,10 @@ export const useMethods = (store) => {
      */
     const copyCardToClipboard = async (card, event) => {
         try {
+            // 阻止事件冒泡，防止触发长按
+            event.preventDefault();
+            event.stopPropagation();
+            
             // 详细记录卡片数据
             console.log('[复制卡片] 接收到的卡片数据:', {
                 card: card,
@@ -632,10 +711,6 @@ export const useMethods = (store) => {
                 showError(errorMessage);
                 return;
             }
-            
-            // 阻止事件冒泡
-            event.preventDefault();
-            event.stopPropagation();
             
             // 获取按钮元素
             const button = event.target;
@@ -823,7 +898,13 @@ export const useMethods = (store) => {
         }
     };
 
-    const generateTask = async (card, feature) => {
+    const generateTask = async (card, feature, event) => {
+        // 阻止事件冒泡，防止触发长按
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
         console.log('[生成任务] 生成任务:', card, feature);
 
         const target = feature.name + '-' + feature.desc;
