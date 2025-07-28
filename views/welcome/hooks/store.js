@@ -50,6 +50,45 @@ export const createStore = () => {
     };
 
     /**
+     * 从本地数组中移除卡片
+     * @param {string} cardKey - 卡片ID
+     * @returns {boolean} 是否成功移除
+     */
+    const removeCardFromLocal = (cardKey) => {
+        if (!cardKey) {
+            console.warn('[Store] cardKey为空，无法移除卡片');
+            return false;
+        }
+
+        const currentCards = featureCards.value;
+        const initialLength = currentCards.length;
+        
+        // 找到要删除的卡片索引
+        const cardIndex = currentCards.findIndex(card => card && card.key === cardKey);
+        
+        if (cardIndex === -1) {
+            console.warn('[Store] 未找到要删除的卡片:', cardKey);
+            return false;
+        }
+
+        // 创建新数组，移除指定卡片
+        const newCards = currentCards.filter((card, index) => index !== cardIndex);
+        
+        // 更新数组
+        featureCards.value = newCards;
+        
+        console.log('[Store] 本地移除卡片成功:', {
+            cardKey: cardKey,
+            removedIndex: cardIndex,
+            beforeCount: initialLength,
+            afterCount: newCards.length,
+            removedCard: currentCards[cardIndex]?.title || '未知卡片'
+        });
+        
+        return true;
+    };
+
+    /**
      * 删除卡片数据
      * @param {string} cardKey - 卡片ID
      * @returns {Promise} 删除结果
@@ -64,15 +103,27 @@ export const createStore = () => {
         }
         
         try {
+            // 先检查卡片是否存在于本地数组中
+            const cardExists = featureCards.value.some(card => card && card.key === cardKey);
+            if (!cardExists) {
+                console.warn('[Store] 卡片不存在于本地数组中:', cardKey);
+                return { success: false, error: new Error('卡片不存在') };
+            }
+            
             // 从MongoDB中删除数据
-            await deleteData(`${window.API_URL}/mongodb/?cname=goals&key=${cardKey}`);
+            const deleteResult = await deleteData(`${window.API_URL}/mongodb/?cname=goals&key=${cardKey}`);
+            console.log('[Store] MongoDB删除结果:', deleteResult);
             
-            // 删除成功后，重新加载所有数据（包括mock数据）
-            console.log('[Store] 删除成功，重新加载所有数据');
-            await loadFeatureCards();
+            // 删除成功后，从本地数组中移除卡片
+            const localRemoved = removeCardFromLocal(cardKey);
             
-            console.log('[Store] 卡片删除成功:', cardKey, '当前卡片数量:', featureCards.value.length);
-            return { success: true };
+            if (localRemoved) {
+                console.log('[Store] 卡片删除成功:', cardKey, '当前卡片数量:', featureCards.value.length);
+                return { success: true };
+            } else {
+                console.error('[Store] 本地移除卡片失败:', cardKey);
+                return { success: false, error: new Error('本地移除卡片失败') };
+            }
         } catch (err) {
             console.error('[Store] 删除卡片失败:', err);
             error.value = err && err.message ? err.message : '删除卡片失败';
@@ -147,6 +198,7 @@ export const createStore = () => {
         fromSystem,     // 系统提示信息
         updateFeatureCards,  // 更新方法
         deleteCard,     // 删除卡片方法
+        removeCardFromLocal, // 本地移除卡片方法
         loadFeatureCards // 重新加载数据方法
     };
 }

@@ -617,10 +617,31 @@ export const useMethods = (store) => {
                 navigator.vibrate([100, 50, 100]);
             }
             
+            // 记录删除前的卡片数量
+            const beforeCount = store.featureCards.value.length;
+            console.log('[删除卡片] 删除前卡片数量:', beforeCount);
+            
             // 调用store的删除方法
             const result = await store.deleteCard(card.key);
             
             if (result.success) {
+                // 验证删除后的卡片数量
+                const afterCount = store.featureCards.value.length;
+                const expectedCount = beforeCount - 1;
+                
+                console.log('[删除卡片] 删除结果验证:', {
+                    beforeCount: beforeCount,
+                    afterCount: afterCount,
+                    expectedCount: expectedCount,
+                    isCorrect: afterCount === expectedCount
+                });
+                
+                if (afterCount !== expectedCount) {
+                    console.warn('[删除卡片] 卡片数量不正确，尝试强制刷新');
+                    // 如果数量不正确，强制重新加载数据
+                    await store.loadFeatureCards();
+                }
+                
                 showSuccess(`已删除卡片"${card.title}"`);
                 console.log('[删除卡片] 删除成功:', card.title);
                 

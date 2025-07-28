@@ -1139,3 +1139,207 @@
     pointer-events: none;
     opacity: 0.7;
 }
+
+/* 删除动画优化 */
+.feature-card.deleting {
+    animation: deleteConfirm 0.6s ease-in-out forwards;
+    pointer-events: none;
+    z-index: 10;
+}
+
+@keyframes deleteConfirm {
+    0% {
+        transform: scale(1) translate3d(0, 0, 0);
+        opacity: 1;
+        filter: brightness(1);
+    }
+    50% {
+        transform: scale(0.8) translate3d(0, -20px, 0);
+        opacity: 0.7;
+        filter: brightness(1.2);
+    }
+    100% {
+        transform: scale(0.6) translate3d(0, -40px, 0);
+        opacity: 0;
+        filter: brightness(1.5);
+    }
+}
+
+/* 网格重排动画优化 */
+.feature-cards-grid.reflowing {
+    animation: gridReflow 0.3s ease-out;
+}
+
+@keyframes gridReflow {
+    0% {
+        opacity: 0.8;
+        transform: scale(0.98);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* 卡片进入动画优化 */
+.feature-card {
+    animation: cardEnter 0.4s ease-out;
+}
+
+@keyframes cardEnter {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 删除后卡片数量验证提示 */
+.feature-cards-container::after {
+    content: attr(data-card-count);
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.feature-cards-container.show-count::after {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 删除确认对话框样式 */
+.delete-confirm-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    z-index: 10000;
+    animation: dialogSlideIn 0.3s ease-out;
+}
+
+@keyframes dialogSlideIn {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* 删除进度指示器 */
+.delete-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(239, 68, 68, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.delete-progress::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #ef4444, #f87171);
+    animation: deleteProgress 3s linear;
+}
+
+@keyframes deleteProgress {
+    0% {
+        width: 0%;
+    }
+    100% {
+        width: 100%;
+    }
+}
+
+/* 删除成功反馈 */
+.delete-success-feedback {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(34, 197, 94, 0.9);
+    color: white;
+    padding: 16px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    z-index: 10001;
+    animation: successFeedback 0.6s ease-out;
+}
+
+@keyframes successFeedback {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* 响应式删除动画优化 */
+@media (max-width: 768px) {
+    .feature-card.deleting {
+        animation-duration: 0.4s;
+    }
+    
+    .delete-confirm-dialog {
+        width: 90%;
+        max-width: 300px;
+    }
+}
+
+/* 无障碍删除支持 */
+@media (prefers-reduced-motion: reduce) {
+    .feature-card.deleting,
+    .feature-cards-grid.reflowing,
+    .feature-card {
+        animation: none;
+        transition: opacity 0.2s ease;
+    }
+    
+    .feature-card.deleting {
+        opacity: 0;
+    }
+}
+
+/* 高对比度模式删除样式 */
+@media (prefers-contrast: high) {
+    .feature-card.deleting {
+        border: 2px solid #ef4444;
+        background: rgba(239, 68, 68, 0.1);
+    }
+    
+    .delete-progress::before {
+        background: #ef4444;
+    }
+}
