@@ -529,8 +529,8 @@
 
 /* 任务输入输出 */
 .task-input-output {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
     animation: inputOutputSlideIn 0.7s ease-out;
@@ -853,7 +853,7 @@
     }
 
     .task-input-output {
-        grid-template-columns: 1fr;
+        flex-direction: column;
     }
 
     .task-detail-actions {
