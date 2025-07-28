@@ -106,12 +106,25 @@
                                     <span class="card-icon" aria-hidden="true">
                                         <i :class="card.icon" :aria-label="card.title + '图标'"></i>
                                     </span>
-                                    <button 
-                                        class="card-badge" 
-                                        type="button"
-                                        @click="copyCardToClipboard(card, $event)"
-                                        :title="'复制卡片信息到剪贴板'"
-                                    >{{ card.badge }}</button>
+                                    <div class="card-actions">
+                                        <button 
+                                            class="card-badge" 
+                                            type="button"
+                                            @click="copyCardToClipboard(card, $event)"
+                                            :title="'复制卡片信息到剪贴板'"
+                                        >{{ card.badge }}</button>
+                                        <!-- 只对MongoDB数据（有key字段）显示删除按钮 -->
+                                        <button 
+                                            v-if="card.key"
+                                            class="card-delete-btn" 
+                                            type="button"
+                                            @click="deleteCard(card, $event)"
+                                            :title="'删除卡片'"
+                                            aria-label="删除卡片"
+                                        >
+                                            <i class="fas fa-trash" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
                                 </header>
                                 <section class="card-content">
                                     <h3 class="card-title">
@@ -168,6 +181,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 
 

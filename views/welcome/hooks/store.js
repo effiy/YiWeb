@@ -1,6 +1,6 @@
 // author: liangliang
 
-import { getData } from '/apis/index.js';
+import { getData, deleteData } from '/apis/index.js';
 
 // 兼容Vue2和Vue3的ref获取方式
 const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ value: val });
@@ -42,6 +42,30 @@ export const createStore = () => {
         } else {
             console.warn('[Store更新] 数据不是数组格式:', newData);
             featureCards.value = [];
+        }
+    };
+
+    /**
+     * 删除卡片数据
+     * @param {string} cardKey - 卡片ID
+     * @returns {Promise} 删除结果
+     */
+    const deleteCard = async (cardKey) => {
+        console.log('[Store] 开始删除卡片:', cardKey);
+        try {
+            // 从MongoDB中删除数据
+            await deleteData(`${window.API_URL}/mongodb/?cname=goals&key=${cardKey}`);
+            
+            // 从本地状态中移除卡片
+            const updatedCards = featureCards.value.filter(card => card.key !== cardKey);
+            updateFeatureCards(updatedCards);
+            
+            console.log('[Store] 卡片删除成功:', cardKey);
+            return { success: true };
+        } catch (err) {
+            console.error('[Store] 删除卡片失败:', err);
+            error.value = err && err.message ? err.message : '删除卡片失败';
+            return { success: false, error: err };
         }
     };
 
@@ -101,7 +125,9 @@ export const createStore = () => {
         loading,        // 加载状态
         error,          // 错误信息
         fromSystem,     // 系统提示信息
-        updateFeatureCards  // 更新方法
+        updateFeatureCards,  // 更新方法
+        deleteCard      // 删除卡片方法
     };
 }
+
 

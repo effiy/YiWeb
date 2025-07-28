@@ -46,6 +46,46 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 删除卡片
+     * @param {Object} card - 卡片对象
+     * @param {Event} event - 点击事件对象
+     */
+    const deleteCard = async (card, event) => {
+        // 阻止事件冒泡
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // 检查是否为MongoDB数据（有key字段）
+        if (!card.key) {
+            showError('只能删除来自数据库的卡片');
+            return;
+        }
+        
+        // 确认删除
+        if (!confirm(`确定要删除卡片"${card.title}"吗？此操作不可撤销。`)) {
+            return;
+        }
+        
+        try {
+            // 显示删除中提示
+            showSuccess('正在删除卡片...');
+            
+            // 调用store的删除方法
+            const result = await store.deleteCard(card.key);
+            
+            if (result.success) {
+                showSuccess(`已删除卡片"${card.title}"`);
+                console.log('[删除卡片] 删除成功:', card.title);
+            } else {
+                throw result.error || new Error('删除失败');
+            }
+        } catch (error) {
+            console.error('[删除卡片] 删除失败:', error);
+            showError('删除卡片失败，请稍后重试');
+        }
+    };
+
+    /**
      * 复制卡片对象到剪贴板
      * @param {Object} card - 卡片对象
      * @param {Event} event - 点击事件对象
@@ -291,6 +331,7 @@ export const useMethods = (store) => {
     return {
         openLink,
         copyCardToClipboard,
+        deleteCard,
         generateTask,
         handleMessageInput,
         handleCompositionStart,
