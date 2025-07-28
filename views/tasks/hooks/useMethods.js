@@ -6,7 +6,7 @@
 
 import { showGlobalLoading, hideGlobalLoading } from '/utils/loading.js';
 import { showError, showSuccess } from '/utils/message.js';
-import { getData, postData } from '/apis/index.js';
+import { getData, postData, deleteData } from '/apis/index.js';
 
 /**
  * 方法工厂函数
@@ -18,7 +18,6 @@ import { getData, postData } from '/apis/index.js';
 export const useMethods = (store, computed) => {
     const {
         loadTasksData,
-        deleteTask: storeDeleteTask,
         toggleCategory,
         addClickedItem,
         addSearchHistory,
@@ -352,8 +351,7 @@ export const useMethods = (store, computed) => {
             console.log('[删除任务] 开始删除，参数:', {
                 task: task ? { title: task.title } : null,
                 hasEvent: !!event,
-                hasTaskElement: !!taskElement,
-                storeDeleteTask: typeof storeDeleteTask
+                hasTaskElement: !!taskElement
             });
             
             // 检查task是否存在
@@ -379,7 +377,7 @@ export const useMethods = (store, computed) => {
             }
             
             // 显示删除中提示
-            showSuccess('正在删除任务...');
+            showGlobalLoading('正在删除任务...');
             
             // 添加删除成功反馈
             if (navigator.vibrate) {
@@ -394,9 +392,9 @@ export const useMethods = (store, computed) => {
             const taskProgressKey = `task_progress_${task.title}`;
             localStorage.removeItem(taskProgressKey);
             
-            // 调用store的删除方法
+            // 调用store的删除方法（现在会调用API）
             console.log('[删除任务] 调用store删除方法:', task.title);
-            const result = await storeDeleteTask(task);
+            const result = await deleteData(`${window.API_URL}/mongodb/?cname=tasks&key=${task.key}`);
             
             console.log('[删除任务] store删除方法返回结果:', result);
             
@@ -456,6 +454,8 @@ export const useMethods = (store, computed) => {
             console.error('[删除任务] 删除失败:', error);
             showError('删除任务失败，请稍后重试');
         } finally {
+            // 隐藏加载提示
+            hideGlobalLoading();
             // 确保删除状态被重置
             isDeleting = false;
         }

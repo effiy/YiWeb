@@ -3,7 +3,7 @@
  * author: liangliang
  */
 
-import { getData } from '/apis/index.js';
+import { getData, deleteData } from '/apis/index.js';
 import { safeExecuteAsync, createError, ErrorTypes } from '/utils/error.js';
 
 // 兼容Vue2和Vue3的ref获取方式
@@ -89,27 +89,55 @@ export const createStore = () => {
      * @returns {boolean} 删除是否成功
      */
     const deleteTask = async (task) => {
-        try {
+        return safeExecuteAsync(async () => {
             console.log('[deleteTask] 开始删除任务:', task.title);
             
-            // 从任务数据中移除任务
-            const updatedTasks = tasksData.value.filter(t => t.title !== task.title);
-            tasksData.value = updatedTasks;
+            // 构建删除API的URL
+            const urlParams = new URLSearchParams(window.location.search);
+            let deleteUrl = `${window.API_URL}/mongodb/?cname=tasks`;
+            const featureName = urlParams.get('featureName');
+            const cardTitle = urlParams.get('cardTitle');
             
-            // 如果删除的是当前选中的任务，关闭详情
-            if (selectedTask.value && selectedTask.value.title === task.title) {
-                closeTaskDetail();
+            if (featureName) {
+                deleteUrl += `&featureName=${encodeURIComponent(featureName)}`;
+            }
+            if (cardTitle) {
+                deleteUrl += `&cardTitle=${encodeURIComponent(cardTitle)}`;
             }
             
-            // 从点击记录中移除
-            clickedItems.value.delete(task.title);
+            // 添加任务标题作为删除条件
+            deleteUrl += `&title=${encodeURIComponent(task.title)}`;
             
-            console.log('[deleteTask] 任务删除成功:', task.title);
-            return true;
-        } catch (error) {
-            console.error('[deleteTask] 删除任务失败:', error);
+            console.log('[deleteTask] 删除API URL:', deleteUrl);
+            
+            // 调用API删除任务
+            const deleteResult = await deleteData(deleteUrl);
+            
+            console.log('[deleteTask] API删除结果:', deleteResult);
+            
+            // 验证删除结果
+            if (deleteResult && deleteResult.success !== false) {
+                // 从本地任务数据中移除任务
+                const updatedTasks = tasksData.value.filter(t => t.title !== task.title);
+                tasksData.value = updatedTasks;
+                
+                // 如果删除的是当前选中的任务，关闭详情
+                if (selectedTask.value && selectedTask.value.title === task.title) {
+                    closeTaskDetail();
+                }
+                
+                // 从点击记录中移除
+                clickedItems.value.delete(task.title);
+                
+                console.log('[deleteTask] 任务删除成功:', task.title);
+                return true;
+            } else {
+                throw new Error('API删除失败：' + (deleteResult?.message || '未知错误'));
+            }
+        }, '任务删除', (errorInfo) => {
+            console.error('[deleteTask] 删除任务失败:', errorInfo);
             return false;
-        }
+        });
     };
 
     /**
