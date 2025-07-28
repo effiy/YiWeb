@@ -18,6 +18,11 @@ import { createBaseView } from '/utils/baseView.js';
             plugins: [],
             onMounted: (app) => {
                 console.log('[欢迎页面] 应用已挂载');
+                
+                // 暴露调试函数到全局作用域
+                if (app && app.methods) {
+                    console.log('[欢迎页面] 调试函数已暴露到全局作用域');
+                }
             }
         });
 

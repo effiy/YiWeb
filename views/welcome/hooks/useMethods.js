@@ -42,6 +42,7 @@ export const useMethods = (store) => {
     let longPressCard = null;
     let longPressStartTime = 0;
     let longPressStartPosition = null;
+    let isDeleting = false; // 新增：防止重复删除
     const LONG_PRESS_DURATION = 3000; // 3秒
     const LONG_PRESS_MOVE_THRESHOLD = 10; // 移动阈值（像素）
     
@@ -407,6 +408,12 @@ export const useMethods = (store) => {
                 event.stopPropagation();
             }
             
+            // 检查是否正在删除中
+            if (isDeleting) {
+                console.log('[长按删除] 正在删除中，忽略新的长按');
+                return;
+            }
+            
             // 检查是否点击在可交互元素上
             const target = event.target;
             const isInteractiveElement = target.closest('button, a, [role="button"], .feature-tag, .stat-item');
@@ -434,6 +441,16 @@ export const useMethods = (store) => {
                 return;
             }
             
+            // 检查卡片是否仍然存在于当前数据中
+            const cardExists = store.featureCards.value.some(existingCard => 
+                existingCard && existingCard.key === card.key
+            );
+            
+            if (!cardExists) {
+                console.warn('[长按删除] 卡片已不存在于数据中:', card.title);
+                return;
+            }
+            
             // 记录长按开始时间和位置
             longPressStartTime = Date.now();
             longPressStartPosition = {
@@ -447,93 +464,118 @@ export const useMethods = (store) => {
                 position: longPressStartPosition
             });
         
-        // 清除之前的计时器
-        if (longPressTimer) {
-            clearTimeout(longPressTimer);
-        }
-        
-        // 深拷贝card对象，避免引用问题
-        longPressCard = JSON.parse(JSON.stringify(card));
-        
-        console.log('[长按删除] 保存卡片引用:', {
-            title: longPressCard.title,
-            key: longPressCard.key
-        });
-        
-        // 添加长按视觉反馈
-        const cardElement = event.target.closest('.feature-card');
-        if (cardElement) {
-            cardElement.classList.add('long-pressing');
-            
-            // 添加触觉反馈（如果支持）
-            if (navigator.vibrate) {
-                navigator.vibrate(100);
+            // 清除之前的计时器
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
             }
             
-            // 添加声音效果
-            playLongPressSound();
-        }
-        
-        // 设置3秒后执行删除
-        longPressTimer = setTimeout(() => {
-            // 检查是否移动过大
-            const currentPosition = {
-                x: event.clientX || event.touches?.[0]?.clientX || 0,
-                y: event.clientY || event.touches?.[0]?.clientY || 0
-            };
+            // 深拷贝card对象，避免引用问题
+            longPressCard = JSON.parse(JSON.stringify(card));
             
-            const moveDistance = Math.sqrt(
-                Math.pow(currentPosition.x - longPressStartPosition.x, 2) +
-                Math.pow(currentPosition.y - longPressStartPosition.y, 2)
-            );
+            console.log('[长按删除] 保存卡片引用:', {
+                title: longPressCard.title,
+                key: longPressCard.key
+            });
             
-            if (moveDistance > LONG_PRESS_MOVE_THRESHOLD) {
-                console.log('[长按删除] 移动距离过大，取消删除:', moveDistance);
-                endLongPress();
-                return;
+            // 添加长按视觉反馈
+            const cardElement = event.target.closest('.feature-card');
+            if (cardElement) {
+                cardElement.classList.add('long-pressing');
+                
+                // 添加触觉反馈（如果支持）
+                if (navigator.vibrate) {
+                    navigator.vibrate(100);
+                }
+                
+                // 添加声音效果
+                playLongPressSound();
             }
             
-            // 保存当前card的引用，避免异步操作中的问题
-            const currentCard = longPressCard;
-            
-            if (currentCard && currentCard.key) {
-                // 添加删除确认动画
-                if (cardElement) {
-                    cardElement.classList.remove('long-pressing');
-                    cardElement.classList.add('deleting');
-                    
-                    // 等待动画完成后执行删除
-                    setTimeout(() => {
+            // 设置3秒后执行删除
+            longPressTimer = setTimeout(() => {
+                // 检查是否移动过大
+                const currentPosition = {
+                    x: event.clientX || event.touches?.[0]?.clientX || 0,
+                    y: event.clientY || event.touches?.[0]?.clientY || 0
+                };
+                
+                const moveDistance = Math.sqrt(
+                    Math.pow(currentPosition.x - longPressStartPosition.x, 2) +
+                    Math.pow(currentPosition.y - longPressStartPosition.y, 2)
+                );
+                
+                if (moveDistance > LONG_PRESS_MOVE_THRESHOLD) {
+                    console.log('[长按删除] 移动距离过大，取消删除:', moveDistance);
+                    endLongPress();
+                    return;
+                }
+                
+                // 再次检查是否正在删除中
+                if (isDeleting) {
+                    console.log('[长按删除] 正在删除中，取消重复删除');
+                    endLongPress();
+                    return;
+                }
+                
+                // 再次验证卡片是否仍然存在
+                const cardStillExists = store.featureCards.value.some(existingCard => 
+                    existingCard && existingCard.key === longPressCard.key
+                );
+                
+                if (!cardStillExists) {
+                    console.warn('[长按删除] 卡片已不存在，取消删除');
+                    endLongPress();
+                    return;
+                }
+                
+                // 设置删除状态
+                isDeleting = true;
+                
+                // 保存当前card的引用，避免异步操作中的问题
+                const currentCard = { ...longPressCard };
+                
+                if (currentCard && currentCard.key) {
+                    // 添加删除确认动画
+                    if (cardElement) {
+                        cardElement.classList.remove('long-pressing');
+                        cardElement.classList.add('deleting');
+                        
+                        // 等待动画完成后执行删除
+                        setTimeout(() => {
+                            // 再次检查card是否仍然有效
+                            if (currentCard && currentCard.key) {
+                                deleteCard(currentCard, null, cardElement);
+                            } else {
+                                console.warn('[长按删除] 卡片数据已失效，取消删除');
+                                if (cardElement) {
+                                    cardElement.classList.remove('deleting');
+                                }
+                                isDeleting = false;
+                            }
+                        }, 600); // 增加一点时间确保动画完成
+                    } else {
                         // 再次检查card是否仍然有效
                         if (currentCard && currentCard.key) {
-                            deleteCard(currentCard, null, cardElement);
+                            deleteCard(currentCard);
                         } else {
                             console.warn('[长按删除] 卡片数据已失效，取消删除');
-                            if (cardElement) {
-                                cardElement.classList.remove('deleting');
-                            }
+                            isDeleting = false;
                         }
-                    }, 600); // 增加一点时间确保动画完成
-                } else {
-                    // 再次检查card是否仍然有效
-                    if (currentCard && currentCard.key) {
-                        deleteCard(currentCard);
-                    } else {
-                        console.warn('[长按删除] 卡片数据已失效，取消删除');
                     }
+                } else {
+                    // 移除长按样式
+                    if (cardElement) {
+                        cardElement.classList.remove('long-pressing');
+                    }
+                    console.log('[长按删除] longPressCard无效，取消删除');
+                    isDeleting = false;
                 }
-            } else {
-                // 移除长按样式
-                if (cardElement) {
-                    cardElement.classList.remove('long-pressing');
-                }
-                console.log('[长按删除] longPressCard无效，取消删除');
-            }
-        }, LONG_PRESS_DURATION);
-        
-        console.log('[长按删除] 开始计时，3秒后将删除卡片:', card.title);
+            }, LONG_PRESS_DURATION);
+            
+            console.log('[长按删除] 开始计时，3秒后将删除卡片:', card.title);
         } catch (error) {
             handleError(error, 'startLongPress');
+            isDeleting = false;
         }
     };
     
@@ -567,6 +609,9 @@ export const useMethods = (store) => {
             
             console.log('[长按删除] 取消删除操作');
         }
+        
+        // 确保删除状态被重置
+        isDeleting = false;
     };
     
     /**
@@ -587,6 +632,7 @@ export const useMethods = (store) => {
             if (!card) {
                 console.error('[删除卡片] card参数为空');
                 showError('删除失败：卡片数据无效');
+                isDeleting = false;
                 return;
             }
             
@@ -594,6 +640,7 @@ export const useMethods = (store) => {
             if (!validateCard(card)) {
                 console.error('[删除卡片] 卡片数据验证失败');
                 showError('删除失败：卡片数据不完整');
+                isDeleting = false;
                 return;
             }
             
@@ -601,11 +648,13 @@ export const useMethods = (store) => {
             if (!card.key) {
                 console.warn('[删除卡片] 卡片没有key字段:', card.title);
                 showError('只能删除来自数据库的卡片');
+                isDeleting = false;
                 return;
             }
             
             // 确认删除
             if (!confirm(`确定要删除卡片"${card.title}"吗？此操作不可撤销。`)) {
+                isDeleting = false;
                 return;
             }
             
@@ -680,6 +729,9 @@ export const useMethods = (store) => {
             handleError(error, 'deleteCard');
             console.error('[删除卡片] 删除失败:', error);
             showError('删除卡片失败，请稍后重试');
+        } finally {
+            // 确保删除状态被重置
+            isDeleting = false;
         }
     };
 
@@ -1093,7 +1145,7 @@ export const useMethods = (store) => {
         generateTask,
         handleMessageInput,
         handleCompositionStart,
-        handleCompositionEnd
+        handleCompositionEnd,
     };
 };
 

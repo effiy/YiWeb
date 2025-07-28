@@ -85,6 +85,16 @@ export const createStore = () => {
             removedCard: currentCards[cardIndex]?.title || '未知卡片'
         });
         
+        // 监控卡片数量变化
+        console.log('[Store] 卡片数量监控 - 移除后:', {
+            count: newCards.length,
+            cards: newCards.map(card => ({
+                title: card?.title,
+                key: card?.key,
+                type: card?.hasOwnProperty('key') ? 'MongoDB' : 'Local'
+            }))
+        });
+        
         return true;
     };
 
