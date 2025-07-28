@@ -898,45 +898,67 @@ export const useMethods = (store) => {
         }
     };
 
+    /**
+     * 生成任务并跳转到任务页面，修复浏览器拦截新窗口的问题
+     */
     const generateTask = async (card, feature, event) => {
         // 阻止事件冒泡，防止触发长按
         if (event) {
             event.preventDefault();
             event.stopPropagation();
         }
-        
+
         console.log('[生成任务] 生成任务:', card, feature);
+
+        // 先打开一个空白窗口，防止后续异步操作被浏览器拦截
+        const taskUrl = `/views/tasks/index.html?featureName=${encodeURIComponent(feature.name)}&cardTitle=${encodeURIComponent(card.title)}`;
+        const newWindow = window.open('about:blank', '_blank');
 
         const target = feature.name + '-' + feature.desc;
         const description = card.title + '-' + card.description;
 
-        const systemPromptData = await getData(`${window.DATA_URL}/prompts/tasks/tasks.txt`);
+        try {
+            const systemPromptData = await getData(`${window.DATA_URL}/prompts/tasks/tasks.txt`);
 
-        const fromSystem = templateReplace(systemPromptData, {
-            target: target,
-            description: description
-        });
+            const fromSystem = templateReplace(systemPromptData, {
+                target: target,
+                description: description
+            });
 
-        console.log('[生成任务] 生成任务:', fromSystem);
+            console.log('[生成任务] 生成任务:', fromSystem);
 
-        // 发送消息请求到API
-        const response = await postData(`${window.API_URL}/prompt`, {
-          fromSystem,
-          fromUser: '必须返回 json 格式，不要返回其他内容'
-        });
+            // 发送消息请求到API
+            const response = await postData(`${window.API_URL}/prompt`, {
+                fromSystem,
+                fromUser: '必须返回 json 格式，不要返回其他内容'
+            });
 
-        console.log('[API响应] 收到服务器响应:', response.data);
+            console.log('[API响应] 收到服务器响应:', response.data);
 
-        // 等待所有 postData 完成后再跳转页面
-        if (Array.isArray(response.data) && response.data.length > 0) {
-            await Promise.all(
-                response.data.map(item =>
-                    postData(`${window.API_URL}/mongodb/?cname=tasks`, { ...item, featureName: feature.name, cardTitle: card.title })
-                )
-            );
+            // 等待所有 postData 完成后再跳转页面
+            if (Array.isArray(response.data) && response.data.length > 0) {
+                await Promise.all(
+                    response.data.map(item =>
+                        postData(`${window.API_URL}/mongodb/?cname=tasks`, { ...item, featureName: feature.name, cardTitle: card.title })
+                    )
+                );
+            }
+
+            // 跳转到任务页面
+            if (newWindow) {
+                newWindow.location.href = taskUrl;
+            } else {
+                // 如果窗口被拦截，降级为当前页面跳转
+                window.location.href = taskUrl;
+            }
+        } catch (err) {
+            // 如果有异常，关闭已打开的空白窗口并提示错误
+            if (newWindow) {
+                newWindow.close();
+            }
+            showError('生成任务失败，请稍后重试');
+            console.error('[生成任务] 生成任务失败:', err);
         }
-
-        window.open(`/views/tasks/index.html?featureName=${feature.name}&cardTitle=${card.title}`, '_blank');
     };
 
     /**

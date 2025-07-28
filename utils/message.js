@@ -19,13 +19,63 @@ const MESSAGE_TYPES = {
 const MESSAGE_CONFIG = {
     duration: 3000,
     position: 'top-right',
-    maxCount: 5
+    maxCount: 5,
+    margin: 20, // 距离边缘的边距
+    safeZone: 60 // 安全区域高度（避免被浏览器地址栏遮挡）
 };
 
 /**
  * 消息容器
  */
 let messageContainer = null;
+
+/**
+ * 视口信息
+ */
+let viewportInfo = {
+    width: 0,
+    height: 0,
+    scrollTop: 0,
+    scrollLeft: 0
+};
+
+/**
+ * 更新视口信息
+ */
+const updateViewportInfo = () => {
+    viewportInfo = {
+        width: window.innerWidth || document.documentElement.clientWidth,
+        height: window.innerHeight || document.documentElement.clientHeight,
+        scrollTop: window.pageYOffset || document.documentElement.scrollTop,
+        scrollLeft: window.pageXOffset || document.documentElement.scrollLeft
+    };
+};
+
+/**
+ * 计算安全位置
+ * @returns {Object} 位置信息
+ */
+const calculateSafePosition = () => {
+    updateViewportInfo();
+    
+    // 获取当前滚动位置
+    const scrollTop = viewportInfo.scrollTop;
+    const scrollLeft = viewportInfo.scrollLeft;
+    
+    // 计算安全区域
+    const safeTop = Math.max(MESSAGE_CONFIG.margin, MESSAGE_CONFIG.safeZone);
+    const safeRight = MESSAGE_CONFIG.margin;
+    
+    // 考虑滚动位置，确保消息始终在可视区域内
+    const adjustedTop = safeTop + scrollTop;
+    const adjustedRight = safeRight + scrollLeft;
+    
+    return {
+        top: adjustedTop,
+        right: adjustedRight,
+        maxWidth: Math.min(400, viewportInfo.width - 40) // 确保不超出屏幕宽度
+    };
+};
 
 /**
  * 创建消息容器
@@ -35,17 +85,72 @@ const createMessageContainer = () => {
 
     messageContainer = document.createElement('div');
     messageContainer.className = 'message-container';
+    
+    // 初始化位置
+    const position = calculateSafePosition();
+    
     messageContainer.style.cssText = `
         position: fixed;
-        top: 20px;
-        right: 20px;
+        top: ${position.top}px;
+        right: ${position.right}px;
         z-index: 9999;
-        max-width: 400px;
+        max-width: ${position.maxWidth}px;
         pointer-events: none;
+        transition: all 0.3s ease;
     `;
 
     document.body.appendChild(messageContainer);
+    
+    // 监听窗口大小变化和滚动事件
+    let resizeTimeout;
+    let scrollTimeout;
+    
+    const handleResize = () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            updateMessagePosition();
+        }, 100);
+    };
+    
+    const handleScroll = () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            updateMessagePosition();
+        }, 16); // 约60fps
+    };
+    
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll);
+    document.addEventListener('scroll', handleScroll);
+    
+    // 监听页面可见性变化
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            updateMessagePosition();
+        }
+    });
+    
     return messageContainer;
+};
+
+/**
+ * 更新消息位置
+ */
+const updateMessagePosition = () => {
+    if (!messageContainer) return;
+    
+    const position = calculateSafePosition();
+    
+    messageContainer.style.top = `${position.top}px`;
+    messageContainer.style.right = `${position.right}px`;
+    messageContainer.style.maxWidth = `${position.maxWidth}px`;
+    
+    console.log('[消息位置] 更新位置:', {
+        top: position.top,
+        right: position.right,
+        maxWidth: position.maxWidth,
+        viewport: viewportInfo
+    });
 };
 
 /**
@@ -71,15 +176,32 @@ const createMessageElement = (message, type) => {
         transition: all 0.3s ease;
         transform: translateX(100%);
         opacity: 0;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
     `;
 
     // 添加图标
     const icon = document.createElement('i');
     icon.className = `fas ${getMessageIcon(type)}`;
     icon.style.marginRight = '8px';
+    icon.style.flexShrink = '0';
     
-    messageEl.appendChild(icon);
-    messageEl.appendChild(document.createTextNode(message));
+    // 创建文本容器
+    const textContainer = document.createElement('span');
+    textContainer.textContent = message;
+    textContainer.style.flex = '1';
+    textContainer.style.minWidth = '0';
+    
+    // 创建内容包装器
+    const contentWrapper = document.createElement('div');
+    contentWrapper.style.display = 'flex';
+    contentWrapper.style.alignItems = 'flex-start';
+    contentWrapper.style.gap = '8px';
+    
+    contentWrapper.appendChild(icon);
+    contentWrapper.appendChild(textContainer);
+    messageEl.appendChild(contentWrapper);
 
     return messageEl;
 };
@@ -129,6 +251,9 @@ export const showMessage = (message, type = MESSAGE_TYPES.INFO, duration = MESSA
     // 添加到容器
     container.appendChild(messageEl);
 
+    // 确保位置正确
+    updateMessagePosition();
+
     // 动画显示
     setTimeout(() => {
         messageEl.style.transform = 'translateX(0)';
@@ -153,6 +278,13 @@ export const showMessage = (message, type = MESSAGE_TYPES.INFO, duration = MESSA
         const oldestMessage = messages[0];
         hideMessage(oldestMessage);
     }
+    
+    console.log('[消息显示] 显示消息:', {
+        type: type,
+        message: message,
+        duration: duration,
+        position: calculateSafePosition()
+    });
 };
 
 /**
@@ -213,6 +345,22 @@ export const clearMessages = () => {
     if (messageContainer) {
         messageContainer.innerHTML = '';
     }
+};
+
+/**
+ * 获取当前视口信息
+ * @returns {Object} 视口信息
+ */
+export const getViewportInfo = () => {
+    updateViewportInfo();
+    return { ...viewportInfo };
+};
+
+/**
+ * 手动更新消息位置（供外部调用）
+ */
+export const updateMessagePositionManually = () => {
+    updateMessagePosition();
 };
 
 // 导出消息类型
