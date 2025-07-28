@@ -16,7 +16,6 @@ import { showGlobalLoading, hideGlobalLoading } from '/utils/loading.js';
 export const useMethods = (store, computed) => {
     const {
         loadTasksData,
-        setSearchQuery,
         toggleCategory,
         addClickedItem,
         addSearchHistory,
@@ -307,3 +306,4 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         cleanupEventListeners
     };
 }; 
+

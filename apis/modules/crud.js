@@ -176,7 +176,7 @@ export async function getData(url, options = {}, useCache = true) {
  * @param {Object} options - 请求选项
  * @returns {Promise} - 返回创建结果
  */
-export async function createData(url, data, validationRules = {}, options = {}) {
+export async function postData(url, data, validationRules = {}, options = {}) {
   // 数据验证
   if (Object.keys(validationRules).length > 0) {
     const validation = validateData(data, validationRules);
@@ -295,7 +295,7 @@ export async function batchOperations(operations) {
           result = await getData(operation.url, operation.options, operation.useCache);
           break;
         case 'POST':
-          result = await createData(operation.url, operation.data, operation.validationRules, operation.options);
+          result = await postData(operation.url, operation.data, operation.validationRules, operation.options);
           break;
         case 'PUT':
           result = await updateData(operation.url, operation.data, operation.validationRules, operation.options);
@@ -325,3 +325,4 @@ export async function batchOperations(operations) {
 
 // 导出缓存管理器
 export { CacheManager };
+

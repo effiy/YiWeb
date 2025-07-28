@@ -119,7 +119,7 @@
                                     </h3>
                                     <p class="card-description">{{ card.description }}</p>
                                     <ul class="card-features" aria-label="功能特性">
-                                        <li class="feature-tag" v-for="(feature, fidx) in card.features" :key="fidx">
+                                        <li class="feature-tag" v-for="(feature, fidx) in card.features" :key="fidx" @click="generateTask(card, feature)">
                                             {{ feature.icon }} {{ feature.name }}
                                         </li>
                                     </ul>
@@ -168,5 +168,6 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 

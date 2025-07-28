@@ -10,7 +10,7 @@ export * from '/apis/helper/apiUtils.js';
 export * from '/apis/modules/crud.js';
 
 // 导出常用组合函数
-import { getData, createData, updateData, patchData, deleteData, batchOperations, CacheManager } from '/apis/modules/crud.js';
+import { getData, postData, updateData, patchData, deleteData, batchOperations, CacheManager } from '/apis/modules/crud.js';
 import { buildUrl, debounce, throttle, isOnline } from '/apis/helper/apiUtils.js';
 
 /**
@@ -19,7 +19,7 @@ import { buildUrl, debounce, throttle, isOnline } from '/apis/helper/apiUtils.js
 export const apiClient = {
   // 基础 CRUD 操作
   get: getData,
-  post: createData,
+  post: postData,
   put: updateData,
   patch: patchData,
   delete: deleteData,
@@ -40,3 +40,4 @@ export const apiClient = {
 
 // 默认导出 API 客户端
 export default apiClient;
+

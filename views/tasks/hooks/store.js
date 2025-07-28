@@ -49,14 +49,14 @@ export const createStore = () => {
             console.log('[loadTasksData] 正在加载任务数据...');
             
             // 从本地文件加载任务数据
-            const tasksResponse = await getData(`${window.DATA_URL}/mock/tasks/tasks.json`);
+            const tasksResponseData = await getData(`${window.DATA_URL}/mock/tasks/tasks.json`);
 
-            console.log('[loadTasksData] 加载到的任务数据:', tasksResponse);
+            console.log('[loadTasksData] 加载到的任务数据:', tasksResponseData);
             
-            tasksData.value = tasksResponse.tasks;
-            console.log(`[loadTasksData] 成功加载 ${tasksResponse.tasks.length} 条任务数据`);
+            tasksData.value = tasksResponseData;
+            console.log(`[loadTasksData] 成功加载 ${tasksResponseData.length} 条任务数据`);
             
-            return tasksResponse.tasks;
+            return tasksResponseData;
         }, '任务数据加载', (errorInfo) => {
             error.value = errorInfo.message;
             errorMessage.value = errorInfo.message;
@@ -212,3 +212,4 @@ export function categorizeTask(task) {
     
     return 'development'; // 默认分类
 } 
+
