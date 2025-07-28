@@ -4,7 +4,7 @@
  */
 
 import { getData, deleteData } from '/apis/index.js';
-import { safeExecuteAsync, createError, ErrorTypes } from '/utils/error.js';
+import { safeExecuteAsync } from '/utils/error.js';
 
 // 兼容Vue2和Vue3的ref获取方式
 const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ value: val });
@@ -94,19 +94,7 @@ export const createStore = () => {
             
             // 构建删除API的URL
             const urlParams = new URLSearchParams(window.location.search);
-            let deleteUrl = `${window.API_URL}/mongodb/?cname=tasks`;
-            const featureName = urlParams.get('featureName');
-            const cardTitle = urlParams.get('cardTitle');
-            
-            if (featureName) {
-                deleteUrl += `&featureName=${encodeURIComponent(featureName)}`;
-            }
-            if (cardTitle) {
-                deleteUrl += `&cardTitle=${encodeURIComponent(cardTitle)}`;
-            }
-            
-            // 添加任务标题作为删除条件
-            deleteUrl += `&title=${encodeURIComponent(task.title)}`;
+            let deleteUrl = `${window.API_URL}/mongodb/?cname=tasks&key=${task.key}`;
             
             console.log('[deleteTask] 删除API URL:', deleteUrl);
             

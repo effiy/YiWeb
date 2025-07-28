@@ -6,7 +6,6 @@
 
 import { showGlobalLoading, hideGlobalLoading } from '/utils/loading.js';
 import { showError, showSuccess } from '/utils/message.js';
-import { getData, postData, deleteData } from '/apis/index.js';
 
 /**
  * 方法工厂函数
@@ -392,9 +391,9 @@ export const useMethods = (store, computed) => {
             const taskProgressKey = `task_progress_${task.title}`;
             localStorage.removeItem(taskProgressKey);
             
-            // 调用store的删除方法（现在会调用API）
+            // 调用store的删除方法
             console.log('[删除任务] 调用store删除方法:', task.title);
-            const result = await deleteData(`${window.API_URL}/mongodb/?cname=tasks&key=${task.key}`);
+            const result = await store.deleteTask(task);
             
             console.log('[删除任务] store删除方法返回结果:', result);
             
@@ -736,9 +735,7 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         handleExportTask,
         handleClearError,
 
-        // 长按删除相关方法
-        startLongPress,
-        endLongPress,
+        // 删除任务方法
         deleteTask,
 
         // 事件监听器管理

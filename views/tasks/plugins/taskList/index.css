@@ -775,7 +775,7 @@
 }
 
 .task-item.long-pressing::after {
-    content: '长按3秒删除';
+    content: '长按删除';
     position: absolute;
     top: 50%;
     left: 50%;
