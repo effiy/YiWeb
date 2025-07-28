@@ -401,6 +401,12 @@ export const useMethods = (store) => {
      */
     const startLongPress = (card, event) => {
         try {
+            // 阻止事件冒泡，避免触发其他点击事件
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
             // 检查是否点击在可交互元素上
             const target = event.target;
             const isInteractiveElement = target.closest('button, a, [role="button"], .feature-tag, .stat-item');
@@ -534,7 +540,13 @@ export const useMethods = (store) => {
     /**
      * 结束长按计时
      */
-    const endLongPress = () => {
+    const endLongPress = (event) => {
+        // 阻止事件冒泡，避免触发其他点击事件
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
         if (longPressTimer) {
             clearTimeout(longPressTimer);
             longPressTimer = null;
