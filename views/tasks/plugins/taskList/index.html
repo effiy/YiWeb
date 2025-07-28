@@ -1,128 +1,93 @@
-<div 
-    v-if="showDetail"
-    class="task-detail-container"
-    :class="{ visible: showDetail }"
-    role="dialog"
-    aria-label="任务详情"
-    aria-modal="true"
->
-    <div class="task-detail-content">
-        <!-- 详情头部 -->
-        <div class="task-detail-header">
-            <h2 class="task-detail-title">{{ selectedTask.title }}</h2>
-            <button 
-                @click="handleCloseDetail"
-                class="close-detail-btn"
-                title="关闭详情"
-                aria-label="关闭任务详情"
-            >
-                <i class="fas fa-times" aria-hidden="true"></i>
+<div class="task-list-container" v-show="hasTasksData" role="region" aria-label="任务列表">
+    <div class="task-list-content">
+        <!-- 加载状态 -->
+        <div v-if="loading" class="task-loading-state" role="status" aria-live="polite">
+            <i class="fas fa-spinner" aria-hidden="true"></i>
+            <span>正在加载任务数据...</span>
+        </div>
+        
+        <!-- 错误状态 -->
+        <div v-else-if="error" class="task-error-state" role="alert" aria-live="assertive">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+            <span>加载失败</span>
+            <p>{{ error }}</p>
+            <button @click="handleLoadTasksData" class="task-retry-btn" aria-label="重新加载任务数据">
+                <i class="fas fa-refresh" aria-hidden="true"></i>
+                重新加载
             </button>
         </div>
         
-        <!-- 任务时间 -->
-        <div class="task-detail-time">
-            <i class="fas fa-clock" aria-hidden="true"></i>
-            <span>{{ formattedTime }}</span>
+        <!-- 空状态 -->
+        <div v-else-if="searchResults.length === 0" class="task-empty-state" role="status" aria-live="polite">
+            <i class="fas fa-tasks" aria-hidden="true"></i>
+            <span v-if="searchQuery">未找到匹配 "{{ searchQuery }}" 的任务</span>
+            <span v-else>暂无任务数据</span>
         </div>
         
-        <!-- 任务描述 -->
-        <div class="task-description" v-if="selectedTask.description">
-            <h4>
-                <i class="fas fa-info-circle" aria-hidden="true"></i>
-                任务描述
-            </h4>
-            <div class="task-description-content">
-                <p class="task-description-text">{{ selectedTask.description }}</p>
-            </div>
-        </div>
-        
-        <!-- 任务步骤详情 -->
-        <div class="task-steps-detail">
-            <h4>
-                <i class="fas fa-list-ol" aria-hidden="true"></i>
-                执行步骤
-                <span class="steps-progress" v-if="stepsProgress.total > 0">
-                    ({{ stepsProgress.completed }}/{{ stepsProgress.total }})
-                </span>
-            </h4>
-            <div class="task-steps-list" role="list">
-                <div 
-                    v-for="step in taskSteps" 
-                    :key="step.number"
-                    class="step-detail-item"
-                    :class="{ 'completed': step.completed }"
-                    role="listitem"
-                >
-                    <div class="step-detail-content">
-                        <label class="step-checkbox-wrapper">
-                            <input 
-                                type="checkbox" 
-                                :checked="step.completed"
-                                @change="handleStepToggle(step)"
-                                class="step-checkbox"
-                                :aria-label="`标记步骤 ${step.number} 为${step.completed ? '未完成' : '已完成'}`"
-                            >
-                            <span class="step-checkbox-custom"></span>
-                        </label>
-                        <div class="step-detail-number">{{ step.number }}</div>
-                        <p class="step-detail-text" :class="{ 'completed-text': step.completed }">{{ step.text }}</p>
+        <!-- 任务列表 -->
+        <div v-else class="task-grid" role="list" aria-label="任务列表">
+            <article 
+                v-for="(task, index) in searchResults" 
+                :key="task.title"
+                @click="handleTaskClick(task)"
+                :class="['task-item', { 
+                    active: clickedItems.has(task.title),
+                    clicked: clickedItems.has(task.title),
+                    'selected': isTaskSelected(task)
+                }]"
+                :title="getTaskTitle(task)"
+                role="listitem"
+                tabindex="0"
+                @keydown.enter="handleTaskClick(task)"
+                @keydown.space="handleTaskClick(task)"
+                :aria-label="`任务 ${index + 1}: ${task.title}`"
+                :aria-describedby="`task-${index}-description`"
+            >
+                <header class="task-header">
+                    <div class="task-header-content">
+                        <h3 class="task-title" :id="`task-${index}-title`">{{ task.title }}</h3>
+                    </div>
+                </header>
+                
+                <div class="task-description" :id="`task-${index}-description`">
+                    {{ task.description }}
+                </div>
+                
+                <div class="task-input-output" aria-label="任务输入输出信息">
+                    <div class="task-input">
+                        <h5>
+                            <i class="fas fa-arrow-down" aria-hidden="true"></i>
+                            输入
+                        </h5>
+                        <p>{{ task.input }}</p>
+                    </div>
+                    <div class="task-output">
+                        <h5>
+                            <i class="fas fa-arrow-up" aria-hidden="true"></i>
+                            输出
+                        </h5>
+                        <p>{{ task.output }}</p>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <!-- 任务输入输出 -->
-        <div class="task-input-output">
-            <div class="task-input">
-                <h5>
-                    <i class="fas fa-arrow-down" aria-hidden="true"></i>
-                    输入
-                </h5>
-                <div class="task-content-wrapper">
-                    <p class="task-content-text">{{ selectedTask.input || '无输入信息' }}</p>
-                </div>
-            </div>
-            <div class="task-output">
-                <h5>
-                    <i class="fas fa-arrow-up" aria-hidden="true"></i>
-                    输出
-                </h5>
-                <div class="task-content-wrapper">
-                    <p class="task-content-text">{{ selectedTask.output || '无输出信息' }}</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 操作按钮 -->
-        <div class="task-detail-actions">
-            <button 
-                @click="handleCopyTask"
-                class="btn btn-secondary"
-                title="复制任务信息"
-                aria-label="复制任务信息到剪贴板"
-            >
-                <i class="fas fa-copy" aria-hidden="true"></i>
-                复制
-            </button>
-            <button 
-                @click="handleShareTask"
-                class="btn btn-secondary"
-                title="分享任务"
-                aria-label="分享任务"
-            >
-                <i class="fas fa-share" aria-hidden="true"></i>
-                分享
-            </button>
-            <button 
-                @click="handleExportTask"
-                class="btn btn-primary"
-                title="导出任务"
-                aria-label="导出任务为JSON文件"
-            >
-                <i class="fas fa-download" aria-hidden="true"></i>
-                导出
-            </button>
+                <div class="task-meta-row">
+                  <div class="task-progress" v-if="getTaskProgress(task).total > 0">
+                      <i class="fas fa-tasks" aria-hidden="true"></i>
+                      <span class="progress-text">{{ getTaskProgress(task).completed }}/{{ getTaskProgress(task).total }}</span>
+                      <div class="progress-bar">
+                          <div 
+                              class="progress-fill" 
+                              :style="{ width: getTaskProgress(task).percentage + '%' }"
+                              :aria-label="`任务进度 ${getTaskProgress(task).percentage}%`"
+                          ></div>
+                      </div>
+                  </div>
+
+                  <time class="task-time" :datetime="task.time" aria-label="任务时间">
+                    <i class="fas fa-clock" aria-hidden="true"></i>
+                    <span>{{ formatTaskTime(task.time) }}</span>
+                </time>
+              </div>
+            </article>
         </div>
     </div>
 </div> 
