@@ -84,6 +84,35 @@ export const createStore = () => {
     };
 
     /**
+     * 删除任务
+     * @param {Object} task - 要删除的任务对象
+     * @returns {boolean} 删除是否成功
+     */
+    const deleteTask = async (task) => {
+        try {
+            console.log('[deleteTask] 开始删除任务:', task.title);
+            
+            // 从任务数据中移除任务
+            const updatedTasks = tasksData.value.filter(t => t.title !== task.title);
+            tasksData.value = updatedTasks;
+            
+            // 如果删除的是当前选中的任务，关闭详情
+            if (selectedTask.value && selectedTask.value.title === task.title) {
+                closeTaskDetail();
+            }
+            
+            // 从点击记录中移除
+            clickedItems.value.delete(task.title);
+            
+            console.log('[deleteTask] 任务删除成功:', task.title);
+            return true;
+        } catch (error) {
+            console.error('[deleteTask] 删除任务失败:', error);
+            return false;
+        }
+    };
+
+    /**
      * 设置搜索查询
      * @param {string} query - 搜索查询
      */
@@ -165,8 +194,6 @@ export const createStore = () => {
         isDetailVisible.value = false;
     };
 
-
-
     return {
         // 响应式数据
         tasksData,
@@ -182,6 +209,7 @@ export const createStore = () => {
 
         // 方法
         loadTasksData,
+        deleteTask,
         setSearchQuery,
         toggleCategory,
         addClickedItem,
