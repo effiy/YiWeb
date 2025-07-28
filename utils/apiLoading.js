@@ -11,8 +11,9 @@ class ApiLoadingManager {
     constructor() {
         this.loadingStates = new Map(); // 存储各个请求的加载状态
         this.globalLoading = false;
-        this.defaultTimeout = 30000; // 30秒默认超时
+        this.defaultTimeout = 300000; // 300秒默认超时
         this.defaultPosition = 'center'; // 默认位置
+        this.scrollTop = 0; // 记录滚动位置
 
         this.init();
     }
@@ -65,8 +66,46 @@ class ApiLoadingManager {
      * 绑定事件
      */
     bindEvents() {
-        // 取消按钮相关事件已移除
-        // 键盘快捷键支持（取消相关已移除）
+        // 防止滚动穿透
+        const overlay = document.getElementById('api-loading-overlay');
+        if (overlay) {
+            overlay.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+            
+            overlay.addEventListener('wheel', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+        }
+    }
+
+    /**
+     * 处理滚动位置
+     */
+    handleScrollPosition() {
+        // 记录当前滚动位置
+        this.scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // 设置CSS变量
+        document.documentElement.style.setProperty('--scroll-top', `${this.scrollTop}px`);
+        
+        // 添加滚动锁定类
+        document.documentElement.classList.add('api-loading-active');
+        document.body.classList.add('api-loading-active');
+    }
+
+    /**
+     * 恢复滚动位置
+     */
+    restoreScrollPosition() {
+        // 移除滚动锁定类
+        document.documentElement.classList.remove('api-loading-active');
+        document.body.classList.remove('api-loading-active');
+        
+        // 恢复滚动位置
+        if (this.scrollTop > 0) {
+            window.scrollTo(0, this.scrollTop);
+        }
     }
 
     /**
@@ -102,11 +141,13 @@ class ApiLoadingManager {
             message = '正在处理请求...',
             timeout = this.defaultTimeout,
             showProgress = true,
-            // showCancel = true, // 取消相关已移除
             details = '',
-            position = this.defaultPosition, // 新增位置选项
-            delayShow = 3000 // 新增：延迟显示时间，默认3秒
+            position = this.defaultPosition,
+            delayShow = 3000
         } = options;
+
+        // 处理滚动位置
+        this.handleScrollPosition();
 
         // 设置位置
         this.setPosition(position);
@@ -117,13 +158,12 @@ class ApiLoadingManager {
             message,
             timeout,
             showProgress,
-            // showCancel, // 取消相关已移除
             details,
-            progress: 0, // 初始化进度为0
+            progress: 0,
             cancelled: false,
-            position, // 保存位置信息
-            delayShow, // 保存延迟显示时间
-            delayedShowTimer: null // 延迟显示定时器
+            position,
+            delayShow,
+            delayedShowTimer: null
         });
 
         this.globalLoading = true;
@@ -180,6 +220,8 @@ class ApiLoadingManager {
         if (this.loadingStates.size === 0) {
             this.globalLoading = false;
             this.hideUI();
+            // 恢复滚动位置
+            this.restoreScrollPosition();
         } else {
             // 更新UI显示其他请求的信息
             const nextRequestId = Array.from(this.loadingStates.keys())[0];
@@ -228,6 +270,9 @@ class ApiLoadingManager {
         const state = this.loadingStates.get(requestId);
         if (!state) return;
 
+        // 确保overlay在正确位置
+        this.ensureOverlayPosition();
+
         // 更新位置
         if (state.position) {
             this.setPosition(state.position);
@@ -264,10 +309,172 @@ class ApiLoadingManager {
             detailsEl.style.display = 'none';
         }
 
-        // 取消按钮相关已移除
+        // 确保api-loading-content可见
+        this.ensureContentVisibility();
 
         // 显示加载界面
         overlay.classList.add('show');
+    }
+
+    /**
+     * 确保内容可见性
+     */
+    ensureContentVisibility() {
+        const contentEl = document.querySelector('.api-loading-content');
+        if (!contentEl) return;
+
+        // 强制设置可见性样式
+        contentEl.style.display = 'block';
+        contentEl.style.visibility = 'visible';
+        contentEl.style.opacity = '1';
+        contentEl.style.zIndex = '10001';
+        contentEl.style.position = 'relative';
+        contentEl.style.width = '100%';
+        contentEl.style.maxHeight = 'none';
+        contentEl.style.overflow = 'visible';
+
+        // 确保所有子元素也可见
+        const children = contentEl.querySelectorAll('*');
+        children.forEach(child => {
+            if (child.style.display === 'none') {
+                child.style.display = '';
+            }
+            if (child.style.visibility === 'hidden') {
+                child.style.visibility = 'visible';
+            }
+        });
+
+        // 智能容器位置检测和调整
+        this.adjustContainerPosition();
+    }
+
+    /**
+     * 智能调整容器位置
+     */
+    adjustContainerPosition() {
+        const container = document.querySelector('.api-loading-container');
+        const overlay = document.getElementById('api-loading-overlay');
+        if (!container || !overlay) return;
+
+        // 获取视口信息
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const containerRect = container.getBoundingClientRect();
+        
+        // 计算安全边距
+        const safeMargin = Math.max(20, Math.min(viewportWidth, viewportHeight) * 0.05);
+        
+        // 设置CSS变量
+        container.style.setProperty('--safe-margin', `${safeMargin}px`);
+        container.style.setProperty('--viewport-width', `${viewportWidth}px`);
+        container.style.setProperty('--viewport-height', `${viewportHeight}px`);
+
+        // 检查容器是否超出视口边界
+        const isOutOfBounds = 
+            containerRect.top < safeMargin ||
+            containerRect.bottom > viewportHeight - safeMargin ||
+            containerRect.left < safeMargin ||
+            containerRect.right > viewportWidth - safeMargin;
+
+        if (isOutOfBounds) {
+            // 智能重新定位
+            this.repositionContainer(container, viewportWidth, viewportHeight, safeMargin);
+        }
+
+        // 确保容器在视口内
+        this.ensureContainerInViewport(container, viewportWidth, viewportHeight, safeMargin);
+    }
+
+    /**
+     * 重新定位容器
+     */
+    repositionContainer(container, viewportWidth, viewportHeight, safeMargin) {
+        const rect = container.getBoundingClientRect();
+        const containerWidth = rect.width;
+        const containerHeight = rect.height;
+
+        // 计算最佳位置
+        let newTop = rect.top;
+        let newLeft = rect.left;
+
+        // 水平居中
+        if (containerWidth < viewportWidth - 2 * safeMargin) {
+            newLeft = (viewportWidth - containerWidth) / 2;
+        } else {
+            // 如果容器太宽，确保不超出边界
+            newLeft = Math.max(safeMargin, Math.min(newLeft, viewportWidth - containerWidth - safeMargin));
+        }
+
+        // 垂直居中
+        if (containerHeight < viewportHeight - 2 * safeMargin) {
+            newTop = (viewportHeight - containerHeight) / 2;
+        } else {
+            // 如果容器太高，确保不超出边界
+            newTop = Math.max(safeMargin, Math.min(newTop, viewportHeight - containerHeight - safeMargin));
+        }
+
+        // 应用新位置
+        container.style.position = 'absolute';
+        container.style.top = `${newTop}px`;
+        container.style.left = `${newLeft}px`;
+        container.style.transform = 'none';
+        container.style.zIndex = '10000';
+    }
+
+    /**
+     * 确保容器在视口内
+     */
+    ensureContainerInViewport(container, viewportWidth, viewportHeight, safeMargin) {
+        const rect = container.getBoundingClientRect();
+        
+        // 检查并调整水平位置
+        if (rect.left < safeMargin) {
+            container.style.left = `${safeMargin}px`;
+        } else if (rect.right > viewportWidth - safeMargin) {
+            container.style.left = `${viewportWidth - rect.width - safeMargin}px`;
+        }
+
+        // 检查并调整垂直位置
+        if (rect.top < safeMargin) {
+            container.style.top = `${safeMargin}px`;
+        } else if (rect.bottom > viewportHeight - safeMargin) {
+            container.style.top = `${viewportHeight - rect.height - safeMargin}px`;
+        }
+
+        // 确保容器不会超出视口
+        const finalRect = container.getBoundingClientRect();
+        if (finalRect.width > viewportWidth - 2 * safeMargin) {
+            container.style.width = `${viewportWidth - 2 * safeMargin}px`;
+            container.style.maxWidth = `${viewportWidth - 2 * safeMargin}px`;
+        }
+
+        if (finalRect.height > viewportHeight - 2 * safeMargin) {
+            container.style.maxHeight = `${viewportHeight - 2 * safeMargin}px`;
+            container.style.overflowY = 'auto';
+        }
+    }
+
+    /**
+     * 确保overlay在正确位置
+     */
+    ensureOverlayPosition() {
+        const overlay = document.getElementById('api-loading-overlay');
+        if (!overlay) return;
+
+        // 确保overlay始终在视口内
+        const rect = overlay.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+
+        // 如果overlay超出视口，调整位置
+        if (rect.top < 0 || rect.bottom > viewportHeight || 
+            rect.left < 0 || rect.right > viewportWidth) {
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100vw';
+            overlay.style.height = '100vh';
+        }
     }
 
     /**
@@ -305,8 +512,6 @@ class ApiLoadingManager {
         }, 3000);
     }
 
-    // 取消所有请求相关方法已移除
-
     /**
      * 触发自定义事件
      * @param {string} eventName - 事件名称
@@ -332,10 +537,9 @@ class ApiLoadingManager {
             message = '正在处理请求...',
             timeout = this.defaultTimeout,
             showProgress = true,
-            // showCancel = true, // 取消相关已移除
-            autoProgress = true, // 自动进度更新
-            position = this.defaultPosition, // 新增位置选项
-            delayShow = 3000 // 新增：延迟显示时间，默认3秒
+            autoProgress = true,
+            position = this.defaultPosition,
+            delayShow = 3000
         } = options;
 
         try {
@@ -442,6 +646,22 @@ class ApiLoadingManager {
             'bottom-right'
         ];
     }
+
+    /**
+     * 强制刷新overlay位置
+     * 用于处理滚动后位置异常的情况
+     */
+    forceRefreshPosition() {
+        const overlay = document.getElementById('api-loading-overlay');
+        if (overlay && this.globalLoading) {
+            // 临时隐藏再显示，强制重新计算位置
+            overlay.style.display = 'none';
+            setTimeout(() => {
+                overlay.style.display = 'flex';
+                this.ensureOverlayPosition();
+            }, 10);
+        }
+    }
 }
 
 // 创建全局实例
@@ -456,6 +676,7 @@ export const hideApiLoading = (requestId) => apiLoading.hide(requestId);
 export const updateApiProgress = (requestId, progress, message) => apiLoading.updateProgress(requestId, progress, message);
 export const withApiLoading = (asyncFunction, options) => apiLoading.withLoading(asyncFunction, options);
 export const setApiLoadingPosition = (position) => apiLoading.setPosition(position);
+export const forceRefreshApiLoadingPosition = () => apiLoading.forceRefreshPosition();
 
 // 测试进度条函数
 export const testProgressBar = () => {
@@ -517,6 +738,181 @@ export const testPositions = () => {
     testNextPosition();
 };
 
+// 测试滚动处理函数
+export const testScrollHandling = () => {
+    const requestId = apiLoading.generateRequestId();
+    
+    // 滚动到页面底部
+    window.scrollTo(0, document.body.scrollHeight);
+    
+    setTimeout(() => {
+        apiLoading.show(requestId, {
+            message: '测试滚动处理 - 在页面底部显示',
+            showProgress: true,
+            position: 'center'
+        });
+        
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 15;
+            apiLoading.updateProgress(requestId, progress, `滚动测试: ${progress}%`);
+            
+            if (progress >= 100) {
+                clearInterval(interval);
+                setTimeout(() => {
+                    apiLoading.hide(requestId);
+                    // 恢复滚动位置
+                    window.scrollTo(0, 0);
+                }, 1000);
+            }
+        }, 400);
+    }, 1000);
+};
+
+// 测试内容显示函数
+export const testContentVisibility = () => {
+    const requestId = apiLoading.generateRequestId();
+    
+    // 滚动到页面中间
+    window.scrollTo(0, document.body.scrollHeight / 2);
+    
+    setTimeout(() => {
+        apiLoading.show(requestId, {
+            message: '测试内容显示 - 验证api-loading-content是否可见',
+            showProgress: true,
+            position: 'center',
+            details: '这是详细信息，用于测试内容显示是否正常。如果能看到这段文字，说明修复成功！'
+        });
+        
+        // 检查内容元素
+        setTimeout(() => {
+            const contentEl = document.querySelector('.api-loading-content');
+            const containerEl = document.querySelector('.api-loading-container');
+            const overlayEl = document.getElementById('api-loading-overlay');
+            
+            console.log('=== 内容显示测试 ===');
+            console.log('Overlay元素:', overlayEl);
+            console.log('Container元素:', containerEl);
+            console.log('Content元素:', contentEl);
+            
+            if (contentEl) {
+                console.log('Content样式:', {
+                    display: contentEl.style.display,
+                    visibility: contentEl.style.visibility,
+                    opacity: contentEl.style.opacity,
+                    zIndex: contentEl.style.zIndex,
+                    position: contentEl.style.position,
+                    width: contentEl.style.width,
+                    maxHeight: contentEl.style.maxHeight,
+                    overflow: contentEl.style.overflow
+                });
+                
+                const rect = contentEl.getBoundingClientRect();
+                console.log('Content位置:', {
+                    top: rect.top,
+                    left: rect.left,
+                    width: rect.width,
+                    height: rect.height,
+                    visible: rect.width > 0 && rect.height > 0
+                });
+            }
+            
+            // 3秒后隐藏
+            setTimeout(() => {
+                apiLoading.hide(requestId);
+                window.scrollTo(0, 0);
+            }, 3000);
+        }, 500);
+    }, 1000);
+};
+
+// 测试位置优化函数
+export const testPositionOptimization = () => {
+    const requestId = apiLoading.generateRequestId();
+    
+    // 滚动到页面底部
+    window.scrollTo(0, document.body.scrollHeight);
+    
+    setTimeout(() => {
+        apiLoading.show(requestId, {
+            message: '测试位置优化 - 验证智能定位功能',
+            showProgress: true,
+            position: 'center',
+            details: '这个测试会验证容器和内容的位置是否被正确优化。如果容器始终在视口内且内容完全可见，说明优化成功！'
+        });
+        
+        // 检查位置优化效果
+        setTimeout(() => {
+            const container = document.querySelector('.api-loading-container');
+            const content = document.querySelector('.api-loading-content');
+            const overlay = document.getElementById('api-loading-overlay');
+            
+            console.log('=== 位置优化测试 ===');
+            
+            if (container) {
+                const containerRect = container.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                
+                console.log('视口尺寸:', { width: viewportWidth, height: viewportHeight });
+                console.log('容器位置:', {
+                    top: containerRect.top,
+                    left: containerRect.left,
+                    width: containerRect.width,
+                    height: containerRect.height,
+                    right: containerRect.right,
+                    bottom: containerRect.bottom
+                });
+                
+                // 检查是否在视口内
+                const isInViewport = 
+                    containerRect.top >= 0 &&
+                    containerRect.bottom <= viewportHeight &&
+                    containerRect.left >= 0 &&
+                    containerRect.right <= viewportWidth;
+                
+                console.log('容器是否在视口内:', isInViewport);
+                
+                // 检查安全边距
+                const safeMargin = 20;
+                const hasSafeMargin = 
+                    containerRect.top >= safeMargin &&
+                    containerRect.bottom <= viewportHeight - safeMargin &&
+                    containerRect.left >= safeMargin &&
+                    containerRect.right <= viewportWidth - safeMargin;
+                
+                console.log('是否保持安全边距:', hasSafeMargin);
+            }
+            
+            if (content) {
+                const contentRect = content.getBoundingClientRect();
+                console.log('内容位置:', {
+                    top: contentRect.top,
+                    left: contentRect.left,
+                    width: contentRect.width,
+                    height: contentRect.height,
+                    visible: contentRect.width > 0 && contentRect.height > 0
+                });
+                
+                // 检查内容是否完全可见
+                const isContentVisible = 
+                    contentRect.width > 0 && 
+                    contentRect.height > 0 &&
+                    content.style.display !== 'none' &&
+                    content.style.visibility !== 'hidden';
+                
+                console.log('内容是否完全可见:', isContentVisible);
+            }
+            
+            // 5秒后隐藏
+            setTimeout(() => {
+                apiLoading.hide(requestId);
+                window.scrollTo(0, 0);
+            }, 5000);
+        }, 1000);
+    }, 1000);
+};
+
 // 在全局作用域中暴露（用于调试）
 if (typeof window !== 'undefined') {
     window.apiLoading = apiLoading;
@@ -525,6 +921,10 @@ if (typeof window !== 'undefined') {
     window.updateApiProgress = updateApiProgress;
     window.withApiLoading = withApiLoading;
     window.setApiLoadingPosition = setApiLoadingPosition;
+    window.forceRefreshApiLoadingPosition = forceRefreshApiLoadingPosition;
     window.testProgressBar = testProgressBar;
     window.testPositions = testPositions;
+    window.testScrollHandling = testScrollHandling;
+    window.testContentVisibility = testContentVisibility;
+    window.testPositionOptimization = testPositionOptimization;
 } 

@@ -3,7 +3,7 @@
  * author: liangliang
  */
 
-/* 加载遮罩层 */
+/* 加载遮罩层 - 优化滚动处理 */
 .api-loading-overlay {
     position: fixed;
     top: 0;
@@ -23,6 +23,10 @@
     /* 确保不受滚动影响 */
     transform: translateZ(0);
     will-change: opacity, visibility;
+    /* 防止滚动穿透 */
+    overscroll-behavior: contain;
+    /* 确保在滚动时保持固定位置 */
+    position: fixed !important;
 }
 
 .api-loading-overlay.show {
@@ -30,7 +34,7 @@
     visibility: visible;
 }
 
-/* 加载容器 - 优化位置设置 */
+/* 加载容器 - 优化位置设置，确保不受滚动影响 */
 .api-loading-container {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 20px;
@@ -42,77 +46,89 @@
     position: relative;
     overflow: hidden;
     transform: translateY(20px);
-    transition: transform 0.3s ease-out;
+    transition: all 0.3s ease-out;
     
-    /* 确保始终居中，不受滚动影响 */
-    margin: auto;
-    /* 使用绝对定位确保居中 */
+    /* 智能定位系统 */
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) translateY(20px);
     
+    /* 确保容器始终可见 */
+    z-index: 10000;
+    
     /* 支持不同的位置模式 */
     --loading-position: center; /* 可选值: center, top, bottom, left, right, top-left, top-right, bottom-left, bottom-right */
+    
+    /* 智能边界检测 */
+    --safe-margin: 20px;
+    --container-width: 450px;
+    --container-height: auto;
 }
 
-/* 位置变体 - 使用绝对定位确保不受滚动影响 */
+/* 位置变体 - 使用智能定位确保不受滚动影响 */
 .api-loading-container.position-top {
-    top: 60px;
+    top: calc(var(--safe-margin) + 40px);
     left: 50%;
     transform: translate(-50%, 0) translateY(20px);
 }
 
 .api-loading-container.position-bottom {
     top: auto;
-    bottom: 60px;
+    bottom: calc(var(--safe-margin) + 40px);
     left: 50%;
     transform: translate(-50%, 0) translateY(20px);
 }
 
 .api-loading-container.position-left {
     top: 50%;
-    left: 60px;
+    left: calc(var(--safe-margin) + 40px);
     transform: translate(0, -50%) translateY(20px);
 }
 
 .api-loading-container.position-right {
     top: 50%;
     left: auto;
-    right: 60px;
+    right: calc(var(--safe-margin) + 40px);
     transform: translate(0, -50%) translateY(20px);
 }
 
 .api-loading-container.position-top-left {
-    top: 60px;
-    left: 60px;
+    top: calc(var(--safe-margin) + 40px);
+    left: calc(var(--safe-margin) + 40px);
     transform: translate(0, 0) translateY(20px);
 }
 
 .api-loading-container.position-top-right {
-    top: 60px;
+    top: calc(var(--safe-margin) + 40px);
     left: auto;
-    right: 60px;
+    right: calc(var(--safe-margin) + 40px);
     transform: translate(0, 0) translateY(20px);
 }
 
 .api-loading-container.position-bottom-left {
     top: auto;
-    bottom: 60px;
-    left: 60px;
+    bottom: calc(var(--safe-margin) + 40px);
+    left: calc(var(--safe-margin) + 40px);
     transform: translate(0, 0) translateY(20px);
 }
 
 .api-loading-container.position-bottom-right {
     top: auto;
-    bottom: 60px;
+    bottom: calc(var(--safe-margin) + 40px);
     left: auto;
-    right: 60px;
+    right: calc(var(--safe-margin) + 40px);
     transform: translate(0, 0) translateY(20px);
 }
 
-/* 响应式位置调整 */
+/* 智能边界检测和自适应定位 */
 @media (max-width: 768px) {
+    .api-loading-container {
+        --safe-margin: 16px;
+        max-width: calc(100vw - 32px);
+        padding: 32px 24px;
+    }
+    
     .api-loading-container.position-top,
     .api-loading-container.position-bottom,
     .api-loading-container.position-left,
@@ -121,12 +137,13 @@
     .api-loading-container.position-top-right,
     .api-loading-container.position-bottom-left,
     .api-loading-container.position-bottom-right {
-        /* 在小屏幕上统一居中显示 */
+        /* 在小屏幕上智能居中显示 */
         top: 50%;
         left: 50%;
         right: auto;
         bottom: auto;
         transform: translate(-50%, -50%) translateY(20px);
+        max-width: calc(100vw - 32px);
     }
     
     .api-loading-overlay.show .api-loading-container.position-top,
@@ -141,11 +158,21 @@
     }
 }
 
+/* 超小屏幕优化 */
+@media (max-width: 480px) {
+    .api-loading-container {
+        --safe-margin: 12px;
+        max-width: calc(100vw - 24px);
+        padding: 28px 20px;
+        border-radius: 16px;
+    }
+}
+
+/* 显示状态下的位置变体 */
 .api-loading-overlay.show .api-loading-container {
     transform: translate(-50%, -50%) translateY(0);
 }
 
-/* 显示状态下的位置变体 */
 .api-loading-overlay.show .api-loading-container.position-top {
     transform: translate(-50%, 0) translateY(0);
 }
@@ -245,10 +272,25 @@
     100% { transform: rotate(360deg); }
 }
 
-/* 加载内容 */
+/* 加载内容 - 优化布局和定位 */
 .api-loading-content {
     color: #fff;
     margin-bottom: 0;
+    /* 确保内容始终可见 */
+    position: relative;
+    z-index: 10001;
+    /* 防止内容被裁剪 */
+    max-height: none;
+    overflow: visible;
+    /* 确保内容完全可见 */
+    display: block;
+    width: 100%;
+    /* 优化内容布局 */
+    box-sizing: border-box;
+    /* 智能内容高度 */
+    min-height: 120px;
+    /* 内容间距优化 */
+    padding: 0;
 }
 
 .loading-title {
@@ -257,6 +299,11 @@
     margin: 0 0 16px;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     letter-spacing: 0.5px;
+    /* 确保标题可见 */
+    display: block;
+    width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .loading-message {
@@ -265,6 +312,11 @@
     opacity: 0.95;
     line-height: 1.5;
     font-weight: 400;
+    /* 确保消息可见 */
+    display: block;
+    width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 /* 进度条 */
@@ -273,6 +325,9 @@
     display: flex;
     align-items: center;
     gap: 16px;
+    /* 确保进度条可见 */
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .progress-bar {
@@ -283,6 +338,8 @@
     overflow: hidden;
     position: relative;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    /* 确保进度条可见 */
+    min-width: 0;
 }
 
 .progress-fill {
@@ -317,6 +374,8 @@
     min-width: 45px;
     text-align: right;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    /* 确保文本可见 */
+    flex-shrink: 0;
 }
 
 /* 详细信息 */
@@ -333,6 +392,14 @@
     display: none;
     border: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(10px);
+    /* 确保详细信息在滚动时也可见 */
+    position: relative;
+    z-index: 10002;
+    /* 确保详细信息可见 */
+    width: 100%;
+    box-sizing: border-box;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .loading-details.show {
@@ -370,14 +437,18 @@
     border-left: 4px solid #ff6b6b;
     box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
     backdrop-filter: blur(10px);
+    /* 确保错误消息可见 */
+    width: 100%;
+    box-sizing: border-box;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .error-message i {
     font-size: 16px;
     color: #ff6b6b;
+    flex-shrink: 0;
 }
-
-/* 取消按钮相关样式已移除 */
 
 /* 响应式设计 */
 @media (max-width: 480px) {
@@ -504,4 +575,45 @@
     .progress-bar {
         border: 1px solid #fff;
     }
+}
+
+/* 滚动优化 - 确保在任何滚动位置都能正确显示 */
+html.api-loading-active {
+    /* 防止页面滚动 */
+    overflow: hidden;
+    /* 保持滚动位置 */
+    scroll-behavior: auto;
+}
+
+body.api-loading-active {
+    /* 防止body滚动 */
+    overflow: hidden;
+    /* 保持滚动位置 */
+    position: fixed;
+    width: 100%;
+    top: var(--scroll-top, 0);
+}
+
+/* 确保loading overlay在所有情况下都可见 */
+.api-loading-overlay {
+    /* 使用更高的z-index确保在最顶层 */
+    z-index: 2147483647;
+    /* 确保覆盖所有其他元素 */
+    position: fixed !important;
+    /* 防止被其他元素覆盖 */
+    pointer-events: auto;
+}
+
+/* 防止loading内容被裁剪或隐藏 */
+.api-loading-container {
+    /* 确保容器不会被裁剪 */
+    max-height: calc(100vh - 40px);
+    overflow: visible;
+    /* 确保在视口内 */
+    position: absolute !important;
+    /* 智能边界检测 */
+    --viewport-width: 100vw;
+    --viewport-height: 100vh;
+    --container-max-width: min(450px, calc(var(--viewport-width) - 40px));
+    --container-max-height: calc(var(--viewport-height) - 40px);
 } 
