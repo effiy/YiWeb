@@ -727,13 +727,13 @@
 
 /* 功能标签样式 */
 .feature-tag {
-    background: rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.08) 100%);
     color: var(--text-secondary);
     padding: 10px 14px;
     border-radius: 14px;
     font-size: 0.85rem;
     border: 1px solid rgba(255, 255, 255, 0.18);
-    transition: all var(--duration-slow) var(--ease-smooth);
+    transition: all var(--duration-normal) var(--ease-smooth);
     font-weight: 600;
     -webkit-backdrop-filter: blur(15px);
     backdrop-filter: blur(15px);
@@ -751,6 +751,12 @@
     transform: translate3d(0, 0, 0);
     backface-visibility: hidden;
     contain: layout style paint;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .feature-tag::before {
@@ -762,16 +768,45 @@
     height: 100%;
     background: linear-gradient(90deg, 
         transparent, 
-        rgba(255, 255, 255, 0.2), 
+        rgba(255, 255, 255, 0.3), 
         transparent);
     transition: left var(--duration-slow) var(--ease-smooth);
     will-change: left;
     transform: translate3d(0, 0, 0);
 }
 
-/* 优化功能标签悬停效果 */
+/* 优化功能标签悬停效果 - 与card-badge保持一致 */
+.feature-tag:hover {
+    background: linear-gradient(135deg, #06b6d4 0%, #4f46e5 50%, #7c3aed 100%);
+    border-color: rgba(6, 182, 212, 0.5);
+    box-shadow: 
+        0 8px 20px rgba(6, 182, 212, 0.4),
+        0 4px 12px rgba(79, 70, 229, 0.3),
+        0 0 0 1px rgba(6, 182, 212, 0.3);
+    transform: translateY(-2px) scale(1.05) translate3d(0, 0, 0);
+    color: white;
+}
+
+.feature-tag:active {
+    transform: translateY(0px) scale(0.95) translate3d(0, 0, 0);
+    transition-duration: var(--duration-fast);
+    box-shadow: 
+        0 4px 12px rgba(6, 182, 212, 0.3),
+        0 2px 6px rgba(79, 70, 229, 0.2);
+}
+
+.feature-tag:focus-visible {
+    outline: 2px solid rgba(6, 182, 212, 0.6);
+    outline-offset: 2px;
+}
+
+.feature-tag:hover::before {
+    left: 100%;
+}
+
+/* 卡片悬停时的功能标签效果 */
 .feature-card:hover .feature-tag {
-    background: rgba(6, 182, 212, 0.15);
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(79, 70, 229, 0.1) 100%);
     border-color: rgba(6, 182, 212, 0.4);
     color: #06b6d4;
     transform: translateY(-3px) scale(1.02) translate3d(0, 0, 0);
@@ -780,8 +815,15 @@
         0 3px 8px rgba(79, 70, 229, 0.15);
 }
 
-.feature-card:hover .feature-tag::before {
-    left: 100%;
+.feature-card:hover .feature-tag:hover {
+    background: linear-gradient(135deg, #06b6d4 0%, #4f46e5 50%, #7c3aed 100%);
+    border-color: rgba(6, 182, 212, 0.5);
+    box-shadow: 
+        0 8px 20px rgba(6, 182, 212, 0.4),
+        0 4px 12px rgba(79, 70, 229, 0.3),
+        0 0 0 1px rgba(6, 182, 212, 0.3);
+    transform: translateY(-2px) scale(1.05) translate3d(0, 0, 0);
+    color: white;
 }
 
 /* 统计区域样式 */
