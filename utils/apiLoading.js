@@ -14,16 +14,30 @@ class ApiLoadingManager {
         this.defaultTimeout = 300000; // 300秒默认超时
         this.defaultPosition = 'center'; // 默认位置
         this.scrollTop = 0; // 记录滚动位置
+        this.initialized = false; // 初始化状态标记
 
-        this.init();
+        // 延迟初始化，确保DOM已加载
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.init();
+            });
+        } else {
+            this.init();
+        }
     }
 
     /**
      * 初始化加载管理器
      */
     init() {
+        if (this.initialized) {
+            return;
+        }
+        
         this.createLoadingUI();
         this.bindEvents();
+        this.initialized = true;
+        console.log('[ApiLoadingManager] 初始化完成');
     }
 
     /**
@@ -32,34 +46,55 @@ class ApiLoadingManager {
     createLoadingUI() {
         // 检查是否已存在
         if (document.getElementById('api-loading-overlay')) {
+            console.log('[ApiLoadingManager] api-loading-overlay已存在');
             return;
         }
 
-        const overlay = document.createElement('div');
-        overlay.id = 'api-loading-overlay';
-        overlay.className = 'api-loading-overlay';
-        overlay.innerHTML = `
-            <div class="api-loading-container">
-                <div class="api-loading-spinner">
-                    <div class="spinner-ring"></div>
-                    <div class="spinner-ring"></div>
-                    <div class="spinner-ring"></div>
-                </div>
-                <div class="api-loading-content">
-                    <h3 class="loading-title">正在处理请求...</h3>
-                    <p class="loading-message" id="loading-message">请稍候</p>
-                    <div class="loading-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progress-fill"></div>
-                        </div>
-                        <span class="progress-text" id="progress-text">0%</span>
-                    </div>
-                    <div class="loading-details" id="loading-details"></div>
-                </div>
-            </div>
-        `;
+        // 确保document.body存在
+        if (!document.body) {
+            console.warn('[ApiLoadingManager] document.body不存在，延迟创建UI');
+            setTimeout(() => this.createLoadingUI(), 100);
+            return;
+        }
 
-        document.body.appendChild(overlay);
+        try {
+            const overlay = document.createElement('div');
+            overlay.id = 'api-loading-overlay';
+            overlay.className = 'api-loading-overlay';
+            overlay.innerHTML = `
+                <div class="api-loading-container">
+                    <div class="api-loading-spinner">
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                    </div>
+                    <div class="api-loading-content">
+                        <h3 class="loading-title">正在处理请求...</h3>
+                        <p class="loading-message" id="loading-message">请稍候</p>
+                        <div class="loading-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-fill"></div>
+                            </div>
+                            <span class="progress-text" id="progress-text">0%</span>
+                        </div>
+                        <div class="loading-details" id="loading-details"></div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+            console.log('[ApiLoadingManager] api-loading-overlay创建成功');
+            
+            // 验证创建的元素
+            const container = document.querySelector('.api-loading-container');
+            if (container) {
+                console.log('[ApiLoadingManager] api-loading-container创建成功');
+            } else {
+                console.error('[ApiLoadingManager] api-loading-container创建失败');
+            }
+        } catch (error) {
+            console.error('[ApiLoadingManager] 创建加载UI失败:', error);
+        }
     }
 
     /**
@@ -145,6 +180,18 @@ class ApiLoadingManager {
             position = this.defaultPosition,
             delayShow = 3000
         } = options;
+
+        // 确保UI已初始化
+        if (!this.initialized) {
+            console.warn('[ApiLoadingManager] 管理器未初始化，尝试初始化');
+            this.init();
+        }
+
+        // 确保加载UI已创建
+        if (!document.getElementById('api-loading-overlay')) {
+            console.warn('[ApiLoadingManager] api-loading-overlay不存在，重新创建');
+            this.createLoadingUI();
+        }
 
         // 处理滚动位置
         this.handleScrollPosition();
@@ -264,11 +311,23 @@ class ApiLoadingManager {
      * @param {string} requestId - 请求ID
      */
     updateUI(requestId) {
+        // 确保加载UI已创建
+        if (!document.getElementById('api-loading-overlay')) {
+            console.warn('[ApiLoadingManager] updateUI: api-loading-overlay不存在，重新创建');
+            this.createLoadingUI();
+        }
+
         const overlay = document.getElementById('api-loading-overlay');
-        if (!overlay) return;
+        if (!overlay) {
+            console.error('[ApiLoadingManager] updateUI: 无法创建api-loading-overlay');
+            return;
+        }
 
         const state = this.loadingStates.get(requestId);
-        if (!state) return;
+        if (!state) {
+            console.warn('[ApiLoadingManager] updateUI: 未找到请求状态:', requestId);
+            return;
+        }
 
         // 确保overlay在正确位置
         this.ensureOverlayPosition();
@@ -282,6 +341,8 @@ class ApiLoadingManager {
         const messageEl = document.getElementById('loading-message');
         if (messageEl) {
             messageEl.textContent = state.message;
+        } else {
+            console.warn('[ApiLoadingManager] updateUI: loading-message元素不存在');
         }
 
         // 更新进度条
@@ -298,6 +359,8 @@ class ApiLoadingManager {
             } else {
                 progressContainer.style.display = 'none';
             }
+        } else {
+            console.warn('[ApiLoadingManager] updateUI: 进度条元素不存在');
         }
 
         // 更新详细信息
@@ -314,6 +377,7 @@ class ApiLoadingManager {
 
         // 显示加载界面
         overlay.classList.add('show');
+        console.log('[ApiLoadingManager] updateUI: 加载界面已显示');
     }
 
     /**
