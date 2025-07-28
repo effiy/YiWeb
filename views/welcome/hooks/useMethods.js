@@ -627,42 +627,30 @@ export const useMethods = (store) => {
                 // 播放删除成功声音
                 playDeleteSuccessSound();
                 
-                // 强制触发Vue响应式更新
-                if (store.featureCards && store.featureCards.value) {
-                    // 确保Vue检测到数组变化
-                    const currentCards = [...store.featureCards.value];
-                    
-                    // 验证数据完整性
-                    const validCards = currentCards.filter(card => card && card.title && card.key);
-                    console.log('[删除卡片] 验证后的卡片数量:', validCards.length);
-                    
-                    store.featureCards.value = validCards;
-                    
-                    // 强制重新渲染
-                    if (Vue && Vue.nextTick) {
-                        Vue.nextTick(() => {
-                            console.log('[删除卡片] Vue响应式更新完成');
-                            
-                            // 使用更简单的方法触发重排
-                            setTimeout(() => {
-                                const gridElement = document.querySelector('.feature-cards-grid');
-                                if (gridElement) {
-                                    // 添加重排动画
-                                    gridElement.classList.add('reflowing');
-                                    
-                                    // 触发CSS Grid重排
-                                    gridElement.style.gridTemplateColumns = gridElement.style.gridTemplateColumns;
-                                    
-                                    // 移除重排动画类
-                                    setTimeout(() => {
-                                        gridElement.classList.remove('reflowing');
-                                    }, 300);
-                                    
-                                    console.log('[删除卡片] CSS Grid重排完成');
-                                }
-                            }, 100);
-                        });
-                    }
+                // 强制重新渲染
+                if (Vue && Vue.nextTick) {
+                    Vue.nextTick(() => {
+                        console.log('[删除卡片] Vue响应式更新完成');
+                        
+                        // 使用更简单的方法触发重排
+                        setTimeout(() => {
+                            const gridElement = document.querySelector('.feature-cards-grid');
+                            if (gridElement) {
+                                // 添加重排动画
+                                gridElement.classList.add('reflowing');
+                                
+                                // 触发CSS Grid重排
+                                gridElement.style.gridTemplateColumns = gridElement.style.gridTemplateColumns;
+                                
+                                // 移除重排动画类
+                                setTimeout(() => {
+                                    gridElement.classList.remove('reflowing');
+                                }, 300);
+                                
+                                console.log('[删除卡片] CSS Grid重排完成');
+                            }
+                        }, 100);
+                    });
                 }
             } else {
                 throw result.error || new Error('删除失败');

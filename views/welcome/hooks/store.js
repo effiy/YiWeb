@@ -67,24 +67,11 @@ export const createStore = () => {
             // 从MongoDB中删除数据
             await deleteData(`${window.API_URL}/mongodb/?cname=goals&key=${cardKey}`);
             
-            // 从本地状态中移除卡片
-            const updatedCards = featureCards.value.filter(card => card && card.key !== cardKey);
+            // 删除成功后，重新加载所有数据（包括mock数据）
+            console.log('[Store] 删除成功，重新加载所有数据');
+            await loadFeatureCards();
             
-            console.log('[Store] 删除前卡片数量:', featureCards.value.length);
-            console.log('[Store] 删除后卡片数量:', updatedCards.length);
-            console.log('[Store] 被删除的卡片key:', cardKey);
-            
-            // 强制更新数组，确保Vue检测到变化
-            featureCards.value = [...updatedCards];
-            
-            // 立即触发DOM更新
-            if (Vue && Vue.nextTick) {
-                Vue.nextTick(() => {
-                    console.log('[Store] DOM更新完成，剩余卡片:', updatedCards.length);
-                });
-            }
-            
-            console.log('[Store] 卡片删除成功:', cardKey, '剩余卡片数量:', updatedCards.length);
+            console.log('[Store] 卡片删除成功:', cardKey, '当前卡片数量:', featureCards.value.length);
             return { success: true };
         } catch (err) {
             console.error('[Store] 删除卡片失败:', err);
@@ -124,8 +111,13 @@ export const createStore = () => {
                 console.warn('[Store] 系统提示数据为空');
                 fromSystem.value = null;
             }
+            
+            // 合并mock数据和MongoDB数据
+            const allData = featureCardsData.concat(validMongoData);
+            console.log('[Store] 合并后的总数据:', allData);
+            
             // 使用更新方法设置数据
-            updateFeatureCards(featureCardsData.concat(validMongoData));
+            updateFeatureCards(allData);
             console.log('[Store] 加载到的功能卡片数据:', featureCardsData);
             console.log('[Store] 加载到的系统提示数据:', systemPromptData);
         } catch (err) {
@@ -154,7 +146,8 @@ export const createStore = () => {
         error,          // 错误信息
         fromSystem,     // 系统提示信息
         updateFeatureCards,  // 更新方法
-        deleteCard      // 删除卡片方法
+        deleteCard,     // 删除卡片方法
+        loadFeatureCards // 重新加载数据方法
     };
 }
 
