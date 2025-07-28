@@ -27,7 +27,7 @@
     visibility: visible;
 }
 
-/* 加载容器 */
+/* 加载容器 - 优化位置设置 */
 .api-loading-container {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 20px;
@@ -40,6 +40,74 @@
     overflow: hidden;
     transform: translateY(20px);
     transition: transform 0.3s ease-out;
+    
+    /* 新增：灵活的位置控制 */
+    margin: auto;
+    /* 支持不同的位置模式 */
+    --loading-position: center; /* 可选值: center, top, bottom, left, right, top-left, top-right, bottom-left, bottom-right */
+}
+
+/* 位置变体 */
+.api-loading-container.position-top {
+    align-self: flex-start;
+    margin-top: 60px;
+}
+
+.api-loading-container.position-bottom {
+    align-self: flex-end;
+    margin-bottom: 60px;
+}
+
+.api-loading-container.position-left {
+    align-self: flex-start;
+    justify-self: flex-start;
+    margin-left: 60px;
+}
+
+.api-loading-container.position-right {
+    align-self: flex-end;
+    justify-self: flex-end;
+    margin-right: 60px;
+}
+
+.api-loading-container.position-top-left {
+    align-self: flex-start;
+    justify-self: flex-start;
+    margin: 60px 0 0 60px;
+}
+
+.api-loading-container.position-top-right {
+    align-self: flex-start;
+    justify-self: flex-end;
+    margin: 60px 60px 0 0;
+}
+
+.api-loading-container.position-bottom-left {
+    align-self: flex-end;
+    justify-self: flex-start;
+    margin: 0 0 60px 60px;
+}
+
+.api-loading-container.position-bottom-right {
+    align-self: flex-end;
+    justify-self: flex-end;
+    margin: 0 60px 60px 0;
+}
+
+/* 响应式位置调整 */
+@media (max-width: 768px) {
+    .api-loading-container.position-top,
+    .api-loading-container.position-bottom,
+    .api-loading-container.position-left,
+    .api-loading-container.position-right,
+    .api-loading-container.position-top-left,
+    .api-loading-container.position-top-right,
+    .api-loading-container.position-bottom-left,
+    .api-loading-container.position-bottom-right {
+        margin: 20px;
+        align-self: center;
+        justify-self: center;
+    }
 }
 
 .api-loading-overlay.show .api-loading-container {

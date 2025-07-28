@@ -12,6 +12,7 @@ class ApiLoadingManager {
         this.loadingStates = new Map(); // 存储各个请求的加载状态
         this.globalLoading = false;
         this.defaultTimeout = 30000; // 30秒默认超时
+        this.defaultPosition = 'center'; // 默认位置
 
         this.init();
     }
@@ -69,6 +70,29 @@ class ApiLoadingManager {
     }
 
     /**
+     * 设置加载容器位置
+     * @param {string} position - 位置类型
+     */
+    setPosition(position = 'center') {
+        const container = document.querySelector('.api-loading-container');
+        if (!container) return;
+
+        // 移除所有位置类
+        const positionClasses = [
+            'position-top', 'position-bottom', 'position-left', 'position-right',
+            'position-top-left', 'position-top-right', 'position-bottom-left', 'position-bottom-right'
+        ];
+        container.classList.remove(...positionClasses);
+
+        // 添加新的位置类
+        if (position !== 'center') {
+            container.classList.add(`position-${position}`);
+        }
+
+        this.defaultPosition = position;
+    }
+
+    /**
      * 显示加载界面
      * @param {string} requestId - 请求ID
      * @param {Object} options - 配置选项
@@ -79,8 +103,12 @@ class ApiLoadingManager {
             timeout = this.defaultTimeout,
             showProgress = true,
             // showCancel = true, // 取消相关已移除
-            details = ''
+            details = '',
+            position = this.defaultPosition // 新增位置选项
         } = options;
+
+        // 设置位置
+        this.setPosition(position);
 
         // 记录加载状态
         this.loadingStates.set(requestId, {
@@ -91,7 +119,8 @@ class ApiLoadingManager {
             // showCancel, // 取消相关已移除
             details,
             progress: 0, // 初始化进度为0
-            cancelled: false
+            cancelled: false,
+            position // 保存位置信息
         });
 
         this.globalLoading = true;
@@ -172,6 +201,11 @@ class ApiLoadingManager {
 
         const state = this.loadingStates.get(requestId);
         if (!state) return;
+
+        // 更新位置
+        if (state.position) {
+            this.setPosition(state.position);
+        }
 
         // 更新消息
         const messageEl = document.getElementById('loading-message');
@@ -273,11 +307,12 @@ class ApiLoadingManager {
             timeout = this.defaultTimeout,
             showProgress = true,
             // showCancel = true, // 取消相关已移除
-            autoProgress = true // 自动进度更新
+            autoProgress = true, // 自动进度更新
+            position = this.defaultPosition // 新增位置选项
         } = options;
 
         try {
-            this.show(requestId, { message, timeout, showProgress });
+            this.show(requestId, { message, timeout, showProgress, position });
             
             // 如果启用自动进度，开始进度动画
             if (autoProgress && showProgress) {
@@ -362,6 +397,24 @@ class ApiLoadingManager {
     getActiveRequestCount() {
         return this.loadingStates.size;
     }
+
+    /**
+     * 获取支持的位置选项
+     * @returns {Array} 位置选项数组
+     */
+    getSupportedPositions() {
+        return [
+            'center',
+            'top',
+            'bottom', 
+            'left',
+            'right',
+            'top-left',
+            'top-right',
+            'bottom-left',
+            'bottom-right'
+        ];
+    }
 }
 
 // 创建全局实例
@@ -375,6 +428,7 @@ export const showApiLoading = (requestId, options) => apiLoading.show(requestId,
 export const hideApiLoading = (requestId) => apiLoading.hide(requestId);
 export const updateApiProgress = (requestId, progress, message) => apiLoading.updateProgress(requestId, progress, message);
 export const withApiLoading = (asyncFunction, options) => apiLoading.withLoading(asyncFunction, options);
+export const setApiLoadingPosition = (position) => apiLoading.setPosition(position);
 
 // 测试进度条函数
 export const testProgressBar = () => {
@@ -398,6 +452,44 @@ export const testProgressBar = () => {
     }, 500);
 };
 
+// 测试不同位置的函数
+export const testPositions = () => {
+    const positions = apiLoading.getSupportedPositions();
+    let currentIndex = 0;
+    
+    const testNextPosition = () => {
+        if (currentIndex >= positions.length) {
+            apiLoading.hide('test-position');
+            return;
+        }
+        
+        const position = positions[currentIndex];
+        const requestId = 'test-position';
+        
+        apiLoading.show(requestId, {
+            message: `测试位置: ${position}`,
+            position: position,
+            showProgress: true
+        });
+        
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 20;
+            apiLoading.updateProgress(requestId, progress, `位置: ${position} - ${progress}%`);
+            
+            if (progress >= 100) {
+                clearInterval(interval);
+                setTimeout(() => {
+                    currentIndex++;
+                    testNextPosition();
+                }, 1000);
+            }
+        }, 300);
+    };
+    
+    testNextPosition();
+};
+
 // 在全局作用域中暴露（用于调试）
 if (typeof window !== 'undefined') {
     window.apiLoading = apiLoading;
@@ -405,5 +497,7 @@ if (typeof window !== 'undefined') {
     window.hideApiLoading = hideApiLoading;
     window.updateApiProgress = updateApiProgress;
     window.withApiLoading = withApiLoading;
+    window.setApiLoadingPosition = setApiLoadingPosition;
     window.testProgressBar = testProgressBar;
+    window.testPositions = testPositions;
 } 
