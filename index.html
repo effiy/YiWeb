@@ -33,24 +33,37 @@
                         <i class="fas fa-brain" aria-label="AI大脑图标"></i>
                     </span>
                     <div class="search-input-wrapper">
-                        <label for="messageInput" class="visually-hidden">消息输入框</label>
+                        <label for="messageInput" class="visually-hidden">搜索输入框</label>
                         <textarea 
                             id="messageInput" 
-                            placeholder="我可以帮助您分析数据、编写代码、生图创造..." 
+                            placeholder="搜索功能卡片，支持标题、描述、特性等..." 
                             rows="1" 
                             maxlength="2000"
-                            aria-label="消息输入框"
+                            aria-label="搜索输入框"
                             aria-describedby="category-filters"
                             autocomplete="off"
                             spellcheck="false"
                             @keydown="handleMessageInput"
                             @compositionstart="handleCompositionStart"
-                            @compositionend="handleCompositionEnd"></textarea>
+                            @compositionend="handleCompositionEnd"
+                            @input="handleSearchInput"></textarea>
+                        
+                        <!-- 清除搜索按钮 -->
+                        <div class="search-clear" v-if="searchQuery">
+                            <button 
+                                @click="clearSearch"
+                                class="clear-search-btn"
+                                title="清除搜索"
+                                aria-label="清除搜索内容"
+                            >
+                                <i class="fas fa-times" aria-hidden="true"></i>
+                            </button>
+                        </div>
                     </div>
                 </form>
-                <nav class="category-filters" id="category-filters" role="toolbar" aria-label="功能分类过滤器">
+                <nav class="category-filters" id="category-filters" role="toolbar" aria-label="页面导航">
                     <ul class="filter-buttons">
-
+                        <!-- 页面导航按钮 -->
                         <li>
                             <button class="filter-btn" type="button" aria-label="网址管理" data-action="aicr" @click="openLink('/views/aicr/index.html')">
                                 <i class="fas fa-globe" aria-hidden="true"></i>
@@ -92,11 +105,32 @@
             </section>
         </header>
         <main class="main-content" role="main">
+
+            
             <!-- 功能卡片区域 -->
             <section class="container">
                 <section class="feature-cards-container">
-                    <section class="feature-cards-grid" role="grid" aria-label="功能卡片网格">
-                        <section role="row" v-for="(card, index) in featureCards" :key="index">
+                    <!-- 加载状态 -->
+                    <div v-if="loading" class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <p>正在加载功能卡片...</p>
+                    </div>
+                    
+                    <!-- 错误状态 -->
+                    <div v-else-if="error" class="error-container">
+                        <p>{{ error }}</p>
+                        <button @click="loadFeatureCards" class="retry-btn">重试</button>
+                    </div>
+                    
+                    <!-- 空状态 -->
+                    <div v-else-if="!featureCards || featureCards.length === 0" class="empty-container">
+                        <p>暂无功能卡片</p>
+                        <button @click="loadFeatureCards" class="retry-btn">重新加载</button>
+                    </div>
+                    
+                    <!-- 卡片网格 -->
+                    <section v-else class="feature-cards-grid" role="grid" aria-label="功能卡片网格">
+                        <section role="row" v-for="(card, index) in filteredFeatureCards" :key="card.key || index" aria-label="功能卡片行">
                             <article 
                                 class="feature-card" 
                                 :data-feature="card.title" 
@@ -161,12 +195,18 @@
 
     <!-- 全局加载指示器 -->
     <section id="global-loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="全局加载中">
-        <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+        <div class="loading-content">
+            <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+            <p class="loading-text" id="loading-text">正在加载...</p>
+        </div>
     </section>
 
     <!-- 加载指示器 -->
     <section id="loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="加载中">
-        <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+        <div class="loading-content">
+            <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+            <p class="loading-text" id="loading-text">正在加载...</p>
+        </div>
     </section>
 
     <!-- 错误提示 -->
@@ -186,6 +226,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 
 

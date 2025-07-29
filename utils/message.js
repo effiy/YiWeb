@@ -119,16 +119,16 @@ const createMessageContainer = () => {
         }, 16); // 约60fps
     };
     
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleScroll);
-    document.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleResize, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    document.addEventListener('scroll', handleScroll, { passive: true });
     
     // 监听页面可见性变化
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
             updateMessagePosition();
         }
-    });
+    }, { passive: true });
     
     return messageContainer;
 };
@@ -263,7 +263,7 @@ export const showMessage = (message, type = MESSAGE_TYPES.INFO, duration = MESSA
     // 点击关闭
     messageEl.addEventListener('click', () => {
         hideMessage(messageEl);
-    });
+    }, { passive: true });
 
     // 自动隐藏
     if (duration > 0) {

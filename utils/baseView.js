@@ -174,11 +174,15 @@ export async function createBaseView(config = {}) {
         const methods = useMethods(store);
 
         // 4. 返回所有需要暴露给模板的数据和方法
-        return {
+        const result = {
             ...store,         // 响应式数据
             ...computedProps, // 计算属性
             ...methods        // 方法
         };
+        
+
+        
+        return result;
     };
 
     // 创建并挂载应用（异步）

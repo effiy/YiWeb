@@ -17,8 +17,6 @@
     <!-- 图标库 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous">
 
-    <!-- 接口等待交互样式 -->
-
 
     <!-- Vue3 CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -30,9 +28,11 @@
             v-model:search-query="searchQuery"
             :categories="categories"
             :selected-categories="selectedCategories"
+            :original-data="tasksData"
             @search-keydown="handleSearchKeydown"
             @clear-search="handleClearSearch"
             @toggle-category="handleToggleCategory"
+            @filter-change="handleFilterChange"
         ></search-header>
         
         <main class="main-content" role="main">
@@ -54,21 +54,16 @@
                     @task-click="handleTaskClick"
                     @delete-task="deleteTask"
                 ></task-list>
-                
-                <!-- 任务详情组件 -->
-                <task-detail
-                    :selected-task="selectedTask"
-                    :is-detail-visible="isDetailVisible"
-                    @close-detail="handleCloseDetail"
-                    @step-toggle="handleStepToggle"
-                ></task-detail>
             </section>
         </main>
     </div>
 
     <!-- 加载指示器 -->
     <section id="global-loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="加载中">
-        <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+        <div class="loading-content">
+            <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+            <p class="loading-text" id="loading-text">正在加载...</p>
+        </div>
     </section>
 
     <!-- 错误提示 -->
@@ -84,10 +79,10 @@
     <!-- 主功能脚本 -->
     <script type="module" src="/plugins/searchHeader/index.js"></script>
     <script type="module" src="/views/tasks/plugins/taskList/index.js"></script>
-    <script type="module" src="/views/tasks/plugins/taskDetail/index.js"></script>
     <script type="module" src="/views/tasks/index.js"></script>
     <!-- 性能监控脚本 -->
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html> 
+
 

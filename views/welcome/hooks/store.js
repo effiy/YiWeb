@@ -1,9 +1,16 @@
 // author: liangliang
 
 import { getData, deleteData } from '/apis/index.js';
+import { safeExecuteAsync } from '/utils/error.js';
 
-// 兼容Vue2和Vue3的ref获取方式
-const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ value: val });
+    // 兼容Vue2和Vue3的ref获取方式
+    const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ value: val });
+    
+    // 确保Vue已加载
+    if (typeof Vue === 'undefined') {
+        console.error('[Store] Vue未加载，无法创建响应式数据');
+        throw new Error('Vue未加载');
+    }
 
 /**
  * 数据存储工厂函数
@@ -14,8 +21,10 @@ export const createStore = () => {
     const fromSystem = vueRef(null)
     // 功能卡片数据 - 使用Vue的响应式系统
     const featureCards = vueRef([]);
+    // 搜索查询
+    const searchQuery = vueRef('');
     // 加载状态
-    const loading = vueRef(false);
+    const loading = vueRef(true); // 初始化为true，表示正在加载
     // 错误信息
     const error = vueRef(null);
 
@@ -101,44 +110,49 @@ export const createStore = () => {
     /**
      * 删除卡片数据
      * @param {string} cardKey - 卡片ID
-     * @returns {Promise} 删除结果
+     * @returns {Promise<boolean>} 删除是否成功
      */
     const deleteCard = async (cardKey) => {
-        console.log('[Store] 开始删除卡片:', cardKey);
-        
-        // 检查cardKey是否存在
-        if (!cardKey) {
-            console.error('[Store] cardKey为空');
-            return { success: false, error: new Error('卡片ID为空') };
-        }
-        
-        try {
+        return safeExecuteAsync(async () => {
+            console.log('[Store] 开始删除卡片:', cardKey);
+            
+            // 检查cardKey是否存在
+            if (!cardKey) {
+                console.error('[Store] cardKey为空');
+                return false;
+            }
+            
             // 先检查卡片是否存在于本地数组中
             const cardExists = featureCards.value.some(card => card && card.key === cardKey);
             if (!cardExists) {
                 console.warn('[Store] 卡片不存在于本地数组中:', cardKey);
-                return { success: false, error: new Error('卡片不存在') };
+                return false;
             }
             
             // 从MongoDB中删除数据
             const deleteResult = await deleteData(`${window.API_URL}/mongodb/?cname=goals&key=${cardKey}`);
             console.log('[Store] MongoDB删除结果:', deleteResult);
             
-            // 删除成功后，从本地数组中移除卡片
-            const localRemoved = removeCardFromLocal(cardKey);
-            
-            if (localRemoved) {
-                console.log('[Store] 卡片删除成功:', cardKey, '当前卡片数量:', featureCards.value.length);
-                return { success: true };
+            // 验证删除结果
+            if (deleteResult && deleteResult.success !== false) {
+                // 删除成功后，从本地数组中移除卡片
+                const localRemoved = removeCardFromLocal(cardKey);
+                
+                if (localRemoved) {
+                    console.log('[Store] 卡片删除成功:', cardKey, '当前卡片数量:', featureCards.value.length);
+                    return true;
+                } else {
+                    console.error('[Store] 本地移除卡片失败:', cardKey);
+                    return false;
+                }
             } else {
-                console.error('[Store] 本地移除卡片失败:', cardKey);
-                return { success: false, error: new Error('本地移除卡片失败') };
+                throw new Error('API删除失败：' + (deleteResult?.message || '未知错误'));
             }
-        } catch (err) {
-            console.error('[Store] 删除卡片失败:', err);
-            error.value = err && err.message ? err.message : '删除卡片失败';
-            return { success: false, error: err };
-        }
+        }, '卡片删除', (errorInfo) => {
+            console.error('[Store] 删除卡片失败:', errorInfo);
+            error.value = errorInfo.message || '删除卡片失败';
+            return false;
+        });
     };
 
     /**
@@ -152,6 +166,8 @@ export const createStore = () => {
         try {
             // 支持本地mock和远程接口切换
             const featureCardsData = await getData(`${window.DATA_URL}/mock/welcome/featureCards.json`);
+            console.log('[Store] 加载到的功能卡片数据:', featureCardsData);
+
             const systemPromptData = await getData(`${window.DATA_URL}/prompts/welcome/featureCards.txt`);
 
             const mongoResponse = await getData(`${window.API_URL}/mongodb/?cname=goals`);
@@ -168,19 +184,25 @@ export const createStore = () => {
             if (systemPromptData) {
                 fromSystem.value = systemPromptData + JSON.stringify(featureCardsData);
                 console.log('[Store] 成功设置fromSystem');
+                console.log('[Store] 加载到的系统提示数据:', systemPromptData);
             } else {
                 console.warn('[Store] 系统提示数据为空');
                 fromSystem.value = null;
             }
             
-            // 合并mock数据和MongoDB数据
-            const allData = featureCardsData.concat(validMongoData);
-            console.log('[Store] 合并后的总数据:', allData);
+            // 确保featureCardsData是数组
+            const mockData = Array.isArray(featureCardsData) ? featureCardsData : [];
             
-            // 使用更新方法设置数据
-            updateFeatureCards(allData);
-            console.log('[Store] 加载到的功能卡片数据:', featureCardsData);
-            console.log('[Store] 加载到的系统提示数据:', systemPromptData);
+            // 合并mock数据和MongoDB数据，并确保视图实时响应
+            const combinedData = [...mockData, ...validMongoData];
+            
+            // 直接更新响应式数据
+            featureCards.value = combinedData;
+            console.log('[Store] 更新featureCards，数量:', combinedData.length);
+            
+
+            
+            console.log('[Store] 合并后的总数据:', combinedData);
         } catch (err) {
             console.error('[Store] 加载数据失败:', err);
             error.value = err && err.message ? err.message : '加载数据失败';
@@ -197,20 +219,53 @@ export const createStore = () => {
         }
     };
 
-    // 自动初始化加载
-    loadFeatureCards();
+    /**
+     * 设置搜索查询
+     * @param {string} query - 搜索查询
+     */
+    const setSearchQuery = (query) => {
+        if (typeof query === 'string') {
+            searchQuery.value = query.trim();
+        }
+    };
+
+    /**
+     * 清除搜索
+     */
+    const clearSearch = () => {
+        searchQuery.value = '';
+    };
+
+    /**
+     * 清除错误
+     */
+    const clearError = () => {
+        error.value = null;
+    };
+
+    // 延迟初始化加载，确保Vue应用已挂载
+    setTimeout(() => {
+        loadFeatureCards();
+    }, 100);
 
     // 便于扩展：后续可添加更多数据和方法
     return {
         featureCards,   // 功能卡片数据
+        searchQuery,    // 搜索查询
         loading,        // 加载状态
         error,          // 错误信息
         fromSystem,     // 系统提示信息
         updateFeatureCards,  // 更新方法
         deleteCard,     // 删除卡片方法
         removeCardFromLocal, // 本地移除卡片方法
-        loadFeatureCards // 重新加载数据方法
+        loadFeatureCards, // 重新加载数据方法
+        setSearchQuery,  // 设置搜索查询
+        clearSearch,     // 清除搜索
+        clearError       // 清除错误
     };
 }
+
+
+
 
 

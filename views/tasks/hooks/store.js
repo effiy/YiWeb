@@ -37,6 +37,14 @@ export const createStore = () => {
     const isDetailVisible = vueRef(false);
 
     /**
+     * 生成唯一ID
+     * @returns {string} 唯一ID
+     */
+    const generateUniqueId = () => {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    };
+
+    /**
      * 异步加载任务数据
      * 支持多次调用，自动处理加载状态和错误
      */
@@ -70,8 +78,35 @@ export const createStore = () => {
 
             console.log('[loadTasksData] 加载到的mongo数据:', mongoData);
             
-            tasksData.value = tasksResponseData.concat(mongoData);
-            console.log(`[loadTasksData] 成功加载 ${tasksResponseData.length} 条任务数据`);
+            // 合并数据并去重，避免重复的任务
+            const allTasks = [...tasksResponseData, ...mongoData];
+            const uniqueTasks = [];
+            const seenTitles = new Set();
+            
+            for (const task of allTasks) {
+                if (task && task.title && !seenTitles.has(task.title)) {
+                    seenTitles.add(task.title);
+                    
+                    // 确保每个任务都有唯一的key
+                    if (!task.key) {
+                        task.key = generateUniqueId();
+                    }
+                    
+                    uniqueTasks.push(task);
+                }
+            }
+            
+            tasksData.value = uniqueTasks;
+            console.log(`[loadTasksData] 成功加载 ${uniqueTasks.length} 条唯一任务数据（去重前：${allTasks.length} 条）`);
+            
+            // 验证所有任务都有唯一的key
+            const keys = uniqueTasks.map(task => task.key).filter(Boolean);
+            const uniqueKeys = new Set(keys);
+            console.log(`[loadTasksData] 任务key验证: 总key数 ${keys.length}, 唯一key数 ${uniqueKeys.size}`);
+            
+            if (keys.length !== uniqueKeys.size) {
+                console.warn('[loadTasksData] 警告：存在重复的key，这可能导致Vue渲染问题');
+            }
             
             return tasksResponseData;
         }, '任务数据加载', (errorInfo) => {
@@ -233,7 +268,8 @@ export const createStore = () => {
         clearSearch,
         clearError,
         selectTask,
-        closeTaskDetail
+        closeTaskDetail,
+        generateUniqueId
     };
 };
 
@@ -273,5 +309,6 @@ export function categorizeTask(task) {
     
     return 'development'; // 默认分类
 } 
+
 
 

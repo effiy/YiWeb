@@ -39,14 +39,67 @@ export const useComputed = (store) => {
             // 根据搜索查询过滤
             if (searchQuery.value) {
                 const query = searchQuery.value.toLowerCase();
-                filtered = filtered.filter(task => 
-                    task.title.toLowerCase().includes(query) ||
-                    task.input.toLowerCase().includes(query) ||
-                    task.output.toLowerCase().includes(query) ||
-                    Object.values(task.steps[0] || {}).some(step => 
-                        step.toLowerCase().includes(query)
-                    )
-                );
+                filtered = filtered.filter(task => {
+                    // 搜索标题
+                    if (task.title && task.title.toLowerCase().includes(query)) {
+                        return true;
+                    }
+                    
+                    // 搜索描述
+                    if (task.description && task.description.toLowerCase().includes(query)) {
+                        return true;
+                    }
+                    
+                    // 搜索输入内容
+                    if (task.input && task.input.toLowerCase().includes(query)) {
+                        return true;
+                    }
+                    
+                    // 搜索输出内容
+                    if (task.output && task.output.toLowerCase().includes(query)) {
+                        return true;
+                    }
+                    
+                    // 搜索功能名称
+                    if (task.featureName && task.featureName.toLowerCase().includes(query)) {
+                        return true;
+                    }
+                    
+                    // 搜索卡片标题
+                    if (task.cardTitle && task.cardTitle.toLowerCase().includes(query)) {
+                        return true;
+                    }
+                    
+                    // 搜索时间（转换为字符串后搜索）
+                    if (task.time) {
+                        const timeStr = typeof task.time === 'number' ? `${task.time}小时` : task.time;
+                        if (timeStr.toLowerCase().includes(query)) {
+                            return true;
+                        }
+                    }
+                    
+                    // 搜索步骤内容
+                    if (task.steps) {
+                        // 搜索所有步骤
+                        for (const stepKey in task.steps) {
+                            const stepContent = task.steps[stepKey];
+                            if (typeof stepContent === 'string' && stepContent.toLowerCase().includes(query)) {
+                                return true;
+                            }
+                        }
+                    }
+                    
+                    // 搜索标签内容（如果有的话）
+                    if (task.tags && Array.isArray(task.tags)) {
+                        for (const tag of task.tags) {
+                            if (tag.toLowerCase().includes(query)) {
+                                return true;
+                            }
+                        }
+                    }
+                    
+                    return false;
+                });
             }
 
             // 根据选中的分类过滤
@@ -224,3 +277,4 @@ export const useComputed = (store) => {
         isDetailVisible: computed(() => isDetailVisible.value)
     };
 }; 
+

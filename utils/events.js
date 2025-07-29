@@ -22,7 +22,9 @@ class EventManager {
      */
     on(element, event, handler, options = {}) {
         const wrappedHandler = this.wrapHandler(handler, options);
-        element.addEventListener(event, wrappedHandler, options);
+        // 为触摸和滚动事件添加passive选项
+        const finalOptions = this.addPassiveOption(event, options);
+        element.addEventListener(event, wrappedHandler, finalOptions);
         
         // 记录监听器以便后续移除
         const key = this.getListenerKey(element, event, handler);
@@ -59,7 +61,9 @@ class EventManager {
      */
     onGlobal(event, handler, options = {}) {
         const wrappedHandler = this.wrapHandler(handler, options);
-        document.addEventListener(event, wrappedHandler, options);
+        // 为触摸和滚动事件添加passive选项
+        const finalOptions = this.addPassiveOption(event, options);
+        document.addEventListener(event, wrappedHandler, finalOptions);
         
         const key = `global_${event}_${this.getHandlerKey(handler)}`;
         this.globalListeners.set(key, {
@@ -102,6 +106,26 @@ class EventManager {
         };
         
         this.on(parent, event, delegateHandler, options);
+    }
+
+    /**
+     * 为触摸和滚动事件添加passive选项
+     * @param {string} event - 事件名称
+     * @param {Object} options - 选项
+     * @returns {Object} 最终选项
+     */
+    addPassiveOption(event, options = {}) {
+        // 需要passive选项的事件类型
+        const passiveEvents = [
+            'touchstart', 'touchmove', 'touchend', 'touchcancel',
+            'scroll', 'wheel', 'mousewheel'
+        ];
+        
+        if (passiveEvents.includes(event) && !options.hasOwnProperty('passive')) {
+            return { ...options, passive: true };
+        }
+        
+        return options;
     }
 
     /**
@@ -557,3 +581,4 @@ export default {
     keyboardHandler,
     SearchHandler
 }; 
+

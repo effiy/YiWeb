@@ -287,3 +287,60 @@
     cursor: not-allowed;
     opacity: 0.7;
 }
+
+/* ========== 输入框加载状态 ========== */
+.loading-input {
+    position: relative;
+    background: var(--bg-secondary, #f8f9fa) !important;
+    border-color: var(--primary, #007bff) !important;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25) !important;
+    transition: all 0.3s ease;
+}
+
+.loading-input::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid var(--primary, #007bff);
+    border-radius: 50%;
+    animation: loading-spin 1s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes loading-spin {
+    0% { transform: translateY(-50%) rotate(0deg); }
+    100% { transform: translateY(-50%) rotate(360deg); }
+}
+
+.loading-input::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(0, 123, 255, 0.1), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+/* 加载状态下的输入框聚焦效果 */
+.loading-input:focus {
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.35) !important;
+    border-color: var(--primary, #007bff) !important;
+}
+
+/* 加载状态下的占位符样式 */
+.loading-input::placeholder {
+    color: var(--text-muted, #6c757d);
+    font-style: italic;
+    opacity: 0.8;
+}
+

@@ -10,6 +10,7 @@
 
 import { getData, postData } from '/apis/index.js';
 import { showError, showSuccess } from '/utils/message.js';
+import { showGlobalLoading, hideGlobalLoading } from '/utils/loading.js';
 
   /**
    * 字符串模板替换函数（支持嵌套属性、健壮性更强）
@@ -166,7 +167,7 @@ export const useMethods = (store) => {
             if (e.target === modal) {
                 modal.remove();
             }
-        });
+        }, { passive: true });
         
         // ESC键关闭模态框
         const handleEsc = (e) => {
@@ -175,13 +176,13 @@ export const useMethods = (store) => {
                 document.removeEventListener('keydown', handleEsc);
             }
         };
-        document.addEventListener('keydown', handleEsc);
+        document.addEventListener('keydown', handleEsc, { passive: true });
         
         // 模态框关闭时清理
         modal.addEventListener('remove', () => {
-            document.removeEventListener('keydown', handleEsc);
+            document.removeEventListener('keydown', handleEsc, { passive: true });
             delete window.copyModalContent;
-        });
+        }, { passive: true });
         
         console.log('[复制模态框] 显示复制内容:', title);
     };
@@ -549,6 +550,10 @@ export const useMethods = (store) => {
                                 console.warn('[长按删除] 卡片数据已失效，取消删除');
                                 if (cardElement) {
                                     cardElement.classList.remove('deleting');
+                                    // 强制重新计算样式，确保动画状态被重置
+                                    cardElement.style.animation = 'none';
+                                    cardElement.offsetHeight; // 触发重排
+                                    cardElement.style.animation = '';
                                 }
                                 isDeleting = false;
                             }
@@ -596,10 +601,20 @@ export const useMethods = (store) => {
             longPressStartTime = 0;
             longPressStartPosition = null;
             
-            // 移除所有卡片的长按样式
+            // 移除所有卡片的长按样式和删除样式
             const longPressingCards = document.querySelectorAll('.feature-card.long-pressing');
             longPressingCards.forEach(card => {
                 card.classList.remove('long-pressing');
+            });
+            
+            // 移除所有卡片的删除样式
+            const deletingCards = document.querySelectorAll('.feature-card.deleting');
+            deletingCards.forEach(card => {
+                card.classList.remove('deleting');
+                // 强制重新计算样式，确保动画状态被重置
+                card.style.animation = 'none';
+                card.offsetHeight; // 触发重排
+                card.style.animation = '';
             });
             
             // 添加取消反馈
@@ -654,82 +669,58 @@ export const useMethods = (store) => {
             
             // 确认删除
             if (!confirm(`确定要删除卡片"${card.title}"吗？此操作不可撤销。`)) {
+                // 移除删除动画样式并重置状态
+                if (cardElement) {
+                    cardElement.classList.remove('deleting');
+                    // 强制重新计算样式，确保动画状态被重置
+                    cardElement.style.animation = 'none';
+                    cardElement.offsetHeight; // 触发重排
+                    cardElement.style.animation = '';
+                }
                 isDeleting = false;
                 return;
             }
             
             // 显示删除中提示
-            showSuccess('正在删除卡片...');
+            showGlobalLoading('正在删除卡片...');
             
             // 添加删除成功反馈
             if (navigator.vibrate) {
                 navigator.vibrate([100, 50, 100]);
             }
             
-            // 记录删除前的卡片数量
-            const beforeCount = store.featureCards.value.length;
-            console.log('[删除卡片] 删除前卡片数量:', beforeCount);
-            
             // 调用store的删除方法
             const result = await store.deleteCard(card.key);
             
-            if (result.success) {
-                // 验证删除后的卡片数量
-                const afterCount = store.featureCards.value.length;
-                const expectedCount = beforeCount - 1;
-                
-                console.log('[删除卡片] 删除结果验证:', {
-                    beforeCount: beforeCount,
-                    afterCount: afterCount,
-                    expectedCount: expectedCount,
-                    isCorrect: afterCount === expectedCount
-                });
-                
-                if (afterCount !== expectedCount) {
-                    console.warn('[删除卡片] 卡片数量不正确，尝试强制刷新');
-                    // 如果数量不正确，强制重新加载数据
-                    await store.loadFeatureCards();
-                }
+            console.log('[删除卡片] store删除方法返回结果:', result);
+            
+            if (result) {
+                await store.loadFeatureCards();
                 
                 showSuccess(`已删除卡片"${card.title}"`);
                 console.log('[删除卡片] 删除成功:', card.title);
                 
                 // 播放删除成功声音
                 playDeleteSuccessSound();
-                
-                // 强制重新渲染
-                if (Vue && Vue.nextTick) {
-                    Vue.nextTick(() => {
-                        console.log('[删除卡片] Vue响应式更新完成');
-                        
-                        // 使用更简单的方法触发重排
-                        setTimeout(() => {
-                            const gridElement = document.querySelector('.feature-cards-grid');
-                            if (gridElement) {
-                                // 添加重排动画
-                                gridElement.classList.add('reflowing');
-                                
-                                // 触发CSS Grid重排
-                                gridElement.style.gridTemplateColumns = gridElement.style.gridTemplateColumns;
-                                
-                                // 移除重排动画类
-                                setTimeout(() => {
-                                    gridElement.classList.remove('reflowing');
-                                }, 300);
-                                
-                                console.log('[删除卡片] CSS Grid重排完成');
-                            }
-                        }, 100);
-                    });
-                }
             } else {
-                throw result.error || new Error('删除失败');
+                throw new Error('删除卡片失败');
             }
         } catch (error) {
             handleError(error, 'deleteCard');
             console.error('[删除卡片] 删除失败:', error);
             showError('删除卡片失败，请稍后重试');
+            
+            // 删除失败时也要移除删除动画样式
+            if (cardElement) {
+                cardElement.classList.remove('deleting');
+                // 强制重新计算样式，确保动画状态被重置
+                cardElement.style.animation = 'none';
+                cardElement.offsetHeight; // 触发重排
+                cardElement.style.animation = '';
+            }
         } finally {
+            // 隐藏加载提示
+            hideGlobalLoading();
             // 确保删除状态被重置
             isDeleting = false;
         }
@@ -983,10 +974,13 @@ export const useMethods = (store) => {
 
         console.log('[生成任务] 生成任务:', card, feature);
 
-        const target = feature.name + '-' + feature.desc;
-        const description = card.title + '-' + card.description;
+        // 显示加载状态
+        showGlobalLoading('正在生成任务，请稍候...');
 
         try {
+            const target = feature.name + '-' + feature.desc;
+            const description = card.title + '-' + card.description;
+
             const systemPromptData = await getData(`${window.DATA_URL}/prompts/tasks/tasks.txt`);
 
             const fromSystem = templateReplace(systemPromptData, {
@@ -1013,9 +1007,14 @@ export const useMethods = (store) => {
                 );
             }
 
+            // 隐藏加载状态
+            hideGlobalLoading();
+
             window.open(`/views/tasks/index.html?featureName=${feature.name}&cardTitle=${card.title}`, '_blank');
 
         } catch (err) {
+            // 隐藏加载状态
+            hideGlobalLoading();
             showError('生成任务失败，请稍后重试');
             console.error('[生成任务] 生成任务失败:', err);
         }
@@ -1038,6 +1037,38 @@ export const useMethods = (store) => {
         isComposing = false;
         console.log('[输入法检测] 输入法结束');
     };
+
+    /**
+     * 处理搜索输入
+     * @param {Event} event - 输入事件对象
+     */
+    const handleSearchInput = (event) => {
+        const query = event.target.value;
+        store.setSearchQuery(query);
+        console.log('[搜索过滤] 搜索查询:', query);
+    };
+
+    /**
+     * 处理搜索键盘事件
+     * @param {Event} event - 键盘事件对象
+     */
+    const handleSearchKeydown = (event) => {
+        // 处理回车键等特殊按键
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            // 可以在这里添加搜索确认逻辑
+        }
+    };
+
+    /**
+     * 清空搜索
+     */
+    const clearSearch = () => {
+        store.clearSearch();
+        console.log('[搜索过滤] 清空搜索');
+    };
+
+
 
     /**
      * 处理消息输入框的回车事件
@@ -1088,6 +1119,11 @@ export const useMethods = (store) => {
             return;
         }
         
+        // 保存原始输入框状态
+        const originalPlaceholder = messageInput.placeholder;
+        const originalValue = messageInput.value;
+        const originalDisabled = messageInput.disabled;
+        
         try {
             // 设置处理状态
             isProcessing = true;
@@ -1096,8 +1132,22 @@ export const useMethods = (store) => {
             store.loading.value = true;
             store.error.value = null;
             
-            // 显示加载提示
-            showSuccess('正在处理您的请求...');
+            // 禁用输入框并显示加载状态
+            messageInput.disabled = true;
+            messageInput.placeholder = '正在处理您的请求，请稍候...';
+            messageInput.style.opacity = '0.6';
+            messageInput.style.cursor = 'not-allowed';
+            
+            // 添加输入框加载动画
+            messageInput.classList.add('loading-input');
+            
+            // 显示全局加载提示
+            // showGlobalLoading('正在处理您的请求，请稍候...');
+            
+            // 添加触觉反馈
+            if (navigator.vibrate) {
+                navigator.vibrate(100);
+            }
             
             console.log('[API请求] 发送消息到服务器:', {
                 fromSystem: store.fromSystem.value,
@@ -1116,23 +1166,66 @@ export const useMethods = (store) => {
             if (response) {
                 console.log('[数据赋值] 准备赋值的新数据:', response.data);
 
-                response.data.forEach(async (item) => {
-                  postData(`${window.API_URL}/mongodb/?cname=goals`, item);
-                });
+                // 显示保存进度提示
+                // showGlobalLoading('正在保存数据，请稍候...');
+                
+                // 等待所有数据保存完成
+                await Promise.all(
+                    response.data.map(async (item) => {
+                        try {
+                            await postData(`${window.API_URL}/mongodb/?cname=goals`, item);
+                        } catch (saveError) {
+                            console.warn('[数据保存] 单个项目保存失败:', saveError);
+                        }
+                    })
+                );
+                
+                // 更新卡片数据
                 store.featureCards.value = response.data.concat(store.featureCards.value);
-                showSuccess('消息发送成功');
+                
+                // 清空输入框
+                messageInput.value = '';
+                
+                // 显示成功提示
+                showSuccess('消息处理成功，已生成新的功能卡片');
+                
+                // 添加成功触觉反馈
+                if (navigator.vibrate) {
+                    navigator.vibrate([50, 50, 50]);
+                }
+                
+                console.log('[消息处理] 处理完成，新增卡片数量:', response.data.length);
             } else {
                 console.error('[API错误] 服务器返回错误:', response);
+                showError('服务器返回错误，请稍后重试');
             }
         } catch (error) {
             console.error('[消息处理错误]', error);
             showError('消息发送失败，请稍后重试');
+            
+            // 恢复输入框内容
+            messageInput.value = originalValue;
         } finally {
             // 清除处理状态
             isProcessing = false;
             
             // 清除加载状态
             store.loading.value = false;
+            
+            // 隐藏全局加载提示
+            // hideGlobalLoading();
+            
+            // 恢复输入框状态
+            messageInput.disabled = originalDisabled;
+            messageInput.placeholder = originalPlaceholder;
+            messageInput.style.opacity = '';
+            messageInput.style.cursor = '';
+            messageInput.classList.remove('loading-input');
+            
+            // 重新聚焦输入框
+            setTimeout(() => {
+                messageInput.focus();
+            }, 100);
         }
     };
 
@@ -1146,7 +1239,12 @@ export const useMethods = (store) => {
         handleMessageInput,
         handleCompositionStart,
         handleCompositionEnd,
+        handleCardClick,
+        handleSearchInput,
+        handleSearchKeydown,
+        clearSearch,
     };
 };
+
 
 

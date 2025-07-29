@@ -36,7 +36,12 @@ class GlobalLoadingManager {
             this.indicator.classList.add('show');
             this.isVisible = true;
             
-            // 如果有消息，可以在这里添加消息显示逻辑
+            // 更新加载文本
+            const loadingText = this.indicator.querySelector('#loading-text');
+            if (loadingText && message) {
+                loadingText.textContent = message;
+            }
+            
             if (message) {
                 console.log('[GlobalLoadingManager] 显示加载指示器:', message);
             }
@@ -96,3 +101,4 @@ if (typeof window !== 'undefined') {
     window.hideGlobalLoading = hideGlobalLoading;
     window.withGlobalLoading = withGlobalLoading;
 } 
+

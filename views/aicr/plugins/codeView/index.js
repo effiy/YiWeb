@@ -91,12 +91,12 @@ const createCodeView = async () => {
                     if (!codeContent) return;
                     
                     // 移除之前的事件监听器
-                    codeContent.removeEventListener('mouseup', this.handleSelection);
-                    codeContent.removeEventListener('touchend', this.handleSelection);
+                    codeContent.removeEventListener('mouseup', this.handleSelection, { passive: true });
+                    codeContent.removeEventListener('touchend', this.handleSelection, { passive: true });
                     
                     // 添加新的事件监听器
-                    codeContent.addEventListener('mouseup', this.handleSelection);
-                    codeContent.addEventListener('touchend', this.handleSelection);
+                    codeContent.addEventListener('mouseup', this.handleSelection, { passive: true });
+                    codeContent.addEventListener('touchend', this.handleSelection, { passive: true });
                 }, '划词事件绑定');
             },
             
@@ -132,7 +132,7 @@ const createCodeView = async () => {
                     const button = document.createElement('button');
                     button.className = 'comment-action-btn';
                     button.textContent = '添加评论';
-                    button.addEventListener('mousedown', e => e.stopPropagation());
+                    button.addEventListener('mousedown', e => e.stopPropagation(), { passive: true });
 
                     // 定位按钮
                     const rect = range.getBoundingClientRect();
@@ -152,7 +152,7 @@ const createCodeView = async () => {
                             document.removeEventListener('mousedown', handleClickOutside);
                         }
                     };
-                    document.addEventListener('mousedown', handleClickOutside);
+                    document.addEventListener('mousedown', handleClickOutside, { passive: true });
                 }, '评论按钮创建');
             },
 
@@ -190,7 +190,7 @@ const createCodeView = async () => {
         mounted() {
             this.bindSelectionEvent();
             // 监听高亮事件
-            window.addEventListener('highlightCodeLines', this.handleHighlightLines);
+            window.addEventListener('highlightCodeLines', this.handleHighlightLines, { passive: true });
             console.log('[CodeView] 组件已挂载');
         },
         updated() {
@@ -199,7 +199,7 @@ const createCodeView = async () => {
             console.log('[CodeView] 组件已更新');
         },
         beforeUnmount() {
-            window.removeEventListener('highlightCodeLines', this.handleHighlightLines);
+            window.removeEventListener('highlightCodeLines', this.handleHighlightLines, { passive: true });
         }
     };
 };
@@ -218,6 +218,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

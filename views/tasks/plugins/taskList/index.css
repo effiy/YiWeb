@@ -398,12 +398,82 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     transition: color var(--transition-normal);
-    padding-bottom: var(--spacing-xs);
+    padding-bottom: var(--spacing-sm);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .task-title:hover {
     color: var(--primary);
+}
+
+/* 任务标签样式 */
+.task-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.task-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px var(--spacing-xs);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: var(--font-weight-medium);
+    transition: all var(--transition-normal);
+    cursor: default;
+    white-space: nowrap;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.task-tag:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.task-tag i {
+    font-size: 0.625rem;
+    color: var(--accent);
+    transition: all var(--transition-normal);
+    flex-shrink: 0;
+}
+
+.task-tag:hover i {
+    color: var(--primary);
+    transform: scale(1.1);
+}
+
+.task-tag.feature-tag {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.2);
+    color: rgba(59, 130, 246, 0.8);
+}
+
+.task-tag.feature-tag:hover {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: rgba(59, 130, 246, 1);
+}
+
+.task-tag.card-tag {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.2);
+    color: rgba(16, 185, 129, 0.8);
+}
+
+.task-tag.card-tag:hover {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: rgba(16, 185, 129, 1);
 }
 
 .task-time {
@@ -655,6 +725,336 @@
     border-color: var(--border-secondary);
 }
 
+/* 步骤进度预览区域 */
+.task-steps-preview {
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-secondary);
+}
+
+.task-steps-preview:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
+    margin: var(--spacing-sm) calc(-1 * var(--spacing-sm)) 0;
+}
+
+/* 步骤预览头部 */
+.steps-preview-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    position: relative;
+}
+
+.steps-preview-header i {
+    color: var(--primary-color);
+    font-size: var(--font-size-xs);
+}
+
+.steps-preview-title {
+    flex: 1;
+    font-weight: 600;
+}
+
+.steps-preview-count {
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    min-width: 40px;
+    text-align: center;
+}
+
+/* 步骤展开/折叠按钮 */
+.steps-toggle-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-normal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-xs);
+}
+
+.steps-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+.steps-toggle-btn.expanded {
+    color: var(--primary-color);
+}
+
+.steps-toggle-btn i {
+    font-size: 10px;
+    transition: transform var(--transition-normal);
+}
+
+.steps-toggle-btn:hover i {
+    transform: scale(1.2);
+}
+
+/* 步骤预览列表 */
+.steps-preview-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    transition: all var(--transition-normal);
+}
+
+/* 步骤展开动画 */
+.step-preview-item {
+    animation: stepItemSlideIn 0.3s ease-out;
+}
+
+@keyframes stepItemSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step-preview-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-normal);
+    cursor: pointer;
+}
+
+.step-preview-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.step-preview-item.completed {
+    opacity: 0.7;
+}
+
+.step-preview-item.completed .step-preview-text {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.step-preview-item.completed .step-preview-number {
+    background: var(--success);
+    color: var(--text-on-success);
+    animation: stepCompleted 0.3s ease-out;
+}
+
+@keyframes stepCompleted {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+        background: var(--success-hover);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* 步骤展开状态指示 */
+.steps-preview-header.expanded .steps-preview-title {
+    color: var(--primary-color);
+}
+
+.steps-preview-header.expanded .steps-preview-count {
+    background: var(--success);
+}
+
+/* 步骤预览复选框 */
+.step-preview-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    transition: all var(--transition-normal);
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.step-preview-checkbox::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+    border-radius: inherit;
+}
+
+.step-preview-checkbox:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-secondary);
+    transform: scale(1.1);
+}
+
+.step-preview-checkbox:hover::before {
+    opacity: 1;
+}
+
+.step-preview-checkbox:active {
+    transform: scale(0.95);
+}
+
+.step-preview-item.completed .step-preview-checkbox {
+    background: var(--success);
+    border-color: var(--success);
+    color: var(--text-on-success);
+}
+
+.step-preview-item.completed .step-preview-checkbox:hover {
+    background: var(--success-hover);
+    transform: scale(1.1);
+}
+
+.step-preview-checkbox i {
+    font-size: 8px;
+    color: inherit;
+    transition: all var(--transition-normal);
+    transform: scale(0.8);
+}
+
+.step-preview-checkbox:hover i {
+    transform: scale(1);
+}
+
+.step-preview-item.completed .step-preview-checkbox i {
+    transform: scale(1);
+    animation: checkmarkAppear 0.3s ease-out;
+}
+
+@keyframes checkmarkAppear {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.step-preview-item:not(.completed) .step-preview-checkbox i {
+    color: var(--text-tertiary);
+}
+
+.step-preview-checkbox:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.step-preview-checkbox:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* 步骤预览编号 */
+.step-preview-number {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 20px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    padding: 2px 6px;
+}
+
+.step-preview-item.completed .step-preview-number {
+    background: var(--success);
+    color: var(--text-on-success);
+}
+
+/* 步骤预览文本 */
+.step-preview-text {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+}
+
+/* 更多步骤提示 */
+.step-preview-more {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs);
+    color: var(--text-tertiary);
+    font-size: var(--font-size-xs);
+    font-style: italic;
+    border-top: 1px solid var(--border-glass);
+    margin-top: var(--spacing-xs);
+    padding-top: var(--spacing-sm);
+}
+
+.step-preview-more i {
+    font-size: 10px;
+}
+
+/* 展开全部按钮 */
+.expand-steps-btn {
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    border: none;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    margin-left: var(--spacing-xs);
+}
+
+.expand-steps-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.expand-steps-btn:active {
+    transform: translateY(0);
+}
+
 /* 点击动画 */
 @keyframes clickEffect {
     0%, 100% {
@@ -848,6 +1248,16 @@
         gap: var(--spacing-xs);
     }
     
+    .task-tags {
+        gap: var(--spacing-xs);
+    }
+    
+    .task-tag {
+        font-size: 0.7rem;
+        padding: 1px var(--spacing-xs);
+        max-width: 100px;
+    }
+    
     .task-meta-row {
         gap: var(--spacing-sm);
         flex-wrap: wrap;
@@ -857,6 +1267,7 @@
     .task-title {
         font-size: 1rem;
         -webkit-line-clamp: 2; /* 在小屏幕上显示两行 */
+        padding-bottom: var(--spacing-sm);
     }
     
     .task-time {
@@ -884,6 +1295,47 @@
     .task-input-output {
         gap: var(--spacing-sm);
     }
+    
+    .task-steps-preview {
+        margin-top: var(--spacing-xs);
+        padding-top: var(--spacing-sm);
+    }
+    
+    .steps-preview-header {
+        gap: var(--spacing-xs);
+        font-size: var(--font-size-xs);
+    }
+    
+    .step-preview-text {
+        max-width: 150px;
+        font-size: var(--font-size-xs);
+    }
+    
+    .step-preview-number {
+        min-width: 16px;
+        padding: 1px 4px;
+        font-size: 10px;
+    }
+    
+    .steps-toggle-btn {
+        padding: 2px;
+        font-size: 8px;
+    }
+    
+    .expand-steps-btn {
+        padding: 1px 6px;
+        font-size: 10px;
+    }
+    
+    .step-preview-checkbox {
+        width: 18px;
+        height: 18px;
+        min-width: 18px;
+    }
+    
+    .step-preview-checkbox i {
+        font-size: 10px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -891,6 +1343,17 @@
         flex-direction: column;
         align-items: stretch;
         gap: var(--spacing-xs);
+    }
+    
+    .task-tags {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+    
+    .task-tag {
+        max-width: none;
+        justify-content: center;
+        font-size: 0.65rem;
     }
     
     .task-progress {
@@ -902,6 +1365,47 @@
         width: 100%;
         justify-content: center;
         order: 2;
+    }
+    
+    .task-steps-preview {
+        margin-top: var(--spacing-xs);
+        padding-top: var(--spacing-sm);
+    }
+    
+    .steps-preview-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+    
+    .step-preview-text {
+        max-width: 120px;
+        font-size: 10px;
+    }
+    
+    .step-preview-item {
+        padding: var(--spacing-xs);
+        gap: var(--spacing-xs);
+    }
+    
+    .steps-toggle-btn {
+        padding: 1px;
+        font-size: 8px;
+    }
+    
+    .expand-steps-btn {
+        padding: 1px 4px;
+        font-size: 9px;
+    }
+    
+    .step-preview-checkbox {
+        width: 20px;
+        height: 20px;
+        min-width: 20px;
+    }
+    
+    .step-preview-checkbox i {
+        font-size: 11px;
     }
 }
 
@@ -964,4 +1468,5 @@
         border: 2px solid var(--border-primary);
     }
 } 
+
 

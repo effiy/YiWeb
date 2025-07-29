@@ -22,8 +22,8 @@ export function autoResizeTextarea(textarea, options = {}) {
         textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
     };
     
-    textarea.addEventListener('input', resize);
-    textarea.addEventListener('focus', resize);
+    textarea.addEventListener('input', resize, { passive: true });
+    textarea.addEventListener('focus', resize, { passive: true });
     
     // 初始化
     resize();
@@ -60,12 +60,17 @@ export function createAnimationElement(styles, parent) {
  * @param {Function} handler - 事件处理函数
  */
 export function addEventDelegate(parent, event, selector, handler) {
+    // 为触摸和滚动事件添加passive选项
+    const options = ['touchstart', 'touchmove', 'touchend', 'touchcancel', 'scroll', 'wheel', 'mousewheel'].includes(event) 
+        ? { passive: true } 
+        : {};
+    
     parent.addEventListener(event, (e) => {
         const target = e.target.closest(selector);
         if (target) {
             handler.call(target, e);
         }
-    });
+    }, options);
 }
 
 /**
@@ -305,3 +310,4 @@ export default {
     getFormData,
     setFormData
 }; 
+

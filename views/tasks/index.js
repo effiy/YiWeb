@@ -16,8 +16,7 @@ import { createBaseView } from '/utils/baseView.js';
             useMethods,
             components: [
                 'SearchHeader',
-                'TaskList',
-                'TaskDetail'
+                'TaskList'
             ],
             plugins: [],
             onMounted: (app) => {
@@ -31,3 +30,4 @@ import { createBaseView } from '/utils/baseView.js';
         console.error('[任务页面] 应用初始化失败:', error);
     }
 })(); 
+

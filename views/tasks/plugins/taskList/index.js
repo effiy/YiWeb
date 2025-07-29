@@ -82,7 +82,7 @@ const createTaskList = async () => {
         }
     },
     
-    emits: ['load-tasks-data', 'task-click'],
+    emits: ['load-tasks-data', 'task-click', 'delete-task'],
     
     data() {
         return {
@@ -102,7 +102,9 @@ const createTaskList = async () => {
             isLongPressTriggered: false, // 标记是否已触发长按
             currentTaskElement: null, // 当前操作的任务元素
             CLICK_DELAY: 300, // 点击延迟，用于区分点击和长按
-            CLICK_MOVE_THRESHOLD: 10 // 点击移动阈值
+            CLICK_MOVE_THRESHOLD: 10, // 点击移动阈值
+            // 步骤展开状态管理
+            expandedSteps: new Set()
         };
     },
     
@@ -451,11 +453,11 @@ const createTaskList = async () => {
             const taskProgressKey = `task_progress_${task.title}`;
             const completedSteps = JSON.parse(localStorage.getItem(taskProgressKey) || '[]');
             
-            if (!task.steps || !task.steps[0]) {
+            if (!task.steps) {
                 return { total: 0, completed: 0, percentage: 0 };
             }
             
-            const total = Object.keys(task.steps[0]).length;
+            const total = Object.keys(task.steps).length;
             const completed = completedSteps.length;
             const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
             
@@ -463,6 +465,41 @@ const createTaskList = async () => {
                 total,
                 completed,
                 percentage
+            };
+        },
+
+        /**
+         * 获取任务步骤详情
+         * @param {Object} task - 任务对象
+         * @returns {Object} 步骤详情对象
+         */
+        getTaskSteps(task) {
+            if (!task.steps) {
+                return { steps: [], total: 0, completed: 0 };
+            }
+            
+            // 从全局存储中获取任务的步骤完成状态
+            const taskProgressKey = `task_progress_${task.title}`;
+            const completedSteps = JSON.parse(localStorage.getItem(taskProgressKey) || '[]');
+            
+            const steps = task.steps;
+            const stepList = [];
+            
+            Object.keys(steps).forEach(key => {
+                stepList.push({
+                    number: key,
+                    text: '' + steps[key],
+                    completed: completedSteps.includes(key)
+                });
+            });
+            
+            const total = stepList.length;
+            const completed = stepList.filter(step => step.completed).length;
+            
+            return {
+                steps: stepList,
+                total,
+                completed
             };
         },
 
@@ -477,6 +514,102 @@ const createTaskList = async () => {
             this.$forceUpdate();
             
             console.log(`[TaskList] 任务进度已更新: ${taskTitle}, 进度: ${progress.completed}/${progress.total}`);
+        },
+
+        /**
+         * 切换步骤展开状态
+         * @param {string} taskTitle - 任务标题
+         */
+        toggleStepsExpanded(taskTitle) {
+            if (this.expandedSteps.has(taskTitle)) {
+                this.expandedSteps.delete(taskTitle);
+            } else {
+                this.expandedSteps.add(taskTitle);
+            }
+            
+            console.log(`[TaskList] 切换步骤展开状态: ${taskTitle}, 展开: ${this.expandedSteps.has(taskTitle)}`);
+        },
+
+        /**
+         * 检查步骤是否已展开
+         * @param {string} taskTitle - 任务标题
+         * @returns {boolean} 是否已展开
+         */
+        isStepsExpanded(taskTitle) {
+            return this.expandedSteps.has(taskTitle);
+        },
+
+        /**
+         * 获取可见的步骤列表
+         * @param {Object} task - 任务对象
+         * @returns {Array} 可见的步骤列表
+         */
+        getVisibleSteps(task) {
+            const steps = this.getTaskSteps(task).steps;
+            const isExpanded = this.isStepsExpanded(task.title);
+            
+            if (isExpanded) {
+                return steps;
+            } else {
+                return steps.slice(0, 3);
+            }
+        },
+
+        /**
+         * 切换步骤完成状态
+         * @param {string} taskTitle - 任务标题
+         * @param {string} stepNumber - 步骤编号
+         * @param {boolean} currentStatus - 当前完成状态
+         */
+        toggleStepComplete(taskTitle, stepNumber, currentStatus) {
+            try {
+                // 阻止事件冒泡，避免触发任务点击
+                event?.stopPropagation();
+                
+                // 获取当前任务的完成步骤
+                const taskProgressKey = `task_progress_${taskTitle}`;
+                let completedSteps = JSON.parse(localStorage.getItem(taskProgressKey) || '[]');
+                
+                const newStatus = !currentStatus;
+                
+                if (newStatus) {
+                    // 标记为完成
+                    if (!completedSteps.includes(stepNumber)) {
+                        completedSteps.push(stepNumber);
+                    }
+                } else {
+                    // 取消完成
+                    completedSteps = completedSteps.filter(step => step !== stepNumber);
+                }
+                
+                // 保存到localStorage
+                localStorage.setItem(taskProgressKey, JSON.stringify(completedSteps));
+                
+                // 计算新的进度
+                const task = this.searchResults.find(t => t.title === taskTitle);
+                if (task) {
+                    const total = Object.keys(task.steps).length;
+                    const completed = completedSteps.length;
+                    const progress = {
+                        total,
+                        completed,
+                        percentage: total > 0 ? Math.round((completed / total) * 100) : 0
+                    };
+                    
+                    // 触发进度更新事件
+                    window.dispatchEvent(new CustomEvent('taskProgressUpdated', {
+                        detail: { taskTitle, progress }
+                    }));
+                    
+                    // 强制重新渲染组件
+                    this.$forceUpdate();
+                    
+                    console.log(`[TaskList] 步骤 ${stepNumber} ${newStatus ? '已完成' : '取消完成'}, 进度: ${progress.completed}/${progress.total}`);
+                }
+                
+            } catch (error) {
+                console.error('[toggleStepComplete] 切换步骤状态失败:', error);
+            }
         }
     },
     
@@ -519,3 +652,4 @@ const createTaskList = async () => {
       console.error('TaskList 组件初始化失败:', error);
   }
 })(); 
+
