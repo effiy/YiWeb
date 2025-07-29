@@ -282,7 +282,15 @@
   transform: translate(-50%, -50%);
   z-index: 9999;
   display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
+
+.loading-indicator.show {
+  display: flex;
+  opacity: 1;
+}
+
 .loading-indicator .loading-spinner {
   width: 40px;
   height: 40px;

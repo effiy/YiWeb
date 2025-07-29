@@ -1,8 +1,10 @@
-// 发送 HTTP 请求的辅助函数
-// 作者：liangliang
+/**
+ * 发送 HTTP 请求的辅助函数 - 简化版本
+ * 作者：liangliang
+ */
 
 import { checkStatus, isJsonResponse } from '/apis/helper/checkStatus.js';
-import { apiLoading } from '/utils/apiLoading.js';
+import { generateRequestId } from '/apis/helper/apiUtils.js';
 
 /**
  * 默认请求配置
@@ -16,8 +18,6 @@ const DEFAULT_CONFIG = {
 
 /**
  * 请求拦截器 - 在发送请求前执行
- * @param {Object} config - 请求配置
- * @returns {Object} - 修改后的配置
  */
 function requestInterceptor(config) {
   // 添加时间戳
@@ -35,9 +35,6 @@ function requestInterceptor(config) {
 
 /**
  * 响应拦截器 - 在收到响应后执行
- * @param {Response} response - 响应对象
- * @param {Object} config - 原始请求配置
- * @returns {Response} - 处理后的响应
  */
 function responseInterceptor(response, config) {
   // 记录响应日志
@@ -52,8 +49,6 @@ function responseInterceptor(response, config) {
 
 /**
  * 创建超时 Promise
- * @param {number} timeout - 超时时间（毫秒）
- * @returns {Promise} - 超时 Promise
  */
 function createTimeoutPromise(timeout) {
   return new Promise((_, reject) => {
@@ -65,9 +60,6 @@ function createTimeoutPromise(timeout) {
 
 /**
  * 发送通用请求
- * @param {string} url - 请求的 URL
- * @param {Object} options - 请求选项
- * @returns {Promise} - 返回响应数据
  */
 export async function sendRequest(url, options = {}) {
   // 合并默认配置
@@ -77,69 +69,51 @@ export async function sendRequest(url, options = {}) {
     url
   };
   
-  // 生成请求ID
-  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  // 应用请求拦截器
+  const interceptedConfig = requestInterceptor(config);
   
-  // 显示加载界面
-  const loadingOptions = {
-    message: `正在请求 ${new URL(url).hostname}...`,
-    timeout: config.timeout,
-    showProgress: true,
-    showCancel: true,
-    details: `请求地址: ${url}\n请求方法: ${config.method || 'GET'}`,
-    delayShow: 3000 // 3秒内完成不显示loading
-  };
-  
-  return apiLoading.withLoading(async () => {
-    // 应用请求拦截器
-    const interceptedConfig = requestInterceptor(config);
+  try {
+    // 创建请求 Promise
+    const requestPromise = fetch(url, {
+      method: config.method || 'GET',
+      headers: config.headers,
+      body: config.body,
+      ...config.fetchOptions
+    });
     
-    try {
-      // 创建请求 Promise
-      const requestPromise = fetch(url, {
-        method: config.method || 'GET',
-        headers: config.headers,
-        body: config.body,
-        ...config.fetchOptions
-      });
-      
-      // 创建超时 Promise
-      const timeoutPromise = createTimeoutPromise(config.timeout);
-      
-      // 竞争：请求 vs 超时
-      const response = await Promise.race([requestPromise, timeoutPromise]);
-      
-      // 应用响应拦截器
-      const interceptedResponse = responseInterceptor(response, interceptedConfig);
-      
-      // 检查状态
-      await checkStatus(interceptedResponse);
-      
-      // 根据响应类型返回数据
-      if (isJsonResponse(interceptedResponse)) {
-        return interceptedResponse.json();
-      } else {
-        return interceptedResponse.text();
-      }
-      
-    } catch (error) {
-      // 监控错误
-      console.error('请求错误：', {
-        url,
-        method: config.method,
-        error: error.message,
-        timestamp: new Date().toISOString()
-      });
-      throw error;
+    // 创建超时 Promise
+    const timeoutPromise = createTimeoutPromise(config.timeout);
+    
+    // 竞争：请求 vs 超时
+    const response = await Promise.race([requestPromise, timeoutPromise]);
+    
+    // 应用响应拦截器
+    const interceptedResponse = responseInterceptor(response, interceptedConfig);
+    
+    // 检查状态
+    await checkStatus(interceptedResponse);
+    
+    // 根据响应类型返回数据
+    if (isJsonResponse(interceptedResponse)) {
+      return interceptedResponse.json();
+    } else {
+      return interceptedResponse.text();
     }
-  }, loadingOptions);
+    
+  } catch (error) {
+    // 监控错误
+    console.error('请求错误：', {
+      url,
+      method: config.method,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
 }
 
 /**
  * 发送 GET 请求
- * @param {string} url - 请求的 URL
- * @param {Object} options - 请求选项
- * @returns {Promise} - 返回 JSON 数据
  */
 export async function getRequest(url, options = {}) {
   return sendRequest(url, { ...options, method: 'GET' });
@@ -147,10 +121,6 @@ export async function getRequest(url, options = {}) {
 
 /**
  * 发送 POST 请求
- * @param {string} url - 请求的 URL
- * @param {Object} data - 要发送的数据
- * @param {Object} options - 请求选项
- * @returns {Promise} - 返回 JSON 数据
  */
 export async function postRequest(url, data, options = {}) {
   return sendRequest(url, {
@@ -162,10 +132,6 @@ export async function postRequest(url, data, options = {}) {
 
 /**
  * 发送 PUT 请求
- * @param {string} url - 请求的 URL
- * @param {Object} data - 要发送的数据
- * @param {Object} options - 请求选项
- * @returns {Promise} - 返回 JSON 数据
  */
 export async function putRequest(url, data, options = {}) {
   return sendRequest(url, {
@@ -177,10 +143,6 @@ export async function putRequest(url, data, options = {}) {
 
 /**
  * 发送 PATCH 请求
- * @param {string} url - 请求的 URL
- * @param {Object} data - 要发送的数据
- * @param {Object} options - 请求选项
- * @returns {Promise} - 返回 JSON 数据
  */
 export async function patchRequest(url, data, options = {}) {
   return sendRequest(url, {
@@ -192,10 +154,179 @@ export async function patchRequest(url, data, options = {}) {
 
 /**
  * 发送 DELETE 请求
- * @param {string} url - 请求的 URL
- * @param {Object} options - 请求选项
- * @returns {Promise} - 返回 JSON 数据
  */
 export async function deleteRequest(url, options = {}) {
   return sendRequest(url, { ...options, method: 'DELETE' });
 }
+
+/**
+ * 批量请求工具
+ */
+export async function batchRequests(requests) {
+  const results = {};
+  const errors = {};
+  
+  try {
+    const promises = requests.map(async (request, index) => {
+      try {
+        const result = await sendRequest(request.url, request.options);
+        results[request.key || index] = result;
+        return { key: request.key || index, success: true, result };
+      } catch (error) {
+        errors[request.key || index] = error;
+        return { key: request.key || index, success: false, error };
+      }
+    });
+    
+    const allResults = await Promise.all(promises);
+    
+    return {
+      results,
+      errors,
+      allResults,
+      hasErrors: Object.keys(errors).length > 0
+    };
+  } catch (error) {
+    console.error('批量请求失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 重试请求工具
+ */
+export async function retryRequest(requestFn, options = {}) {
+  const {
+    maxRetries = 3,
+    retryDelay = 1000,
+    retryCondition = (error) => error.status >= 500,
+    onRetry = null
+  } = options;
+  
+  let lastError;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await requestFn();
+    } catch (error) {
+      lastError = error;
+      
+      if (attempt === maxRetries || !retryCondition(error)) {
+        throw error;
+      }
+      
+      if (onRetry) {
+        onRetry(error, attempt + 1, maxRetries);
+      }
+      
+      // 等待重试
+      await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)));
+    }
+  }
+  
+  throw lastError;
+}
+
+/**
+ * 缓存请求工具
+ */
+export class CachedRequest {
+  constructor(options = {}) {
+    this.cache = new Map();
+    this.maxAge = options.maxAge || 5 * 60 * 1000; // 5分钟
+    this.maxSize = options.maxSize || 100;
+  }
+  
+  /**
+   * 获取缓存
+   */
+  get(key) {
+    const item = this.cache.get(key);
+    if (!item) return null;
+    
+    if (Date.now() - item.timestamp > this.maxAge) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return item.data;
+  }
+  
+  /**
+   * 设置缓存
+   */
+  set(key, data) {
+    // 清理过期缓存
+    this.cleanup();
+    
+    // 检查缓存大小
+    if (this.cache.size >= this.maxSize) {
+      const oldestKey = this.cache.keys().next().value;
+      this.cache.delete(oldestKey);
+    }
+    
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+  
+  /**
+   * 清理过期缓存
+   */
+  cleanup() {
+    const now = Date.now();
+    for (const [key, item] of this.cache.entries()) {
+      if (now - item.timestamp > this.maxAge) {
+        this.cache.delete(key);
+      }
+    }
+  }
+  
+  /**
+   * 清空缓存
+   */
+  clear() {
+    this.cache.clear();
+  }
+  
+  /**
+   * 带缓存的请求
+   */
+  async request(key, requestFn, options = {}) {
+    const { useCache = true, forceRefresh = false } = options;
+    
+    // 检查缓存
+    if (useCache && !forceRefresh) {
+      const cached = this.get(key);
+      if (cached) {
+        return cached;
+      }
+    }
+    
+    // 执行请求
+    const result = await requestFn();
+    
+    // 缓存结果
+    if (useCache) {
+      this.set(key, result);
+    }
+    
+    return result;
+  }
+}
+
+/**
+ * 创建缓存请求实例
+ */
+export function createCachedRequest(options = {}) {
+  return new CachedRequest(options);
+}
+
+// 导出便捷函数
+export const get = getRequest;
+export const post = postRequest;
+export const put = putRequest;
+export const patch = patchRequest;
+export const del = deleteRequest;
+

@@ -14,8 +14,7 @@
     
     <!-- 页面样式 -->
     <link rel="stylesheet" href="/views/welcome/index.css">
-    <!-- 接口等待交互样式 -->
-    <link rel="stylesheet" href="/css/apiLoading.css">
+
     <!-- 消息提示样式 -->
     <link rel="stylesheet" href="/css/message.css">
     <!-- 图标库 -->
@@ -51,12 +50,7 @@
                 </form>
                 <nav class="category-filters" id="category-filters" role="toolbar" aria-label="功能分类过滤器">
                     <ul class="filter-buttons">
-                      <li>
-                        <button class="filter-btn" type="button" aria-label="接口管理" data-action="aicr" @click="openLink('/views/apis/index.html')">
-                            <i class="fas fa-globe" aria-hidden="true"></i>
-                            <span>apis</span>
-                        </button>
-                    </li>
+
                         <li>
                             <button class="filter-btn" type="button" aria-label="网址管理" data-action="aicr" @click="openLink('/views/aicr/index.html')">
                                 <i class="fas fa-globe" aria-hidden="true"></i>
@@ -165,6 +159,11 @@
         </main>
     </div>
 
+    <!-- 全局加载指示器 -->
+    <section id="global-loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="全局加载中">
+        <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+    </section>
+
     <!-- 加载指示器 -->
     <section id="loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="加载中">
         <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
@@ -178,7 +177,7 @@
 
     <script type="module" src="/config.js"></script>
     <!-- API加载管理工具 -->
-    <script type="module" src="/utils/apiLoading.js"></script>
+
     <!-- 功能卡片主题管理器 -->
     <script src="/views/welcome/plugins/featureCard/index.js"></script>
     <!-- 主功能脚本 -->
@@ -187,6 +186,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 
 
