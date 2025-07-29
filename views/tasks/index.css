@@ -85,18 +85,7 @@
     line-height: 1.4;
 }
 
-/* 任务时间 */
-.task-time {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
-}
 
-.task-time i {
-    color: var(--accent);
-}
 
 /* 任务步骤预览 */
 .task-steps-preview {
@@ -403,3 +392,4 @@
     font-size: var(--font-size-base);
     margin: 0;
 } 
+

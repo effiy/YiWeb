@@ -70,13 +70,7 @@ export const useComputed = (store) => {
                         return true;
                     }
                     
-                    // 搜索时间（转换为字符串后搜索）
-                    if (task.time) {
-                        const timeStr = typeof task.time === 'number' ? `${task.time}小时` : task.time;
-                        if (timeStr.toLowerCase().includes(query)) {
-                            return true;
-                        }
-                    }
+
                     
                     // 搜索步骤内容
                     if (task.steps) {
@@ -225,16 +219,7 @@ export const useComputed = (store) => {
             return previewSteps;
         },
 
-        /**
-         * 任务时间格式化
-         * 将时间转换为可读格式
-         */
-        formatTaskTime: (time) => {
-            if (typeof time === 'number') {
-                return `${time} 小时`;
-            }
-            return time || '未设置';
-        },
+
 
         /**
          * 任务卡片样式类
@@ -277,4 +262,5 @@ export const useComputed = (store) => {
         isDetailVisible: computed(() => isDetailVisible.value)
     };
 }; 
+
 

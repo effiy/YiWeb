@@ -366,25 +366,7 @@
     width: 100%;
 }
 
-.task-meta-row {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.03);
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-sm);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    transition: all var(--transition-normal);
-    width: 100%;
-}
 
-.task-meta-row:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.1);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
-}
 
 .task-title {
     font-size: 1.2rem;
@@ -476,35 +458,7 @@
     color: rgba(16, 185, 129, 1);
 }
 
-.task-time {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    flex-shrink: 0; /* 防止时间被压缩 */
-    white-space: nowrap; /* 防止时间换行 */
-    transition: color var(--transition-normal);
-    width: 20%;
-    justify-content: flex-end;
-    padding-left: var(--spacing-sm);
-    min-width: 80px;
-}
 
-.task-time:hover {
-    color: var(--text-primary);
-}
-
-.task-time i {
-    font-size: 0.75rem;
-    color: var(--accent);
-    transition: all var(--transition-normal);
-}
-
-.task-time:hover i {
-    color: var(--primary);
-    transform: scale(1.1);
-}
 
 /* 任务进度显示 */
 .task-progress {
@@ -614,31 +568,125 @@
     font-size: 0.9rem;
     line-height: 1.5;
     margin-bottom: var(--spacing-md);
+    text-align: left;
+    position: relative;
+}
+
+.description-content {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    text-align: left;
+    transition: all var(--transition-normal);
+}
+
+.description-content.expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+}
+
+.description-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 8px 0;
+    gap: var(--spacing-xs);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    margin-top: var(--spacing-xs);
+    opacity: 0.7;
+    position: relative;
+    overflow: hidden;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.description-toggle-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left var(--transition-normal);
+}
+
+.description-toggle-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+    border-color: var(--border-secondary);
+    opacity: 1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.description-toggle-btn:hover::before {
+    left: 100%;
+}
+
+.description-toggle-btn.expanded {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    border-color: var(--primary);
+    color: var(--text-primary);
+}
+
+.description-toggle-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.description-toggle-btn i {
+    font-size: var(--font-size-xs);
+    transition: transform var(--transition-normal);
+    color: var(--text-secondary);
+}
+
+.description-toggle-btn:hover i {
+    color: var(--text-primary);
+}
+
+.description-toggle-btn.expanded i {
+    transform: rotate(180deg);
+    color: var(--primary);
+}
+
+.description-toggle-btn span {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: 0.5px;
 }
 
 /* 任务输入输出 */
 .task-input-output {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
     margin-top: var(--spacing-sm);
-    padding-top: var(--spacing-md);
+    padding-top: var(--spacing-sm);
     border-top: 1px solid var(--border-secondary);
 }
 
 .task-input, .task-output {
     background: rgba(255, 255, 255, 0.03);
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm);
     border-radius: var(--radius-md);
     border: 1px solid var(--border-glass);
     transition: all var(--transition-normal);
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+}
+
+.task-input, .task-output {
+    display: block;
 }
 
 .task-input::before, .task-output::before {
@@ -682,7 +730,7 @@
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     color: var(--text-secondary);
-    margin: 0 0 var(--spacing-sm) 0;
+    margin: 0;
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
@@ -691,6 +739,9 @@
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-glass);
     transition: all var(--transition-normal);
+    min-width: 80px;
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
 .task-input h5:hover, .task-output h5:hover {
@@ -711,13 +762,37 @@
 .task-input p, .task-output p {
     font-size: var(--font-size-sm);
     color: var(--text-primary);
-    line-height: 1.5;
+    line-height: 1.4;
     margin: 0;
     padding: var(--spacing-xs);
     background: rgba(255, 255, 255, 0.03);
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-glass);
     transition: all var(--transition-normal);
+    overflow: visible;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.task-input p, .task-output p {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+    min-height: auto;
+}
+
+.task-input p i {
+    color: var(--info);
+    font-size: var(--font-size-sm);
+    margin-top: 1px;
+    flex-shrink: 0;
+}
+
+.task-output p i {
+    color: var(--success);
+    font-size: var(--font-size-sm);
+    margin-top: 1px;
+    flex-shrink: 0;
 }
 
 .task-input p:hover, .task-output p:hover {
@@ -1294,11 +1369,7 @@
         max-width: 100px;
     }
     
-    .task-meta-row {
-        gap: var(--spacing-sm);
-        flex-wrap: wrap;
-        justify-content: space-between;
-    }
+
     
     .task-title {
         font-size: 1rem;
@@ -1306,11 +1377,7 @@
         padding-bottom: var(--spacing-sm);
     }
     
-    .task-time {
-        font-size: 0.8rem;
-        width: 25%;
-        min-width: 60px;
-    }
+
     
     .task-progress {
         min-width: 60px;
@@ -1329,7 +1396,38 @@
     }
     
     .task-input-output {
-        gap: var(--spacing-sm);
+        gap: var(--spacing-xs);
+    }
+    
+    .task-input, .task-output {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-xs);
+    }
+    
+    .task-input h5, .task-output h5 {
+        min-width: auto;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .task-input p, .task-output p {
+        white-space: normal;
+        text-overflow: initial;
+        overflow: visible;
+        word-wrap: break-word;
+        padding: var(--spacing-xs);
+    }
+    
+    .task-input p, .task-output p {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+    
+    .task-input p i, .task-output p i {
+        margin-top: 0;
     }
     
     .task-steps-preview {
@@ -1385,11 +1483,7 @@
 }
 
 @media (max-width: 480px) {
-    .task-meta-row {
-        flex-direction: column;
-        align-items: stretch;
-        gap: var(--spacing-xs);
-    }
+
     
     .task-tags {
         flex-direction: column;
@@ -1407,11 +1501,48 @@
         order: 1;
     }
     
-    .task-time {
-        width: 100%;
-        justify-content: center;
-        order: 2;
+    .task-input-output {
+        gap: var(--spacing-xs);
     }
+    
+    .task-input, .task-output {
+        padding: var(--spacing-xs);
+        gap: var(--spacing-xs);
+    }
+    
+    .task-input h5, .task-output h5 {
+        font-size: var(--font-size-xs);
+        padding: var(--spacing-xs);
+    }
+    
+    .task-input p, .task-output p {
+        font-size: var(--font-size-xs);
+        padding: var(--spacing-xs);
+    }
+    
+    .task-input p i, .task-output p i {
+        font-size: var(--font-size-xs);
+    }
+    
+    .task-description {
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .description-toggle-btn {
+        padding: var(--spacing-xs);
+        font-size: 10px;
+        margin-top: var(--spacing-xs);
+    }
+    
+    .description-toggle-btn span {
+        display: none;
+    }
+    
+    .description-toggle-btn i {
+        font-size: 10px;
+    }
+    
+
     
     .task-steps-preview {
         margin-top: var(--spacing-xs);
@@ -1515,10 +1646,9 @@
         outline-offset: 3px;
     }
     
-    .task-time {
-        border: 2px solid var(--border-primary);
-    }
+
 } 
+
 
 
 

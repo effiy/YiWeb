@@ -67,43 +67,32 @@
                 </header>
                 
                 <div class="task-description" :id="`task-${index}-description`">
-                    {{ task.description }}
+                  <div 
+                        v-if="task.description && task.description.length > 100"
+                        @click="toggleDescriptionExpanded(task.title)"
+                        class="description-toggle-btn"
+                        :class="{ 'expanded': isDescriptionExpanded(task.title) }"
+                        :title="isDescriptionExpanded(task.title) ? '收起描述' : '展开描述'"
+                        aria-label="切换描述显示"
+                    >
+                        <i class="fas fa-chevron-down" v-if="!isDescriptionExpanded(task.title)"></i>
+                        <i class="fas fa-chevron-up" v-else></i>
+                        <span>{{ isDescriptionExpanded(task.title) ? '收起' : '展开' }}</span>
+                  </div>
+                  <div class="description-content" :class="{ 'expanded': isDescriptionExpanded(task.title) }">  
+                      {{ task.description }}
+                  </div>
                 </div>
                 
                 <div class="task-input-output" aria-label="任务输入输出信息">
                     <div class="task-input">
-                        <h5>
-                            <i class="fas fa-arrow-down" aria-hidden="true"></i>
-                            输入
-                        </h5>
-                        <p>{{ task.input }}</p>
+                        <p><i class="fas fa-arrow-down" aria-hidden="true"></i> 输入：{{ task.input }}</p>
                     </div>
                     <div class="task-output">
-                        <h5>
-                            <i class="fas fa-arrow-up" aria-hidden="true"></i>
-                            输出
-                        </h5>
-                        <p>{{ task.output }}</p>
+                        <p><i class="fas fa-arrow-up" aria-hidden="true"></i> 输出：{{ task.output }}</p>
                     </div>
                 </div>
-                <div class="task-meta-row">
-                  <div class="task-progress" v-if="getTaskProgress(task).total > 0">
-                      <i class="fas fa-tasks" aria-hidden="true"></i>
-                      <span class="progress-text">{{ getTaskProgress(task).completed }}/{{ getTaskProgress(task).total }}</span>
-                      <div class="progress-bar">
-                          <div 
-                              class="progress-fill" 
-                              :style="{ width: getTaskProgress(task).percentage + '%' }"
-                              :aria-label="`任务进度 ${getTaskProgress(task).percentage}%`"
-                          ></div>
-                      </div>
-                  </div>
 
-                  <time class="task-time" :datetime="task.time" aria-label="任务时间">
-                    <i class="fas fa-clock" aria-hidden="true"></i>
-                    <span>{{ formatTaskTime(task.time) }}</span>
-                </time>
-              </div>
               
               <!-- 步骤进度详情 -->
               <div class="task-steps-preview" v-if="getTaskSteps(task).total > 0">
@@ -164,4 +153,5 @@
         </div>
     </div>
 </div> 
+
 

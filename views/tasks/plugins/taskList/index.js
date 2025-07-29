@@ -104,7 +104,9 @@ const createTaskList = async () => {
             CLICK_DELAY: 300, // 点击延迟，用于区分点击和长按
             CLICK_MOVE_THRESHOLD: 10, // 点击移动阈值
             // 步骤展开状态管理
-            expandedSteps: new Set()
+            expandedSteps: new Set(),
+            // 描述展开状态管理
+            expandedDescriptions: new Set()
         };
     },
     
@@ -408,17 +410,7 @@ const createTaskList = async () => {
             this.$emit('load-tasks-data');
         },
         
-        /**
-         * 格式化任务时间
-         * @param {number|string} time - 时间值
-         * @returns {string} 格式化后的时间
-         */
-        formatTaskTime(time) {
-            if (typeof time === 'number') {
-                return `${time} 小时`;
-            }
-            return time || '未设置';
-        },
+
         
         /**
          * 判断任务是否被选中
@@ -556,6 +548,29 @@ const createTaskList = async () => {
         },
 
         /**
+         * 切换描述展开状态
+         * @param {string} taskTitle - 任务标题
+         */
+        toggleDescriptionExpanded(taskTitle) {
+            if (this.expandedDescriptions.has(taskTitle)) {
+                this.expandedDescriptions.delete(taskTitle);
+            } else {
+                this.expandedDescriptions.add(taskTitle);
+            }
+            
+            console.log(`[TaskList] 切换描述展开状态: ${taskTitle}, 展开: ${this.expandedDescriptions.has(taskTitle)}`);
+        },
+
+        /**
+         * 检查描述是否已展开
+         * @param {string} taskTitle - 任务标题
+         * @returns {boolean} 是否已展开
+         */
+        isDescriptionExpanded(taskTitle) {
+            return this.expandedDescriptions.has(taskTitle);
+        },
+
+        /**
          * 切换步骤完成状态
          * @param {string} taskTitle - 任务标题
          * @param {string} stepNumber - 步骤编号
@@ -652,4 +667,5 @@ const createTaskList = async () => {
       console.error('TaskList 组件初始化失败:', error);
   }
 })(); 
+
 

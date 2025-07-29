@@ -561,7 +561,6 @@ export const useMethods = (store, computed) => {
         try {
             const taskText = `
 任务: ${task.title}
-时间: ${computed.formatTaskTime(task.time)}
 输入: ${task.input}
 输出: ${task.output}
 步骤:
@@ -605,7 +604,6 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         try {
             const taskData = {
                 title: task.title,
-                time: task.time,
                 input: task.input,
                 output: task.output,
                 steps: task.steps,
@@ -684,6 +682,7 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         cleanupEventListeners
     };
 }; 
+
 
 
 
