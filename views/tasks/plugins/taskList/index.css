@@ -887,28 +887,9 @@
     flex-direction: column;
     gap: var(--spacing-xs);
     transition: all var(--transition-normal);
-    max-height: 300px;
-    overflow-y: auto;
-    padding-right: var(--spacing-xs);
-}
-
-/* 步骤预览列表滚动条 */
-.steps-preview-list::-webkit-scrollbar {
-    width: 4px;
-}
-
-.steps-preview-list::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--radius-full);
-}
-
-.steps-preview-list::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius-full);
-}
-
-.steps-preview-list::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
 }
 
 /* 步骤展开动画 */
@@ -1477,7 +1458,7 @@
     }
 
     .steps-preview-list {
-        max-height: 200px;
+        max-height: none;
         gap: var(--spacing-xs);
     }
 }
@@ -1648,6 +1629,7 @@
     
 
 } 
+
 
 
 
