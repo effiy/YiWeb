@@ -12,25 +12,6 @@ import { getData, postData } from '/apis/index.js';
 import { showError, showSuccess } from '/utils/message.js';
 import { showGlobalLoading, hideGlobalLoading } from '/utils/loading.js';
 
-  /**
-   * 字符串模板替换函数（支持嵌套属性、健壮性更强）
-   * @param {string} template - 含有 {{ key }} 占位符的字符串
-   * @param {Object} data - 替换用的键值对对象
-   * @returns {string} 替换后的字符串
-   *
-   * 示例：
-   *   templateReplace('你好，{{ name }}！', { name: '小明' }) // '你好，小明！'
-   *   templateReplace('城市：{{ user.city }}', { user: { city: '北京' } }) // '城市：北京'
-   */
-  function templateReplace(template, data) {
-    if (typeof template !== 'string' || typeof data !== 'object' || data === null) return template;
-    return template.replace(/\{\{\s*([\w$.]+)\s*\}\}/g, (match, key) => {
-        // 支持嵌套属性，如 user.name.first
-        const value = key.split('.').reduce((obj, prop) => (obj && obj[prop] !== undefined ? obj[prop] : undefined), data);
-        return value !== undefined && value !== null ? value : match;
-    });
-  }
-
 export const useMethods = (store) => {
     // 输入法状态标记
     let isComposing = false;
@@ -981,19 +962,14 @@ export const useMethods = (store) => {
             const target = feature.name + '-' + feature.desc;
             const description = card.title + '-' + card.description;
 
-            const systemPromptData = await getData(`${window.DATA_URL}/prompts/tasks/tasks.txt`);
-
-            const fromSystem = templateReplace(systemPromptData, {
-                target: target,
-                description: description
-            });
+            const fromSystem = await getData(`${window.DATA_URL}/prompts/tasks/tasks.txt`);
 
             console.log('[生成任务] 生成任务:', fromSystem);
 
             // 发送消息请求到API
             const response = await postData(`${window.API_URL}/prompt`, {
                 fromSystem,
-                fromUser: '必须返回 json 格式，不要返回其他内容'
+                fromUser: `目标是:${target}, 描述:${description}`
             });
 
             console.log('[API响应] 收到服务器响应:', response.data);
@@ -1245,6 +1221,7 @@ export const useMethods = (store) => {
         clearSearch,
     };
 };
+
 
 
 

@@ -6,6 +6,7 @@
 
 import { showGlobalLoading, hideGlobalLoading } from '/utils/loading.js';
 import { showError, showSuccess } from '/utils/message.js';
+import { getData, postData } from '/apis/index.js';
 
 /**
  * 方法工厂函数
@@ -476,11 +477,40 @@ export const useMethods = (store, computed) => {
      * 处理搜索键盘事件
      * @param {KeyboardEvent} event - 键盘事件
      */
-    const handleSearchKeydown = (event) => {
+    const handleSearchKeydown = async (event) => {
         if (event.key === 'Enter') {
             const query = event.target.value.trim();
             if (query) {
                 addSearchHistory(query);
+                
+                // 调用prompt接口生成新任务
+                try {
+                    showGlobalLoading('正在生成任务，请稍候...');
+                    
+                    const fromSystem = await getData(`${window.DATA_URL}/prompts/tasks/tasks.txt`);
+                    
+                    const response = await postData(`${window.API_URL}/prompt`, {
+                        fromSystem,
+                        fromUser: query
+                    });
+                    
+                    if (Array.isArray(response.data) && response.data.length > 0) {
+                        await Promise.all(
+                            response.data.map(item =>
+                                postData(`${window.API_URL}/mongodb/?cname=tasks`, item)
+                            )
+                        );
+                        store.setSearchQuery('');
+                        // 重新加载任务数据
+                        await loadTasksData();
+                        showSuccess('已生成新任务');
+                    }
+                } catch (error) {
+                    showError('生成任务失败，请稍后重试');
+                    console.error('生成任务失败:', error);
+                } finally {
+                    hideGlobalLoading();
+                }
             }
         }
     };
@@ -654,5 +684,6 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         cleanupEventListeners
     };
 }; 
+
 
 
