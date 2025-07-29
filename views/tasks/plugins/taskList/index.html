@@ -54,11 +54,11 @@
                         <h3 class="task-title" :id="`task-${index}-title`">{{ task.title }}</h3>
                         <!-- 标签区域 -->
                         <div class="task-tags" v-if="task.featureName || task.cardTitle">
-                            <span class="task-tag feature-tag" v-if="task.featureName">
+                            <span class="task-tag feature-tag" v-if="task.featureName" :title="task.featureName">
                                 <i class="fas fa-tag" aria-hidden="true"></i>
                                 {{ task.featureName }}
                             </span>
-                            <span class="task-tag card-tag" v-if="task.cardTitle">
+                            <span class="task-tag card-tag" v-if="task.cardTitle" :title="task.cardTitle">
                                 <i class="fas fa-layer-group" aria-hidden="true"></i>
                                 {{ task.cardTitle }}
                             </span>
@@ -153,5 +153,6 @@
         </div>
     </div>
 </div> 
+
 
 
