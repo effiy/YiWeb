@@ -245,8 +245,8 @@ const createCodeView = async () => {
                         console.log('==========================================');
                         
                         // 关闭弹窗
-                        container.innerHTML = '';
-                        container.style.display = 'none';
+                        // container.innerHTML = '';
+                        // container.style.display = 'none';
                         
                         // 移除事件监听器
                         button.removeEventListener('click', handleButtonClick);
