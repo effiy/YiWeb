@@ -132,7 +132,128 @@ const createCodeView = async () => {
                     const button = document.createElement('button');
                     button.className = 'comment-action-btn';
                     button.textContent = '添加评论';
-                    button.addEventListener('mousedown', e => e.stopPropagation(), { passive: true });
+                    button.type = 'button'; // 明确指定按钮类型
+                    
+                    // 添加内联事件处理器作为备用
+                    const selectedTextForButton = selectedText; // 创建一个局部变量
+                    button.onclick = function(e) {
+                        console.log('[CodeView] 内联onclick事件触发');
+                        e.preventDefault();
+                        e.stopPropagation();
+                    };
+                    
+                    console.log('[CodeView] 评论按钮已创建');
+                    
+                    // 添加调试信息
+                    console.log('[CodeView] 按钮元素:', button);
+                    console.log('[CodeView] 按钮样式:', window.getComputedStyle(button));
+                    
+                    // 阻止事件冒泡
+                    button.addEventListener('mousedown', e => {
+                        console.log('[CodeView] 按钮mousedown事件触发');
+                        e.stopPropagation();
+                        e.preventDefault();
+                    }, { passive: false });
+                    
+                    // 添加点击事件处理 - 使用更直接的方式
+                    const handleButtonClick = (e) => {
+                        console.log('[CodeView] 按钮点击事件被触发');
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        
+                        // 简单测试：确保事件处理逻辑能够执行
+                        console.log('[CodeView] 事件处理开始');
+                        
+                        // 获取选中的文本和范围信息
+                        const currentSelectedText = range.toString().trim();
+                        const startContainer = range.startContainer;
+                        const endContainer = range.endContainer;
+                        
+                        // 获取行号信息
+                        let startLine = 0, endLine = 0, startChar = 0, endChar = 0;
+                        
+                        // 获取起始行号
+                        if (startContainer.nodeType === 3) { // 文本节点
+                            const codeLine = startContainer.parentElement;
+                            if (codeLine && codeLine.classList.contains('code-line')) {
+                                startLine = parseInt(codeLine.getAttribute('data-line')) || 0;
+                                startChar = range.startOffset;
+                            }
+                        }
+                        
+                        // 获取结束行号
+                        if (endContainer.nodeType === 3) { // 文本节点
+                            const codeLine = endContainer.parentElement;
+                            if (codeLine && codeLine.classList.contains('code-line')) {
+                                endLine = parseInt(codeLine.getAttribute('data-line')) || 0;
+                                endChar = range.endOffset;
+                            }
+                        }
+                        
+                        // 如果没有获取到行号，尝试从父元素获取
+                        if (!startLine) {
+                            const startElement = startContainer.nodeType === 3 ? startContainer.parentElement : startContainer;
+                            if (startElement && startElement.classList.contains('code-line')) {
+                                startLine = parseInt(startElement.getAttribute('data-line')) || 0;
+                            }
+                        }
+                        
+                        if (!endLine) {
+                            const endElement = endContainer.nodeType === 3 ? endContainer.parentElement : endContainer;
+                            if (endElement && endElement.classList.contains('code-line')) {
+                                endLine = parseInt(endElement.getAttribute('data-line')) || 0;
+                            }
+                        }
+                        
+                        // 确保行号有效
+                        if (!startLine) startLine = 1;
+                        if (!endLine) endLine = startLine;
+                        
+                        // 构建选中对象信息
+                        const selectedObjectInfo = {
+                            text: currentSelectedText,
+                            range: {
+                                startLine: startLine,
+                                endLine: endLine,
+                                startChar: startChar,
+                                endChar: endChar
+                            },
+                            selection: {
+                                startContainer: startContainer,
+                                endContainer: endContainer,
+                                startOffset: range.startOffset,
+                                endOffset: range.endOffset
+                            },
+                            timestamp: new Date().toISOString(),
+                            fileInfo: {
+                                // 这里可以添加当前文件信息
+                                currentFile: this.file || null
+                            }
+                        };
+                        
+                        // 打印选中的对象信息
+                        console.log('[CodeView] 准备打印选中对象信息');
+                        console.log('=== 添加评论按钮点击 - 选中对象信息 ===');
+                        console.log('选中的文本:', selectedObjectInfo.text);
+                        console.log('行号范围:', selectedObjectInfo.range);
+                        console.log('字符位置:', { startChar: selectedObjectInfo.range.startChar, endChar: selectedObjectInfo.range.endChar });
+                        console.log('选择范围详情:', selectedObjectInfo.selection);
+                        console.log('时间戳:', selectedObjectInfo.timestamp);
+                        console.log('文件信息:', selectedObjectInfo.fileInfo);
+                        console.log('完整选中对象:', selectedObjectInfo);
+                        console.log('==========================================');
+                        
+                        // 关闭弹窗
+                        container.innerHTML = '';
+                        container.style.display = 'none';
+                        
+                        // 移除事件监听器
+                        button.removeEventListener('click', handleButtonClick);
+                    };
+                    
+                    // 绑定点击事件
+                    button.addEventListener('click', handleButtonClick, { passive: false });
 
                     // 定位按钮
                     const rect = range.getBoundingClientRect();
@@ -143,6 +264,20 @@ const createCodeView = async () => {
                     container.style.zIndex = 1000;
 
                     container.appendChild(button);
+                    
+                    // 验证按钮是否正确添加到DOM
+                    console.log('[CodeView] 按钮已添加到容器:', container.contains(button));
+                    console.log('[CodeView] 容器内容:', container.innerHTML);
+                    
+                    // 测试按钮是否可以点击
+                    console.log('[CodeView] 按钮的pointer-events:', window.getComputedStyle(button).pointerEvents);
+                    console.log('[CodeView] 按钮的z-index:', window.getComputedStyle(button).zIndex);
+                    
+                    // 添加一个简单的测试点击
+                    setTimeout(() => {
+                        console.log('[CodeView] 尝试模拟点击按钮');
+                        button.click();
+                    }, 100);
 
                     // 点击 codeContent 以外区域时关闭弹窗
                     const handleClickOutside = (event) => {
@@ -191,12 +326,10 @@ const createCodeView = async () => {
             this.bindSelectionEvent();
             // 监听高亮事件
             window.addEventListener('highlightCodeLines', this.handleHighlightLines, { passive: true });
-            console.log('[CodeView] 组件已挂载');
         },
         updated() {
             // 重新绑定划词评论事件
             this.bindSelectionEvent();
-            console.log('[CodeView] 组件已更新');
         },
         beforeUnmount() {
             window.removeEventListener('highlightCodeLines', this.handleHighlightLines, { passive: true });
