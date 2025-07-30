@@ -17,20 +17,6 @@ async function loadTemplate() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const templateText = await response.text();
-        
-        // 将模板插入到DOM中，以便Vue可以找到模板
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = templateText;
-        
-        // 查找并插入模板脚本
-        const templateScripts = tempDiv.querySelectorAll('script[type="text/x-template"]');
-        templateScripts.forEach(script => {
-            // 检查模板是否已经存在
-            if (!document.getElementById(script.id)) {
-                document.body.appendChild(script);
-            }
-        });
-        
         return templateText;
     } catch (error) {
         console.error('加载模板失败:', error);
@@ -166,7 +152,72 @@ const createFileTreeNode = () => {
                 }, '文件评论数量计算');
             }
         },
-        template: '#file-tree-node-template'
+        template: `
+            <li 
+                class="file-tree-node"
+                role="treeitem"
+                :aria-expanded="item.type === 'folder' ? isFolderExpanded(item.id) : undefined"
+            >
+                <!-- 文件夹 -->
+                <div 
+                    v-if="item.type === 'folder'"
+                    :class="['file-tree-item', 'folder-item', { 
+                        expanded: isFolderExpanded(item.id)
+                    }]"
+                    @click="toggleFolder(item.id)"
+                    :title="\`文件夹: \${item.name}\`"
+                    tabindex="0"
+                    @keydown.enter="toggleFolder(item.id)"
+                    @keydown.space="toggleFolder(item.id)"
+                >
+                    <span class="folder-toggle" aria-hidden="true">
+                        <i :class="['fas', isFolderExpanded(item.id) ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
+                    </span>
+                    <span class="file-icon" aria-hidden="true">{{ getFileIcon(item) }}</span>
+                    <span class="file-name">{{ item.name }}</span>
+                    <span v-if="item.children" class="folder-count">({{ item.children.length }})</span>
+                </div>
+                
+                <!-- 文件 -->
+                <div 
+                    v-else
+                    :class="['file-tree-item', 'file-item', { 
+                        selected: isFileSelected(item.id)
+                    }]"
+                    @click="selectFile(item.id)"
+                    :title="\`文件: \${item.name}\`"
+                    tabindex="0"
+                    @keydown.enter="selectFile(item.id)"
+                    @keydown.space="selectFile(item.id)"
+                >
+                    <span class="folder-toggle file-toggle-placeholder" aria-hidden="true"></span>
+                    <span class="file-icon" aria-hidden="true">{{ getFileIcon(item) }}</span>
+                    <span class="file-name">{{ item.name }}</span>
+                    <span v-if="getFileSizeDisplay(item)" class="file-size">{{ getFileSizeDisplay(item) }}</span>
+                    <span v-if="getCommentCount(item.id) > 0" class="comment-count" :title="\`\${getCommentCount(item.id)} 条评论\`">
+                        💬 {{ getCommentCount(item.id) }}
+                    </span>
+                </div>
+                
+                <!-- 递归渲染子节点 -->
+                <ul 
+                    v-if="item.type === 'folder' && item.children && isFolderExpanded(item.id)"
+                    class="file-tree-children"
+                    role="group"
+                >
+                    <template v-for="child in item.children" :key="child.id">
+                        <file-tree-node 
+                            :item="child"
+                            :selected-file-id="selectedFileId"
+                            :expanded-folders="expandedFolders"
+                            :comments="comments"
+                            @file-select="$emit('file-select', $event)"
+                            @folder-toggle="$emit('folder-toggle', $event)"
+                        ></file-tree-node>
+                    </template>
+                </ul>
+            </li>
+        `
     };
 };
 
@@ -362,5 +413,6 @@ const createFileTree = async () => {
         console.error('FileTree 组件初始化失败:', error);
     }
 })();
+
 
 
