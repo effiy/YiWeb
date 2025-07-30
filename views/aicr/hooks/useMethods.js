@@ -139,6 +139,17 @@ export const useMethods = (store) => {
     const expandAllFolders = () => {
         return safeExecute(() => {
             const expandFolder = (items) => {
+                if (!Array.isArray(items)) {
+                    // 如果是单个节点，直接处理
+                    if (items.type === 'folder') {
+                        expandedFolders.value.add(items.id);
+                        if (items.children) {
+                            expandFolder(items.children);
+                        }
+                    }
+                    return;
+                }
+                
                 items.forEach(item => {
                     if (item.type === 'folder') {
                         expandedFolders.value.add(item.id);
@@ -178,3 +189,4 @@ export const useMethods = (store) => {
         collapseAllFolders
     };
 };
+

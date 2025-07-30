@@ -60,6 +60,19 @@ export const useComputed = (store) => {
             const stats = { folders: 0, files: 0 };
             
             const countItems = (items) => {
+                if (!Array.isArray(items)) {
+                    // 如果是单个节点，直接处理
+                    if (items.type === 'folder') {
+                        stats.folders++;
+                        if (items.children) {
+                            countItems(items.children);
+                        }
+                    } else {
+                        stats.files++;
+                    }
+                    return;
+                }
+                
                 items.forEach(item => {
                     if (item.type === 'folder') {
                         stats.folders++;
@@ -138,4 +151,5 @@ export const useComputed = (store) => {
         })
     };
 };
+
 

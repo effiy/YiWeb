@@ -37,7 +37,16 @@
         </header>
         <main class="aicr-main">
             <aside class="aicr-sidebar" aria-label="文件目录树" v-show="!sidebarCollapsed">
-                <file-tree :tree="fileTree" :selected-file-id="selectedFileId" :expanded-folders="expandedFolders" :loading="loading" :error="errorMessage" :comments="currentComments" @file-select="handleFileSelect" @folder-toggle="handleFolderToggle"></file-tree>
+                <file-tree 
+                    :tree="fileTree" 
+                    :selected-file-id="selectedFileId" 
+                    :expanded-folders="expandedFolders" 
+                    :loading="loading" 
+                    :error="errorMessage" 
+                    :comments="comments"
+                    @file-select="handleFileSelect" 
+                    @folder-toggle="handleFolderToggle"
+                ></file-tree>
             </aside>
             <section class="aicr-code" aria-label="代码区">
                 <code-view :file="currentFile" :loading="loading" :error="errorMessage"></code-view>
@@ -47,6 +56,9 @@
             </aside>
         </main>
     </div>
+    
+    <!-- 脚本标签移到Vue应用容器外部 -->
+    <script type="module" src="/config.js"></script>
     <script type="module" src="/views/aicr/plugins/fileTree/index.js"></script>
     <script type="module" src="/views/aicr/plugins/codeView/index.js"></script>
     <script type="module" src="/views/aicr/plugins/commentPanel/index.js"></script>
@@ -54,6 +66,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html> 
+
 
 
 

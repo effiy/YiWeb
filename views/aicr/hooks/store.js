@@ -49,17 +49,27 @@ export const createStore = () => {
             
             console.log('[loadFileTree] 正在加载文件树数据...');
             
-            const response = await getData('/views/aicr/mock/fileTree.json');
+            const response = await getData(`${window.DATA_URL}/aicr/YiAi/2025-07-30/tree.json`);
             
-            if (!Array.isArray(response)) {
+            if (!response || typeof response !== 'object') {
                 throw createError('文件树数据格式错误', ErrorTypes.API, '文件树加载');
             }
             
-            fileTree.value = response;
+            // 将单个文件树对象包装成数组，以符合组件期望的格式
+            fileTree.value = [response];
             console.log(`[loadFileTree] 成功加载文件树数据`);
 
             // 默认展开所有文件夹
             function collectAllFolderIds(nodes, set) {
+                if (!Array.isArray(nodes)) {
+                    // 如果是单个节点，直接处理
+                    if (nodes.type === 'folder') {
+                        set.add(nodes.id);
+                        if (nodes.children) collectAllFolderIds(nodes.children, set);
+                    }
+                    return;
+                }
+                
                 nodes.forEach(item => {
                     if (item.type === 'folder') {
                         set.add(item.id);
@@ -88,7 +98,7 @@ export const createStore = () => {
         return safeExecuteAsync(async () => {
             console.log('[loadFiles] 正在加载代码文件数据...');
             
-            const response = await getData('https://data.effiy.cn/mock/aicr/2025-07-25/files.json');
+            const response = await getData(`${window.DATA_URL}/aicr/YiAi/2025-07-30/files.json`);
             
             if (!Array.isArray(response)) {
                 throw createError('代码文件数据格式错误', ErrorTypes.API, '代码文件加载');
@@ -112,7 +122,8 @@ export const createStore = () => {
         return safeExecuteAsync(async () => {
             console.log('[loadComments] 正在加载评论数据...');
             
-            const response = await getData('/views/aicr/mock/comments.json');
+            // const response = await getData('/views/aicr/mock/comments.json');
+            const response = [];
             
             if (!Array.isArray(response)) {
                 throw createError('评论数据格式错误', ErrorTypes.API, '评论加载');
@@ -230,6 +241,7 @@ export const createStore = () => {
         clearError
     };
 };
+
 
 
 

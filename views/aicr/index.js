@@ -72,7 +72,16 @@ import { createBaseView } from '/utils/baseView.js';
             ],
             data: {
                 // 新增：本地评论和高亮状态
-                codeComments: localState.codeComments
+                codeComments: localState.codeComments,
+                // 暴露store数据给模板
+                fileTree: store.fileTree,
+                selectedFileId: store.selectedFileId,
+                expandedFolders: store.expandedFolders,
+                loading: store.loading,
+                errorMessage: store.errorMessage,
+                comments: store.comments,
+                sidebarCollapsed: store.sidebarCollapsed,
+                commentsCollapsed: store.commentsCollapsed
             },
             computed: {
                 // 当前文件的评论
@@ -126,11 +135,49 @@ import { createBaseView } from '/utils/baseView.js';
             // 传递props给子组件
             props: {
                 'code-view': {},
+                'file-tree': {
+                    tree: function() { return store.fileTree; },
+                    selectedFileId: function() { return store.selectedFileId; },
+                    expandedFolders: function() { return store.expandedFolders; },
+                    loading: function() { return store.loading; },
+                    error: function() { return store.errorMessage; },
+                    comments: function() { return store.comments; }
+                },
                 'comment-panel': {
                     comments: function() { return this.currentComments; },
                     newComment: function() { return store.newComment; },
                     loading: function() { return store.loading; },
                     error: function() { return store.errorMessage; }
+                }
+            },
+            methods: {
+                // 处理文件选择
+                handleFileSelect(fileId) {
+                    console.log('[主应用] 文件选择:', fileId);
+                    store.setSelectedFileId(fileId);
+                },
+                // 处理文件夹切换
+                handleFolderToggle(folderId) {
+                    console.log('[主应用] 文件夹切换:', folderId);
+                    store.toggleFolder(folderId);
+                },
+                // 处理评论提交
+                handleCommentSubmit(commentData) {
+                    console.log('[主应用] 评论提交:', commentData);
+                    // 这里可以添加评论提交逻辑
+                },
+                // 处理评论输入
+                handleCommentInput(event) {
+                    console.log('[主应用] 评论输入:', event.target.value);
+                    store.setNewComment(event.target.value);
+                },
+                // 切换侧边栏
+                toggleSidebar() {
+                    store.toggleSidebar();
+                },
+                // 切换评论区
+                toggleComments() {
+                    store.toggleComments();
                 }
             }
         });
@@ -147,5 +194,6 @@ import { createBaseView } from '/utils/baseView.js';
         console.error('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
 
 
