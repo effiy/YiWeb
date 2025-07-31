@@ -21,8 +21,8 @@ import { createBaseView } from '/utils/baseView.js';
         // 监听划词评论事件
         window.addEventListener('addCodeComment', (e) => {
             const detail = e.detail;
-            // 生成唯一id
-            const id = 'cmt_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+            // 生成唯一key
+            const key = 'cmt_' + Date.now() + '_' + Math.floor(Math.random()*10000);
             // 假设当前文件id为store.selectedFileId
             const fileId = store.selectedFileId || (store.state && store.state.selectedFileId);
             // 记录range的起止行号和字符索引
@@ -51,7 +51,7 @@ import { createBaseView } from '/utils/baseView.js';
                 startLine = endLine = 0;
             }
             localState.codeComments.push({
-                id,
+                key,
                 fileId,
                 text: detail.text,
                 comment: detail.comment,
@@ -84,6 +84,25 @@ import { createBaseView } from '/utils/baseView.js';
                 commentsCollapsed: store.commentsCollapsed
             },
             computed: {
+                // 当前文件
+                currentFile() {
+                    const fileId = store.selectedFileId || (store.state && store.state.selectedFileId);
+                    console.log('[currentFile] 当前文件ID:', fileId);
+                    console.log('[currentFile] store.files:', store.files);
+                    
+                    if (!fileId || !store.files) return null;
+                    
+                    const currentFile = store.files.find(f => {
+                        const fileIdentifier = f.fileId || f.id || f.path;
+                        const match = fileIdentifier === fileId;
+                        console.log('[currentFile] 检查文件:', f.name, '标识符:', fileIdentifier, '匹配:', match);
+                        return match;
+                    });
+                    
+                    console.log('[currentFile] 找到的当前文件:', currentFile);
+                    return currentFile;
+                },
+                
                 // 当前文件的评论
                 currentComments() {
                     const fileId = store.selectedFileId || (store.state && store.state.selectedFileId);
@@ -104,7 +123,12 @@ import { createBaseView } from '/utils/baseView.js';
                     console.log('[currentComments] store评论数量:', storeComments.length);
                     console.log('[currentComments] 总评论数量:', allComments.length);
                     console.log('[currentComments] 所有评论详情:', allComments);
-                    return allComments;
+                    
+                    // 确保返回的评论有正确的key属性
+                    return allComments.map(comment => ({
+                        ...comment,
+                        key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
+                    }));
                 }
             },
             onMounted: (mountedApp) => {
@@ -118,8 +142,10 @@ import { createBaseView } from '/utils/baseView.js';
                         console.log('[代码审查页面] 数据加载完成');
                         // 如果没有选中文件，选择第一个文件
                         if (!store.selectedFileId && store.files && store.files.length > 0) {
-                            store.setSelectedFileId(store.files[0].id || store.files[0].path);
-                            console.log('[代码审查页面] 自动选择第一个文件:', store.files[0]);
+                            const firstFile = store.files[0];
+                            const fileId = firstFile.id || firstFile.path || firstFile.fileId;
+                            store.setSelectedFileId(fileId);
+                            console.log('[代码审查页面] 自动选择第一个文件:', firstFile, '文件ID:', fileId);
                         }
                     }).catch(error => {
                         console.error('[代码审查页面] 数据加载失败:', error);
@@ -144,14 +170,75 @@ import { createBaseView } from '/utils/baseView.js';
                     comments: function() { return store.comments; }
                 },
                 'comment-panel': {
-                    comments: function() { return this.currentComments; },
+                    comments: function() { 
+                        console.log('[主页面] 传递给评论面板的评论数据:', this.currentComments);
+                        return this.currentComments; 
+                    },
+                    file: function() { 
+                        console.log('[主页面] 传递给评论面板的文件数据:', this.currentFile);
+                        return this.currentFile; 
+                    },
                     newComment: function() { return store.newComment; },
                     loading: function() { return store.loading; },
                     error: function() { return store.errorMessage; }
                 }
             },
             methods: {
-                // 这里可以添加其他特定于主视图的方法
+                // 处理文件选择
+                handleFileSelect(fileId) {
+                    console.log('[主页面] 处理文件选择:', fileId);
+                    if (store) {
+                        store.setSelectedFileId(fileId);
+                        console.log('[主页面] 已设置选中文件ID:', fileId);
+                    }
+                },
+                
+                // 处理文件夹切换
+                handleFolderToggle(folderId) {
+                    console.log('[主页面] 处理文件夹切换:', folderId);
+                    if (store) {
+                        store.toggleFolder(folderId);
+                        console.log('[主页面] 已切换文件夹:', folderId);
+                    }
+                },
+                
+                // 处理评论提交
+                handleCommentSubmit(commentData) {
+                    console.log('[主页面] 处理评论提交:', commentData);
+                    if (store) {
+                        store.addComment(commentData);
+                        console.log('[主页面] 已添加评论');
+                    }
+                },
+                
+                // 处理评论输入
+                handleCommentInput(event) {
+                    console.log('[主页面] 处理评论输入:', event);
+                    if (store) {
+                        store.setNewComment(event.target.value);
+                    }
+                },
+                
+                // 处理评论者选择
+                handleCommenterSelect(commenters) {
+                    console.log('[主页面] 处理评论者选择:', commenters);
+                },
+                
+                // 切换侧边栏
+                toggleSidebar() {
+                    console.log('[主页面] 切换侧边栏');
+                    if (store) {
+                        store.toggleSidebar();
+                    }
+                },
+                
+                // 切换评论区
+                toggleComments() {
+                    console.log('[主页面] 切换评论区');
+                    if (store) {
+                        store.toggleComments();
+                    }
+                }
             }
         });
         window.aicrApp = app;
@@ -167,6 +254,7 @@ import { createBaseView } from '/utils/baseView.js';
         console.error('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
 
 
 

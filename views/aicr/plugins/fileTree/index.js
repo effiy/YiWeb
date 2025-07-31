@@ -73,6 +73,7 @@ const createFileTreeNode = () => {
                         throw createError('文件ID无效', ErrorTypes.VALIDATION, '文件选择');
                     }
                     
+                    console.log('[FileTreeNode] 选择文件:', fileId);
                     this.$emit('file-select', fileId);
                 }, '文件选择处理');
             },
@@ -283,6 +284,7 @@ const createFileTree = async () => {
                         throw createError('文件ID无效', ErrorTypes.VALIDATION, '文件选择');
                     }
                     
+                    console.log('[FileTree] 选择文件:', fileId);
                     this.$emit('file-select', fileId);
                 }, '文件选择处理');
             },
@@ -413,6 +415,7 @@ const createFileTree = async () => {
         console.error('FileTree 组件初始化失败:', error);
     }
 })();
+
 
 
 

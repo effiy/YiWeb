@@ -54,6 +54,7 @@
             <aside class="aicr-comments" aria-label="评论区" v-show="!commentsCollapsed">
                 <comment-panel 
                     :comments="currentComments" 
+                    :file="currentFile"
                     :new-comment="newComment" 
                     :loading="loading" 
                     :error="errorMessage" 
@@ -64,6 +65,22 @@
             </aside>
         </main>
     </div>
+
+    <!-- 全局加载指示器 -->
+    <section id="global-loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="全局加载中">
+      <div class="loading-content">
+          <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+          <p class="loading-text" id="loading-text">正在加载...</p>
+      </div>
+    </section>
+
+    <!-- 加载指示器 -->
+    <section id="loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="加载中">
+        <div class="loading-content">
+            <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+            <p class="loading-text" id="loading-text">正在加载...</p>
+        </div>
+    </section>
     
     <!-- 脚本标签移到Vue应用容器外部 -->
     <script type="module" src="/config.js"></script>
@@ -74,6 +91,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html> 
+
 
 
 

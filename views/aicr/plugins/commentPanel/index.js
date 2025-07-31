@@ -24,15 +24,39 @@ async function loadTemplate() {
     }
 }
 
+// 新增：异步获取评论数据（从mongo api）
+async function fetchCommentsFromMongo(file) {
+    try {
+        // 假设有一个API接口用于获取评论，传入file信息
+        // 你可以根据实际API调整URL和参数
+        let url = `${window.API_URL}/mongodb/?cname=comments`;
+        if (file) {
+            // 兼容不同的文件ID字段
+            const fileId = file.fileId || file.id || file.path || file.key;
+            if (fileId) {
+                url += `&fileId=${fileId}`;
+            }
+        }
+        const response = await getData(url, { method: 'GET' });
+        console.log('[CommentPanel] 获取评论数据:', response.data.list);
+        // 期望返回数组，如果response是数组则直接返回，否则返回空数组
+        return Array.isArray(response.data.list) ? response.data.list : [];
+    } catch (err) {
+        console.error('[CommentPanel] 获取评论数据失败:', err);
+        return [];
+    }
+}
+
 // 创建组件定义
 const createCommentPanel = async () => {
     const template = await loadTemplate();
-    
+
     return {
         name: 'CommentPanel',
         props: {
             comments: {
                 type: Array,
+                // 默认值通过异步获取mongo评论
                 default: () => []
             },
             file: {
@@ -65,52 +89,101 @@ const createCommentPanel = async () => {
                 replyingTo: null,
                 replyContent: '',
                 commenters: [
-                    { id: 'user1', name: '张三', avatar: null },
-                    { id: 'user2', name: '李四', avatar: null },
-                    { id: 'user3', name: '王五', avatar: null },
-                    { id: 'user4', name: '赵六', avatar: null },
-                    { id: 'user5', name: '孙七', avatar: null }
+                    { id: 'user1', name: '张三', avatar: null, forSystem: '' },
+                    { id: 'user2', name: '李四', avatar: null, forSystem: '' },
+                    { id: 'user3', name: '王五', avatar: null, forSystem: '' },
+                    { id: 'user4', name: '赵六', avatar: null, forSystem: '' },
+                    { id: 'user5', name: '孙七', avatar: null, forSystem: '' }
                 ], // 评论者列表 - 设置默认值
                 selectedCommenterIds: ['user1'], // 选中的评论者ID数组（多选）- 默认选中第一个
                 commentersLoading: false, // 评论者数据加载状态
-                commentersError: '' // 评论者数据加载错误
+                commentersError: '', // 评论者数据加载错误
+                commentsLoading: false, // 新增：评论加载状态
+                commentsError: '',     // 新增：评论加载错误
+                mongoComments: []      // 新增：实际评论数据
             };
         },
-        mounted() {
+        watch: {
+            // 监听文件变化，重新加载评论
+            file: {
+                handler: async function(newFile, oldFile) {
+                    console.log('[CommentPanel] 文件变化:', newFile, oldFile);
+                    if (newFile && newFile !== oldFile) {
+                        console.log('[CommentPanel] 文件已变化，重新加载评论');
+                        await this.loadMongoComments();
+                    }
+                },
+                immediate: true
+            },
+            // 监听评论数据变化
+            comments: {
+                handler: function(newComments, oldComments) {
+                    console.log('[CommentPanel] 评论数据变化:', newComments, oldComments);
+                },
+                deep: true
+            }
+        },
+        async mounted() {
             console.log('[CommentPanel] 组件已挂载');
             console.log('[CommentPanel] 初始评论数据:', this.comments);
             console.log('[CommentPanel] 初始loading状态:', this.loading);
             console.log('[CommentPanel] 初始error状态:', this.error);
-            
+            console.log('[CommentPanel] 初始文件数据:', this.file);
+
             // 加载评论者数据
             this.loadCommenters();
-            
+
+            // 初始加载mongo评论数据
+            await this.loadMongoComments();
+
             // 确保评论者数据在组件挂载后立即加载
             this.$nextTick(() => {
                 console.log('[CommentPanel] 组件挂载完成，评论者数据:', this.commenters);
                 console.log('[CommentPanel] 选中的评论者:', this.selectedCommenterIds);
+                console.log('[CommentPanel] 最终渲染评论数据:', this.renderComments);
             });
+
+            // 监听获取评论者信息的事件
+            this.handleGetSelectedCommenters = (event) => {
+                console.log('[CommentPanel] 收到获取评论者信息事件');
+                const callback = event.detail?.callback;
+                if (callback && typeof callback === 'function') {
+                    const selectedCommenters = this.commenters.filter(c => this.selectedCommenterIds.includes(c.id));
+                    console.log('[CommentPanel] 返回选中的评论者:', selectedCommenters);
+                    callback(selectedCommenters);
+                }
+            };
+            window.addEventListener('getSelectedCommenters', this.handleGetSelectedCommenters);
         },
         updated() {
             console.log('[CommentPanel] 组件已更新');
-            console.log('[CommentPanel] 更新后评论数据:', this.comments);
+            console.log('[CommentPanel] 更新后mongoComments数量:', this.mongoComments ? this.mongoComments.length : 0);
+            console.log('[CommentPanel] 更新后props comments数量:', this.comments ? this.comments.length : 0);
+            console.log('[CommentPanel] 更新后renderComments数量:', this.renderComments ? this.renderComments.length : 0);
             console.log('[CommentPanel] 更新后loading状态:', this.loading);
             console.log('[CommentPanel] 更新后error状态:', this.error);
             console.log('[CommentPanel] 更新后评论者数据:', this.commenters);
             console.log('[CommentPanel] 更新后评论者数量:', this.commenters.length);
             console.log('[CommentPanel] 更新后选中的评论者:', this.selectedCommenterIds);
         },
+
+        beforeUnmount() {
+            // 清理事件监听器
+            window.removeEventListener('getSelectedCommenters', this.handleGetSelectedCommenters);
+        },
         computed: {
             // 评论统计
             commentStats() {
                 return safeExecute(() => {
-                    console.log('[CommentPanel] 接收到的评论数据:', this.comments);
-                    const total = this.comments.length;
-                    const resolved = this.comments.filter(c => c.status === 'resolved').length;
-                    const pending = this.comments.filter(c => c.status === 'pending' || !c.status).length;
-                    const withReplies = this.comments.filter(c => c.replies && c.replies.length > 0).length;
-                    const totalReplies = this.comments.reduce((sum, c) => sum + (c.replies ? c.replies.length : 0), 0);
-                    
+                    // 使用renderComments计算属性
+                    const commentsArr = this.renderComments;
+                    console.log('[CommentPanel] 接收到的评论数据:', commentsArr);
+                    const total = commentsArr.length;
+                    const resolved = commentsArr.filter(c => c.status === 'resolved').length;
+                    const pending = commentsArr.filter(c => c.status === 'pending' || !c.status).length;
+                    const withReplies = commentsArr.filter(c => c.replies && c.replies.length > 0).length;
+                    const totalReplies = commentsArr.reduce((sum, c) => sum + (c.replies ? c.replies.length : 0), 0);
+
                     console.log('[CommentPanel] 评论统计:', { total, resolved, pending, withReplies, totalReplies });
                     return {
                         total,
@@ -121,14 +194,14 @@ const createCommentPanel = async () => {
                     };
                 }, '评论统计计算');
             },
-            
+
             // 评论者统计
             commenterStats() {
                 return safeExecute(() => {
                     const total = this.commenters.length;
                     const selected = this.selectedCommenterIds.length;
                     const available = this.commenters.filter(c => !c.disabled).length;
-                    
+
                     console.log('[CommentPanel] 评论者统计:', { total, selected, available });
                     return {
                         total,
@@ -136,44 +209,59 @@ const createCommentPanel = async () => {
                         available
                     };
                 }, '评论者统计计算');
+            },
+
+            // 新增：实际用于渲染的评论列表
+            renderComments() {
+                // 优先用mongoComments，如果mongoComments有数据则使用，否则使用props中的comments
+                const commentsToRender = (this.mongoComments && this.mongoComments.length > 0) ? this.mongoComments : this.comments;
+                console.log('[CommentPanel] renderComments - mongoComments数量:', this.mongoComments ? this.mongoComments.length : 0);
+                console.log('[CommentPanel] renderComments - props comments数量:', this.comments ? this.comments.length : 0);
+                console.log('[CommentPanel] renderComments - 最终渲染评论数量:', commentsToRender ? commentsToRender.length : 0);
+                return commentsToRender || [];
             }
         },
         methods: {
+            // 加载mongo评论数据
+            async loadMongoComments() {
+                return safeExecute(async () => {
+                    console.log('[CommentPanel] 开始加载mongo评论数据...');
+                    this.commentsLoading = true;
+                    this.commentsError = '';
+
+                    try {
+                        const mongoComments = await fetchCommentsFromMongo(this.file);
+                        
+                        // 确保评论数据有正确的key属性
+                        this.mongoComments = mongoComments
+                        
+                        console.log('[CommentPanel] 从mongo加载的评论:', this.mongoComments);
+                    } catch (err) {
+                        this.commentsError = '加载评论失败';
+                        console.error('[CommentPanel] 评论加载失败:', err);
+                    } finally {
+                        this.commentsLoading = false;
+                    }
+                }, 'mongo评论数据加载');
+            },
+
             // 加载评论者数据
             async loadCommenters() {
                 return safeExecute(async () => {
                     console.log('[CommentPanel] 开始加载评论者数据...');
                     this.commentersLoading = true;
                     this.commentersError = '';
-                    
+
                     try {
                         // 调用接口获取评论者数据
                         console.log('[CommentPanel] 尝试从接口获取评论者数据...');
-                        const response = await getData('/views/aicr/mock/commenters.json');
-                        console.log('[CommentPanel] 接口响应:', response);
-                        
-                        if (Array.isArray(response) && response.length > 0) {
-                            this.commenters = response;
-                            console.log('[CommentPanel] 成功加载评论者数据:', this.commenters);
-                            console.log('[CommentPanel] 评论者数量:', this.commenters.length);
-                            console.log('[CommentPanel] 评论者详情:', this.commenters.map(c => ({ id: c.id, name: c.name })));
-                            
-                            // 如果有评论者数据，默认选择第一个
-                            if (this.commenters.length > 0 && !this.selectedCommenterIds.length) {
-                                console.log('[CommentPanel] 默认选择第一个评论者:', this.commenters[0].name);
-                                this.selectCommenters([this.commenters[0].id]);
-                            }
-                        } else {
-                            // 如果没有接口数据，保持默认评论者数据
-                            console.log('[CommentPanel] 接口数据无效，保持默认数据');
-                            console.log('[CommentPanel] 当前评论者数据:', this.commenters);
-                            console.log('[CommentPanel] 当前评论者数量:', this.commenters.length);
-                            console.log('[CommentPanel] 当前评论者详情:', this.commenters.map(c => ({ id: c.id, name: c.name })));
-                        }
+                        const response = await getData(`${window.DATA_URL}/prompts/aicr/commenter4crad.txt`);
+                        this.commenters[0].forSystem = response;
+
                     } catch (error) {
                         console.error('[CommentPanel] 加载评论者数据失败:', error);
                         this.commentersError = '加载评论者数据失败';
-                        
+
                         // 保持默认数据，不重新设置
                         console.log('[CommentPanel] 错误处理中保持默认数据');
                         console.log('[CommentPanel] 当前评论者数据:', this.commenters);
@@ -187,22 +275,22 @@ const createCommentPanel = async () => {
                     }
                 }, '评论者数据加载');
             },
-            
+
             // 选择评论者
             selectCommenters(commenterIds) {
                 return safeExecute(() => {
                     console.log('[CommentPanel] 选择评论者:', commenterIds);
-                    
+
                     this.selectedCommenterIds = commenterIds;
                     this.$emit('commenter-select', this.commenters.filter(c => commenterIds.includes(c.id)));
                 }, '评论者选择处理');
             },
-            
+
             // 切换单个评论者选择状态
             toggleCommenter(commenter) {
                 return safeExecute(() => {
                     console.log('[CommentPanel] 切换评论者选择:', commenter);
-                    
+
                     const index = this.selectedCommenterIds.indexOf(commenter.id);
                     if (index > -1) {
                         // 如果已选中，则取消选择
@@ -211,11 +299,11 @@ const createCommentPanel = async () => {
                         // 如果未选中，则添加到选择列表
                         this.selectedCommenterIds.push(commenter.id);
                     }
-                    
+
                     this.$emit('commenter-select', this.commenters.filter(c => this.selectedCommenterIds.includes(c.id)));
                 }, '评论者切换选择处理');
             },
-            
+
             // 获取评论者头像样式
             getCommenterAvatar(commenter) {
                 return safeExecute(() => {
@@ -227,7 +315,7 @@ const createCommentPanel = async () => {
                             text: ''
                         };
                     }
-                    
+
                     // 优化的头像生成逻辑 - 使用主题色系
                     const colorPalettes = [
                         // 量子蓝紫系
@@ -242,10 +330,10 @@ const createCommentPanel = async () => {
                         { bg: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', text: '#ffffff' },
                         { bg: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)', text: '#ffffff' }
                     ];
-                    
+
                     const index = commenter.name.charCodeAt(0) % colorPalettes.length;
                     const palette = colorPalettes[index];
-                    
+
                     return {
                         background: palette.bg,
                         color: palette.text,
@@ -254,37 +342,37 @@ const createCommentPanel = async () => {
                     };
                 }, '评论者头像生成');
             },
-            
+
             // 提交评论
             submitComment() {
                 return safeExecute(() => {
                     if (!this.newComment.trim()) {
                         throw createError('评论内容不能为空', ErrorTypes.VALIDATION, '评论提交');
                     }
-                    
+
                     // 如果有选中的评论者，添加fromSystem字段
                     const commentData = {
                         content: this.newComment.trim()
                     };
-                    
+
                     if (this.selectedCommenterIds.length > 0) {
                         const selectedCommenters = this.commenters.filter(c => this.selectedCommenterIds.includes(c.id));
                         if (selectedCommenters.length > 0) {
                             commentData.fromSystem = selectedCommenters;
                         }
                     }
-                    
+
                     this.$emit('comment-submit', commentData);
                 }, '评论提交处理');
             },
-            
+
             // 处理评论输入
             handleCommentInput(event) {
                 return safeExecute(() => {
                     this.$emit('comment-input', event);
                 }, '评论输入处理');
             },
-            
+
             // 删除评论
             deleteComment(commentId) {
                 return safeExecute(() => {
@@ -293,21 +381,21 @@ const createCommentPanel = async () => {
                     }
                 }, '评论删除处理');
             },
-            
+
             // 解决评论
             resolveComment(commentId) {
                 return safeExecute(() => {
                     this.$emit('comment-resolve', commentId);
                 }, '评论解决处理');
             },
-            
+
             // 重新打开评论
             reopenComment(commentId) {
                 return safeExecute(() => {
                     this.$emit('comment-reopen', commentId);
                 }, '评论重开处理');
             },
-            
+
             // 取消回复
             cancelReply() {
                 return safeExecute(() => {
@@ -315,20 +403,20 @@ const createCommentPanel = async () => {
                     this.replyContent = '';
                 }, '取消回复处理');
             },
-            
+
             // 格式化时间
             formatTime(timestamp) {
                 return safeExecute(() => {
                     if (!timestamp) return '';
-                    
+
                     const date = new Date(timestamp);
                     const now = new Date();
                     const diff = now - date;
-                    
+
                     if (diff < 60000) return '刚刚';
                     if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
                     if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
-                    
+
                     return date.toLocaleDateString('zh-CN', {
                         month: '2-digit',
                         day: '2-digit',
@@ -337,7 +425,7 @@ const createCommentPanel = async () => {
                     });
                 }, '时间格式化');
             },
-            
+
             // 获取评论作者头像
             getAuthorAvatar(author) {
                 return safeExecute(() => {
@@ -351,7 +439,7 @@ const createCommentPanel = async () => {
                     };
                 }, '头像生成');
             },
-            
+
             // 获取评论类型标签
             getCommentTypeLabel(type) {
                 const typeLabels = {
@@ -364,7 +452,7 @@ const createCommentPanel = async () => {
                 };
                 return typeLabels[type] || type;
             },
-            
+
             // 获取评论状态标签
             getCommentStatusLabel(status) {
                 const statusLabels = {
@@ -375,13 +463,13 @@ const createCommentPanel = async () => {
                 };
                 return statusLabels[status] || status;
             },
-            
+
             // 获取评论状态CSS类
             getCommentStatusClass(status) {
                 if (!status || status === 'pending') return 'status-pending';
                 return `status-${status}`;
             },
-            
+
             // 获取文件名
             getFileName(filePath) {
                 return safeExecute(() => {
@@ -413,16 +501,15 @@ const createCommentPanel = async () => {
     try {
         const CommentPanel = await createCommentPanel();
         window.CommentPanel = CommentPanel;
-        
+
         // 触发自定义事件，通知组件已加载完成
         window.dispatchEvent(new CustomEvent('CommentPanelLoaded', { detail: CommentPanel }));
-        
+
         console.log('[CommentPanel] 代码评审评论面板组件初始化完成');
         console.log('[CommentPanel] 组件对象:', CommentPanel);
     } catch (error) {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
-
 
 

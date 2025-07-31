@@ -171,7 +171,7 @@ export const createStore = () => {
         if (!commentData || !commentData.content) return;
         
         const newCommentObj = {
-            id: Date.now(),
+            key: Date.now(),
             fileId: commentData.fileId,
             line: commentData.line || 0,
             author: commentData.author || 'liangliang',
@@ -241,6 +241,7 @@ export const createStore = () => {
         clearError
     };
 };
+
 
 
 

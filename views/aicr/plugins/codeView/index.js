@@ -1,8 +1,11 @@
 // 代码查看组件 - 负责代码内容的展示和高亮
 // 作者：liangliang
 
-import { safeExecute, createError, ErrorTypes } from '/utils/error.js';
+import { safeExecute } from '/utils/error.js';
 import { loadCSSFiles } from '/utils/baseView.js';
+import { showGlobalLoading, hideGlobalLoading } from '/utils/loading.js';
+
+import { postData } from '/apis/index.js';
 
 // 自动加载相关的CSS文件
 loadCSSFiles([
@@ -266,6 +269,123 @@ const createCodeView = async () => {
                         console.log('完整选中对象:', selectedObjectInfo);
                         console.log('==========================================');
                         
+                        // 打印已选中的评论者信息
+                        console.log('=== 添加评论按钮点击 - 已选中的评论者信息 ===');
+                        try {
+                            // 方法1: 通过全局变量获取评论面板实例
+                            let commentPanelInstance = null;
+                            
+                            // 尝试从全局Vue应用获取
+                            if (window.aicrApp && window.aicrApp.$refs) {
+                                const commentPanelRef = window.aicrApp.$refs['comment-panel'];
+                                if (commentPanelRef) {
+                                    commentPanelInstance = commentPanelRef;
+                                    console.log('通过全局应用获取到评论面板实例');
+                                }
+                            }
+                            
+                            // 方法2: 通过DOM查询获取
+                            if (!commentPanelInstance) {
+                                const commentPanelElement = document.querySelector('.comment-panel-container');
+                                if (commentPanelElement && commentPanelElement.__vueParentComponent) {
+                                    commentPanelInstance = commentPanelElement.__vueParentComponent.component;
+                                    console.log('通过DOM查询获取到评论面板实例');
+                                }
+                            }
+                            
+                            // 方法3: 通过store获取
+                            if (!commentPanelInstance && window.aicrStore) {
+                                console.log('尝试通过store获取评论者信息');
+                                // 这里可以尝试从store获取评论者信息
+                            }
+                            
+                            if (commentPanelInstance) {
+                                console.log('评论面板实例:', commentPanelInstance);
+                                console.log('实例属性:', Object.keys(commentPanelInstance));
+                                
+                                // 尝试不同的属性名获取选中状态
+                                const selectedIds = commentPanelInstance.selectedCommenterIds || 
+                                                  commentPanelInstance.data?.selectedCommenterIds ||
+                                                  [];
+                                const commenters = commentPanelInstance.commenters || 
+                                                 commentPanelInstance.data?.commenters ||
+                                                 [];
+                                
+                                console.log('选中的评论者ID:', selectedIds);
+                                console.log('评论者列表:', commenters);
+                                
+                                const selectedCommenters = commenters.filter(c => selectedIds.includes(c.id));
+                                console.log('选中的评论者数量:', selectedCommenters.length);
+                                console.log('选中的评论者详情:', selectedCommenters);
+                                
+                                if (selectedCommenters.length > 0) {
+                                    selectedCommenters.forEach((commenter, index) => {
+                                        console.log(`评论者 ${index + 1}:`, {
+                                            id: commenter.id,
+                                            name: commenter.name,
+                                            avatar: commenter.avatar,
+                                            forSystem: commenter.forSystem
+                                        });
+                                    });
+                                } else {
+                                    console.log('没有选中任何评论者');
+                                }
+                            } else {
+                                console.log('无法找到评论面板组件实例');
+                                console.log('可用的全局变量:', Object.keys(window).filter(key => key.includes('aicr')));
+                            }
+                        } catch (error) {
+                            console.error('获取评论者信息时出错:', error);
+                            console.error('错误详情:', error.message);
+                            console.error('错误堆栈:', error.stack);
+                        }
+                        console.log('==========================================');
+                        
+                        // 触发自定义事件获取评论者信息
+                        window.dispatchEvent(new CustomEvent('getSelectedCommenters', {
+                            detail: {
+                                callback: (commenters) => {
+                                    showGlobalLoading('正在生成任务，请稍候...');
+                                    console.log('=== 通过事件获取的评论者信息 ===');
+                                    if (commenters && commenters.length > 0) {
+                                        console.log('选中的评论者数量:', commenters.length);
+                                        commenters.forEach(async (commenter, index) => {
+                                            console.log(`评论者 ${index + 1}:`, {
+                                                id: commenter.id,
+                                                name: commenter.name,
+                                                avatar: commenter.avatar,
+                                                forSystem: commenter.forSystem
+                                            });
+                                            if (commenter.forSystem) {
+                                                console.log('评论者系统提示:', commenter.forSystem);
+                                                
+                                                // 发送消息请求到API
+                                                const response = await postData(`${window.API_URL}/prompt`, {
+                                                    fromSystem: commenter.forSystem,
+                                                    fromUser: `fileId: ${selectedObjectInfo.fileInfo.currentFile.fileId} \n` + selectedObjectInfo.text
+                                                });
+
+                                                console.log('[API响应] 收到服务器响应:', response.data);
+
+                                                // 等待所有 postData 完成后再跳转页面
+                                                if (Array.isArray(response.data) && response.data.length > 0) {
+                                                    await Promise.all(
+                                                        response.data.map(item =>
+                                                            postData(`${window.API_URL}/mongodb/?cname=comments`, { ...item })
+                                                        )
+                                                    );
+                                                }
+                                            }
+                                        });
+                                    } else {
+                                        console.log('没有选中任何评论者');
+                                    }
+                                    hideGlobalLoading();
+                                    console.log('==========================================');
+                                }
+                            }
+                        }));
+                        
                         // 清除按钮和选择
                         this.clearSelectionAndButton();
                     }, { passive: false });
@@ -363,6 +483,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 
