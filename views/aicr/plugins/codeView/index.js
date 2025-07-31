@@ -91,29 +91,68 @@ const createCodeView = async () => {
                     if (!codeContent) return;
                     
                     // 移除之前的事件监听器
-                    codeContent.removeEventListener('mouseup', this.handleSelection, { passive: true });
-                    codeContent.removeEventListener('touchend', this.handleSelection, { passive: true });
+                    codeContent.removeEventListener('mouseup', this.handleSelection, { passive: false });
+                    codeContent.removeEventListener('touchend', this.handleSelection, { passive: false });
+                    codeContent.removeEventListener('mousedown', this.handleMouseDown, { passive: false });
                     
                     // 添加新的事件监听器
-                    codeContent.addEventListener('mouseup', this.handleSelection, { passive: true });
-                    codeContent.addEventListener('touchend', this.handleSelection, { passive: true });
+                    codeContent.addEventListener('mouseup', this.handleSelection, { passive: false });
+                    codeContent.addEventListener('touchend', this.handleSelection, { passive: false });
+                    codeContent.addEventListener('mousedown', this.handleMouseDown, { passive: false });
                 }, '划词事件绑定');
+            },
+            
+            // 处理鼠标按下事件
+            handleMouseDown(event) {
+                return safeExecute(() => {
+                    // 如果点击的是评论按钮或其容器，不处理
+                    if (event.target.closest('#comment-action-container')) {
+                        return;
+                    }
+                    
+                    // 清除之前的选择和按钮
+                    this.clearSelectionAndButton();
+                }, '鼠标按下处理');
             },
             
             // 处理文本选择
             handleSelection(event) {
                 return safeExecute(() => {
-                    const selection = window.getSelection();
-                    if (!selection || selection.rangeCount === 0) return;
-                    
-                    const range = selection.getRangeAt(0);
-                    const selectedText = range.toString().trim();
-                    
-                    if (selectedText.length > 0) {
-                        // 创建评论按钮
-                        this.createCommentButton(range, selectedText);
+                    // 如果点击的是评论按钮或其容器，不处理选择
+                    if (event.target.closest('#comment-action-container')) {
+                        return;
                     }
+                    
+                    // 延迟处理，确保选择完成
+                    setTimeout(() => {
+                        const selection = window.getSelection();
+                        if (!selection || selection.rangeCount === 0) return;
+                        
+                        const range = selection.getRangeAt(0);
+                        const selectedText = range.toString().trim();
+                        
+                        if (selectedText.length > 0) {
+                            // 创建评论按钮
+                            this.createCommentButton(range, selectedText);
+                        }
+                    }, 10);
                 }, '文本选择处理');
+            },
+            
+            // 清除选择和按钮
+            clearSelectionAndButton() {
+                return safeExecute(() => {
+                    const container = document.querySelector('#comment-action-container');
+                    if (container) {
+                        container.innerHTML = '';
+                        container.style.display = 'none';
+                    }
+                    
+                    // 清除文本选择
+                    if (window.getSelection) {
+                        window.getSelection().removeAllRanges();
+                    }
+                }, '清除选择和按钮');
             },
             
             // 创建评论按钮
@@ -132,38 +171,22 @@ const createCodeView = async () => {
                     const button = document.createElement('button');
                     button.className = 'comment-action-btn';
                     button.textContent = '添加评论';
-                    button.type = 'button'; // 明确指定按钮类型
-                    
-                    // 添加内联事件处理器作为备用
-                    const selectedTextForButton = selectedText; // 创建一个局部变量
-                    button.onclick = function(e) {
-                        console.log('[CodeView] 内联onclick事件触发');
-                        e.preventDefault();
-                        e.stopPropagation();
-                    };
+                    button.type = 'button';
                     
                     console.log('[CodeView] 评论按钮已创建');
                     
-                    // 添加调试信息
-                    console.log('[CodeView] 按钮元素:', button);
-                    console.log('[CodeView] 按钮样式:', window.getComputedStyle(button));
-                    
-                    // 阻止事件冒泡
+                    // 阻止按钮的默认行为和冒泡
                     button.addEventListener('mousedown', e => {
                         console.log('[CodeView] 按钮mousedown事件触发');
                         e.stopPropagation();
                         e.preventDefault();
                     }, { passive: false });
                     
-                    // 添加点击事件处理 - 使用更直接的方式
-                    const handleButtonClick = (e) => {
+                    button.addEventListener('click', e => {
                         console.log('[CodeView] 按钮点击事件被触发');
                         e.preventDefault();
                         e.stopPropagation();
                         e.stopImmediatePropagation();
-                        
-                        // 简单测试：确保事件处理逻辑能够执行
-                        console.log('[CodeView] 事件处理开始');
                         
                         // 获取选中的文本和范围信息
                         const currentSelectedText = range.toString().trim();
@@ -227,7 +250,6 @@ const createCodeView = async () => {
                             },
                             timestamp: new Date().toISOString(),
                             fileInfo: {
-                                // 这里可以添加当前文件信息
                                 currentFile: this.file || null
                             }
                         };
@@ -244,16 +266,9 @@ const createCodeView = async () => {
                         console.log('完整选中对象:', selectedObjectInfo);
                         console.log('==========================================');
                         
-                        // 关闭弹窗
-                        // container.innerHTML = '';
-                        // container.style.display = 'none';
-                        
-                        // 移除事件监听器
-                        button.removeEventListener('click', handleButtonClick);
-                    };
-                    
-                    // 绑定点击事件
-                    button.addEventListener('click', handleButtonClick, { passive: false });
+                        // 清除按钮和选择
+                        this.clearSelectionAndButton();
+                    }, { passive: false });
 
                     // 定位按钮
                     const rect = range.getBoundingClientRect();
@@ -264,26 +279,11 @@ const createCodeView = async () => {
                     container.style.zIndex = 1000;
 
                     container.appendChild(button);
-                    
-                    // 验证按钮是否正确添加到DOM
-                    console.log('[CodeView] 按钮已添加到容器:', container.contains(button));
-                    console.log('[CodeView] 容器内容:', container.innerHTML);
-                    
-                    // 测试按钮是否可以点击
-                    console.log('[CodeView] 按钮的pointer-events:', window.getComputedStyle(button).pointerEvents);
-                    console.log('[CodeView] 按钮的z-index:', window.getComputedStyle(button).zIndex);
-                    
-                    // 添加一个简单的测试点击
-                    setTimeout(() => {
-                        console.log('[CodeView] 尝试模拟点击按钮');
-                        button.click();
-                    }, 100);
 
                     // 点击 codeContent 以外区域时关闭弹窗
                     const handleClickOutside = (event) => {
                         if (!container.contains(event.target)) {
-                            container.innerHTML = '';
-                            container.style.display = 'none';
+                            this.clearSelectionAndButton();
                             document.removeEventListener('mousedown', handleClickOutside);
                         }
                     };
@@ -332,7 +332,19 @@ const createCodeView = async () => {
             this.bindSelectionEvent();
         },
         beforeUnmount() {
+            // 清理高亮事件监听器
             window.removeEventListener('highlightCodeLines', this.handleHighlightLines, { passive: true });
+            
+            // 清理代码内容的事件监听器
+            const codeContent = this.$refs.codeContent;
+            if (codeContent) {
+                codeContent.removeEventListener('mouseup', this.handleSelection, { passive: false });
+                codeContent.removeEventListener('touchend', this.handleSelection, { passive: false });
+                codeContent.removeEventListener('mousedown', this.handleMouseDown, { passive: false });
+            }
+            
+            // 清理评论按钮容器
+            this.clearSelectionAndButton();
         }
     };
 };
@@ -351,6 +363,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

@@ -246,6 +246,7 @@
     border: 1px solid #ccc !important;
     border-radius: 6px !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
     backdrop-filter: blur(8px) !important;
     padding: 4px !important;
     pointer-events: auto !important;
@@ -253,6 +254,9 @@
     -webkit-user-select: none !important;
     /* 确保容器可以接收点击事件 */
     touch-action: manipulation !important;
+    /* 防止文本选择 */
+    -webkit-touch-callout: none !important;
+    -webkit-tap-highlight-color: transparent !important;
 }
 
 .comment-action-btn {
@@ -283,17 +287,38 @@
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
+    /* 确保按钮在容器中正确显示 */
+    position: relative !important;
+    width: auto !important;
+    height: auto !important;
 }
 
 .comment-action-btn:hover {
-    background: var(--accent, #06b6d4);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    background: var(--accent, #06b6d4) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
 }
 
 .comment-action-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
+}
+
+/* 确保代码内容区域的选择行为正常 */
+.code-content {
+    -webkit-user-select: text !important;
+    user-select: text !important;
+}
+
+.code-line {
+    -webkit-user-select: text !important;
+    user-select: text !important;
+}
+
+.line-content {
+    -webkit-user-select: text !important;
+    user-select: text !important;
 } 
+
 
 
