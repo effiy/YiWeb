@@ -19,6 +19,8 @@ export const useMethods = (store) => {
         toggleFolder,
         addComment,
         setNewComment,
+        toggleSidebar,
+        toggleComments
     } = store;
 
     /**
@@ -81,6 +83,21 @@ export const useMethods = (store) => {
                 ...commentData,
                 fileId: selectedFileId.value
             };
+
+            // 处理fromSystem字段
+            if (commentData.fromSystem) {
+                console.log('[评论提交] 评论者信息:', commentData.fromSystem);
+                if (Array.isArray(commentData.fromSystem)) {
+                    console.log('[评论提交] 多个评论者:', commentData.fromSystem.length);
+                    commentData.fromSystem.forEach(commenter => {
+                        console.log('[评论提交] 评论者:', commenter.name, commenter.id);
+                    });
+                } else {
+                    console.log('[评论提交] 单个评论者:', commentData.fromSystem.name);
+                }
+                // 这里可以调用接口将评论者信息传递给后端
+                updateCommentFromSystem(comment);
+            }
 
             addComment(comment);
             setNewComment('');
@@ -177,6 +194,72 @@ export const useMethods = (store) => {
         }, '收起所有文件夹');
     };
 
+    /**
+     * 处理评论者选择
+     * @param {Array} commenters - 选中的评论者数组
+     */
+    const handleCommenterSelect = (commenters) => {
+        return safeExecute(() => {
+            console.log('[评论者选择] 选中的评论者:', commenters);
+            
+            if (commenters && commenters.length > 0) {
+                console.log('[评论者选择] 选中的评论者数量:', commenters.length);
+                commenters.forEach(commenter => {
+                    console.log('[评论者选择] 评论者:', commenter.name, commenter.id);
+                });
+            } else {
+                console.log('[评论者选择] 没有选中任何评论者');
+            }
+        }, '评论者选择处理');
+    };
+
+    /**
+     * 更新评论的fromSystem字段
+     * @param {Object} commentData - 评论数据
+     */
+    const updateCommentFromSystem = async (commentData) => {
+        return safeExecute(async () => {
+            try {
+                // 这里可以调用接口更新评论的fromSystem字段
+                // 示例接口调用：
+                // const response = await fetch('/api/comments/update-from-system', {
+                //     method: 'POST',
+                //     headers: {
+                //         'Content-Type': 'application/json'
+                //     },
+                //     body: JSON.stringify({
+                //         commentId: commentData.id,
+                //         fromSystem: commentData.fromSystem
+                //     })
+                // });
+                
+                console.log('[评论者选择] 评论fromSystem字段更新成功');
+            } catch (error) {
+                console.error('[评论者选择] 评论fromSystem字段更新失败:', error);
+            }
+        }, '更新评论fromSystem字段');
+    };
+
+    /**
+     * 切换侧边栏
+     */
+    const handleToggleSidebar = () => {
+        return safeExecute(() => {
+            toggleSidebar();
+            console.log('[侧边栏] 切换侧边栏状态');
+        }, '侧边栏切换');
+    };
+
+    /**
+     * 切换评论区
+     */
+    const handleToggleComments = () => {
+        return safeExecute(() => {
+            toggleComments();
+            console.log('[评论区] 切换评论区状态');
+        }, '评论区切换');
+    };
+
     return {
         openLink,
         handleFileSelect,
@@ -186,7 +269,12 @@ export const useMethods = (store) => {
         handleCommentKeydown,
         clearAllComments,
         expandAllFolders,
-        collapseAllFolders
+        collapseAllFolders,
+        handleCommenterSelect,
+        updateCommentFromSystem,
+        toggleSidebar: handleToggleSidebar,
+        toggleComments: handleToggleComments
     };
 };
+
 

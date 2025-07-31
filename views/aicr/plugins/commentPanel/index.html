@@ -17,6 +17,49 @@
 
     <!-- 评论内容 -->
     <div v-else class="comment-panel-content">
+        <!-- 评论者头像选择区域 -->
+        <div class="commenter-avatars">
+            <div class="avatars-header">
+                <span class="avatars-title">选择评论者</span>
+                <span class="avatars-subtitle">点击头像选择评论者（默认选中第一个，支持多选）</span>
+                <span class="avatars-count">共 {{ commenterStats.total }} 位评论者，已选择 {{ commenterStats.selected }} 位</span>
+            </div>
+            <div v-if="commentersLoading" class="avatars-loading">
+                <div class="loading-spinner"></div>
+                <span>加载评论者中...</span>
+            </div>
+            <div v-else-if="commentersError" class="avatars-error">
+                <span>{{ commentersError }}</span>
+            </div>
+            <div v-else-if="commenters.length > 0" class="avatars-container">
+                <div 
+                    v-for="(commenter, index) in commenters" 
+                    :key="commenter.id"
+                    class="commenter-avatar"
+                    :class="{ 
+                        'selected': selectedCommenterIds.includes(commenter.id),
+                        'multi-selected': selectedCommenterIds.length > 1 && selectedCommenterIds.includes(commenter.id)
+                    }"
+                    @click="toggleCommenter(commenter)"
+                    @keydown.enter="toggleCommenter(commenter)"
+                    @keydown.space="toggleCommenter(commenter)"
+                    :title="commenter.name"
+                    :aria-label="`选择评论者 ${commenter.name}`"
+                    :aria-pressed="selectedCommenterIds.includes(commenter.id)"
+                    tabindex="0"
+                    role="button"
+                >
+                    <div class="avatar-image" :style="getCommenterAvatar(commenter)">
+                        {{ getCommenterAvatar(commenter).text }}
+                    </div>
+                    <div class="avatar-name">{{ commenter.name }}</div>
+                </div>
+            </div>
+            <div v-else class="avatars-empty">
+                <span>暂无评论者</span>
+            </div>
+        </div>
+
         <!-- 评论统计 -->
         <div v-if="comments.length > 0" class="comment-stats">
             <div class="stats-item stats-item-total">
@@ -144,5 +187,6 @@
         </div>
     </div>
 </aside>
+
 
 

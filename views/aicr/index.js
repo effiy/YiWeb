@@ -151,34 +151,7 @@ import { createBaseView } from '/utils/baseView.js';
                 }
             },
             methods: {
-                // 处理文件选择
-                handleFileSelect(fileId) {
-                    console.log('[主应用] 文件选择:', fileId);
-                    store.setSelectedFileId(fileId);
-                },
-                // 处理文件夹切换
-                handleFolderToggle(folderId) {
-                    console.log('[主应用] 文件夹切换:', folderId);
-                    store.toggleFolder(folderId);
-                },
-                // 处理评论提交
-                handleCommentSubmit(commentData) {
-                    console.log('[主应用] 评论提交:', commentData);
-                    // 这里可以添加评论提交逻辑
-                },
-                // 处理评论输入
-                handleCommentInput(event) {
-                    console.log('[主应用] 评论输入:', event.target.value);
-                    store.setNewComment(event.target.value);
-                },
-                // 切换侧边栏
-                toggleSidebar() {
-                    store.toggleSidebar();
-                },
-                // 切换评论区
-                toggleComments() {
-                    store.toggleComments();
-                }
+                // 这里可以添加其他特定于主视图的方法
             }
         });
         window.aicrApp = app;
@@ -194,6 +167,7 @@ import { createBaseView } from '/utils/baseView.js';
         console.error('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
 
 
 

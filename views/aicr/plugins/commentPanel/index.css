@@ -11,6 +11,358 @@
     border: none !important;
 }
 
+/* 评论者头像选择区域 */
+.commenter-avatars {
+    margin-bottom: 12px;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(30,41,59,0.95) 0%, rgba(51,65,85,0.9) 50%, rgba(71,85,105,0.85) 100%);
+    border-radius: 10px;
+    border: 1px solid rgba(79,70,229,0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 2px 8px rgba(79,70,229,0.1);
+    position: relative;
+    overflow: visible;
+    min-height: 140px;
+    width: 100%;
+}
+
+.commenter-avatars::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, var(--primary, #4f46e5) 25%, var(--primary-light, #6366f1) 50%, var(--scientist-purple, #9333ea) 75%, transparent 100%);
+    opacity: 0.8;
+}
+
+.commenter-avatars::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(79,70,229,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(108,99,255,0.05) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.avatars-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-bottom: 8px;
+}
+
+.avatars-title {
+    font-size: 12px;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--primary, #4f46e5) 0%, var(--primary-light, #6366f1) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.avatars-subtitle {
+    font-size: 10px;
+    color: var(--text-secondary);
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.avatars-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0.8;
+    font-weight: 500;
+    margin-top: 2px;
+    padding: 2px 6px;
+    background: rgba(79,70,229,0.1);
+    border-radius: 4px;
+    border: 1px solid rgba(79,70,229,0.2);
+    display: inline-block;
+}
+
+/* 评论者加载和错误状态 */
+.avatars-loading,
+.avatars-error,
+.avatars-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.avatars-loading {
+    gap: 8px;
+}
+
+.avatars-loading .loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(79,70,229,0.2);
+    border-top: 2px solid var(--primary, #4f46e5);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.avatars-error {
+    color: var(--error, #ef4444);
+}
+
+.avatars-empty {
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+.avatars-container {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 4px 0;
+    width: 100%;
+    min-height: 80px;
+    max-width: 100%;
+}
+
+.commenter-avatar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 48px;
+    max-width: 60px;
+    flex: 0 0 auto;
+    position: relative;
+    border: 2px solid transparent;
+    background: rgba(51,65,85,0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    margin: 2px;
+}
+
+/* 确保未选中的评论者没有边框高亮 */
+.commenter-avatar:not(.selected):not(.multi-selected) {
+    border-color: transparent !important;
+}
+
+.commenter-avatar:not(.selected):not(.multi-selected) .avatar-image {
+    border-color: transparent !important;
+}
+
+.commenter-avatar:hover,
+.commenter-avatar:focus {
+    background: linear-gradient(135deg, rgba(79,70,229,0.15) 0%, rgba(108,99,255,0.1) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(79,70,229,0.25);
+    border-color: transparent;
+    outline: none;
+}
+
+.commenter-avatar:focus-visible {
+    outline: 2px solid var(--primary-light, #6366f1);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.2);
+    border-color: transparent;
+}
+
+.commenter-avatar.selected {
+    background: linear-gradient(135deg, rgba(79,70,229,0.18) 0%, rgba(108,99,255,0.12) 50%, rgba(139,92,246,0.08) 100%);
+    border: 2px solid var(--primary, #4F46E5);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(79,70,229,0.3);
+    position: relative;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.commenter-avatar.selected::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(135deg, var(--primary, #4F46E5) 0%, var(--primary-light, #6366f1) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 8px;
+    font-weight: bold;
+    box-shadow: 0 3px 8px rgba(79,70,229,0.4), 0 0 0 1px rgba(255,255,255,0.2);
+    animation: checkmarkAppear 0.3s ease-out;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.commenter-avatar.selected::after {
+    content: '✓';
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 9px;
+    font-weight: bold;
+    z-index: 1;
+    animation: checkmarkAppear 0.3s ease-out;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+@keyframes checkmarkAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) rotate(-10deg);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.1) rotate(5deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+@keyframes avatarGlow {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    50% {
+        box-shadow: 0 4px 16px rgba(79,70,229,0.2);
+    }
+}
+
+.commenter-avatar:hover .avatar-image {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(79,70,229,0.2);
+}
+
+.commenter-avatar.selected .avatar-image {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(79,70,229,0.4);
+    border: 2px solid rgba(79,70,229,0.3);
+    background: linear-gradient(135deg, rgba(79,70,229,0.1) 0%, rgba(108,99,255,0.05) 100%);
+}
+
+.commenter-avatar.selected .avatar-name {
+    color: var(--primary, #4F46E5);
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(79,70,229,0.2);
+    background: linear-gradient(135deg, var(--primary, #4F46E5) 0%, var(--primary-light, #6366f1) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* 点击反馈效果 */
+.commenter-avatar:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+}
+
+.commenter-avatar.selected:active {
+    transform: scale(0.95) translateY(-1px);
+}
+
+/* 多选状态指示 */
+.commenter-avatar.multi-selected {
+    background: linear-gradient(135deg, rgba(79,70,229,0.2) 0%, rgba(108,99,255,0.15) 50%, rgba(139,92,246,0.1) 100%);
+    border-color: var(--primary-light, #6366f1);
+    box-shadow: 0 6px 20px rgba(79,70,229,0.25);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.commenter-avatar.multi-selected .avatar-image {
+    transform: scale(1.08);
+    box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+    border: 2px solid rgba(99,102,241,0.25);
+}
+
+.commenter-avatar.multi-selected .avatar-name {
+    background: linear-gradient(135deg, var(--primary-light, #6366f1) 0%, var(--scientist-purple, #9333ea) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+}
+
+.avatar-image {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    border: 2px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.avatar-image::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.commenter-avatar:hover .avatar-image::before {
+    opacity: 1;
+}
+
+.avatar-name {
+    font-size: 10px;
+    color: var(--text-secondary);
+    text-align: center;
+    font-weight: 500;
+    max-width: 48px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.commenter-avatar.selected .avatar-name {
+    color: var(--primary, #4F46E5);
+    font-weight: 600;
+}
+
 /* 评论统计 */
 .comment-stats {
     width: 100%;
@@ -21,12 +373,12 @@
     gap: 0;
     margin-bottom: 20px;
     padding: 16px 0;
-    background: var(--bg-glass, rgba(255,255,255,0.7));
+    background: linear-gradient(135deg, rgba(30,41,59,0.9) 0%, rgba(51,65,85,0.8) 100%);
     border-radius: 12px;
-    border: 1px solid var(--border-primary);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    box-shadow: 0 2px 8px 0 rgba(0,0,0,0.03);
+    border: 1px solid rgba(79,70,229,0.1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
 
 .stats-item {
@@ -113,8 +465,8 @@
     border-radius: 0;
     box-shadow: none;
     margin-bottom: 16px;
-    padding: 0 0 16px 0;
-    border-bottom: 1px solid var(--border-primary);
+    padding: 12px 0 16px 0;
+    border-bottom: 1px solid rgba(79,70,229,0.1);
     transition: all 0.2s ease;
 }
 
@@ -124,21 +476,25 @@
 
 /* 评论状态样式 */
 .comment-item.status-resolved {
-    background: rgba(76, 175, 80, 0.02);
-    border-left: 3px solid #4CAF50;
-    padding-left: 8px;
+    background: rgba(16, 185, 129, 0.05);
+    border-left: 3px solid var(--success, #10b981);
+    padding-left: 12px;
+    border-radius: 0 8px 8px 0;
 }
 
 .comment-item.status-closed {
-    opacity: 0.5;
-    background: rgba(158, 158, 158, 0.02);
-    border-left: 3px solid #9E9E9E;
-    padding-left: 8px;
+    opacity: 0.6;
+    background: rgba(107, 114, 128, 0.05);
+    border-left: 3px solid var(--gray-500, #6b7280);
+    padding-left: 12px;
+    border-radius: 0 8px 8px 0;
 }
 
 .comment-item.status-pending {
-    border-left: 3px solid #FF9800;
-    padding-left: 8px;
+    background: rgba(245, 158, 11, 0.05);
+    border-left: 3px solid var(--warning, #f59e0b);
+    padding-left: 12px;
+    border-radius: 0 8px 8px 0;
 }
 
 /* 评论头部 */
@@ -264,9 +620,11 @@
 .code-location {
     margin-bottom: 8px;
     padding: 8px;
-    background: var(--bg-glass, rgba(248,250,252,0.8));
+    background: linear-gradient(135deg, rgba(30,41,59,0.8) 0%, rgba(51,65,85,0.6) 100%);
     border-radius: 6px;
-    border: 1px solid var(--border-primary);
+    border: 1px solid rgba(79,70,229,0.1);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .location-header {
@@ -391,9 +749,11 @@
 .comment-quote {
     margin-bottom: 8px;
     padding: 8px;
-    background: var(--bg-glass, rgba(248,250,252,0.8));
+    background: linear-gradient(135deg, rgba(30,41,59,0.8) 0%, rgba(51,65,85,0.6) 100%);
     border-radius: 6px;
     border-left: 3px solid var(--primary);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .quote-header {
@@ -412,13 +772,13 @@
 }
 
 .quote-code {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
+    background: rgba(51,65,85,0.6);
+    border: 1px solid rgba(79,70,229,0.2);
     border-radius: 4px;
     padding: 6px;
     font-size: 12px;
     line-height: 1.4;
-    color: #495057;
+    color: var(--text-secondary);
     overflow-x: auto;
     margin: 0;
 }
@@ -434,10 +794,12 @@
 .comment-improvement {
     margin-bottom: 8px;
     padding: 8px;
-    background: linear-gradient(90deg, #e3f2fd 0%, #f1f8e9 100%);
+    background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(34,197,94,0.05) 100%);
     border-radius: 6px;
-    border-left: 3px solid #388E3C;
-    box-shadow: 0 1px 4px 0 rgba(56,142,60,0.06);
+    border-left: 3px solid var(--success, #10b981);
+    box-shadow: 0 2px 8px rgba(16,185,129,0.1);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .improvement-header {
@@ -457,13 +819,13 @@
 }
 
 .improvement-code {
-    background: #f4fff6;
-    border: 1px solid #b2dfdb;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.2);
     border-radius: 4px;
     padding: 6px;
     font-size: 12px;
     line-height: 1.4;
-    color: #256029;
+    color: var(--text-secondary);
     overflow-x: auto;
     margin: 0;
     font-family: 'JetBrains Mono', 'Fira Mono', 'Menlo', 'Consolas', monospace;
@@ -734,12 +1096,14 @@
 /* 无评论状态 */
 .no-comments-state {
     color: var(--text-muted);
-    background: none;
-    box-shadow: none;
-    border: none;
-    padding: 32px 0 12px 0;
+    background: linear-gradient(135deg, rgba(30,41,59,0.6) 0%, rgba(51,65,85,0.4) 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(79,70,229,0.1);
+    padding: 32px 16px 12px 16px;
     text-align: center;
-    opacity: 0.7;
+    opacity: 0.8;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .no-comments-icon {
@@ -848,6 +1212,54 @@
         padding: 1px 3px;
         font-size: 10px;
     }
+    
+    /* 评论者头像选择区域响应式 */
+    .commenter-avatars {
+        margin-bottom: 10px;
+        padding: 10px;
+    }
+    
+    .avatars-container {
+        gap: 6px;
+        justify-content: flex-start;
+        padding: 2px 0;
+        width: 100%;
+        min-height: 50px;
+    }
+    
+    .commenter-avatar {
+        min-width: 44px;
+        max-width: 50px;
+        padding: 4px;
+        flex: 0 0 auto;
+    }
+    
+    .commenter-avatar.selected::before,
+    .commenter-avatar.selected::after {
+        width: 12px;
+        height: 12px;
+        font-size: 7px;
+    }
+    
+    .avatar-image {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+    
+    .avatar-name {
+        font-size: 8px;
+        max-width: 44px;
+    }
+    
+    .avatars-title {
+        font-size: 12px;
+    }
+    
+    .avatars-subtitle {
+        font-size: 10px;
+    }
 } 
+
 
 
