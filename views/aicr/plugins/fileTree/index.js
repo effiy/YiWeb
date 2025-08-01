@@ -34,7 +34,7 @@ const createFileTreeNode = () => {
                 required: true
             },
             selectedFileId: {
-                type: String,
+                type: [String, null],
                 default: null
             },
             expandedFolders: {
@@ -81,6 +81,7 @@ const createFileTreeNode = () => {
             // 检查文件是否被选中
             isFileSelected(fileId) {
                 return safeExecute(() => {
+                    console.log('[FileTreeNode] isFileSelected - fileId:', fileId, 'selectedFileId:', this.selectedFileId, 'result:', this.selectedFileId && this.selectedFileId === fileId);
                     return this.selectedFileId && this.selectedFileId === fileId;
                 }, '文件选中状态检查');
             },
@@ -237,7 +238,7 @@ const createFileTree = async () => {
                 default: () => []
             },
             selectedFileId: {
-                type: String,
+                type: [String, null],
                 default: null
             },
             expandedFolders: {
@@ -292,6 +293,7 @@ const createFileTree = async () => {
             // 检查文件是否被选中
             isFileSelected(fileId) {
                 return safeExecute(() => {
+                    console.log('[FileTree] isFileSelected - fileId:', fileId, 'selectedFileId:', this.selectedFileId, 'result:', this.selectedFileId && this.selectedFileId === fileId);
                     return this.selectedFileId && this.selectedFileId === fileId;
                 }, '文件选中状态检查');
             },
@@ -415,6 +417,7 @@ const createFileTree = async () => {
         console.error('FileTree 组件初始化失败:', error);
     }
 })();
+
 
 
 

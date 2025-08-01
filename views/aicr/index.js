@@ -75,7 +75,6 @@ import { createBaseView } from '/utils/baseView.js';
                 codeComments: localState.codeComments,
                 // 暴露store数据给模板
                 fileTree: store.fileTree,
-                selectedFileId: store.selectedFileId,
                 expandedFolders: store.expandedFolders,
                 loading: store.loading,
                 errorMessage: store.errorMessage,
@@ -84,9 +83,14 @@ import { createBaseView } from '/utils/baseView.js';
                 commentsCollapsed: store.commentsCollapsed
             },
             computed: {
+                // 选中的文件ID
+                selectedFileId() {
+                    return store.selectedFileId.value;
+                },
+                
                 // 当前文件
                 currentFile() {
-                    const fileId = store.selectedFileId || (store.state && store.state.selectedFileId);
+                    const fileId = store.selectedFileId.value;
                     console.log('[currentFile] 当前文件ID:', fileId);
                     console.log('[currentFile] store.files:', store.files);
                     
@@ -105,7 +109,7 @@ import { createBaseView } from '/utils/baseView.js';
                 
                 // 当前文件的评论
                 currentComments() {
-                    const fileId = store.selectedFileId || (store.state && store.state.selectedFileId);
+                    const fileId = store.selectedFileId.value;
                     console.log('[currentComments] 当前文件ID:', fileId);
                     console.log('[currentComments] store.comments:', store.comments);
                     
@@ -141,7 +145,7 @@ import { createBaseView } from '/utils/baseView.js';
                     ]).then(() => {
                         console.log('[代码审查页面] 数据加载完成');
                         // 如果没有选中文件，选择第一个文件
-                        if (!store.selectedFileId && store.files && store.files.length > 0) {
+                        if (!store.selectedFileId.value && store.files && store.files.length > 0) {
                             const firstFile = store.files[0];
                             const fileId = firstFile.id || firstFile.path || firstFile.fileId;
                             store.setSelectedFileId(fileId);
@@ -157,13 +161,45 @@ import { createBaseView } from '/utils/baseView.js';
                         if (window.aicrApp && window.aicrApp.reload) window.aicrApp.reload();
                     }
                 });
+                
+                // 添加ESC快捷键监听，取消文件选中
+                window.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        console.log('[代码审查页面] ESC键被按下，取消文件选中');
+                        if (store && store.selectedFileId.value) {
+                            store.setSelectedFileId(null);
+                            console.log('[代码审查页面] 已取消文件选中');
+                        }
+                    }
+                });
+                
+                // 监听评论区的代码高亮事件
+                window.addEventListener('highlightCodeLines', (e) => {
+                    const { fileId, rangeInfo, comment } = e.detail;
+                    console.log('[代码审查页面] 收到代码高亮事件:', { fileId, rangeInfo, comment });
+                    
+                    if (fileId) {
+                        // 如果当前没有选中该文件，先选中文件
+                        if (store && store.selectedFileId.value !== fileId) {
+                            console.log('[代码审查页面] 切换到文件:', fileId);
+                            store.setSelectedFileId(fileId);
+                        }
+                        
+                        // 发送高亮事件给代码视图组件
+                        setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('highlightCodeLines', { 
+                                detail: { rangeInfo, comment } 
+                            }));
+                        }, 100); // 给文件切换一点时间
+                    }
+                });
             },
             // 传递props给子组件
             props: {
                 'code-view': {},
                 'file-tree': {
                     tree: function() { return store.fileTree; },
-                    selectedFileId: function() { return store.selectedFileId; },
+                    selectedFileId: function() { return store.selectedFileId.value; },
                     expandedFolders: function() { return store.expandedFolders; },
                     loading: function() { return store.loading; },
                     error: function() { return store.errorMessage; },
@@ -254,6 +290,7 @@ import { createBaseView } from '/utils/baseView.js';
         console.error('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
 
 
 

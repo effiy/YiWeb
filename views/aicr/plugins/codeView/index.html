@@ -22,6 +22,7 @@
                 :key="index + 1"
                 :class="['code-line', highlightedLines.includes(index + 1) ? 'highlight' : '']"
                 :data-line="index + 1"
+                :title="`行号: ${index + 1}, 是否高亮: ${highlightedLines.includes(index + 1)}`"
             >
                 <span class="line-number">{{ index + 1 }}</span>
                 <span class="line-content" v-html="escapeHtml(line)"></span>
@@ -40,5 +41,6 @@
         <div class="empty-subtitle">从左侧文件树中选择要查看的文件</div>
     </div>
 </section>
+
 
 

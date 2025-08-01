@@ -413,28 +413,61 @@ const createCodeView = async () => {
 
             // 高亮代码行
             handleHighlightLines(event) {
-                const rangeInfo = event.detail;
-                if (!rangeInfo) return;
+                console.log('[CodeView] 收到高亮事件:', event.detail);
+                
+                // 兼容旧的事件格式
+                let rangeInfo = event.detail;
+                if (event.detail && event.detail.rangeInfo) {
+                    rangeInfo = event.detail.rangeInfo;
+                }
+                
+                if (!rangeInfo) {
+                    console.log('[CodeView] 没有rangeInfo信息');
+                    return;
+                }
+                
                 let start = rangeInfo.startLine || 0;
                 let end = rangeInfo.endLine || start;
                 if (start > end) [start, end] = [end, start];
-                // 只允许正整数
-                if (start < 1) start = 1;
-                if (end < 1) end = start;
+                
+                // 确保行号是正整数且从1开始
+                start = Math.max(1, Math.floor(start));
+                end = Math.max(1, Math.floor(end));
+                
+                console.log('[CodeView] 高亮行号范围:', start, '到', end);
+                
                 // 设置高亮
                 this.highlightedLines = [];
                 for (let i = start; i <= end; i++) {
                     this.highlightedLines.push(i);
                 }
+                console.log('[CodeView] 设置高亮行号数组:', this.highlightedLines);
+                
                 // 自动滚动到首行
                 this.$nextTick(() => {
                     const codeContent = this.$refs.codeContent;
                     if (!codeContent) return;
+                    
+                    console.log('[CodeView] 查找目标行:', start);
                     const target = codeContent.querySelector(`.code-line[data-line='${start}']`);
+                    
                     if (target) {
+                        console.log('[CodeView] 找到目标行，滚动到位置');
                         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                        console.log('[CodeView] 未找到目标行，尝试查找所有行');
+                        const allLines = codeContent.querySelectorAll('.code-line');
+                        console.log('[CodeView] 总行数:', allLines.length);
+                        if (allLines.length > 0 && start <= allLines.length) {
+                            const targetLine = allLines[start - 1];
+                            if (targetLine) {
+                                console.log('[CodeView] 通过索引找到目标行');
+                                targetLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }
                     }
                 });
+                
                 // 3秒后自动取消高亮
                 setTimeout(() => {
                     this.highlightedLines = [];
@@ -483,6 +516,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

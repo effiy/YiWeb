@@ -130,7 +130,7 @@
                             <i class="fas fa-quote-left"></i>
                             <span>引用代码</span>
                         </div>
-                        <pre class="quote-code" @click="highlightCode(comment.rangeInfo)">{{ comment.text }}</pre>
+                        <pre class="quote-code" @click="highlightCode(comment)">{{ comment.text }}</pre>
                     </div>
                     <div class="comment-content">{{ comment.content }}</div>
                     <!-- 改进代码展示区域，仅当有改进代码时显示 -->
@@ -178,6 +178,15 @@
         </div>
 
         <!-- 无评论状态 -->
+        <div v-else-if="!file" class="no-file-state" role="status">
+            <div class="no-file-icon" aria-hidden="true">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="no-file-title">未选中文件</div>
+            <div class="no-file-subtitle">请从左侧文件树中选择一个文件来查看评论</div>
+        </div>
+        
+        <!-- 无评论状态 -->
         <div v-else-if="renderComments.length === 0" class="no-comments-state" role="status">
             <div class="no-comments-icon" aria-hidden="true">
                 <i class="fas fa-comment-slash"></i>
@@ -187,6 +196,7 @@
         </div>
     </div>
 </aside>
+
 
 
 

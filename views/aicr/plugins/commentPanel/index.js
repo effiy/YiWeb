@@ -37,6 +37,7 @@ async function fetchCommentsFromMongo(file) {
                 url += `&fileId=${fileId}`;
             }
         }
+        console.log('[CommentPanel] 调用MongoDB接口:', url);
         const response = await getData(url, { method: 'GET' });
         console.log('[CommentPanel] 获取评论数据:', response.data.list);
         // 期望返回数组，如果response是数组则直接返回，否则返回空数组
@@ -130,6 +131,9 @@ const createCommentPanel = async () => {
             console.log('[CommentPanel] 初始error状态:', this.error);
             console.log('[CommentPanel] 初始文件数据:', this.file);
 
+            // 初始化文件跟踪
+            this._lastFile = this.file;
+
             // 加载评论者数据
             this.loadCommenters();
 
@@ -157,6 +161,7 @@ const createCommentPanel = async () => {
         },
         updated() {
             console.log('[CommentPanel] 组件已更新');
+            console.log('[CommentPanel] 更新后文件数据:', this.file);
             console.log('[CommentPanel] 更新后mongoComments数量:', this.mongoComments ? this.mongoComments.length : 0);
             console.log('[CommentPanel] 更新后props comments数量:', this.comments ? this.comments.length : 0);
             console.log('[CommentPanel] 更新后renderComments数量:', this.renderComments ? this.renderComments.length : 0);
@@ -165,6 +170,13 @@ const createCommentPanel = async () => {
             console.log('[CommentPanel] 更新后评论者数据:', this.commenters);
             console.log('[CommentPanel] 更新后评论者数量:', this.commenters.length);
             console.log('[CommentPanel] 更新后选中的评论者:', this.selectedCommenterIds);
+            
+            // 当文件变化时，重新加载评论
+            if (this.file !== this._lastFile) {
+                console.log('[CommentPanel] 文件发生变化，重新加载评论');
+                this._lastFile = this.file;
+                this.loadMongoComments();
+            }
         },
 
         beforeUnmount() {
@@ -215,6 +227,7 @@ const createCommentPanel = async () => {
             renderComments() {
                 // 优先用mongoComments，如果mongoComments有数据则使用，否则使用props中的comments
                 const commentsToRender = (this.mongoComments && this.mongoComments.length > 0) ? this.mongoComments : this.comments;
+                console.log('[CommentPanel] renderComments - 当前文件:', this.file);
                 console.log('[CommentPanel] renderComments - mongoComments数量:', this.mongoComments ? this.mongoComments.length : 0);
                 console.log('[CommentPanel] renderComments - props comments数量:', this.comments ? this.comments.length : 0);
                 console.log('[CommentPanel] renderComments - 最终渲染评论数量:', commentsToRender ? commentsToRender.length : 0);
@@ -226,10 +239,13 @@ const createCommentPanel = async () => {
             async loadMongoComments() {
                 return safeExecute(async () => {
                     console.log('[CommentPanel] 开始加载mongo评论数据...');
+                    console.log('[CommentPanel] 当前文件:', this.file);
                     this.commentsLoading = true;
                     this.commentsError = '';
 
                     try {
+                        // 无论是否有文件，都调用MongoDB接口
+                        // 如果没有文件，fetchCommentsFromMongo会调用不带fileId参数的接口
                         const mongoComments = await fetchCommentsFromMongo(this.file);
                         
                         // 确保评论数据有正确的key属性
@@ -480,10 +496,45 @@ const createCommentPanel = async () => {
             },
 
             // 高亮代码区对应行
-            highlightCode(rangeInfo) {
+            highlightCode(comment) {
                 return safeExecute(() => {
-                    if (!rangeInfo) return;
-                    window.dispatchEvent(new CustomEvent('highlightCodeLines', { detail: rangeInfo }));
+                    if (!comment || !comment.rangeInfo) {
+                        console.log('[CommentPanel] 评论或rangeInfo为空');
+                        return;
+                    }
+                    
+                    console.log('[CommentPanel] 点击引用代码，评论信息:', comment);
+                    
+                    // 获取文件信息
+                    const fileId = comment.fileId || (comment.fileInfo && comment.fileInfo.path);
+                    const rangeInfo = comment.rangeInfo;
+                    
+                    if (!fileId) {
+                        console.log('[CommentPanel] 评论中没有文件信息');
+                        return;
+                    }
+                    
+                    // 确保行号是从1开始的
+                    // 如果行号已经是1或更大，就不需要转换
+                    const normalizedRangeInfo = {
+                        startLine: rangeInfo.startLine >= 1 ? rangeInfo.startLine : rangeInfo.startLine + 1,
+                        endLine: rangeInfo.endLine >= 1 ? rangeInfo.endLine : rangeInfo.endLine + 1,
+                        startChar: rangeInfo.startChar,
+                        endChar: rangeInfo.endChar
+                    };
+                    
+                    console.log('[CommentPanel] 原始行号:', rangeInfo.startLine, '-', rangeInfo.endLine);
+                    console.log('[CommentPanel] 标准化行号:', normalizedRangeInfo.startLine, '-', normalizedRangeInfo.endLine);
+                    
+                    // 发送事件，包含文件信息和行号信息
+                    const eventData = {
+                        fileId: fileId,
+                        rangeInfo: normalizedRangeInfo,
+                        comment: comment
+                    };
+                    
+                    console.log('[CommentPanel] 发送highlightCodeLines事件:', eventData);
+                    window.dispatchEvent(new CustomEvent('highlightCodeLines', { detail: eventData }));
                 }, '高亮代码区行');
             }
         },
@@ -511,5 +562,6 @@ const createCommentPanel = async () => {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
+
 
 
