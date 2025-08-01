@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YiWeb - 代码审查</title>
     <link rel="stylesheet" href="/views/aicr/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
@@ -29,10 +30,60 @@
                         spellcheck="false"></textarea>
                 </div>
             </form>
+            
+            <!-- 项目/版本选择器 -->
+            <div class="project-selector-inline">
+                <div class="selector-group">
+                    <label for="projectSelect" class="selector-label">项目：</label>
+                    <select 
+                        id="projectSelect" 
+                        v-model="selectedProject" 
+                        @change="handleProjectChange"
+                        class="selector-dropdown"
+                        aria-label="选择项目">
+                        <option value="" disabled>请选择项目</option>
+                        <option 
+                            v-for="project in projects" 
+                            :key="project.id" 
+                            :value="project.id">
+                            {{ project.name }}
+                        </option>
+                    </select>
+                </div>
+                
+                <div class="selector-group">
+                    <label for="versionSelect" class="selector-label">版本：</label>
+                    <select 
+                        id="versionSelect" 
+                        v-model="selectedVersion" 
+                        @change="handleVersionChange"
+                        class="selector-dropdown"
+                        :disabled="!selectedProject"
+                        aria-label="选择版本">
+                        <option value="" disabled>请选择版本</option>
+                        <option 
+                            v-for="version in availableVersions" 
+                            :key="version.id" 
+                            :value="version.id">
+                            {{ version.name }}
+                        </option>
+                    </select>
+                </div>
+                
+                <button 
+                    type="button" 
+                    @click="refreshData"
+                    :disabled="loading"
+                    class="refresh-btn"
+                    aria-label="刷新数据">
+                    <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }"></i>
+                    刷新
+                </button>
+            </div>
+            
             <div class="collapse-btns">
               <button type="button" @click="toggleSidebar">{{ sidebarCollapsed ? '展开文件目录树' : '收起文件目录树' }}</button>
               <button type="button" @click="toggleComments">{{ commentsCollapsed ? '展开评论区' : '收起评论区' }}</button>
-              <span class="shortcut-hint" title="快捷键提示">ESC: 取消选中文件</span>
             </div>
         </section>
         </header>
@@ -92,6 +143,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html> 
+
 
 
 

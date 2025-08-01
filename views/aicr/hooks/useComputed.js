@@ -16,7 +16,12 @@ export const useComputed = (store) => {
         selectedFileId,
         expandedFolders,
         loading,
-        error
+        error,
+        // 项目/版本管理
+        projects,
+        selectedProject,
+        selectedVersion,
+        availableVersions
     } = store;
 
     return {
@@ -148,8 +153,53 @@ export const useComputed = (store) => {
         currentFileCommentCount: computed(() => {
             if (!selectedFileId.value || !comments.value) return 0;
             return comments.value.filter(c => c.fileId === selectedFileId.value).length;
+        }),
+
+        /**
+         * 是否有项目数据
+         */
+        hasProjects: computed(() => {
+            return projects.value && projects.value.length > 0;
+        }),
+
+        /**
+         * 是否有版本数据
+         */
+        hasVersions: computed(() => {
+            return availableVersions.value && availableVersions.value.length > 0;
+        }),
+
+        /**
+         * 是否已选择项目
+         */
+        isProjectSelected: computed(() => {
+            return !!selectedProject.value;
+        }),
+
+        /**
+         * 是否已选择版本
+         */
+        isVersionSelected: computed(() => {
+            return !!selectedVersion.value;
+        }),
+
+        /**
+         * 当前项目信息
+         */
+        currentProject: computed(() => {
+            if (!selectedProject.value || !projects.value) return null;
+            return projects.value.find(p => p.id === selectedProject.value);
+        }),
+
+        /**
+         * 当前版本信息
+         */
+        currentVersion: computed(() => {
+            if (!selectedVersion.value || !availableVersions.value) return null;
+            return availableVersions.value.find(v => v.id === selectedVersion.value);
         })
     };
 };
+
 
 

@@ -30,6 +30,32 @@ async function fetchCommentsFromMongo(file) {
         // 假设有一个API接口用于获取评论，传入file信息
         // 你可以根据实际API调整URL和参数
         let url = `${window.API_URL}/mongodb/?cname=comments`;
+        
+        // 从header-row的选择器获取项目/版本信息
+        const projectSelect = document.getElementById('projectSelect');
+        const versionSelect = document.getElementById('versionSelect');
+        
+        let projectId = null;
+        let versionId = null;
+        
+        if (projectSelect) {
+            projectId = projectSelect.value;
+            console.log('[CommentPanel] 从选择器获取项目ID:', projectId);
+        }
+        
+        if (versionSelect) {
+            versionId = versionSelect.value;
+            console.log('[CommentPanel] 从选择器获取版本ID:', versionId);
+        }
+        
+        // 添加项目/版本参数
+        if (projectId) {
+            url += `&projectId=${projectId}`;
+        }
+        if (versionId) {
+            url += `&versionId=${versionId}`;
+        }
+        
         if (file) {
             // 兼容不同的文件ID字段
             const fileId = file.fileId || file.id || file.path || file.key;
@@ -75,6 +101,15 @@ const createCommentPanel = async () => {
             error: {
                 type: String,
                 default: ''
+            },
+            // 项目/版本信息
+            projectId: {
+                type: String,
+                default: ''
+            },
+            versionId: {
+                type: String,
+                default: ''
             }
         },
         emits: [
@@ -101,7 +136,8 @@ const createCommentPanel = async () => {
                 commentersError: '', // 评论者数据加载错误
                 commentsLoading: false, // 新增：评论加载状态
                 commentsError: '',     // 新增：评论加载错误
-                mongoComments: []      // 新增：实际评论数据
+                mongoComments: [],     // 新增：实际评论数据
+                _lastProjectVersionKey: null // 跟踪项目/版本变化
             };
         },
         watch: {
@@ -116,10 +152,61 @@ const createCommentPanel = async () => {
                 },
                 immediate: true
             },
+            // 监听选择器变化，重新加载评论
+            // 由于现在从DOM选择器获取项目/版本信息，我们需要监听选择器的变化
+            // 这里我们使用一个定时器来检查选择器的变化
+            '$props': {
+                handler: function(newProps, oldProps) {
+                    // 检查选择器的值是否发生变化
+                    const projectSelect = document.getElementById('projectSelect');
+                    const versionSelect = document.getElementById('versionSelect');
+                    
+                    if (projectSelect && versionSelect) {
+                        const currentProject = projectSelect.value;
+                        const currentVersion = versionSelect.value;
+                        
+                        // 如果选择器有值且与之前不同，则重新加载
+                        if (currentProject && currentVersion) {
+                            const key = `${currentProject}-${currentVersion}`;
+                            if (this._lastProjectVersionKey !== key) {
+                                this._lastProjectVersionKey = key;
+                                console.log('[CommentPanel] 选择器项目/版本变化，重新加载评论');
+                                setTimeout(async () => {
+                                    await this.loadMongoComments();
+                                }, 100);
+                            }
+                        }
+                    }
+                },
+                deep: true
+            },
             // 监听评论数据变化
             comments: {
                 handler: function(newComments, oldComments) {
                     console.log('[CommentPanel] 评论数据变化:', newComments, oldComments);
+                },
+                deep: true
+            },
+            
+            // 监听项目/版本信息的组合变化
+            '$props': {
+                handler: function(newProps, oldProps) {
+                    const hasProject = !!this.projectId;
+                    const hasVersion = !!this.versionId;
+                    console.log('[CommentPanel] Props变化检查 - 项目:', hasProject, '版本:', hasVersion);
+                    
+                    // 如果项目/版本信息都完整了，且之前不完整，则触发加载
+                    if (hasProject && hasVersion) {
+                        const hadProject = !!oldProps?.projectId;
+                        const hadVersion = !!oldProps?.versionId;
+                        
+                        if (!hadProject || !hadVersion) {
+                            console.log('[CommentPanel] 项目/版本信息首次完整，触发加载');
+                            setTimeout(() => {
+                                this.loadMongoComments();
+                            }, 200);
+                        }
+                    }
                 },
                 deep: true
             }
@@ -130,6 +217,8 @@ const createCommentPanel = async () => {
             console.log('[CommentPanel] 初始loading状态:', this.loading);
             console.log('[CommentPanel] 初始error状态:', this.error);
             console.log('[CommentPanel] 初始文件数据:', this.file);
+            console.log('[CommentPanel] 初始项目ID:', this.projectId);
+            console.log('[CommentPanel] 初始版本ID:', this.versionId);
 
             // 初始化文件跟踪
             this._lastFile = this.file;
@@ -137,7 +226,8 @@ const createCommentPanel = async () => {
             // 加载评论者数据
             this.loadCommenters();
 
-            // 初始加载mongo评论数据
+            // 尝试进行首次加载，即使项目/版本信息可能不完整
+            console.log('[CommentPanel] 尝试首次加载评论');
             await this.loadMongoComments();
 
             // 确保评论者数据在组件挂载后立即加载
@@ -158,6 +248,20 @@ const createCommentPanel = async () => {
                 }
             };
             window.addEventListener('getSelectedCommenters', this.handleGetSelectedCommenters);
+            
+            // 监听项目/版本准备完成事件
+            this.handleProjectVersionReady = (event) => {
+                console.log('[CommentPanel] 收到项目/版本准备完成事件:', event.detail);
+                const { projectId, versionId } = event.detail;
+                console.log('[CommentPanel] 项目ID:', projectId, '版本ID:', versionId);
+                
+                // 重新加载评论
+                setTimeout(async () => {
+                    console.log('[CommentPanel] 项目/版本准备完成，重新加载评论');
+                    await this.loadMongoComments();
+                }, 100);
+            };
+            window.addEventListener('projectVersionReady', this.handleProjectVersionReady);
         },
         updated() {
             console.log('[CommentPanel] 组件已更新');
@@ -180,8 +284,14 @@ const createCommentPanel = async () => {
         },
 
         beforeUnmount() {
+            console.log('[CommentPanel] 组件即将卸载');
             // 清理事件监听器
-            window.removeEventListener('getSelectedCommenters', this.handleGetSelectedCommenters);
+            if (this.handleGetSelectedCommenters) {
+                window.removeEventListener('getSelectedCommenters', this.handleGetSelectedCommenters);
+            }
+            if (this.handleProjectVersionReady) {
+                window.removeEventListener('projectVersionReady', this.handleProjectVersionReady);
+            }
         },
         computed: {
             // 评论统计
@@ -240,12 +350,14 @@ const createCommentPanel = async () => {
                 return safeExecute(async () => {
                     console.log('[CommentPanel] 开始加载mongo评论数据...');
                     console.log('[CommentPanel] 当前文件:', this.file);
+                    
                     this.commentsLoading = true;
                     this.commentsError = '';
 
                     try {
                         // 无论是否有文件，都调用MongoDB接口
                         // 如果没有文件，fetchCommentsFromMongo会调用不带fileId参数的接口
+                        // 项目/版本信息现在从header-row的选择器获取
                         const mongoComments = await fetchCommentsFromMongo(this.file);
                         
                         // 确保评论数据有正确的key属性
@@ -562,6 +674,7 @@ const createCommentPanel = async () => {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
+
 
 
 

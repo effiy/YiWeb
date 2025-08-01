@@ -80,7 +80,12 @@ import { createBaseView } from '/utils/baseView.js';
                 errorMessage: store.errorMessage,
                 comments: store.comments,
                 sidebarCollapsed: store.sidebarCollapsed,
-                commentsCollapsed: store.commentsCollapsed
+                commentsCollapsed: store.commentsCollapsed,
+                // 项目/版本管理
+                projects: store.projects,
+                selectedProject: store.selectedProject,
+                selectedVersion: store.selectedVersion,
+                availableVersions: store.availableVersions
             },
             computed: {
                 // 选中的文件ID
@@ -138,11 +143,47 @@ import { createBaseView } from '/utils/baseView.js';
             onMounted: (mountedApp) => {
                 console.log('[代码审查页面] 应用已挂载');
                 if (store) {
-                    Promise.all([
-                        store.loadFileTree(),
-                        store.loadFiles(),
-                        store.loadComments()
-                    ]).then(() => {
+                    // 首先加载项目列表
+                    store.loadProjects().then(() => {
+                        // 设置默认项目
+                        if (store.projects.value.length > 0) {
+                            const defaultProject = store.projects.value[0];
+                            store.setSelectedProject(defaultProject.id);
+                            console.log('[代码审查页面] 设置默认项目:', defaultProject);
+                            
+                            // 加载默认项目的版本列表
+                            return store.loadVersions(defaultProject.id);
+                        }
+                    }).then(() => {
+                        // 设置默认版本
+                        if (store.availableVersions.value.length > 0) {
+                            const defaultVersion = store.availableVersions.value[0];
+                            store.setSelectedVersion(defaultVersion.id);
+                            console.log('[代码审查页面] 设置默认版本:', defaultVersion);
+                            
+                            // 加载文件树和文件数据（不包含评论，因为评论需要项目/版本信息）
+                            return Promise.all([
+                                store.loadFileTree(),
+                                store.loadFiles()
+                            ]);
+                        }
+                    }).then(() => {
+                        // 项目/版本信息设置完成，加载评论数据
+                        console.log('[代码审查页面] 项目/版本信息设置完成，开始加载评论');
+                        return store.loadComments();
+                    }).then(() => {
+                        // 项目/版本信息设置完成，触发评论面板重新加载
+                        console.log('[代码审查页面] 项目/版本信息设置完成，触发评论加载');
+                        // 通过触发一个自定义事件来通知评论面板重新加载
+                        setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('projectVersionReady', {
+                                detail: {
+                                    projectId: store.selectedProject.value,
+                                    versionId: store.selectedVersion.value
+                                }
+                            }));
+                        }, 500);
+                    }).then(() => {
                         console.log('[代码审查页面] 数据加载完成');
                         // 如果没有选中文件，选择第一个文件
                         if (!store.selectedFileId.value && store.files && store.files.length > 0) {
@@ -216,65 +257,22 @@ import { createBaseView } from '/utils/baseView.js';
                     },
                     newComment: function() { return store.newComment; },
                     loading: function() { return store.loading; },
-                    error: function() { return store.errorMessage; }
+                    error: function() { return store.errorMessage; },
+                    // 传递项目/版本信息
+                    projectId: function() { 
+                        const projectId = store.selectedProject.value;
+                        console.log('[主页面] 传递给评论面板的项目ID:', projectId);
+                        return projectId; 
+                    },
+                    versionId: function() { 
+                        const versionId = store.selectedVersion.value;
+                        console.log('[主页面] 传递给评论面板的版本ID:', versionId);
+                        return versionId; 
+                    }
                 }
             },
-            methods: {
-                // 处理文件选择
-                handleFileSelect(fileId) {
-                    console.log('[主页面] 处理文件选择:', fileId);
-                    if (store) {
-                        store.setSelectedFileId(fileId);
-                        console.log('[主页面] 已设置选中文件ID:', fileId);
-                    }
-                },
-                
-                // 处理文件夹切换
-                handleFolderToggle(folderId) {
-                    console.log('[主页面] 处理文件夹切换:', folderId);
-                    if (store) {
-                        store.toggleFolder(folderId);
-                        console.log('[主页面] 已切换文件夹:', folderId);
-                    }
-                },
-                
-                // 处理评论提交
-                handleCommentSubmit(commentData) {
-                    console.log('[主页面] 处理评论提交:', commentData);
-                    if (store) {
-                        store.addComment(commentData);
-                        console.log('[主页面] 已添加评论');
-                    }
-                },
-                
-                // 处理评论输入
-                handleCommentInput(event) {
-                    console.log('[主页面] 处理评论输入:', event);
-                    if (store) {
-                        store.setNewComment(event.target.value);
-                    }
-                },
-                
-                // 处理评论者选择
-                handleCommenterSelect(commenters) {
-                    console.log('[主页面] 处理评论者选择:', commenters);
-                },
-                
-                // 切换侧边栏
-                toggleSidebar() {
-                    console.log('[主页面] 切换侧边栏');
-                    if (store) {
-                        store.toggleSidebar();
-                    }
-                },
-                
-                // 切换评论区
-                toggleComments() {
-                    console.log('[主页面] 切换评论区');
-                    if (store) {
-                        store.toggleComments();
-                    }
-                }
+                        methods: {
+                // 所有方法现在都在useMethods.js中定义
             }
         });
         window.aicrApp = app;
@@ -290,6 +288,7 @@ import { createBaseView } from '/utils/baseView.js';
         console.error('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
 
 
 

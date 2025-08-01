@@ -20,7 +20,16 @@ export const useMethods = (store) => {
         addComment,
         setNewComment,
         toggleSidebar,
-        toggleComments
+        toggleComments,
+        // 项目/版本管理
+        projects,
+        selectedProject,
+        selectedVersion,
+        availableVersions,
+        setSelectedProject,
+        setSelectedVersion,
+        loadVersions,
+        refreshData
     } = store;
 
     /**
@@ -260,6 +269,53 @@ export const useMethods = (store) => {
         }, '评论区切换');
     };
 
+    /**
+     * 处理项目切换
+     */
+    const handleProjectChange = () => {
+        return safeExecute(() => {
+            if (selectedProject.value) {
+                setSelectedProject(selectedProject.value);
+                // 加载对应项目的版本列表
+                loadVersions(selectedProject.value);
+                console.log('[项目切换] 切换到项目:', selectedProject.value);
+                
+                // 清空评论数据，等待版本选择后重新加载
+                comments.value = [];
+            }
+        }, '项目切换处理');
+    };
+
+    /**
+     * 处理版本切换
+     */
+    const handleVersionChange = () => {
+        return safeExecute(() => {
+            if (selectedVersion.value) {
+                setSelectedVersion(selectedVersion.value);
+                console.log('[版本切换] 切换到版本:', selectedVersion.value);
+                
+                // 版本切换后重新加载评论数据
+                setTimeout(async () => {
+                    if (selectedProject.value && selectedVersion.value) {
+                        console.log('[版本切换] 项目/版本信息完整，重新加载评论');
+                        await loadComments(selectedProject.value, selectedVersion.value);
+                    }
+                }, 100);
+            }
+        }, '版本切换处理');
+    };
+
+    /**
+     * 刷新数据
+     */
+    const handleRefreshData = () => {
+        return safeExecute(() => {
+            refreshData();
+            console.log('[数据刷新] 刷新当前项目/版本数据');
+        }, '数据刷新处理');
+    };
+
     return {
         openLink,
         handleFileSelect,
@@ -273,8 +329,13 @@ export const useMethods = (store) => {
         handleCommenterSelect,
         updateCommentFromSystem,
         toggleSidebar: handleToggleSidebar,
-        toggleComments: handleToggleComments
+        toggleComments: handleToggleComments,
+        // 项目/版本管理方法
+        handleProjectChange,
+        handleVersionChange,
+        refreshData: handleRefreshData
     };
 };
+
 
 

@@ -370,9 +370,21 @@ const createCodeView = async () => {
                                                 // 等待所有 postData 完成后再跳转页面
                                                 if (Array.isArray(response.data) && response.data.length > 0) {
                                                     await Promise.all(
-                                                        response.data.map(item =>
-                                                            postData(`${window.API_URL}/mongodb/?cname=comments`, { ...item })
-                                                        )
+                                                        response.data.map(item => {
+                                                            // 获取当前项目/版本信息
+                                                            const currentProject = window.aicrStore?.selectedProject?.value;
+                                                            const currentVersion = window.aicrStore?.selectedVersion?.value;
+                                                            
+                                                            // 构建请求数据，包含项目/版本信息
+                                                            const requestData = {
+                                                                ...item,
+                                                                projectId: currentProject,
+                                                                versionId: currentVersion
+                                                            };
+                                                            
+                                                            console.log('[CodeView] 发送评论数据到MongoDB:', requestData);
+                                                            return postData(`${window.API_URL}/mongodb/?cname=comments`, requestData);
+                                                        })
                                                     );
                                                 }
                                             }
@@ -516,6 +528,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

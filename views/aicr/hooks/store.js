@@ -37,19 +37,30 @@ export const createStore = () => {
     const sidebarCollapsed = vueRef(false);
     // 评论区收缩状态
     const commentsCollapsed = vueRef(false);
+    
+    // 项目/版本管理
+    const projects = vueRef([]);
+    const selectedProject = vueRef('');
+    const selectedVersion = vueRef('');
+    const availableVersions = vueRef([]);
 
     /**
      * 异步加载文件树数据
      */
-    const loadFileTree = async () => {
+    const loadFileTree = async (projectId = null, versionId = null) => {
         return safeExecuteAsync(async () => {
             loading.value = true;
             error.value = null;
             errorMessage.value = '';
             
-            console.log('[loadFileTree] 正在加载文件树数据...');
+            console.log('[loadFileTree] 正在加载文件树数据...', { projectId, versionId });
             
-            const response = await getData(`${window.DATA_URL}/aicr/YiAi/2025-07-30/tree.json`);
+            // 构建动态URL
+            const project = projectId || selectedProject.value || 'YiAi';
+            const version = versionId || selectedVersion.value || '2025-07-30';
+            const url = `${window.DATA_URL}/aicr/${project}/${version}/tree.json`;
+            
+            const response = await getData(url);
             
             if (!response || typeof response !== 'object') {
                 throw createError('文件树数据格式错误', ErrorTypes.API, '文件树加载');
@@ -94,11 +105,16 @@ export const createStore = () => {
     /**
      * 异步加载代码文件数据
      */
-    const loadFiles = async () => {
+    const loadFiles = async (projectId = null, versionId = null) => {
         return safeExecuteAsync(async () => {
-            console.log('[loadFiles] 正在加载代码文件数据...');
+            console.log('[loadFiles] 正在加载代码文件数据...', { projectId, versionId });
             
-            const response = await getData(`${window.DATA_URL}/aicr/YiAi/2025-07-30/files.json`);
+            // 构建动态URL
+            const project = projectId || selectedProject.value || 'YiAi';
+            const version = versionId || selectedVersion.value || '2025-07-30';
+            const url = `${window.DATA_URL}/aicr/${project}/${version}/files.json`;
+            
+            const response = await getData(url);
             
             if (!Array.isArray(response)) {
                 throw createError('代码文件数据格式错误', ErrorTypes.API, '代码文件加载');
@@ -118,11 +134,24 @@ export const createStore = () => {
     /**
      * 异步加载评论数据
      */
-    const loadComments = async () => {
+    const loadComments = async (projectId = null, versionId = null) => {
         return safeExecuteAsync(async () => {
-            console.log('[loadComments] 正在加载评论数据...');
+            console.log('[loadComments] 正在加载评论数据...', { projectId, versionId });
             
-            // const response = await getData('/views/aicr/mock/comments.json');
+            // 检查是否有项目/版本信息
+            const project = projectId || selectedProject.value;
+            const version = versionId || selectedVersion.value;
+            
+            if (!project || !version) {
+                console.log('[loadComments] 项目/版本信息不完整，跳过评论加载');
+                comments.value = [];
+                return [];
+            }
+            
+            console.log('[loadComments] 项目/版本信息完整，开始加载评论');
+            
+            // 这里可以调用MongoDB接口获取评论数据
+            // 目前返回空数组，实际应该调用MongoDB接口
             const response = [];
             
             if (!Array.isArray(response)) {
@@ -206,6 +235,102 @@ export const createStore = () => {
     };
 
     /**
+     * 加载项目列表
+     */
+    const loadProjects = async () => {
+        return safeExecuteAsync(async () => {
+            console.log('[loadProjects] 正在加载项目列表...');
+            
+            // 模拟项目数据，实际应该从API获取
+            const mockProjects = [
+                { id: 'YiAi', name: 'YiAI项目' },
+                { id: 'YiWeb', name: 'YiWeb项目' },
+                { id: 'YiMobile', name: 'YiMobile项目' }
+            ];
+            
+            projects.value = mockProjects;
+            console.log('[loadProjects] 成功加载项目列表:', mockProjects);
+            
+            return mockProjects;
+        }, '项目列表加载', (errorInfo) => {
+            error.value = errorInfo.message;
+            errorMessage.value = errorInfo.message;
+            projects.value = [];
+        });
+    };
+
+    /**
+     * 加载版本列表
+     */
+    const loadVersions = async (projectId) => {
+        return safeExecuteAsync(async () => {
+            console.log('[loadVersions] 正在加载版本列表...', { projectId });
+            
+            // 模拟版本数据，实际应该从API获取
+            const mockVersions = [
+                { id: '2025-07-30', name: '2025-07-30版本' },
+                { id: '2025-07-29', name: '2025-07-29版本' },
+                { id: '2025-07-28', name: '2025-07-28版本' }
+            ];
+            
+            availableVersions.value = mockVersions;
+            console.log('[loadVersions] 成功加载版本列表:', mockVersions);
+            
+            return mockVersions;
+        }, '版本列表加载', (errorInfo) => {
+            error.value = errorInfo.message;
+            errorMessage.value = errorInfo.message;
+            availableVersions.value = [];
+        });
+    };
+
+    /**
+     * 设置选中的项目
+     */
+    const setSelectedProject = (projectId) => {
+        selectedProject.value = projectId;
+        selectedVersion.value = ''; // 清空版本选择
+        availableVersions.value = []; // 清空版本列表
+    };
+
+    /**
+     * 设置选中的版本
+     */
+    const setSelectedVersion = (versionId) => {
+        selectedVersion.value = versionId;
+    };
+
+    /**
+     * 刷新数据
+     */
+    const refreshData = async () => {
+        if (!selectedProject.value || !selectedVersion.value) {
+            console.warn('[refreshData] 请先选择项目和版本');
+            return;
+        }
+        
+        console.log('[refreshData] 正在刷新数据...', { 
+            project: selectedProject.value, 
+            version: selectedVersion.value 
+        });
+        
+        try {
+            await Promise.all([
+                loadFileTree(selectedProject.value, selectedVersion.value),
+                loadFiles(selectedProject.value, selectedVersion.value),
+                loadComments(selectedProject.value, selectedVersion.value)
+            ]);
+            
+            // 清空选中的文件
+            selectedFileId.value = null;
+            
+            console.log('[refreshData] 数据刷新完成');
+        } catch (error) {
+            console.error('[refreshData] 数据刷新失败:', error);
+        }
+    };
+
+    /**
      * 清空错误
      */
     const clearError = () => {
@@ -228,6 +353,12 @@ export const createStore = () => {
         sidebarCollapsed,
         commentsCollapsed,
         
+        // 项目/版本管理
+        projects,
+        selectedProject,
+        selectedVersion,
+        availableVersions,
+        
         // 方法
         loadFileTree,
         loadFiles,
@@ -238,9 +369,15 @@ export const createStore = () => {
         setNewComment,
         toggleSidebar,
         toggleComments,
+        loadProjects,
+        loadVersions,
+        setSelectedProject,
+        setSelectedVersion,
+        refreshData,
         clearError
     };
 };
+
 
 
 
