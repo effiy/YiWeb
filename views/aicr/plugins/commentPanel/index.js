@@ -27,10 +27,6 @@ async function loadTemplate() {
 // 新增：异步获取评论数据（从mongo api）
 async function fetchCommentsFromMongo(file) {
     try {
-        // 假设有一个API接口用于获取评论，传入file信息
-        // 你可以根据实际API调整URL和参数
-        let url = `${window.API_URL}/mongodb/?cname=comments`;
-        
         // 从header-row的选择器获取项目/版本信息
         const projectSelect = document.getElementById('projectSelect');
         const versionSelect = document.getElementById('versionSelect');
@@ -48,13 +44,20 @@ async function fetchCommentsFromMongo(file) {
             console.log('[CommentPanel] 从选择器获取版本ID:', versionId);
         }
         
+        // 检查项目/版本信息是否完整
+        if (!projectId || !versionId) {
+            console.log('[CommentPanel] 项目/版本信息不完整，跳过MongoDB接口请求');
+            console.log('[CommentPanel] 项目ID:', projectId, '版本ID:', versionId);
+            return [];
+        }
+        
+        // 假设有一个API接口用于获取评论，传入file信息
+        // 你可以根据实际API调整URL和参数
+        let url = `${window.API_URL}/mongodb/?cname=comments`;
+        
         // 添加项目/版本参数
-        if (projectId) {
-            url += `&projectId=${projectId}`;
-        }
-        if (versionId) {
-            url += `&versionId=${versionId}`;
-        }
+        url += `&projectId=${projectId}`;
+        url += `&versionId=${versionId}`;
         
         if (file) {
             // 兼容不同的文件ID字段
@@ -674,6 +677,7 @@ const createCommentPanel = async () => {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
+
 
 
 

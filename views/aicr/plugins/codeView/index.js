@@ -369,12 +369,19 @@ const createCodeView = async () => {
 
                                                 // 等待所有 postData 完成后再跳转页面
                                                 if (Array.isArray(response.data) && response.data.length > 0) {
+                                                    // 获取当前项目/版本信息
+                                                    const currentProject = window.aicrStore?.selectedProject?.value;
+                                                    const currentVersion = window.aicrStore?.selectedVersion?.value;
+                                                    
+                                                    // 检查项目/版本信息是否完整
+                                                    if (!currentProject || !currentVersion) {
+                                                        console.log('[CodeView] 项目/版本信息不完整，跳过MongoDB接口请求');
+                                                        console.log('[CodeView] 项目ID:', currentProject, '版本ID:', currentVersion);
+                                                        return;
+                                                    }
+                                                    
                                                     await Promise.all(
                                                         response.data.map(item => {
-                                                            // 获取当前项目/版本信息
-                                                            const currentProject = window.aicrStore?.selectedProject?.value;
-                                                            const currentVersion = window.aicrStore?.selectedVersion?.value;
-                                                            
                                                             // 构建请求数据，包含项目/版本信息
                                                             const requestData = {
                                                                 ...item,
@@ -528,6 +535,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 
