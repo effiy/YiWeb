@@ -19,8 +19,8 @@
 }
 
 .file-tree-children {
-    padding-left: var(--spacing-md);
-    margin-left: 22px; /* 可根据需要调整缩进宽度 */
+    padding-left: var(--spacing-sm);
+    margin-left: 16px; /* 优化缩进宽度，使其更紧凑 */
     border-left: 1px solid var(--border-primary);
     position: relative;
 }
@@ -185,7 +185,7 @@
 
 /* ========== 嵌套文件夹 ========== */
 .file-tree .file-tree {
-    padding-left: var(--spacing-md);
+    padding-left: var(--spacing-sm);
     margin-left: var(--spacing-xs);
     border-left: 1px solid var(--border-primary);
     position: relative;
@@ -339,7 +339,7 @@
     }
     
     .file-tree .file-tree {
-        padding-left: var(--spacing-sm);
+        padding-left: var(--spacing-xs);
     }
 }
 
