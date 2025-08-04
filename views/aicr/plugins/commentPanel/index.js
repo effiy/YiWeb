@@ -604,6 +604,19 @@ const createCommentPanel = async () => {
                 return typeLabels[type] || type;
             },
 
+            // 获取评论类型图标
+            getCommentTypeIcon(type) {
+                const typeIcons = {
+                    'suggestion': 'fas fa-lightbulb',
+                    'question': 'fas fa-question-circle',
+                    'bug': 'fas fa-bug',
+                    'discussion': 'fas fa-comments',
+                    'praise': 'fas fa-thumbs-up',
+                    'nitpick': 'fas fa-search'
+                };
+                return typeIcons[type] || 'fas fa-tag';
+            },
+
             // 获取评论状态标签
             getCommentStatusLabel(status) {
                 const statusLabels = {
@@ -613,6 +626,17 @@ const createCommentPanel = async () => {
                     'wontfix': '不修复'
                 };
                 return statusLabels[status] || status;
+            },
+
+            // 获取评论状态图标
+            getCommentStatusIcon(status) {
+                const statusIcons = {
+                    'pending': 'fas fa-clock',
+                    'resolved': 'fas fa-check-circle',
+                    'closed': 'fas fa-times-circle',
+                    'wontfix': 'fas fa-ban'
+                };
+                return statusIcons[status] || 'fas fa-circle';
             },
 
             // 获取评论状态CSS类

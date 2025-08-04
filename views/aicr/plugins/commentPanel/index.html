@@ -103,9 +103,11 @@
                         <!-- 评论类型和状态 -->
                         <div class="comment-badges">
                             <span v-if="comment.type" class="comment-type" :class="`type-${comment.type}`">
+                                <i :class="getCommentTypeIcon(comment.type)"></i>
                                 {{ getCommentTypeLabel(comment.type) }}
                             </span>
                             <span v-if="comment.status" class="comment-status" :class="`status-${comment.status}`">
+                                <i :class="getCommentStatusIcon(comment.status)"></i>
                                 {{ getCommentStatusLabel(comment.status) }}
                             </span>
                         </div>

@@ -558,10 +558,10 @@
 .comment-status {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 11px;
+    gap: 3px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -575,6 +575,12 @@
     -webkit-backdrop-filter: blur(4px);
 }
 
+.comment-type i,
+.comment-status i {
+    font-size: 8px;
+    opacity: 0.9;
+}
+
 .comment-type::before,
 .comment-status::before {
     content: '';
@@ -586,7 +592,7 @@
     background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
     opacity: 0;
     transition: opacity 0.3s ease;
-    border-radius: 6px;
+    border-radius: 4px;
 }
 
 .comment-type:hover,
@@ -1603,6 +1609,12 @@
     .comment-status {
         font-size: 9px;
         padding: 1px 4px;
+        gap: 2px;
+    }
+    
+    .comment-type i,
+    .comment-status i {
+        font-size: 7px;
     }
     
     .file-info {

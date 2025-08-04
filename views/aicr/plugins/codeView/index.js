@@ -443,7 +443,7 @@ const createCodeView = async () => {
                     const commentKey = this.currentCommentPreview?.key;
                     if (!commentKey) {
                         console.warn('[CodeView] 无法找到预览评论key，使用默认位置计算');
-                        const position = this.calculatePopupPosition(event, '.comment-preview-popup', 320, 180);
+                        const position = this.calculatePopupPosition(event, '.comment-preview-popup', 550, 350);
                         if (position) {
                             this.convertPreviewToFixedPosition(position);
                         }
@@ -457,7 +457,7 @@ const createCodeView = async () => {
                     if (!markerElement) {
                         console.warn('[CodeView] 未找到对应的comment-marker元素:', markerSelector);
                         // 回退到基于事件的位置计算
-                        const position = this.calculatePopupPosition(event, '.comment-preview-popup', 320, 180);
+                        const position = this.calculatePopupPosition(event, '.comment-preview-popup', 550, 350);
                         if (position) {
                             this.convertPreviewToFixedPosition(position);
                         }
@@ -468,8 +468,8 @@ const createCodeView = async () => {
                     const markerRect = markerElement.getBoundingClientRect();
                     const viewportWidth = window.innerWidth;
                     const viewportHeight = window.innerHeight;
-                    const popupWidth = 320; // 预估预览弹窗宽度
-                    const popupHeight = 180; // 预估预览弹窗高度
+                    const popupWidth = 550; // 进一步增加预估预览弹窗宽度
+                    const popupHeight = 350; // 增加预估预览弹窗高度以显示更多内容
                     
                     // 查找comment-markers容器
                     const commentMarkersContainer = markerElement.closest('.comment-markers');
@@ -1346,7 +1346,7 @@ const createCodeView = async () => {
             },
 
             // 新增：通用弹窗位置计算工具
-            calculatePopupPosition(event, popupSelector, defaultWidth = 320, defaultHeight = 180) {
+            calculatePopupPosition(event, popupSelector, defaultWidth = 550, defaultHeight = 350) {
                 return safeExecute(() => {
                     const rect = event.target.getBoundingClientRect();
                     const codeContent = this.$refs.codeContent;
