@@ -72,6 +72,12 @@
                         </time>
                     </div>
                 </div>
+                <!-- 评论状态 -->
+                <div v-if="currentCommentDetail.status" class="comment-status">
+                    <span class="status-badge" :class="getCommentStatusClass(currentCommentDetail.status)">
+                        {{ getCommentStatusLabel(currentCommentDetail.status) }}
+                    </span>
+                </div>
                 <button 
                     @click="hideCommentDetail"
                     class="close-button"
@@ -110,13 +116,6 @@
                         <span>改进代码</span>
                     </div>
                     <pre class="improvement-code">{{ currentCommentDetail.improvementText }}</pre>
-                </div>
-                
-                <!-- 评论状态 -->
-                <div v-if="currentCommentDetail.status" class="comment-status">
-                    <span class="status-badge" :class="getCommentStatusClass(currentCommentDetail.status)">
-                        {{ getCommentStatusLabel(currentCommentDetail.status) }}
-                    </span>
                 </div>
             </div>
         </div>
