@@ -85,7 +85,9 @@ import { createBaseView } from '/utils/baseView.js';
                 projects: store.projects,
                 selectedProject: store.selectedProject,
                 selectedVersion: store.selectedVersion,
-                availableVersions: store.availableVersions
+                availableVersions: store.availableVersions,
+                // 搜索相关状态
+                searchQuery: store.searchQuery
             },
             computed: {
                 // 选中的文件ID
@@ -306,6 +308,57 @@ import { createBaseView } from '/utils/baseView.js';
                         await methods.handleCommentReopen(commentId);
                     } catch (error) {
                         console.error('[主页面] 评论重新打开失败:', error);
+                    }
+                },
+                
+                // 搜索相关方法
+                handleSearchInput: function(event) {
+                    console.log('[主页面] 收到搜索输入事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleSearchInput(event);
+                    } catch (error) {
+                        console.error('[主页面] 搜索输入处理失败:', error);
+                    }
+                },
+                
+                clearSearch: function() {
+                    console.log('[主页面] 收到清除搜索事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.clearSearch();
+                    } catch (error) {
+                        console.error('[主页面] 清除搜索失败:', error);
+                    }
+                },
+                
+                handleMessageInput: function(event) {
+                    console.log('[主页面] 收到消息输入事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleMessageInput(event);
+                    } catch (error) {
+                        console.error('[主页面] 消息输入处理失败:', error);
+                    }
+                },
+                
+                handleCompositionStart: function(event) {
+                    console.log('[主页面] 收到输入法开始事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleCompositionStart(event);
+                    } catch (error) {
+                        console.error('[主页面] 输入法开始处理失败:', error);
+                    }
+                },
+                
+                handleCompositionEnd: function(event) {
+                    console.log('[主页面] 收到输入法结束事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleCompositionEnd(event);
+                    } catch (error) {
+                        console.error('[主页面] 输入法结束处理失败:', error);
                     }
                 }
             }

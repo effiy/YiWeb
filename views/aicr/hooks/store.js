@@ -43,6 +43,9 @@ export const createStore = () => {
     const selectedProject = vueRef('');
     const selectedVersion = vueRef('');
     const availableVersions = vueRef([]);
+    
+    // 搜索相关状态
+    const searchQuery = vueRef('');
 
     /**
      * 异步加载文件树数据
@@ -358,6 +361,9 @@ export const createStore = () => {
         selectedProject,
         selectedVersion,
         availableVersions,
+        
+        // 搜索相关状态
+        searchQuery,
         
         // 方法
         loadFileTree,

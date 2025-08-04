@@ -423,6 +423,94 @@
     }
 }
 
+/* ========== 搜索清除按钮样式 ========== */
+.search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.search-clear .clear-search-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-smooth);
+    pointer-events: auto;
+    font-size: 0.75rem;
+}
+
+.search-clear .clear-search-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+.search-clear .clear-search-btn:active {
+    transform: scale(0.95);
+}
+
+.search-clear .clear-search-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.3);
+}
+
+/* 搜索输入框高亮效果 */
+.search-input-wrapper textarea:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+/* 搜索结果动画 */
+.feature-cards-grid {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 暗色模式适配 */
+@media (prefers-color-scheme: dark) {
+    .search-clear .clear-search-btn {
+        background: rgba(79, 172, 254, 0.15);
+        border-color: rgba(79, 172, 254, 0.25);
+    }
+    .search-clear .clear-search-btn:hover {
+        background: rgba(79, 172, 254, 0.25);
+        border-color: rgba(79, 172, 254, 0.35);
+    }
+}
+
+/* 减少动画选项 */
+@media (prefers-reduced-motion: reduce) {
+    .search-clear .clear-search-btn {
+        transition: none;
+    }
+    .feature-cards-grid {
+        animation: none;
+    }
+} 
+
 
 
 

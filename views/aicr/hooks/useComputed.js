@@ -21,7 +21,9 @@ export const useComputed = (store) => {
         projects,
         selectedProject,
         selectedVersion,
-        availableVersions
+        availableVersions,
+        // 搜索相关状态
+        searchQuery
     } = store;
 
     return {
@@ -197,6 +199,21 @@ export const useComputed = (store) => {
         currentVersion: computed(() => {
             if (!selectedVersion.value || !availableVersions.value) return null;
             return availableVersions.value.find(v => v.id === selectedVersion.value);
+        }),
+
+        /**
+         * 搜索查询值 - 用于模板中的条件判断
+         */
+        searchQueryValue: computed(() => {
+            // 添加调试信息
+            console.log('[searchQueryValue] searchQuery状态:', searchQuery);
+            console.log('[searchQueryValue] searchQuery.value:', searchQuery?.value);
+            
+            // 安全地获取搜索查询值
+            const query = searchQuery && typeof searchQuery.value !== 'undefined' ? searchQuery.value : '';
+            console.log('[searchQueryValue] 返回的查询值:', query);
+            
+            return query;
         })
     };
 };
