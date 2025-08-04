@@ -195,11 +195,19 @@ const createCodeView = async () => {
                 const result = {};
                 const lineCount = this.codeLines.length;
                 
+                console.log('[CodeView] lineComments计算属性触发，代码行数:', lineCount);
+                console.log('[CodeView] 当前commentMarkers:', this.commentMarkers);
+                
                 for (let lineNumber = 1; lineNumber <= lineCount; lineNumber++) {
                     const comments = this.commentMarkers[lineNumber] || [];
                     result[lineNumber] = comments;
+                    
+                    if (comments.length > 0) {
+                        console.log(`[CodeView] 第${lineNumber}行有${comments.length}个评论:`, comments.map(c => c.key));
+                    }
                 }
                 
+                console.log('[CodeView] lineComments计算结果:', result);
                 return result;
             }
         },
@@ -256,6 +264,7 @@ const createCodeView = async () => {
                 const newCommentMarkers = {};
                 
                 console.log('[CodeView] 开始构建评论标记映射，评论数量:', this.fileComments.length);
+                console.log('[CodeView] 文件评论数据:', this.fileComments.map(c => ({ key: c.key, startLine: c.rangeInfo?.startLine, endLine: c.rangeInfo?.endLine })));
                 
                 this.fileComments.forEach(comment => {
                     if (comment.rangeInfo && comment.rangeInfo.startLine) {
@@ -271,6 +280,8 @@ const createCodeView = async () => {
                             }
                             newCommentMarkers[line].push(comment);
                         }
+                    } else {
+                        console.log('[CodeView] 跳过无效评论:', comment.key, 'rangeInfo:', comment.rangeInfo);
                     }
                 });
                 
@@ -279,6 +290,10 @@ const createCodeView = async () => {
                 
                 console.log('[CodeView] 评论标记映射构建完成:', this.commentMarkers);
                 console.log('[CodeView] 评论标记行数:', Object.keys(this.commentMarkers).length);
+                
+                // 统计总评论数量
+                const totalComments = Object.values(this.commentMarkers).reduce((sum, comments) => sum + comments.length, 0);
+                console.log('[CodeView] 总评论数量:', totalComments);
                 
                 // 确保DOM更新
                 this.$nextTick(() => {
@@ -491,8 +506,12 @@ const createCodeView = async () => {
                 return safeExecute(() => {
                     console.log('[CodeView] 删除评论:', commentKey);
                     if (confirm('确定要删除这条评论吗？')) {
+                        // 立即移除本地数据，确保UI立即更新
+                        this.removeCommentFromLocalData(commentKey);
+                        
                         // 触发事件，通知父组件处理
                         this.$emit('comment-delete', commentKey);
+                        
                         // 关闭详情弹窗
                         this.hideCommentDetail();
                     }
@@ -1649,6 +1668,25 @@ const createCodeView = async () => {
             restoreDragPosition() {
                 // 拖拽功能已移除，此方法不再需要
                 console.log('[CodeView] 拖拽功能已移除');
+            },
+            
+            // 新增：立即移除本地评论数据
+            removeCommentFromLocalData(commentKey) {
+                return safeExecute(() => {
+                    console.log('[CodeView] 立即移除本地评论数据:', commentKey);
+                    
+                    // 从fileComments中移除
+                    const commentIndex = this.fileComments.findIndex(c => c.key === commentKey);
+                    if (commentIndex !== -1) {
+                        this.fileComments.splice(commentIndex, 1);
+                        console.log('[CodeView] 从fileComments中移除评论，剩余数量:', this.fileComments.length);
+                    }
+                    
+                    // 重新构建评论标记
+                    this.buildCommentMarkers();
+                    
+                    console.log('[CodeView] 本地评论数据移除完成');
+                }, '立即移除本地评论数据');
             }
         },
         template: template,
@@ -1727,8 +1765,8 @@ const createCodeView = async () => {
             return safeExecute(async () => {
                 console.log('[CodeView] 收到评论重新加载事件:', event.detail);
                 console.log('[CodeView] 当前文件:', this.file);
-                console.log('[CodeView] 当前评论标记数量:', Object.keys(this.commentMarkers).length);
-                console.log('[CodeView] 当前lineComments状态:', this.lineComments);
+                console.log('[CodeView] 重新加载前的评论标记数量:', Object.keys(this.commentMarkers).length);
+                console.log('[CodeView] 重新加载前的lineComments状态:', this.lineComments);
                 
                 // 如果当前有显示的评论详情弹窗，关闭它
                 if (this.showCommentDetailPopup) {
@@ -1754,6 +1792,10 @@ const createCodeView = async () => {
                 await this.$nextTick();
                 console.log('[CodeView] 评论数据重新加载完成，新的评论标记数量:', Object.keys(this.commentMarkers).length);
                 console.log('[CodeView] 新的lineComments状态:', this.lineComments);
+                
+                // 验证数据更新
+                const totalComments = Object.values(this.commentMarkers).reduce((sum, comments) => sum + comments.length, 0);
+                console.log('[CodeView] 总评论数量:', totalComments);
                 
                 // 重新绑定选择事件，确保选择功能正常工作
                 console.log('[CodeView] 重新绑定选择事件');

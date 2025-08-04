@@ -532,10 +532,11 @@ export const useMethods = (store) => {
                     // 触发评论面板重新加载mongoComments
                     console.log('[评论删除] 触发评论面板重新加载');
                     setTimeout(() => {
+                        console.log('[评论删除] 发送reloadComments事件');
                         window.dispatchEvent(new CustomEvent('reloadComments', {
                             detail: { projectId: selectedProject.value, versionId: selectedVersion.value }
                         }));
-                    }, 100);
+                    }, 50); // 减少延迟时间从100ms到50ms
                 }
 
             } catch (error) {
