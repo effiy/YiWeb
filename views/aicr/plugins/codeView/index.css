@@ -230,12 +230,7 @@
     border: 1px solid rgba(79, 70, 229, 0.2);
     /* 确保弹窗在滚动时保持可见 */
     transform: translateZ(0);
-    /* 拖拽相关样式 */
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
-    /* 确保拖拽时不受transition影响 */
-    -webkit-user-select: none;
-    user-select: none;
-    /* 添加边界检测和自动调整 */
+    /* 确保弹窗在边界情况下也能显示 */
     will-change: transform, left, top;
     /* 确保弹窗不会被其他元素遮挡 */
     isolation: isolate;
@@ -243,24 +238,6 @@
     filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.15));
     /* 向左偏移210px */
     margin-left: -210px;
-}
-
-/* 拖拽时的视觉反馈 */
-.comment-detail-popup.dragging {
-    box-shadow: 
-        0 25px 50px rgba(0, 0, 0, 0.15),
-        0 12px 24px rgba(0, 0, 0, 0.1),
-        0 0 0 2px rgba(79, 70, 229, 0.3);
-    transform: translateZ(0) scale(1.02);
-    z-index: 1000000; /* 拖拽时进一步提高层级 */
-    /* 拖拽时禁用transition，确保流畅的拖拽体验 */
-    transition: none !important;
-}
-
-/* 拖拽时的头部样式 */
-.comment-detail-popup.dragging .comment-detail-header {
-    background: linear-gradient(135deg, var(--bg-tertiary) 0%, rgba(79, 70, 229, 0.1) 100%);
-    border-bottom: 2px solid rgba(79, 70, 229, 0.3);
 }
 
 /* 添加边界检测和自动调整的样式 */
@@ -330,42 +307,8 @@
     border-radius: 12px 12px 0 0;
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
-    /* 拖拽相关样式 */
-    cursor: grab;
-    -webkit-user-select: none;
-    user-select: none;
-    transition: cursor 0.2s ease;
     position: relative;
 }
-
-.comment-detail-header:hover {
-    cursor: grabbing;
-}
-
-.comment-detail-header:active {
-    cursor: grabbing;
-}
-
-/* 拖拽指示器 */
-.comment-detail-header::before {
-    content: '⋮⋮';
-    position: absolute;
-    left: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 12px;
-    color: var(--text-muted);
-    opacity: 0.6;
-    transition: opacity 0.2s ease;
-    pointer-events: none;
-}
-
-.comment-detail-header:hover::before {
-    opacity: 1;
-    color: var(--text-secondary);
-}
-
-
 
 .comment-author-info {
     display: flex;
@@ -2062,6 +2005,7 @@
         background: linear-gradient(135deg, rgba(79, 70, 229, 0.8) 0%, rgba(99, 102, 241, 0.7) 100%);
     }
 } 
+
 
 
 

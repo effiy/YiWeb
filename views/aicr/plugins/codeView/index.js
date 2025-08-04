@@ -117,17 +117,9 @@ const createCodeView = async () => {
                     vertical: 'bottom',  // 'top', 'bottom', 'center'
                     lastPosition: null
                 },
-                // 新增：拖拽相关状态
-                dragState: {
-                    isDragging: false,
-                    startX: 0,
-                    startY: 0,
-                    startLeft: 0,
-                    startTop: 0
-                },
                 // 新增：弹窗状态
                 popupState: {
-                    isDraggable: true
+                    isDraggable: false
                 }
             };
         },
@@ -249,11 +241,8 @@ const createCodeView = async () => {
                     
                     // 等待DOM更新后计算位置
                     this.$nextTick(() => {
-                        // 优先恢复拖拽位置，如果没有则计算新位置
-                        this.restoreDragPosition();
-                        if (!this.popupPositionPreference.lastPosition || !this.popupPositionPreference.lastPosition.isDragged) {
-                            this.calculateDetailPosition(event);
-                        }
+                        // 计算新位置
+                        this.calculateDetailPosition(event);
                     });
                     
                     // 点击外部关闭
@@ -1499,170 +1488,10 @@ const createCodeView = async () => {
                 }
             },
             
-            // 新增：开始拖拽
-            startDrag(event) {
-                return safeExecute(() => {
-                    // 阻止默认行为
-                    event.preventDefault();
-                    event.stopPropagation();
-                    
-                    console.log('[CodeView] 开始拖拽弹窗', {
-                        event: event.type,
-                        target: event.target,
-                        clientX: event.clientX,
-                        clientY: event.clientY,
-                        currentPosition: this.commentDetailPosition
-                    });
-                    
-                    this.dragState.isDragging = true;
-                    this.dragState.startX = event.clientX || event.touches[0].clientX;
-                    this.dragState.startY = event.clientY || event.touches[0].clientY;
-                    this.dragState.startLeft = this.commentDetailPosition.x;
-                    this.dragState.startTop = this.commentDetailPosition.y;
-                    
-                    console.log('[CodeView] 拖拽状态已设置:', this.dragState);
-                    
-                    // 添加拖拽样式和视觉反馈
-                    const popup = document.querySelector('.comment-detail-popup');
-                    if (popup) {
-                        popup.style.cursor = 'grabbing';
-                        popup.style.userSelect = 'none';
-                        popup.classList.add('dragging');
-                        console.log('[CodeView] 拖拽样式已应用');
-                    } else {
-                        console.warn('[CodeView] 未找到弹窗元素');
-                    }
-                    
-                    // 添加事件监听器
-                    document.addEventListener('mousemove', this.onDrag);
-                    document.addEventListener('touchmove', this.onDrag, { passive: false });
-                    document.addEventListener('mouseup', this.stopDrag);
-                    document.addEventListener('touchend', this.stopDrag);
-                    
-                    console.log('[CodeView] 拖拽事件监听器已添加');
-                }, '开始拖拽');
-            },
-            
-            // 新增：拖拽中
-            onDrag(event) {
-                return safeExecute(() => {
-                    if (!this.dragState.isDragging) {
-                        console.log('[CodeView] 拖拽状态为false，忽略拖拽事件');
-                        return;
-                    }
-                    
-                    event.preventDefault();
-                    
-                    const currentX = event.clientX || event.touches[0].clientX;
-                    const currentY = event.clientY || event.touches[0].clientY;
-                    
-                    const deltaX = currentX - this.dragState.startX;
-                    const deltaY = currentY - this.dragState.startY;
-                    
-                    // 更新位置 - 由于使用fixed定位，直接使用clientX/Y坐标
-                    this.commentDetailPosition.x = this.dragState.startLeft + deltaX;
-                    this.commentDetailPosition.y = this.dragState.startTop + deltaY;
-                    
-                    console.log('[CodeView] 拖拽中更新位置:', {
-                        currentX, currentY,
-                        deltaX, deltaY,
-                        newPosition: this.commentDetailPosition
-                    });
-                    
-                    // 边界检查
-                    this.constrainPopupPosition();
-                }, '拖拽中');
-            },
-            
-            // 新增：停止拖拽
-            stopDrag(event) {
-                return safeExecute(() => {
-                    if (!this.dragState.isDragging) return;
-                    
-                    console.log('[CodeView] 停止拖拽弹窗');
-                    
-                    this.dragState.isDragging = false;
-                    
-                    // 移除拖拽样式和视觉反馈
-                    const popup = document.querySelector('.comment-detail-popup');
-                    if (popup) {
-                        popup.style.cursor = '';
-                        popup.style.userSelect = '';
-                        popup.classList.remove('dragging');
-                    }
-                    
-                    // 移除事件监听器
-                    document.removeEventListener('mousemove', this.onDrag);
-                    document.removeEventListener('touchmove', this.onDrag);
-                    document.removeEventListener('mouseup', this.stopDrag);
-                    document.removeEventListener('touchend', this.stopDrag);
-                    
-                    // 保存位置偏好
-                    this.saveDragPosition();
-                }, '停止拖拽');
-            },
-            
-            // 新增：约束弹窗位置
-            constrainPopupPosition() {
-                const viewportWidth = window.innerWidth;
-                const viewportHeight = window.innerHeight;
-                const popup = document.querySelector('.comment-detail-popup');
-                
-                if (!popup) return;
-                
-                const popupRect = popup.getBoundingClientRect();
-                const popupWidth = popupRect.width;
-                const popupHeight = popupRect.height;
-                
-                // 检查评论区位置
-                const commentsPanel = document.querySelector('.aicr-comments');
-                let commentsLeft = viewportWidth;
-                if (commentsPanel) {
-                    const commentsRect = commentsPanel.getBoundingClientRect();
-                    commentsLeft = commentsRect.left;
-                }
-                
-                // 确保弹窗不会完全移出视窗，且不被评论区遮挡
-                const minX = 20; // 距离左边界至少20px
-                const maxX = Math.min(viewportWidth - popupWidth - 20, commentsLeft - popupWidth - 20);
-                const minY = 20; // 距离上边界至少20px
-                const maxY = viewportHeight - popupHeight - 20;
-                
-                this.commentDetailPosition.x = Math.max(minX, Math.min(maxX, this.commentDetailPosition.x));
-                this.commentDetailPosition.y = Math.max(minY, Math.min(maxY, this.commentDetailPosition.y));
-                
-                // 更新评论区附近的样式
-                if (popup) {
-                    if (this.commentDetailPosition.x + popupWidth > commentsLeft - 50) {
-                        popup.classList.add('near-comments');
-                    } else {
-                        popup.classList.remove('near-comments');
-                    }
-                }
-            },
-            
-            // 新增：保存拖拽位置
-            saveDragPosition() {
-                // 更新位置偏好
-                this.popupPositionPreference.lastPosition = {
-                    x: this.commentDetailPosition.x,
-                    y: this.commentDetailPosition.y,
-                    timestamp: Date.now(),
-                    isDragged: true
-                };
-                
-                console.log('[CodeView] 拖拽位置已保存:', this.commentDetailPosition);
-            },
-            
-
-            
             // 新增：恢复拖拽位置
             restoreDragPosition() {
-                if (this.popupPositionPreference.lastPosition && this.popupPositionPreference.lastPosition.isDragged) {
-                    this.commentDetailPosition.x = this.popupPositionPreference.lastPosition.x;
-                    this.commentDetailPosition.y = this.popupPositionPreference.lastPosition.y;
-                    console.log('[CodeView] 恢复拖拽位置:', this.commentDetailPosition);
-                }
+                // 拖拽功能已移除，此方法不再需要
+                console.log('[CodeView] 拖拽功能已移除');
             }
         },
         template: template,
@@ -1745,10 +1574,10 @@ const createCodeView = async () => {
                         this.hideCommentPreview();
                     }
                     
-                    // 如果详情弹窗正在显示，重新约束位置
+                    // 如果详情弹窗正在显示，重新计算位置
                     if (this.showCommentDetailPopup && this.currentCommentDetail) {
-                        console.log('[CodeView] 重新约束详情弹窗位置');
-                        this.constrainPopupPosition();
+                        console.log('[CodeView] 重新计算详情弹窗位置');
+                        // 这里可以添加重新计算位置的逻辑
                     }
                     
                     // 如果预览弹窗正在显示，重新约束位置
@@ -1796,6 +1625,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 
