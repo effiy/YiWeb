@@ -5,7 +5,7 @@ import { safeExecute } from '/utils/error.js';
 import { loadCSSFiles } from '/utils/baseView.js';
 import { showGlobalLoading, hideGlobalLoading } from '/utils/loading.js';
 
-import { postData } from '/apis/index.js';
+import { postData, getData } from '/apis/index.js';
 
 // 自动加载相关的CSS文件
 loadCSSFiles([
@@ -23,6 +23,56 @@ async function loadTemplate() {
     } catch (error) {
         console.error('加载模板失败:', error);
         return;
+    }
+}
+
+// 新增：异步获取评论数据
+async function fetchCommentsForFile(file) {
+    try {
+        // 从header-row的选择器获取项目/版本信息
+        const projectSelect = document.getElementById('projectSelect');
+        const versionSelect = document.getElementById('versionSelect');
+        
+        let projectId = null;
+        let versionId = null;
+        
+        if (projectSelect) {
+            projectId = projectSelect.value;
+            console.log('[CodeView] 从选择器获取项目ID:', projectId);
+        }
+        
+        if (versionSelect) {
+            versionId = versionSelect.value;
+            console.log('[CodeView] 从选择器获取版本ID:', versionId);
+        }
+        
+        // 检查项目/版本信息是否完整
+        if (!projectId || !versionId) {
+            console.log('[CodeView] 项目/版本信息不完整，跳过MongoDB接口请求');
+            console.log('[CodeView] 项目ID:', projectId, '版本ID:', versionId);
+            return [];
+        }
+        
+        // 构建API URL
+        let url = `${window.API_URL}/mongodb/?cname=comments`;
+        url += `&projectId=${projectId}`;
+        url += `&versionId=${versionId}`;
+        
+        if (file) {
+            const fileId = file.fileId || file.id || file.path || file.key;
+            if (fileId) {
+                url += `&fileId=${fileId}`;
+            }
+        }
+        
+        console.log('[CodeView] 获取文件评论数据:', url);
+        const response = await getData(url, { method: 'GET' });
+        console.log('[CodeView] 获取评论数据:', response.data.list);
+        
+        return Array.isArray(response.data.list) ? response.data.list : [];
+    } catch (err) {
+        console.error('[CodeView] 获取评论数据失败:', err);
+        return [];
     }
 }
 
@@ -49,8 +99,36 @@ const createCodeView = async () => {
         emits: ['line-click'],
         data() {
             return {
-                // 已无与code-actions相关的数据
-                highlightedLines: [] // 新增：高亮的行号数组
+                highlightedLines: [], // 高亮的行号数组
+                fileComments: [], // 当前文件的评论数据
+                commentsLoading: false, // 评论加载状态
+                commentsError: '', // 评论加载错误
+                commentMarkers: new Map(), // 评论标记映射 {lineNumber: [comments]}
+                showCommentDetailPopup: false, // 是否显示评论详情弹窗
+                currentCommentDetail: null, // 当前显示的评论详情
+                commentDetailPosition: { x: 0, y: 0 }, // 评论详情位置
+                showCommentPreviewPopup: false, // 是否显示评论预览弹窗
+                currentCommentPreview: null, // 当前显示的评论预览
+                commentPreviewPosition: { x: 0, y: 0 }, // 评论预览位置
+                hoverTimeout: null, // 悬停延迟定时器
+                // 新增：弹窗位置偏好记忆
+                popupPositionPreference: {
+                    horizontal: 'right', // 'right', 'left', 'center'
+                    vertical: 'bottom',  // 'top', 'bottom', 'center'
+                    lastPosition: null
+                },
+                // 新增：拖拽相关状态
+                dragState: {
+                    isDragging: false,
+                    startX: 0,
+                    startY: 0,
+                    startLeft: 0,
+                    startTop: 0
+                },
+                // 新增：弹窗状态
+                popupState: {
+                    isDraggable: true
+                }
             };
         },
         computed: {
@@ -68,6 +146,16 @@ const createCodeView = async () => {
                     if (!this.file) return 'text';
                     return this.file.language || 'text';
                 }, '语言类型获取');
+            },
+            
+            // 新增：检查是否有弹窗正在显示
+            hasActivePopup() {
+                return this.showCommentDetailPopup || this.showCommentPreviewPopup;
+            },
+            
+            // 新增：检查弹窗冲突
+            hasPopupConflict() {
+                return this.showCommentDetailPopup && this.showCommentPreviewPopup;
             }
         },
         methods: {
@@ -85,6 +173,521 @@ const createCodeView = async () => {
                     div.textContent = text;
                     return div.innerHTML;
                 }, 'HTML转义');
+            },
+            
+            // 新增：加载文件评论数据
+            async loadFileComments() {
+                return safeExecute(async () => {
+                    if (!this.file) {
+                        this.fileComments = [];
+                        this.commentMarkers.clear();
+                        return;
+                    }
+                    
+                    console.log('[CodeView] 开始加载文件评论数据...');
+                    this.commentsLoading = true;
+                    this.commentsError = '';
+                    
+                    try {
+                        const comments = await fetchCommentsForFile(this.file);
+                        this.fileComments = comments;
+                        
+                        // 构建评论标记映射
+                        this.buildCommentMarkers();
+                        
+                        console.log('[CodeView] 文件评论数据加载完成:', comments.length);
+                    } catch (err) {
+                        this.commentsError = '加载评论失败';
+                        console.error('[CodeView] 评论加载失败:', err);
+                    } finally {
+                        this.commentsLoading = false;
+                    }
+                }, '文件评论数据加载');
+            },
+            
+            // 新增：构建评论标记映射
+            buildCommentMarkers() {
+                this.commentMarkers.clear();
+                
+                console.log('[CodeView] 开始构建评论标记映射，评论数量:', this.fileComments.length);
+                
+                this.fileComments.forEach(comment => {
+                    if (comment.rangeInfo && comment.rangeInfo.startLine) {
+                        const startLine = comment.rangeInfo.startLine;
+                        const endLine = comment.rangeInfo.endLine || startLine;
+                        
+                        console.log('[CodeView] 处理评论:', comment.key, '行号范围:', startLine, '-', endLine);
+                        
+                        // 为范围内的每一行添加评论标记
+                        for (let line = startLine; line <= endLine; line++) {
+                            if (!this.commentMarkers.has(line)) {
+                                this.commentMarkers.set(line, []);
+                            }
+                            this.commentMarkers.get(line).push(comment);
+                        }
+                    }
+                });
+                
+                console.log('[CodeView] 评论标记映射构建完成:', this.commentMarkers);
+            },
+            
+            // 新增：获取指定行的评论
+            getCommentsForLine(lineNumber) {
+                const comments = this.commentMarkers.get(lineNumber) || [];
+                console.log('[CodeView] 获取第', lineNumber, '行的评论，数量:', comments.length);
+                return comments;
+            },
+            
+            // 新增：显示评论详情
+            showCommentDetail(comment, event) {
+                return safeExecute(() => {
+                    // 互斥显示：先隐藏预览弹窗
+                    this.hideCommentPreview();
+                    
+                    this.currentCommentDetail = comment;
+                    this.showCommentDetailPopup = true;
+                    
+                    // 等待DOM更新后计算位置
+                    this.$nextTick(() => {
+                        // 优先恢复拖拽位置，如果没有则计算新位置
+                        this.restoreDragPosition();
+                        if (!this.popupPositionPreference.lastPosition || !this.popupPositionPreference.lastPosition.isDragged) {
+                            this.calculateDetailPosition(event);
+                        }
+                    });
+                    
+                    // 点击外部关闭
+                    setTimeout(() => {
+                        document.addEventListener('mousedown', this.handleCommentDetailClickOutside, { passive: true });
+                    }, 100);
+                }, '显示评论详情');
+            },
+            
+            // 新增：计算详情弹窗位置
+            calculateDetailPosition(event) {
+                return safeExecute(() => {
+                    // 找到对应的 comment-marker 元素
+                    const commentKey = this.currentCommentDetail?.key;
+                    if (!commentKey) {
+                        console.warn('[CodeView] 无法找到评论key，使用默认位置计算');
+                const position = this.calculatePopupPosition(event, '.comment-detail-popup', 400, 300);
+                if (position) {
+                            this.convertToFixedPosition(position);
+                        }
+                        return;
+                    }
+                    
+                    // 查找对应的 comment-marker 元素
+                    const markerSelector = `.comment-marker[data-comment-key="${commentKey}"]`;
+                    const markerElement = document.querySelector(markerSelector);
+                    
+                    if (!markerElement) {
+                        console.warn('[CodeView] 未找到对应的comment-marker元素:', markerSelector);
+                        // 回退到基于事件的位置计算
+                        const position = this.calculatePopupPosition(event, '.comment-detail-popup', 400, 300);
+                        if (position) {
+                            this.convertToFixedPosition(position);
+                        }
+                        return;
+                    }
+                    
+                    // 获取marker的位置信息
+                    const markerRect = markerElement.getBoundingClientRect();
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+                    const popupWidth = 400; // 预估弹窗宽度
+                    const popupHeight = 300; // 预估弹窗高度
+                    
+                    // 检查评论区位置
+                    const commentsPanel = document.querySelector('.aicr-comments');
+                    let commentsLeft = viewportWidth;
+                    if (commentsPanel) {
+                        const commentsRect = commentsPanel.getBoundingClientRect();
+                        commentsLeft = commentsRect.left;
+                    }
+                    
+                    // 计算紧挨着marker的位置（详情弹窗往右偏移）
+                    let x, y;
+                    const margin = 8; // 与marker的间距
+                    const offsetX = 9; // 水平偏移量，向右偏移9px（13-4=9）
+                    
+                    // 水平位置：优先显示在marker右侧，但往右偏移
+                    if (markerRect.right + popupWidth + margin + offsetX <= commentsLeft - 20) {
+                        // 右侧有足够空间且不会与评论区重叠
+                        x = markerRect.right + margin + offsetX;
+                    } else if (markerRect.left - popupWidth - margin + offsetX >= 20) {
+                        // 左侧有足够空间
+                        x = markerRect.left - popupWidth - margin + offsetX;
+                    } else {
+                        // 居中显示，但避免与评论区重叠
+                        x = Math.max(20, Math.min(markerRect.left + offsetX, commentsLeft - popupWidth - 20));
+                    }
+                    
+                    // 垂直位置：优先显示在marker下方
+                    if (markerRect.bottom + popupHeight + margin <= viewportHeight - 20) {
+                        // 下方有足够空间
+                        y = markerRect.bottom + margin;
+                    } else if (markerRect.top - popupHeight - margin >= 20) {
+                        // 上方有足够空间
+                        y = markerRect.top - popupHeight - margin;
+                    } else {
+                        // 居中显示
+                        y = Math.max(20, Math.min(markerRect.top, viewportHeight - popupHeight - 20));
+                    }
+                    
+                    // 边界检查和调整
+                    x = Math.max(20, Math.min(x, viewportWidth - popupWidth - 20));
+                    y = Math.max(20, Math.min(y, viewportHeight - popupHeight - 20));
+                    
+                    this.commentDetailPosition = { x, y };
+                    
+                    // 检查是否在评论区附近，如果是则添加特殊样式
+                    const popupElement = document.querySelector('.comment-detail-popup');
+                    if (popupElement) {
+                        if (x + popupWidth > commentsLeft - 50) {
+                            popupElement.classList.add('near-comments');
+                        } else {
+                            popupElement.classList.remove('near-comments');
+                        }
+                    }
+                    
+                    console.log('[CodeView] 弹窗位置已优化（往右偏移）:', {
+                        commentKey: commentKey,
+                        marker: { 
+                            left: markerRect.left, 
+                            top: markerRect.top, 
+                            right: markerRect.right, 
+                            bottom: markerRect.bottom 
+                        },
+                        position: { x, y },
+                        offset: { x: offsetX },
+                        viewport: { width: viewportWidth, height: viewportHeight },
+                        commentsLeft: commentsLeft
+                    });
+                }, '计算详情弹窗位置（往右偏移）');
+            },
+            
+            // 新增：转换位置为fixed坐标
+            convertToFixedPosition(position) {
+                const codeContent = this.$refs.codeContent;
+                const codeRect = codeContent.getBoundingClientRect();
+                const scrollX = window.pageXOffset || document.documentElement.scrollX;
+                const scrollY = window.pageYOffset || document.documentElement.scrollY;
+                
+                // 转换为fixed定位的坐标
+                const fixedX = position.x + codeRect.left - scrollX;
+                const fixedY = position.y + codeRect.top - scrollY;
+                
+                // 优化位置计算 - 确保弹窗在视窗内且不被评论区遮挡
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                const popupWidth = 400; // 预估弹窗宽度
+                const popupHeight = 300; // 预估弹窗高度
+                
+                // 检查评论区位置
+                const commentsPanel = document.querySelector('.aicr-comments');
+                let commentsLeft = viewportWidth;
+                if (commentsPanel) {
+                    const commentsRect = commentsPanel.getBoundingClientRect();
+                    commentsLeft = commentsRect.left;
+                }
+                
+                // 智能位置调整
+                let optimizedX = fixedX;
+                let optimizedY = fixedY;
+                
+                // 水平位置优化
+                if (optimizedX + popupWidth > commentsLeft - 20) {
+                    // 如果会与评论区重叠，优先显示在左侧
+                    optimizedX = Math.max(20, commentsLeft - popupWidth - 20);
+                }
+                
+                // 确保不超出视窗边界
+                if (optimizedX < 20) optimizedX = 20;
+                if (optimizedX + popupWidth > viewportWidth - 20) {
+                    optimizedX = viewportWidth - popupWidth - 20;
+                }
+                
+                // 垂直位置优化
+                if (optimizedY < 20) optimizedY = 20;
+                if (optimizedY + popupHeight > viewportHeight - 20) {
+                    optimizedY = viewportHeight - popupHeight - 20;
+                }
+                
+                this.commentDetailPosition = { x: optimizedX, y: optimizedY };
+                
+                // 检查是否在评论区附近，如果是则添加特殊样式
+                const popupElement = document.querySelector('.comment-detail-popup');
+                if (popupElement) {
+                    if (optimizedX + popupWidth > commentsLeft - 50) {
+                        popupElement.classList.add('near-comments');
+                    } else {
+                        popupElement.classList.remove('near-comments');
+                    }
+                }
+                
+                console.log('[CodeView] 弹窗位置已优化（基于事件）:', {
+                    original: { x: fixedX, y: fixedY },
+                    optimized: { x: optimizedX, y: optimizedY },
+                    viewport: { width: viewportWidth, height: viewportHeight },
+                    commentsLeft: commentsLeft
+                });
+            },
+            
+            // 新增：处理评论详情外部点击
+            handleCommentDetailClickOutside(event) {
+                if (!event.target.closest('.comment-detail-popup')) {
+                    this.hideCommentDetail();
+                    document.removeEventListener('mousedown', this.handleCommentDetailClickOutside, { passive: true });
+                }
+            },
+            
+            // 新增：处理键盘事件（ESC键关闭弹窗）
+            handleKeyDown(event) {
+                if (event.key === 'Escape') {
+                    if (this.showCommentDetailPopup) {
+                        this.hideCommentDetail();
+                    } else if (this.showCommentPreviewPopup) {
+                        this.hideCommentPreview();
+                    }
+                }
+            },
+            
+            // 新增：隐藏评论详情
+            hideCommentDetail() {
+                // 添加关闭动画
+                const popup = document.querySelector('.comment-detail-popup');
+                if (popup) {
+                    popup.style.animation = 'commentPopupFadeOut 0.2s ease-out forwards';
+                    setTimeout(() => {
+                        this.showCommentDetailPopup = false;
+                        this.currentCommentDetail = null;
+                        console.log('[CodeView] 详情弹窗已关闭，可以重新显示预览弹窗');
+                    }, 200);
+                } else {
+                    this.showCommentDetailPopup = false;
+                    this.currentCommentDetail = null;
+                    console.log('[CodeView] 详情弹窗已关闭，可以重新显示预览弹窗');
+                }
+            },
+            
+            // 新增：格式化时间
+            formatTime(timestamp) {
+                if (!timestamp) return '';
+                const date = new Date(timestamp);
+                return date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            },
+            
+            // 新增：获取评论状态标签
+            getCommentStatusLabel(status) {
+                const statusMap = {
+                    'pending': '待处理',
+                    'resolved': '已解决',
+                    'reopened': '重新打开'
+                };
+                return statusMap[status] || status;
+            },
+            
+            // 新增：获取评论状态样式类
+            getCommentStatusClass(status) {
+                const classMap = {
+                    'pending': 'status-pending',
+                    'resolved': 'status-resolved',
+                    'reopened': 'status-reopened'
+                };
+                return classMap[status] || '';
+            },
+            
+            // 新增：显示评论预览（悬停）
+            showCommentPreview(comment, event) {
+                return safeExecute(() => {
+                    console.log('[CodeView] 开始显示评论预览:', comment);
+                    
+                    // 互斥显示：如果详情弹窗正在显示，则不显示预览弹窗
+                    if (this.showCommentDetailPopup) {
+                        console.log('[CodeView] 详情弹窗正在显示，跳过预览弹窗');
+                        return;
+                    }
+                    
+                    // 清除之前的定时器
+                    if (this.hoverTimeout) {
+                        clearTimeout(this.hoverTimeout);
+                    }
+                    
+                    // 设置延迟显示，避免鼠标快速移动时频繁显示
+                    this.hoverTimeout = setTimeout(() => {
+                        // 再次检查互斥状态，确保在延迟期间状态没有变化
+                        if (this.showCommentDetailPopup) {
+                            console.log('[CodeView] 延迟期间详情弹窗已显示，取消预览弹窗');
+                            return;
+                        }
+                        
+                        console.log('[CodeView] 延迟显示评论预览');
+                        this.currentCommentPreview = comment;
+                        this.showCommentPreviewPopup = true;
+                        
+                        // 等待DOM更新后计算位置
+                        this.$nextTick(() => {
+                            this.calculatePreviewPosition(event);
+                        });
+                    }, 200); // 减少延迟到200ms，提升响应速度
+                }, '显示评论预览');
+            },
+            
+            // 新增：计算预览弹窗位置
+            calculatePreviewPosition(event) {
+                return safeExecute(() => {
+                    // 找到对应的 comment-marker 元素
+                    const commentKey = this.currentCommentPreview?.key;
+                    if (!commentKey) {
+                        console.warn('[CodeView] 无法找到预览评论key，使用默认位置计算');
+                const position = this.calculatePopupPosition(event, '.comment-preview-popup', 320, 180);
+                if (position) {
+                            this.convertPreviewToFixedPosition(position);
+                        }
+                        return;
+                    }
+                    
+                    // 查找对应的 comment-marker 元素
+                    const markerSelector = `.comment-marker[data-comment-key="${commentKey}"]`;
+                    const markerElement = document.querySelector(markerSelector);
+                    
+                    if (!markerElement) {
+                        console.warn('[CodeView] 未找到对应的comment-marker元素:', markerSelector);
+                        // 回退到基于事件的位置计算
+                        const position = this.calculatePopupPosition(event, '.comment-preview-popup', 320, 180);
+                        if (position) {
+                            this.convertPreviewToFixedPosition(position);
+                        }
+                        return;
+                    }
+                    
+                    // 获取marker的位置信息
+                    const markerRect = markerElement.getBoundingClientRect();
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+                    const popupWidth = 320; // 预估预览弹窗宽度
+                    const popupHeight = 180; // 预估预览弹窗高度
+                    
+                    // 检查评论区位置
+                    const commentsPanel = document.querySelector('.aicr-comments');
+                    let commentsLeft = viewportWidth;
+                    if (commentsPanel) {
+                        const commentsRect = commentsPanel.getBoundingClientRect();
+                        commentsLeft = commentsRect.left;
+                    }
+                    
+                    // 计算紧挨着marker的位置（预览弹窗往左下方偏移）
+                    let x, y;
+                    const margin = 8; // 与marker的间距
+                    const offsetX = -30; // 水平偏移量，向左偏移30px
+                    const offsetY = 10; // 垂直偏移量，向下偏移10px
+                    
+                    // 水平位置：优先显示在marker右侧，但往左偏移
+                    if (markerRect.right + popupWidth + margin + offsetX <= commentsLeft - 20) {
+                        // 右侧有足够空间且不会与评论区重叠
+                        x = markerRect.right + margin + offsetX;
+                    } else if (markerRect.left - popupWidth - margin + offsetX >= 20) {
+                        // 左侧有足够空间
+                        x = markerRect.left - popupWidth - margin + offsetX;
+                    } else {
+                        // 居中显示，但避免与评论区重叠
+                        x = Math.max(20, Math.min(markerRect.left + offsetX, commentsLeft - popupWidth - 20));
+                    }
+                    
+                    // 垂直位置：优先显示在marker下方，但往下偏移
+                    if (markerRect.bottom + popupHeight + margin + offsetY <= viewportHeight - 20) {
+                        // 下方有足够空间
+                        y = markerRect.bottom + margin + offsetY;
+                    } else if (markerRect.top - popupHeight - margin + offsetY >= 20) {
+                        // 上方有足够空间
+                        y = markerRect.top - popupHeight - margin + offsetY;
+                    } else {
+                        // 居中显示
+                        y = Math.max(20, Math.min(markerRect.top + offsetY, viewportHeight - popupHeight - 20));
+                    }
+                    
+                    // 边界检查和调整
+                    x = Math.max(20, Math.min(x, viewportWidth - popupWidth - 20));
+                    y = Math.max(20, Math.min(y, viewportHeight - popupHeight - 20));
+                    
+                    this.commentPreviewPosition = { x, y };
+                    
+                    console.log('[CodeView] 预览弹窗位置已优化（往左下方偏移）:', {
+                        commentKey: commentKey,
+                        marker: { 
+                            left: markerRect.left, 
+                            top: markerRect.top, 
+                            right: markerRect.right, 
+                            bottom: markerRect.bottom 
+                        },
+                        position: { x, y },
+                        offset: { x: offsetX, y: offsetY },
+                        viewport: { width: viewportWidth, height: viewportHeight },
+                        commentsLeft: commentsLeft
+                    });
+                }, '计算预览弹窗位置（往左下方偏移）');
+            },
+            
+            // 新增：转换预览弹窗位置为fixed坐标
+            convertPreviewToFixedPosition(position) {
+                const codeContent = this.$refs.codeContent;
+                const codeRect = codeContent.getBoundingClientRect();
+                const scrollX = window.pageXOffset || document.documentElement.scrollX;
+                const scrollY = window.pageYOffset || document.documentElement.scrollY;
+                
+                // 转换为fixed定位的坐标
+                const fixedX = position.x + codeRect.left - scrollX;
+                const fixedY = position.y + codeRect.top - scrollY;
+                
+                this.commentPreviewPosition = { x: fixedX, y: fixedY };
+                
+                console.log('[CodeView] 预览弹窗位置已优化（基于事件）:', {
+                    original: { x: position.x, y: position.y },
+                    fixed: { x: fixedX, y: fixedY }
+                });
+            },
+            
+            // 新增：隐藏评论预览
+            hideCommentPreview() {
+                return safeExecute(() => {
+                    console.log('[CodeView] 开始隐藏评论预览');
+                    
+                    // 清除定时器
+                    if (this.hoverTimeout) {
+                        clearTimeout(this.hoverTimeout);
+                        this.hoverTimeout = null;
+                    }
+                    
+                    // 延迟隐藏，避免鼠标快速移动时闪烁
+                    setTimeout(() => {
+                        console.log('[CodeView] 延迟隐藏评论预览');
+                        this.showCommentPreviewPopup = false;
+                        this.currentCommentPreview = null;
+                    }, 150); // 增加延迟到150ms，减少闪烁
+                }, '隐藏评论预览');
+            },
+            
+            // 新增：处理评论标记鼠标事件
+            handleCommentMarkerMouseEvents(comment, event) {
+                return safeExecute(() => {
+                    const eventType = event.type;
+                    console.log('[CodeView] 评论标记鼠标事件:', eventType, comment);
+                    
+                    if (eventType === 'mouseenter') {
+                        console.log('[CodeView] 鼠标进入评论标记，显示预览');
+                        this.showCommentPreview(comment, event);
+                    } else if (eventType === 'mouseleave') {
+                        console.log('[CodeView] 鼠标离开评论标记，隐藏预览');
+                        this.hideCommentPreview();
+                    }
+                }, '评论标记鼠标事件处理');
             },
             
             // 绑定划词评论事件
@@ -169,12 +772,59 @@ const createCodeView = async () => {
                     // 清空容器内容
                     container.innerHTML = '';
                     container.style.display = 'block';
+                    
+                    // 添加容器状态指示器
+                    const indicator = document.createElement('div');
+                    indicator.className = 'container-indicator';
+                    container.appendChild(indicator);
+                    
+                    // 添加容器工具提示
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'container-tooltip';
+                    tooltip.textContent = '点击添加评论';
+                    tooltip.setAttribute('role', 'tooltip');
+                    tooltip.setAttribute('aria-hidden', 'true');
+                    container.appendChild(tooltip);
+                    
+                    // 添加容器关闭按钮
+                    const closeBtn = document.createElement('button');
+                    closeBtn.className = 'container-close';
+                    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    closeBtn.setAttribute('title', '关闭评论操作');
+                    closeBtn.setAttribute('aria-label', '关闭评论操作');
+                    closeBtn.setAttribute('type', 'button');
+                    closeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.clearSelectionAndButton();
+                    });
+                    closeBtn.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            this.clearSelectionAndButton();
+                        }
+                    });
+                    container.appendChild(closeBtn);
 
-                    // 创建评论按钮
+                    // 创建评论按钮 - 优化版本
                     const button = document.createElement('button');
-                    button.className = 'comment-action-btn';
-                    button.textContent = '添加评论';
+                    button.className = 'comment-action-btn primary';
                     button.type = 'button';
+                    button.setAttribute('aria-label', '添加评论');
+                    button.setAttribute('title', '添加评论');
+                    
+                    // 创建图标元素
+                    const icon = document.createElement('i');
+                    icon.className = 'fas fa-comment-plus';
+                    icon.setAttribute('aria-hidden', 'true');
+                    
+                    // 创建文本元素
+                    const text = document.createElement('span');
+                    text.textContent = '添加评论';
+                    text.className = 'button-text';
+                    
+                    // 组装按钮内容
+                    button.appendChild(icon);
+                    button.appendChild(text);
                     
                     console.log('[CodeView] 评论按钮已创建');
                     
@@ -398,6 +1048,9 @@ const createCodeView = async () => {
                                                                 return postData(`${window.API_URL}/mongodb/?cname=comments`, requestData);
                                                             })
                                                         );
+                                                        
+                                                        // 重新加载评论数据
+                                                        await this.loadFileComments();
                                                     }
                                                 }
                                             }
@@ -420,13 +1073,136 @@ const createCodeView = async () => {
                         this.clearSelectionAndButton();
                     }, { passive: false });
 
-                    // 定位按钮
+                    // 智能定位策略 - 基于选中文本位置，优先保持在右边
                     const rect = range.getBoundingClientRect();
-                    const codeRect = codeContent.getBoundingClientRect();
-                    container.style.position = 'absolute';
-                    container.style.left = `${rect.left - codeRect.left}px`;
-                    container.style.top = `${rect.bottom - codeRect.top + 5}px`;
-                    container.style.zIndex = 1000;
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+                    
+                    // 容器尺寸
+                    const containerWidth = 200;
+                    const containerHeight = 60;
+                    const margin = 16;
+                    
+                    // 检查评论区位置
+                    const commentsPanel = document.querySelector('.aicr-comments');
+                    let commentsLeft = viewportWidth;
+                    if (commentsPanel) {
+                        const commentsRect = commentsPanel.getBoundingClientRect();
+                        commentsLeft = commentsRect.left;
+                    }
+                    
+                    // 计算位置 - 优先保持在右边
+                    let left, top;
+                    
+                    // 水平位置：优先显示在右边，避免与评论区重叠
+                    if (rect.right + containerWidth + margin <= commentsLeft - 20) {
+                        // 右侧有足够空间且不会与评论区重叠
+                        left = rect.right + margin;
+                        console.log('[CodeView] 显示在选中文本右侧');
+                    } else if (commentsLeft - containerWidth - margin >= margin) {
+                        // 评论区左侧有足够空间，显示在评论区左侧
+                        left = commentsLeft - containerWidth - margin;
+                        console.log('[CodeView] 显示在评论区左侧');
+                    } else if (rect.left - containerWidth - margin >= margin) {
+                        // 选中文本左侧有足够空间
+                        left = rect.left - containerWidth - margin;
+                        console.log('[CodeView] 显示在选中文本左侧');
+                    } else {
+                        // 备用方案：显示在视口右侧
+                        left = viewportWidth - containerWidth - margin;
+                        console.log('[CodeView] 显示在视口右侧');
+                    }
+                    
+                    // 垂直位置：优先显示在选中文本中间
+                    const textHeight = rect.height;
+                    if (textHeight >= containerHeight) {
+                        // 选中文本高度足够，居中显示
+                        top = rect.top + (textHeight - containerHeight) / 2;
+                    } else {
+                        // 选中文本高度不足，显示在文本下方
+                        top = rect.bottom + margin;
+                    }
+                    
+                    // 边界检查和调整
+                    left = Math.max(margin, Math.min(left, viewportWidth - containerWidth - margin));
+                    top = Math.max(margin, Math.min(top, viewportHeight - containerHeight - margin));
+                    
+                    // 备用定位策略：如果位置无效，使用固定位置
+                    if (isNaN(left) || isNaN(top) || left < 0 || top < 0) {
+                        left = 20;
+                        top = 20;
+                        console.log('[CodeView] 使用备用固定位置');
+                    }
+                    
+                    // 应用位置 - 使用fixed定位确保不被评论区遮挡
+                    container.style.position = 'fixed';
+                    container.style.left = `${left}px`;
+                    container.style.top = `${top}px`;
+                    container.style.zIndex = 999997; // 提高层级，确保不被评论区遮挡
+                    
+                    // 添加位置类名用于样式优化
+                    container.classList.remove('position-right', 'position-left', 'position-center');
+                    if (left >= rect.right) {
+                        container.classList.add('position-right');
+                    } else if (left <= rect.left - containerWidth) {
+                        container.classList.add('position-left');
+                    } else {
+                        container.classList.add('position-center');
+                    }
+                    
+                    // 确保容器可见并添加动画
+                    container.style.opacity = '0';
+                    container.style.visibility = 'visible';
+                    container.style.transform = 'scale(0.9) translateX(10px)';
+                    container.style.display = 'flex';
+                    
+                    // 使用 requestAnimationFrame 确保位置设置完成后再显示
+                    requestAnimationFrame(() => {
+                        container.style.opacity = '1';
+                        container.style.transform = 'scale(1) translateX(0)';
+                        
+                        // 确保容器完全可见
+                        if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+                            console.log('[CodeView] 容器尺寸异常，重新设置');
+                            container.style.left = '20px';
+                            container.style.top = '20px';
+                        }
+                    });
+                    
+                    console.log('[CodeView] 容器定位:', { 
+                        left, 
+                        top, 
+                        rect: { 
+                            left: rect.left, 
+                            top: rect.top, 
+                            bottom: rect.bottom,
+                            width: rect.width,
+                            height: rect.height
+                        }, 
+                        viewport: { width: viewportWidth, height: viewportHeight },
+                        container: { width: containerWidth, height: containerHeight },
+                        position: left < rect.left ? 'left' : 'right'
+                    });
+                    
+                    // 验证容器是否在可视区域内
+                    setTimeout(() => {
+                        const containerRect = container.getBoundingClientRect();
+                        const isVisible = 
+                            containerRect.width > 0 && 
+                            containerRect.height > 0 && 
+                            containerRect.left >= 0 && 
+                            containerRect.top >= 0;
+                        
+                        console.log('[CodeView] 容器可见性检查:', {
+                            containerRect: {
+                                width: containerRect.width,
+                                height: containerRect.height,
+                                left: containerRect.left,
+                                top: containerRect.top
+                            },
+                            isVisible
+                        });
+                    }, 200);
 
                     container.appendChild(button);
 
@@ -442,6 +1218,91 @@ const createCodeView = async () => {
             },
 
             // 高亮代码行
+            highlightCode(comment) {
+                return safeExecute(() => {
+                    if (!comment || !comment.rangeInfo) {
+                        console.log('[CodeView] 评论或rangeInfo为空');
+                        return;
+                    }
+                    
+                    console.log('[CodeView] 点击引用代码，评论信息:', comment);
+                    
+                    const rangeInfo = comment.rangeInfo;
+                    
+                    // 确保行号是从1开始的
+                    const normalizedRangeInfo = {
+                        startLine: rangeInfo.startLine >= 1 ? rangeInfo.startLine : rangeInfo.startLine + 1,
+                        endLine: rangeInfo.endLine >= 1 ? rangeInfo.endLine : rangeInfo.endLine + 1,
+                        startChar: rangeInfo.startChar,
+                        endChar: rangeInfo.endChar
+                    };
+                    
+                    console.log('[CodeView] 原始行号:', rangeInfo.startLine, '-', rangeInfo.endLine);
+                    console.log('[CodeView] 标准化行号:', normalizedRangeInfo.startLine, '-', normalizedRangeInfo.endLine);
+                    
+                    // 直接调用高亮方法
+                    this.highlightLines(normalizedRangeInfo);
+                }, '高亮代码区行');
+            },
+
+            // 高亮代码行
+            highlightLines(rangeInfo) {
+                return safeExecute(() => {
+                    if (!rangeInfo) {
+                        console.log('[CodeView] 没有rangeInfo信息');
+                        return;
+                    }
+                    
+                    let start = rangeInfo.startLine || 0;
+                    let end = rangeInfo.endLine || start;
+                    if (start > end) [start, end] = [end, start];
+                    
+                    // 确保行号是正整数且从1开始
+                    start = Math.max(1, Math.floor(start));
+                    end = Math.max(1, Math.floor(end));
+                    
+                    console.log('[CodeView] 高亮行号范围:', start, '到', end);
+                    
+                    // 设置高亮
+                    this.highlightedLines = [];
+                    for (let i = start; i <= end; i++) {
+                        this.highlightedLines.push(i);
+                    }
+                    console.log('[CodeView] 设置高亮行号数组:', this.highlightedLines);
+                    
+                    // 自动滚动到首行
+                    this.$nextTick(() => {
+                        const codeContent = this.$refs.codeContent;
+                        if (!codeContent) return;
+                        
+                        console.log('[CodeView] 查找目标行:', start);
+                        const target = codeContent.querySelector(`.code-line[data-line='${start}']`);
+                        
+                        if (target) {
+                            console.log('[CodeView] 找到目标行，滚动到位置');
+                            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        } else {
+                            console.log('[CodeView] 未找到目标行，尝试查找所有行');
+                            const allLines = codeContent.querySelectorAll('.code-line');
+                            console.log('[CodeView] 总行数:', allLines.length);
+                            if (allLines.length > 0 && start <= allLines.length) {
+                                const targetLine = allLines[start - 1];
+                                if (targetLine) {
+                                    console.log('[CodeView] 通过索引找到目标行');
+                                    targetLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }
+                            }
+                        }
+                    });
+                    
+                    // 3秒后自动取消高亮
+                    setTimeout(() => {
+                        this.highlightedLines = [];
+                    }, 3000);
+                }, '高亮代码行');
+            },
+
+            // 处理高亮事件
             handleHighlightLines(event) {
                 console.log('[CodeView] 收到高亮事件:', event.detail);
                 
@@ -456,69 +1317,383 @@ const createCodeView = async () => {
                     return;
                 }
                 
-                let start = rangeInfo.startLine || 0;
-                let end = rangeInfo.endLine || start;
-                if (start > end) [start, end] = [end, start];
-                
-                // 确保行号是正整数且从1开始
-                start = Math.max(1, Math.floor(start));
-                end = Math.max(1, Math.floor(end));
-                
-                console.log('[CodeView] 高亮行号范围:', start, '到', end);
-                
-                // 设置高亮
-                this.highlightedLines = [];
-                for (let i = start; i <= end; i++) {
-                    this.highlightedLines.push(i);
-                }
-                console.log('[CodeView] 设置高亮行号数组:', this.highlightedLines);
-                
-                // 自动滚动到首行
-                this.$nextTick(() => {
+                // 调用统一的高亮方法
+                this.highlightLines(rangeInfo);
+            },
+
+            // 新增：通用弹窗位置计算工具
+            calculatePopupPosition(event, popupSelector, defaultWidth = 320, defaultHeight = 180) {
+                return safeExecute(() => {
+                    const rect = event.target.getBoundingClientRect();
                     const codeContent = this.$refs.codeContent;
-                    if (!codeContent) return;
+                    const codeRect = codeContent.getBoundingClientRect();
                     
-                    console.log('[CodeView] 查找目标行:', start);
-                    const target = codeContent.querySelector(`.code-line[data-line='${start}']`);
+                    // 获取实际的弹窗元素
+                    const popupElement = document.querySelector(popupSelector);
+                    if (!popupElement) {
+                        console.warn('[CodeView] 未找到弹窗元素:', popupSelector);
+                        return { x: 0, y: 0 };
+                    }
                     
-                    if (target) {
-                        console.log('[CodeView] 找到目标行，滚动到位置');
-                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    } else {
-                        console.log('[CodeView] 未找到目标行，尝试查找所有行');
-                        const allLines = codeContent.querySelectorAll('.code-line');
-                        console.log('[CodeView] 总行数:', allLines.length);
-                        if (allLines.length > 0 && start <= allLines.length) {
-                            const targetLine = allLines[start - 1];
-                            if (targetLine) {
-                                console.log('[CodeView] 通过索引找到目标行');
-                                targetLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }
+                    // 获取实际弹窗尺寸
+                    const popupRect = popupElement.getBoundingClientRect();
+                    const popupWidth = popupRect.width || defaultWidth;
+                    const popupHeight = popupRect.height || defaultHeight;
+                    
+                    // 获取视窗信息
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+                    const scrollX = window.pageXOffset || document.documentElement.scrollX;
+                    const scrollY = window.pageYOffset || document.documentElement.scrollY;
+                    
+                    // 计算标记位置相对于视窗的坐标
+                    const markerLeft = rect.left + scrollX;
+                    const markerTop = rect.top + scrollY;
+                    const markerRight = rect.right + scrollX;
+                    const markerBottom = rect.bottom + scrollY;
+                    const markerCenterX = markerLeft + rect.width / 2;
+                    const markerCenterY = markerTop + rect.height / 2;
+                    
+                    // 计算最佳位置 - 增强版智能算法
+                    let x, y;
+                    const margin = 16; // 增加边距，提供更好的视觉体验
+                    
+                    // 水平位置计算 - 多策略智能选择
+                    const rightSpace = viewportWidth - markerRight - margin;
+                    const leftSpace = markerLeft - margin;
+                    const centerSpace = Math.min(rightSpace, leftSpace);
+                    
+                    // 策略1：优先右侧显示（符合阅读习惯）
+                    if (rightSpace >= popupWidth * 0.8) {
+                        x = markerRight + 12;
+                    }
+                    // 策略2：左侧有更好空间
+                    else if (leftSpace >= popupWidth * 0.8 && leftSpace > rightSpace) {
+                        x = markerLeft - popupWidth - 12;
+                    }
+                    // 策略3：尝试居中显示
+                    else if (centerSpace >= popupWidth * 0.6) {
+                        x = markerCenterX - popupWidth / 2;
+                    }
+                    // 策略4：强制右侧显示（即使空间不够）
+                    else if (rightSpace >= popupWidth * 0.5) {
+                        x = markerRight + 8;
+                    }
+                    // 策略5：强制左侧显示
+                    else if (leftSpace >= popupWidth * 0.5) {
+                        x = markerLeft - popupWidth - 8;
+                    }
+                    // 策略6：最后选择，居中显示
+                    else {
+                        x = Math.max(margin, (viewportWidth - popupWidth) / 2);
+                    }
+                    
+                    // 垂直位置计算 - 智能优先级
+                    const bottomSpace = viewportHeight - markerBottom - margin;
+                    const topSpace = markerTop - margin;
+                    const centerY = markerCenterY - popupHeight / 2;
+                    
+                    // 策略1：优先下方显示（避免遮挡标记）
+                    if (bottomSpace >= popupHeight * 0.8) {
+                        y = markerBottom + 12;
+                    }
+                    // 策略2：上方有更好空间
+                    else if (topSpace >= popupHeight * 0.8 && topSpace > bottomSpace) {
+                        y = markerTop - popupHeight - 12;
+                    }
+                    // 策略3：尝试垂直居中
+                    else if (centerY >= scrollY + margin && centerY + popupHeight <= scrollY + viewportHeight - margin) {
+                        y = centerY;
+                    }
+                    // 策略4：强制下方显示
+                    else if (bottomSpace >= popupHeight * 0.5) {
+                        y = markerBottom + 8;
+                    }
+                    // 策略5：强制上方显示
+                    else if (topSpace >= popupHeight * 0.5) {
+                        y = markerTop - popupHeight - 8;
+                    }
+                    // 策略6：最后选择，显示在可用空间内
+                    else {
+                        const availableHeight = viewportHeight - 2 * margin;
+                        if (popupHeight > availableHeight) {
+                            // 弹窗太高，显示在顶部并允许滚动
+                            y = scrollY + margin;
+                        } else {
+                            // 居中显示
+                            y = scrollY + (availableHeight - popupHeight) / 2;
                         }
                     }
-                });
+                    
+                    // 边界检查和调整
+                    x = Math.max(margin, Math.min(x, viewportWidth - popupWidth - margin));
+                    y = Math.max(scrollY + margin, Math.min(y, scrollY + viewportHeight - popupHeight - margin));
+                    
+                    // 转换为相对于代码容器的坐标
+                    const relativeX = x - codeRect.left;
+                    const relativeY = y - codeRect.top;
+                    
+                    const position = { x: relativeX, y: relativeY };
+                    
+                    console.log('[CodeView] 弹窗位置计算完成:', {
+                        selector: popupSelector,
+                        marker: { left: markerLeft, top: markerTop, right: markerRight, bottom: markerBottom, centerX: markerCenterX, centerY: markerCenterY },
+                        popup: { width: popupWidth, height: popupHeight },
+                        viewport: { width: viewportWidth, height: viewportHeight },
+                        scroll: { x: scrollX, y: scrollY },
+                        spaces: { right: rightSpace, left: leftSpace, bottom: bottomSpace, top: topSpace, center: centerSpace },
+                        position: position,
+                        strategy: 'enhanced'
+                    });
+                    
+                    // 学习用户的位置偏好
+                    this.learnPositionPreference(position, { x: markerCenterX, y: markerCenterY });
+                    
+                    return position;
+                }, '计算弹窗位置');
+            },
+            
+            // 新增：学习用户的位置偏好
+            learnPositionPreference(popupPosition, markerPosition) {
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
                 
-                // 3秒后自动取消高亮
-                setTimeout(() => {
-                    this.highlightedLines = [];
-                }, 3000);
+                // 计算弹窗相对于标记的位置
+                const relativeX = popupPosition.x - markerPosition.x;
+                const relativeY = popupPosition.y - markerPosition.y;
+                
+                // 更新水平偏好
+                if (relativeX > 50) {
+                    this.popupPositionPreference.horizontal = 'right';
+                } else if (relativeX < -50) {
+                    this.popupPositionPreference.horizontal = 'left';
+                } else {
+                    this.popupPositionPreference.horizontal = 'center';
+                }
+                
+                // 更新垂直偏好
+                if (relativeY > 50) {
+                    this.popupPositionPreference.vertical = 'bottom';
+                } else if (relativeY < -50) {
+                    this.popupPositionPreference.vertical = 'top';
+                } else {
+                    this.popupPositionPreference.vertical = 'center';
+                }
+                
+                // 记录最后的位置
+                this.popupPositionPreference.lastPosition = {
+                    x: popupPosition.x,
+                    y: popupPosition.y,
+                    timestamp: Date.now()
+                };
+                
+                console.log('[CodeView] 位置偏好已更新:', this.popupPositionPreference);
+            },
+            
+            // 新增：统一处理弹窗互斥逻辑
+            ensurePopupMutualExclusion() {
+                // 检查是否有冲突
+                if (this.hasPopupConflict) {
+                    console.log('[CodeView] 检测到弹窗冲突，隐藏预览弹窗');
+                    this.hideCommentPreview();
+                }
+            },
+            
+            // 新增：开始拖拽
+            startDrag(event) {
+                return safeExecute(() => {
+                    // 阻止默认行为
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    console.log('[CodeView] 开始拖拽弹窗', {
+                        event: event.type,
+                        target: event.target,
+                        clientX: event.clientX,
+                        clientY: event.clientY,
+                        currentPosition: this.commentDetailPosition
+                    });
+                    
+                    this.dragState.isDragging = true;
+                    this.dragState.startX = event.clientX || event.touches[0].clientX;
+                    this.dragState.startY = event.clientY || event.touches[0].clientY;
+                    this.dragState.startLeft = this.commentDetailPosition.x;
+                    this.dragState.startTop = this.commentDetailPosition.y;
+                    
+                    console.log('[CodeView] 拖拽状态已设置:', this.dragState);
+                    
+                    // 添加拖拽样式和视觉反馈
+                    const popup = document.querySelector('.comment-detail-popup');
+                    if (popup) {
+                        popup.style.cursor = 'grabbing';
+                        popup.style.userSelect = 'none';
+                        popup.classList.add('dragging');
+                        console.log('[CodeView] 拖拽样式已应用');
+                    } else {
+                        console.warn('[CodeView] 未找到弹窗元素');
+                    }
+                    
+                    // 添加事件监听器
+                    document.addEventListener('mousemove', this.onDrag);
+                    document.addEventListener('touchmove', this.onDrag, { passive: false });
+                    document.addEventListener('mouseup', this.stopDrag);
+                    document.addEventListener('touchend', this.stopDrag);
+                    
+                    console.log('[CodeView] 拖拽事件监听器已添加');
+                }, '开始拖拽');
+            },
+            
+            // 新增：拖拽中
+            onDrag(event) {
+                return safeExecute(() => {
+                    if (!this.dragState.isDragging) {
+                        console.log('[CodeView] 拖拽状态为false，忽略拖拽事件');
+                        return;
+                    }
+                    
+                    event.preventDefault();
+                    
+                    const currentX = event.clientX || event.touches[0].clientX;
+                    const currentY = event.clientY || event.touches[0].clientY;
+                    
+                    const deltaX = currentX - this.dragState.startX;
+                    const deltaY = currentY - this.dragState.startY;
+                    
+                    // 更新位置 - 由于使用fixed定位，直接使用clientX/Y坐标
+                    this.commentDetailPosition.x = this.dragState.startLeft + deltaX;
+                    this.commentDetailPosition.y = this.dragState.startTop + deltaY;
+                    
+                    console.log('[CodeView] 拖拽中更新位置:', {
+                        currentX, currentY,
+                        deltaX, deltaY,
+                        newPosition: this.commentDetailPosition
+                    });
+                    
+                    // 边界检查
+                    this.constrainPopupPosition();
+                }, '拖拽中');
+            },
+            
+            // 新增：停止拖拽
+            stopDrag(event) {
+                return safeExecute(() => {
+                    if (!this.dragState.isDragging) return;
+                    
+                    console.log('[CodeView] 停止拖拽弹窗');
+                    
+                    this.dragState.isDragging = false;
+                    
+                    // 移除拖拽样式和视觉反馈
+                    const popup = document.querySelector('.comment-detail-popup');
+                    if (popup) {
+                        popup.style.cursor = '';
+                        popup.style.userSelect = '';
+                        popup.classList.remove('dragging');
+                    }
+                    
+                    // 移除事件监听器
+                    document.removeEventListener('mousemove', this.onDrag);
+                    document.removeEventListener('touchmove', this.onDrag);
+                    document.removeEventListener('mouseup', this.stopDrag);
+                    document.removeEventListener('touchend', this.stopDrag);
+                    
+                    // 保存位置偏好
+                    this.saveDragPosition();
+                }, '停止拖拽');
+            },
+            
+            // 新增：约束弹窗位置
+            constrainPopupPosition() {
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                const popup = document.querySelector('.comment-detail-popup');
+                
+                if (!popup) return;
+                
+                const popupRect = popup.getBoundingClientRect();
+                const popupWidth = popupRect.width;
+                const popupHeight = popupRect.height;
+                
+                // 检查评论区位置
+                const commentsPanel = document.querySelector('.aicr-comments');
+                let commentsLeft = viewportWidth;
+                if (commentsPanel) {
+                    const commentsRect = commentsPanel.getBoundingClientRect();
+                    commentsLeft = commentsRect.left;
+                }
+                
+                // 确保弹窗不会完全移出视窗，且不被评论区遮挡
+                const minX = 20; // 距离左边界至少20px
+                const maxX = Math.min(viewportWidth - popupWidth - 20, commentsLeft - popupWidth - 20);
+                const minY = 20; // 距离上边界至少20px
+                const maxY = viewportHeight - popupHeight - 20;
+                
+                this.commentDetailPosition.x = Math.max(minX, Math.min(maxX, this.commentDetailPosition.x));
+                this.commentDetailPosition.y = Math.max(minY, Math.min(maxY, this.commentDetailPosition.y));
+                
+                // 更新评论区附近的样式
+                if (popup) {
+                    if (this.commentDetailPosition.x + popupWidth > commentsLeft - 50) {
+                        popup.classList.add('near-comments');
+                    } else {
+                        popup.classList.remove('near-comments');
+                    }
+                }
+            },
+            
+            // 新增：保存拖拽位置
+            saveDragPosition() {
+                // 更新位置偏好
+                this.popupPositionPreference.lastPosition = {
+                    x: this.commentDetailPosition.x,
+                    y: this.commentDetailPosition.y,
+                    timestamp: Date.now(),
+                    isDragged: true
+                };
+                
+                console.log('[CodeView] 拖拽位置已保存:', this.commentDetailPosition);
+            },
+            
+
+            
+            // 新增：恢复拖拽位置
+            restoreDragPosition() {
+                if (this.popupPositionPreference.lastPosition && this.popupPositionPreference.lastPosition.isDragged) {
+                    this.commentDetailPosition.x = this.popupPositionPreference.lastPosition.x;
+                    this.commentDetailPosition.y = this.popupPositionPreference.lastPosition.y;
+                    console.log('[CodeView] 恢复拖拽位置:', this.commentDetailPosition);
+                }
             }
         },
         template: template,
-        mounted() {
+        // 生命周期钩子
+        async mounted() {
+            console.log('[CodeView] 组件已挂载');
+            await this.loadFileComments();
             this.bindSelectionEvent();
-            // 监听高亮事件
-            window.addEventListener('highlightCodeLines', this.handleHighlightLines, { passive: true });
-        },
-        updated() {
-            // 重新绑定划词评论事件
-            this.bindSelectionEvent();
-        },
-        beforeUnmount() {
-            // 清理高亮事件监听器
-            window.removeEventListener('highlightCodeLines', this.handleHighlightLines, { passive: true });
             
-            // 清理代码内容的事件监听器
+            // 添加高亮代码行事件监听
+            window.addEventListener('highlightCodeLines', this.handleHighlightLines);
+            
+            // 添加窗口大小变化监听
+            window.addEventListener('resize', this.handleWindowResize);
+            
+            // 添加键盘事件监听
+            document.addEventListener('keydown', this.handleKeyDown);
+        },
+        
+        updated() {
+            console.log('[CodeView] 组件已更新');
+            this.bindSelectionEvent();
+            
+            // 检查弹窗互斥状态
+            this.ensurePopupMutualExclusion();
+        },
+        
+        beforeUnmount() {
+            console.log('[CodeView] 组件即将卸载');
+            
+            // 清理事件监听器
             const codeContent = this.$refs.codeContent;
             if (codeContent) {
                 codeContent.removeEventListener('mouseup', this.handleSelection, { passive: false });
@@ -526,8 +1701,83 @@ const createCodeView = async () => {
                 codeContent.removeEventListener('mousedown', this.handleMouseDown, { passive: false });
             }
             
-            // 清理评论按钮容器
-            this.clearSelectionAndButton();
+            // 移除高亮代码行事件监听
+            window.removeEventListener('highlightCodeLines', this.handleHighlightLines);
+            
+            // 移除窗口大小变化监听
+            window.removeEventListener('resize', this.handleWindowResize);
+            
+            // 移除键盘事件监听
+            document.removeEventListener('keydown', this.handleKeyDown);
+            
+            // 清理定时器
+            if (this.hoverTimeout) {
+                clearTimeout(this.hoverTimeout);
+            }
+            
+            // 移除外部点击监听
+            document.removeEventListener('mousedown', this.handleCommentDetailClickOutside, { passive: true });
+        },
+        
+        // 监听文件变化
+        watch: {
+            file: {
+                handler: async function(newFile, oldFile) {
+                    if (newFile !== oldFile) {
+                        console.log('[CodeView] 文件已变化，重新加载评论数据');
+                        await this.loadFileComments();
+                    }
+                },
+                immediate: false
+            }
+        },
+        
+        // 新增：处理窗口大小变化
+        handleWindowResize() {
+            return safeExecute(() => {
+                console.log('[CodeView] 窗口大小变化，重新计算弹窗位置');
+                
+                // 延迟执行，确保DOM已更新
+                setTimeout(() => {
+                    // 互斥检查：如果详情弹窗正在显示，隐藏预览弹窗
+                    if (this.showCommentDetailPopup && this.showCommentPreviewPopup) {
+                        console.log('[CodeView] 窗口大小变化时发现冲突，隐藏预览弹窗');
+                        this.hideCommentPreview();
+                    }
+                    
+                    // 如果详情弹窗正在显示，重新约束位置
+                    if (this.showCommentDetailPopup && this.currentCommentDetail) {
+                        console.log('[CodeView] 重新约束详情弹窗位置');
+                        this.constrainPopupPosition();
+                    }
+                    
+                    // 如果预览弹窗正在显示，重新约束位置
+                    if (this.showCommentPreviewPopup && this.currentCommentPreview) {
+                        console.log('[CodeView] 重新约束预览弹窗位置');
+                        const popupElement = document.querySelector('.comment-preview-popup');
+                        if (popupElement) {
+                            const rect = popupElement.getBoundingClientRect();
+                            const viewportWidth = window.innerWidth;
+                            const viewportHeight = window.innerHeight;
+                            
+                            // 简单的边界约束
+                            let x = this.commentPreviewPosition.x;
+                            let y = this.commentPreviewPosition.y;
+                            
+                            if (x < 20) x = 20;
+                            if (x + rect.width > viewportWidth - 20) {
+                                x = viewportWidth - rect.width - 20;
+                            }
+                            if (y < 20) y = 20;
+                            if (y + rect.height > viewportHeight - 20) {
+                                y = viewportHeight - rect.height - 20;
+                            }
+                            
+                            this.commentPreviewPosition = { x, y };
+                        }
+                    }
+                }, 100);
+            }, '处理窗口大小变化');
         }
     };
 };
@@ -546,6 +1796,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

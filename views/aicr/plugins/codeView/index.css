@@ -10,13 +10,13 @@
     border: 1px solid var(--border-primary);
     border-top: none;
     border-radius: 0 0 8px 8px;
-    padding: 8px 10px; /* 原为 var(--spacing-md)，改为更小 */
+    padding: 8px 10px;
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
-    font-size: 12px;   /* 原为13px，略小 */
-    line-height: 1.4;  /* 原为1.7，更紧凑 */
+    font-size: 12px;
+    line-height: 1.4;
     overflow-x: auto;
     position: relative;
-    min-height: 120px; /* 原为200px，减少空白 */
+    min-height: 120px;
     box-shadow: var(--shadow-sm);
 }
 
@@ -42,8 +42,8 @@
     background: none;
     color: inherit;
     font-family: inherit;
-    font-size: 11px;    /* 与 .code-line 保持一致 */
-    line-height: 1.1;   /* 与 .code-line 保持一致 */
+    font-size: 11px;
+    line-height: 1.1;
 }
 
 /* ========== 行号和代码行 ========== */
@@ -57,10 +57,11 @@
     font-size: 12px;
     line-height: 1.2;
     white-space: pre;
+    position: relative;
 }
 
 .line-number {
-    color: #b0b0b0;
+    color: var(--text-muted);
     min-width: 32px;
     text-align: right;
     margin-right: 12px;
@@ -72,7 +73,7 @@
 }
 
 .line-number:hover {
-    color: #4f46e5;
+    color: var(--primary);
     opacity: 1;
 }
 
@@ -82,26 +83,963 @@
     font-family: inherit;
 }
 
-/* ========== 代码行状态 ========== */
+/* ========== 评论标记样式 ========== */
+.comment-markers {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    position: relative;
+    z-index: 100;
+}
+
+.comment-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--text-on-accent);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    border: 2px solid transparent;
+    box-shadow: var(--shadow-sm);
+    z-index: 101;
+    overflow: hidden;
+}
+
+.comment-marker::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 50%;
+}
+
+.comment-marker:hover {
+    transform: scale(1.15);
+    box-shadow: var(--shadow-primary);
+    background: var(--accent);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.comment-marker:hover::before {
+    opacity: 1;
+}
+
+.comment-marker:active {
+    transform: scale(1.05);
+    transition: all 0.1s ease;
+}
+
+.comment-marker.status-pending {
+    background: var(--warning);
+    border-color: var(--warning);
+}
+
+.comment-marker.status-pending:hover {
+    background: #fbbf24;
+    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3);
+}
+
+.comment-marker.status-resolved {
+    background: var(--success);
+    border-color: var(--success);
+}
+
+.comment-marker.status-resolved:hover {
+    background: #34d399;
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+.comment-marker.status-reopened {
+    background: var(--error);
+    border-color: var(--error);
+}
+
+.comment-marker.status-reopened:hover {
+    background: #f87171;
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+}
+
+.comment-count {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: var(--error);
+    color: var(--text-on-accent);
+    font-size: 8px;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.comment-marker:hover .comment-count {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-md);
+}
+
+/* ========== 评论详情弹窗样式 ========== */
+/* 评论详情弹窗 - 最高层级 */
+.comment-detail-popup {
+    position: fixed; /* 改为 fixed 定位，确保不受父容器影响 */
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    max-width: 800px; /* 增加最大宽度，提供更好的内容展示空间 */
+    min-width: 360px; /* 增加最小宽度，确保内容不会过于拥挤 */
+    width: 600px; /* 设置默认宽度，提供更好的阅读体验 */
+    z-index: 999999; /* 大幅提高层级，确保在最顶层 */
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    animation: commentPopupFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--border-glass);
+    background: var(--bg-elevated);
+    /* 确保弹窗不会被遮挡 */
+    pointer-events: auto;
+    /* 防止内容溢出 */
+    overflow: hidden;
+    /* 确保在边界情况下也能显示 */
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    /* 添加更好的视觉效果 */
+    transform-origin: center;
+    /* 添加微妙的阴影效果 */
+    box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.1),
+        0 8px 16px rgba(0, 0, 0, 0.05),
+        0 0 0 1px rgba(79, 70, 229, 0.1);
+    /* 添加边框渐变效果 */
+    border: 1px solid rgba(79, 70, 229, 0.2);
+    /* 确保弹窗在滚动时保持可见 */
+    transform: translateZ(0);
+    /* 拖拽相关样式 */
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    /* 确保拖拽时不受transition影响 */
+    -webkit-user-select: none;
+    user-select: none;
+    /* 添加边界检测和自动调整 */
+    will-change: transform, left, top;
+    /* 确保弹窗不会被其他元素遮挡 */
+    isolation: isolate;
+    /* 添加更好的视觉层次 */
+    filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.15));
+    /* 向左偏移210px */
+    margin-left: -210px;
+}
+
+/* 拖拽时的视觉反馈 */
+.comment-detail-popup.dragging {
+    box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.15),
+        0 12px 24px rgba(0, 0, 0, 0.1),
+        0 0 0 2px rgba(79, 70, 229, 0.3);
+    transform: translateZ(0) scale(1.02);
+    z-index: 1000000; /* 拖拽时进一步提高层级 */
+    /* 拖拽时禁用transition，确保流畅的拖拽体验 */
+    transition: none !important;
+}
+
+/* 拖拽时的头部样式 */
+.comment-detail-popup.dragging .comment-detail-header {
+    background: linear-gradient(135deg, var(--bg-tertiary) 0%, rgba(79, 70, 229, 0.1) 100%);
+    border-bottom: 2px solid rgba(79, 70, 229, 0.3);
+}
+
+/* 添加边界检测和自动调整的样式 */
+.comment-detail-popup.boundary-adjusted {
+    animation: boundaryAdjust 0.3s ease-out;
+}
+
+@keyframes boundaryAdjust {
+    0% {
+        transform: scale(0.95);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* 确保弹窗在评论区附近时也能正确显示 */
+.comment-detail-popup.near-comments {
+    z-index: 999999;
+    /* 添加额外的阴影效果 */
+    box-shadow: 
+        0 25px 60px rgba(0, 0, 0, 0.2),
+        0 12px 24px rgba(0, 0, 0, 0.1),
+        0 0 0 2px rgba(79, 70, 229, 0.3);
+}
+
+@keyframes commentPopupFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.94);
+        filter: blur(3px);
+    }
+    50% {
+        opacity: 0.8;
+        transform: translateY(-4px) scale(0.98);
+        filter: blur(1px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes commentPopupFadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.96);
+        filter: blur(2px);
+    }
+}
+
+.comment-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-primary);
+    background: var(--bg-tertiary);
+    border-radius: 12px 12px 0 0;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    /* 拖拽相关样式 */
+    cursor: grab;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: cursor 0.2s ease;
+    position: relative;
+}
+
+.comment-detail-header:hover {
+    cursor: grabbing;
+}
+
+.comment-detail-header:active {
+    cursor: grabbing;
+}
+
+/* 拖拽指示器 */
+.comment-detail-header::before {
+    content: '⋮⋮';
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: var(--text-muted);
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.comment-detail-header:hover::before {
+    opacity: 1;
+    color: var(--text-secondary);
+}
+
+
+
+.comment-author-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.comment-author-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    color: var(--text-on-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: var(--shadow-primary);
+    position: relative;
+    overflow: hidden;
+}
+
+.comment-author-avatar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.comment-author-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.comment-author {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.comment-time {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.2;
+}
+
+.close-button {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.close-button:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+    transform: scale(1.05);
+}
+
+.comment-detail-body {
+    padding: 24px; /* 增加内边距，提供更好的内容间距 */
+    max-height: 450px; /* 增加最大高度，提供更多内容展示空间 */
+    overflow-y: auto;
+    background: var(--bg-secondary);
+    /* 优化滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-primary) transparent;
+}
+
+.comment-detail-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.comment-detail-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.comment-detail-body::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 3px;
+}
+
+.comment-detail-body::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
+}
+
+.comment-location {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.comment-quote {
+    margin-bottom: 16px;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-glass);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.quote-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-primary);
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.quote-code {
+    margin: 0;
+    padding: 16px; /* 增加内边距 */
+    background: var(--bg-secondary);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.5; /* 增加行高，提高可读性 */
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+    /* 移除高度限制和滚动条 */
+    max-height: none;
+    overflow: visible;
+    border-radius: 0 0 8px 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    /* 优化长代码的显示 */
+    overflow-x: auto;
+    /* 添加代码区域的滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-primary) transparent;
+}
+
+.quote-code::-webkit-scrollbar {
+    height: 4px;
+}
+
+.quote-code::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.quote-code::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 2px;
+}
+
+.quote-code::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
+}
+
+.quote-code:hover {
+    background: var(--bg-tertiary);
+    box-shadow: 0 2px 8px rgba(79,70,229,0.2);
+    transform: translateY(-1px);
+}
+
+.quote-code:active {
+    transform: translateY(0);
+    transition: all 0.1s ease;
+}
+
+.quote-code::before {
+    content: '点击高亮';
+    position: absolute;
+    top: -20px;
+    right: 0;
+    background: rgba(15, 23, 42, 0.9);
+    color: #e2e8f0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.quote-code:hover::before {
+    opacity: 1;
+}
+
+.comment-content {
+    margin-bottom: 16px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    padding: 12px 0;
+}
+
+.comment-improvement {
+    margin-bottom: 16px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-glass);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.improvement-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-secondary);
+    font-size: 12px;
+    color: var(--text-accent);
+    font-weight: 600;
+}
+
+.improvement-code {
+    margin: 0;
+    padding: 16px; /* 增加内边距 */
+    background: var(--bg-secondary);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.5; /* 增加行高，提高可读性 */
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+    /* 移除高度限制和滚动条 */
+    max-height: none;
+    overflow: visible;
+    border-radius: 0 0 8px 8px;
+    /* 优化长代码的显示 */
+    overflow-x: auto;
+    /* 添加代码区域的滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-primary) transparent;
+}
+
+.improvement-code::-webkit-scrollbar {
+    height: 4px;
+}
+
+.improvement-code::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.improvement-code::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 2px;
+}
+
+.improvement-code::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
+}
+
+.comment-status {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.status-badge.status-pending {
+    background: var(--warning-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-badge.status-resolved {
+    background: var(--success-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-badge.status-reopened {
+    background: var(--error-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ========== 评论预览弹窗样式 ========== */
+.comment-preview-popup {
+    position: fixed; /* 改为 fixed 定位，确保不受父容器影响 */
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    max-width: 600px; /* 增加预览弹窗的最大宽度 */
+    min-width: 320px; /* 增加最小宽度 */
+    width: 520px; /* 设置默认宽度 */
+    z-index: 999998; /* 提高层级，仅次于评论详情弹窗 */
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    animation: commentPreviewFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    border: 1px solid var(--border-glass);
+    background: var(--bg-elevated);
+    /* 确保预览弹窗不会被遮挡 */
+    isolation: isolate;
+    /* 添加更好的视觉层次 */
+    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.12));
+    /* 向左偏移170px */
+    margin-left: -170px;
+}
+
+@keyframes commentPreviewFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.96);
+        filter: blur(2px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+.preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-primary);
+    background: var(--bg-tertiary);
+    border-radius: 12px 12px 0 0;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+
+.preview-author-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.preview-author-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    color: var(--text-on-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: var(--shadow-primary);
+    position: relative;
+    overflow: hidden;
+}
+
+.preview-author-avatar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.preview-author-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.preview-author {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.preview-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.2;
+}
+
+.preview-status-badge {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.preview-status-badge.status-pending {
+    background: var(--warning-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.preview-status-badge.status-resolved {
+    background: var(--success-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.preview-status-badge.status-reopened {
+    background: var(--error-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.preview-body {
+    padding: 20px; /* 增加内边距 */
+    max-height: 250px; /* 增加最大高度 */
+    overflow-y: auto;
+    background: var(--bg-secondary);
+    /* 优化滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-primary) transparent;
+}
+
+.preview-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.preview-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.preview-body::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 2px;
+}
+
+.preview-body::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
+}
+
+.preview-content {
+    margin-bottom: 12px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 80px;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.preview-quote {
+    margin-bottom: 12px;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-glass);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.preview-quote-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-primary);
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.preview-quote-code {
+    margin: 0;
+    padding: 14px; /* 增加内边距 */
+    background: var(--bg-secondary);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    line-height: 1.5; /* 增加行高，提高可读性 */
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+    /* 移除高度限制和滚动条 */
+    max-height: none;
+    overflow: visible;
+    border-radius: 0 0 8px 8px;
+    /* 优化长代码的显示 */
+    overflow-x: auto;
+    /* 添加代码区域的滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-primary) transparent;
+}
+
+.preview-quote-code::-webkit-scrollbar {
+    height: 3px;
+}
+
+.preview-quote-code::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.preview-quote-code::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 1.5px;
+}
+
+.preview-quote-code::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
+}
+
+.preview-improvement {
+    margin-bottom: 12px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-glass);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.preview-improvement-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-secondary);
+    font-size: 11px;
+    color: var(--text-accent);
+    font-weight: 600;
+}
+
+.preview-improvement-code {
+    margin: 0;
+    padding: 14px; /* 增加内边距 */
+    background: var(--bg-secondary);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    line-height: 1.5; /* 增加行高，提高可读性 */
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+    /* 移除高度限制和滚动条 */
+    max-height: none;
+    overflow: visible;
+    border-radius: 0 0 8px 8px;
+    /* 优化长代码的显示 */
+    overflow-x: auto;
+    /* 添加代码区域的滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-primary) transparent;
+}
+
+.preview-improvement-code::-webkit-scrollbar {
+    height: 3px;
+}
+
+.preview-improvement-code::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.preview-improvement-code::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 1.5px;
+}
+
+.preview-improvement-code::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
+}
+
+.preview-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-primary);
+    background: var(--bg-tertiary);
+    border-radius: 0 0 12px 12px;
+    text-align: center;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+
+.preview-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+/* 优化评论标记的悬停效果 */
+.comment-marker {
+    position: relative;
+}
+
+.comment-marker::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 50%;
+    background: rgba(79, 70, 229, 0.1);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.comment-marker:hover::after {
+    opacity: 1;
+}
+
+/* ========== 代码行状态样式 ========== */
 .code-line.selected {
-    background: rgba(6, 182, 212, 0.08);
-    border-left-color: var(--accent);
-    box-shadow: inset 0 0 0 1px rgba(6, 182, 212, 0.15);
+    background: var(--primary-alpha);
+    border-left: 3px solid var(--primary);
 }
 
 .code-line:hover {
-    background: var(--bg-glass);
-    border-left-color: var(--border-secondary);
+    background: var(--bg-hover);
 }
 
 .code-line.error {
-    background: rgba(239, 68, 68, 0.08);
-    border-left-color: var(--error);
+    background: var(--danger-color-alpha);
+    border-left: 3px solid var(--error);
 }
 
 .code-line.warning {
-    background: rgba(245, 158, 11, 0.08);
-    border-left-color: var(--warning);
+    background: rgba(245, 158, 11, 0.1);
+    border-left: 3px solid var(--warning);
 }
 
 /* ========== 加载和错误状态 ========== */
@@ -109,7 +1047,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 200px;
+    padding: 40px;
     color: var(--text-muted);
     font-size: 14px;
 }
@@ -118,55 +1056,55 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 200px;
+    padding: 40px;
     color: var(--error);
     font-size: 14px;
     text-align: center;
-    padding: var(--spacing-lg);
 }
 
 .code-empty {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 200px;
+    padding: 40px;
     color: var(--text-muted);
     font-size: 14px;
-    opacity: 0.6;
+    font-style: italic;
 }
 
-/* ========== 引用高亮 ========== */
+/* ========== 代码高亮 ========== */
 .highlight {
-    background: linear-gradient(90deg, rgba(79,70,229,0.18) 60%, rgba(6,182,212,0.10) 85%, rgba(168,85,247,0.12) 100%) !important;
+    background: var(--primary-alpha);
+    border-radius: 3px;
+    padding: 2px 4px;
     position: relative;
-    box-shadow: 0 2px 16px 0 rgba(79,70,229,0.18), 0 0 24px 2px rgba(6,182,212,0.10);
-    transition: background 0.5s, box-shadow 0.5s;
-    animation: quantumFlow 2.5s linear infinite;
-    overflow: visible;
+    animation: quantumGlow 2s ease-in-out infinite alternate;
 }
+
 .highlight::before {
     content: '';
-    display: block;
     position: absolute;
-    left: -2px;
     top: 0;
+    left: 0;
+    right: 0;
     bottom: 0;
-    width: 6px;
-    background: linear-gradient(180deg, #06b6d4 0%, #4f46e5 60%, #a855f7 100%);
+    background: linear-gradient(45deg, 
+        transparent 0%, 
+        rgba(79, 70, 229, 0.1) 25%, 
+        rgba(6, 182, 212, 0.1) 50%, 
+        rgba(79, 70, 229, 0.1) 75%, 
+        transparent 100%);
     border-radius: 3px;
-    box-shadow: 0 0 12px 2px #06b6d4, 0 0 24px 4px #a855f7;
-    filter: blur(0.5px) brightness(1.2);
-    animation: quantumGlow 2.2s ease-in-out infinite alternate;
-    z-index: 1;
+    animation: quantumGlow 2s ease-in-out infinite alternate;
+    z-index: -1;
 }
+
 @keyframes quantumGlow {
-    0%, 100% {
-        box-shadow: 0 0 12px 2px #06b6d4, 0 0 24px 4px #a855f7;
-        opacity: 0.7;
+    0% {
+        box-shadow: 0 0 5px rgba(79, 70, 229, 0.3);
     }
-    50% {
-        box-shadow: 0 0 24px 6px #4f46e5, 0 0 32px 8px #a855f7;
-        opacity: 1;
+    100% {
+        box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
     }
 }
 
@@ -194,6 +1132,47 @@
         margin-right: var(--spacing-xs);
         font-size: 10px;
     }
+    
+    .comment-detail-popup {
+        max-width: 620px; /* 增加中等屏幕的最大宽度 */
+        min-width: 320px; /* 增加最小宽度 */
+        width: 520px; /* 设置默认宽度 */
+        /* 确保在中等屏幕上也能正确显示 */
+        max-height: calc(100vh - 48px);
+        /* 添加更好的边界处理 */
+        margin: 8px;
+        /* 拖拽功能优化 */
+        touch-action: none;
+        /* 确保层级足够高 */
+        z-index: 999999;
+    }
+    
+    .comment-detail-header {
+        padding: 12px 16px;
+    }
+    
+    .close-button {
+        padding: 3px 5px;
+        font-size: 12px;
+    }
+    
+    .comment-preview-popup {
+        max-width: 360px; /* 增加中等屏幕预览弹窗的最大宽度 */
+        min-width: 300px; /* 增加最小宽度 */
+        width: 340px; /* 设置默认宽度 */
+    }
+    
+    .comment-marker {
+        width: 18px;
+        height: 18px;
+        font-size: 9px;
+    }
+    
+    .comment-count {
+        width: 12px;
+        height: 12px;
+        font-size: 7px;
+    }
 }
 
 @media (max-width: 640px) {
@@ -214,12 +1193,98 @@
         min-width: 25px;
         font-size: 9px;
     }
+    
+    .comment-markers {
+        margin-left: 4px;
+        gap: 2px;
+    }
+    
+    .comment-marker {
+        width: 16px;
+        height: 16px;
+        font-size: 8px;
+    }
+    
+    .comment-count {
+        width: 10px;
+        height: 10px;
+        font-size: 6px;
+        top: -4px;
+        right: -4px;
+    }
+    
+    .comment-detail-popup {
+        max-width: 600px; /* 增加小屏幕的最大宽度 */
+        min-width: 280px; /* 增加最小宽度 */
+        width: 520px; /* 设置默认宽度 */
+        /* 确保在小屏幕上也能正确显示 */
+        max-height: calc(100vh - 64px);
+        /* 添加更好的边界处理 */
+        margin: 12px;
+        /* 拖拽功能优化 */
+        touch-action: none;
+        /* 确保层级足够高 */
+        z-index: 999999;
+    }
+    
+    .comment-detail-header {
+        padding: 10px 12px;
+    }
+    
+    .close-button {
+        padding: 2px 4px;
+        font-size: 11px;
+    }
+    
+    .comment-preview-popup {
+        max-width: 320px; /* 增加小屏幕预览弹窗的最大宽度 */
+        min-width: 280px; /* 增加最小宽度 */
+        width: 300px; /* 设置默认宽度 */
+    }
+    
+    .preview-content {
+        /* 移除高度限制，允许内容完整显示 */
+        max-height: none;
+    }
+    
+    .preview-quote-code,
+    .preview-improvement-code {
+        /* 移除高度限制，允许内容完整显示 */
+        max-height: none;
+    }
+    
+    .preview-header {
+        padding: 10px 12px;
+    }
+    
+    .preview-body {
+        padding: 12px;
+    }
+    
+    .preview-author-avatar {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+    
+    .preview-author {
+        font-size: 12px;
+    }
+    
+    .preview-time {
+        font-size: 10px;
+    }
+    
+    .preview-status-badge {
+        padding: 2px 6px;
+        font-size: 9px;
+    }
 }
 
-/* ========== 滚动条优化 ========== */
+/* ========== 滚动条样式 ========== */
 .code-content::-webkit-scrollbar {
-    height: 8px;
     width: 8px;
+    height: 8px;
 }
 
 .code-content::-webkit-scrollbar-track {
@@ -234,74 +1299,584 @@
 }
 
 .code-content::-webkit-scrollbar-thumb:hover {
-    background: var(--border-secondary);
-} 
+    background: var(--border-hover);
+}
 
-/* 划词评论按钮样式 */
+/* ========== 评论操作容器 - 重构优化版本 ========== */
 #comment-action-container {
-    position: absolute !important;
-    display: none;
-    z-index: 1000 !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    border: 1px solid #ccc !important;
-    border-radius: 6px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
-    backdrop-filter: blur(8px) !important;
-    padding: 4px !important;
-    pointer-events: auto !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
-    /* 确保容器可以接收点击事件 */
-    touch-action: manipulation !important;
-    /* 防止文本选择 */
-    -webkit-touch-callout: none !important;
-    -webkit-tap-highlight-color: transparent !important;
+    position: fixed; /* 改为 fixed 定位，确保不受父容器影响 */
+    /* 移除默认的 top/right 定位，由 JavaScript 动态设置 */
+    z-index: 999997; /* 提高层级，确保不被评论区遮挡 */
+    display: flex;
+    gap: 8px;
+    opacity: 1;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    pointer-events: auto;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 8px 12px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, 
+        rgba(30, 41, 59, 0.95) 0%, 
+        rgba(51, 65, 85, 0.9) 100%);
+    border: 1px solid rgba(79, 70, 229, 0.15);
+    box-shadow: 
+        0 8px 24px rgba(0, 0, 0, 0.3),
+        0 3px 8px rgba(79, 70, 229, 0.1),
+        0 1px 2px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transform: translateY(0) scale(1);
+    animation: containerSlideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    min-width: 160px;
+    max-width: 240px;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    will-change: transform, opacity;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    /* 添加左边定位的视觉优化 */
+    border-left: 2px solid rgba(79, 70, 229, 0.3);
+    /* 添加指向选中文本的视觉指示 */
+    position: relative;
 }
 
+#comment-action-container::before {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid rgba(79, 70, 229, 0.3);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+}
+
+/* 移除hover效果，容器应该始终可见 */
+
+/* 容器动画效果 - 左边定位优化版本 */
+@keyframes containerSlideIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.9) translateX(10px);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(0.95) translateX(5px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateX(0);
+    }
+}
+
+#comment-action-container.visible {
+    animation: containerSlideIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* 容器内部光效 */
+#comment-action-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(79, 70, 229, 0.08) 0%, 
+        rgba(99, 102, 241, 0.05) 50%, 
+        transparent 100%);
+    border-radius: 20px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#comment-action-container:hover::before {
+    opacity: 1;
+}
+
+/* 右边定位时的特殊样式 */
+#comment-action-container.position-right {
+    border-left: 2px solid rgba(79, 70, 229, 0.3);
+    border-right: 1px solid rgba(79, 70, 229, 0.15);
+}
+
+#comment-action-container.position-right::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-right: 6px solid rgba(79, 70, 229, 0.3);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+}
+
+/* 左边定位时的特殊样式 */
+#comment-action-container.position-left {
+    border-right: 2px solid rgba(79, 70, 229, 0.3);
+    border-left: 1px solid rgba(79, 70, 229, 0.15);
+}
+
+#comment-action-container.position-left::before {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid rgba(79, 70, 229, 0.3);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+}
+
+/* 居中定位时的特殊样式 */
+#comment-action-container.position-center {
+    border-left: 1px solid rgba(79, 70, 229, 0.15);
+    border-right: 1px solid rgba(79, 70, 229, 0.15);
+}
+
+/* 容器边框光效 */
+#comment-action-container::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    background: linear-gradient(135deg, 
+        rgba(79, 70, 229, 0.3) 0%, 
+        rgba(99, 102, 241, 0.2) 50%, 
+        rgba(139, 92, 246, 0.1) 100%);
+    border-radius: 21px;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#comment-action-container:hover::after {
+    opacity: 1;
+}
+
+/* 容器状态指示器 */
+#comment-action-container .container-indicator {
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 6px;
+    height: 6px;
+    background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+    animation: indicatorPulse 2s infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#comment-action-container:hover .container-indicator {
+    opacity: 1;
+}
+
+@keyframes indicatorPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+/* 容器加载状态 */
+#comment-action-container.loading {
+    background: linear-gradient(135deg, 
+        rgba(30, 41, 59, 0.95) 0%, 
+        rgba(51, 65, 85, 0.9) 100%);
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+#comment-action-container.loading::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid rgba(79, 70, 229, 0.3);
+    border-top: 2px solid rgba(79, 70, 229, 0.8);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 10;
+}
+
+/* 容器错误状态 */
+#comment-action-container.error {
+    background: linear-gradient(135deg, 
+        rgba(239, 68, 68, 0.1) 0%, 
+        rgba(220, 38, 38, 0.05) 100%);
+    border-color: rgba(239, 68, 68, 0.3);
+    box-shadow: 
+        0 12px 40px rgba(0, 0, 0, 0.4),
+        0 4px 12px rgba(239, 68, 68, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* 容器成功状态 */
+#comment-action-container.success {
+    background: linear-gradient(135deg, 
+        rgba(16, 185, 129, 0.1) 0%, 
+        rgba(34, 197, 94, 0.05) 100%);
+    border-color: rgba(16, 185, 129, 0.3);
+    box-shadow: 
+        0 12px 40px rgba(0, 0, 0, 0.4),
+        0 4px 12px rgba(16, 185, 129, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* 容器工具提示 */
+#comment-action-container .container-tooltip {
+    position: absolute;
+    bottom: -32px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.95);
+    color: #e2e8f0;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(79, 70, 229, 0.2);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+    z-index: 1001;
+}
+
+#comment-action-container .container-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 4px solid rgba(15, 23, 42, 0.95);
+}
+
+#comment-action-container:hover .container-tooltip {
+    opacity: 1;
+}
+
+/* 容器关闭按钮 */
+#comment-action-container .container-close {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.9) 0%, rgba(220, 38, 38, 0.8) 100%);
+    border: 1.5px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.3s ease;
+    font-size: 8px;
+    color: white;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+    z-index: 1002;
+    border: none;
+    outline: none;
+    padding: 0;
+}
+
+#comment-action-container:hover .container-close {
+    opacity: 1;
+}
+
+#comment-action-container .container-close:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+#comment-action-container .container-close:active {
+    transform: scale(0.95);
+}
+
+/* 主按钮样式 - 重构优化 */
 .comment-action-btn {
-    background: #4f46e5 !important;
-    color: #fff !important;
-    border: none !important;
-    border-radius: 4px !important;
-    padding: 6px 12px !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
-    cursor: pointer !important;
-    transition: all 0.2s ease !important;
-    outline: none !important;
-    white-space: nowrap !important;
-    min-width: 80px !important;
-    pointer-events: auto !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
-    position: relative !important;
-    z-index: 1001 !important;
-    /* 确保按钮可以接收点击事件 */
-    touch-action: manipulation !important;
-    /* 防止文本选择 */
-    -webkit-touch-callout: none !important;
-    -webkit-tap-highlight-color: transparent !important;
-    /* 强制显示按钮 */
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    /* 确保按钮在容器中正确显示 */
-    position: relative !important;
-    width: auto !important;
-    height: auto !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: 100px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.9) 0%, rgba(99, 102, 241, 0.8) 100%);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    font-size: 14px;
+    box-shadow: 
+        0 3px 8px rgba(79, 70, 229, 0.25),
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
 }
 
+/* 按钮内部光效 */
+.comment-action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.15) 0%, 
+        rgba(255, 255, 255, 0.05) 50%, 
+        transparent 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 12px;
+}
+
+/* 按钮点击波纹效果 */
+.comment-action-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    opacity: 0;
+}
+
+/* 悬停效果 - 优化版本 */
 .comment-action-btn:hover {
-    background: var(--accent, #06b6d4) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.95) 0%, rgba(139, 92, 246, 0.85) 100%);
+    transform: translateY(-1px) scale(1.03);
+    box-shadow: 
+        0 6px 16px rgba(79, 70, 229, 0.35),
+        0 2px 6px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.25);
 }
 
+.comment-action-btn:hover::before {
+    opacity: 1;
+}
+
+.comment-action-btn:hover::after {
+    width: 120%;
+    height: 120%;
+    opacity: 1;
+}
+
+/* 点击效果 */
 .comment-action-btn:active {
-    transform: translateY(0) !important;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
+    transform: translateY(0) scale(0.95);
+    transition: all 0.1s ease;
+    box-shadow: 
+        0 2px 8px rgba(79, 70, 229, 0.3),
+        0 1px 2px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* 焦点效果 */
+.comment-action-btn:focus {
+    outline: none;
+    box-shadow: 
+        0 0 0 3px rgba(79, 70, 229, 0.3),
+        0 4px 12px rgba(79, 70, 229, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* 按钮图标样式 - 优化 */
+.comment-action-btn i {
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+    margin-right: 4px;
+    font-size: 13px;
+}
+
+.comment-action-btn:hover i {
+    transform: scale(1.1) rotate(5deg);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* 按钮文本样式 */
+.comment-action-btn .button-text {
+    position: relative;
+    z-index: 2;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+.comment-action-btn:hover .button-text {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* 按钮状态变体 - 重构优化 */
+.comment-action-btn.primary {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.9) 0%, rgba(99, 102, 241, 0.8) 100%);
+}
+
+.comment-action-btn.primary:hover {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.95) 0%, rgba(139, 92, 246, 0.85) 100%);
+}
+
+.comment-action-btn.success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.9) 0%, rgba(34, 197, 94, 0.8) 100%);
+}
+
+.comment-action-btn.success:hover {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.95) 0%, rgba(5, 150, 105, 0.85) 100%);
+    box-shadow: 
+        0 8px 24px rgba(16, 185, 129, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.comment-action-btn.warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.9) 0%, rgba(217, 119, 6, 0.8) 100%);
+}
+
+.comment-action-btn.warning:hover {
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.95) 0%, rgba(194, 65, 12, 0.85) 100%);
+    box-shadow: 
+        0 8px 24px rgba(245, 158, 11, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.comment-action-btn.danger {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.9) 0%, rgba(220, 38, 38, 0.8) 100%);
+}
+
+.comment-action-btn.danger:hover {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.95) 0%, rgba(185, 28, 28, 0.85) 100%);
+    box-shadow: 
+        0 8px 24px rgba(239, 68, 68, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.comment-action-btn.info {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.9) 0%, rgba(8, 145, 178, 0.8) 100%);
+}
+
+.comment-action-btn.info:hover {
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.95) 0%, rgba(14, 116, 144, 0.85) 100%);
+    box-shadow: 
+        0 8px 24px rgba(6, 182, 212, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* 按钮尺寸变体 - 优化 */
+.comment-action-btn.small {
+    width: auto;
+    min-width: 80px;
+    height: 28px;
+    padding: 0 8px;
+    font-size: 11px;
+    border-radius: 6px;
+}
+
+.comment-action-btn.large {
+    width: auto;
+    min-width: 140px;
+    height: 44px;
+    padding: 0 20px;
+    font-size: 16px;
+    border-radius: 12px;
+}
+
+/* 按钮动画效果 - 重构 */
+@keyframes buttonPulse {
+    0% {
+        box-shadow: 
+            0 0 0 0 rgba(79, 70, 229, 0.7),
+            0 4px 12px rgba(79, 70, 229, 0.3),
+            0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    70% {
+        box-shadow: 
+            0 0 0 8px rgba(79, 70, 229, 0),
+            0 4px 12px rgba(79, 70, 229, 0.3),
+            0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    100% {
+        box-shadow: 
+            0 0 0 0 rgba(79, 70, 229, 0),
+            0 4px 12px rgba(79, 70, 229, 0.3),
+            0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+}
+
+.comment-action-btn.pulse {
+    animation: buttonPulse 2s infinite;
+}
+
+/* 按钮加载状态 - 优化 */
+.comment-action-btn.loading {
+    pointer-events: none;
+    opacity: 0.8;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.7) 0%, rgba(99, 102, 241, 0.6) 100%);
+}
+
+.comment-action-btn.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* 确保代码内容区域的选择行为正常 */
@@ -318,7 +1893,176 @@
 .line-content {
     -webkit-user-select: text !important;
     user-select: text !important;
+}
+
+/* ========== 响应式设计 - 重构优化 ========== */
+@media (max-width: 950px) {
+    #comment-action-container {
+        top: 10px;
+        right: 10px;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 14px;
+        min-width: 150px;
+        max-width: 220px;
+    }
+    
+    .comment-action-btn {
+        width: auto;
+        min-width: 90px;
+        height: 32px;
+        padding: 0 10px;
+        font-size: 13px;
+        border-radius: 8px;
+    }
+    
+    .comment-action-btn.small {
+        width: auto;
+        min-width: 70px;
+        height: 24px;
+        padding: 0 6px;
+        font-size: 10px;
+        border-radius: 5px;
+    }
+    
+    .comment-action-btn.large {
+        width: auto;
+        min-width: 120px;
+        height: 40px;
+        padding: 0 16px;
+        font-size: 15px;
+        border-radius: 10px;
+    }
+    
+    /* 中等屏幕设备优化按钮文本显示 */
+    .comment-action-btn .button-text {
+        font-size: 12px;
+    }
+    
+    .comment-action-btn i {
+        font-size: 13px;
+        margin-right: 4px;
+    }
+    
+    /* 中等屏幕设备优化容器 */
+    #comment-action-container .container-tooltip {
+        font-size: 11px;
+        padding: 6px 10px;
+        bottom: -35px;
+    }
+    
+    #comment-action-container .container-close {
+        width: 18px;
+        height: 18px;
+        font-size: 9px;
+    }
+}
+
+@media (max-width: 640px) {
+    #comment-action-container {
+        top: 6px;
+        right: 6px;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(51, 65, 85, 0.95) 100%);
+        min-width: 120px;
+        max-width: 180px;
+    }
+    
+    .comment-action-btn {
+        width: auto;
+        min-width: 80px;
+        height: 28px;
+        padding: 0 8px;
+        font-size: 12px;
+        border-radius: 6px;
+        border-width: 1px;
+    }
+    
+    .comment-action-btn.small {
+        width: auto;
+        min-width: 60px;
+        height: 20px;
+        padding: 0 4px;
+        font-size: 9px;
+        border-radius: 4px;
+    }
+    
+    .comment-action-btn.large {
+        width: auto;
+        min-width: 100px;
+        height: 36px;
+        padding: 0 12px;
+        font-size: 13px;
+        border-radius: 8px;
+    }
+    
+    .comment-action-btn:hover {
+        transform: translateY(-1px) scale(1.03);
+    }
+    
+    /* 小屏幕设备隐藏按钮文本，只显示图标 */
+    .comment-action-btn .button-text {
+        display: none;
+    }
+    
+    .comment-action-btn i {
+        margin-right: 0;
+        font-size: 12px;
+    }
+    
+    /* 小屏幕设备优化容器 */
+    #comment-action-container .container-tooltip {
+        display: none;
+    }
+    
+    #comment-action-container .container-close {
+        width: 16px;
+        height: 16px;
+        font-size: 8px;
+        top: -6px;
+        right: -6px;
+    }
+    
+    #comment-action-container .container-indicator {
+        width: 6px;
+        height: 6px;
+        top: -1px;
+        right: -1px;
+    }
+}
+
+/* 触摸设备优化 - 重构 */
+@media (hover: none) and (pointer: coarse) {
+    .comment-action-btn:hover {
+        transform: none;
+    }
+    
+    .comment-action-btn:active {
+        transform: scale(0.95);
+        transition: all 0.1s ease;
+    }
+    
+    #comment-action-container {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 10px 14px;
+        border-radius: 18px;
+    }
+    
+    .comment-action-btn {
+        border-width: 1.5px;
+    }
+    
+    .comment-action-btn:active {
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.8) 0%, rgba(99, 102, 241, 0.7) 100%);
+    }
 } 
+
 
 
 

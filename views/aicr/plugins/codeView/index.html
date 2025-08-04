@@ -26,10 +26,163 @@
             >
                 <span class="line-number">{{ index + 1 }}</span>
                 <span class="line-content" v-html="escapeHtml(line)"></span>
+                
+                <!-- 评论标记 -->
+                <div v-if="getCommentsForLine(index + 1).length > 0" class="comment-markers">
+                    <div 
+                        v-for="(comment, commentIndex) in getCommentsForLine(index + 1)" 
+                        :key="comment.key || commentIndex"
+                        class="comment-marker"
+                        :class="getCommentStatusClass(comment.status)"
+                        :data-comment-key="comment.key"
+                        @click="showCommentDetail(comment, $event)"
+                        @mouseenter="handleCommentMarkerMouseEvents(comment, $event)"
+                        @mouseleave="handleCommentMarkerMouseEvents(comment, $event)"
+                        :title="`${comment.author} - ${formatTime(comment.timestamp)}`"
+                        role="button"
+                        tabindex="0"
+                    >
+                        <i class="fas fa-comment"></i>
+                        <span class="comment-count" v-if="getCommentsForLine(index + 1).length > 1">
+                            {{ getCommentsForLine(index + 1).length }}
+                        </span>
+                    </div>
+                </div>
             </code>
         </pre>
         <!-- 划词评论按钮和弹窗容器 -->
         <div id="comment-action-container"></div>
+        
+        <!-- 评论详情弹窗 -->
+        <div 
+            v-if="showCommentDetailPopup && currentCommentDetail" 
+            class="comment-detail-popup"
+            :style="{
+                left: commentDetailPosition.x + 'px',
+                top: commentDetailPosition.y + 'px'
+            }"
+            role="dialog"
+            aria-label="评论详情"
+        >
+            <div class="comment-detail-header draggable-header" 
+                 @mousedown="startDrag" 
+                 @touchstart="startDrag">
+                <div class="comment-author-info">
+                    <div class="comment-author-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="comment-author-details">
+                        <span class="comment-author">{{ currentCommentDetail.author }}</span>
+                        <time class="comment-time" :datetime="currentCommentDetail.timestamp">
+                            {{ formatTime(currentCommentDetail.timestamp) }}
+                        </time>
+                    </div>
+                </div>
+                <button 
+                    @click="hideCommentDetail"
+                    class="close-button"
+                    title="关闭"
+                    aria-label="关闭评论详情"
+                >
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="comment-detail-body">
+                <!-- 代码位置信息 -->
+                <div v-if="currentCommentDetail.rangeInfo" class="comment-location">
+                    <i class="fas fa-code"></i>
+                    <span class="location-text">
+                        第 {{ currentCommentDetail.rangeInfo.startLine }}{{ currentCommentDetail.rangeInfo.endLine !== currentCommentDetail.rangeInfo.startLine ? `-${currentCommentDetail.rangeInfo.endLine}` : '' }} 行
+                    </span>
+                </div>
+                
+                <!-- 引用的代码 -->
+                <div v-if="currentCommentDetail.text" class="comment-quote">
+                    <div class="quote-header">
+                        <i class="fas fa-quote-left"></i>
+                        <span>引用代码</span>
+                    </div>
+                    <pre class="quote-code" @click="highlightCode(currentCommentDetail)">{{ currentCommentDetail.text }}</pre>
+                </div>
+                
+                <!-- 评论内容 -->
+                <div class="comment-content">{{ currentCommentDetail.content }}</div>
+                
+                <!-- 改进代码 -->
+                <div v-if="currentCommentDetail.improvementText" class="comment-improvement">
+                    <div class="improvement-header">
+                        <i class="fas fa-magic"></i>
+                        <span>改进代码</span>
+                    </div>
+                    <pre class="improvement-code">{{ currentCommentDetail.improvementText }}</pre>
+                </div>
+                
+                <!-- 评论状态 -->
+                <div v-if="currentCommentDetail.status" class="comment-status">
+                    <span class="status-badge" :class="getCommentStatusClass(currentCommentDetail.status)">
+                        {{ getCommentStatusLabel(currentCommentDetail.status) }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 评论预览弹窗（悬停显示） -->
+        <div 
+            v-if="showCommentPreviewPopup && currentCommentPreview" 
+            class="comment-preview-popup"
+            :style="{
+                left: commentPreviewPosition.x + 'px',
+                top: commentPreviewPosition.y + 'px'
+            }"
+            role="tooltip"
+            aria-label="评论预览"
+        >
+            <div class="preview-header">
+                <div class="preview-author-info">
+                    <div class="preview-author-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="preview-author-details">
+                        <span class="preview-author">{{ currentCommentPreview.author }}</span>
+                        <time class="preview-time" :datetime="currentCommentPreview.timestamp">
+                            {{ formatTime(currentCommentPreview.timestamp) }}
+                        </time>
+                    </div>
+                </div>
+                <span class="preview-status-badge" :class="getCommentStatusClass(currentCommentPreview.status)">
+                    {{ getCommentStatusLabel(currentCommentPreview.status) }}
+                </span>
+            </div>
+            
+            <div class="preview-body">
+                <!-- 评论内容预览 -->
+                <div class="preview-content">{{ currentCommentPreview.content }}</div>
+                
+                <!-- 引用的代码预览（如果有） -->
+                <div v-if="currentCommentPreview.text" class="preview-quote">
+                    <div class="preview-quote-header">
+                        <i class="fas fa-quote-left"></i>
+                        <span>引用代码</span>
+                    </div>
+                    <pre class="preview-quote-code">{{ currentCommentPreview.text }}</pre>
+                </div>
+                
+                <!-- 改进代码预览（如果有） -->
+                <div v-if="currentCommentPreview.improvementText" class="preview-improvement">
+                    <div class="preview-improvement-header">
+                        <i class="fas fa-magic"></i>
+                        <span>改进建议</span>
+                    </div>
+                    <pre class="preview-improvement-code">{{ currentCommentPreview.improvementText }}</pre>
+                </div>
+            </div>
+            
+            <!-- 点击查看详情提示 -->
+            <div class="preview-footer">
+                <span class="preview-hint">点击查看完整详情</span>
+            </div>
+        </div>
     </div>
 
     <!-- 空状态 -->
@@ -41,6 +194,7 @@
         <div class="empty-subtitle">从左侧文件树中选择要查看的文件</div>
     </div>
 </section>
+
 
 
 
