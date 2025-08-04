@@ -127,27 +127,80 @@ const createCodeView = async () => {
             // 获取代码行数组
             codeLines() {
                 return safeExecute(() => {
-                    if (!this.file || !this.file.content) return [];
-                    return this.file.content.split('\n');
-                }, '代码行分割');
+                    if (!this.file || !this.file.content) {
+                        return [];
+                    }
+                    
+                    // 按行分割代码内容
+                    const lines = this.file.content.split('\n');
+                    console.log('[CodeView] 代码行数:', lines.length);
+                    return lines;
+                }, '获取代码行数组');
             },
             
             // 获取语言类型
             languageType() {
                 return safeExecute(() => {
-                    if (!this.file) return 'text';
-                    return this.file.language || 'text';
-                }, '语言类型获取');
+                    if (!this.file || !this.file.name) {
+                        return 'text';
+                    }
+                    
+                    const fileName = this.file.name.toLowerCase();
+                    const extension = fileName.split('.').pop();
+                    
+                    // 语言映射
+                    const languageMap = {
+                        'js': 'javascript',
+                        'ts': 'typescript',
+                        'jsx': 'javascript',
+                        'tsx': 'typescript',
+                        'html': 'html',
+                        'css': 'css',
+                        'scss': 'scss',
+                        'less': 'less',
+                        'json': 'json',
+                        'xml': 'xml',
+                        'py': 'python',
+                        'java': 'java',
+                        'cpp': 'cpp',
+                        'c': 'c',
+                        'php': 'php',
+                        'rb': 'ruby',
+                        'go': 'go',
+                        'rs': 'rust',
+                        'swift': 'swift',
+                        'kt': 'kotlin',
+                        'sql': 'sql',
+                        'sh': 'bash',
+                        'md': 'markdown',
+                        'txt': 'text'
+                    };
+                    
+                    return languageMap[extension] || 'text';
+                }, '获取语言类型');
             },
             
-            // 新增：检查是否有弹窗正在显示
+            // 检查是否有活动的弹窗
             hasActivePopup() {
                 return this.showCommentDetailPopup || this.showCommentPreviewPopup;
             },
             
-            // 新增：检查弹窗冲突
+            // 检查弹窗冲突
             hasPopupConflict() {
                 return this.showCommentDetailPopup && this.showCommentPreviewPopup;
+            },
+            
+            // 新增：计算每行的评论数据，确保响应式更新
+            lineComments() {
+                const result = {};
+                const lineCount = this.codeLines.length;
+                
+                for (let lineNumber = 1; lineNumber <= lineCount; lineNumber++) {
+                    const comments = this.commentMarkers[lineNumber] || [];
+                    result[lineNumber] = comments;
+                }
+                
+                return result;
             }
         },
         methods: {
@@ -225,16 +278,18 @@ const createCodeView = async () => {
                 this.commentMarkers = newCommentMarkers;
                 
                 console.log('[CodeView] 评论标记映射构建完成:', this.commentMarkers);
+                console.log('[CodeView] 评论标记行数:', Object.keys(this.commentMarkers).length);
                 
                 // 确保DOM更新
                 this.$nextTick(() => {
                     console.log('[CodeView] DOM更新完成，评论标记已刷新');
+                    console.log('[CodeView] lineComments计算属性已更新:', this.lineComments);
                 });
             },
             
             // 新增：获取指定行的评论
             getCommentsForLine(lineNumber) {
-                const comments = this.commentMarkers[lineNumber] || [];
+                const comments = this.lineComments[lineNumber] || [];
                 console.log('[CodeView] 获取第', lineNumber, '行的评论，数量:', comments.length);
                 return comments;
             },
@@ -762,7 +817,12 @@ const createCodeView = async () => {
             bindSelectionEvent() {
                 return safeExecute(() => {
                     const codeContent = this.$refs.codeContent;
-                    if (!codeContent) return;
+                    if (!codeContent) {
+                        console.log('[CodeView] codeContent引用不存在，无法绑定选择事件');
+                        return;
+                    }
+                    
+                    console.log('[CodeView] 开始绑定选择事件');
                     
                     // 移除之前的事件监听器
                     codeContent.removeEventListener('mouseup', this.handleSelection, { passive: false });
@@ -773,17 +833,23 @@ const createCodeView = async () => {
                     codeContent.addEventListener('mouseup', this.handleSelection, { passive: false });
                     codeContent.addEventListener('touchend', this.handleSelection, { passive: false });
                     codeContent.addEventListener('mousedown', this.handleMouseDown, { passive: false });
+                    
+                    console.log('[CodeView] 选择事件绑定完成');
                 }, '划词事件绑定');
             },
             
             // 处理鼠标按下事件
             handleMouseDown(event) {
                 return safeExecute(() => {
+                    console.log('[CodeView] 鼠标按下事件触发');
+                    
                     // 如果点击的是评论按钮或其容器，不处理
                     if (event.target.closest('#comment-action-container')) {
+                        console.log('[CodeView] 点击的是评论按钮容器，跳过鼠标按下处理');
                         return;
                     }
                     
+                    console.log('[CodeView] 清除之前的选择和按钮');
                     // 清除之前的选择和按钮
                     this.clearSelectionAndButton();
                 }, '鼠标按下处理');
@@ -794,22 +860,34 @@ const createCodeView = async () => {
                 return safeExecute(() => {
                     // 如果点击的是评论按钮或其容器，不处理选择
                     if (event.target.closest('#comment-action-container')) {
+                        console.log('[CodeView] 点击的是评论按钮容器，跳过选择处理');
                         return;
                     }
+                    
+                    console.log('[CodeView] 文本选择事件触发');
                     
                     // 延迟处理，确保选择完成
                     setTimeout(() => {
                         const selection = window.getSelection();
-                        if (!selection || selection.rangeCount === 0) return;
+                        if (!selection || selection.rangeCount === 0) {
+                            console.log('[CodeView] 没有有效的选择范围');
+                            return;
+                        }
                         
                         const range = selection.getRangeAt(0);
                         const selectedText = range.toString().trim();
                         
+                        console.log('[CodeView] 选中的文本长度:', selectedText.length);
+                        console.log('[CodeView] 选中的文本:', selectedText);
+                        
                         if (selectedText.length > 0) {
+                            console.log('[CodeView] 创建评论按钮');
                             // 创建评论按钮
                             this.createCommentButton(range, selectedText);
+                        } else {
+                            console.log('[CodeView] 选中的文本为空，不创建按钮');
                         }
-                    }, 10);
+                    }, 50); // 增加延迟时间，确保选择完成
                 }, '文本选择处理');
             },
             
@@ -1604,6 +1682,9 @@ const createCodeView = async () => {
         updated() {
             return safeExecute(() => {
                 console.log('[CodeView] 组件已更新');
+                
+                // 重新绑定选择事件，确保在组件更新后事件监听器仍然有效
+                this.bindSelectionEvent();
             }, 'CodeView组件更新');
         },
         
@@ -1614,6 +1695,8 @@ const createCodeView = async () => {
                 // 移除选择事件监听
                 const codeContent = this.$refs.codeContent;
                 if (codeContent) {
+                    codeContent.removeEventListener('mouseup', this.handleSelection, { passive: false });
+                    codeContent.removeEventListener('touchend', this.handleSelection, { passive: false });
                     codeContent.removeEventListener('mousedown', this.handleMouseDown, { passive: false });
                 }
                 
@@ -1645,6 +1728,7 @@ const createCodeView = async () => {
                 console.log('[CodeView] 收到评论重新加载事件:', event.detail);
                 console.log('[CodeView] 当前文件:', this.file);
                 console.log('[CodeView] 当前评论标记数量:', Object.keys(this.commentMarkers).length);
+                console.log('[CodeView] 当前lineComments状态:', this.lineComments);
                 
                 // 如果当前有显示的评论详情弹窗，关闭它
                 if (this.showCommentDetailPopup) {
@@ -1669,6 +1753,11 @@ const createCodeView = async () => {
                 // 等待DOM更新完成
                 await this.$nextTick();
                 console.log('[CodeView] 评论数据重新加载完成，新的评论标记数量:', Object.keys(this.commentMarkers).length);
+                console.log('[CodeView] 新的lineComments状态:', this.lineComments);
+                
+                // 重新绑定选择事件，确保选择功能正常工作
+                console.log('[CodeView] 重新绑定选择事件');
+                this.bindSelectionEvent();
             }, '处理评论数据重新加载');
         },
         

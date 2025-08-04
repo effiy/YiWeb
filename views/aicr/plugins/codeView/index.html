@@ -28,9 +28,9 @@
                 <span class="line-content" v-html="escapeHtml(line)"></span>
                 
                 <!-- 评论标记 -->
-                <div v-if="getCommentsForLine(index + 1).length > 0" class="comment-markers">
+                <div v-if="lineComments[index + 1] && lineComments[index + 1].length > 0" class="comment-markers">
                     <div 
-                        v-for="(comment, commentIndex) in getCommentsForLine(index + 1)" 
+                        v-for="(comment, commentIndex) in lineComments[index + 1]" 
                         :key="comment.key || commentIndex"
                         class="comment-marker"
                         :class="getCommentStatusClass(comment.status)"
@@ -43,8 +43,8 @@
                         tabindex="0"
                     >
                         <i class="fas fa-comment"></i>
-                        <span class="comment-count" v-if="getCommentsForLine(index + 1).length > 1">
-                            {{ getCommentsForLine(index + 1).length }}
+                        <span class="comment-count" v-if="lineComments[index + 1].length > 1">
+                            {{ lineComments[index + 1].length }}
                         </span>
                     </div>
                 </div>
