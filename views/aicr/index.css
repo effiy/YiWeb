@@ -9,7 +9,7 @@
 /* ========== 主容器 ========== */
 .aicr-main {
     display: flex;
-    height: calc(100vh - 80px);
+    height: calc(100vh - 68px);
     background: var(--bg-primary);
     min-width: 320px;
     position: relative;
@@ -18,9 +18,9 @@
 
 /* ========== 侧边栏（文件树） ========== */
 .aicr-sidebar {
-    width: 280px;
-    min-width: 200px;
-    max-width: 350px;
+    width: 320px;
+    min-width: 240px;
+    max-width: 400px;
     background: var(--bg-secondary);
     border-right: 1px solid var(--border-primary);
     box-shadow: var(--shadow-sm);
@@ -61,9 +61,9 @@
 
 /* ========== 评论区域 ========== */
 .aicr-comments {
-    width: 360px;
-    min-width: 240px;
-    max-width: 450px;
+    width: 450px;
+    min-width: 320px;
+    max-width: 550px;
     background: var(--bg-secondary);
     border-left: 1px solid var(--border-primary);
     box-shadow: var(--shadow-sm);
@@ -84,12 +84,12 @@
 /* 中等屏幕 */
 @media (max-width: 1200px) {
     .aicr-sidebar {
-        width: 240px;
-        min-width: 180px;
+        width: 280px;
+        min-width: 220px;
     }
     .aicr-comments {
-        width: 300px;
-        min-width: 220px;
+        width: 400px;
+        min-width: 300px;
     }
     .aicr-code {
         font-size: 13px;
