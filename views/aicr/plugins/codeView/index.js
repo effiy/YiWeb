@@ -252,108 +252,15 @@ const createCodeView = async () => {
                 }, '显示评论详情');
             },
             
-            // 新增：计算详情弹窗位置
+            // 修改：计算详情弹窗位置 - 始终居中显示
             calculateDetailPosition(event) {
                 return safeExecute(() => {
-                    // 找到对应的 comment-marker 元素
-                    const commentKey = this.currentCommentDetail?.key;
-                    if (!commentKey) {
-                        console.warn('[CodeView] 无法找到评论key，使用默认位置计算');
-                const position = this.calculatePopupPosition(event, '.comment-detail-popup', 400, 300);
-                if (position) {
-                            this.convertToFixedPosition(position);
-                        }
-                        return;
-                    }
+                    // 弹窗始终居中显示，不需要复杂的位置计算
+                    // 设置默认位置为屏幕中心
+                    this.commentDetailPosition = { x: 0, y: 0 };
                     
-                    // 查找对应的 comment-marker 元素
-                    const markerSelector = `.comment-marker[data-comment-key="${commentKey}"]`;
-                    const markerElement = document.querySelector(markerSelector);
-                    
-                    if (!markerElement) {
-                        console.warn('[CodeView] 未找到对应的comment-marker元素:', markerSelector);
-                        // 回退到基于事件的位置计算
-                        const position = this.calculatePopupPosition(event, '.comment-detail-popup', 400, 300);
-                        if (position) {
-                            this.convertToFixedPosition(position);
-                        }
-                        return;
-                    }
-                    
-                    // 获取marker的位置信息
-                    const markerRect = markerElement.getBoundingClientRect();
-                    const viewportWidth = window.innerWidth;
-                    const viewportHeight = window.innerHeight;
-                    const popupWidth = 400; // 预估弹窗宽度
-                    const popupHeight = 300; // 预估弹窗高度
-                    
-                    // 检查评论区位置
-                    const commentsPanel = document.querySelector('.aicr-comments');
-                    let commentsLeft = viewportWidth;
-                    if (commentsPanel) {
-                        const commentsRect = commentsPanel.getBoundingClientRect();
-                        commentsLeft = commentsRect.left;
-                    }
-                    
-                    // 计算紧挨着marker的位置（详情弹窗往右偏移）
-                    let x, y;
-                    const margin = 8; // 与marker的间距
-                    const offsetX = 9; // 水平偏移量，向右偏移9px（13-4=9）
-                    
-                    // 水平位置：优先显示在marker右侧，但往右偏移
-                    if (markerRect.right + popupWidth + margin + offsetX <= commentsLeft - 20) {
-                        // 右侧有足够空间且不会与评论区重叠
-                        x = markerRect.right + margin + offsetX;
-                    } else if (markerRect.left - popupWidth - margin + offsetX >= 20) {
-                        // 左侧有足够空间
-                        x = markerRect.left - popupWidth - margin + offsetX;
-                    } else {
-                        // 居中显示，但避免与评论区重叠
-                        x = Math.max(20, Math.min(markerRect.left + offsetX, commentsLeft - popupWidth - 20));
-                    }
-                    
-                    // 垂直位置：优先显示在marker下方
-                    if (markerRect.bottom + popupHeight + margin <= viewportHeight - 20) {
-                        // 下方有足够空间
-                        y = markerRect.bottom + margin;
-                    } else if (markerRect.top - popupHeight - margin >= 20) {
-                        // 上方有足够空间
-                        y = markerRect.top - popupHeight - margin;
-                    } else {
-                        // 居中显示
-                        y = Math.max(20, Math.min(markerRect.top, viewportHeight - popupHeight - 20));
-                    }
-                    
-                    // 边界检查和调整
-                    x = Math.max(20, Math.min(x, viewportWidth - popupWidth - 20));
-                    y = Math.max(20, Math.min(y, viewportHeight - popupHeight - 20));
-                    
-                    this.commentDetailPosition = { x, y };
-                    
-                    // 检查是否在评论区附近，如果是则添加特殊样式
-                    const popupElement = document.querySelector('.comment-detail-popup');
-                    if (popupElement) {
-                        if (x + popupWidth > commentsLeft - 50) {
-                            popupElement.classList.add('near-comments');
-                        } else {
-                            popupElement.classList.remove('near-comments');
-                        }
-                    }
-                    
-                    console.log('[CodeView] 弹窗位置已优化（往右偏移）:', {
-                        commentKey: commentKey,
-                        marker: { 
-                            left: markerRect.left, 
-                            top: markerRect.top, 
-                            right: markerRect.right, 
-                            bottom: markerRect.bottom 
-                        },
-                        position: { x, y },
-                        offset: { x: offsetX },
-                        viewport: { width: viewportWidth, height: viewportHeight },
-                        commentsLeft: commentsLeft
-                    });
-                }, '计算详情弹窗位置（往右偏移）');
+                    console.log('[CodeView] 弹窗设置为居中显示');
+                }, '计算弹窗位置');
             },
             
             // 新增：转换位置为fixed坐标
@@ -536,8 +443,8 @@ const createCodeView = async () => {
                     const commentKey = this.currentCommentPreview?.key;
                     if (!commentKey) {
                         console.warn('[CodeView] 无法找到预览评论key，使用默认位置计算');
-                const position = this.calculatePopupPosition(event, '.comment-preview-popup', 320, 180);
-                if (position) {
+                        const position = this.calculatePopupPosition(event, '.comment-preview-popup', 320, 180);
+                        if (position) {
                             this.convertPreviewToFixedPosition(position);
                         }
                         return;
@@ -564,6 +471,13 @@ const createCodeView = async () => {
                     const popupWidth = 320; // 预估预览弹窗宽度
                     const popupHeight = 180; // 预估预览弹窗高度
                     
+                    // 查找comment-markers容器
+                    const commentMarkersContainer = markerElement.closest('.comment-markers');
+                    let markersContainerRect = null;
+                    if (commentMarkersContainer) {
+                        markersContainerRect = commentMarkersContainer.getBoundingClientRect();
+                    }
+                    
                     // 检查评论区位置
                     const commentsPanel = document.querySelector('.aicr-comments');
                     let commentsLeft = viewportWidth;
@@ -572,34 +486,136 @@ const createCodeView = async () => {
                         commentsLeft = commentsRect.left;
                     }
                     
-                    // 计算紧挨着marker的位置（预览弹窗往左下方偏移）
+                    // 计算预览弹窗位置 - 根据comment-markers宽度动态调整
                     let x, y;
                     const margin = 8; // 与marker的间距
-                    const offsetX = -30; // 水平偏移量，向左偏移30px
-                    const offsetY = 10; // 垂直偏移量，向下偏移10px
+                    const baseLeftOffset = 20; // 基础左偏移量
                     
-                    // 水平位置：优先显示在marker右侧，但往左偏移
-                    if (markerRect.right + popupWidth + margin + offsetX <= commentsLeft - 20) {
-                        // 右侧有足够空间且不会与评论区重叠
-                        x = markerRect.right + margin + offsetX;
-                    } else if (markerRect.left - popupWidth - margin + offsetX >= 20) {
-                        // 左侧有足够空间
-                        x = markerRect.left - popupWidth - margin + offsetX;
-                    } else {
-                        // 居中显示，但避免与评论区重叠
-                        x = Math.max(20, Math.min(markerRect.left + offsetX, commentsLeft - popupWidth - 20));
+                    // 计算动态偏移量：根据comment-markers的宽度和视口尺寸调整
+                    let dynamicOffset = baseLeftOffset;
+                    if (markersContainerRect) {
+                        // 根据comment-markers的宽度计算额外偏移
+                        const markersWidth = markersContainerRect.width;
+                        
+                        // 根据视口宽度动态调整偏移比例
+                        const viewportRatio = Math.min(viewportWidth / 1200, 1.5); // 视口宽度比例，最大1.5
+                        const baseWidthRatio = 0.3; // 基础宽度比例
+                        const adjustedWidthRatio = baseWidthRatio * viewportRatio;
+                        
+                        // 宽度越大，偏移越多，但设置上限避免过度偏移
+                        const maxOffset = Math.min(viewportWidth * 0.15, 60); // 最大偏移量基于视口宽度
+                        const widthBasedOffset = Math.min(markersWidth * adjustedWidthRatio, maxOffset);
+                        
+                        // 根据屏幕密度调整基础偏移
+                        const densityFactor = window.devicePixelRatio || 1;
+                        const adjustedBaseOffset = baseLeftOffset * Math.min(densityFactor, 1.5);
+                        
+                        dynamicOffset = adjustedBaseOffset + widthBasedOffset;
                     }
                     
-                    // 垂直位置：优先显示在marker下方，但往下偏移
-                    if (markerRect.bottom + popupHeight + margin + offsetY <= viewportHeight - 20) {
-                        // 下方有足够空间
-                        y = markerRect.bottom + margin + offsetY;
-                    } else if (markerRect.top - popupHeight - margin + offsetY >= 20) {
-                        // 上方有足够空间
-                        y = markerRect.top - popupHeight - margin + offsetY;
+                    // 水平位置：智能适配不同布局和屏幕尺寸
+                    if (markersContainerRect) {
+                        // 如果有comment-markers容器，使用智能定位
+                        const containerLeft = markersContainerRect.left;
+                        const containerRight = markersContainerRect.right;
+                        const containerWidth = markersContainerRect.width;
+                        
+                        // 计算可用空间
+                        const leftSpace = containerLeft - 20; // 左侧可用空间
+                        const rightSpace = commentsLeft - containerRight - 20; // 右侧可用空间
+                        const popupSpace = popupWidth + margin + dynamicOffset; // 弹窗所需空间
+                        
+                        // 智能选择最佳位置
+                        if (leftSpace >= popupSpace) {
+                            // 左侧空间充足，优先显示在左侧
+                            x = containerLeft - popupWidth - margin - dynamicOffset;
+                        } else if (rightSpace >= popupWidth + margin) {
+                            // 右侧空间充足，显示在右侧
+                            x = containerRight + margin;
+                        } else if (leftSpace >= popupWidth * 0.7) {
+                            // 左侧空间勉强够用，压缩显示
+                            x = Math.max(20, containerLeft - popupWidth * 0.8 - margin);
+                        } else if (rightSpace >= popupWidth * 0.7) {
+                            // 右侧空间勉强够用，压缩显示
+                            x = Math.min(commentsLeft - popupWidth * 0.8 - 20, containerRight + margin);
+                        } else {
+                            // 空间都不够，居中显示但避免重叠
+                            const centerX = containerLeft + containerWidth / 2 - popupWidth / 2;
+                            x = Math.max(20, Math.min(centerX, commentsLeft - popupWidth - 20));
+                        }
                     } else {
-                        // 居中显示
-                        y = Math.max(20, Math.min(markerRect.top + offsetY, viewportHeight - popupHeight - 20));
+                        // 如果没有找到容器，回退到基于单个marker的位置
+                        const markerLeft = markerRect.left;
+                        const markerRight = markerRect.right;
+                        
+                        // 计算可用空间
+                        const leftSpace = markerLeft - 20;
+                        const rightSpace = commentsLeft - markerRight - 20;
+                        const popupSpace = popupWidth + margin + baseLeftOffset;
+                        
+                        if (leftSpace >= popupSpace) {
+                            // 左侧空间充足
+                            x = markerLeft - popupWidth - margin - baseLeftOffset;
+                        } else if (rightSpace >= popupWidth + margin) {
+                            // 右侧空间充足
+                            x = markerRight + margin;
+                        } else {
+                            // 居中显示
+                            x = Math.max(20, Math.min(markerLeft - baseLeftOffset, commentsLeft - popupWidth - 20));
+                        }
+                    }
+                    
+                    // 垂直位置：智能适配不同屏幕高度和布局
+                    if (markersContainerRect) {
+                        // 如果有comment-markers容器，使用智能垂直定位
+                        const containerTop = markersContainerRect.top;
+                        const containerBottom = markersContainerRect.bottom;
+                        const containerHeight = markersContainerRect.height;
+                        const containerCenterY = containerTop + containerHeight / 2;
+                        
+                        // 计算可用垂直空间
+                        const topSpace = containerTop - 20;
+                        const bottomSpace = viewportHeight - containerBottom - 20;
+                        const popupSpace = popupHeight + margin;
+                        
+                        // 智能选择最佳垂直位置
+                        if (bottomSpace >= popupSpace) {
+                            // 下方空间充足，优先显示在下方
+                            y = containerBottom + margin;
+                        } else if (topSpace >= popupSpace) {
+                            // 上方空间充足，显示在上方
+                            y = containerTop - popupHeight - margin;
+                        } else if (bottomSpace >= popupHeight * 0.8) {
+                            // 下方空间勉强够用，压缩显示
+                            y = Math.max(20, containerBottom + margin);
+                        } else if (topSpace >= popupHeight * 0.8) {
+                            // 上方空间勉强够用，压缩显示
+                            y = Math.min(viewportHeight - popupHeight * 0.8 - 20, containerTop - popupHeight - margin);
+                        } else {
+                            // 空间都不够，居中对齐但避免超出边界
+                            const centerY = containerCenterY - popupHeight / 2;
+                            y = Math.max(20, Math.min(centerY, viewportHeight - popupHeight - 20));
+                        }
+                    } else {
+                        // 如果没有找到容器，回退到基于单个marker的位置
+                        const markerTop = markerRect.top;
+                        const markerBottom = markerRect.bottom;
+                        
+                        // 计算可用垂直空间
+                        const topSpace = markerTop - 20;
+                        const bottomSpace = viewportHeight - markerBottom - 20;
+                        const popupSpace = popupHeight + margin;
+                        
+                        if (bottomSpace >= popupSpace) {
+                            // 下方空间充足
+                            y = markerBottom + margin;
+                        } else if (topSpace >= popupSpace) {
+                            // 上方空间充足
+                            y = markerTop - popupHeight - margin;
+                        } else {
+                            // 居中显示
+                            y = Math.max(20, Math.min(markerTop, viewportHeight - popupHeight - 20));
+                        }
                     }
                     
                     // 边界检查和调整
@@ -608,7 +624,7 @@ const createCodeView = async () => {
                     
                     this.commentPreviewPosition = { x, y };
                     
-                    console.log('[CodeView] 预览弹窗位置已优化（往左下方偏移）:', {
+                    console.log('[CodeView] 预览弹窗位置已优化（智能适配多维度）:', {
                         commentKey: commentKey,
                         marker: { 
                             left: markerRect.left, 
@@ -616,12 +632,31 @@ const createCodeView = async () => {
                             right: markerRect.right, 
                             bottom: markerRect.bottom 
                         },
+                        markersContainer: markersContainerRect ? {
+                            left: markersContainerRect.left,
+                            top: markersContainerRect.top,
+                            right: markersContainerRect.right,
+                            bottom: markersContainerRect.bottom,
+                            width: markersContainerRect.width,
+                            height: markersContainerRect.height
+                        } : null,
                         position: { x, y },
-                        offset: { x: offsetX, y: offsetY },
+                        adaptation: {
+                            baseLeftOffset: baseLeftOffset,
+                            dynamicOffset: dynamicOffset,
+                            viewportRatio: markersContainerRect ? Math.min(viewportWidth / 1200, 1.5) : 1,
+                            densityFactor: window.devicePixelRatio || 1,
+                            availableSpace: {
+                                left: markersContainerRect ? markersContainerRect.left - 20 : markerRect.left - 20,
+                                right: commentsLeft - (markersContainerRect ? markersContainerRect.right : markerRect.right) - 20,
+                                top: markersContainerRect ? markersContainerRect.top - 20 : markerRect.top - 20,
+                                bottom: viewportHeight - (markersContainerRect ? markersContainerRect.bottom : markerRect.bottom) - 20
+                            }
+                        },
                         viewport: { width: viewportWidth, height: viewportHeight },
                         commentsLeft: commentsLeft
                     });
-                }, '计算预览弹窗位置（往左下方偏移）');
+                }, '计算预览弹窗位置（基于comment-markers区块）');
             },
             
             // 新增：转换预览弹窗位置为fixed坐标
@@ -1625,6 +1660,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

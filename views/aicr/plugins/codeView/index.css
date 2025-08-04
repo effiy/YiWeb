@@ -196,17 +196,21 @@
 }
 
 /* ========== 评论详情弹窗样式 ========== */
-/* 评论详情弹窗 - 最高层级 */
+/* 评论详情弹窗 - 始终居中显示 */
 .comment-detail-popup {
-    position: fixed; /* 改为 fixed 定位，确保不受父容器影响 */
+    position: fixed; /* 固定定位，确保不受父容器影响 */
+    top: 50% !important; /* 强制垂直居中 */
+    left: 50% !important; /* 强制水平居中 */
+    transform: translate(-50%, -50%) !important; /* 使用transform确保完美居中 */
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: 12px;
     box-shadow: var(--shadow-lg);
-    max-width: 800px; /* 增加最大宽度，提供更好的内容展示空间 */
-    min-width: 360px; /* 增加最小宽度，确保内容不会过于拥挤 */
-    width: 600px; /* 设置默认宽度，提供更好的阅读体验 */
-    z-index: 999999; /* 大幅提高层级，确保在最顶层 */
+    max-width: 90vw; /* 最大宽度为视口宽度的90% */
+    min-width: 360px; /* 最小宽度 */
+    width: 600px; /* 默认宽度 */
+    max-height: 90vh; /* 最大高度为视口高度的90% */
+    z-index: 999999; /* 最高层级 */
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     animation: commentPopupFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -216,8 +220,7 @@
     pointer-events: auto;
     /* 防止内容溢出 */
     overflow: hidden;
-    /* 确保在边界情况下也能显示 */
-    max-height: calc(100vh - 32px);
+    /* 确保弹窗在边界情况下也能显示 */
     overflow-y: auto;
     /* 添加更好的视觉效果 */
     transform-origin: center;
@@ -229,15 +232,14 @@
     /* 添加边框渐变效果 */
     border: 1px solid rgba(79, 70, 229, 0.2);
     /* 确保弹窗在滚动时保持可见 */
-    transform: translateZ(0);
+    transform: translate(-50%, -50%) translateZ(0);
     /* 确保弹窗在边界情况下也能显示 */
-    will-change: transform, left, top;
+    will-change: transform;
     /* 确保弹窗不会被其他元素遮挡 */
     isolation: isolate;
     /* 添加更好的视觉层次 */
     filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.15));
-    /* 向左偏移210px */
-    margin-left: -210px;
+    /* 移除之前的margin-left偏移 */
 }
 
 /* 添加边界检测和自动调整的样式 */
@@ -631,14 +633,15 @@
 
 /* ========== 评论预览弹窗样式 ========== */
 .comment-preview-popup {
-    position: fixed; /* 改为 fixed 定位，确保不受父容器影响 */
+    position: fixed; /* 固定定位，确保不受父容器影响 */
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: 12px;
     box-shadow: var(--shadow-lg);
-    max-width: 600px; /* 增加预览弹窗的最大宽度 */
-    min-width: 320px; /* 增加最小宽度 */
-    width: 520px; /* 设置默认宽度 */
+    max-width: 400px; /* 预览弹窗的最大宽度 */
+    min-width: 280px; /* 最小宽度 */
+    width: 320px; /* 默认宽度 */
+    max-height: 300px; /* 最大高度 */
     z-index: 999998; /* 提高层级，仅次于评论详情弹窗 */
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
@@ -650,8 +653,8 @@
     isolation: isolate;
     /* 添加更好的视觉层次 */
     filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.12));
-    /* 向左偏移170px */
-    margin-left: -170px;
+    /* 移除固定的margin-left偏移，由JavaScript动态控制位置 */
+    overflow: hidden;
 }
 
 @keyframes commentPreviewFadeIn {
@@ -1077,15 +1080,15 @@
     }
     
     .comment-detail-popup {
-        max-width: 620px; /* 增加中等屏幕的最大宽度 */
-        min-width: 320px; /* 增加最小宽度 */
+        max-width: 90vw; /* 最大宽度为视口宽度的90% */
+        min-width: 320px; /* 最小宽度 */
         width: 520px; /* 设置默认宽度 */
         /* 确保在中等屏幕上也能正确显示 */
-        max-height: calc(100vh - 48px);
-        /* 添加更好的边界处理 */
-        margin: 8px;
-        /* 拖拽功能优化 */
-        touch-action: none;
+        max-height: 85vh; /* 最大高度为视口高度的85% */
+        /* 保持居中显示 */
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
         /* 确保层级足够高 */
         z-index: 999999;
     }
@@ -1100,9 +1103,10 @@
     }
     
     .comment-preview-popup {
-        max-width: 360px; /* 增加中等屏幕预览弹窗的最大宽度 */
-        min-width: 300px; /* 增加最小宽度 */
-        width: 340px; /* 设置默认宽度 */
+        max-width: 350px; /* 中等屏幕预览弹窗的最大宽度 */
+        min-width: 280px; /* 最小宽度 */
+        width: 320px; /* 默认宽度 */
+        max-height: 280px; /* 最大高度 */
     }
     
     .comment-marker {
@@ -1157,15 +1161,15 @@
     }
     
     .comment-detail-popup {
-        max-width: 600px; /* 增加小屏幕的最大宽度 */
-        min-width: 280px; /* 增加最小宽度 */
-        width: 520px; /* 设置默认宽度 */
+        max-width: 95vw; /* 最大宽度为视口宽度的95% */
+        min-width: 280px; /* 最小宽度 */
+        width: 90vw; /* 设置默认宽度为视口宽度的90% */
         /* 确保在小屏幕上也能正确显示 */
-        max-height: calc(100vh - 64px);
-        /* 添加更好的边界处理 */
-        margin: 12px;
-        /* 拖拽功能优化 */
-        touch-action: none;
+        max-height: 90vh; /* 最大高度为视口高度的90% */
+        /* 保持居中显示 */
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
         /* 确保层级足够高 */
         z-index: 999999;
     }
@@ -1180,9 +1184,10 @@
     }
     
     .comment-preview-popup {
-        max-width: 320px; /* 增加小屏幕预览弹窗的最大宽度 */
-        min-width: 280px; /* 增加最小宽度 */
-        width: 300px; /* 设置默认宽度 */
+        max-width: 300px; /* 小屏幕预览弹窗的最大宽度 */
+        min-width: 260px; /* 最小宽度 */
+        width: 280px; /* 默认宽度 */
+        max-height: 250px; /* 最大高度 */
     }
     
     .preview-content {
@@ -2005,6 +2010,7 @@
         background: linear-gradient(135deg, rgba(79, 70, 229, 0.8) 0%, rgba(99, 102, 241, 0.7) 100%);
     }
 } 
+
 
 
 

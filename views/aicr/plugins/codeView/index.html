@@ -57,10 +57,6 @@
         <div 
             v-if="showCommentDetailPopup && currentCommentDetail" 
             class="comment-detail-popup"
-            :style="{
-                left: commentDetailPosition.x + 'px',
-                top: commentDetailPosition.y + 'px'
-            }"
             role="dialog"
             aria-label="评论详情"
         >
@@ -192,6 +188,7 @@
         <div class="empty-subtitle">从左侧文件树中选择要查看的文件</div>
     </div>
 </section>
+
 
 
 
