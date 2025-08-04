@@ -117,7 +117,14 @@
                 ></file-tree>
             </aside>
             <section class="aicr-code" aria-label="代码区">
-                <code-view :file="currentFile" :loading="loading" :error="errorMessage"></code-view>
+                <code-view 
+                    :file="currentFile" 
+                    :loading="loading" 
+                    :error="errorMessage"
+                    @comment-delete="handleCommentDelete"
+                    @comment-resolve="handleCommentResolve"
+                    @comment-reopen="handleCommentReopen"
+                ></code-view>
             </section>
             <aside class="aicr-comments" aria-label="评论区" v-show="!commentsCollapsed">
                 <comment-panel 

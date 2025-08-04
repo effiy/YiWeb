@@ -400,6 +400,41 @@ const createCodeView = async () => {
                 return classMap[status] || '';
             },
             
+            // 新增：解决评论详情
+            resolveCommentDetail(commentKey) {
+                return safeExecute(() => {
+                    console.log('[CodeView] 解决评论:', commentKey);
+                    // 触发事件，通知父组件处理
+                    this.$emit('comment-resolve', commentKey);
+                    // 关闭详情弹窗
+                    this.hideCommentDetail();
+                }, '解决评论详情');
+            },
+            
+            // 新增：重新打开评论详情
+            reopenCommentDetail(commentKey) {
+                return safeExecute(() => {
+                    console.log('[CodeView] 重新打开评论:', commentKey);
+                    // 触发事件，通知父组件处理
+                    this.$emit('comment-reopen', commentKey);
+                    // 关闭详情弹窗
+                    this.hideCommentDetail();
+                }, '重新打开评论详情');
+            },
+            
+            // 新增：删除评论详情
+            deleteCommentDetail(commentKey) {
+                return safeExecute(() => {
+                    console.log('[CodeView] 删除评论:', commentKey);
+                    if (confirm('确定要删除这条评论吗？')) {
+                        // 触发事件，通知父组件处理
+                        this.$emit('comment-delete', commentKey);
+                        // 关闭详情弹窗
+                        this.hideCommentDetail();
+                    }
+                }, '删除评论详情');
+            },
+            
             // 新增：显示评论预览（悬停）
             showCommentPreview(comment, event) {
                 return safeExecute(() => {

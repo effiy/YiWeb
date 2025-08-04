@@ -66,17 +66,17 @@
                         <i class="fas fa-user"></i>
                     </div>
                     <div class="comment-author-details">
-                        <span class="comment-author">{{ currentCommentDetail.author }}</span>
+                        <div class="author-name-row">
+                            <span class="comment-author">{{ currentCommentDetail.author }}</span>
+                            <!-- 评论状态 - 移到作者名旁边 -->
+                            <span v-if="currentCommentDetail.status" class="status-badge-inline" :class="getCommentStatusClass(currentCommentDetail.status)">
+                                {{ getCommentStatusLabel(currentCommentDetail.status) }}
+                            </span>
+                        </div>
                         <time class="comment-time" :datetime="currentCommentDetail.timestamp">
                             {{ formatTime(currentCommentDetail.timestamp) }}
                         </time>
                     </div>
-                </div>
-                <!-- 评论状态 -->
-                <div v-if="currentCommentDetail.status" class="comment-status">
-                    <span class="status-badge" :class="getCommentStatusClass(currentCommentDetail.status)">
-                        {{ getCommentStatusLabel(currentCommentDetail.status) }}
-                    </span>
                 </div>
                 <button 
                     @click="hideCommentDetail"
@@ -117,6 +117,38 @@
                     </div>
                     <pre class="improvement-code">{{ currentCommentDetail.improvementText }}</pre>
                 </div>
+                
+                <!-- 评论操作按钮 -->
+                <div class="comment-detail-actions">
+                    <button 
+                        v-if="currentCommentDetail.status === 'pending'"
+                        @click="resolveCommentDetail(currentCommentDetail.key)"
+                        class="action-button resolve-button"
+                        title="标记为已解决"
+                    >
+                        <i class="fas fa-check"></i>
+                        解决
+                    </button>
+                    
+                    <button 
+                        v-if="currentCommentDetail.status === 'resolved'"
+                        @click="reopenCommentDetail(currentCommentDetail.key)"
+                        class="action-button reopen-button"
+                        title="重新打开"
+                    >
+                        <i class="fas fa-undo"></i>
+                        重开
+                    </button>
+                    
+                    <button 
+                        @click="deleteCommentDetail(currentCommentDetail.key)"
+                        class="action-button delete-button"
+                        title="删除评论"
+                    >
+                        <i class="fas fa-trash"></i>
+                        删除
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -137,15 +169,18 @@
                         <i class="fas fa-user"></i>
                     </div>
                     <div class="preview-author-details">
-                        <span class="preview-author">{{ currentCommentPreview.author }}</span>
+                        <div class="preview-author-name-row">
+                            <span class="preview-author">{{ currentCommentPreview.author }}</span>
+                            <!-- 评论状态 - 移到作者名旁边 -->
+                            <span v-if="currentCommentPreview.status" class="preview-status-badge-inline" :class="getCommentStatusClass(currentCommentPreview.status)">
+                                {{ getCommentStatusLabel(currentCommentPreview.status) }}
+                            </span>
+                        </div>
                         <time class="preview-time" :datetime="currentCommentPreview.timestamp">
                             {{ formatTime(currentCommentPreview.timestamp) }}
                         </time>
                     </div>
                 </div>
-                <span class="preview-status-badge" :class="getCommentStatusClass(currentCommentPreview.status)">
-                    {{ getCommentStatusLabel(currentCommentPreview.status) }}
-                </span>
             </div>
             
             <div class="preview-body">

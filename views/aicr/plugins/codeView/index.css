@@ -356,11 +356,48 @@
     gap: 4px;
 }
 
+.author-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .comment-author {
     font-weight: 600;
     font-size: 14px;
     color: var(--text-primary);
     line-height: 1.2;
+}
+
+.status-badge-inline {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.status-badge-inline.status-pending {
+    background: var(--warning-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-badge-inline.status-resolved {
+    background: var(--success-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-badge-inline.status-reopened {
+    background: var(--error-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .comment-time {
@@ -630,6 +667,94 @@
     border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
+/* 评论详情操作按钮样式 */
+.comment-detail-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-secondary);
+    justify-content: flex-end;
+}
+
+.comment-detail-actions .action-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.comment-detail-actions .action-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.comment-detail-actions .action-button:hover::before {
+    left: 100%;
+}
+
+.comment-detail-actions .action-button i {
+    font-size: 11px;
+    transition: transform 0.2s ease;
+}
+
+.comment-detail-actions .action-button:hover i {
+    transform: scale(1.1);
+}
+
+.comment-detail-actions .resolve-button {
+    background: var(--success-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.comment-detail-actions .resolve-button:hover {
+    background: var(--success-gradient-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.comment-detail-actions .reopen-button {
+    background: var(--warning-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.comment-detail-actions .reopen-button:hover {
+    background: var(--warning-gradient-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.comment-detail-actions .delete-button {
+    background: var(--error-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.comment-detail-actions .delete-button:hover {
+    background: var(--error-gradient-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
 /* ========== 评论预览弹窗样式 ========== */
 .comment-preview-popup {
     position: fixed; /* 固定定位，确保不受父容器影响 */
@@ -725,6 +850,13 @@
     gap: 2px;
 }
 
+.preview-author-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
 .preview-author {
     font-weight: 600;
     font-size: 13px;
@@ -732,39 +864,40 @@
     line-height: 1.2;
 }
 
-.preview-time {
-    font-size: 11px;
-    color: var(--text-muted);
-    line-height: 1.2;
-}
-
-.preview-status-badge {
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-size: 10px;
+.preview-status-badge-inline {
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 9px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.2px;
     box-shadow: var(--shadow-sm);
     transition: all 0.2s ease;
+    white-space: nowrap;
 }
 
-.preview-status-badge.status-pending {
+.preview-status-badge-inline.status-pending {
     background: var(--warning-gradient);
     color: var(--text-on-accent);
     border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.preview-status-badge.status-resolved {
+.preview-status-badge-inline.status-resolved {
     background: var(--success-gradient);
     color: var(--text-on-accent);
     border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-.preview-status-badge.status-reopened {
+.preview-status-badge-inline.status-reopened {
     background: var(--error-gradient);
     color: var(--text-on-accent);
     border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.preview-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.2;
 }
 
 .preview-body {
@@ -1103,6 +1236,17 @@
         font-size: 12px;
     }
     
+    .comment-detail-actions {
+        gap: 6px;
+        margin-top: 12px;
+        padding-top: 12px;
+    }
+    
+    .comment-detail-actions .action-button {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+    
     .comment-preview-popup {
         max-width: 580px; /* 增加中等屏幕预览弹窗的最大宽度 */
         min-width: 400px; /* 增加最小宽度 */
@@ -1182,6 +1326,20 @@
     .close-button {
         padding: 2px 4px;
         font-size: 11px;
+    }
+    
+    .comment-detail-actions {
+        gap: 4px;
+        margin-top: 10px;
+        padding-top: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .comment-detail-actions .action-button {
+        padding: 5px 8px;
+        font-size: 10px;
+        min-width: 60px;
     }
     
     .comment-preview-popup {
@@ -2011,6 +2169,55 @@
         background: linear-gradient(135deg, rgba(79, 70, 229, 0.8) 0%, rgba(99, 102, 241, 0.7) 100%);
     }
 } 
+
+/* 响应式设计 - 状态标签布局优化 */
+@media (max-width: 950px) {
+    .author-name-row {
+        gap: 6px;
+    }
+    
+    .status-badge-inline {
+        padding: 1px 6px;
+        font-size: 9px;
+        letter-spacing: 0.2px;
+    }
+    
+    .preview-author-name-row {
+        gap: 4px;
+    }
+    
+    .preview-status-badge-inline {
+        padding: 1px 4px;
+        font-size: 8px;
+        letter-spacing: 0.1px;
+    }
+}
+
+@media (max-width: 640px) {
+    .author-name-row {
+        gap: 4px;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .status-badge-inline {
+        padding: 1px 4px;
+        font-size: 8px;
+        letter-spacing: 0.1px;
+    }
+    
+    .preview-author-name-row {
+        gap: 3px;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .preview-status-badge-inline {
+        padding: 1px 3px;
+        font-size: 7px;
+        letter-spacing: 0.1px;
+    }
+}
 
 
 
