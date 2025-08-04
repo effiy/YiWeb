@@ -185,7 +185,7 @@ const createCodeView = async () => {
                         e.preventDefault();
                     }, { passive: false });
                     
-                    button.addEventListener('click', e => {
+                    button.addEventListener('click', async e => {
                         console.log('[CodeView] 按钮点击事件被触发');
                         e.preventDefault();
                         e.stopPropagation();
@@ -341,66 +341,77 @@ const createCodeView = async () => {
                         }
                         console.log('==========================================');
                         
+                        // 显示全局loading
+                        const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
+                        showGlobalLoading('正在生成评论，请稍候...');
+                        console.log('[CodeView] 显示全局loading');
+                        
                         // 触发自定义事件获取评论者信息
                         window.dispatchEvent(new CustomEvent('getSelectedCommenters', {
                             detail: {
-                                callback: (commenters) => {
-                                    showGlobalLoading('正在生成任务，请稍候...');
-                                    console.log('=== 通过事件获取的评论者信息 ===');
-                                    if (commenters && commenters.length > 0) {
-                                        console.log('选中的评论者数量:', commenters.length);
-                                        commenters.forEach(async (commenter, index) => {
-                                            console.log(`评论者 ${index + 1}:`, {
-                                                id: commenter.id,
-                                                name: commenter.name,
-                                                avatar: commenter.avatar,
-                                                forSystem: commenter.forSystem
-                                            });
-                                            if (commenter.forSystem) {
-                                                console.log('评论者系统提示:', commenter.forSystem);
-                                                
-                                                // 发送消息请求到API
-                                                const response = await postData(`${window.API_URL}/prompt`, {
-                                                    fromSystem: commenter.forSystem,
-                                                    fromUser: `fileId: ${selectedObjectInfo.fileInfo.currentFile.fileId} \n` + selectedObjectInfo.text
+                                callback: async (commenters) => {
+                                    try {
+                                        console.log('=== 通过事件获取的评论者信息 ===');
+                                        if (commenters && commenters.length > 0) {
+                                            console.log('选中的评论者数量:', commenters.length);
+                                            for (const commenter of commenters) {
+                                                console.log(`评论者:`, {
+                                                    id: commenter.id,
+                                                    name: commenter.name,
+                                                    avatar: commenter.avatar,
+                                                    forSystem: commenter.forSystem
                                                 });
-
-                                                console.log('[API响应] 收到服务器响应:', response.data);
-
-                                                // 等待所有 postData 完成后再跳转页面
-                                                if (Array.isArray(response.data) && response.data.length > 0) {
-                                                    // 获取当前项目/版本信息
-                                                    const currentProject = window.aicrStore?.selectedProject?.value;
-                                                    const currentVersion = window.aicrStore?.selectedVersion?.value;
+                                                if (commenter.forSystem) {
+                                                    console.log('评论者系统提示:', commenter.forSystem);
                                                     
-                                                    // 检查项目/版本信息是否完整
-                                                    if (!currentProject || !currentVersion) {
-                                                        console.log('[CodeView] 项目/版本信息不完整，跳过MongoDB接口请求');
-                                                        console.log('[CodeView] 项目ID:', currentProject, '版本ID:', currentVersion);
-                                                        return;
+                                                    // 发送消息请求到API
+                                                    const response = await postData(`${window.API_URL}/prompt`, {
+                                                        fromSystem: commenter.forSystem,
+                                                        fromUser: `fileId: ${selectedObjectInfo.fileInfo.currentFile.fileId} \n` + selectedObjectInfo.text
+                                                    });
+
+                                                    console.log('[API响应] 收到服务器响应:', response.data);
+
+                                                    // 等待所有 postData 完成后再跳转页面
+                                                    if (Array.isArray(response.data) && response.data.length > 0) {
+                                                        // 获取当前项目/版本信息
+                                                        const currentProject = window.aicrStore?.selectedProject?.value;
+                                                        const currentVersion = window.aicrStore?.selectedVersion?.value;
+                                                        
+                                                        // 检查项目/版本信息是否完整
+                                                        if (!currentProject || !currentVersion) {
+                                                            console.log('[CodeView] 项目/版本信息不完整，跳过MongoDB接口请求');
+                                                            console.log('[CodeView] 项目ID:', currentProject, '版本ID:', currentVersion);
+                                                            continue;
+                                                        }
+                                                        
+                                                        await Promise.all(
+                                                            response.data.map(item => {
+                                                                // 构建请求数据，包含项目/版本信息
+                                                                const requestData = {
+                                                                    ...item,
+                                                                    projectId: currentProject,
+                                                                    versionId: currentVersion
+                                                                };
+                                                                
+                                                                console.log('[CodeView] 发送评论数据到MongoDB:', requestData);
+                                                                return postData(`${window.API_URL}/mongodb/?cname=comments`, requestData);
+                                                            })
+                                                        );
                                                     }
-                                                    
-                                                    await Promise.all(
-                                                        response.data.map(item => {
-                                                            // 构建请求数据，包含项目/版本信息
-                                                            const requestData = {
-                                                                ...item,
-                                                                projectId: currentProject,
-                                                                versionId: currentVersion
-                                                            };
-                                                            
-                                                            console.log('[CodeView] 发送评论数据到MongoDB:', requestData);
-                                                            return postData(`${window.API_URL}/mongodb/?cname=comments`, requestData);
-                                                        })
-                                                    );
                                                 }
                                             }
-                                        });
-                                    } else {
-                                        console.log('没有选中任何评论者');
+                                        } else {
+                                            console.log('没有选中任何评论者');
+                                        }
+                                    } catch (error) {
+                                        console.error('[CodeView] 评论生成失败:', error);
+                                    } finally {
+                                        // 隐藏全局loading
+                                        hideGlobalLoading();
+                                        console.log('[CodeView] 隐藏全局loading');
+                                        console.log('==========================================');
                                     }
-                                    hideGlobalLoading();
-                                    console.log('==========================================');
                                 }
                             }
                         }));
@@ -535,6 +546,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

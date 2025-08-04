@@ -265,6 +265,20 @@ const createCommentPanel = async () => {
                 }, 100);
             };
             window.addEventListener('projectVersionReady', this.handleProjectVersionReady);
+            
+            // 监听重新加载评论事件
+            this.handleReloadComments = (event) => {
+                console.log('[CommentPanel] 收到重新加载评论事件:', event.detail);
+                const { projectId, versionId } = event.detail;
+                console.log('[CommentPanel] 项目ID:', projectId, '版本ID:', versionId);
+                
+                // 重新加载评论
+                setTimeout(async () => {
+                    console.log('[CommentPanel] 触发重新加载评论');
+                    await this.loadMongoComments();
+                }, 100);
+            };
+            window.addEventListener('reloadComments', this.handleReloadComments);
         },
         updated() {
             console.log('[CommentPanel] 组件已更新');
@@ -294,6 +308,9 @@ const createCommentPanel = async () => {
             }
             if (this.handleProjectVersionReady) {
                 window.removeEventListener('projectVersionReady', this.handleProjectVersionReady);
+            }
+            if (this.handleReloadComments) {
+                window.removeEventListener('reloadComments', this.handleReloadComments);
             }
         },
         computed: {
@@ -364,7 +381,10 @@ const createCommentPanel = async () => {
                         const mongoComments = await fetchCommentsFromMongo(this.file);
                         
                         // 确保评论数据有正确的key属性
-                        this.mongoComments = mongoComments
+                        this.mongoComments = mongoComments.map(comment => ({
+                            ...comment,
+                            key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
+                        }));
                         
                         console.log('[CommentPanel] 从mongo加载的评论:', this.mongoComments);
                     } catch (err) {
@@ -677,6 +697,7 @@ const createCommentPanel = async () => {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
+
 
 
 

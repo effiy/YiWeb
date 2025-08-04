@@ -271,8 +271,43 @@ import { createBaseView } from '/utils/baseView.js';
                     }
                 }
             },
-                        methods: {
+            methods: {
                 // 所有方法现在都在useMethods.js中定义
+                // 添加评论删除事件处理
+                handleCommentDelete: async function(commentId) {
+                    console.log('[主页面] 收到评论删除事件:', commentId);
+                    try {
+                        // 从useMethods中获取handleCommentDelete方法
+                        const methods = useMethods(store);
+                        await methods.handleCommentDelete(commentId);
+                    } catch (error) {
+                        console.error('[主页面] 评论删除失败:', error);
+                    }
+                },
+                
+                // 添加评论解决事件处理
+                handleCommentResolve: async function(commentId) {
+                    console.log('[主页面] 收到评论解决事件:', commentId);
+                    try {
+                        // 从useMethods中获取handleCommentResolve方法
+                        const methods = useMethods(store);
+                        await methods.handleCommentResolve(commentId);
+                    } catch (error) {
+                        console.error('[主页面] 评论解决失败:', error);
+                    }
+                },
+                
+                // 添加评论重新打开事件处理
+                handleCommentReopen: async function(commentId) {
+                    console.log('[主页面] 收到评论重新打开事件:', commentId);
+                    try {
+                        // 从useMethods中获取handleCommentReopen方法
+                        const methods = useMethods(store);
+                        await methods.handleCommentReopen(commentId);
+                    } catch (error) {
+                        console.error('[主页面] 评论重新打开失败:', error);
+                    }
+                }
             }
         });
         window.aicrApp = app;
@@ -288,6 +323,7 @@ import { createBaseView } from '/utils/baseView.js';
         console.error('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
 
 
 
