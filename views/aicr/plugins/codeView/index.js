@@ -103,7 +103,7 @@ const createCodeView = async () => {
                 fileComments: [], // 当前文件的评论数据
                 commentsLoading: false, // 评论加载状态
                 commentsError: '', // 评论加载错误
-                commentMarkers: new Map(), // 评论标记映射 {lineNumber: [comments]}
+                commentMarkers: {}, // 评论标记映射 {lineNumber: [comments]} - 改为响应式对象
                 showCommentDetailPopup: false, // 是否显示评论详情弹窗
                 currentCommentDetail: null, // 当前显示的评论详情
                 commentDetailPosition: { x: 0, y: 0 }, // 评论详情位置
@@ -172,7 +172,7 @@ const createCodeView = async () => {
                 return safeExecute(async () => {
                     if (!this.file) {
                         this.fileComments = [];
-                        this.commentMarkers.clear();
+                        this.commentMarkers = {}; // 清空评论标记
                         return;
                     }
                     
@@ -199,7 +199,8 @@ const createCodeView = async () => {
             
             // 新增：构建评论标记映射
             buildCommentMarkers() {
-                this.commentMarkers.clear();
+                // 创建新的评论标记对象
+                const newCommentMarkers = {};
                 
                 console.log('[CodeView] 开始构建评论标记映射，评论数量:', this.fileComments.length);
                 
@@ -212,20 +213,28 @@ const createCodeView = async () => {
                         
                         // 为范围内的每一行添加评论标记
                         for (let line = startLine; line <= endLine; line++) {
-                            if (!this.commentMarkers.has(line)) {
-                                this.commentMarkers.set(line, []);
+                            if (!newCommentMarkers[line]) {
+                                newCommentMarkers[line] = [];
                             }
-                            this.commentMarkers.get(line).push(comment);
+                            newCommentMarkers[line].push(comment);
                         }
                     }
                 });
                 
+                // 使用Vue的响应式API更新评论标记
+                this.commentMarkers = newCommentMarkers;
+                
                 console.log('[CodeView] 评论标记映射构建完成:', this.commentMarkers);
+                
+                // 确保DOM更新
+                this.$nextTick(() => {
+                    console.log('[CodeView] DOM更新完成，评论标记已刷新');
+                });
             },
             
             // 新增：获取指定行的评论
             getCommentsForLine(lineNumber) {
-                const comments = this.commentMarkers.get(lineNumber) || [];
+                const comments = this.commentMarkers[lineNumber] || [];
                 console.log('[CodeView] 获取第', lineNumber, '行的评论，数量:', comments.length);
                 return comments;
             },
@@ -1567,55 +1576,100 @@ const createCodeView = async () => {
         template: template,
         // 生命周期钩子
         async mounted() {
-            console.log('[CodeView] 组件已挂载');
-            await this.loadFileComments();
-            this.bindSelectionEvent();
-            
-            // 添加高亮代码行事件监听
-            window.addEventListener('highlightCodeLines', this.handleHighlightLines);
-            
-            // 添加窗口大小变化监听
-            window.addEventListener('resize', this.handleWindowResize);
-            
-            // 添加键盘事件监听
-            document.addEventListener('keydown', this.handleKeyDown);
+            return safeExecute(async () => {
+                console.log('[CodeView] 组件已挂载');
+                
+                // 加载文件评论数据
+                await this.loadFileComments();
+                
+                // 绑定选择事件
+                this.bindSelectionEvent();
+                
+                // 绑定高亮代码行事件监听
+                window.addEventListener('highlightCodeLines', this.handleHighlightLines);
+                
+                // 绑定窗口大小变化监听
+                window.addEventListener('resize', this.handleWindowResize);
+                
+                // 绑定键盘事件监听
+                document.addEventListener('keydown', this.handleKeyDown);
+                
+                // 新增：监听评论数据变化事件
+                window.addEventListener('reloadComments', this.handleCommentsReload);
+                
+                console.log('[CodeView] 组件挂载完成');
+            }, 'CodeView组件挂载');
         },
         
         updated() {
-            console.log('[CodeView] 组件已更新');
-            this.bindSelectionEvent();
-            
-            // 检查弹窗互斥状态
-            this.ensurePopupMutualExclusion();
+            return safeExecute(() => {
+                console.log('[CodeView] 组件已更新');
+            }, 'CodeView组件更新');
         },
         
         beforeUnmount() {
-            console.log('[CodeView] 组件即将卸载');
-            
-            // 清理事件监听器
-            const codeContent = this.$refs.codeContent;
-            if (codeContent) {
-                codeContent.removeEventListener('mouseup', this.handleSelection, { passive: false });
-                codeContent.removeEventListener('touchend', this.handleSelection, { passive: false });
-                codeContent.removeEventListener('mousedown', this.handleMouseDown, { passive: false });
-            }
-            
-            // 移除高亮代码行事件监听
-            window.removeEventListener('highlightCodeLines', this.handleHighlightLines);
-            
-            // 移除窗口大小变化监听
-            window.removeEventListener('resize', this.handleWindowResize);
-            
-            // 移除键盘事件监听
-            document.removeEventListener('keydown', this.handleKeyDown);
-            
-            // 清理定时器
-            if (this.hoverTimeout) {
-                clearTimeout(this.hoverTimeout);
-            }
-            
-            // 移除外部点击监听
-            document.removeEventListener('mousedown', this.handleCommentDetailClickOutside, { passive: true });
+            return safeExecute(() => {
+                console.log('[CodeView] 组件即将卸载');
+                
+                // 移除选择事件监听
+                const codeContent = this.$refs.codeContent;
+                if (codeContent) {
+                    codeContent.removeEventListener('mousedown', this.handleMouseDown, { passive: false });
+                }
+                
+                // 移除高亮代码行事件监听
+                window.removeEventListener('highlightCodeLines', this.handleHighlightLines);
+                
+                // 移除窗口大小变化监听
+                window.removeEventListener('resize', this.handleWindowResize);
+                
+                // 移除键盘事件监听
+                document.removeEventListener('keydown', this.handleKeyDown);
+                
+                // 移除评论数据变化事件监听
+                window.removeEventListener('reloadComments', this.handleCommentsReload);
+                
+                // 清理定时器
+                if (this.hoverTimeout) {
+                    clearTimeout(this.hoverTimeout);
+                }
+                
+                // 移除外部点击监听
+                document.removeEventListener('mousedown', this.handleCommentDetailClickOutside, { passive: true });
+            }, 'CodeView组件卸载');
+        },
+        
+        // 新增：处理评论数据重新加载
+        handleCommentsReload(event) {
+            return safeExecute(async () => {
+                console.log('[CodeView] 收到评论重新加载事件:', event.detail);
+                console.log('[CodeView] 当前文件:', this.file);
+                console.log('[CodeView] 当前评论标记数量:', Object.keys(this.commentMarkers).length);
+                
+                // 如果当前有显示的评论详情弹窗，关闭它
+                if (this.showCommentDetailPopup) {
+                    console.log('[CodeView] 关闭评论详情弹窗');
+                    this.hideCommentDetail();
+                }
+                
+                // 如果当前有显示的评论预览弹窗，关闭它
+                if (this.showCommentPreviewPopup) {
+                    console.log('[CodeView] 关闭评论预览弹窗');
+                    this.hideCommentPreview();
+                }
+                
+                // 重新加载文件评论数据
+                console.log('[CodeView] 开始重新加载文件评论数据');
+                await this.loadFileComments();
+                
+                // 强制触发Vue的重新渲染
+                console.log('[CodeView] 强制触发Vue重新渲染');
+                this.$forceUpdate();
+                
+                // 等待DOM更新完成
+                await this.$nextTick();
+                console.log('[CodeView] 评论数据重新加载完成，新的评论标记数量:', Object.keys(this.commentMarkers).length);
+            }, '处理评论数据重新加载');
         },
         
         // 监听文件变化
