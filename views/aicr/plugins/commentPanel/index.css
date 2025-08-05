@@ -1121,7 +1121,7 @@
     border-radius: 4px;
     padding: 6px;
     font-size: 12px;
-    line-height: 1.4;
+    line-height: 0.5;
     color: var(--text-secondary);
     overflow-x: auto;
     margin: 0;
@@ -1203,7 +1203,7 @@
     border-radius: 4px;
     padding: 6px;
     font-size: 12px;
-    line-height: 1.4;
+    line-height: 1.7;
     color: var(--text-secondary);
     overflow-x: auto;
     margin: 0;
