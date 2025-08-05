@@ -18,11 +18,9 @@ export const useMethods = (store) => {
         comments,
         selectedFileId,
         expandedFolders,
-        newComment,
         setSelectedFileId,
         toggleFolder,
         addComment,
-        setNewComment,
         toggleSidebar,
         toggleComments,
         // 项目/版本管理
@@ -361,33 +359,9 @@ export const useMethods = (store) => {
         }, '评论提交处理');
     };
 
-    /**
-     * 处理评论输入
-     * @param {Event} event - 输入事件
-     */
-    const handleCommentInput = (event) => {
-        return safeExecute(() => {
-            const value = event.target.value;
-            setNewComment(value);
-        }, '评论输入处理');
-    };
 
-    /**
-     * 处理评论键盘事件
-     * @param {Event} event - 键盘事件
-     */
-    const handleCommentKeydown = (event) => {
-        return safeExecute(() => {
-            if (event.key === 'Escape') {
-                setNewComment('');
-            } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-                event.preventDefault();
-                if (newComment.value.trim()) {
-                    handleCommentSubmit({ content: newComment.value.trim() });
-                }
-            }
-        }, '评论键盘事件处理');
-    };
+
+
 
     /**
      * 清空所有评论
@@ -874,8 +848,6 @@ export const useMethods = (store) => {
         handleFileSelect,
         handleFolderToggle,
         handleCommentSubmit,
-        handleCommentInput,
-        handleCommentKeydown,
         clearAllComments,
         expandAllFolders,
         collapseAllFolders,
@@ -899,6 +871,7 @@ export const useMethods = (store) => {
         handleCompositionEnd
     };
 };
+
 
 
 

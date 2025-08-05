@@ -116,8 +116,6 @@ const createCommentPanel = async () => {
             }
         },
         emits: [
-            'comment-submit', 
-            'comment-input', 
             'comment-delete', 
             'comment-resolve',
             'comment-reopen',
@@ -494,35 +492,7 @@ const createCommentPanel = async () => {
                 }, '评论者头像生成');
             },
 
-            // 提交评论
-            submitComment() {
-                return safeExecute(() => {
-                    if (!this.newComment.trim()) {
-                        throw createError('评论内容不能为空', ErrorTypes.VALIDATION, '评论提交');
-                    }
 
-                    // 如果有选中的评论者，添加fromSystem字段
-                    const commentData = {
-                        content: this.newComment.trim()
-                    };
-
-                    if (this.selectedCommenterIds.length > 0) {
-                        const selectedCommenters = this.commenters.filter(c => this.selectedCommenterIds.includes(c.id));
-                        if (selectedCommenters.length > 0) {
-                            commentData.fromSystem = selectedCommenters;
-                        }
-                    }
-
-                    this.$emit('comment-submit', commentData);
-                }, '评论提交处理');
-            },
-
-            // 处理评论输入
-            handleCommentInput(event) {
-                return safeExecute(() => {
-                    this.$emit('comment-input', event);
-                }, '评论输入处理');
-            },
 
             // 删除评论
             deleteComment(commentId) {
@@ -721,6 +691,7 @@ const createCommentPanel = async () => {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
+
 
 
 

@@ -257,7 +257,6 @@ import { createBaseView } from '/utils/baseView.js';
                         console.log('[主页面] 传递给评论面板的文件数据:', this.currentFile);
                         return this.currentFile; 
                     },
-                    newComment: function() { return store.newComment; },
                     loading: function() { return store.loading; },
                     error: function() { return store.errorMessage; },
                     // 传递项目/版本信息
@@ -275,6 +274,18 @@ import { createBaseView } from '/utils/baseView.js';
             },
             methods: {
                 // 所有方法现在都在useMethods.js中定义
+                // 添加评论提交事件处理
+                handleCommentSubmit: async function(commentData) {
+                    console.log('[主页面] 收到评论提交事件:', commentData);
+                    try {
+                        // 从useMethods中获取handleCommentSubmit方法
+                        const methods = useMethods(store);
+                        await methods.handleCommentSubmit(commentData);
+                    } catch (error) {
+                        console.error('[主页面] 评论提交失败:', error);
+                    }
+                },
+                
                 // 添加评论删除事件处理
                 handleCommentDelete: async function(commentId) {
                     console.log('[主页面] 收到评论删除事件:', commentId);
@@ -308,6 +319,17 @@ import { createBaseView } from '/utils/baseView.js';
                         await methods.handleCommentReopen(commentId);
                     } catch (error) {
                         console.error('[主页面] 评论重新打开失败:', error);
+                    }
+                },
+                
+                // 添加评论者选择事件处理
+                handleCommenterSelect: function(commenters) {
+                    console.log('[主页面] 收到评论者选择事件:', commenters);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleCommenterSelect(commenters);
+                    } catch (error) {
+                        console.error('[主页面] 评论者选择处理失败:', error);
                     }
                 },
                 
@@ -376,6 +398,7 @@ import { createBaseView } from '/utils/baseView.js';
         console.error('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
 
 
 

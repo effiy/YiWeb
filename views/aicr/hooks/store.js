@@ -31,8 +31,6 @@ export const createStore = () => {
     const errorMessage = vueRef('');
     // 展开的文件夹状态
     const expandedFolders = vueRef(new Set());
-    // 新评论内容
-    const newComment = vueRef('');
     // 侧边栏收缩状态
     const sidebarCollapsed = vueRef(false);
     // 评论区收缩状态
@@ -153,19 +151,35 @@ export const createStore = () => {
             
             console.log('[loadComments] 项目/版本信息完整，开始加载评论');
             
-            // 这里可以调用MongoDB接口获取评论数据
-            // 目前返回空数组，实际应该调用MongoDB接口
-            const response = [];
-            
-            if (!Array.isArray(response)) {
-                throw createError('评论数据格式错误', ErrorTypes.API, '评论加载');
+            try {
+                // 调用MongoDB接口获取评论数据
+                let url = `${window.API_URL}/mongodb/?cname=comments`;
+                url += `&projectId=${project}`;
+                url += `&versionId=${version}`;
+                
+                // 如果有当前选中的文件，也添加到参数中
+                if (selectedFileId.value) {
+                    url += `&fileId=${selectedFileId.value}`;
+                }
+                
+                console.log('[loadComments] 调用MongoDB接口:', url);
+                const response = await getData(url);
+                
+                if (response && response.data && response.data.list) {
+                    comments.value = response.data.list;
+                    console.log(`[loadComments] 成功加载 ${comments.value.length} 条评论`);
+                    console.log('[loadComments] 评论数据详情:', comments.value);
+                    return comments.value;
+                } else {
+                    comments.value = [];
+                    console.log('[loadComments] 没有评论数据');
+                    return [];
+                }
+            } catch (error) {
+                console.error('[loadComments] 加载评论失败:', error);
+                comments.value = [];
+                return [];
             }
-            
-            comments.value = response;
-            console.log(`[loadComments] 成功加载 ${response.length} 条评论`);
-            console.log('[loadComments] 评论数据详情:', response);
-            
-            return response;
         }, '评论数据加载', (errorInfo) => {
             error.value = errorInfo.message;
             errorMessage.value = errorInfo.message;
@@ -215,13 +229,7 @@ export const createStore = () => {
         comments.value.push(newCommentObj);
     };
 
-    /**
-     * 设置新评论内容
-     * @param {string} content - 评论内容
-     */
-    const setNewComment = (content) => {
-        newComment.value = content;
-    };
+
 
     /**
      * 切换侧边栏状态
@@ -352,7 +360,6 @@ export const createStore = () => {
         error,
         errorMessage,
         expandedFolders,
-        newComment,
         sidebarCollapsed,
         commentsCollapsed,
         
@@ -372,7 +379,6 @@ export const createStore = () => {
         setSelectedFileId,
         toggleFolder,
         addComment,
-        setNewComment,
         toggleSidebar,
         toggleComments,
         loadProjects,
@@ -383,6 +389,7 @@ export const createStore = () => {
         clearError
     };
 };
+
 
 
 
