@@ -116,6 +116,8 @@ const createCommentPanel = async () => {
             }
         },
         emits: [
+            'comment-submit', 
+            'comment-input', 
             'comment-delete', 
             'comment-resolve',
             'comment-reopen',
@@ -125,6 +127,7 @@ const createCommentPanel = async () => {
             return {
                 replyingTo: null,
                 replyContent: '',
+                newCommentText: '', // 内部管理的评论输入内容
                 commenters: [
                     { id: 'user1', name: '张三', avatar: null, forSystem: '' },
                     { id: 'user2', name: '李四', avatar: null, forSystem: '' },
@@ -138,24 +141,41 @@ const createCommentPanel = async () => {
                 commentsLoading: false, // 新增：评论加载状态
                 commentsError: '',     // 新增：评论加载错误
                 mongoComments: [],     // 新增：实际评论数据
-                _lastProjectVersionKey: null // 跟踪项目/版本变化
+                _lastProjectVersionKey: null, // 跟踪项目/版本变化
+                _lastFileId: null, // 跟踪文件变化
+                _commentLoadTimeout: null, // 评论加载防抖定时器
+                _isLoadingComments: false // 防止重复加载标志
             };
         },
         watch: {
-            // 监听文件变化，重新加载评论
+            // 监听文件变化，重新加载评论 - 优化防抖逻辑
             file: {
                 handler: async function(newFile, oldFile) {
                     console.log('[CommentPanel] 文件变化:', newFile, oldFile);
+                    
+                    // 获取文件ID
+                    const newFileId = newFile ? (newFile.fileId || newFile.id || newFile.path || newFile.key) : null;
+                    const oldFileId = oldFile ? (oldFile.fileId || oldFile.id || oldFile.path || oldFile.key) : null;
+                    
+                    // 如果文件ID没有变化，跳过
+                    if (newFileId === oldFileId) {
+                        console.log('[CommentPanel] 文件ID未变化，跳过评论加载');
+                        return;
+                    }
+                    
+                    // 更新文件ID跟踪
+                    this._lastFileId = newFileId;
+                    
                     if (newFile && newFile !== oldFile) {
-                        console.log('[CommentPanel] 文件已变化，重新加载评论');
-                        await this.loadMongoComments();
+                        console.log('[CommentPanel] 文件已变化，准备重新加载评论');
+                        // 使用防抖机制
+                        this._debouncedLoadComments();
                     }
                 },
                 immediate: true
             },
-            // 监听选择器变化，重新加载评论
-            // 由于现在从DOM选择器获取项目/版本信息，我们需要监听选择器的变化
-            // 这里我们使用一个定时器来检查选择器的变化
+            
+            // 监听选择器变化，重新加载评论 - 优化逻辑
             '$props': {
                 handler: function(newProps, oldProps) {
                     // 检查选择器的值是否发生变化
@@ -171,16 +191,16 @@ const createCommentPanel = async () => {
                             const key = `${currentProject}-${currentVersion}`;
                             if (this._lastProjectVersionKey !== key) {
                                 this._lastProjectVersionKey = key;
-                                console.log('[CommentPanel] 选择器项目/版本变化，重新加载评论');
-                                setTimeout(async () => {
-                                    await this.loadMongoComments();
-                                }, 100);
+                                console.log('[CommentPanel] 选择器项目/版本变化，准备重新加载评论');
+                                // 使用防抖机制
+                                this._debouncedLoadComments();
                             }
                         }
                     }
                 },
                 deep: true
             },
+            
             // 监听评论数据变化
             comments: {
                 handler: function(newComments, oldComments) {
@@ -189,7 +209,19 @@ const createCommentPanel = async () => {
                 deep: true
             },
             
-            // 监听项目/版本信息的组合变化
+            // 监听mongoComments数据变化
+            mongoComments: {
+                handler: function(newComments, oldComments) {
+                    console.log('[CommentPanel] mongoComments数据变化:', newComments ? newComments.length : 0, oldComments ? oldComments.length : 0);
+                    // 强制更新UI
+                    this.$nextTick(() => {
+                        console.log('[CommentPanel] mongoComments变化后强制更新UI');
+                    });
+                },
+                deep: true
+            },
+            
+            // 监听项目/版本信息的组合变化 - 优化逻辑
             '$props': {
                 handler: function(newProps, oldProps) {
                     const hasProject = !!this.projectId;
@@ -202,10 +234,9 @@ const createCommentPanel = async () => {
                         const hadVersion = !!oldProps?.versionId;
                         
                         if (!hadProject || !hadVersion) {
-                            console.log('[CommentPanel] 项目/版本信息首次完整，触发加载');
-                            setTimeout(() => {
-                                this.loadMongoComments();
-                            }, 200);
+                            console.log('[CommentPanel] 项目/版本信息首次完整，准备触发加载');
+                            // 使用防抖机制
+                            this._debouncedLoadComments();
                         }
                     }
                 },
@@ -223,6 +254,9 @@ const createCommentPanel = async () => {
 
             // 初始化文件跟踪
             this._lastFile = this.file;
+
+            // 创建防抖的评论加载方法
+            this._debouncedLoadComments = this._createDebouncedLoadComments();
 
             // 加载评论者数据
             this.loadCommenters();
@@ -250,33 +284,56 @@ const createCommentPanel = async () => {
             };
             window.addEventListener('getSelectedCommenters', this.handleGetSelectedCommenters);
             
-            // 监听项目/版本准备完成事件
+            // 监听项目/版本准备完成事件 - 优化逻辑
             this.handleProjectVersionReady = (event) => {
                 console.log('[CommentPanel] 收到项目/版本准备完成事件:', event.detail);
                 const { projectId, versionId } = event.detail;
                 console.log('[CommentPanel] 项目ID:', projectId, '版本ID:', versionId);
                 
-                // 重新加载评论
-                setTimeout(async () => {
-                    console.log('[CommentPanel] 项目/版本准备完成，重新加载评论');
-                    await this.loadMongoComments();
-                }, 100);
+                // 使用防抖机制重新加载评论
+                this._debouncedLoadComments();
             };
             window.addEventListener('projectVersionReady', this.handleProjectVersionReady);
             
-            // 监听重新加载评论事件
+            // 监听重新加载评论事件 - 优化逻辑
             this.handleReloadComments = (event) => {
                 console.log('[CommentPanel] 收到重新加载评论事件:', event.detail);
-                const { projectId, versionId } = event.detail;
-                console.log('[CommentPanel] 项目ID:', projectId, '版本ID:', versionId);
+                const { projectId, versionId, forceReload, fileId } = event.detail;
+                console.log('[CommentPanel] 项目ID:', projectId, '版本ID:', versionId, '强制重新加载:', forceReload, '文件ID:', fileId);
                 
-                // 重新加载评论
-                setTimeout(async () => {
-                    console.log('[CommentPanel] 触发重新加载评论');
-                    await this.loadMongoComments();
-                }, 100);
+                // 如果是强制重新加载，立即执行；否则使用防抖机制
+                if (forceReload) {
+                    console.log('[CommentPanel] 强制重新加载评论');
+                    this.loadMongoComments();
+                } else {
+                    console.log('[CommentPanel] 使用防抖机制重新加载评论');
+                    this._debouncedLoadComments();
+                }
             };
             window.addEventListener('reloadComments', this.handleReloadComments);
+            
+            // 监听添加新评论事件
+            this.handleAddNewComment = (event) => {
+                console.log('[CommentPanel] 收到添加新评论事件:', event.detail);
+                const { comment } = event.detail;
+                console.log('[CommentPanel] 新评论数据:', comment);
+                
+                // 立即添加评论到本地数据
+                this.addCommentToLocalData(comment);
+                
+                // 额外确保UI更新
+                this.$nextTick(() => {
+                    console.log('[CommentPanel] 确保UI更新完成');
+                    this.$forceUpdate();
+                    
+                    // 滚动到顶部显示新评论
+                    const commentContainer = document.querySelector('.comment-panel-container');
+                    if (commentContainer) {
+                        commentContainer.scrollTop = 0;
+                    }
+                });
+            };
+            window.addEventListener('addNewComment', this.handleAddNewComment);
         },
         updated() {
             console.log('[CommentPanel] 组件已更新');
@@ -290,11 +347,23 @@ const createCommentPanel = async () => {
             console.log('[CommentPanel] 更新后评论者数量:', this.commenters.length);
             console.log('[CommentPanel] 更新后选中的评论者:', this.selectedCommenterIds);
             
-            // 当文件变化时，重新加载评论
+            // 当文件变化时，重新加载评论 - 优化逻辑
             if (this.file !== this._lastFile) {
-                console.log('[CommentPanel] 文件发生变化，重新加载评论');
+                console.log('[CommentPanel] 文件发生变化，准备重新加载评论');
                 this._lastFile = this.file;
-                this.loadMongoComments();
+                
+                // 获取文件ID进行比较
+                const currentFileId = this.file ? (this.file.fileId || this.file.id || this.file.path || this.file.key) : null;
+                
+                // 只有当文件ID真正发生变化时才重新加载
+                if (currentFileId !== this._lastFileId) {
+                    console.log('[CommentPanel] 文件ID发生变化，触发评论重新加载');
+                    this._lastFileId = currentFileId;
+                    // 使用防抖机制
+                    this._debouncedLoadComments();
+                } else {
+                    console.log('[CommentPanel] 文件ID未变化，跳过评论重新加载');
+                }
             }
         },
 
@@ -309,6 +378,9 @@ const createCommentPanel = async () => {
             }
             if (this.handleReloadComments) {
                 window.removeEventListener('reloadComments', this.handleReloadComments);
+            }
+            if (this.handleAddNewComment) {
+                window.removeEventListener('addNewComment', this.handleAddNewComment);
             }
         },
         computed: {
@@ -359,7 +431,31 @@ const createCommentPanel = async () => {
                 console.log('[CommentPanel] renderComments - mongoComments数量:', this.mongoComments ? this.mongoComments.length : 0);
                 console.log('[CommentPanel] renderComments - props comments数量:', this.comments ? this.comments.length : 0);
                 console.log('[CommentPanel] renderComments - 最终渲染评论数量:', commentsToRender ? commentsToRender.length : 0);
-                return commentsToRender || [];
+                
+                // 确保返回的评论有正确的key属性，并且按时间排序
+                const sortedComments = (commentsToRender || []).map(comment => ({
+                    ...comment,
+                    key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
+                })).sort((a, b) => {
+                    // 按时间戳排序，最新的在前面
+                    const timeA = new Date(a.timestamp || a.createdAt || 0).getTime();
+                    const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
+                    return timeB - timeA;
+                });
+                
+                console.log('[CommentPanel] renderComments - 排序后的评论数量:', sortedComments.length);
+                
+                // 确保计算属性能够触发UI更新
+                if (sortedComments.length > 0) {
+                    console.log('[CommentPanel] renderComments - 返回评论列表，确保UI更新');
+                    // 使用Vue的响应式系统确保更新
+                    this.$nextTick(() => {
+                        // 触发响应式更新
+                        this.$forceUpdate();
+                    });
+                }
+                
+                return sortedComments;
             }
         },
         methods: {
@@ -369,6 +465,13 @@ const createCommentPanel = async () => {
                     console.log('[CommentPanel] 开始加载mongo评论数据...');
                     console.log('[CommentPanel] 当前文件:', this.file);
                     
+                    // 防止重复加载
+                    if (this._isLoadingComments) {
+                        console.log('[CommentPanel] 评论正在加载中，跳过重复请求');
+                        return;
+                    }
+                    
+                    this._isLoadingComments = true;
                     this.commentsLoading = true;
                     this.commentsError = '';
 
@@ -385,11 +488,18 @@ const createCommentPanel = async () => {
                         }));
                         
                         console.log('[CommentPanel] 从mongo加载的评论:', this.mongoComments);
+                        
+                        // 强制更新UI，确保评论立即显示
+                        this.$nextTick(() => {
+                            console.log('[CommentPanel] 评论数据加载完成，强制更新UI');
+                            this.$forceUpdate();
+                        });
                     } catch (err) {
                         this.commentsError = '加载评论失败';
                         console.error('[CommentPanel] 评论加载失败:', err);
                     } finally {
                         this.commentsLoading = false;
+                        this._isLoadingComments = false;
                     }
                 }, 'mongo评论数据加载');
             },
@@ -490,6 +600,42 @@ const createCommentPanel = async () => {
                         boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
                     };
                 }, '评论者头像生成');
+            },
+
+            // 提交评论
+            submitComment() {
+                return safeExecute(() => {
+                    if (!this.newCommentText.trim()) {
+                        throw createError('评论内容不能为空', ErrorTypes.VALIDATION, '评论提交');
+                    }
+
+                    // 如果有选中的评论者，添加fromSystem字段
+                    const commentData = {
+                        content: this.newCommentText.trim()
+                    };
+
+                    if (this.selectedCommenterIds.length > 0) {
+                        const selectedCommenters = this.commenters.filter(c => this.selectedCommenterIds.includes(c.id));
+                        if (selectedCommenters.length > 0) {
+                            commentData.fromSystem = selectedCommenters;
+                        }
+                    }
+
+                    this.$emit('comment-submit', commentData);
+                    
+                    // 提交成功后清空输入框
+                    this.newCommentText = '';
+                }, '评论提交处理');
+            },
+
+            // 处理评论输入
+            handleCommentInput(event) {
+                return safeExecute(() => {
+                    // 更新内部状态
+                    this.newCommentText = event.target.value;
+                    // 触发事件通知父组件
+                    this.$emit('comment-input', event);
+                }, '评论输入处理');
             },
 
 
@@ -665,6 +811,71 @@ const createCommentPanel = async () => {
                     console.log('[CommentPanel] 发送highlightCodeLines事件:', eventData);
                     window.dispatchEvent(new CustomEvent('highlightCodeLines', { detail: eventData }));
                 }, '高亮代码区行');
+            },
+
+            // 新增：立即添加新评论到本地数据
+            addCommentToLocalData(commentData) {
+                return safeExecute(() => {
+                    console.log('[CommentPanel] 立即添加新评论到本地数据:', commentData);
+                    
+                    // 确保评论数据有正确的key属性
+                    const newComment = {
+                        ...commentData,
+                        key: commentData.key || commentData.id || `comment_${Date.now()}_${Math.random()}`,
+                        timestamp: commentData.timestamp || new Date().toISOString()
+                    };
+                    
+                    // 使用Vue 3的响应式更新方式，确保触发UI更新
+                    // 创建新的数组引用，确保Vue能够检测到变化
+                    const updatedComments = [newComment, ...this.mongoComments];
+                    this.mongoComments = updatedComments;
+                    
+                    console.log('[CommentPanel] 新评论已添加到本地数据，当前评论数量:', this.mongoComments.length);
+                    
+                    // 立即触发计算属性重新计算
+                    this.$nextTick(() => {
+                        console.log('[CommentPanel] UI已更新，新评论已显示');
+                        console.log('[CommentPanel] renderComments计算属性应该重新计算');
+                        
+                        // 强制更新UI
+                        this.$forceUpdate();
+                        
+                        // 滚动到顶部，显示新评论
+                        const commentContainer = document.querySelector('.comment-panel-container');
+                        if (commentContainer) {
+                            commentContainer.scrollTop = 0;
+                        }
+                        
+                        // 额外验证新评论是否已显示
+                        setTimeout(() => {
+                            const commentElements = document.querySelectorAll('.comment-item');
+                            console.log('[CommentPanel] 验证新评论显示，当前评论元素数量:', commentElements.length);
+                            console.log('[CommentPanel] 本地评论数据数量:', this.mongoComments.length);
+                        }, 100);
+                    });
+                }, '立即添加新评论到本地数据');
+            },
+
+            // 新增：全局方法，用于外部直接调用
+            addCommentGlobally(commentData) {
+                return safeExecute(() => {
+                    console.log('[CommentPanel] 全局方法：添加新评论:', commentData);
+                    this.addCommentToLocalData(commentData);
+                }, '全局添加评论方法');
+            },
+
+            // 新增：创建防抖的评论加载方法
+            _createDebouncedLoadComments() {
+                let timeoutId;
+                const debounceTime = 500; // 500ms防抖时间
+
+                return () => {
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(async () => {
+                        console.log('[CommentPanel] 防抖加载评论，当前文件:', this.file);
+                        await this.loadMongoComments();
+                    }, debounceTime);
+                };
             }
         },
         template: template,
@@ -691,6 +902,7 @@ const createCommentPanel = async () => {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
+
 
 
 

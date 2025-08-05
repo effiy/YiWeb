@@ -333,6 +333,73 @@ import { createBaseView } from '/utils/baseView.js';
                     }
                 },
                 
+                // 重构文件选择事件处理 - 避免重复的评论接口请求
+                handleFileSelect: function(fileId) {
+                    console.log('[主页面] 收到文件选择事件:', fileId);
+                    try {
+                        // 检查文件ID是否有效
+                        if (!fileId || typeof fileId !== 'string') {
+                            console.warn('[主页面] 无效的文件ID:', fileId);
+                            return;
+                        }
+                        
+                        // 检查是否与当前选中的文件相同
+                        if (store.selectedFileId.value === fileId) {
+                            console.log('[主页面] 文件已选中，跳过重复选择:', fileId);
+                            return;
+                        }
+                        
+                        console.log('[主页面] 设置新的选中文件:', fileId);
+                        
+                        // 设置选中的文件ID
+                        store.setSelectedFileId(fileId);
+                        
+                        // 获取项目/版本信息
+                        const projectSelect = document.getElementById('projectSelect');
+                        const versionSelect = document.getElementById('versionSelect');
+                        const projectId = projectSelect ? projectSelect.value : null;
+                        const versionId = versionSelect ? versionSelect.value : null;
+                        
+                        // 只有在项目/版本信息完整时才触发评论加载
+                        if (projectId && versionId) {
+                            console.log('[主页面] 项目/版本信息完整，触发评论加载');
+                            // 使用防抖机制，避免短时间内多次触发
+                            if (this._commentLoadTimeout) {
+                                clearTimeout(this._commentLoadTimeout);
+                            }
+                            
+                            this._commentLoadTimeout = setTimeout(() => {
+                                console.log('[主页面] 延迟触发评论加载');
+                                // 触发评论面板重新加载事件
+                                window.dispatchEvent(new CustomEvent('reloadComments', {
+                                    detail: { 
+                                        projectId: projectId, 
+                                        versionId: versionId,
+                                        fileId: fileId,
+                                        forceReload: false
+                                    }
+                                }));
+                            }, 100); // 100ms防抖延迟
+                        } else {
+                            console.log('[主页面] 项目/版本信息不完整，跳过评论加载');
+                        }
+                        
+                    } catch (error) {
+                        console.error('[主页面] 文件选择处理失败:', error);
+                    }
+                },
+                
+                // 添加文件夹切换事件处理
+                handleFolderToggle: function(folderId) {
+                    console.log('[主页面] 收到文件夹切换事件:', folderId);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleFolderToggle(folderId);
+                    } catch (error) {
+                        console.error('[主页面] 文件夹切换处理失败:', error);
+                    }
+                },
+                
                 // 搜索相关方法
                 handleSearchInput: function(event) {
                     console.log('[主页面] 收到搜索输入事件');
@@ -382,6 +449,58 @@ import { createBaseView } from '/utils/baseView.js';
                     } catch (error) {
                         console.error('[主页面] 输入法结束处理失败:', error);
                     }
+                },
+                
+                // 项目/版本管理方法
+                handleProjectChange: function() {
+                    console.log('[主页面] 收到项目切换事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleProjectChange();
+                    } catch (error) {
+                        console.error('[主页面] 项目切换处理失败:', error);
+                    }
+                },
+                
+                handleVersionChange: function() {
+                    console.log('[主页面] 收到版本切换事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleVersionChange();
+                    } catch (error) {
+                        console.error('[主页面] 版本切换处理失败:', error);
+                    }
+                },
+                
+                refreshData: function() {
+                    console.log('[主页面] 收到刷新数据事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.refreshData();
+                    } catch (error) {
+                        console.error('[主页面] 刷新数据处理失败:', error);
+                    }
+                },
+                
+                // 侧边栏和评论区切换
+                toggleSidebar: function() {
+                    console.log('[主页面] 收到侧边栏切换事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.toggleSidebar();
+                    } catch (error) {
+                        console.error('[主页面] 侧边栏切换处理失败:', error);
+                    }
+                },
+                
+                toggleComments: function() {
+                    console.log('[主页面] 收到评论区切换事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.toggleComments();
+                    } catch (error) {
+                        console.error('[主页面] 评论区切换处理失败:', error);
+                    }
                 }
             }
         });
@@ -398,6 +517,7 @@ import { createBaseView } from '/utils/baseView.js';
         console.error('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
 
 
 

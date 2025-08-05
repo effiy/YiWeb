@@ -1200,8 +1200,11 @@ const createCodeView = async () => {
                                                             continue;
                                                         }
                                                         
+                                                        // 保存所有生成的评论数据，用于后续通知comment-panel
+                                                        const generatedComments = [];
+                                                        
                                                         await Promise.all(
-                                                            response.data.map(item => {
+                                                            response.data.map(async (item) => {
                                                                 // 构建请求数据，包含项目/版本信息
                                                                 const requestData = {
                                                                     ...item,
@@ -1210,12 +1213,45 @@ const createCodeView = async () => {
                                                                 };
                                                                 
                                                                 console.log('[CodeView] 发送评论数据到MongoDB:', requestData);
-                                                                return postData(`${window.API_URL}/mongodb/?cname=comments`, requestData);
+                                                                const result = await postData(`${window.API_URL}/mongodb/?cname=comments`, requestData);
+                                                                
+                                                                // 保存生成的评论数据
+                                                                if (result && result.data) {
+                                                                    generatedComments.push({
+                                                                        ...requestData,
+                                                                        key: result.data.key || `comment_${Date.now()}_${Math.random()}`,
+                                                                        timestamp: new Date().toISOString()
+                                                                    });
+                                                                }
+                                                                
+                                                                return result;
                                                             })
                                                         );
                                                         
+                                                        // 立即通知comment-panel添加新评论
+                                                        if (generatedComments.length > 0) {
+                                                            console.log('[CodeView] 立即通知comment-panel添加新评论:', generatedComments.length, '条');
+                                                            generatedComments.forEach(comment => {
+                                                                window.dispatchEvent(new CustomEvent('addNewComment', {
+                                                                    detail: { comment: comment }
+                                                                }));
+                                                            });
+                                                        }
+                                                        
                                                         // 重新加载评论数据
                                                         await this.loadFileComments();
+                                                        
+                                                        // 触发全局重新加载事件，确保所有组件同步
+                                                        setTimeout(() => {
+                                                            console.log('[CodeView] 触发全局重新加载事件');
+                                                            window.dispatchEvent(new CustomEvent('reloadComments', {
+                                                                detail: { 
+                                                                    projectId: currentProject, 
+                                                                    versionId: currentVersion,
+                                                                    forceReload: true 
+                                                                }
+                                                            }));
+                                                        }, 500);
                                                     }
                                                 }
                                             }
@@ -1880,6 +1916,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

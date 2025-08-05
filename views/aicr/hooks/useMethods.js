@@ -18,9 +18,11 @@ export const useMethods = (store) => {
         comments,
         selectedFileId,
         expandedFolders,
+        newComment,
         setSelectedFileId,
         toggleFolder,
         addComment,
+        setNewComment,
         toggleSidebar,
         toggleComments,
         // 项目/版本管理
@@ -249,6 +251,34 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 处理评论输入
+     * @param {Event} event - 输入事件
+     */
+    const handleCommentInput = (event) => {
+        return safeExecute(() => {
+            const value = event.target.value;
+            setNewComment(value);
+        }, '评论输入处理');
+    };
+
+    /**
+     * 处理评论键盘事件
+     * @param {Event} event - 键盘事件
+     */
+    const handleCommentKeydown = (event) => {
+        return safeExecute(() => {
+            if (event.key === 'Escape') {
+                setNewComment('');
+            } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                event.preventDefault();
+                if (newComment.value.trim()) {
+                    handleCommentSubmit({ content: newComment.value.trim() });
+                }
+            }
+        }, '评论键盘事件处理');
+    };
+
+    /**
      * 处理评论提交
      * @param {Object} commentData - 评论数据
      */
@@ -322,21 +352,138 @@ export const useMethods = (store) => {
                 console.log('[评论提交] API调用成功:', result);
                 showSuccessMessage('评论添加成功');
 
+                // 立即在UI中显示新评论
+                let commentAdded = false;
+                
+                // 方法1：通过ref直接调用组件方法
+                if (window.aicrApp && window.aicrApp.$refs) {
+                    const commentPanelRef = window.aicrApp.$refs['comment-panel'];
+                    if (commentPanelRef && commentPanelRef.addCommentToLocalData) {
+                        console.log('[评论提交] 方法1：通过ref直接调用组件方法');
+                        commentPanelRef.addCommentToLocalData(comment);
+                        commentAdded = true;
+                    } else {
+                        console.log('[评论提交] 方法1失败：无法获取评论面板组件引用或方法不存在');
+                        console.log('[评论提交] commentPanelRef:', commentPanelRef);
+                        console.log('[评论提交] aicrApp.$refs:', window.aicrApp.$refs);
+                    }
+                } else {
+                    console.log('[评论提交] 方法1失败：无法获取aicrApp或$refs');
+                }
+                
+                // 方法2：通过全局方法调用
+                if (!commentAdded) {
+                    try {
+                        // 查找评论面板组件实例
+                        const commentPanelElement = document.querySelector('.comment-panel-container');
+                        if (commentPanelElement && commentPanelElement.__vueParentComponent) {
+                            const componentInstance = commentPanelElement.__vueParentComponent.component;
+                            if (componentInstance && componentInstance.addCommentGlobally) {
+                                console.log('[评论提交] 方法2：通过全局方法调用');
+                                componentInstance.addCommentGlobally(comment);
+                                commentAdded = true;
+                            }
+                        }
+                    } catch (error) {
+                        console.log('[评论提交] 方法2失败:', error);
+                    }
+                }
+                
+                // 方法3：通过全局事件传递新评论数据
+                if (!commentAdded) {
+                    console.log('[评论提交] 方法3：通过全局事件传递新评论数据');
+                    window.dispatchEvent(new CustomEvent('addNewComment', {
+                        detail: { comment: comment }
+                    }));
+                }
+                
+                // 方法4：备用方案：直接触发重新加载评论
+                if (!commentAdded) {
+                    console.log('[评论提交] 方法4：使用备用方案：触发重新加载评论');
+                    window.dispatchEvent(new CustomEvent('reloadComments', {
+                        detail: { projectId: projectId, versionId: versionId, forceReload: true }
+                    }));
+                }
+                
+                // 方法5：额外确保comment-panel同步 - 增加延迟确保事件被正确处理
+                console.log('[评论提交] 方法5：额外确保comment-panel同步');
+                setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('addNewComment', {
+                        detail: { comment: comment }
+                    }));
+                }, 100);
+                
+                // 方法6：最终备用方案 - 强制重新加载
+                setTimeout(() => {
+                    console.log('[评论提交] 方法6：最终备用方案 - 强制重新加载');
+                    window.dispatchEvent(new CustomEvent('reloadComments', {
+                        detail: { projectId: projectId, versionId: versionId, forceReload: true }
+                    }));
+                }, 1000);
+
                 // 清空评论输入
                 setNewComment('');
 
-                // 重新加载评论数据
+                // 重新加载评论数据 - 增加延迟和重试机制
                 if (projectId && versionId) {
-                    console.log('[评论提交] 重新加载评论数据');
-                    await loadComments(projectId, versionId);
+                    console.log('[评论提交] 开始重新加载评论数据');
                     
-                    // 触发评论面板重新加载mongoComments
-                    console.log('[评论提交] 触发评论面板重新加载');
+                    // 延迟重新加载，确保数据库写入完成
+                    const reloadCommentsWithRetry = async (retryCount = 0) => {
+                        try {
+                            console.log(`[评论提交] 第${retryCount + 1}次尝试重新加载评论`);
+                            await loadComments(projectId, versionId);
+                            
+                            // 触发评论面板重新加载mongoComments
+                            console.log('[评论提交] 触发评论面板重新加载');
+                            window.dispatchEvent(new CustomEvent('reloadComments', {
+                                detail: { projectId: projectId, versionId: versionId }
+                            }));
+                            
+                            // 验证评论是否成功加载
+                            setTimeout(async () => {
+                                try {
+                                    // 验证评论是否已加载
+                                    const { getData: verifyGetData } = await import('/apis/modules/crud.js');
+                                    const verifyUrl = `${window.API_URL}/mongodb/?cname=comments&projectId=${projectId}&versionId=${versionId}`;
+                                    if (selectedFileId.value) {
+                                        verifyUrl += `&fileId=${selectedFileId.value}`;
+                                    }
+                                    
+                                    const verifyResponse = await verifyGetData(verifyUrl);
+                                    const newComments = verifyResponse.data.list || [];
+                                    
+                                    console.log('[评论提交] 验证评论加载结果:', newComments.length, '条评论');
+                                    
+                                    // 如果评论数量没有增加，且还有重试次数，则重试
+                                    if (newComments.length <= comments.value.length && retryCount < 2) {
+                                        console.log('[评论提交] 评论数量未增加，准备重试');
+                                        setTimeout(() => {
+                                            reloadCommentsWithRetry(retryCount + 1);
+                                        }, 1000); // 1秒后重试
+                                    } else {
+                                        console.log('[评论提交] 评论重新加载完成');
+                                    }
+                                } catch (error) {
+                                    console.error('[评论提交] 验证评论加载失败:', error);
+                                }
+                            }, 500);
+                            
+                        } catch (error) {
+                            console.error(`[评论提交] 第${retryCount + 1}次重新加载失败:`, error);
+                            if (retryCount < 2) {
+                                console.log('[评论提交] 准备重试重新加载');
+                                setTimeout(() => {
+                                    reloadCommentsWithRetry(retryCount + 1);
+                                }, 1000); // 1秒后重试
+                            }
+                        }
+                    };
+                    
+                    // 延迟500ms后开始重新加载，确保数据库写入完成
                     setTimeout(() => {
-                        window.dispatchEvent(new CustomEvent('reloadComments', {
-                            detail: { projectId: projectId, versionId: versionId }
-                        }));
-                    }, 100);
+                        reloadCommentsWithRetry();
+                    }, 500);
                 }
 
             } catch (error) {
@@ -510,7 +657,7 @@ export const useMethods = (store) => {
                         window.dispatchEvent(new CustomEvent('reloadComments', {
                             detail: { projectId: selectedProject.value, versionId: selectedVersion.value }
                         }));
-                    }, 50); // 减少延迟时间从100ms到50ms
+                    }, 200); // 增加延迟时间到200ms
                 }
 
             } catch (error) {
@@ -597,7 +744,7 @@ export const useMethods = (store) => {
                         window.dispatchEvent(new CustomEvent('reloadComments', {
                             detail: { projectId: selectedProject.value, versionId: selectedVersion.value }
                         }));
-                    }, 100);
+                    }, 200); // 增加延迟时间到200ms
                 }
 
             } catch (error) {
@@ -684,7 +831,7 @@ export const useMethods = (store) => {
                         window.dispatchEvent(new CustomEvent('reloadComments', {
                             detail: { projectId: selectedProject.value, versionId: selectedVersion.value }
                         }));
-                    }, 100);
+                    }, 200); // 增加延迟时间到200ms
                 }
 
             } catch (error) {
@@ -848,6 +995,8 @@ export const useMethods = (store) => {
         handleFileSelect,
         handleFolderToggle,
         handleCommentSubmit,
+        handleCommentInput,
+        handleCommentKeydown,
         clearAllComments,
         expandAllFolders,
         collapseAllFolders,
@@ -871,6 +1020,7 @@ export const useMethods = (store) => {
         handleCompositionEnd
     };
 };
+
 
 
 
