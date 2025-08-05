@@ -103,7 +103,9 @@
                         <i class="fas fa-quote-left"></i>
                         <span>引用代码</span>
                     </div>
-                    <pre class="quote-code" @click="highlightCode(currentCommentDetail)">{{ currentCommentDetail.text }}</pre>
+                    <pre class="quote-code" @click="highlightCode(currentCommentDetail)">
+                        <code>{{ currentCommentDetail.text }}</code>
+                    </pre>
                 </div>
                 
                 <!-- 评论内容 -->
@@ -115,7 +117,9 @@
                         <i class="fas fa-magic"></i>
                         <span>改进代码</span>
                     </div>
-                    <pre class="improvement-code">{{ currentCommentDetail.improvementText }}</pre>
+                    <pre class="improvement-code">
+                        <code>{{ currentCommentDetail.improvementText }}</code>
+                    </pre>
                 </div>
                 
                 <!-- 评论操作按钮 -->
@@ -193,7 +197,9 @@
                         <i class="fas fa-quote-left"></i>
                         <span>引用代码</span>
                     </div>
-                    <pre class="preview-quote-code">{{ currentCommentPreview.text }}</pre>
+                    <pre class="preview-quote-code">
+                        <code>{{ currentCommentPreview.text }}</code>
+                    </pre>
                 </div>
                 
                 <!-- 改进代码预览（如果有） -->
@@ -202,7 +208,9 @@
                         <i class="fas fa-magic"></i>
                         <span>改进建议</span>
                     </div>
-                    <pre class="preview-improvement-code">{{ currentCommentPreview.improvementText }}</pre>
+                    <pre class="preview-improvement-code">
+                        <code>{{ currentCommentPreview.improvementText }}</code>
+                    </pre>
                 </div>
             </div>
             
