@@ -44,6 +44,8 @@ export const createStore = () => {
     
     // 搜索相关状态
     const searchQuery = vueRef('');
+    // 新增评论内容
+    const newComment = vueRef('');
 
     /**
      * 异步加载文件树数据
@@ -312,6 +314,15 @@ export const createStore = () => {
     };
 
     /**
+     * 设置新增评论内容
+     * @param {string} content - 评论内容
+     */
+    const setNewComment = (content) => {
+        newComment.value = content;
+        console.log('[setNewComment] 设置评论内容:', content);
+    };
+
+    /**
      * 刷新数据
      */
     const refreshData = async () => {
@@ -371,6 +382,7 @@ export const createStore = () => {
         
         // 搜索相关状态
         searchQuery,
+        newComment,
         
         // 方法
         loadFileTree,
@@ -385,6 +397,7 @@ export const createStore = () => {
         loadVersions,
         setSelectedProject,
         setSelectedVersion,
+        setNewComment,
         refreshData,
         clearError
     };

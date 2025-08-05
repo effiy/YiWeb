@@ -87,7 +87,9 @@ import { createBaseView } from '/utils/baseView.js';
                 selectedVersion: store.selectedVersion,
                 availableVersions: store.availableVersions,
                 // 搜索相关状态
-                searchQuery: store.searchQuery
+                searchQuery: store.searchQuery,
+                // 新增评论内容
+                newComment: ''
             },
             computed: {
                 // 选中的文件ID
@@ -500,6 +502,19 @@ import { createBaseView } from '/utils/baseView.js';
                         methods.toggleComments();
                     } catch (error) {
                         console.error('[主页面] 评论区切换处理失败:', error);
+                    }
+                },
+                
+                // 处理评论输入
+                handleCommentInput: function(event) {
+                    console.log('[主页面] 收到评论输入事件');
+                    try {
+                        // 更新newComment数据
+                        this.newComment = event.target.value;
+                        const methods = useMethods(store);
+                        methods.handleCommentInput(event);
+                    } catch (error) {
+                        console.error('[主页面] 评论输入处理失败:', error);
                     }
                 }
             }
