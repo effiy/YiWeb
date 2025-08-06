@@ -220,8 +220,8 @@ export function showErrorMessage(errorInfo) {
 export function showSuccessMessage(message) {
     if (!message) return;
     
-    // 这里可以集成UI组件库的Toast
-    // 目前使用简单的console.log，后续可以替换为更优雅的UI组件
+    // 移除弹框显示，只保留控制台日志
+    // 用户反馈：评论保存成功后不需要再显示弹框
     console.log(`✅ ${message}`);
 }
 

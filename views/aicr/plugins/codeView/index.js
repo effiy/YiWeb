@@ -1129,14 +1129,14 @@ const createCodeView = async () => {
                                 console.log('选中的评论者ID:', selectedIds);
                                 console.log('评论者列表:', commenters);
                                 
-                                const selectedCommenters = commenters.filter(c => selectedIds.includes(c.id));
+                                const selectedCommenters = commenters.filter(c => selectedIds.includes(c.key));
                                 console.log('选中的评论者数量:', selectedCommenters.length);
                                 console.log('选中的评论者详情:', selectedCommenters);
                                 
                                 if (selectedCommenters.length > 0) {
                                     selectedCommenters.forEach((commenter, index) => {
                                         console.log(`评论者 ${index + 1}:`, {
-                                            id: commenter.id,
+                                            key: commenter.key,
                                             name: commenter.name,
                                             avatar: commenter.avatar,
                                             forSystem: commenter.forSystem
@@ -1171,7 +1171,7 @@ const createCodeView = async () => {
                                             console.log('选中的评论者数量:', commenters.length);
                                             for (const commenter of commenters) {
                                                 console.log(`评论者:`, {
-                                                    id: commenter.id,
+                                                    key: commenter.key,
                                                     name: commenter.name,
                                                     avatar: commenter.avatar,
                                                     forSystem: commenter.forSystem
@@ -1916,6 +1916,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

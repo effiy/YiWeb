@@ -3,7 +3,7 @@
  * author: liangliang
  */
 
-import { getData } from '/apis/index.js';
+import { getData, postData, deleteData, updateData } from '/apis/index.js';
 import { safeExecuteAsync, createError, ErrorTypes } from '/utils/error.js';
 
 // 兼容Vue2和Vue3的ref获取方式
@@ -46,6 +46,12 @@ export const createStore = () => {
     const searchQuery = vueRef('');
     // 新增评论内容
     const newComment = vueRef('');
+    
+    // 评论者相关状态
+    const commenters = vueRef([]);
+    const selectedCommenterIds = vueRef([]);
+    const commentersLoading = vueRef(false);
+    const commentersError = vueRef('');
 
     /**
      * 异步加载文件树数据
@@ -187,6 +193,253 @@ export const createStore = () => {
             errorMessage.value = errorInfo.message;
             comments.value = [];
         });
+    };
+
+    /**
+     * 异步加载评论者数据
+     */
+    const loadCommenters = async (projectId = null, versionId = null) => {
+        return safeExecuteAsync(async () => {
+            commentersLoading.value = true;
+            commentersError.value = '';
+            
+            console.log('[loadCommenters] 正在加载评论者数据...', { projectId, versionId });
+            
+            // 检查是否有项目/版本信息
+            const project = projectId || selectedProject.value;
+            const version = versionId || selectedVersion.value;
+            
+            if (!project || !version) {
+                console.log('[loadCommenters] 项目/版本信息不完整，跳过评论者加载');
+                commenters.value = [];
+                return [];
+            }
+            
+            console.log('[loadCommenters] 项目/版本信息完整，开始加载评论者');
+            
+            try {
+                let url = `${window.API_URL}/mongodb/?cname=commenters`;
+                url += `&projectId=${project}`;
+                url += `&versionId=${version}`;
+                
+                console.log('[loadCommenters] 调用MongoDB接口:', url);
+                const response = await getData(url);
+                
+                if (response && response.data && response.data.list) {
+                    commenters.value = response.data.list;
+                    console.log(`[loadCommenters] 成功加载 ${commenters.value.length} 个评论者`);
+                    return commenters.value;
+                } else {
+                    commenters.value = [];
+                    console.log('[loadCommenters] 没有评论者数据');
+                    return [];
+                }
+            } catch (error) {
+                console.error('[loadCommenters] 加载评论者失败:', error);
+                commenters.value = [];
+                return [];
+            }
+        }, '评论者数据加载', (errorInfo) => {
+            commentersError.value = errorInfo.message;
+            commenters.value = [];
+        }).finally(() => {
+            commentersLoading.value = false;
+        });
+    };
+
+    /**
+     * 添加评论者
+     */
+    const addCommenter = async (commenterData, projectId = null, versionId = null) => {
+        return safeExecuteAsync(async () => {
+            console.log('[addCommenter] 正在添加评论者...', { commenterData, projectId, versionId });
+            
+            // 检查是否有项目/版本信息
+            const project = projectId || selectedProject.value;
+            const version = versionId || selectedVersion.value;
+            
+            if (!project || !version) {
+                throw new Error('项目/版本信息不完整，无法添加评论者');
+            }
+            
+            // 构建添加URL
+            let url = `${window.API_URL}/mongodb/?cname=commenters`;
+            
+            // 构建请求数据
+            const requestData = {
+                ...commenterData,
+                projectId: project,
+                versionId: version
+            };
+            
+            console.log('[addCommenter] 调用MongoDB接口:', url, requestData);
+            
+            try {
+                // 检查网络连接
+                if (!navigator.onLine) {
+                    throw new Error('网络连接不可用，请检查网络设置');
+                }
+                
+                // 检查API_URL是否可用
+                if (!window.API_URL) {
+                    throw new Error('API配置错误：API_URL未定义');
+                }
+                
+                console.log('[addCommenter] API_URL:', window.API_URL);
+                console.log('[addCommenter] 完整请求URL:', url);
+                
+                // 使用POST方法添加评论者
+                const response = await postData(url, requestData);
+                
+                console.log('[addCommenter] 添加响应:', response);
+                
+                if (response && response.status === 200) {
+                    console.log('[addCommenter] 评论者添加成功');
+                    // 重新加载评论者列表
+                    await loadCommenters(project, version);
+                    return response.data;
+                } else {
+                    const errorMsg = response?.message || response?.error || '服务器返回错误';
+                    console.error('[addCommenter] 服务器返回错误:', response);
+                    throw new Error('添加评论者失败: ' + errorMsg);
+                }
+            } catch (error) {
+                console.error('[addCommenter] 添加请求失败:', error);
+                
+                // 提供更详细的错误信息
+                let errorMessage = '添加评论者失败: ';
+                
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMessage += '网络请求失败，可能是网络连接问题或API服务器不可用';
+                } else if (error.status === 404) {
+                    errorMessage += 'API接口不存在';
+                } else if (error.status === 500) {
+                    errorMessage += '服务器内部错误';
+                } else if (error.status === 403) {
+                    errorMessage += '访问被拒绝，请检查权限';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage += '请求超时，请检查网络连接';
+                } else {
+                    errorMessage += error.message || '未知错误';
+                }
+                
+                console.error('[addCommenter] 详细错误信息:', {
+                    name: error.name,
+                    message: error.message,
+                    status: error.status,
+                    stack: error.stack
+                });
+                
+                throw new Error(errorMessage);
+            }
+        }, '添加评论者', (errorInfo) => {
+            commentersError.value = errorInfo.message;
+        });
+    };
+
+    /**
+     * 更新评论者
+     */
+    const updateCommenter = async (commenterKey, commenterData, projectId = null, versionId = null) => {
+        return safeExecuteAsync(async () => {
+            console.log('[updateCommenter] 正在更新评论者...', { commenterKey, commenterData, projectId, versionId });
+            
+            // 检查是否有项目/版本信息
+            const project = projectId || selectedProject.value;
+            const version = versionId || selectedVersion.value;
+            
+            if (!project || !version) {
+                throw new Error('项目/版本信息不完整，无法更新评论者');
+            }
+            
+            // 构建更新URL
+            let url = `${window.API_URL}/mongodb/?cname=commenters`;
+            
+            console.log('[updateCommenter] 调用MongoDB接口:', url);
+            
+            try {
+                // 使用PUT方法更新评论者
+                const response = await updateData(url, {
+                  ...commenterData,
+                  key: commenterKey,
+                  projectId: project,
+                  versionId: version
+                });
+                
+                console.log('[updateCommenter] 更新响应:', response);
+                
+                if (response && response.status === 200) {
+                    console.log('[updateCommenter] 评论者更新成功');
+                    // 重新加载评论者列表
+                    await loadCommenters(project, version);
+                    return response.data;
+                } else {
+                    throw new Error('更新评论者失败: ' + (response?.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('[updateCommenter] 更新请求失败:', error);
+                throw new Error('更新评论者失败: ' + error.message);
+            }
+        }, '更新评论者', (errorInfo) => {
+            commentersError.value = errorInfo.message;
+        });
+    };
+
+    /**
+     * 删除评论者
+     */
+    const deleteCommenter = async (commenterKey, projectId = null, versionId = null) => {
+        return safeExecuteAsync(async () => {
+            console.log('[deleteCommenter] 正在删除评论者...', { commenterKey, projectId, versionId });
+            
+            // 验证评论者key
+            if (!commenterKey) {
+                throw new Error('评论者key不能为空');
+            }
+            
+            // 检查是否有项目/版本信息
+            const project = projectId || selectedProject.value;
+            const version = versionId || selectedVersion.value;
+            
+            if (!project || !version) {
+                throw new Error('项目/版本信息不完整，无法删除评论者');
+            }
+            
+            // 构建删除URL
+            let url = `${window.API_URL}/mongodb/?cname=commenters&key=${commenterKey}`;
+            
+            console.log('[deleteCommenter] 调用MongoDB接口:', url);
+            
+            try {
+                // 使用DELETE方法删除评论者
+                const response = await deleteData(url);
+                
+                console.log('[deleteCommenter] 删除响应:', response);
+                
+                if (response && response.status === 200) {
+                    console.log('[deleteCommenter] 评论者删除成功');
+                    // 重新加载评论者列表
+                    await loadCommenters(project, version);
+                    return response.data;
+                } else {
+                    throw new Error('删除评论者失败: ' + (response?.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('[deleteCommenter] 删除请求失败:', error);
+                throw new Error('删除评论者失败: ' + error.message);
+            }
+        }, '删除评论者', (errorInfo) => {
+            commentersError.value = errorInfo.message;
+        });
+    };
+
+    /**
+     * 设置选中的评论者ID列表
+     */
+    const setSelectedCommenterIds = (commenterIds) => {
+        if (Array.isArray(commenterIds)) {
+            selectedCommenterIds.value = commenterIds;
+        }
     };
 
     /**
@@ -340,7 +593,8 @@ export const createStore = () => {
             await Promise.all([
                 loadFileTree(selectedProject.value, selectedVersion.value),
                 loadFiles(selectedProject.value, selectedVersion.value),
-                loadComments(selectedProject.value, selectedVersion.value)
+                loadComments(selectedProject.value, selectedVersion.value),
+                loadCommenters(selectedProject.value, selectedVersion.value)
             ]);
             
             // 清空选中的文件
@@ -384,10 +638,21 @@ export const createStore = () => {
         searchQuery,
         newComment,
         
+        // 评论者相关状态
+        commenters,
+        selectedCommenterIds,
+        commentersLoading,
+        commentersError,
+        
         // 方法
         loadFileTree,
         loadFiles,
         loadComments,
+        loadCommenters,
+        addCommenter,
+        updateCommenter,
+        deleteCommenter,
+        setSelectedCommenterIds,
         setSelectedFileId,
         toggleFolder,
         addComment,
@@ -402,6 +667,7 @@ export const createStore = () => {
         clearError
     };
 };
+
 
 
 

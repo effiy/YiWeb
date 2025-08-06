@@ -101,13 +101,32 @@ export async function sendRequest(url, options = {}) {
     }
     
   } catch (error) {
-    // 监控错误
-    console.error('请求错误：', {
+    // 监控错误 - 提供更详细的错误信息
+    console.error('请求错误详情：', {
       url,
       method: config.method,
       error: error.message,
+      errorName: error.name,
+      errorStack: error.stack,
       timestamp: new Date().toISOString()
     });
+    
+    // 如果是网络错误，提供更友好的错误信息
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      const networkError = new Error('网络请求失败：无法连接到服务器，请检查网络连接和API地址');
+      networkError.originalError = error;
+      networkError.isNetworkError = true;
+      throw networkError;
+    }
+    
+    // 如果是CORS错误
+    if (error.message.includes('CORS') || error.message.includes('cross-origin')) {
+      const corsError = new Error('跨域请求被阻止：请检查API服务器的CORS配置');
+      corsError.originalError = error;
+      corsError.isCorsError = true;
+      throw corsError;
+    }
+    
     throw error;
   }
 }
@@ -329,4 +348,5 @@ export const post = postRequest;
 export const put = putRequest;
 export const patch = patchRequest;
 export const del = deleteRequest;
+
 

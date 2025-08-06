@@ -89,7 +89,12 @@ import { createBaseView } from '/utils/baseView.js';
                 // 搜索相关状态
                 searchQuery: store.searchQuery,
                 // 新增评论内容
-                newComment: ''
+                newComment: '',
+                // 评论者相关状态
+                commenters: store.commenters,
+                selectedCommenterIds: store.selectedCommenterIds,
+                commentersLoading: store.commentersLoading,
+                commentersError: store.commentersError
             },
             computed: {
                 // 选中的文件ID
@@ -172,9 +177,12 @@ import { createBaseView } from '/utils/baseView.js';
                             ]);
                         }
                     }).then(() => {
-                        // 项目/版本信息设置完成，加载评论数据
-                        console.log('[代码审查页面] 项目/版本信息设置完成，开始加载评论');
-                        return store.loadComments();
+                        // 项目/版本信息设置完成，加载评论数据和评论者数据
+                        console.log('[代码审查页面] 项目/版本信息设置完成，开始加载评论和评论者');
+                        return Promise.all([
+                            store.loadComments(),
+                            store.loadCommenters()
+                        ]);
                     }).then(() => {
                         // 项目/版本信息设置完成，触发评论面板重新加载
                         console.log('[代码审查页面] 项目/版本信息设置完成，触发评论加载');
@@ -521,6 +529,16 @@ import { createBaseView } from '/utils/baseView.js';
         });
         window.aicrApp = app;
         window.aicrStore = store;
+        
+        // 确保store中的评论者方法可用
+        console.log('[代码审查页面] store已暴露到全局，评论者方法:', {
+            loadCommenters: !!store.loadCommenters,
+            addCommenter: !!store.addCommenter,
+            updateCommenter: !!store.updateCommenter,
+            deleteCommenter: !!store.deleteCommenter,
+            setSelectedCommenterIds: !!store.setSelectedCommenterIds
+        });
+        
         if (window.aicrApp && window.aicrApp.reload) {
             const oldReload = window.aicrApp.reload;
             window.aicrApp.reload = function() {
@@ -532,6 +550,7 @@ import { createBaseView } from '/utils/baseView.js';
         console.error('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
 
 
 

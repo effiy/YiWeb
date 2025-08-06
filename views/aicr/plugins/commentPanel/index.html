@@ -19,8 +19,22 @@
     <div v-else class="comment-panel-content">
         <!-- 评论者头像选择区域 -->
         <div class="commenter-avatars">
-            <div class="avatars-header">
-                <span class="avatars-title">选择评论者</span>
+                            <div class="avatars-header">
+                    <div class="avatars-title-row">
+                        <span class="avatars-title">选择评论者</span>
+                        <div class="avatars-actions">
+                            <button 
+                                @click="openCommenterEditor"
+                                class="edit-commenters-btn"
+                                :class="{ 'no-commenters': commenters.length === 0 }"
+                                :title="commenters.length === 0 ? '添加第一个评论者' : '编辑评论者'"
+                                :aria-label="commenters.length === 0 ? '添加第一个评论者' : '编辑评论者'"
+                            >
+                                <i :class="commenters.length === 0 ? 'fas fa-plus' : 'fas fa-edit'"></i>
+                                {{ commenters.length === 0 ? '添加评论者' : '编辑评论者' }}
+                            </button>
+                        </div>
+                    </div>
                 <span class="avatars-subtitle">点击头像选择评论者（默认选中第一个，支持多选）</span>
                 <span class="avatars-count">共 {{ commenterStats.total }} 位评论者，已选择 {{ commenterStats.selected }} 位</span>
             </div>
@@ -34,18 +48,18 @@
             <div v-else-if="commenters.length > 0" class="avatars-container">
                 <div 
                     v-for="(commenter, index) in commenters" 
-                    :key="commenter.id"
+                    :key="commenter.key"
                     class="commenter-avatar"
                     :class="{ 
-                        'selected': selectedCommenterIds.includes(commenter.id),
-                        'multi-selected': selectedCommenterIds.length > 1 && selectedCommenterIds.includes(commenter.id)
+                        'selected': selectedCommenterIds.includes(commenter.key),
+                        'multi-selected': selectedCommenterIds.length > 1 && selectedCommenterIds.includes(commenter.key)
                     }"
                     @click="toggleCommenter(commenter)"
                     @keydown.enter="toggleCommenter(commenter)"
                     @keydown.space="toggleCommenter(commenter)"
                     :title="commenter.name"
                     :aria-label="`选择评论者 ${commenter.name}`"
-                    :aria-pressed="selectedCommenterIds.includes(commenter.id)"
+                    :aria-pressed="selectedCommenterIds.includes(commenter.key)"
                     tabindex="0"
                     role="button"
                 >
@@ -53,10 +67,47 @@
                         {{ getCommenterAvatar(commenter).text }}
                     </div>
                     <div class="avatar-name">{{ commenter.name }}</div>
+                    <button 
+                        @click.stop="editCommenter(commenter)"
+                        class="avatar-edit-btn"
+                        title="编辑评论者"
+                        aria-label="编辑评论者"
+                    >
+                        <i class="fas fa-pen"></i>
+                    </button>
+                </div>
+                
+                <!-- 始终显示的添加评论者按钮 -->
+                <div 
+                    class="commenter-avatar add-commenter-avatar"
+                    @click="addNewCommenter"
+                    @keydown.enter="addNewCommenter"
+                    @keydown.space="addNewCommenter"
+                    title="添加评论者"
+                    aria-label="添加评论者"
+                    tabindex="0"
+                    role="button"
+                >
+                    <div class="avatar-image add-avatar-image">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="avatar-name">添加</div>
                 </div>
             </div>
             <div v-else class="avatars-empty">
-                <span>暂无评论者</span>
+                <div class="empty-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="empty-title">暂无评论者</div>
+                <div class="empty-subtitle">点击下方按钮添加第一个评论者</div>
+                <button 
+                    @click="addNewCommenter"
+                    class="add-commenter-btn"
+                    title="添加评论者"
+                >
+                    <i class="fas fa-plus"></i>
+                    添加评论者
+                </button>
             </div>
         </div>
 
@@ -132,9 +183,7 @@
                             <i class="fas fa-quote-left"></i>
                             <span>引用代码</span>
                         </div>
-                        <pre class="quote-code" @click="highlightCode(comment)">
-                            <code>{{ comment.text }}</code>
-                        </pre>
+                        <pre class="quote-code" @click="highlightCode(comment)">{{ comment.text }}</pre>
                     </div>
                     <div class="comment-content">{{ comment.content }}</div>
                     <!-- 改进代码展示区域，仅当有改进代码时显示 -->
@@ -143,9 +192,7 @@
                             <i class="fas fa-magic"></i>
                             <span>改进代码</span>
                         </div>
-                        <pre class="improvement-code">
-                            <code>{{ comment.improvementText }}</code>
-                        </pre>
+                        <pre class="improvement-code">{{ comment.improvementText }}</pre>
                     </div>
                     
                     <!-- 评论操作 -->
@@ -200,10 +247,169 @@
             <div class="no-comments-title">暂无评论</div>
             <div class="no-comments-subtitle">开始代码评审，添加第一个评论</div>
         </div>
-        
+    </div>
 
+    <!-- 评论者编辑模态框 -->
+    <div v-if="showCommenterEditor" class="commenter-editor-modal" @click="closeCommenterEditor">
+        <div class="commenter-editor-content" @click.stop>
+            <div class="editor-header">
+                <h3 class="editor-title">{{ editingCommenter && !editingCommenter._id ? '添加评论者' : '编辑评论者' }}</h3>
+                <button @click="closeCommenterEditor" class="close-btn" title="关闭">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="editor-body">
+                <!-- 评论者列表 - 仅在非编辑模式下显示 -->
+                <div v-if="!editingCommenter" class="commenter-list">
+                    <div v-if="commenters.length > 0" class="commenter-items">
+                        <!-- 现有评论者列表 -->
+                        <div 
+                            v-for="(commenter, index) in commenters" 
+                            :key="commenter.key"
+                            class="commenter-item"
+                        >
+                            <div class="commenter-display">
+                                <div class="commenter-info">
+                                    <div class="commenter-avatar-preview" :style="getCommenterAvatar(commenter)">
+                                        {{ getCommenterAvatar(commenter).text }}
+                                    </div>
+                                    <div class="commenter-details">
+                                        <div class="commenter-name">{{ commenter.name }}</div>
+                                        <div class="commenter-id">ID: {{ commenter.key }}</div>
+                                        <div class="commenter-model" v-if="commenter.model">
+                                            <i class="fas fa-robot"></i>
+                                            {{ getModelDisplayName(commenter.model) }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="commenter-actions">
+                                    <button @click="editCommenter(commenter)" class="edit-btn" title="编辑">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button @click="deleteCommenter(commenter)" class="delete-btn" title="删除">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="commenter-empty">
+                        <div class="empty-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="empty-title">暂无评论者</div>
+                        <div class="empty-subtitle">点击下方按钮添加第一个评论者</div>
+                        <button @click="addNewCommenter" class="add-first-commenter-btn">
+                            <i class="fas fa-plus"></i>
+                            添加评论者
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 统一的编辑表单 -->
+                <div v-if="editingCommenter" class="commenter-edit-form">
+                    <div class="form-group">
+                        <label>姓名:</label>
+                        <input 
+                            v-model="editingCommenter.name" 
+                            type="text" 
+                            class="form-input"
+                            placeholder="输入评论者姓名"
+                        />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>头像URL (可选):</label>
+                        <input 
+                            v-model="editingCommenter.avatar" 
+                            type="text" 
+                            class="form-input"
+                            placeholder="输入头像URL"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label>模型选择:</label>
+                        <input 
+                            v-model="editingCommenter.model" 
+                            type="text" 
+                            class="form-input"
+                            placeholder="输入AI模型名称，如：gpt-4, claude-3-opus, gemini-pro"
+                            aria-label="输入AI模型名称"
+                        />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>系统提示词:</label>
+                        <textarea 
+                            v-model="editingCommenter.forSystem" 
+                            class="form-textarea"
+                            placeholder="输入系统提示词"
+                            rows="12"
+                        ></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>模型参数:</label>
+                        <div class="model-params">
+                            <div class="param-group">
+                                <label class="param-label">温度 (Temperature):</label>
+                                <input 
+                                    v-model.number="editingCommenter.temperature" 
+                                    type="number" 
+                                    min="0" 
+                                    max="2" 
+                                    step="0.1"
+                                    class="form-input param-input"
+                                    placeholder="0.7"
+                                />
+                                <span class="param-hint">0-2，控制随机性</span>
+                            </div>
+                            <div class="param-group">
+                                <label class="param-label">最大长度 (Max Tokens):</label>
+                                <input 
+                                    v-model.number="editingCommenter.maxTokens" 
+                                    type="number" 
+                                    min="1" 
+                                    max="8000" 
+                                    step="100"
+                                    class="form-input param-input"
+                                    placeholder="2000"
+                                />
+                                <span class="param-hint">1-8000，控制回复长度</span>
+                            </div>
+                            <div class="param-group">
+                                <label class="param-label">Top P:</label>
+                                <input 
+                                    v-model.number="editingCommenter.topP" 
+                                    type="number" 
+                                    min="0" 
+                                    max="1" 
+                                    step="0.1"
+                                    class="form-input param-input"
+                                    placeholder="0.9"
+                                />
+                                <span class="param-hint">0-1，控制多样性</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button @click="saveCommenter" class="save-btn">
+                            <i class="fas fa-save"></i>
+                            保存
+                        </button>
+                        <button @click="cancelEdit" class="cancel-btn">
+                            <i class="fas fa-times"></i>
+                            取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </aside>
+
 
 
 

@@ -334,7 +334,7 @@ export const useMethods = (store) => {
                     if (Array.isArray(commentData.fromSystem)) {
                         console.log('[评论提交] 多个评论者:', commentData.fromSystem.length);
                         commentData.fromSystem.forEach(commenter => {
-                            console.log('[评论提交] 评论者:', commenter.name, commenter.id);
+                            console.log('[评论提交] 评论者:', commenter.name, commenter.key);
                         });
                     } else {
                         console.log('[评论提交] 单个评论者:', commentData.fromSystem.name);
@@ -581,7 +581,7 @@ export const useMethods = (store) => {
             if (commenters && commenters.length > 0) {
                 console.log('[评论者选择] 选中的评论者数量:', commenters.length);
                 commenters.forEach(commenter => {
-                    console.log('[评论者选择] 评论者:', commenter.name, commenter.id);
+                    console.log('[评论者选择] 评论者:', commenter.name, commenter.key);
                 });
             } else {
                 console.log('[评论者选择] 没有选中任何评论者');
@@ -1020,6 +1020,7 @@ export const useMethods = (store) => {
         handleCompositionEnd
     };
 };
+
 
 
 
