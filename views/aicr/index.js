@@ -378,13 +378,24 @@ const { computed } = Vue;
                         // 只有在项目/版本信息完整时才触发评论加载
                         if (projectId && versionId) {
                             console.log('[主页面] 项目/版本信息完整，触发评论加载');
+                            
                             // 使用防抖机制，避免短时间内多次触发
                             if (this._commentLoadTimeout) {
                                 clearTimeout(this._commentLoadTimeout);
                             }
                             
+                            // 添加请求状态检查，防止重复请求
+                            if (this._isLoadingComments) {
+                                console.log('[主页面] 评论正在加载中，跳过重复请求');
+                                return;
+                            }
+                            
                             this._commentLoadTimeout = setTimeout(() => {
                                 console.log('[主页面] 延迟触发评论加载');
+                                
+                                // 设置加载状态
+                                this._isLoadingComments = true;
+                                
                                 // 触发评论面板重新加载事件
                                 window.dispatchEvent(new CustomEvent('reloadComments', {
                                     detail: { 
@@ -394,6 +405,11 @@ const { computed } = Vue;
                                         forceReload: true
                                     }
                                 }));
+                                
+                                // 延迟重置加载状态
+                                setTimeout(() => {
+                                    this._isLoadingComments = false;
+                                }, 1000);
                             }, 100); // 100ms防抖延迟
                         } else {
                             console.log('[主页面] 项目/版本信息不完整，跳过评论加载');

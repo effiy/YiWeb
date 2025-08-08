@@ -46,6 +46,11 @@ const createFileTreeNode = () => {
                 default: () => []
             }
         },
+        data() {
+            return {
+                _lastClickTime: null
+            };
+        },
         emits: ['file-select', 'folder-toggle'],
         methods: {
             // 切换文件夹展开状态
@@ -73,6 +78,13 @@ const createFileTreeNode = () => {
                         throw createError('文件ID无效', ErrorTypes.VALIDATION, '文件选择');
                     }
                     
+                    // 添加防抖机制，避免快速连续点击
+                    if (this._lastClickTime && Date.now() - this._lastClickTime < 300) {
+                        console.log('[FileTreeNode] 点击间隔过短，跳过重复选择:', fileId);
+                        return;
+                    }
+                    
+                    this._lastClickTime = Date.now();
                     console.log('[FileTreeNode] 选择文件:', fileId);
                     this.$emit('file-select', fileId);
                 }, '文件选择处理');
