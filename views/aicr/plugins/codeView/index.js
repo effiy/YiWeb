@@ -1842,9 +1842,16 @@ const createCodeView = async () => {
                 
                 // 监听文件变化，重新加载评论
                 this.$watch('file', async (newFile, oldFile) => {
+                    console.log('[CodeView] 文件变化:', { newFile, oldFile });
+                    
                     if (newFile && newFile !== oldFile) {
                         console.log('[CodeView] 文件变化，重新加载评论:', newFile.name);
                         await this.loadFileComments();
+                    } else if (!newFile && oldFile) {
+                        // 文件被取消选中（如按ESC键）
+                        console.log('[CodeView] 文件被取消选中，清空评论数据');
+                        this.fileComments = [];
+                        this.commentMarkers = {};
                     }
                 });
                 

@@ -1038,9 +1038,16 @@ const createCommentPanel = async () => {
             
             // 监听文件选择变化，重新加载评论
             this.$watch('file', async (newFile, oldFile) => {
+                console.log('[CommentPanel] 文件选择变化:', { newFile, oldFile });
+                
                 if (newFile && newFile !== oldFile) {
                     console.log('[CommentPanel] 文件选择变化，重新加载评论:', newFile);
                     await this.loadMongoComments();
+                } else if (!newFile && oldFile) {
+                    // 文件被取消选中（如按ESC键）
+                    console.log('[CommentPanel] 文件被取消选中，清空评论数据');
+                    this.mongoComments = [];
+                    this.fileComments = [];
                 }
             });
             
@@ -1127,12 +1134,21 @@ const createCommentPanel = async () => {
             
             // 监听reloadComments事件，重新加载评论数据
             window.addEventListener('reloadComments', async (event) => {
-                console.log('[CommentPanel] 收到reloadComments事件');
-                const { projectId, versionId, forceReload } = event.detail;
+                console.log('[CommentPanel] 收到reloadComments事件:', event.detail);
+                const { projectId, versionId, fileId, forceReload } = event.detail;
                 
                 if (forceReload) {
                     console.log('[CommentPanel] 强制重新加载评论数据');
-                    await this.loadMongoComments();
+                    
+                    // 如果fileId为null，说明文件被取消选中，清空评论数据
+                    if (fileId === null) {
+                        console.log('[CommentPanel] 文件被取消选中，清空评论数据');
+                        this.mongoComments = [];
+                        this.fileComments = [];
+                    } else {
+                        // 否则重新加载评论数据
+                        await this.loadMongoComments();
+                    }
                 }
             });
             

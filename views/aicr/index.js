@@ -207,8 +207,22 @@ const { computed } = Vue;
                     if (e.key === 'Escape') {
                         console.log('[代码审查页面] ESC键被按下，取消文件选中');
                         if (store && store.selectedFileId.value) {
+                            const previousFileId = store.selectedFileId.value;
                             store.setSelectedFileId(null);
-                            console.log('[代码审查页面] 已取消文件选中');
+                            console.log('[代码审查页面] 已取消文件选中，之前文件ID:', previousFileId);
+                            
+                            // 触发评论面板刷新事件
+                            setTimeout(() => {
+                                console.log('[代码审查页面] 触发评论面板刷新事件');
+                                window.dispatchEvent(new CustomEvent('reloadComments', {
+                                    detail: { 
+                                        projectId: store.selectedProject ? store.selectedProject.value : null, 
+                                        versionId: store.selectedVersion ? store.selectedVersion.value : null,
+                                        fileId: null,
+                                        forceReload: true
+                                    }
+                                }));
+                            }, 100);
                         }
                     }
                 });
@@ -357,10 +371,8 @@ const { computed } = Vue;
                         store.setSelectedFileId(fileId);
                         
                         // 获取项目/版本信息
-                        const projectSelect = document.getElementById('projectSelect');
-                        const versionSelect = document.getElementById('versionSelect');
-                        const projectId = projectSelect ? projectSelect.value : null;
-                        const versionId = versionSelect ? versionSelect.value : null;
+                        const projectId = store.selectedProject ? store.selectedProject.value : null;
+                        const versionId = store.selectedVersion ? store.selectedVersion.value : null;
                         
                         // 只有在项目/版本信息完整时才触发评论加载
                         if (projectId && versionId) {
@@ -378,7 +390,7 @@ const { computed } = Vue;
                                         projectId: projectId, 
                                         versionId: versionId,
                                         fileId: fileId,
-                                        forceReload: false
+                                        forceReload: true
                                     }
                                 }));
                             }, 100); // 100ms防抖延迟

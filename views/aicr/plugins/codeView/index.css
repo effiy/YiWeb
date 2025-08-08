@@ -538,7 +538,7 @@
     background: var(--bg-secondary);
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 12px;
-    line-height: 0.5; /* 增加行高，提高可读性 */
+    line-height: 1.4; /* 增加行高，提高可读性 */
     color: var(--text-primary);
     white-space: pre-wrap;
     word-break: break-word;
@@ -1008,7 +1008,7 @@
     background: var(--bg-secondary);
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 11px;
-    line-height: 0.5; /* 增加行高，提高可读性 */
+    line-height: 1.4; /* 增加行高，提高可读性 */
     color: var(--text-primary);
     white-space: pre-wrap;
     word-break: break-word;
