@@ -19,7 +19,7 @@ import { safeExecuteAsync } from '/utils/error.js';
  */
 export const createStore = () => {
     const fromSystem = vueRef(null)
-    // 功能卡片数据 - 使用Vue的响应式系统
+    // 功能卡片数据
     const featureCards = vueRef([]);
     // 搜索查询
     const searchQuery = vueRef('');
@@ -29,56 +29,7 @@ export const createStore = () => {
     const error = vueRef(null);
     
     // 导航分类过滤器配置
-    const categoryFilters = vueRef([
-        {
-            id: 'aicr',
-            label: 'aicr',
-            icon: 'fas fa-globe',
-            ariaLabel: '网址管理',
-            link: '/views/aicr/index.html',
-            description: 'AI代码审查工具'
-        },
-        {
-            id: 'news',
-            label: 'news',
-            icon: 'fas fa-newspaper',
-            ariaLabel: '新闻博客',
-            link: '/views/news/index.html',
-            description: '新闻资讯管理'
-        },
-        {
-            id: 'shortcuts',
-            label: 'shortcuts',
-            icon: 'fas fa-keyboard',
-            ariaLabel: '快捷键',
-            link: '/views/shortcuts/index.html',
-            description: '快捷键配置管理'
-        },
-        {
-            id: 'commands',
-            label: 'commands',
-            icon: 'fas fa-terminal',
-            ariaLabel: '命令行',
-            link: '/views/commands/index.html',
-            description: '命令行工具集合'
-        },
-        {
-            id: 'websites',
-            label: 'websites',
-            icon: 'fas fa-globe',
-            ariaLabel: '网址管理',
-            link: '/views/websites/index.html',
-            description: '网址收藏管理'
-        },
-        {
-            id: 'tasks',
-            label: 'tasks',
-            icon: 'fas fa-tasks',
-            ariaLabel: '任务管理',
-            link: '/views/tasks/index.html',
-            description: '任务创建和跟踪'
-        }
-    ]);
+    const categoryFilters = vueRef([]);
 
     /**
      * 强制触发Vue响应式更新
@@ -216,6 +167,8 @@ export const createStore = () => {
         loading.value = true;
         error.value = null;
         try {
+            const categoryFiltersData = await getData(`${window.DATA_URL}/mock/welcome/categoryFilters.json`);
+            categoryFilters.value = categoryFiltersData;
             // 支持本地mock和远程接口切换
             const featureCardsData = await getData(`${window.DATA_URL}/mock/welcome/featureCards.json`);
             console.log('[Store] 加载到的功能卡片数据:', featureCardsData);
