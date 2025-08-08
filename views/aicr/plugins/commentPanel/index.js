@@ -27,21 +27,30 @@ async function loadTemplate() {
 // 新增：异步获取评论数据（从mongo api）
 async function fetchCommentsFromMongo(file) {
     try {
-        // 从header-row的选择器获取项目/版本信息
-        const projectSelect = document.getElementById('projectSelect');
-        const versionSelect = document.getElementById('versionSelect');
-        
+        // 优先从store获取项目/版本信息
         let projectId = null;
         let versionId = null;
         
-        if (projectSelect) {
-            projectId = projectSelect.value;
-            console.log('[CommentPanel] 从选择器获取项目ID:', projectId);
+        if (window.aicrStore) {
+            projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
+            versionId = window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : null;
+            console.log('[CommentPanel] 从store获取项目ID:', projectId, '版本ID:', versionId);
         }
         
-        if (versionSelect) {
-            versionId = versionSelect.value;
-            console.log('[CommentPanel] 从选择器获取版本ID:', versionId);
+        // 如果store中没有，尝试从DOM元素获取
+        if (!projectId || !versionId) {
+            const projectSelect = document.getElementById('projectSelect');
+            const versionSelect = document.getElementById('versionSelect');
+            
+            if (projectSelect) {
+                projectId = projectSelect.value;
+                console.log('[CommentPanel] 从选择器获取项目ID:', projectId);
+            }
+            
+            if (versionSelect) {
+                versionId = versionSelect.value;
+                console.log('[CommentPanel] 从选择器获取版本ID:', versionId);
+            }
         }
         
         // 检查项目/版本信息是否完整
@@ -51,8 +60,7 @@ async function fetchCommentsFromMongo(file) {
             return [];
         }
         
-        // 假设有一个API接口用于获取评论，传入file信息
-        // 你可以根据实际API调整URL和参数
+        // 构建API URL
         let url = `${window.API_URL}/mongodb/?cname=comments`;
         
         // 添加项目/版本参数
@@ -65,14 +73,26 @@ async function fetchCommentsFromMongo(file) {
             const fileId = file.fileId || file.id || file.path || file.key;
             if (fileId) {
                 url += `&fileId=${fileId}`;
+                console.log('[CommentPanel] 添加文件ID到URL:', fileId);
             }
         }
-        // 如果没有文件信息，仍然获取评论数据（可能是页面刷新时的延迟加载）
+        
         console.log('[CommentPanel] 调用MongoDB接口:', url);
         const response = await getData(url, { method: 'GET' });
-        console.log('[CommentPanel] 获取评论数据:', response.data.list);
-        // 期望返回数组，如果response是数组则直接返回，否则返回空数组
-        return Array.isArray(response.data.list) ? response.data.list : [];
+        console.log('[CommentPanel] 获取评论数据响应:', response);
+        
+        // 处理响应数据
+        let comments = [];
+        if (response && response.data && response.data.list) {
+            comments = response.data.list;
+        } else if (Array.isArray(response)) {
+            comments = response;
+        } else if (response && Array.isArray(response.data)) {
+            comments = response.data;
+        }
+        
+        console.log('[CommentPanel] 最终评论数据:', comments);
+        return Array.isArray(comments) ? comments : [];
     } catch (err) {
         console.error('[CommentPanel] 获取评论数据失败:', err);
         return [];
@@ -168,9 +188,12 @@ const createCommentPanel = async () => {
                 }, '评论者统计计算');
             },
             renderComments() {
-                // 如果没有选中文件，但有评论数据，仍然显示评论
-                // 这样可以处理页面刷新时文件选择延迟的情况
+                // 优先使用mongoComments，如果没有则使用props中的comments
                 const commentsToRender = (this.mongoComments && this.mongoComments.length > 0) ? this.mongoComments : this.comments;
+                console.log('[CommentPanel] renderComments - mongoComments:', this.mongoComments);
+                console.log('[CommentPanel] renderComments - props comments:', this.comments);
+                console.log('[CommentPanel] renderComments - commentsToRender:', commentsToRender);
+                
                 const comments = (commentsToRender || []).map(comment => ({
                     ...comment,
                     key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
@@ -179,6 +202,8 @@ const createCommentPanel = async () => {
                     const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
                     return timeB - timeA;
                 });
+                
+                console.log('[CommentPanel] renderComments - 最终评论列表:', comments);
                 
                 // 如果有评论数据，即使没有选中文件也显示
                 if (comments.length > 0) {
@@ -213,22 +238,33 @@ const createCommentPanel = async () => {
             // 加载mongo评论数据
             async loadMongoComments() {
                 return safeExecute(async () => {
-                    if (this._isLoadingComments) return;
+                    if (this._isLoadingComments) {
+                        console.log('[CommentPanel] 评论正在加载中，跳过重复请求');
+                        return;
+                    }
                     
                     this._isLoadingComments = true;
                     this.commentsLoading = true;
                     this.commentsError = '';
 
                     try {
+                        console.log('[CommentPanel] 开始加载评论数据，当前文件:', this.file);
+                        
                         // 即使没有选中文件，也尝试加载评论数据
                         // 这样可以处理页面刷新时文件选择延迟的情况
                         const mongoComments = await fetchCommentsFromMongo(this.file);
+                        
+                        // 确保评论数据有正确的key属性
                         this.mongoComments = mongoComments.map(comment => ({
                             ...comment,
                             key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
                         }));
                         
                         console.log('[CommentPanel] 加载评论数据完成，评论数量:', this.mongoComments.length);
+                        console.log('[CommentPanel] 评论数据详情:', this.mongoComments);
+                        
+                        // 强制更新视图
+                        this.$forceUpdate && this.$forceUpdate();
                     } catch (err) {
                         this.commentsError = '加载评论失败';
                         console.error('[CommentPanel] 评论加载失败:', err);
@@ -981,7 +1017,8 @@ const createCommentPanel = async () => {
                     await this.loadCommenters();
                 }
 
-                // 尝试进行首次加载
+                // 立即尝试加载评论数据
+                console.log('[CommentPanel] 开始加载评论数据');
                 await this.loadMongoComments();
                 
                 // 延迟再次加载评论，确保在文件选择完成后能获取到评论
@@ -989,6 +1026,12 @@ const createCommentPanel = async () => {
                     console.log('[CommentPanel] 延迟加载评论，确保文件选择完成');
                     await this.loadMongoComments();
                 }, 1000);
+                
+                // 再次延迟加载，确保所有数据都已加载完成
+                setTimeout(async () => {
+                    console.log('[CommentPanel] 最终加载评论，确保所有数据加载完成');
+                    await this.loadMongoComments();
+                }, 2000);
             } else {
                 console.warn('[CommentPanel] store初始化超时，使用默认数据');
             }
@@ -998,6 +1041,15 @@ const createCommentPanel = async () => {
                 if (newFile && newFile !== oldFile) {
                     console.log('[CommentPanel] 文件选择变化，重新加载评论:', newFile);
                     await this.loadMongoComments();
+                }
+            });
+            
+            // 监听评论数据变化
+            this.$watch('comments', async (newComments, oldComments) => {
+                if (newComments && newComments !== oldComments) {
+                    console.log('[CommentPanel] 评论数据变化，更新本地数据:', newComments);
+                    // 更新本地评论数据
+                    this.mongoComments = [...(newComments || [])];
                 }
             });
 

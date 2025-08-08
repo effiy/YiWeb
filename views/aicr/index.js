@@ -7,6 +7,9 @@ import { useComputed } from '/views/aicr/hooks/useComputed.js';
 import { useMethods } from '/views/aicr/hooks/useMethods.js';
 import { createBaseView } from '/utils/baseView.js';
 
+// 获取Vue的computed函数
+const { computed } = Vue;
+
 // 创建代码审查页面应用
 (async function initAicrApp() {
     try {
@@ -95,7 +98,41 @@ import { createBaseView } from '/utils/baseView.js';
                 commenters: store.commenters,
                 selectedCommenterIds: store.selectedCommenterIds,
                 commentersLoading: store.commentersLoading,
-                commentersError: store.commentersError
+                commentersError: store.commentersError,
+                
+                // 计算属性
+                currentFile: computed(() => {
+                    const fileId = store.selectedFileId ? store.selectedFileId.value : null;
+                    console.log('[主页面] currentFile计算 - 文件ID:', fileId);
+                    const currentFile = fileId && store.files ? store.files.value.find(f => {
+                        const fileIdentifier = f.fileId || f.id || f.path;
+                        const match = fileIdentifier === fileId;
+                        console.log('[主页面] currentFile计算 - 检查文件:', f.name, '标识符:', fileIdentifier, '匹配:', match);
+                        return match;
+                    }) : null;
+                    console.log('[主页面] currentFile计算 - 找到的文件:', currentFile);
+                    return currentFile;
+                }),
+                currentComments: computed(() => {
+                    const fileId = store.selectedFileId ? store.selectedFileId.value : null;
+                    console.log('[主页面] currentComments计算 - 文件ID:', fileId);
+                    if (!fileId) return [];
+                    
+                    const storeComments = store.comments ? store.comments.value.filter(c => {
+                        const commentFileId = c.fileId || (c.fileInfo && c.fileInfo.path);
+                        const match = commentFileId === fileId;
+                        console.log('[主页面] currentComments计算 - 检查评论:', c.content, '文件ID:', commentFileId, '匹配:', match);
+                        return match;
+                    }) : [];
+                    
+                    const result = storeComments.map(comment => ({
+                        ...comment,
+                        key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
+                    }));
+                    
+                    console.log('[主页面] currentComments计算 - 最终评论:', result);
+                    return result;
+                })
             },
             // 注意：计算属性现在在 useComputed.js 中定义
             // 这里不再需要重复定义
@@ -210,26 +247,31 @@ import { createBaseView } from '/utils/baseView.js';
                 },
                 'comment-panel': {
                     comments: function() { 
-                        console.log('[主页面] 传递给评论面板的评论数据:', this.currentComments);
-                        return this.currentComments; 
+                        // 使用计算属性中的currentComments
+                        const comments = this.currentComments || [];
+                        console.log('[主页面] 传递给评论面板的评论数据:', comments);
+                        return comments; 
                     },
                     file: function() { 
-                        console.log('[主页面] 传递给评论面板的文件数据:', this.currentFile);
-                        return this.currentFile; 
+                        // 使用计算属性中的currentFile
+                        const currentFile = this.currentFile;
+                        console.log('[主页面] 传递给评论面板的文件数据:', currentFile);
+                        return currentFile; 
                     },
                     loading: function() { return store.loading; },
                     error: function() { return store.errorMessage; },
                     // 传递项目/版本信息
                     projectId: function() { 
-                        const projectId = store.selectedProject.value;
+                        const projectId = store.selectedProject ? store.selectedProject.value : null;
                         console.log('[主页面] 传递给评论面板的项目ID:', projectId);
                         return projectId; 
                     },
                     versionId: function() { 
-                        const versionId = store.selectedVersion.value;
+                        const versionId = store.selectedVersion ? store.selectedVersion.value : null;
                         console.log('[主页面] 传递给评论面板的版本ID:', versionId);
                         return versionId; 
-                    }
+                    },
+                    collapsed: function() { return store.commentsCollapsed ? store.commentsCollapsed.value : false; }
                 }
             },
             methods: {

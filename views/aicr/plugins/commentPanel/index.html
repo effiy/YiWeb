@@ -132,7 +132,15 @@
         </div>
 
         <!-- 评论列表 -->
-        <div v-if="renderComments.length > 0" class="comment-list" role="list">
+        <div v-if="renderComments && renderComments.length > 0" class="comment-list" role="list">
+            <!-- 调试信息 -->
+            <div v-if="false" class="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 12px;">
+                <p>调试信息:</p>
+                <p>评论数量: {{ renderComments.length }}</p>
+                <p>文件信息: {{ file ? file.name : '无文件' }}</p>
+                <p>加载状态: {{ loading }}</p>
+                <p>错误信息: {{ error }}</p>
+            </div>
             <article 
                 v-for="comment in renderComments" 
                 :key="comment.key"
@@ -235,7 +243,7 @@
         </div>
         
         <!-- 未选中文件状态 -->
-        <div v-if="!file && renderComments.length === 0" class="no-file-state" role="status">
+        <div v-if="!file && (!renderComments || renderComments.length === 0)" class="no-file-state" role="status">
             <div class="no-file-icon" aria-hidden="true">
                 <i class="fas fa-file-alt"></i>
             </div>
@@ -244,12 +252,18 @@
         </div>
         
         <!-- 无评论状态 -->
-        <div v-else-if="file && renderComments.length === 0" class="no-comments-state" role="status">
+        <div v-else-if="file && (!renderComments || renderComments.length === 0)" class="no-comments-state" role="status">
             <div class="no-comments-icon" aria-hidden="true">
                 <i class="fas fa-comment-slash"></i>
             </div>
             <div class="no-comments-title">暂无评论</div>
             <div class="no-comments-subtitle">开始代码评审，添加第一个评论</div>
+        </div>
+        
+        <!-- 加载状态 -->
+        <div v-else-if="commentsLoading" class="loading-container" role="status" aria-live="polite">
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <div class="loading-text">正在加载评论...</div>
         </div>
     </div>
 
