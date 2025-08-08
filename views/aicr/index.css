@@ -336,7 +336,7 @@
     display: inline-block;
 }
 
-.version-selector-btn {
+.version-select {
     position: relative;
     display: flex;
     align-items: center;
@@ -344,199 +344,73 @@
     min-width: 160px;
     justify-content: space-between;
     transition: all var(--duration-fast) var(--ease-smooth);
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: var(--radius-md, 6px);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    padding: var(--spacing-2) var(--spacing-4);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+    padding-right: 32px;
 }
 
-.version-selector-btn.version-loading {
+.version-select.version-loading {
     background: rgba(79, 172, 254, 0.1);
     border-color: rgba(79, 172, 254, 0.3);
     color: var(--primary-blue);
 }
 
-.version-selector-btn.version-loading i {
-    color: var(--primary-blue);
+.version-select:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.35);
 }
 
-.version-text {
-    flex: 1;
-    text-align: left;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.version-arrow {
-    font-size: 0.75rem;
-    transition: transform var(--duration-fast) var(--ease-smooth);
-    margin-left: auto;
-}
-
-.version-arrow.rotated {
-    transform: rotate(180deg);
-}
-
-.version-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-md, 6px);
-    box-shadow: var(--shadow-lg);
-    z-index: 1000;
-    margin-top: 4px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    animation: versionDropdownSlideIn 0.2s ease-out;
-    min-width: 200px;
-}
-
-.version-dropdown-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--spacing-2) var(--spacing-3);
-    border-bottom: 1px solid var(--border-primary);
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.version-dropdown-title {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
+.version-select:hover:not(:disabled) {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.3);
     color: var(--text-primary);
 }
 
-.version-count {
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
-    background: rgba(255, 255, 255, 0.1);
-    padding: 2px 6px;
-    border-radius: var(--radius-sm);
-}
-
-.version-list {
-    list-style: none;
-    margin: 0;
-    padding: var(--spacing-1);
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.version-item {
-    margin-bottom: 2px;
-}
-
-.version-option {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm, 0.5rem);
-    width: 100%;
-    padding: var(--spacing-2) var(--spacing-3);
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm, 4px);
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-smooth);
-    text-align: left;
-    position: relative;
-}
-
-.version-option:hover {
-    background: rgba(255,255,255,0.1);
-    color: var(--text-primary);
-    transform: translateX(2px);
-}
-
-.version-option.active {
+.version-select.active {
     background: var(--primary-blue);
+    border-color: var(--primary-blue);
     color: #fff;
 }
 
-.version-option.active:hover {
+.version-select.active:hover {
     background: var(--primary-cyan);
+    border-color: var(--primary-cyan);
 }
 
-.version-option.version-loading {
-    background: rgba(79, 172, 254, 0.1);
-    color: var(--primary-blue);
-}
-
-.version-option.version-loading i {
-    color: var(--primary-blue);
-}
-
-.version-name {
-    flex: 1;
-    text-align: left;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.version-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    background: #fff;
-    border-radius: 50%;
-    color: var(--primary-blue);
-    font-size: 0.6rem;
-    animation: versionIndicatorSlideIn 0.3s ease-out;
-}
-
-@keyframes versionIndicatorSlideIn {
-    from {
-        opacity: 0;
-        transform: scale(0.5);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-.version-option i {
-    font-size: var(--font-size-sm);
-    transition: color var(--duration-fast) var(--ease-smooth);
-}
-
-.version-option:hover i {
-    color: var(--text-primary);
-}
-
-.version-option.active i {
-    color: #fff;
-}
-
-.version-dropdown-footer {
-    padding: var(--spacing-2) var(--spacing-3);
-    border-top: 1px solid var(--border-primary);
-    background: rgba(255, 255, 255, 0.02);
-}
-
-.version-tip {
-    font-size: var(--font-size-xs);
+.version-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
     color: var(--text-secondary);
-    text-align: center;
-    display: block;
 }
 
-/* 版本下拉菜单动画 */
-@keyframes versionDropdownSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.version-select option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: var(--spacing-2) var(--spacing-3);
 }
+
+.version-select option:disabled {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* 版本选择器样式已更新为select元素 */
 
 /* 按钮动画 */
 @keyframes filterButtonSlideIn {
@@ -976,20 +850,9 @@
         justify-content: space-between;
     }
     
-    .version-selector-btn {
+    .version-select {
         min-width: 100%;
         justify-content: space-between;
-    }
-    
-    .version-dropdown {
-        position: fixed;
-        top: auto;
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
-        width: 90vw;
-        max-width: 300px;
-        margin-top: 8px;
     }
     
     .refresh-filter-btn {

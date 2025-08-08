@@ -164,11 +164,8 @@ export const useComputed = (store) => {
         }),
 
         /**
-         * 版本选择器展开状态
+         * 版本选择器已改为select元素，不再需要展开状态
          */
-        versionSelectorExpanded: computed(() => {
-            return store.versionSelectorExpanded ? store.versionSelectorExpanded.value : false;
-        }),
 
         /**
          * 是否正在加载

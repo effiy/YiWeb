@@ -36,8 +36,7 @@ export const useMethods = (store) => {
         loadFileTree,
         loadFiles,
         refreshData,
-        // 版本选择器状态
-        versionSelectorExpanded,
+
         // 搜索相关状态
         searchQuery,
         // 加载状态
@@ -979,10 +978,7 @@ export const useMethods = (store) => {
                     await loadVersions(projectId);
                     console.log('[项目切换] 版本列表加载完成');
                     
-                    // 切换项目时关闭版本选择器
-                    if (versionSelectorExpanded) {
-                        versionSelectorExpanded.value = false;
-                    }
+
                     
                     // 显示成功消息
                     showSuccessMessage(`已切换到项目: ${projectId}`);
@@ -1001,13 +997,14 @@ export const useMethods = (store) => {
     /**
      * 处理版本切换
      */
-    const handleVersionChange = (versionId) => {
+    const handleVersionChange = (event) => {
         return safeExecute(async () => {
+            const versionId = event.target.value;
             console.log('[版本切换] 开始处理版本切换:', versionId);
             console.log('[版本切换] 当前selectedVersion:', selectedVersion?.value);
             console.log('[版本切换] 当前availableVersions:', availableVersions?.value);
             
-            if (versionId) {
+            if (versionId && versionId !== '') {
                 console.log('[版本切换] 开始切换到版本:', versionId);
                 
                 // 设置loading状态
@@ -1037,11 +1034,6 @@ export const useMethods = (store) => {
                     await loadComments(selectedProject.value, versionId);
                     console.log('[版本切换] 评论数据加载完成');
                     
-                    // 选择版本后关闭版本选择器
-                    if (versionSelectorExpanded) {
-                        versionSelectorExpanded.value = false;
-                    }
-                    
                     // 显示成功消息
                     showSuccessMessage(`已切换到版本: ${versionId}`);
                     
@@ -1053,7 +1045,7 @@ export const useMethods = (store) => {
                     loading.value = false;
                 }
             } else {
-                console.warn('[版本切换] versionId为空');
+                console.warn('[版本切换] versionId为空或无效');
             }
         }, '版本切换处理');
     };
@@ -1069,22 +1061,8 @@ export const useMethods = (store) => {
     };
 
     /**
-     * 切换版本选择器
+     * 版本选择器已改为select元素，不再需要切换方法
      */
-    const toggleVersionSelector = () => {
-        return safeExecute(() => {
-            console.log('[版本选择器] 开始切换，当前状态:', versionSelectorExpanded?.value);
-            console.log('[版本选择器] selectedProject:', selectedProject?.value);
-            console.log('[版本选择器] availableVersions:', availableVersions?.value);
-            
-            if (versionSelectorExpanded) {
-                versionSelectorExpanded.value = !versionSelectorExpanded.value;
-                console.log('[版本选择器] 切换展开状态:', versionSelectorExpanded.value);
-            } else {
-                console.warn('[版本选择器] versionSelectorExpanded未定义');
-            }
-        }, '版本选择器切换');
-    };
 
     return {
         openLink,
@@ -1108,7 +1086,6 @@ export const useMethods = (store) => {
         handleProjectChange,
         handleVersionChange,
         refreshData: handleRefreshData,
-        toggleVersionSelector,
         // 搜索相关方法
         handleSearchInput,
         clearSearch,

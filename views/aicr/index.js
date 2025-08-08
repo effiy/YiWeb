@@ -86,7 +86,7 @@ import { createBaseView } from '/utils/baseView.js';
                 selectedProject: store.selectedProject,
                 selectedVersion: store.selectedVersion,
                 availableVersions: store.availableVersions,
-                versionSelectorExpanded: store.versionSelectorExpanded,
+
                 // 搜索相关状态
                 searchQuery: store.searchQuery,
                 // 新增评论内容
@@ -162,13 +162,6 @@ import { createBaseView } from '/utils/baseView.js';
                 window.addEventListener('click', (e) => {
                     if (!e.target.closest('.comment-item')) {
                         if (window.aicrApp && window.aicrApp.reload) window.aicrApp.reload();
-                    }
-                    
-                    // 点击外部关闭版本选择器
-                    if (!e.target.closest('.version-selector')) {
-                        if (store && store.versionSelectorExpanded) {
-                            store.versionSelectorExpanded.value = false;
-                        }
                     }
                 });
                 
