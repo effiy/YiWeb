@@ -506,35 +506,7 @@ export const createStore = () => {
             console.log('[loadProjects] 正在加载项目列表...');
             
             // 重构后的项目数据结构：一个项目对应多个版本
-            const mockProjects = [
-                {
-                    id: 'YiAi',
-                    name: 'YiAI',
-                    versions: [
-                        { id: '2025-07-30', name: '2025-07-30' },
-                        { id: '2025-07-29', name: '2025-07-29' },
-                        { id: '2025-07-28', name: '2025-07-28' }
-                    ]
-                },
-                {
-                    id: 'YiWeb',
-                    name: 'YiWeb',
-                    versions: [
-                        { id: '2025-07-30', name: '2025-07-30' },
-                        { id: '2025-07-29', name: '2025-07-29' },
-                        { id: '2025-07-28', name: '2025-07-28' }
-                    ]
-                },
-                {
-                    id: 'YiMobile',
-                    name: 'YiMobile',
-                    versions: [
-                        { id: '2025-07-30', name: '2025-07-30' },
-                        { id: '2025-07-29', name: '2025-07-29' },
-                        { id: '2025-07-28', name: '2025-07-28' }
-                    ]
-                }
-            ];
+            const mockProjects = await getData(`${window.DATA_URL}/mock/aicr/projects.json`);
             
             projects.value = mockProjects;
             console.log('[loadProjects] 成功加载项目列表:', mockProjects);
