@@ -86,6 +86,7 @@ import { createBaseView } from '/utils/baseView.js';
                 selectedProject: store.selectedProject,
                 selectedVersion: store.selectedVersion,
                 availableVersions: store.availableVersions,
+                versionSelectorExpanded: store.versionSelectorExpanded,
                 // 搜索相关状态
                 searchQuery: store.searchQuery,
                 // 新增评论内容
@@ -96,59 +97,8 @@ import { createBaseView } from '/utils/baseView.js';
                 commentersLoading: store.commentersLoading,
                 commentersError: store.commentersError
             },
-            computed: {
-                // 选中的文件ID
-                selectedFileId() {
-                    return store.selectedFileId.value;
-                },
-                
-                // 当前文件
-                currentFile() {
-                    const fileId = store.selectedFileId.value;
-                    console.log('[currentFile] 当前文件ID:', fileId);
-                    console.log('[currentFile] store.files:', store.files);
-                    
-                    if (!fileId || !store.files) return null;
-                    
-                    const currentFile = store.files.find(f => {
-                        const fileIdentifier = f.fileId || f.id || f.path;
-                        const match = fileIdentifier === fileId;
-                        console.log('[currentFile] 检查文件:', f.name, '标识符:', fileIdentifier, '匹配:', match);
-                        return match;
-                    });
-                    
-                    console.log('[currentFile] 找到的当前文件:', currentFile);
-                    return currentFile;
-                },
-                
-                // 当前文件的评论
-                currentComments() {
-                    const fileId = store.selectedFileId.value;
-                    console.log('[currentComments] 当前文件ID:', fileId);
-                    console.log('[currentComments] store.comments:', store.comments);
-                    
-                    // 合并本地评论和store中的评论
-                    const localComments = localState.codeComments.filter(c => c.fileId === fileId);
-                    const storeComments = store.comments ? store.comments.filter(c => {
-                        // 兼容不同的文件标识方式
-                        const commentFileId = c.fileId || (c.fileInfo && c.fileInfo.path);
-                        console.log('[currentComments] 评论文件ID:', commentFileId, '当前文件ID:', fileId);
-                        return commentFileId === fileId;
-                    }) : [];
-                    const allComments = [...localComments, ...storeComments];
-                    
-                    console.log('[currentComments] 本地评论数量:', localComments.length);
-                    console.log('[currentComments] store评论数量:', storeComments.length);
-                    console.log('[currentComments] 总评论数量:', allComments.length);
-                    console.log('[currentComments] 所有评论详情:', allComments);
-                    
-                    // 确保返回的评论有正确的key属性
-                    return allComments.map(comment => ({
-                        ...comment,
-                        key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
-                    }));
-                }
-            },
+            // 注意：计算属性现在在 useComputed.js 中定义
+            // 这里不再需要重复定义
             onMounted: (mountedApp) => {
                 console.log('[代码审查页面] 应用已挂载');
                 if (store) {

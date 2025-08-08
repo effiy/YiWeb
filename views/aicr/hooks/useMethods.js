@@ -33,11 +33,15 @@ export const useMethods = (store) => {
         setSelectedProject,
         setSelectedVersion,
         loadVersions,
+        loadFileTree,
+        loadFiles,
         refreshData,
         // 版本选择器状态
         versionSelectorExpanded,
         // 搜索相关状态
-        searchQuery
+        searchQuery,
+        // 加载状态
+        loading
     } = store;
 
     // 搜索相关状态
@@ -949,19 +953,46 @@ export const useMethods = (store) => {
      * 处理项目切换
      */
     const handleProjectChange = (projectId) => {
-        return safeExecute(() => {
+        return safeExecute(async () => {
             if (projectId) {
-                setSelectedProject(projectId);
-                // 加载对应项目的版本列表
-                loadVersions(projectId);
-                console.log('[项目切换] 切换到项目:', projectId);
+                console.log('[项目切换] 开始切换到项目:', projectId);
                 
-                // 清空评论数据，等待版本选择后重新加载
-                comments.value = [];
+                // 设置loading状态
+                loading.value = true;
                 
-                // 切换项目时关闭版本选择器
-                if (versionSelectorExpanded) {
-                    versionSelectorExpanded.value = false;
+                try {
+                    // 设置选中的项目
+                    setSelectedProject(projectId);
+                    console.log('[项目切换] 项目已设置:', projectId);
+                    
+                    // 清空版本选择
+                    setSelectedVersion('');
+                    
+                    // 清空评论数据，等待版本选择后重新加载
+                    comments.value = [];
+                    
+                    // 清空文件选择
+                    setSelectedFileId(null);
+                    
+                    // 加载对应项目的版本列表
+                    console.log('[项目切换] 开始加载版本列表...');
+                    await loadVersions(projectId);
+                    console.log('[项目切换] 版本列表加载完成');
+                    
+                    // 切换项目时关闭版本选择器
+                    if (versionSelectorExpanded) {
+                        versionSelectorExpanded.value = false;
+                    }
+                    
+                    // 显示成功消息
+                    showSuccessMessage(`已切换到项目: ${projectId}`);
+                    
+                } catch (error) {
+                    console.error('[项目切换] 项目切换失败:', error);
+                    throw createError(`项目切换失败: ${error.message}`, ErrorTypes.API, '项目切换');
+                } finally {
+                    // 清除loading状态
+                    loading.value = false;
                 }
             }
         }, '项目切换处理');
@@ -971,27 +1002,55 @@ export const useMethods = (store) => {
      * 处理版本切换
      */
     const handleVersionChange = (versionId) => {
-        return safeExecute(() => {
+        return safeExecute(async () => {
             console.log('[版本切换] 开始处理版本切换:', versionId);
             console.log('[版本切换] 当前selectedVersion:', selectedVersion?.value);
             console.log('[版本切换] 当前availableVersions:', availableVersions?.value);
             
             if (versionId) {
-                setSelectedVersion(versionId);
-                console.log('[版本切换] 切换到版本:', versionId);
-                console.log('[版本切换] 设置后的selectedVersion:', selectedVersion?.value);
+                console.log('[版本切换] 开始切换到版本:', versionId);
                 
-                // 版本切换后重新加载评论数据
-                setTimeout(async () => {
-                    if (selectedProject.value && selectedVersion.value) {
-                        console.log('[版本切换] 项目/版本信息完整，重新加载评论');
-                        await loadComments(selectedProject.value, selectedVersion.value);
+                // 设置loading状态
+                loading.value = true;
+                
+                try {
+                    // 设置选中的版本
+                    setSelectedVersion(versionId);
+                    console.log('[版本切换] 版本已设置:', versionId);
+                    
+                    // 清空文件选择
+                    setSelectedFileId(null);
+                    
+                    // 清空评论数据
+                    comments.value = [];
+                    
+                    // 加载文件树和文件数据
+                    console.log('[版本切换] 开始加载文件树和文件数据...');
+                    await Promise.all([
+                        loadFileTree(selectedProject.value, versionId),
+                        loadFiles(selectedProject.value, versionId)
+                    ]);
+                    console.log('[版本切换] 文件树和文件数据加载完成');
+                    
+                    // 加载评论数据
+                    console.log('[版本切换] 开始加载评论数据...');
+                    await loadComments(selectedProject.value, versionId);
+                    console.log('[版本切换] 评论数据加载完成');
+                    
+                    // 选择版本后关闭版本选择器
+                    if (versionSelectorExpanded) {
+                        versionSelectorExpanded.value = false;
                     }
-                }, 100);
-                
-                // 选择版本后关闭版本选择器
-                if (versionSelectorExpanded) {
-                    versionSelectorExpanded.value = false;
+                    
+                    // 显示成功消息
+                    showSuccessMessage(`已切换到版本: ${versionId}`);
+                    
+                } catch (error) {
+                    console.error('[版本切换] 版本切换失败:', error);
+                    throw createError(`版本切换失败: ${error.message}`, ErrorTypes.API, '版本切换');
+                } finally {
+                    // 清除loading状态
+                    loading.value = false;
                 }
             } else {
                 console.warn('[版本切换] versionId为空');

@@ -26,22 +26,63 @@ export const useComputed = (store) => {
         }),
 
         /**
+         * 选中的文件ID
+         */
+        selectedFileId: computed(() => {
+            return store.selectedFileId?.value;
+        }),
+
+        /**
          * 当前选中的文件
          */
         currentFile: computed(() => {
-            if (!store.selectedFileId?.value || !store.files?.value) return null;
-            return store.files.value.find(f => f.fileId === store.selectedFileId.value);
+            const fileId = store.selectedFileId?.value;
+            console.log('[currentFile] 当前文件ID:', fileId);
+            console.log('[currentFile] store.files:', store.files);
+            
+            if (!fileId || !store.files?.value) return null;
+            
+            const currentFile = store.files.value.find(f => {
+                const fileIdentifier = f.fileId || f.id || f.path;
+                const match = fileIdentifier === fileId;
+                console.log('[currentFile] 检查文件:', f.name, '标识符:', fileIdentifier, '匹配:', match);
+                return match;
+            });
+            
+            console.log('[currentFile] 找到的当前文件:', currentFile);
+            return currentFile;
         }),
 
         /**
          * 当前文件的评论
          */
         currentComments: computed(() => {
-            if (!store.selectedFileId?.value || !store.comments?.value) return [];
-            return store.comments.value.filter(c => {
+            const fileId = store.selectedFileId?.value;
+            console.log('[currentComments] 当前文件ID:', fileId);
+            console.log('[currentComments] store.comments:', store.comments);
+            
+            if (!fileId) return [];
+            
+            // 合并本地评论和store中的评论
+            const localComments = []; // 这里可以添加本地评论逻辑
+            const storeComments = store.comments?.value ? store.comments.value.filter(c => {
                 // 兼容不同的文件标识方式
-                return c.fileId === store.selectedFileId.value || (c.fileInfo && c.fileInfo.path === store.selectedFileId.value);
-            });
+                const commentFileId = c.fileId || (c.fileInfo && c.fileInfo.path);
+                console.log('[currentComments] 评论文件ID:', commentFileId, '当前文件ID:', fileId);
+                return commentFileId === fileId;
+            }) : [];
+            const allComments = [...localComments, ...storeComments];
+            
+            console.log('[currentComments] 本地评论数量:', localComments.length);
+            console.log('[currentComments] store评论数量:', storeComments.length);
+            console.log('[currentComments] 总评论数量:', allComments.length);
+            console.log('[currentComments] 所有评论详情:', allComments);
+            
+            // 确保返回的评论有正确的key属性
+            return allComments.map(comment => ({
+                ...comment,
+                key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
+            }));
         }),
 
         /**
@@ -102,6 +143,31 @@ export const useComputed = (store) => {
             }
             
             return stats;
+        }),
+
+        /**
+         * 选中的版本名称
+         */
+        selectedVersionName: computed(() => {
+            if (!store.selectedVersion?.value) return '';
+            const version = store.availableVersions?.value?.find(v => v.id === store.selectedVersion.value);
+            return version ? version.name : '';
+        }),
+
+        /**
+         * 选中的项目名称
+         */
+        selectedProjectName: computed(() => {
+            if (!store.selectedProject?.value) return '';
+            const project = store.projects?.value?.find(p => p.id === store.selectedProject.value);
+            return project ? project.name : '';
+        }),
+
+        /**
+         * 版本选择器展开状态
+         */
+        versionSelectorExpanded: computed(() => {
+            return store.versionSelectorExpanded ? store.versionSelectorExpanded.value : false;
         }),
 
         /**

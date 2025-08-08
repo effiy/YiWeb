@@ -159,9 +159,19 @@
 }
 
 /* 刷新按钮特殊样式 */
+.refresh-item {
+    position: relative;
+}
+
 .refresh-filter-btn {
     background: rgba(255,255,255,0.1);
     border: 1px solid rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    min-width: 100px;
+    justify-content: center;
+    transition: all var(--duration-fast) var(--ease-smooth);
 }
 
 .refresh-filter-btn:hover:not(:disabled) {
@@ -171,10 +181,33 @@
     transform: translateY(-1px);
 }
 
+.refresh-filter-btn.refresh-loading {
+    background: rgba(79, 172, 254, 0.1);
+    border-color: rgba(79, 172, 254, 0.3);
+    color: var(--primary-blue);
+}
+
+.refresh-filter-btn.refresh-loading i {
+    color: var(--primary-blue);
+}
+
 .refresh-filter-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+}
+
+.refresh-filter-btn:disabled:hover {
+    transform: none;
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+}
+
+.refresh-text {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
 }
 
 .refresh-filter-btn i {
@@ -184,6 +217,113 @@
 
 .refresh-filter-btn:hover:not(:disabled) i {
     color: var(--text-primary);
+}
+
+/* 项目版本状态指示器 */
+.project-version-status {
+    margin-top: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    background: rgba(79, 172, 254, 0.1);
+    border: 1px solid rgba(79, 172, 254, 0.2);
+    border-radius: var(--radius-md);
+    animation: statusIndicatorSlideIn 0.3s ease-out;
+}
+
+@keyframes statusIndicatorSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.status-dot {
+    font-size: 0.5rem;
+    color: var(--primary-blue);
+    animation: statusDotPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusDotPulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.2);
+    }
+}
+
+.status-text {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+}
+
+/* 项目选择器样式 */
+.project-item {
+    position: relative;
+}
+
+.project-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    min-width: 120px;
+    justify-content: space-between;
+    transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.project-btn.project-loading {
+    background: rgba(79, 172, 254, 0.1);
+    border-color: rgba(79, 172, 254, 0.3);
+    color: var(--primary-blue);
+}
+
+.project-btn.project-loading i {
+    color: var(--primary-blue);
+}
+
+.project-name {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.project-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background: var(--primary-blue);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 0.6rem;
+    animation: projectIndicatorSlideIn 0.3s ease-out;
+}
+
+@keyframes projectIndicatorSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 /* 版本选择器样式 */
@@ -201,8 +341,19 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm, 0.5rem);
-    min-width: 140px;
+    min-width: 160px;
     justify-content: space-between;
+    transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.version-selector-btn.version-loading {
+    background: rgba(79, 172, 254, 0.1);
+    border-color: rgba(79, 172, 254, 0.3);
+    color: var(--primary-blue);
+}
+
+.version-selector-btn.version-loading i {
+    color: var(--primary-blue);
 }
 
 .version-text {
@@ -237,6 +388,30 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     animation: versionDropdownSlideIn 0.2s ease-out;
+    min-width: 200px;
+}
+
+.version-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-2) var(--spacing-3);
+    border-bottom: 1px solid var(--border-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.version-dropdown-title {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+}
+
+.version-count {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
 }
 
 .version-list {
@@ -245,6 +420,10 @@
     padding: var(--spacing-1);
     max-height: 200px;
     overflow-y: auto;
+}
+
+.version-item {
+    margin-bottom: 2px;
 }
 
 .version-option {
@@ -262,11 +441,13 @@
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-smooth);
     text-align: left;
+    position: relative;
 }
 
 .version-option:hover {
     background: rgba(255,255,255,0.1);
     color: var(--text-primary);
+    transform: translateX(2px);
 }
 
 .version-option.active {
@@ -276,6 +457,47 @@
 
 .version-option.active:hover {
     background: var(--primary-cyan);
+}
+
+.version-option.version-loading {
+    background: rgba(79, 172, 254, 0.1);
+    color: var(--primary-blue);
+}
+
+.version-option.version-loading i {
+    color: var(--primary-blue);
+}
+
+.version-name {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.version-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    color: var(--primary-blue);
+    font-size: 0.6rem;
+    animation: versionIndicatorSlideIn 0.3s ease-out;
+}
+
+@keyframes versionIndicatorSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .version-option i {
@@ -289,6 +511,19 @@
 
 .version-option.active i {
     color: #fff;
+}
+
+.version-dropdown-footer {
+    padding: var(--spacing-2) var(--spacing-3);
+    border-top: 1px solid var(--border-primary);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.version-tip {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    text-align: center;
+    display: block;
 }
 
 /* 版本下拉菜单动画 */
@@ -736,6 +971,11 @@
         min-width: 120px;
     }
     
+    .project-btn {
+        min-width: 100%;
+        justify-content: space-between;
+    }
+    
     .version-selector-btn {
         min-width: 100%;
         justify-content: space-between;
@@ -754,6 +994,16 @@
     
     .refresh-filter-btn {
         align-self: center;
+        min-width: 100%;
+    }
+    
+    .project-version-status {
+        margin-top: var(--spacing-1);
+        padding: var(--spacing-1) var(--spacing-2);
+    }
+    
+    .status-text {
+        font-size: var(--font-size-xs);
     }
 }
 

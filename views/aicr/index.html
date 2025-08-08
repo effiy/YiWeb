@@ -51,15 +51,22 @@
             <nav class="category-filters" id="category-filters" role="toolbar" aria-label="项目版本过滤器">
                 <ul class="filter-buttons">
                     <!-- 项目选择器 -->
-                    <li v-for="project in projects" :key="project.id">
+                    <li v-for="project in projects" :key="project.id" class="project-item">
                         <button 
-                            class="filter-btn" 
-                            :class="{ active: selectedProject === project.id }"
+                            class="filter-btn project-btn" 
+                            :class="{ 
+                                active: selectedProject === project.id,
+                                'project-loading': loading && selectedProject === project.id 
+                            }"
                             :data-project="project.id"
                             @click="handleProjectChange(project.id)"
-                            :disabled="loading">
-                            <i class="fas fa-folder"></i>
-                            {{ project.name }}
+                            :disabled="loading"
+                            :title="`选择项目: ${project.name}`">
+                            <i class="fas fa-folder" :class="{ 'fa-spin': loading && selectedProject === project.id }"></i>
+                            <span class="project-name">{{ project.name }}</span>
+                            <span class="project-indicator" v-if="selectedProject === project.id">
+                                <i class="fas fa-check"></i>
+                            </span>
                         </button>
                     </li>
                     
@@ -68,44 +75,71 @@
                         <div class="version-selector" :class="{ expanded: versionSelectorExpanded }">
                             <button 
                                 class="filter-btn version-selector-btn" 
-                                :class="{ active: selectedVersion && selectedVersion !== '' }"
+                                :class="{ 
+                                    active: selectedVersion && selectedVersion !== '',
+                                    'version-loading': loading && !selectedVersion
+                                }"
                                 @click="toggleVersionSelector"
-                                :disabled="!selectedProject || loading">
-                                <i class="fas fa-tag"></i>
-                                <span class="version-text">{{ selectedVersionName || '选择版本' }}</span>
+                                :disabled="!selectedProject || loading"
+                                :title="selectedVersionName ? `当前版本: ${selectedVersionName}` : '请先选择项目'">
+                                <i class="fas fa-tag" :class="{ 'fa-spin': loading && !selectedVersion }"></i>
+                                <span class="version-text">{{ selectedVersionName || (selectedProject ? '选择版本' : '请先选择项目') }}</span>
                                 <i class="fas fa-chevron-down version-arrow" :class="{ rotated: versionSelectorExpanded }"></i>
                             </button>
                             
                             <!-- 版本下拉菜单 -->
                             <div class="version-dropdown" v-show="versionSelectorExpanded && availableVersions.length > 0">
+                                <div class="version-dropdown-header">
+                                    <span class="version-dropdown-title">选择版本</span>
+                                    <span class="version-count">{{ availableVersions.length }} 个版本</span>
+                                </div>
                                 <ul class="version-list">
-                                    <li v-for="version in availableVersions" :key="version.id">
+                                    <li v-for="version in availableVersions" :key="version.id" class="version-item">
                                         <button 
                                             class="version-option" 
-                                            :class="{ active: selectedVersion && selectedVersion === version.id }"
-                                            @click="handleVersionChange(version.id)">
+                                            :class="{ 
+                                                active: selectedVersion && selectedVersion === version.id,
+                                                'version-loading': loading && selectedVersion === version.id
+                                            }"
+                                            @click="handleVersionChange(version.id)"
+                                            :title="`选择版本: ${version.name}`">
                                             <i class="fas fa-tag"></i>
-                                            {{ version.name }}
+                                            <span class="version-name">{{ version.name }}</span>
+                                            <span class="version-indicator" v-if="selectedVersion && selectedVersion === version.id">
+                                                <i class="fas fa-check"></i>
+                                            </span>
                                         </button>
                                     </li>
                                 </ul>
+                                <div class="version-dropdown-footer">
+                                    <span class="version-tip">选择版本后将自动加载对应数据</span>
+                                </div>
                             </div>
                         </div>
                     </li>
                     
                     <!-- 刷新按钮 -->
-                    <li>
+                    <li class="refresh-item">
                         <button 
                             type="button" 
                             @click="refreshData"
-                            :disabled="loading"
+                            :disabled="loading || !selectedProject || !selectedVersion"
                             class="filter-btn refresh-filter-btn"
-                            aria-label="刷新数据">
+                            :class="{ 'refresh-loading': loading }"
+                            :title="!selectedProject || !selectedVersion ? '请先选择项目和版本' : '刷新当前项目版本数据'">
                             <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }"></i>
-                            刷新
+                            <span class="refresh-text">刷新</span>
                         </button>
                     </li>
                 </ul>
+                
+                <!-- 项目版本状态指示器 -->
+                <div class="project-version-status" v-if="selectedProject && selectedVersion">
+                    <div class="status-indicator">
+                        <i class="fas fa-circle status-dot"></i>
+                        <span class="status-text">{{ selectedProjectName }} / {{ selectedVersionName }}</span>
+                    </div>
+                </div>
             </nav>
             
         </section>
