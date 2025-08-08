@@ -59,6 +59,7 @@ async function fetchCommentsFromMongo(file) {
         url += `&projectId=${projectId}`;
         url += `&versionId=${versionId}`;
         
+        // 如果有文件信息，添加到URL中
         if (file) {
             // 兼容不同的文件ID字段
             const fileId = file.fileId || file.id || file.path || file.key;
@@ -66,6 +67,7 @@ async function fetchCommentsFromMongo(file) {
                 url += `&fileId=${fileId}`;
             }
         }
+        // 如果没有文件信息，仍然获取评论数据（可能是页面刷新时的延迟加载）
         console.log('[CommentPanel] 调用MongoDB接口:', url);
         const response = await getData(url, { method: 'GET' });
         console.log('[CommentPanel] 获取评论数据:', response.data.list);
@@ -142,6 +144,7 @@ const createCommentPanel = async () => {
                 _lastFileId: null,
                 _commentLoadTimeout: null,
                 _isLoadingComments: false,
+                _isLoadingCommenters: false,
                 showCommenterEditor: false,
                 editingCommenter: null,
                 originalCommenter: null
@@ -165,8 +168,10 @@ const createCommentPanel = async () => {
                 }, '评论者统计计算');
             },
             renderComments() {
+                // 如果没有选中文件，但有评论数据，仍然显示评论
+                // 这样可以处理页面刷新时文件选择延迟的情况
                 const commentsToRender = (this.mongoComments && this.mongoComments.length > 0) ? this.mongoComments : this.comments;
-                return (commentsToRender || []).map(comment => ({
+                const comments = (commentsToRender || []).map(comment => ({
                     ...comment,
                     key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
                 })).sort((a, b) => {
@@ -174,6 +179,18 @@ const createCommentPanel = async () => {
                     const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
                     return timeB - timeA;
                 });
+                
+                // 如果有评论数据，即使没有选中文件也显示
+                if (comments.length > 0) {
+                    return comments;
+                }
+                
+                // 如果没有评论数据且没有选中文件，返回空数组
+                if (!this.file) {
+                    return [];
+                }
+                
+                return comments;
             },
             // 检查是否应该自动关闭评论者编辑器
             shouldAutoCloseEditor() {
@@ -203,11 +220,15 @@ const createCommentPanel = async () => {
                     this.commentsError = '';
 
                     try {
+                        // 即使没有选中文件，也尝试加载评论数据
+                        // 这样可以处理页面刷新时文件选择延迟的情况
                         const mongoComments = await fetchCommentsFromMongo(this.file);
                         this.mongoComments = mongoComments.map(comment => ({
                             ...comment,
                             key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
                         }));
+                        
+                        console.log('[CommentPanel] 加载评论数据完成，评论数量:', this.mongoComments.length);
                     } catch (err) {
                         this.commentsError = '加载评论失败';
                         console.error('[CommentPanel] 评论加载失败:', err);
@@ -221,6 +242,13 @@ const createCommentPanel = async () => {
             // 加载评论者数据
             async loadCommenters() {
                 return safeExecute(async () => {
+                    // 防止重复加载
+                    if (this._isLoadingCommenters) {
+                        console.log('[CommentPanel] 评论者数据正在加载中，跳过重复请求');
+                        return;
+                    }
+                    
+                    this._isLoadingCommenters = true;
                     this.commentersLoading = true;
                     this.commentersError = '';
 
@@ -303,6 +331,7 @@ const createCommentPanel = async () => {
                         this.selectedCommenterIds = [];
                     } finally {
                         this.commentersLoading = false;
+                        this._isLoadingCommenters = false;
                     }
                 }, '评论者数据加载');
             },
@@ -935,14 +964,42 @@ const createCommentPanel = async () => {
             if (window.aicrStore) {
                 console.log('[CommentPanel] store已初始化，开始加载数据');
                 
-                // 加载评论者数据
-                await this.loadCommenters();
+                // 检查store中是否已经有评论者数据，如果有则直接使用
+                if (window.aicrStore.commenters && window.aicrStore.commenters.value && window.aicrStore.commenters.value.length > 0) {
+                    console.log('[CommentPanel] store中已有评论者数据，直接使用');
+                    this.commenters = [...window.aicrStore.commenters.value];
+                    
+                    // 从store获取选中状态
+                    if (window.aicrStore.selectedCommenterIds && window.aicrStore.selectedCommenterIds.value) {
+                        this.selectedCommenterIds = [...window.aicrStore.selectedCommenterIds.value];
+                    } else if (this.commenters.length > 0) {
+                        this.selectedCommenterIds = [this.commenters[0].key];
+                    }
+                } else {
+                    console.log('[CommentPanel] store中没有评论者数据，开始加载');
+                    // 加载评论者数据
+                    await this.loadCommenters();
+                }
 
                 // 尝试进行首次加载
                 await this.loadMongoComments();
+                
+                // 延迟再次加载评论，确保在文件选择完成后能获取到评论
+                setTimeout(async () => {
+                    console.log('[CommentPanel] 延迟加载评论，确保文件选择完成');
+                    await this.loadMongoComments();
+                }, 1000);
             } else {
                 console.warn('[CommentPanel] store初始化超时，使用默认数据');
             }
+            
+            // 监听文件选择变化，重新加载评论
+            this.$watch('file', async (newFile, oldFile) => {
+                if (newFile && newFile !== oldFile) {
+                    console.log('[CommentPanel] 文件选择变化，重新加载评论:', newFile);
+                    await this.loadMongoComments();
+                }
+            });
 
             console.log('[CommentPanel] 组件挂载完成，评论者数据:', this.commenters);
             console.log('[CommentPanel] 选中的评论者:', this.selectedCommenterIds);
@@ -952,6 +1009,79 @@ const createCommentPanel = async () => {
                 console.log('[CommentPanel] 收到项目/版本变化事件:', event.detail);
                 // 重新加载评论者数据
                 await this.loadCommenters();
+                // 重新加载评论数据
+                await this.loadMongoComments();
+            });
+            
+            // 监听getSelectedCommenters事件，响应codeView组件获取选中评论者的请求
+            window.addEventListener('getSelectedCommenters', (event) => {
+                console.log('[CommentPanel] 收到getSelectedCommenters事件');
+                const { callback } = event.detail;
+                
+                if (typeof callback === 'function') {
+                    // 获取选中的评论者
+                    const selectedCommenters = this.commenters.filter(c => 
+                        this.selectedCommenterIds.includes(c.key)
+                    );
+                    
+                    console.log('[CommentPanel] 返回选中的评论者:', selectedCommenters);
+                    callback(selectedCommenters);
+                }
+            });
+            
+            // 监听addNewComment事件，处理从codeView组件发送的新评论
+            window.addEventListener('addNewComment', (event) => {
+                console.log('[CommentPanel] 收到addNewComment事件');
+                const { comment } = event.detail;
+                
+                if (comment) {
+                    console.log('[CommentPanel] 添加新评论到本地数据:', comment);
+                    this.addCommentToLocalData(comment);
+                }
+            });
+            
+            // 监听focusCommentPanel事件，处理从codeView组件发送的聚焦请求
+            window.addEventListener('focusCommentPanel', (event) => {
+                console.log('[CommentPanel] 收到focusCommentPanel事件');
+                
+                // 确保评论面板展开
+                if (this.collapsed) {
+                    this.$emit('toggle-collapse');
+                }
+                
+                // 高亮评论者选择区域
+                setTimeout(() => {
+                    const avatarsContainer = document.querySelector('.avatars-container');
+                    if (avatarsContainer) {
+                        avatarsContainer.style.transition = 'all 0.3s ease';
+                        avatarsContainer.style.boxShadow = '0 0 15px rgba(79,70,229,0.4)';
+                        avatarsContainer.style.border = '2px solid rgba(79,70,229,0.6)';
+                        avatarsContainer.style.borderRadius = '8px';
+                        
+                        setTimeout(() => {
+                            avatarsContainer.style.boxShadow = '';
+                            avatarsContainer.style.border = '';
+                        }, 3000);
+                    }
+                    
+                    // 如果没有评论者，自动打开评论者编辑器
+                    if (this.commenters.length === 0) {
+                        setTimeout(() => {
+                            this.openCommenterEditor();
+                        }, 500);
+                    }
+                }, 100);
+            });
+            
+            // 监听reloadComments事件，重新加载评论数据
+            window.addEventListener('reloadComments', async (event) => {
+                console.log('[CommentPanel] 收到reloadComments事件');
+                const { projectId, versionId, forceReload } = event.detail;
+                
+                if (forceReload) {
+                    console.log('[CommentPanel] 强制重新加载评论数据');
+                    await this.loadMongoComments();
+                }
             });
             
             // 监听shouldAutoCloseEditor的变化

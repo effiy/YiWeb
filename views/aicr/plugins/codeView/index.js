@@ -1257,6 +1257,46 @@ const createCodeView = async () => {
                                             }
                                         } else {
                                             console.log('没有选中任何评论者');
+                                            
+                                            // 显示友好的提示信息
+                                            const { showMessage } = await import('/utils/message.js');
+                                            showMessage({
+                                                type: 'warning',
+                                                title: '请先选择评论者',
+                                                content: '在添加评论之前，请先在右侧评论面板中选择一个或多个评论者。',
+                                                duration: 5000,
+                                                showClose: true,
+                                                actions: [
+                                                    {
+                                                        text: '去选择评论者',
+                                                        type: 'primary',
+                                                        action: () => {
+                                                            // 触发评论面板展开事件
+                                                            window.dispatchEvent(new CustomEvent('focusCommentPanel'));
+                                                        }
+                                                    },
+                                                    {
+                                                        text: '我知道了',
+                                                        type: 'default',
+                                                        action: () => {}
+                                                    }
+                                                ]
+                                            });
+                                            
+                                            // 可选：高亮评论面板区域
+                                            setTimeout(() => {
+                                                const commentPanel = document.querySelector('.comment-panel-container');
+                                                if (commentPanel) {
+                                                    commentPanel.style.transition = 'all 0.3s ease';
+                                                    commentPanel.style.boxShadow = '0 0 20px rgba(79,70,229,0.3)';
+                                                    commentPanel.style.border = '2px solid rgba(79,70,229,0.5)';
+                                                    
+                                                    setTimeout(() => {
+                                                        commentPanel.style.boxShadow = '';
+                                                        commentPanel.style.border = '';
+                                                    }, 2000);
+                                                }
+                                            }, 100);
                                         }
                                     } catch (error) {
                                         console.error('[CodeView] 评论生成失败:', error);

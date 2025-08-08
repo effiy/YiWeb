@@ -970,6 +970,12 @@ export const useMethods = (store) => {
                     // 清空评论数据，等待版本选择后重新加载
                     comments.value = [];
                     
+                    // 清空评论者数据
+                    if (store.commenters) {
+                        store.commenters.value = [];
+                        console.log('[项目切换] 评论者数据已清空');
+                    }
+                    
                     // 清空文件选择
                     setSelectedFileId(null);
                     
@@ -1029,6 +1035,24 @@ export const useMethods = (store) => {
                     console.log('[版本切换] 开始加载评论数据...');
                     await loadComments(selectedProject.value, versionId);
                     console.log('[版本切换] 评论数据加载完成');
+                    
+                    // 重新加载评论者数据
+                    console.log('[版本切换] 开始重新加载评论者数据...');
+                    if (store.loadCommenters) {
+                        await store.loadCommenters(selectedProject.value, versionId);
+                        console.log('[版本切换] 评论者数据重新加载完成');
+                    } else {
+                        console.warn('[版本切换] store中loadCommenters方法不可用');
+                    }
+                    
+                    // 触发项目/版本就绪事件，通知评论面板重新加载
+                    console.log('[版本切换] 触发projectVersionReady事件');
+                    window.dispatchEvent(new CustomEvent('projectVersionReady', {
+                        detail: {
+                            projectId: selectedProject.value,
+                            versionId: versionId
+                        }
+                    }));
                     
                     // 显示成功消息
                     showSuccessMessage(`已切换到版本: ${versionId}`);

@@ -200,6 +200,12 @@ export const createStore = () => {
      */
     const loadCommenters = async (projectId = null, versionId = null) => {
         return safeExecuteAsync(async () => {
+            // 防止重复加载
+            if (commentersLoading.value) {
+                console.log('[loadCommenters] 评论者数据正在加载中，跳过重复请求');
+                return commenters.value;
+            }
+            
             commentersLoading.value = true;
             commentersError.value = '';
             

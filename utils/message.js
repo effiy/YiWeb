@@ -237,12 +237,208 @@ const getMessageIcon = (type) => {
 };
 
 /**
+ * 创建复杂消息元素
+ * @param {Object} config - 消息配置
+ * @returns {HTMLElement} 消息元素
+ */
+const createComplexMessageElement = (config) => {
+    const messageEl = document.createElement('div');
+    messageEl.className = `message message-${config.type || 'info'} complex-message`;
+    messageEl.style.cssText = `
+        background: ${getMessageColor(config.type || 'info')};
+        color: white;
+        padding: 16px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        font-size: 14px;
+        line-height: 1.4;
+        pointer-events: auto;
+        transition: all 0.3s ease;
+        transform: translateX(100%);
+        opacity: 0;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
+        min-width: 300px;
+    `;
+
+    // 创建头部
+    const header = document.createElement('div');
+    header.style.cssText = `
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    `;
+
+    // 标题和图标
+    const titleSection = document.createElement('div');
+    titleSection.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+    `;
+
+    const icon = document.createElement('i');
+    icon.className = `fas ${getMessageIcon(config.type || 'info')}`;
+    icon.style.flexShrink = '0';
+
+    const title = document.createElement('div');
+    title.textContent = config.title || '';
+    title.style.cssText = `
+        font-weight: 600;
+        font-size: 15px;
+    `;
+
+    titleSection.appendChild(icon);
+    titleSection.appendChild(title);
+    header.appendChild(titleSection);
+
+    // 关闭按钮
+    if (config.showClose !== false) {
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        closeBtn.style.cssText = `
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            font-size: 12px;
+        `;
+        closeBtn.addEventListener('mouseenter', () => {
+            closeBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+        });
+        closeBtn.addEventListener('mouseleave', () => {
+            closeBtn.style.backgroundColor = 'transparent';
+        });
+        closeBtn.addEventListener('click', () => {
+            hideMessage(messageEl);
+        });
+        header.appendChild(closeBtn);
+    }
+
+    messageEl.appendChild(header);
+
+    // 内容
+    if (config.content) {
+        const content = document.createElement('div');
+        content.textContent = config.content;
+        content.style.cssText = `
+            margin-bottom: 12px;
+            opacity: 0.9;
+        `;
+        messageEl.appendChild(content);
+    }
+
+    // 操作按钮
+    if (config.actions && config.actions.length > 0) {
+        const actionsContainer = document.createElement('div');
+        actionsContainer.style.cssText = `
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 8px;
+        `;
+
+        config.actions.forEach(action => {
+            const actionBtn = document.createElement('button');
+            actionBtn.textContent = action.text;
+            actionBtn.style.cssText = `
+                padding: 6px 12px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                transition: all 0.2s;
+                background: ${action.type === 'primary' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)'};
+                color: white;
+                border: 1px solid ${action.type === 'primary' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)'};
+            `;
+
+            actionBtn.addEventListener('mouseenter', () => {
+                actionBtn.style.backgroundColor = action.type === 'primary' 
+                    ? 'rgba(255, 255, 255, 0.3)' 
+                    : 'rgba(255, 255, 255, 0.2)';
+            });
+            actionBtn.addEventListener('mouseleave', () => {
+                actionBtn.style.backgroundColor = action.type === 'primary' 
+                    ? 'rgba(255, 255, 255, 0.2)' 
+                    : 'rgba(255, 255, 255, 0.1)';
+            });
+            actionBtn.addEventListener('click', () => {
+                if (action.action) {
+                    action.action();
+                }
+                hideMessage(messageEl);
+            });
+
+            actionsContainer.appendChild(actionBtn);
+        });
+
+        messageEl.appendChild(actionsContainer);
+    }
+
+    return messageEl;
+};
+
+/**
+ * 显示复杂消息
+ * @param {Object} config - 消息配置
+ */
+const showComplexMessage = (config) => {
+    const container = createMessageContainer();
+    const messageEl = createComplexMessageElement(config);
+
+    // 添加到容器
+    container.appendChild(messageEl);
+
+    // 确保位置正确
+    updateMessagePosition();
+
+    // 动画显示
+    setTimeout(() => {
+        messageEl.style.transform = 'translateX(0)';
+        messageEl.style.opacity = '1';
+    }, 10);
+
+    // 自动隐藏
+    if (config.duration !== 0) {
+        const duration = config.duration || MESSAGE_CONFIG.duration;
+        setTimeout(() => {
+            hideMessage(messageEl);
+        }, duration);
+    }
+
+    // 限制最大数量
+    const messages = container.querySelectorAll('.message');
+    if (messages.length > MESSAGE_CONFIG.maxCount) {
+        const oldestMessage = messages[0];
+        hideMessage(oldestMessage);
+    }
+    
+    console.log('[复杂消息显示] 显示消息:', config);
+};
+
+/**
  * 显示消息
- * @param {string} message - 消息内容
+ * @param {string|Object} messageOrConfig - 消息内容或配置对象
  * @param {string} type - 消息类型
  * @param {number} duration - 显示时长（毫秒）
  */
-export const showMessage = (message, type = MESSAGE_TYPES.INFO, duration = MESSAGE_CONFIG.duration) => {
+export const showMessage = (messageOrConfig, type = MESSAGE_TYPES.INFO, duration = MESSAGE_CONFIG.duration) => {
+    // 支持对象配置
+    if (typeof messageOrConfig === 'object') {
+        const config = messageOrConfig;
+        return showComplexMessage(config);
+    }
+    
+    // 简单消息
+    const message = messageOrConfig;
     if (!message) return;
 
     const container = createMessageContainer();

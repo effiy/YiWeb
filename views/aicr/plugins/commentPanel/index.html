@@ -233,9 +233,9 @@
                 </div>
             </article>
         </div>
-
-        <!-- 无评论状态 -->
-        <div v-else-if="!file" class="no-file-state" role="status">
+        
+        <!-- 未选中文件状态 -->
+        <div v-if="!file && renderComments.length === 0" class="no-file-state" role="status">
             <div class="no-file-icon" aria-hidden="true">
                 <i class="fas fa-file-alt"></i>
             </div>
@@ -244,7 +244,7 @@
         </div>
         
         <!-- 无评论状态 -->
-        <div v-else-if="renderComments.length === 0" class="no-comments-state" role="status">
+        <div v-else-if="file && renderComments.length === 0" class="no-comments-state" role="status">
             <div class="no-comments-icon" aria-hidden="true">
                 <i class="fas fa-comment-slash"></i>
             </div>
