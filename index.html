@@ -63,41 +63,18 @@
                 </form>
                 <nav class="category-filters" id="category-filters" role="toolbar" aria-label="页面导航">
                     <ul class="filter-buttons">
-                        <!-- 页面导航按钮 -->
-                        <li>
-                            <button class="filter-btn" type="button" aria-label="网址管理" data-action="aicr" @click="openLink('/views/aicr/index.html')">
-                                <i class="fas fa-globe" aria-hidden="true"></i>
-                                <span>aicr</span>
-                            </button>
-                        </li>
-                        <li>
-                            <button class="filter-btn" type="button" aria-label="新闻博客" data-action="news" @click="openLink('/views/news/index.html')">
-                                <i class="fas fa-newspaper" aria-hidden="true"></i>
-                                <span>news</span>
-                            </button>
-                        </li>
-                        <li>
-                            <button class="filter-btn" type="button" aria-label="快捷键" data-action="shortcuts" @click="openLink('/views/shortcuts/index.html')">
-                                <i class="fas fa-keyboard" aria-hidden="true"></i>
-                                <span>shortcuts</span>
-                            </button>
-                        </li>
-                        <li>
-                            <button class="filter-btn" type="button" aria-label="命令行" data-action="websites" @click="openLink('/views/commands/index.html')">
-                                <i class="fas fa-terminal" aria-hidden="true"></i>
-                                <span>commands</span>
-                            </button>
-                        </li>
-                        <li>
-                            <button class="filter-btn" type="button" aria-label="网址管理" data-action="websites" @click="openLink('/views/websites/index.html')">
-                                <i class="fas fa-globe" aria-hidden="true"></i>
-                                <span>websites</span>
-                            </button>
-                        </li>
-                        <li>
-                            <button class="filter-btn" type="button" aria-label="任务管理" data-action="tasks" @click="openLink('/views/tasks/index.html')">
-                                <i class="fas fa-tasks" aria-hidden="true"></i>
-                                <span>tasks</span>
+                        <!-- 动态渲染页面导航按钮 -->
+                        <li v-for="(filter, index) in categoryFilters" :key="filter.id">
+                            <button 
+                                class="filter-btn" 
+                                type="button" 
+                                :aria-label="filter.ariaLabel" 
+                                :data-action="filter.id" 
+                                @click="openLink(filter.link)"
+                                :title="filter.description"
+                            >
+                                <i :class="filter.icon" aria-hidden="true"></i>
+                                <span>{{ filter.label }}</span>
                             </button>
                         </li>
                     </ul>

@@ -27,6 +27,58 @@ export const createStore = () => {
     const loading = vueRef(true); // 初始化为true，表示正在加载
     // 错误信息
     const error = vueRef(null);
+    
+    // 导航分类过滤器配置
+    const categoryFilters = vueRef([
+        {
+            id: 'aicr',
+            label: 'aicr',
+            icon: 'fas fa-globe',
+            ariaLabel: '网址管理',
+            link: '/views/aicr/index.html',
+            description: 'AI代码审查工具'
+        },
+        {
+            id: 'news',
+            label: 'news',
+            icon: 'fas fa-newspaper',
+            ariaLabel: '新闻博客',
+            link: '/views/news/index.html',
+            description: '新闻资讯管理'
+        },
+        {
+            id: 'shortcuts',
+            label: 'shortcuts',
+            icon: 'fas fa-keyboard',
+            ariaLabel: '快捷键',
+            link: '/views/shortcuts/index.html',
+            description: '快捷键配置管理'
+        },
+        {
+            id: 'commands',
+            label: 'commands',
+            icon: 'fas fa-terminal',
+            ariaLabel: '命令行',
+            link: '/views/commands/index.html',
+            description: '命令行工具集合'
+        },
+        {
+            id: 'websites',
+            label: 'websites',
+            icon: 'fas fa-globe',
+            ariaLabel: '网址管理',
+            link: '/views/websites/index.html',
+            description: '网址收藏管理'
+        },
+        {
+            id: 'tasks',
+            label: 'tasks',
+            icon: 'fas fa-tasks',
+            ariaLabel: '任务管理',
+            link: '/views/tasks/index.html',
+            description: '任务创建和跟踪'
+        }
+    ]);
 
     /**
      * 强制触发Vue响应式更新
@@ -255,6 +307,7 @@ export const createStore = () => {
         loading,        // 加载状态
         error,          // 错误信息
         fromSystem,     // 系统提示信息
+        categoryFilters, // 导航分类过滤器配置
         updateFeatureCards,  // 更新方法
         deleteCard,     // 删除卡片方法
         removeCardFromLocal, // 本地移除卡片方法
