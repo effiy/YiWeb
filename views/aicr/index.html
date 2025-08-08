@@ -68,7 +68,7 @@
                         <div class="version-selector" :class="{ expanded: versionSelectorExpanded }">
                             <button 
                                 class="filter-btn version-selector-btn" 
-                                :class="{ active: selectedVersion }"
+                                :class="{ active: selectedVersion && selectedVersion !== '' }"
                                 @click="toggleVersionSelector"
                                 :disabled="!selectedProject || loading">
                                 <i class="fas fa-tag"></i>
@@ -82,7 +82,7 @@
                                     <li v-for="version in availableVersions" :key="version.id">
                                         <button 
                                             class="version-option" 
-                                            :class="{ active: selectedVersion === version.id }"
+                                            :class="{ active: selectedVersion && selectedVersion === version.id }"
                                             @click="handleVersionChange(version.id)">
                                             <i class="fas fa-tag"></i>
                                             {{ version.name }}

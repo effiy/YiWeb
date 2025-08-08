@@ -972,9 +972,14 @@ export const useMethods = (store) => {
      */
     const handleVersionChange = (versionId) => {
         return safeExecute(() => {
+            console.log('[版本切换] 开始处理版本切换:', versionId);
+            console.log('[版本切换] 当前selectedVersion:', selectedVersion?.value);
+            console.log('[版本切换] 当前availableVersions:', availableVersions?.value);
+            
             if (versionId) {
                 setSelectedVersion(versionId);
                 console.log('[版本切换] 切换到版本:', versionId);
+                console.log('[版本切换] 设置后的selectedVersion:', selectedVersion?.value);
                 
                 // 版本切换后重新加载评论数据
                 setTimeout(async () => {
@@ -988,6 +993,8 @@ export const useMethods = (store) => {
                 if (versionSelectorExpanded) {
                     versionSelectorExpanded.value = false;
                 }
+            } else {
+                console.warn('[版本切换] versionId为空');
             }
         }, '版本切换处理');
     };
@@ -1007,6 +1014,10 @@ export const useMethods = (store) => {
      */
     const toggleVersionSelector = () => {
         return safeExecute(() => {
+            console.log('[版本选择器] 开始切换，当前状态:', versionSelectorExpanded?.value);
+            console.log('[版本选择器] selectedProject:', selectedProject?.value);
+            console.log('[版本选择器] availableVersions:', availableVersions?.value);
+            
             if (versionSelectorExpanded) {
                 versionSelectorExpanded.value = !versionSelectorExpanded.value;
                 console.log('[版本选择器] 切换展开状态:', versionSelectorExpanded.value);
