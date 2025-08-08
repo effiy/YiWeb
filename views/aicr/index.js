@@ -211,15 +211,16 @@ const { computed } = Vue;
                             store.setSelectedFileId(null);
                             console.log('[代码审查页面] 已取消文件选中，之前文件ID:', previousFileId);
                             
-                            // 触发评论面板刷新事件
+                            // 触发评论面板刷新事件，恢复到显示所有评论的状态
                             setTimeout(() => {
-                                console.log('[代码审查页面] 触发评论面板刷新事件');
+                                console.log('[代码审查页面] 触发评论面板刷新事件，恢复到显示所有评论');
                                 window.dispatchEvent(new CustomEvent('reloadComments', {
                                     detail: { 
                                         projectId: store.selectedProject ? store.selectedProject.value : null, 
                                         versionId: store.selectedVersion ? store.selectedVersion.value : null,
                                         fileId: null,
-                                        forceReload: true
+                                        forceReload: true,
+                                        showAllComments: true // 新增：标记显示所有评论
                                     }
                                 }));
                             }, 100);

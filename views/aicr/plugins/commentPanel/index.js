@@ -75,6 +75,9 @@ async function fetchCommentsFromMongo(file) {
                 url += `&fileId=${fileId}`;
                 console.log('[CommentPanel] 添加文件ID到URL:', fileId);
             }
+        } else {
+            // 如果没有文件信息，不添加fileId参数，这样会返回所有评论
+            console.log('[CommentPanel] 没有文件信息，将加载所有评论');
         }
         
         console.log('[CommentPanel] 调用MongoDB接口:', url);
@@ -252,6 +255,7 @@ const createCommentPanel = async () => {
                         
                         // 即使没有选中文件，也尝试加载评论数据
                         // 这样可以处理页面刷新时文件选择延迟的情况
+                        // 当没有文件时，会加载所有评论
                         const mongoComments = await fetchCommentsFromMongo(this.file);
                         
                         // 确保评论数据有正确的key属性
@@ -1135,13 +1139,18 @@ const createCommentPanel = async () => {
             // 监听reloadComments事件，重新加载评论数据
             window.addEventListener('reloadComments', async (event) => {
                 console.log('[CommentPanel] 收到reloadComments事件:', event.detail);
-                const { projectId, versionId, fileId, forceReload } = event.detail;
+                const { projectId, versionId, fileId, forceReload, showAllComments } = event.detail;
                 
                 if (forceReload) {
                     console.log('[CommentPanel] 强制重新加载评论数据');
                     
-                    // 如果fileId为null，说明文件被取消选中，清空评论数据
-                    if (fileId === null) {
+                    // 如果fileId为null且showAllComments为true，说明要显示所有评论
+                    if (fileId === null && showAllComments) {
+                        console.log('[CommentPanel] 文件被取消选中，显示所有评论');
+                        // 重新加载所有评论数据（不限制文件）
+                        await this.loadMongoComments();
+                    } else if (fileId === null) {
+                        // 如果fileId为null但showAllComments不为true，清空评论数据
                         console.log('[CommentPanel] 文件被取消选中，清空评论数据');
                         this.mongoComments = [];
                         this.fileComments = [];
