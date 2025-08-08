@@ -16,6 +16,17 @@
 
     <!-- 代码内容 -->
     <div v-else-if="file" class="code-content" ref="codeContent">
+        <!-- 调试信息 -->
+        <div v-if="false" class="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 12px;">
+            <p>调试信息:</p>
+            <p>文件: {{ file.name }}</p>
+            <p>代码行数: {{ codeLines.length }}</p>
+            <p>评论数量: {{ fileComments.length }}</p>
+            <p>评论标记行数: {{ Object.keys(commentMarkers).length }}</p>
+            <p>有评论标记的行数: {{ Object.keys(lineComments).filter(line => lineComments[line].length > 0).length }}</p>
+            <p>加载状态: {{ commentsLoading }}</p>
+            <p>错误信息: {{ commentsError }}</p>
+        </div>
         <pre class="code-block" :class="`language-${languageType}`">
             <code 
                 v-for="(line, index) in codeLines" 
@@ -38,7 +49,7 @@
                         @click="showCommentDetail(comment, $event)"
                         @mouseenter="handleCommentMarkerMouseEvents(comment, $event)"
                         @mouseleave="handleCommentMarkerMouseEvents(comment, $event)"
-                        :title="`${comment.author} - ${formatTime(comment.timestamp)}`"
+                        :title="`${comment.author || '匿名用户'} - ${formatTime(comment.timestamp)}`"
                         role="button"
                         tabindex="0"
                     >

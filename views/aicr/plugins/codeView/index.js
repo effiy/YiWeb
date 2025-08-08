@@ -29,21 +29,30 @@ async function loadTemplate() {
 // 新增：异步获取评论数据
 async function fetchCommentsForFile(file) {
     try {
-        // 从header-row的选择器获取项目/版本信息
-        const projectSelect = document.getElementById('projectSelect');
-        const versionSelect = document.getElementById('versionSelect');
-        
+        // 优先从store获取项目/版本信息
         let projectId = null;
         let versionId = null;
         
-        if (projectSelect) {
-            projectId = projectSelect.value;
-            console.log('[CodeView] 从选择器获取项目ID:', projectId);
+        if (window.aicrStore) {
+            projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
+            versionId = window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : null;
+            console.log('[CodeView] 从store获取项目ID:', projectId, '版本ID:', versionId);
         }
         
-        if (versionSelect) {
-            versionId = versionSelect.value;
-            console.log('[CodeView] 从选择器获取版本ID:', versionId);
+        // 如果store中没有，尝试从DOM元素获取
+        if (!projectId || !versionId) {
+            const projectSelect = document.getElementById('projectSelect');
+            const versionSelect = document.getElementById('versionSelect');
+            
+            if (projectSelect) {
+                projectId = projectSelect.value;
+                console.log('[CodeView] 从选择器获取项目ID:', projectId);
+            }
+            
+            if (versionSelect) {
+                versionId = versionSelect.value;
+                console.log('[CodeView] 从选择器获取版本ID:', versionId);
+            }
         }
         
         // 检查项目/版本信息是否完整
@@ -62,14 +71,26 @@ async function fetchCommentsForFile(file) {
             const fileId = file.fileId || file.id || file.path || file.key;
             if (fileId) {
                 url += `&fileId=${fileId}`;
+                console.log('[CodeView] 添加文件ID到URL:', fileId);
             }
         }
         
         console.log('[CodeView] 获取文件评论数据:', url);
         const response = await getData(url, { method: 'GET' });
-        console.log('[CodeView] 获取评论数据:', response.data.list);
+        console.log('[CodeView] 获取评论数据响应:', response);
         
-        return Array.isArray(response.data.list) ? response.data.list : [];
+        // 处理响应数据
+        let comments = [];
+        if (response && response.data && response.data.list) {
+            comments = response.data.list;
+        } else if (Array.isArray(response)) {
+            comments = response;
+        } else if (response && Array.isArray(response.data)) {
+            comments = response.data;
+        }
+        
+        console.log('[CodeView] 最终评论数据:', comments);
+        return Array.isArray(comments) ? comments : [];
     } catch (err) {
         console.error('[CodeView] 获取评论数据失败:', err);
         return [];
@@ -197,17 +218,24 @@ const createCodeView = async () => {
                 
                 console.log('[CodeView] lineComments计算属性触发，代码行数:', lineCount);
                 console.log('[CodeView] 当前commentMarkers:', this.commentMarkers);
+                console.log('[CodeView] 当前fileComments:', this.fileComments);
+                
+                // 如果没有评论数据，返回空结果
+                if (!this.commentMarkers || Object.keys(this.commentMarkers).length === 0) {
+                    console.log('[CodeView] 没有评论标记数据，返回空结果');
+                    return result;
+                }
                 
                 for (let lineNumber = 1; lineNumber <= lineCount; lineNumber++) {
                     const comments = this.commentMarkers[lineNumber] || [];
                     result[lineNumber] = comments;
                     
                     if (comments.length > 0) {
-                        console.log(`[CodeView] 第${lineNumber}行有${comments.length}个评论:`, comments.map(c => c.key));
+                        console.log(`[CodeView] 第${lineNumber}行有${comments.length}个评论:`, comments.map(c => ({ key: c.key, author: c.author, content: c.content?.substring(0, 50) })));
                     }
                 }
                 
-                console.log('[CodeView] lineComments计算结果:', result);
+                console.log('[CodeView] lineComments计算结果，有评论的行数:', Object.keys(result).filter(line => result[line].length > 0).length);
                 return result;
             }
         },
@@ -232,26 +260,36 @@ const createCodeView = async () => {
             async loadFileComments() {
                 return safeExecute(async () => {
                     if (!this.file) {
+                        console.log('[CodeView] 没有文件，清空评论数据');
                         this.fileComments = [];
                         this.commentMarkers = {}; // 清空评论标记
                         return;
                     }
                     
-                    console.log('[CodeView] 开始加载文件评论数据...');
+                    console.log('[CodeView] 开始加载文件评论数据，文件:', this.file.name);
                     this.commentsLoading = true;
                     this.commentsError = '';
                     
                     try {
                         const comments = await fetchCommentsForFile(this.file);
-                        this.fileComments = comments;
+                        console.log('[CodeView] 获取到评论数据:', comments);
+                        
+                        // 确保评论数据有正确的key属性
+                        this.fileComments = comments.map(comment => ({
+                            ...comment,
+                            key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
+                        }));
                         
                         // 构建评论标记映射
                         this.buildCommentMarkers();
                         
-                        console.log('[CodeView] 文件评论数据加载完成:', comments.length);
+                        console.log('[CodeView] 文件评论数据加载完成，评论数量:', this.fileComments.length);
+                        console.log('[CodeView] 评论标记构建完成，标记行数:', Object.keys(this.commentMarkers).length);
                     } catch (err) {
                         this.commentsError = '加载评论失败';
                         console.error('[CodeView] 评论加载失败:', err);
+                        this.fileComments = [];
+                        this.commentMarkers = {};
                     } finally {
                         this.commentsLoading = false;
                     }
@@ -264,14 +302,27 @@ const createCodeView = async () => {
                 const newCommentMarkers = {};
                 
                 console.log('[CodeView] 开始构建评论标记映射，评论数量:', this.fileComments.length);
-                console.log('[CodeView] 文件评论数据:', this.fileComments.map(c => ({ key: c.key, startLine: c.rangeInfo?.startLine, endLine: c.rangeInfo?.endLine })));
+                console.log('[CodeView] 文件评论数据:', this.fileComments.map(c => ({ 
+                    key: c.key, 
+                    startLine: c.rangeInfo?.startLine, 
+                    endLine: c.rangeInfo?.endLine,
+                    author: c.author,
+                    content: c.content?.substring(0, 30)
+                })));
+                
+                // 如果没有评论数据，清空标记
+                if (!this.fileComments || this.fileComments.length === 0) {
+                    console.log('[CodeView] 没有评论数据，清空评论标记');
+                    this.commentMarkers = {};
+                    return;
+                }
                 
                 this.fileComments.forEach(comment => {
                     if (comment.rangeInfo && comment.rangeInfo.startLine) {
-                        const startLine = comment.rangeInfo.startLine;
-                        const endLine = comment.rangeInfo.endLine || startLine;
+                        const startLine = parseInt(comment.rangeInfo.startLine);
+                        const endLine = parseInt(comment.rangeInfo.endLine) || startLine;
                         
-                        console.log('[CodeView] 处理评论:', comment.key, '行号范围:', startLine, '-', endLine);
+                        console.log('[CodeView] 处理评论:', comment.key, '行号范围:', startLine, '-', endLine, '作者:', comment.author);
                         
                         // 为范围内的每一行添加评论标记
                         for (let line = startLine; line <= endLine; line++) {
@@ -298,7 +349,7 @@ const createCodeView = async () => {
                 // 确保DOM更新
                 this.$nextTick(() => {
                     console.log('[CodeView] DOM更新完成，评论标记已刷新');
-                    console.log('[CodeView] lineComments计算属性已更新:', this.lineComments);
+                    console.log('[CodeView] lineComments计算属性已更新，有评论的行数:', Object.keys(this.lineComments).filter(line => this.lineComments[line].length > 0).length);
                 });
             },
             
@@ -1788,6 +1839,14 @@ const createCodeView = async () => {
                 
                 // 新增：监听评论数据变化事件
                 window.addEventListener('reloadComments', this.handleCommentsReload);
+                
+                // 监听文件变化，重新加载评论
+                this.$watch('file', async (newFile, oldFile) => {
+                    if (newFile && newFile !== oldFile) {
+                        console.log('[CodeView] 文件变化，重新加载评论:', newFile.name);
+                        await this.loadFileComments();
+                    }
+                });
                 
                 console.log('[CodeView] 组件挂载完成');
             }, 'CodeView组件挂载');
