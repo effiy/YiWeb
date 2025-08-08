@@ -509,9 +509,9 @@ export const createStore = () => {
             
             // 模拟项目数据，实际应该从API获取
             const mockProjects = [
-                { id: 'YiAi', name: 'YiAI项目' },
-                { id: 'YiWeb', name: 'YiWeb项目' },
-                { id: 'YiMobile', name: 'YiMobile项目' }
+                { id: 'YiAi', name: 'YiAI' },
+                { id: 'YiWeb', name: 'YiWeb' },
+                { id: 'YiMobile', name: 'YiMobile' }
             ];
             
             projects.value = mockProjects;
@@ -534,9 +534,9 @@ export const createStore = () => {
             
             // 模拟版本数据，实际应该从API获取
             const mockVersions = [
-                { id: '2025-07-30', name: '2025-07-30版本' },
-                { id: '2025-07-29', name: '2025-07-29版本' },
-                { id: '2025-07-28', name: '2025-07-28版本' }
+                { id: '2025-07-30', name: '2025-07-30' },
+                { id: '2025-07-29', name: '2025-07-29' },
+                { id: '2025-07-28', name: '2025-07-28' }
             ];
             
             availableVersions.value = mockVersions;
