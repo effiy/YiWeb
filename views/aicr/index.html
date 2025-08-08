@@ -128,7 +128,7 @@
                 title="展开文件目录树">
                 <i class="fas fa-chevron-right" aria-hidden="true"></i>
             </button>
-            <section class="aicr-code" :class="{ 'with-sidebar-collapsed': sidebarCollapsed }" aria-label="代码区">
+            <section class="aicr-code" :class="{ 'with-sidebar-collapsed': sidebarCollapsed, 'with-comments-collapsed': commentsCollapsed }" aria-label="代码区">
                 <code-view 
                     :file="currentFile" 
                     :loading="loading" 
@@ -145,14 +145,25 @@
                     :new-comment="newComment" 
                     :loading="loading" 
                     :error="errorMessage" 
+                    :collapsed="commentsCollapsed"
                     @comment-submit="handleCommentSubmit" 
                     @comment-input="handleCommentInput"
                     @commenter-select="handleCommenterSelect"
                     @comment-delete="handleCommentDelete"
                     @comment-resolve="handleCommentResolve"
                     @comment-reopen="handleCommentReopen"
+                    @toggle-collapse="toggleComments"
                 ></comment-panel>
             </aside>
+            <!-- 评论区收起后的展开把手 -->
+            <button 
+                class="comments-expand-handle" 
+                v-show="commentsCollapsed"
+                @click="toggleComments"
+                aria-label="展开评论区"
+                title="展开评论区">
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+            </button>
         </main>
     </div>
 

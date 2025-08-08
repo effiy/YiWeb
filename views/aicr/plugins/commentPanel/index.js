@@ -111,6 +111,10 @@ const createCommentPanel = async () => {
             versionId: {
                 type: String,
                 default: ''
+            },
+            collapsed: {
+                type: Boolean,
+                default: false
             }
         },
         emits: [
@@ -119,7 +123,8 @@ const createCommentPanel = async () => {
             'comment-delete', 
             'comment-resolve',
             'comment-reopen',
-            'commenter-select'
+            'commenter-select',
+            'toggle-collapse'
         ],
         data() {
             return {
@@ -178,6 +183,10 @@ const createCommentPanel = async () => {
             }
         },
         methods: {
+            // 切换评论面板收起状态
+            toggleCollapse() {
+                this.$emit('toggle-collapse');
+            },
             // 测试方法
             testMethod() {
                 console.log('[CommentPanel] testMethod被调用');

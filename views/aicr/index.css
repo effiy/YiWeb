@@ -64,14 +64,16 @@
     width: 450px;
     min-width: 320px;
     max-width: 550px;
-    background: var(--bg-secondary);
+    background: linear-gradient(135deg, rgba(30,41,59,0.95) 0%, rgba(51,65,85,0.92) 50%, rgba(71,85,105,0.88) 100%);
     border-left: 1px solid var(--border-primary);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.03);
     overflow-y: auto;
-    padding: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) 0;
     z-index: 10;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .aicr-comments:hover {
@@ -331,6 +333,58 @@
     bottom: 10px;
     left: 50%;
     transform: translate(-50%, 0);
+    padding: 8px 12px;
+  }
+}
+
+/* ========== 评论区展开把手样式 ========== */
+.comments-expand-handle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translate(50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, #4338ca) 100%);
+  color: #fff;
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  padding: 8px 10px;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 6px 18px rgba(79,70,229,0.35), 0 0 0 0 rgba(79,70,229,0.25);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  opacity: 0.98;
+}
+.comments-expand-handle i { font-size: 12px; transition: transform 0.25s ease; }
+.comments-expand-handle:hover {
+  transform: translate(45%, -50%) scale(1.06);
+  box-shadow: 0 8px 24px rgba(79,70,229,0.45), 0 0 0 8px rgba(79,70,229,0.12);
+}
+.comments-expand-handle:active { transform: translate(45%, -50%) scale(0.96); }
+.comments-expand-handle:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(79,70,229,0.35), 0 6px 18px rgba(79,70,229,0.35); }
+
+/* 代码区右侧视觉引导，当评论区收起时显示淡淡的渐变与内阴影 */
+.aicr-code.with-comments-collapsed::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 56px;
+  background: linear-gradient(270deg, rgba(79,70,229,0.18) 0%, rgba(79,70,229,0.10) 40%, rgba(79,70,229,0.00) 100%);
+  pointer-events: none;
+}
+.aicr-code.with-comments-collapsed {
+  box-shadow: inset -8px 0 18px -12px rgba(79,70,229,0.35);
+}
+
+@media (max-width: 950px) {
+  .comments-expand-handle {
+    top: auto;
+    bottom: 10px;
+    right: 50%;
+    transform: translate(50%, 0);
     padding: 8px 12px;
   }
 }
