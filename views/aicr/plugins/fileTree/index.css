@@ -4,6 +4,77 @@
  */
 
 /* ========== 文件树容器 ========== */
+.file-tree-container {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ========== 收起按钮 ========== */
+.file-tree-toggle {
+    position: absolute;
+    top: 50%;
+    right: -16px;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-secondary);
+    font-size: 12px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.file-tree-toggle:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: translateY(-50%) scale(1.15);
+    box-shadow: var(--shadow-md);
+}
+
+.file-tree-toggle:active {
+    transform: translateY(-50%) scale(0.9);
+}
+
+.file-tree-toggle:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+}
+
+.file-tree-toggle i {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 11px;
+}
+
+.file-tree-toggle i.rotated {
+    transform: rotate(180deg);
+}
+
+/* 收起状态下的特殊样式 */
+.file-tree-container.collapsed .file-tree-toggle {
+    right: -12px;
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.file-tree-container.collapsed .file-tree-toggle:hover {
+    background: var(--primary-dark, #4338ca);
+    transform: translateY(-50%) scale(1.1);
+}
+
+/* ========== 文件树 ========== */
 .file-tree {
     list-style: none;
     margin: 0px;
@@ -12,6 +83,7 @@
     background: var(--bg-secondary);
     height: 100%;
     overflow-y: auto;
+    flex: 1;
 }
 
 .file-tree > .file-tree-node {
@@ -341,6 +413,17 @@
     .file-tree .file-tree {
         padding-left: var(--spacing-xs);
     }
+
+    .file-tree-toggle {
+        right: -14px;
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+    
+    .file-tree-toggle i {
+        font-size: 10px;
+    }
 }
 
 @media (max-width: 640px) {
@@ -361,6 +444,17 @@
     
     .folder-count {
         display: none;
+    }
+
+    .file-tree-toggle {
+        right: -12px;
+        width: 22px;
+        height: 22px;
+        font-size: 9px;
+    }
+    
+    .file-tree-toggle i {
+        font-size: 9px;
     }
 }
 

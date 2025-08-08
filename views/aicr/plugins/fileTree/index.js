@@ -256,10 +256,22 @@ const createFileTree = async () => {
             comments: {
                 type: Array,
                 default: () => []
+            },
+            collapsed: {
+                type: Boolean,
+                default: false
             }
         },
-        emits: ['file-select', 'folder-toggle'],
+        emits: ['file-select', 'folder-toggle', 'toggle-collapse'],
         methods: {
+            // 切换收起状态
+            toggleCollapse() {
+                return safeExecute(() => {
+                    console.log('[FileTree] 切换收起状态');
+                    this.$emit('toggle-collapse');
+                }, '收起状态切换处理');
+            },
+            
             // 切换文件夹展开状态
             toggleFolder(folderId) {
                 return safeExecute(() => {

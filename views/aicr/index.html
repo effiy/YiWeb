@@ -112,11 +112,23 @@
                     :loading="loading" 
                     :error="errorMessage" 
                     :comments="comments"
+                    :collapsed="sidebarCollapsed"
                     @file-select="handleFileSelect" 
                     @folder-toggle="handleFolderToggle"
+                    @toggle-collapse="toggleSidebar"
                 ></file-tree>
             </aside>
-            <section class="aicr-code" aria-label="代码区">
+            
+            <!-- 侧边栏收起后的展开把手 -->
+            <button 
+                class="sidebar-expand-handle" 
+                v-show="sidebarCollapsed"
+                @click="toggleSidebar"
+                aria-label="展开文件目录树"
+                title="展开文件目录树">
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </button>
+            <section class="aicr-code" :class="{ 'with-sidebar-collapsed': sidebarCollapsed }" aria-label="代码区">
                 <code-view 
                     :file="currentFile" 
                     :loading="loading" 
