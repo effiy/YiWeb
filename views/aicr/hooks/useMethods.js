@@ -34,6 +34,8 @@ export const useMethods = (store) => {
         setSelectedVersion,
         loadVersions,
         refreshData,
+        // 版本选择器状态
+        versionSelectorExpanded,
         // 搜索相关状态
         searchQuery
     } = store;
@@ -946,16 +948,21 @@ export const useMethods = (store) => {
     /**
      * 处理项目切换
      */
-    const handleProjectChange = () => {
+    const handleProjectChange = (projectId) => {
         return safeExecute(() => {
-            if (selectedProject.value) {
-                setSelectedProject(selectedProject.value);
+            if (projectId) {
+                setSelectedProject(projectId);
                 // 加载对应项目的版本列表
-                loadVersions(selectedProject.value);
-                console.log('[项目切换] 切换到项目:', selectedProject.value);
+                loadVersions(projectId);
+                console.log('[项目切换] 切换到项目:', projectId);
                 
                 // 清空评论数据，等待版本选择后重新加载
                 comments.value = [];
+                
+                // 切换项目时关闭版本选择器
+                if (versionSelectorExpanded) {
+                    versionSelectorExpanded.value = false;
+                }
             }
         }, '项目切换处理');
     };
@@ -963,11 +970,11 @@ export const useMethods = (store) => {
     /**
      * 处理版本切换
      */
-    const handleVersionChange = () => {
+    const handleVersionChange = (versionId) => {
         return safeExecute(() => {
-            if (selectedVersion.value) {
-                setSelectedVersion(selectedVersion.value);
-                console.log('[版本切换] 切换到版本:', selectedVersion.value);
+            if (versionId) {
+                setSelectedVersion(versionId);
+                console.log('[版本切换] 切换到版本:', versionId);
                 
                 // 版本切换后重新加载评论数据
                 setTimeout(async () => {
@@ -976,6 +983,11 @@ export const useMethods = (store) => {
                         await loadComments(selectedProject.value, selectedVersion.value);
                     }
                 }, 100);
+                
+                // 选择版本后关闭版本选择器
+                if (versionSelectorExpanded) {
+                    versionSelectorExpanded.value = false;
+                }
             }
         }, '版本切换处理');
     };
@@ -988,6 +1000,20 @@ export const useMethods = (store) => {
             refreshData();
             console.log('[数据刷新] 刷新当前项目/版本数据');
         }, '数据刷新处理');
+    };
+
+    /**
+     * 切换版本选择器
+     */
+    const toggleVersionSelector = () => {
+        return safeExecute(() => {
+            if (versionSelectorExpanded) {
+                versionSelectorExpanded.value = !versionSelectorExpanded.value;
+                console.log('[版本选择器] 切换展开状态:', versionSelectorExpanded.value);
+            } else {
+                console.warn('[版本选择器] versionSelectorExpanded未定义');
+            }
+        }, '版本选择器切换');
     };
 
     return {
@@ -1012,6 +1038,7 @@ export const useMethods = (store) => {
         handleProjectChange,
         handleVersionChange,
         refreshData: handleRefreshData,
+        toggleVersionSelector,
         // 搜索相关方法
         handleSearchInput,
         clearSearch,

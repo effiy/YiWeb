@@ -213,6 +213,13 @@ import { createBaseView } from '/utils/baseView.js';
                     if (!e.target.closest('.comment-item')) {
                         if (window.aicrApp && window.aicrApp.reload) window.aicrApp.reload();
                     }
+                    
+                    // 点击外部关闭版本选择器
+                    if (!e.target.closest('.version-selector')) {
+                        if (store && store.versionSelectorExpanded) {
+                            store.versionSelectorExpanded.value = false;
+                        }
+                    }
                 });
                 
                 // 添加ESC快捷键监听，取消文件选中
@@ -461,26 +468,9 @@ import { createBaseView } from '/utils/baseView.js';
                     }
                 },
                 
-                // 项目/版本管理方法
-                handleProjectChange: function() {
-                    console.log('[主页面] 收到项目切换事件');
-                    try {
-                        const methods = useMethods(store);
-                        methods.handleProjectChange();
-                    } catch (error) {
-                        console.error('[主页面] 项目切换处理失败:', error);
-                    }
-                },
+
                 
-                handleVersionChange: function() {
-                    console.log('[主页面] 收到版本切换事件');
-                    try {
-                        const methods = useMethods(store);
-                        methods.handleVersionChange();
-                    } catch (error) {
-                        console.error('[主页面] 版本切换处理失败:', error);
-                    }
-                },
+
                 
                 refreshData: function() {
                     console.log('[主页面] 收到刷新数据事件');

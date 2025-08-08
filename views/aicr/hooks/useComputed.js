@@ -9,54 +9,38 @@
 
 export const useComputed = (store) => {
     const { computed } = Vue;
-    const { 
-        fileTree,
-        files, 
-        comments, 
-        selectedFileId,
-        expandedFolders,
-        loading,
-        error,
-        // 项目/版本管理
-        projects,
-        selectedProject,
-        selectedVersion,
-        availableVersions,
-        // 搜索相关状态
-        searchQuery
-    } = store;
 
     return {
         /**
          * 是否有文件树数据
          */
         hasFileTree: computed(() => {
-            return fileTree.value && fileTree.value.length > 0;
+            return store.fileTree?.value && store.fileTree.value.length > 0;
         }),
 
         /**
          * 是否有文件数据
          */
         hasFiles: computed(() => {
-            return files.value && files.value.length > 0;
+            return store.files?.value && store.files.value.length > 0;
         }),
 
         /**
          * 当前选中的文件
          */
         currentFile: computed(() => {
-            if (!selectedFileId.value || !files.value) return null;
-            return files.value.find(f => f.fileId === selectedFileId.value);
+            if (!store.selectedFileId?.value || !store.files?.value) return null;
+            return store.files.value.find(f => f.fileId === store.selectedFileId.value);
         }),
 
         /**
          * 当前文件的评论
          */
         currentComments: computed(() => {
-            if (!selectedFileId.value || !comments.value) return [];
-            return comments.value.filter(c => {
+            if (!store.selectedFileId?.value || !store.comments?.value) return [];
+            return store.comments.value.filter(c => {
                 // 兼容不同的文件标识方式
-                return c.fileId === selectedFileId.value || (c.fileInfo && c.fileInfo.path === selectedFileId.value);
+                return c.fileId === store.selectedFileId.value || (c.fileInfo && c.fileInfo.path === store.selectedFileId.value);
             });
         }),
 
@@ -92,8 +76,8 @@ export const useComputed = (store) => {
                 });
             };
             
-            if (fileTree.value) {
-                countItems(fileTree.value);
+            if (store.fileTree?.value) {
+                countItems(store.fileTree.value);
             }
             
             return stats;
@@ -105,10 +89,10 @@ export const useComputed = (store) => {
         commentStats: computed(() => {
             const stats = { total: 0, byFile: {} };
             
-            if (comments.value) {
-                stats.total = comments.value.length;
+            if (store.comments?.value) {
+                stats.total = store.comments.value.length;
                 
-                comments.value.forEach(comment => {
+                store.comments.value.forEach(comment => {
                     const fileId = comment.fileId;
                     if (!stats.byFile[fileId]) {
                         stats.byFile[fileId] = 0;
@@ -124,28 +108,28 @@ export const useComputed = (store) => {
          * 是否正在加载
          */
         isLoading: computed(() => {
-            return loading.value;
+            return store.loading?.value;
         }),
 
         /**
          * 是否有错误
          */
         hasError: computed(() => {
-            return !!error.value;
+            return !!store.error?.value;
         }),
 
         /**
          * 文件夹是否展开
          */
         isFolderExpanded: computed(() => {
-            return (folderId) => expandedFolders.value.has(folderId);
+            return (folderId) => store.expandedFolders?.value?.has(folderId);
         }),
 
         /**
          * 当前文件的语言类型
          */
         currentFileLanguage: computed(() => {
-            const file = files.value?.find(f => f.fileId === selectedFileId.value);
+            const file = store.files?.value?.find(f => f.fileId === store.selectedFileId?.value);
             return file?.language || 'text';
         }),
 
@@ -153,52 +137,52 @@ export const useComputed = (store) => {
          * 当前文件的评论数量
          */
         currentFileCommentCount: computed(() => {
-            if (!selectedFileId.value || !comments.value) return 0;
-            return comments.value.filter(c => c.fileId === selectedFileId.value).length;
+            if (!store.selectedFileId?.value || !store.comments?.value) return 0;
+            return store.comments.value.filter(c => c.fileId === store.selectedFileId.value).length;
         }),
 
         /**
          * 是否有项目数据
          */
         hasProjects: computed(() => {
-            return projects.value && projects.value.length > 0;
+            return store.projects?.value && store.projects.value.length > 0;
         }),
 
         /**
          * 是否有版本数据
          */
         hasVersions: computed(() => {
-            return availableVersions.value && availableVersions.value.length > 0;
+            return store.availableVersions?.value && store.availableVersions.value.length > 0;
         }),
 
         /**
          * 是否已选择项目
          */
         isProjectSelected: computed(() => {
-            return !!selectedProject.value;
+            return !!store.selectedProject?.value;
         }),
 
         /**
          * 是否已选择版本
          */
         isVersionSelected: computed(() => {
-            return !!selectedVersion.value;
+            return !!store.selectedVersion?.value;
         }),
 
         /**
          * 当前项目信息
          */
         currentProject: computed(() => {
-            if (!selectedProject.value || !projects.value) return null;
-            return projects.value.find(p => p.id === selectedProject.value);
+            if (!store.selectedProject?.value || !store.projects?.value) return null;
+            return store.projects.value.find(p => p.id === store.selectedProject.value);
         }),
 
         /**
          * 当前版本信息
          */
         currentVersion: computed(() => {
-            if (!selectedVersion.value || !availableVersions.value) return null;
-            return availableVersions.value.find(v => v.id === selectedVersion.value);
+            if (!store.selectedVersion?.value || !store.availableVersions?.value) return null;
+            return store.availableVersions.value.find(v => v.id === store.selectedVersion.value);
         }),
 
         /**
@@ -206,14 +190,23 @@ export const useComputed = (store) => {
          */
         searchQueryValue: computed(() => {
             // 添加调试信息
-            console.log('[searchQueryValue] searchQuery状态:', searchQuery);
-            console.log('[searchQueryValue] searchQuery.value:', searchQuery?.value);
+            console.log('[searchQueryValue] searchQuery状态:', store.searchQuery);
+            console.log('[searchQueryValue] searchQuery.value:', store.searchQuery?.value);
             
             // 安全地获取搜索查询值
-            const query = searchQuery && typeof searchQuery.value !== 'undefined' ? searchQuery.value : '';
+            const query = store.searchQuery && typeof store.searchQuery.value !== 'undefined' ? store.searchQuery.value : '';
             console.log('[searchQueryValue] 返回的查询值:', query);
             
             return query;
+        }),
+
+        /**
+         * 选中的版本名称
+         */
+        selectedVersionName: computed(() => {
+            if (!store.selectedVersion?.value || !store.availableVersions?.value) return '';
+            const selectedVersion = store.availableVersions.value.find(v => v.id === store.selectedVersion.value);
+            return selectedVersion ? selectedVersion.name : '';
         })
     };
 };

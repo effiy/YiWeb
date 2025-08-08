@@ -48,54 +48,65 @@
             </form>
             
             <!-- 项目/版本选择器 -->
-            <div class="project-selector-inline">
-                <div class="selector-group">
-                    <label for="projectSelect" class="selector-label">项目：</label>
-                    <select 
-                        id="projectSelect" 
-                        v-model="selectedProject" 
-                        @change="handleProjectChange"
-                        class="selector-dropdown"
-                        aria-label="选择项目">
-                        <option value="" disabled>请选择项目</option>
-                        <option 
-                            v-for="project in projects" 
-                            :key="project.id" 
-                            :value="project.id">
+            <nav class="category-filters" id="category-filters" role="toolbar" aria-label="项目版本过滤器">
+                <ul class="filter-buttons">
+                    <!-- 项目选择器 -->
+                    <li v-for="project in projects" :key="project.id">
+                        <button 
+                            class="filter-btn" 
+                            :class="{ active: selectedProject === project.id }"
+                            :data-project="project.id"
+                            @click="handleProjectChange(project.id)"
+                            :disabled="loading">
+                            <i class="fas fa-folder"></i>
                             {{ project.name }}
-                        </option>
-                    </select>
-                </div>
-                
-                <div class="selector-group">
-                    <label for="versionSelect" class="selector-label">版本：</label>
-                    <select 
-                        id="versionSelect" 
-                        v-model="selectedVersion" 
-                        @change="handleVersionChange"
-                        class="selector-dropdown"
-                        :disabled="!selectedProject"
-                        aria-label="选择版本">
-                        <option value="" disabled>请选择版本</option>
-                        <option 
-                            v-for="version in availableVersions" 
-                            :key="version.id" 
-                            :value="version.id">
-                            {{ version.name }}
-                        </option>
-                    </select>
-                </div>
-                
-                <button 
-                    type="button" 
-                    @click="refreshData"
-                    :disabled="loading"
-                    class="refresh-btn"
-                    aria-label="刷新数据">
-                    <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }"></i>
-                    刷新
-                </button>
-            </div>
+                        </button>
+                    </li>
+                    
+                    <!-- 版本选择器 -->
+                    <li class="version-selector-container">
+                        <div class="version-selector" :class="{ expanded: versionSelectorExpanded }">
+                            <button 
+                                class="filter-btn version-selector-btn" 
+                                :class="{ active: selectedVersion }"
+                                @click="toggleVersionSelector"
+                                :disabled="!selectedProject || loading">
+                                <i class="fas fa-tag"></i>
+                                <span class="version-text">{{ selectedVersionName || '选择版本' }}</span>
+                                <i class="fas fa-chevron-down version-arrow" :class="{ rotated: versionSelectorExpanded }"></i>
+                            </button>
+                            
+                            <!-- 版本下拉菜单 -->
+                            <div class="version-dropdown" v-show="versionSelectorExpanded && availableVersions.length > 0">
+                                <ul class="version-list">
+                                    <li v-for="version in availableVersions" :key="version.id">
+                                        <button 
+                                            class="version-option" 
+                                            :class="{ active: selectedVersion === version.id }"
+                                            @click="handleVersionChange(version.id)">
+                                            <i class="fas fa-tag"></i>
+                                            {{ version.name }}
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </li>
+                    
+                    <!-- 刷新按钮 -->
+                    <li>
+                        <button 
+                            type="button" 
+                            @click="refreshData"
+                            :disabled="loading"
+                            class="filter-btn refresh-filter-btn"
+                            aria-label="刷新数据">
+                            <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }"></i>
+                            刷新
+                        </button>
+                    </li>
+                </ul>
+            </nav>
             
         </section>
         </header>

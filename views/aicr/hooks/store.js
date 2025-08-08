@@ -41,6 +41,8 @@ export const createStore = () => {
     const selectedProject = vueRef('');
     const selectedVersion = vueRef('');
     const availableVersions = vueRef([]);
+    // 版本选择器状态
+    const versionSelectorExpanded = vueRef(false);
     
     // 搜索相关状态
     const searchQuery = vueRef('');
@@ -633,6 +635,7 @@ export const createStore = () => {
         selectedProject,
         selectedVersion,
         availableVersions,
+        versionSelectorExpanded,
         
         // 搜索相关状态
         searchQuery,
