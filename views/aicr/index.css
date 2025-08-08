@@ -68,7 +68,7 @@
     border-left: 1px solid var(--border-primary);
     box-shadow: 0 8px 32px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.03);
     overflow-y: auto;
-    padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) 0;
+    padding: 0 var(--spacing-md) var(--spacing-md) 0;
     z-index: 10;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
