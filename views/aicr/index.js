@@ -220,7 +220,8 @@ const { computed } = Vue;
                                         versionId: store.selectedVersion ? store.selectedVersion.value : null,
                                         fileId: null,
                                         forceReload: true,
-                                        showAllComments: true // 新增：标记显示所有评论
+                                        showAllComments: true, // 新增：标记显示所有评论
+                                        immediateReload: true // 新增：标记立即刷新，不使用防抖
                                     }
                                 }));
                             }, 100);
