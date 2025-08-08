@@ -110,8 +110,8 @@ import { createBaseView } from '/utils/baseView.js';
                             store.setSelectedProject(defaultProject.id);
                             console.log('[代码审查页面] 设置默认项目:', defaultProject);
                             
-                            // 加载默认项目的版本列表
-                            return store.loadVersions(defaultProject.id);
+                            // 版本列表现在通过setSelectedProject自动更新
+                            console.log('[代码审查页面] 版本列表已自动更新');
                         }
                     }).then(() => {
                         // 设置默认版本

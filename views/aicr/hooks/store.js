@@ -36,11 +36,11 @@ export const createStore = () => {
     // 评论区收缩状态
     const commentsCollapsed = vueRef(false);
     
-    // 项目/版本管理
-    const projects = vueRef([]);
+    // 重构后的项目/版本管理 - 一个项目对应多个版本
+    const projects = vueRef([]); // 存储项目列表，每个项目包含versions数组
     const selectedProject = vueRef('');
     const selectedVersion = vueRef('');
-    const availableVersions = vueRef([]);
+    const availableVersions = vueRef([]); // 当前选中项目的版本列表
     
     // 搜索相关状态
     const searchQuery = vueRef('');
@@ -484,8 +484,6 @@ export const createStore = () => {
         comments.value.push(newCommentObj);
     };
 
-
-
     /**
      * 切换侧边栏状态
      */
@@ -501,17 +499,41 @@ export const createStore = () => {
     };
 
     /**
-     * 加载项目列表
+     * 加载项目列表（重构后包含版本信息）
      */
     const loadProjects = async () => {
         return safeExecuteAsync(async () => {
             console.log('[loadProjects] 正在加载项目列表...');
             
-            // 模拟项目数据，实际应该从API获取
+            // 重构后的项目数据结构：一个项目对应多个版本
             const mockProjects = [
-                { id: 'YiAi', name: 'YiAI' },
-                { id: 'YiWeb', name: 'YiWeb' },
-                { id: 'YiMobile', name: 'YiMobile' }
+                {
+                    id: 'YiAi',
+                    name: 'YiAI',
+                    versions: [
+                        { id: '2025-07-30', name: '2025-07-30' },
+                        { id: '2025-07-29', name: '2025-07-29' },
+                        { id: '2025-07-28', name: '2025-07-28' }
+                    ]
+                },
+                {
+                    id: 'YiWeb',
+                    name: 'YiWeb',
+                    versions: [
+                        { id: '2025-07-30', name: '2025-07-30' },
+                        { id: '2025-07-29', name: '2025-07-29' },
+                        { id: '2025-07-28', name: '2025-07-28' }
+                    ]
+                },
+                {
+                    id: 'YiMobile',
+                    name: 'YiMobile',
+                    versions: [
+                        { id: '2025-07-30', name: '2025-07-30' },
+                        { id: '2025-07-29', name: '2025-07-29' },
+                        { id: '2025-07-28', name: '2025-07-28' }
+                    ]
+                }
             ];
             
             projects.value = mockProjects;
@@ -526,28 +548,11 @@ export const createStore = () => {
     };
 
     /**
-     * 加载版本列表
+     * 根据项目ID获取版本列表（重构后的方法）
      */
-    const loadVersions = async (projectId) => {
-        return safeExecuteAsync(async () => {
-            console.log('[loadVersions] 正在加载版本列表...', { projectId });
-            
-            // 模拟版本数据，实际应该从API获取
-            const mockVersions = [
-                { id: '2025-07-30', name: '2025-07-30' },
-                { id: '2025-07-29', name: '2025-07-29' },
-                { id: '2025-07-28', name: '2025-07-28' }
-            ];
-            
-            availableVersions.value = mockVersions;
-            console.log('[loadVersions] 成功加载版本列表:', mockVersions);
-            
-            return mockVersions;
-        }, '版本列表加载', (errorInfo) => {
-            error.value = errorInfo.message;
-            errorMessage.value = errorInfo.message;
-            availableVersions.value = [];
-        });
+    const getVersionsByProject = (projectId) => {
+        const project = projects.value.find(p => p.id === projectId);
+        return project ? project.versions : [];
     };
 
     /**
@@ -556,7 +561,15 @@ export const createStore = () => {
     const setSelectedProject = (projectId) => {
         selectedProject.value = projectId;
         selectedVersion.value = ''; // 清空版本选择
-        availableVersions.value = []; // 清空版本列表
+        
+        // 根据选中的项目更新可用版本列表
+        if (projectId) {
+            const versions = getVersionsByProject(projectId);
+            availableVersions.value = versions;
+            console.log(`[setSelectedProject] 项目 ${projectId} 的版本列表:`, versions);
+        } else {
+            availableVersions.value = [];
+        }
     };
 
     /**
@@ -628,7 +641,7 @@ export const createStore = () => {
         sidebarCollapsed,
         commentsCollapsed,
         
-        // 项目/版本管理
+        // 重构后的项目/版本管理
         projects,
         selectedProject,
         selectedVersion,
@@ -659,7 +672,7 @@ export const createStore = () => {
         toggleSidebar,
         toggleComments,
         loadProjects,
-        loadVersions,
+        getVersionsByProject, // 新增方法
         setSelectedProject,
         setSelectedVersion,
         setNewComment,

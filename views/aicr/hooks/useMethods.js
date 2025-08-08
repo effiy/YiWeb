@@ -25,14 +25,14 @@ export const useMethods = (store) => {
         setNewComment,
         toggleSidebar,
         toggleComments,
-        // 项目/版本管理
+        // 重构后的项目/版本管理
         projects,
         selectedProject,
         selectedVersion,
         availableVersions,
         setSelectedProject,
         setSelectedVersion,
-        loadVersions,
+        getVersionsByProject, // 重构后的方法
         loadFileTree,
         loadFiles,
         refreshData,
@@ -960,7 +960,7 @@ export const useMethods = (store) => {
                 loading.value = true;
                 
                 try {
-                    // 设置选中的项目
+                    // 设置选中的项目（这会自动更新版本列表）
                     setSelectedProject(projectId);
                     console.log('[项目切换] 项目已设置:', projectId);
                     
@@ -973,12 +973,8 @@ export const useMethods = (store) => {
                     // 清空文件选择
                     setSelectedFileId(null);
                     
-                    // 加载对应项目的版本列表
-                    console.log('[项目切换] 开始加载版本列表...');
-                    await loadVersions(projectId);
-                    console.log('[项目切换] 版本列表加载完成');
-                    
-
+                    // 版本列表现在通过setSelectedProject自动更新
+                    console.log('[项目切换] 版本列表已自动更新');
                     
                     // 显示成功消息
                     showSuccessMessage(`已切换到项目: ${projectId}`);
