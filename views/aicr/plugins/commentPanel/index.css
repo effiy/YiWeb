@@ -152,7 +152,7 @@
     position: relative;
     /* 允许内部滚动区域完全可见，避免被裁切 */
     overflow: visible;
-    min-height: 180px;
+    min-height: 190px;
     width: 100%;
 }
 
