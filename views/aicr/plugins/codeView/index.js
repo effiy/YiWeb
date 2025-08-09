@@ -270,6 +270,36 @@ const createCodeView = async () => {
             }
         },
         methods: {
+            // 清洗选中文本：移除行号、公共缩进与多余空白
+            sanitizeSelectedText(rawText) {
+                return safeExecute(() => {
+                    if (!rawText) return '';
+                    // 统一换行与移除零宽空格
+                    let text = String(rawText).replace(/\r\n?/g, '\n').replace(/\u200B/g, '');
+                    const lines = text.split('\n');
+
+                    // 1) 移除每行行首的行号（支持: 12 |, 12:, 12., 12) 以及单纯数字+空格）
+                    const stripLineNumber = (line) => line.replace(/^\s*\d+\s*[|:.\)]?\s*/, '');
+                    const noNumberLines = lines.map(l => stripLineNumber(l));
+
+                    // 2) 计算公共缩进（空行不纳入统计），统一去除
+                    const leadingCounts = noNumberLines
+                        .filter(l => l.trim().length > 0)
+                        .map(l => (l.match(/^([ \t]+)/) || ['',''])[1].length);
+                    const commonIndent = leadingCounts.length > 0 ? Math.min(...leadingCounts) : 0;
+                    const stripCommonIndent = (line) => commonIndent > 0 ? line.replace(new RegExp(`^[ \t]{0,${commonIndent}}`), '') : line;
+                    let outLines = noNumberLines.map(l => stripCommonIndent(l));
+
+                    // 3) 去除每行行尾多余空白
+                    outLines = outLines.map(l => l.replace(/[ \t]+$/g, ''));
+
+                    // 4) 去除首尾空行，保留中间空行
+                    while (outLines.length && outLines[0].trim() === '') outLines.shift();
+                    while (outLines.length && outLines[outLines.length - 1].trim() === '') outLines.pop();
+
+                    return outLines.join('\n').trim();
+                }, '清洗选中文本');
+            },
             // 切换手动改进弹框内预览折叠
             toggleManualPreviewCollapse() {
                 return safeExecute(() => {
@@ -1257,7 +1287,8 @@ const createCodeView = async () => {
                         }
                         
                         const range = selection.getRangeAt(0);
-                        const selectedText = range.toString().trim();
+                        const rawText = range.toString();
+                        const selectedText = this.sanitizeSelectedText(rawText);
                         
                         console.log('[CodeView] 选中的文本长度:', selectedText.length);
                         console.log('[CodeView] 选中的文本:', selectedText);
@@ -1370,7 +1401,7 @@ const createCodeView = async () => {
                         e.stopImmediatePropagation();
                         
                         // 获取选中的文本和范围信息
-                        const currentSelectedText = range.toString().trim();
+                        const currentSelectedText = this.sanitizeSelectedText(range.toString());
                         const startContainer = range.startContainer;
                         const endContainer = range.endContainer;
                         

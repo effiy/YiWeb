@@ -733,7 +733,7 @@ export const useMethods = (store) => {
 
                 // 调用更新接口
                 const { updateData } = await import('/apis/modules/crud.js');
-                const result = await updateData(url);
+                const result = await updateData(url, { status: 'resolved' });
 
                 console.log('[评论解决] 解决成功:', result);
                 showSuccessMessage('评论已标记为已解决');
@@ -820,7 +820,7 @@ export const useMethods = (store) => {
 
                 // 调用更新接口
                 const { updateData } = await import('/apis/modules/crud.js');
-                const result = await updateData(url);
+                const result = await updateData(url, { status: 'pending' });
 
                 console.log('[评论重新打开] 重新打开成功:', result);
                 showSuccessMessage('评论已重新打开');
