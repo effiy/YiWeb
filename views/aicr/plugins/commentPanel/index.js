@@ -233,6 +233,75 @@ const createCommentPanel = async () => {
             }
         },
         methods: {
+            // 将Markdown渲染为HTML（与codeView保持一致的轻量实现）
+            renderMarkdown(text) {
+                return safeExecute(() => {
+                    if (!text) return '';
+                    let html = text;
+
+                    const escapeHtml = (s) => s
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                    html = escapeHtml(html);
+
+                    // 代码块 ```
+                    html = html.replace(/```([\s\S]*?)```/g, (m, code) => {
+                        return `<pre class="md-code"><code>${code}</code></pre>`;
+                    });
+
+                    // 行内代码 `code`
+                    html = html.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
+
+                    // 图片 ![alt](url)
+                    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, url) => {
+                        const safeUrl = /^https?:\/\//i.test(url) ? url : '';
+                        const altText = alt || '';
+                        return safeUrl ? `<img src="${safeUrl}" alt="${altText}" class="md-image"/>` : m;
+                    });
+
+                    // 标题 # ## ### #### ##### ######（行首）
+                    html = html.replace(/^(#{6})\s*(.+)$/gm, '<h6>$2<\/h6>')
+                               .replace(/^(#{5})\s*(.+)$/gm, '<h5>$2<\/h5>')
+                               .replace(/^(#{4})\s*(.+)$/gm, '<h4>$2<\/h4>')
+                               .replace(/^(#{3})\s*(.+)$/gm, '<h3>$2<\/h3>')
+                               .replace(/^(#{2})\s*(.+)$/gm, '<h2>$2<\/h2>')
+                               .replace(/^#{1}\s*(.+)$/gm, '<h1>$1<\/h1>');
+
+                    // 粗体/斜体（先粗体）
+                    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1<\/strong>');
+                    html = html.replace(/\*([^*]+)\*/g, '<em>$1<\/em>');
+
+                    // 链接 [text](url)
+                    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer noopener">$1<\/a>');
+
+                    // 有序列表
+                    html = html.replace(/^(\d+)\.\s+(.+)$/gm, '<li>$2<\/li>');
+                    html = html.replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ol>${m.replace(/\n/g, '')}<\/ol>`);
+                    // 无序列表
+                    html = html.replace(/^[-*+]\s+(.+)$/gm, '<li>$1<\/li>');
+                    html = html.replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ul>${m.replace(/\n/g, '')}<\/ul>`);
+
+                    // 段落/换行
+                    const blockTags = ['h1','h2','h3','h4','h5','h6','pre','ul','ol','li','blockquote'];
+                    html = html.split(/\n{2,}/).map(block => {
+                        const trimmed = block.trim();
+                        if (!trimmed) return '';
+                        const isBlock = blockTags.some(tag => new RegExp(`^<${tag}[\\s>]`, 'i').test(trimmed));
+                        return isBlock ? trimmed : `<p>${trimmed.replace(/\n/g, '<br/>')}<\/p>`;
+                    }).join('');
+
+                    // 清理空列表
+                    html = html.replace(/<(ul|ol)>\s*<\/\1>/g, '');
+
+                    // 独立图片链接行转图片
+                    html = html.replace(/(?:^|\n)(https?:[^\s]+\.(?:png|jpe?g|gif|webp|svg))(?:\n|$)/gi, (m, url) => {
+                        return `\n<p><img src="${url}" alt="image" class="md-image"\/><\/p>\n`;
+                    });
+
+                    return html;
+                }, 'Markdown渲染(CommentPanel)');
+            },
             // 切换评论面板收起状态
             toggleCollapse() {
                 this.$emit('toggle-collapse');

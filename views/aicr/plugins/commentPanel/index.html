@@ -197,7 +197,7 @@
                         </div>
                         <pre class="quote-code" @click="highlightCode(comment)">{{ comment.text }}</pre>
                     </div>
-                    <div class="comment-content">{{ comment.content }}</div>
+                    <div class="comment-content md-preview-body" v-html="renderMarkdown(comment.content)"></div>
                     <!-- 改进代码展示区域，仅当有改进代码时显示 -->
                     <div v-if="comment.improvementText" class="comment-improvement">
                         <div class="improvement-header">
