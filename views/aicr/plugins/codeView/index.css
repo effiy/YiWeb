@@ -836,8 +836,8 @@
 }
 
 .manual-improvement-content {
-    width: min(820px, 92vw);
-    max-height: 86vh;
+    width: 80vw;
+    height: 86vh;
     background: var(--bg-elevated);
     border: 1px solid var(--border-primary);
     border-radius: 12px;
@@ -869,6 +869,8 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    flex: 1;
+    min-height: 0;
 }
 
 /* 选中代码片段不再显示，移除样式块 */
@@ -880,15 +882,144 @@
 
 .manual-improvement-input {
     width: 100%;
-    min-height: 160px;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
     padding: 10px 12px;
     background: var(--bg-secondary);
     color: var(--text-primary);
     border: 1px solid var(--border-primary);
     border-radius: 8px;
-    resize: vertical;
+    resize: none;
     font-family: inherit;
     line-height: 1.6;
+}
+
+/* Markdown 输入 + 预览布局 */
+.md-input-preview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    height: 100%;
+    min-height: 0;
+}
+
+/* 预览折叠时，改为单列布局并让输入区占满 */
+.md-input-preview.preview-collapsed {
+    grid-template-columns: 1fr;
+}
+
+/* 折叠时强制隐藏预览列，并让输入列占据整行，增强兼容性 */
+.md-input-preview.preview-collapsed .md-preview {
+    display: none !important;
+}
+.md-input-preview.preview-collapsed .md-input {
+    grid-column: 1 / -1;
+}
+
+.md-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+    min-height: 0;
+}
+
+.md-toolbar {
+    display: flex;
+    gap: 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 6px 8px;
+    align-items: center;
+}
+
+.md-toolbar .md-btn {
+    background: transparent;
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+    border-radius: 4px;
+    padding: 4px 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.md-toolbar .md-btn:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(79,70,229,0.06);
+}
+.md-toolbar-spacer { flex: 1; }
+.md-counter { font-size: 12px; color: var(--text-muted); }
+
+.md-preview {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.preview-header-row {
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.preview-title {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.md-preview-body {
+    padding: 12px;
+    max-height: none;
+    overflow: auto;
+    color: var(--text-primary);
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.md-preview-body img.md-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    display: block;
+    margin: 8px 0;
+    border: 1px solid var(--border-primary);
+}
+
+/* 预览内的通用Markdown样式（简化） */
+.md-preview-body h1, .md-preview-body h2, .md-preview-body h3,
+.md-preview-body h4, .md-preview-body h5, .md-preview-body h6 {
+    margin: 8px 0 6px;
+}
+.md-preview-body p { margin: 6px 0; }
+.md-preview-body ul, .md-preview-body ol { padding-left: 18px; margin: 6px 0; }
+.md-preview-body code.md-inline-code {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+}
+.md-preview-body pre.md-code {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 10px;
+    overflow: auto;
+}
+.md-preview-body a { color: var(--primary); text-decoration: underline; }
+
+@media (max-width: 900px) {
+    .md-input-preview {
+        grid-template-columns: 1fr;
+    }
 }
 
 .manual-improvement-error {
@@ -926,6 +1057,12 @@
     color: #fff;
     border-color: var(--primary);
 }
+.manual-improvement-actions .action-button.confirm:disabled {
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+    border-color: var(--border-primary);
+    cursor: not-allowed;
+}
 
 @media (max-width: 640px) {
     .manual-improvement-content {
@@ -933,7 +1070,7 @@
         max-height: 90vh;
     }
     .manual-improvement-input {
-        min-height: 120px;
+        min-height: 0;
     }
 }
 

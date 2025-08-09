@@ -147,7 +147,11 @@ const createCodeView = async () => {
                 showManualImprovementModal: false,
                 manualCommentText: '',
                 manualCommentError: '',
-                pendingSelectedInfo: null
+                pendingSelectedInfo: null,
+                manualSubmitting: false,
+                manualMaxLength: 2000,
+                // 预览折叠状态
+                manualPreviewCollapsed: false
             };
         },
         computed: {
@@ -244,8 +248,34 @@ const createCodeView = async () => {
                 console.log('[CodeView] lineComments计算结果，有评论的行数:', Object.keys(result).filter(line => result[line].length > 0).length);
                 return result;
             }
+            ,
+            // 新增：手动评论Markdown预览HTML
+            manualCommentPreviewHtml() {
+                return this.renderMarkdown(this.manualCommentText || '');
+            },
+            // 新增：评论详情Markdown渲染
+            currentCommentDetailHtml() {
+                const content = this.currentCommentDetail && this.currentCommentDetail.content ? this.currentCommentDetail.content : '';
+                return this.renderMarkdown(content);
+            },
+            // 新增：评论预览Markdown渲染
+            currentCommentPreviewHtml() {
+                const content = this.currentCommentPreview && this.currentCommentPreview.content ? this.currentCommentPreview.content : '';
+                return this.renderMarkdown(content);
+            },
+            // 新增：是否允许提交
+            canSubmitManualComment() {
+                const len = (this.manualCommentText || '').trim().length;
+                return len > 0 && len <= this.manualMaxLength && !this.manualSubmitting;
+            }
         },
         methods: {
+            // 切换手动改进弹框内预览折叠
+            toggleManualPreviewCollapse() {
+                return safeExecute(() => {
+                    this.manualPreviewCollapsed = !this.manualPreviewCollapsed;
+                }, '切换预览折叠');
+            },
             // 点击行号
             clickLine(lineNumber) {
                 return safeExecute(() => {
@@ -873,6 +903,78 @@ const createCodeView = async () => {
                 }, '隐藏评论预览');
             },
 
+            // 新增：将Markdown渲染为HTML（轻量实现）
+            renderMarkdown(text) {
+                return safeExecute(() => {
+                    if (!text) return '';
+                    let html = text;
+
+                    // 转义HTML（先转义，后按Markdown规则还原必要片段）
+                    const escapeHtml = (s) => s
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                    html = escapeHtml(html);
+
+                    // 代码块 ```
+                    html = html.replace(/```([\s\S]*?)```/g, (m, code) => {
+                        return `<pre class="md-code"><code>${code}</code></pre>`;
+                    });
+
+                    // 行内代码 `code`
+                    html = html.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
+
+                    // 图片 ![alt](url)
+                    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, url) => {
+                        const safeUrl = /^https?:\/\//i.test(url) ? url : '';
+                        const altText = alt || '';
+                        return safeUrl ? `<img src="${safeUrl}" alt="${altText}" class="md-image"/>` : m;
+                    });
+
+                    // 标题 # ## ### #### ##### ######（行首）
+                    html = html.replace(/^(#{6})\s*(.+)$/gm, '<h6>$2</h6>')
+                               .replace(/^(#{5})\s*(.+)$/gm, '<h5>$2</h5>')
+                               .replace(/^(#{4})\s*(.+)$/gm, '<h4>$2</h4>')
+                               .replace(/^(#{3})\s*(.+)$/gm, '<h3>$2</h3>')
+                               .replace(/^(#{2})\s*(.+)$/gm, '<h2>$2</h2>')
+                               .replace(/^#{1}\s*(.+)$/gm, '<h1>$1</h1>');
+
+                    // 粗体/斜体（先粗体）
+                    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+                    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+                    // 链接 [text](url)
+                    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer noopener">$1</a>');
+
+                    // 无序列表与有序列表（简单处理）
+                    // 有序
+                    html = html.replace(/^(\d+)\.\s+(.+)$/gm, '<li>$2</li>');
+                    html = html.replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ol>${m.replace(/\n/g, '')}</ol>`);
+                    // 无序
+                    html = html.replace(/^[-*+]\s+(.+)$/gm, '<li>$1</li>');
+                    html = html.replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ul>${m.replace(/\n/g, '')}</ul>`);
+
+                    // 段落（对非块元素的行加段落）
+                    const blockTags = ['h1','h2','h3','h4','h5','h6','pre','ul','ol','li','blockquote'];
+                    html = html.split(/\n{2,}/).map(block => {
+                        const trimmed = block.trim();
+                        if (!trimmed) return '';
+                        const isBlock = blockTags.some(tag => new RegExp(`^<${tag}[\s>]`, 'i').test(trimmed));
+                        return isBlock ? trimmed : `<p>${trimmed.replace(/\n/g, '<br/>')}</p>`;
+                    }).join('');
+
+                    // 简单清理：移除多余的空ul/ol
+                    html = html.replace(/<(ul|ol)>\s*<\/\1>/g, '');
+
+                    // 将独立图片链接行转为图片
+                    html = html.replace(/(?:^|\n)(https?:[^\s]+\.(?:png|jpe?g|gif|webp|svg))(?:\n|$)/gi, (m, url) => {
+                        return `\n<p><img src="${url}" alt="image" class="md-image"/></p>\n`;
+                    });
+
+                    return html;
+                }, 'Markdown渲染');
+            },
+
             // 新增：打开手动改进弹框
             openManualImprovementModal(selectedInfo) {
                 return safeExecute(() => {
@@ -880,6 +982,19 @@ const createCodeView = async () => {
                     this.manualCommentText = '';
                     this.manualCommentError = '';
                     this.showManualImprovementModal = true;
+                    // 下一个tick自动聚焦
+                    this.$nextTick(() => {
+                        try {
+                            const el = this.$refs && this.$refs.manualCommentTextarea;
+                            if (el && el.focus) {
+                                el.focus();
+                                // 将光标移至末尾
+                                const val = el.value;
+                                el.value = '';
+                                el.value = val;
+                            }
+                        } catch (e) {}
+                    });
                 }, '打开手动改进弹框');
             },
 
@@ -905,6 +1020,10 @@ const createCodeView = async () => {
                         this.manualCommentError = '请填写评论内容';
                         return;
                     }
+                    if (contentText.length > this.manualMaxLength) {
+                        this.manualCommentError = `评论内容过长（最多 ${this.manualMaxLength} 字）`;
+                        return;
+                    }
 
                     // 组装评论对象
                     const selectedInfo = this.pendingSelectedInfo;
@@ -926,6 +1045,7 @@ const createCodeView = async () => {
                     const versionId = window.aicrStore?.selectedVersion?.value;
 
                     try {
+                        this.manualSubmitting = true;
                         if (projectId && versionId) {
                             const payload = { ...commentData, projectId, versionId };
                             const result = await postData(`${window.API_URL}/mongodb/?cname=comments`, payload);
@@ -974,8 +1094,89 @@ const createCodeView = async () => {
                             const { showMessage } = await import('/utils/message.js');
                             showMessage({ type: 'error', title: '提交失败', content: this.manualCommentError, duration: 4000, showClose: true });
                         } catch (_) {}
+                    } finally {
+                        this.manualSubmitting = false;
                     }
                 }, '提交手动改进评论');
+            },
+
+            // 新增：Markdown工具插入
+            insertMarkdown(type) {
+                return safeExecute(() => {
+                    const textarea = this.$refs && this.$refs.manualCommentTextarea;
+                    if (!textarea) return;
+                    const start = textarea.selectionStart || 0;
+                    const end = textarea.selectionEnd || 0;
+                    const value = this.manualCommentText || '';
+                    const selected = value.slice(start, end);
+                    let before = value.slice(0, start);
+                    let after = value.slice(end);
+                    let insertText = '';
+                    let cursorOffset = 0;
+
+                    switch (type) {
+                        case 'bold':
+                            insertText = selected ? `**${selected}**` : `**粗体**`;
+                            cursorOffset = selected ? 0 : 4;
+                            break;
+                        case 'italic':
+                            insertText = selected ? `*${selected}*` : `*斜体*`;
+                            cursorOffset = selected ? 0 : 3;
+                            break;
+                        case 'code':
+                            insertText = selected ? `\`${selected}\`` : '`code`';
+                            cursorOffset = selected ? 0 : 1;
+                            break;
+                        case 'codeblock':
+                            insertText = selected ? `\n\n\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+` + selected + `\n\n` : "```\n示例代码\n```\n";
+                            cursorOffset = 0;
+                            break;
+                        case 'ul':
+                            insertText = selected ? selected.split(/\n/).map(l => `- ${l || ''}`).join('\n') : '- 列表项\n- 列表项';
+                            break;
+                        case 'ol':
+                            insertText = selected ? selected.split(/\n/).map((l,i) => `${i+1}. ${l || ''}`).join('\n') : '1. 列表项\n2. 列表项';
+                            break;
+                        case 'link':
+                            insertText = `[${selected || '链接文字'}](${selected ? 'https://example.com' : 'https://example.com'})`;
+                            cursorOffset = 0;
+                            break;
+                        default:
+                            return;
+                    }
+
+                    this.manualCommentText = before + insertText + after;
+                    this.$nextTick(() => {
+                        const pos = before.length + insertText.length - cursorOffset;
+                        textarea.focus();
+                        textarea.setSelectionRange(pos, pos);
+                    });
+                }, '插入Markdown');
+            },
+
+            // 新增：编辑器快捷键
+            handleManualKeydown(event) {
+                return safeExecute(() => {
+                    const isSubmit = (event.ctrlKey || event.metaKey) && event.key === 'Enter';
+                    const isEscape = event.key === 'Escape';
+                    if (isSubmit) {
+                        event.preventDefault();
+                        if (this.canSubmitManualComment) this.submitManualImprovement();
+                    } else if (isEscape) {
+                        event.preventDefault();
+                        this.closeManualImprovementModal();
+                    }
+                }, '手动评论快捷键');
             },
             
             // 新增：处理评论标记鼠标事件
