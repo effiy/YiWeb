@@ -1030,53 +1030,11 @@ const createCodeView = async () => {
                     const file = selectedInfo?.fileInfo?.currentFile;
                     const fileId = file?.fileId || file?.id || file?.path || file?.key;
 
-                    // 标准化 rangeInfo 与 text，确保与“有评论者”的内容保持一致
-                    const rawRange = selectedInfo.range || null;
-                    let normalizedRange = null;
-                    if (rawRange && typeof rawRange === 'object') {
-                        let startLine = parseInt(rawRange.startLine ?? rawRange.start ?? 1, 10);
-                        let endLine = parseInt(rawRange.endLine ?? rawRange.end ?? startLine, 10);
-                        if (Number.isNaN(startLine)) startLine = 1;
-                        if (Number.isNaN(endLine)) endLine = startLine;
-                        if (startLine > endLine) {
-                            const temp = startLine; startLine = endLine; endLine = temp;
-                        }
-                        const startChar = (typeof rawRange.startChar === 'number') ? rawRange.startChar : 0;
-                        let endChar = (typeof rawRange.endChar === 'number') ? rawRange.endChar : null;
-                        normalizedRange = {
-                            startLine: startLine >= 1 ? startLine : startLine + 1,
-                            endLine: endLine >= 1 ? endLine : endLine + 1,
-                            startChar,
-                            endChar
-                        };
-                    }
-
-                    // 规范化选中文本；若为空则按行号回填
-                    let normalizedText = (selectedInfo.text || '').trim();
-                    if ((!normalizedText || normalizedText.length === 0) && normalizedRange) {
-                        const lines = [];
-                        try {
-                            for (let i = normalizedRange.startLine; i <= normalizedRange.endLine; i++) {
-                                const el = document.querySelector(`.code-line[data-line="${i}"]`);
-                                if (el) lines.push(el.textContent || '');
-                            }
-                        } catch (_) {}
-                        normalizedText = lines.join('\n').trim();
-                    }
-
-                    // 单行场景补齐 endChar（尽量与被选中文本长度对齐）
-                    if (normalizedRange && normalizedRange.startLine === normalizedRange.endLine) {
-                        if (typeof normalizedRange.endChar !== 'number') {
-                            const length = normalizedText ? normalizedText.length : 0;
-                            normalizedRange.endChar = (typeof normalizedRange.startChar === 'number') ? (normalizedRange.startChar + length) : length;
-                        }
-                    }
-
                     const commentData = {
                         author: 'manual',
                         content: contentText,
-                        text: normalizedText,
-                        rangeInfo: normalizedRange,
+                        text: selectedInfo.text || '',
+                        rangeInfo: selectedInfo.range || null,
                         fileId: fileId || null,
                         status: 'pending',
                         timestamp: new Date().toISOString()
