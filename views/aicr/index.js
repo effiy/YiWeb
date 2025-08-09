@@ -32,21 +32,37 @@ const { computed } = Vue;
             let startLine = 0, endLine = 0, startChar = 0, endChar = 0;
             if (detail.range) {
                 const range = detail.range;
-                // 获取起止节点的父元素（.code-line）
-                const pre = range.startContainer.parentElement;
-                const post = range.endContainer.parentElement;
-                if (pre && pre.classList.contains('code-line')) {
-                    startLine = parseInt(pre.getAttribute('data-line')) || 0;
-                }
-                if (post && post.classList.contains('code-line')) {
-                    endLine = parseInt(post.getAttribute('data-line')) || 0;
-                }
+                // 通过closest('.code-line') 获取准确行号（author: liangliang）
+                const getLineNumberFromNode = (node) => {
+                    const el = node && node.nodeType === 3 ? node.parentElement : node;
+                    if (!el) return 0;
+                    const codeLineEl = el.classList && el.classList.contains('code-line')
+                        ? el
+                        : (el.closest ? el.closest('.code-line') : null);
+                    if (!codeLineEl) return 0;
+                    const num = parseInt(codeLineEl.getAttribute('data-line'));
+                    return Number.isFinite(num) ? num : 0;
+                };
+
+                startLine = getLineNumberFromNode(range.startContainer);
+                endLine = getLineNumberFromNode(range.endContainer);
+
                 // 获取字符级索引
-                if (range.startContainer.nodeType === 3 && pre) {
+                if (range.startContainer && range.startContainer.nodeType === 3) {
                     startChar = range.startOffset;
                 }
-                if (range.endContainer.nodeType === 3 && post) {
+                if (range.endContainer && range.endContainer.nodeType === 3) {
                     endChar = range.endOffset;
+                }
+
+                // 规范化与排序
+                if (!startLine && endLine) startLine = endLine;
+                if (!endLine && startLine) endLine = startLine;
+                if (!startLine) startLine = 1;
+                if (!endLine) endLine = startLine;
+                if (startLine > endLine) {
+                    const tmp = startLine; startLine = endLine; endLine = tmp;
+                    const tmpChar = startChar; startChar = endChar; endChar = tmpChar;
                 }
             }
             // 兼容性处理

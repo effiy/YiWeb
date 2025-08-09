@@ -1374,40 +1374,41 @@ const createCodeView = async () => {
                         const startContainer = range.startContainer;
                         const endContainer = range.endContainer;
                         
-                        // 获取行号信息
+                        // 获取行号信息（author: liangliang）
+                        // 统一通过最近的 .code-line 容器获取行号，避免仅取父元素导致的行号错位
                         let startLine = 0, endLine = 0, startChar = 0, endChar = 0;
-                        
-                        // 获取起始行号
-                        if (startContainer.nodeType === 3) { // 文本节点
-                            const codeLine = startContainer.parentElement;
-                            if (codeLine && codeLine.classList.contains('code-line')) {
-                                startLine = parseInt(codeLine.getAttribute('data-line')) || 0;
-                                startChar = range.startOffset;
-                            }
+
+                        const getLineNumberFromNode = (node) => {
+                            const el = node && node.nodeType === 3 ? node.parentElement : node;
+                            if (!el) return 0;
+                            // 如果自身不是 .code-line，则向上查找最近的 .code-line
+                            const codeLineEl = el.classList && el.classList.contains('code-line')
+                                ? el
+                                : (el.closest ? el.closest('.code-line') : null);
+                            if (!codeLineEl) return 0;
+                            const num = parseInt(codeLineEl.getAttribute('data-line'));
+                            return Number.isFinite(num) ? num : 0;
+                        };
+
+                        startLine = getLineNumberFromNode(startContainer);
+                        endLine = getLineNumberFromNode(endContainer);
+
+                        // 记录字符位置（仅对文本节点有效，不影响行号）
+                        if (startContainer && startContainer.nodeType === 3) {
+                            startChar = range.startOffset;
                         }
-                        
-                        // 获取结束行号
-                        if (endContainer.nodeType === 3) { // 文本节点
-                            const codeLine = endContainer.parentElement;
-                            if (codeLine && codeLine.classList.contains('code-line')) {
-                                endLine = parseInt(codeLine.getAttribute('data-line')) || 0;
-                                endChar = range.endOffset;
-                            }
+                        if (endContainer && endContainer.nodeType === 3) {
+                            endChar = range.endOffset;
                         }
-                        
-                        // 如果没有获取到行号，尝试从父元素获取
-                        if (!startLine) {
-                            const startElement = startContainer.nodeType === 3 ? startContainer.parentElement : startContainer;
-                            if (startElement && startElement.classList.contains('code-line')) {
-                                startLine = parseInt(startElement.getAttribute('data-line')) || 0;
-                            }
-                        }
-                        
-                        if (!endLine) {
-                            const endElement = endContainer.nodeType === 3 ? endContainer.parentElement : endContainer;
-                            if (endElement && endElement.classList.contains('code-line')) {
-                                endLine = parseInt(endElement.getAttribute('data-line')) || 0;
-                            }
+
+                        // 确保行号有效并排序
+                        if (!startLine && endLine) startLine = endLine;
+                        if (!endLine && startLine) endLine = startLine;
+                        if (!startLine) startLine = 1;
+                        if (!endLine) endLine = startLine;
+                        if (startLine > endLine) {
+                            const tmp = startLine; startLine = endLine; endLine = tmp;
+                            const tmpChar = startChar; startChar = endChar; endChar = tmpChar;
                         }
                         
                         // 确保行号有效
