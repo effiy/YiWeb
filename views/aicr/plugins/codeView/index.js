@@ -297,7 +297,47 @@ const createCodeView = async () => {
                     while (outLines.length && outLines[0].trim() === '') outLines.shift();
                     while (outLines.length && outLines[outLines.length - 1].trim() === '') outLines.pop();
 
-                    return outLines.join('\n').trim();
+                    // 5) 压缩中间连续空行为单个空行，并智能识别“每行后都有一个空行”的交错模式
+                    const nonEmptyCount = outLines.filter(l => l.trim() !== '').length;
+                    const emptyCount = outLines.length - nonEmptyCount;
+
+                    let allowMiddleBlanks = true;
+                    if (nonEmptyCount > 0 && emptyCount >= Math.max(0, nonEmptyCount - 1)) {
+                        // 检测交错模式：非空行与空行交替出现
+                        let alternating = true;
+                        for (let i = 0; i < outLines.length - 1; i++) {
+                            const curEmpty = outLines[i].trim() === '';
+                            const nextEmpty = outLines[i + 1].trim() === '';
+                            if (i % 2 === 0) {
+                                // 期望: 非空 -> 空
+                                if (curEmpty || !nextEmpty) { alternating = false; break; }
+                            } else {
+                                // 期望: 空 -> 非空
+                                if (!curEmpty || nextEmpty) { alternating = false; break; }
+                            }
+                        }
+                        if (alternating) {
+                            // 出现交错空行，移除所有中间空行
+                            allowMiddleBlanks = false;
+                        }
+                    }
+
+                    const normalizedLines = [];
+                    let lastWasEmpty = false;
+                    for (const l of outLines) {
+                        const isEmpty = l.trim() === '';
+                        if (isEmpty) {
+                            if (!allowMiddleBlanks) continue; // 完全忽略中间空行
+                            if (lastWasEmpty) continue; // 压缩多余连续空行
+                            lastWasEmpty = true;
+                            normalizedLines.push('');
+                        } else {
+                            lastWasEmpty = false;
+                            normalizedLines.push(l);
+                        }
+                    }
+
+                    return normalizedLines.join('\n').trim();
                 }, '清洗选中文本');
             },
             // 切换手动改进弹框内预览折叠
