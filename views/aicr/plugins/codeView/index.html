@@ -167,6 +167,42 @@
             </div>
         </div>
         
+        <!-- 未选评论者时的手动评论弹框 -->
+        <div 
+            v-if="showManualImprovementModal" 
+            class="manual-improvement-modal" 
+            role="dialog" 
+            aria-label="手动填写评论内容"
+        >
+            <div class="manual-improvement-content">
+                <div class="manual-improvement-header">
+                    <h3 class="manual-improvement-title">填写评论内容</h3>
+                    <button class="close-btn" @click="closeManualImprovementModal" title="关闭" aria-label="关闭">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="manual-improvement-body">
+                    <textarea 
+                        class="manual-improvement-input"
+                        v-model="manualCommentText" 
+                        placeholder="请输入要发布的评论内容"
+                        rows="10"
+                    ></textarea>
+                    <div v-if="manualCommentError" class="manual-improvement-error">
+                        <i class="fas fa-exclamation-circle"></i> {{ manualCommentError }}
+                    </div>
+                </div>
+                <div class="manual-improvement-actions">
+                    <button class="action-button cancel" @click="closeManualImprovementModal">
+                        <i class="fas fa-times"></i> 取消
+                    </button>
+                    <button class="action-button confirm" @click="submitManualImprovement">
+                        <i class="fas fa-paper-plane"></i> 提交
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- 评论预览弹窗（悬停显示） -->
         <div 
             v-if="showCommentPreviewPopup && currentCommentPreview" 

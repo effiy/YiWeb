@@ -142,7 +142,12 @@ const createCodeView = async () => {
                 // 新增：弹窗状态
                 popupState: {
                     isDraggable: false
-                }
+                },
+                // 新增：未选评论者时的手动评论弹框
+                showManualImprovementModal: false,
+                manualCommentText: '',
+                manualCommentError: '',
+                pendingSelectedInfo: null
             };
         },
         computed: {
@@ -867,6 +872,111 @@ const createCodeView = async () => {
                     }, 150); // 增加延迟到150ms，减少闪烁
                 }, '隐藏评论预览');
             },
+
+            // 新增：打开手动改进弹框
+            openManualImprovementModal(selectedInfo) {
+                return safeExecute(() => {
+                    this.pendingSelectedInfo = selectedInfo || null;
+                    this.manualCommentText = '';
+                    this.manualCommentError = '';
+                    this.showManualImprovementModal = true;
+                }, '打开手动改进弹框');
+            },
+
+            // 新增：关闭手动改进弹框
+            closeManualImprovementModal() {
+                return safeExecute(() => {
+                    this.showManualImprovementModal = false;
+                    this.manualCommentText = '';
+                    this.manualCommentError = '';
+                    this.pendingSelectedInfo = null;
+                }, '关闭手动改进弹框');
+            },
+
+            // 新增：提交手动改进评论
+            async submitManualImprovement() {
+                return safeExecute(async () => {
+                    if (!this.pendingSelectedInfo) {
+                        this.manualCommentError = '缺少选中代码信息，请重新选择代码后重试';
+                        return;
+                    }
+                    const contentText = (this.manualCommentText || '').trim();
+                    if (!contentText) {
+                        this.manualCommentError = '请填写评论内容';
+                        return;
+                    }
+
+                    // 组装评论对象
+                    const selectedInfo = this.pendingSelectedInfo;
+                    const file = selectedInfo?.fileInfo?.currentFile;
+                    const fileId = file?.fileId || file?.id || file?.path || file?.key;
+
+                    const commentData = {
+                        author: 'manual',
+                        content: contentText,
+                        text: selectedInfo.text || '',
+                        rangeInfo: selectedInfo.range || null,
+                        fileId: fileId || null,
+                        status: 'pending',
+                        timestamp: new Date().toISOString()
+                    };
+
+                    // 获取项目/版本
+                    const projectId = window.aicrStore?.selectedProject?.value;
+                    const versionId = window.aicrStore?.selectedVersion?.value;
+
+                    try {
+                        if (projectId && versionId) {
+                            const payload = { ...commentData, projectId, versionId };
+                            const result = await postData(`${window.API_URL}/mongodb/?cname=comments`, payload);
+                            // 构造带key的新评论
+                            const newComment = {
+                                ...payload,
+                                key: (result && result.data && result.data.key) ? result.data.key : `comment_${Date.now()}_${Math.random()}`
+                            };
+
+                            // 通知评论面板立即添加
+                            window.dispatchEvent(new CustomEvent('addNewComment', { detail: { comment: newComment } }));
+                            // 本地加入
+                            this.fileComments = [newComment, ...this.fileComments];
+                        } else {
+                            // 无项目/版本时，仅本地添加
+                            const newLocalComment = {
+                                ...commentData,
+                                key: `comment_${Date.now()}_${Math.random()}`
+                            };
+                            window.dispatchEvent(new CustomEvent('addNewComment', { detail: { comment: newLocalComment } }));
+                            this.fileComments = [newLocalComment, ...this.fileComments];
+                        }
+
+                        this.buildCommentMarkers();
+
+                        // 关闭弹框并清理
+                        this.closeManualImprovementModal();
+
+                        // 触发全局刷新，确保其他面板同步
+                        setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('reloadComments', {
+                                detail: {
+                                    projectId: projectId || null,
+                                    versionId: versionId || null,
+                                    fileId: fileId || null,
+                                    forceReload: true,
+                                    showAllComments: !fileId
+                                }
+                            }));
+                        }, 300);
+                    } catch (err) {
+                        console.error('[CodeView] 手动提交改进失败:', err);
+                        this.manualCommentError = err?.message || '提交失败，请稍后重试';
+                        // 兜底消息
+                        try {
+                            const { showMessage } = await import('/utils/message.js');
+                            showMessage({ type: 'error', title: '提交失败', content: this.manualCommentError, duration: 4000, showClose: true });
+                        } catch (_) {}
+                    }
+                }, '提交手动改进评论');
+            },
             
             // 新增：处理评论标记鼠标事件
             handleCommentMarkerMouseEvents(comment, event) {
@@ -1213,10 +1323,12 @@ const createCodeView = async () => {
                         showGlobalLoading('正在生成评论，请稍候...');
                         console.log('[CodeView] 显示全局loading');
                         
-                        // 触发自定义事件获取评论者信息
+                        // 触发自定义事件获取评论者信息（增加回退逻辑）
+                        let commenterCallbackHandled = false;
                         window.dispatchEvent(new CustomEvent('getSelectedCommenters', {
                             detail: {
                                 callback: async (commenters) => {
+                                    commenterCallbackHandled = true;
                                     try {
                                         console.log('=== 通过事件获取的评论者信息 ===');
                                         if (commenters && commenters.length > 0) {
@@ -1307,49 +1419,13 @@ const createCodeView = async () => {
                                                     }
                                                 }
                                             }
-                                        } else {
-                                            console.log('没有选中任何评论者');
-                                            
-                                            // 显示友好的提示信息
-                                            const { showMessage } = await import('/utils/message.js');
-                                            showMessage({
-                                                type: 'warning',
-                                                title: '请先选择评论者',
-                                                content: '在添加评论之前，请先在右侧评论面板中选择一个或多个评论者。',
-                                                duration: 5000,
-                                                showClose: true,
-                                                actions: [
-                                                    {
-                                                        text: '去选择评论者',
-                                                        type: 'primary',
-                                                        action: () => {
-                                                            // 触发评论面板展开事件
-                                                            window.dispatchEvent(new CustomEvent('focusCommentPanel'));
-                                                        }
-                                                    },
-                                                    {
-                                                        text: '我知道了',
-                                                        type: 'default',
-                                                        action: () => {}
-                                                    }
-                                                ]
-                                            });
-                                            
-                                            // 可选：高亮评论面板区域
-                                            setTimeout(() => {
-                                                const commentPanel = document.querySelector('.comment-panel-container');
-                                                if (commentPanel) {
-                                                    commentPanel.style.transition = 'all 0.3s ease';
-                                                    commentPanel.style.boxShadow = '0 0 20px rgba(79,70,229,0.3)';
-                                                    commentPanel.style.border = '2px solid rgba(79,70,229,0.5)';
-                                                    
-                                                    setTimeout(() => {
-                                                        commentPanel.style.boxShadow = '';
-                                                        commentPanel.style.border = '';
-                                                    }, 2000);
-                                                }
-                                            }, 100);
-                                        }
+                        } else {
+                            console.log('没有选中任何评论者，改为弹出手动填写改进代码弹框');
+                            // 隐藏全局loading
+                            hideGlobalLoading();
+                            // 打开手动改进弹框
+                            this.openManualImprovementModal(selectedObjectInfo);
+                        }
                                     } catch (error) {
                                         console.error('[CodeView] 评论生成失败:', error);
                                     } finally {
@@ -1361,6 +1437,14 @@ const createCodeView = async () => {
                                 }
                             }
                         }));
+                        // 回退方案：若未收到回调，默认弹出手动填写改进代码弹框
+                        setTimeout(() => {
+                            if (!commenterCallbackHandled) {
+                                console.log('[CodeView] 未收到评论者回调，启用回退弹框');
+                                hideGlobalLoading();
+                                this.openManualImprovementModal(selectedObjectInfo);
+                            }
+                        }, 500);
                         
                         // 清除按钮和选择
                         this.clearSelectionAndButton();
