@@ -81,7 +81,8 @@ async function fetchCommentsFromMongo(file) {
         }
         
         console.log('[CommentPanel] 调用MongoDB接口:', url);
-        const response = await getData(url, { method: 'GET' });
+        // 禁用本地缓存，确保评论列表总是从服务端获取最新数据
+        const response = await getData(url, { method: 'GET' }, false);
         console.log('[CommentPanel] 获取评论数据响应:', response);
         
         // 处理响应数据

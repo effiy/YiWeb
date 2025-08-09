@@ -171,7 +171,8 @@ export const createStore = () => {
                 }
                 
                 console.log('[loadComments] 调用MongoDB接口:', url);
-                const response = await getData(url);
+                // 禁用本地缓存，确保评论列表总是从服务端获取最新数据
+                const response = await getData(url, {}, false);
                 
                 if (response && response.data && response.data.list) {
                     comments.value = response.data.list;
