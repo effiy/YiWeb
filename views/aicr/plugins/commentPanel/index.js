@@ -177,8 +177,16 @@ const createCommentPanel = async () => {
                 // 移除缓存机制，只保留防抖定时器
                 _debounceTimer: null,
                 // 评论编辑状态（作者：liangliang）
-                editingCommentKey: null,
+                showCommentEditor: false,
+                editingComment: null,
                 editingCommentContent: '',
+                editingCommentAuthor: '',
+                editingCommentTimestamp: '',
+                editingCommentText: '',
+                editingRangeInfo: { startLine: 1, endLine: 1 },
+                editingImprovementText: '',
+                editingCommentType: '',
+                editingCommentStatus: 'pending',
                 editingSaving: false
             };
         },
@@ -562,35 +570,95 @@ const createCommentPanel = async () => {
                 }
             },
 
-            // 开始编辑评论（作者：liangliang）
-            startEditComment(comment) {
+
+
+            // 打开评论编辑器（作者：liangliang）
+            openCommentEditor(comment) {
                 return safeExecute(() => {
                     if (!comment || !comment.key) return;
-                    this.editingCommentKey = comment.key;
+                    
+                    console.log('[CommentPanel] 打开评论编辑器:', comment);
+                    
+                    // 设置编辑状态
+                    this.editingComment = { ...comment };
                     this.editingCommentContent = comment.content || '';
+                    this.editingCommentAuthor = comment.author || '';
+                    
+                    // 处理时间戳
+                    if (comment.timestamp) {
+                        const date = new Date(comment.timestamp);
+                        // 转换为datetime-local格式 (YYYY-MM-DDTHH:mm)
+                        this.editingCommentTimestamp = date.toISOString().slice(0, 16);
+                    } else {
+                        this.editingCommentTimestamp = new Date().toISOString().slice(0, 16);
+                    }
+                    
+                    this.editingCommentText = comment.text || '';
+                    this.editingRangeInfo = comment.rangeInfo ? { ...comment.rangeInfo } : { startLine: 1, endLine: 1 };
+                    this.editingImprovementText = comment.improvementText || '';
+                    this.editingCommentType = comment.type || '';
+                    this.editingCommentStatus = comment.status || 'pending';
+                    this.editingSaving = false;
+                    
+                    // 显示编辑器
+                    this.showCommentEditor = true;
+                    
+                    // 聚焦到内容输入框
                     this.$nextTick(() => {
-                        const textarea = document.querySelector('.comment-edit textarea');
-                        if (textarea) textarea.focus();
+                        const textarea = document.querySelector('.comment-content-textarea');
+                        if (textarea) {
+                            textarea.focus();
+                            // 将光标移到末尾
+                            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+                        }
                     });
-                }, '开始编辑评论');
+                }, '打开评论编辑器');
             },
 
-            // 取消编辑评论（作者：liangliang）
-            cancelEditComment() {
+            // 关闭评论编辑器（作者：liangliang）
+            closeCommentEditor() {
                 return safeExecute(() => {
-                    this.editingCommentKey = null;
+                    console.log('[CommentPanel] 关闭评论编辑器');
+                    
+                    this.showCommentEditor = false;
+                    this.editingComment = null;
                     this.editingCommentContent = '';
+                    this.editingCommentAuthor = '';
+                    this.editingCommentTimestamp = '';
+                    this.editingCommentText = '';
+                    this.editingRangeInfo = { startLine: 1, endLine: 1 };
+                    this.editingImprovementText = '';
+                    this.editingCommentType = '';
+                    this.editingCommentStatus = 'pending';
                     this.editingSaving = false;
-                }, '取消编辑评论');
+                }, '关闭评论编辑器');
             },
 
             // 保存编辑后的评论（作者：liangliang）
-            async saveEditedComment(comment) {
+            async saveEditedComment() {
                 return safeExecute(async () => {
-                    if (!comment || !comment.key) return;
+                    if (!this.editingComment || !this.editingComment.key) return;
+                    
                     const newContent = (this.editingCommentContent || '').trim();
                     if (!newContent) {
                         alert('评论内容不能为空');
+                        return;
+                    }
+
+                    // 验证评论者姓名
+                    const newAuthor = (this.editingCommentAuthor || '').trim();
+                    if (!newAuthor) {
+                        alert('评论者姓名不能为空');
+                        return;
+                    }
+
+                    // 验证位置信息
+                    if (this.editingRangeInfo.startLine < 1 || this.editingRangeInfo.endLine < 1) {
+                        alert('行号必须大于0');
+                        return;
+                    }
+                    if (this.editingRangeInfo.startLine > this.editingRangeInfo.endLine) {
+                        alert('开始行号不能大于结束行号');
                         return;
                     }
 
@@ -610,24 +678,51 @@ const createCommentPanel = async () => {
                     let url = `${window.API_URL}/mongodb/?cname=comments`;
                     if (projectId) url += `&projectId=${projectId}`;
                     if (versionId) url += `&versionId=${versionId}`;
-                    url += `&key=${comment.key}`;
+                    url += `&key=${this.editingComment.key}`;
 
                     try {
                         const { updateData } = await import('/apis/modules/crud.js');
-                        const payload = { key: comment.key, content: newContent, updatedAt: new Date().toISOString() };
+                        
+                        // 处理时间戳
+                        let newTimestamp = this.editingComment.timestamp;
+                        if (this.editingCommentTimestamp) {
+                            newTimestamp = new Date(this.editingCommentTimestamp).toISOString();
+                        }
+                        
+                        const payload = {
+                            key: this.editingComment.key,
+                            author: newAuthor,
+                            timestamp: newTimestamp,
+                            content: newContent,
+                            text: this.editingCommentText || null,
+                            rangeInfo: this.editingRangeInfo,
+                            improvementText: this.editingImprovementText || null,
+                            type: this.editingCommentType || null,
+                            status: this.editingCommentStatus,
+                            updatedAt: new Date().toISOString()
+                        };
+                        
                         const result = await updateData(url, payload);
                         console.log('[CommentPanel] 评论更新成功:', result);
 
                         // 本地同步更新，提升体验
-                        const idx = this.mongoComments.findIndex(c => (c.key || c.id) === comment.key);
+                        const idx = this.mongoComments.findIndex(c => (c.key || c.id) === this.editingComment.key);
                         if (idx !== -1) {
-                            this.mongoComments[idx] = { ...this.mongoComments[idx], content: newContent };
+                            this.mongoComments[idx] = { 
+                                ...this.mongoComments[idx], 
+                                author: newAuthor,
+                                timestamp: newTimestamp,
+                                content: newContent,
+                                text: this.editingCommentText || null,
+                                rangeInfo: this.editingRangeInfo,
+                                improvementText: this.editingImprovementText || null,
+                                type: this.editingCommentType || null,
+                                status: this.editingCommentStatus
+                            };
                         }
 
-                        // 退出编辑态
-                        this.editingCommentKey = null;
-                        this.editingCommentContent = '';
-                        this.editingSaving = false;
+                        // 关闭编辑器
+                        this.closeCommentEditor();
 
                         // 轻量刷新
                         this.debouncedLoadComments();
@@ -639,14 +734,14 @@ const createCommentPanel = async () => {
                 }, '保存编辑后的评论');
             },
 
-            // 编辑态键盘事件（作者：liangliang）
-            onEditKeydown(event, comment) {
+            // 评论编辑键盘事件（作者：liangliang）
+            onCommentEditKeydown(event) {
                 if (event.key === 'Escape') {
                     event.preventDefault();
-                    this.cancelEditComment();
+                    this.closeCommentEditor();
                 } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
                     event.preventDefault();
-                    this.saveEditedComment(comment);
+                    this.saveEditedComment();
                 }
             },
 

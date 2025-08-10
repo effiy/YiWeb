@@ -1727,7 +1727,7 @@
 .comment-input:focus {
     outline: none;
     border-color: var(--primary);
-    background: #fafaff;
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
 }
 
 .form-header {
@@ -3149,4 +3149,226 @@
     .input-counter {
         font-size: 11px;
     }
+}
+
+/* ========== 评论编辑模态框样式 ========== */
+.comment-editor-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.comment-editor-content {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 600px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-primary);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.comment-edit-form {
+    padding: 24px;
+    overflow-y: auto;
+    max-height: calc(90vh - 120px);
+}
+
+/* 评论信息展示区域 */
+.comment-info {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-secondary);
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 60px;
+    margin-right: 12px;
+}
+
+.info-item span {
+    color: var(--text-primary);
+    flex: 1;
+}
+
+/* 引用代码展示区域 */
+.quoted-code-section {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-secondary);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.section-header i {
+    margin-right: 8px;
+    color: var(--primary);
+}
+
+.quoted-code {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-tertiary);
+    border-radius: 6px;
+    padding: 12px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* 评论内容编辑区域 */
+.comment-content-textarea {
+    font-family: inherit;
+    line-height: 1.6;
+    resize: vertical;
+    min-height: 200px;
+}
+
+.textarea-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+}
+
+.textarea-hint i {
+    margin-right: 6px;
+    color: var(--primary);
+}
+
+/* 改进代码编辑区域 */
+.improvement-textarea {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    resize: vertical;
+    min-height: 150px;
+}
+
+/* 表单行布局 */
+.form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.form-group.half-width {
+    flex: 1;
+}
+
+/* 选择框样式 */
+.form-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-select:hover {
+    border-color: var(--border-hover);
+}
+
+/* 响应式设计 */
+@media (max-width: 640px) {
+    .comment-editor-modal {
+        padding: 16px;
+    }
+    
+    .comment-editor-content {
+        width: 100%;
+        max-width: none;
+        max-height: 95vh;
+    }
+    
+    .comment-edit-form {
+        padding: 16px;
+        max-height: calc(95vh - 100px);
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .comment-content-textarea {
+        min-height: 150px;
+    }
+    
+    .improvement-textarea {
+        min-height: 120px;
+    }
+    
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .info-item label {
+        min-width: auto;
+        margin-right: 0;
+    }
+}
+
+/* 引用代码编辑区域 */
+.quoted-code-textarea {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    resize: vertical;
+    min-height: 120px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-tertiary);
 }
