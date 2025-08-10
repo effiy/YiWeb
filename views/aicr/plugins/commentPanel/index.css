@@ -723,6 +723,7 @@
 /* 评论头部 */
 .comment-header-section {
     margin-bottom: 8px;
+    padding: 0 10px;
 }
 
 .comment-meta {
