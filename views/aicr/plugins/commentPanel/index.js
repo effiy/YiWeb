@@ -175,7 +175,11 @@ const createCommentPanel = async () => {
                 editingCommenter: null,
                 originalCommenter: null,
                 // 移除缓存机制，只保留防抖定时器
-                _debounceTimer: null
+                _debounceTimer: null,
+                // 评论编辑状态（作者：liangliang）
+                editingCommentKey: null,
+                editingCommentContent: '',
+                editingSaving: false
             };
         },
         computed: {
@@ -555,6 +559,94 @@ const createCommentPanel = async () => {
             deleteComment(commentId) {
                 if (confirm('确定要删除这条评论吗？')) {
                     this.$emit('comment-delete', commentId);
+                }
+            },
+
+            // 开始编辑评论（作者：liangliang）
+            startEditComment(comment) {
+                return safeExecute(() => {
+                    if (!comment || !comment.key) return;
+                    this.editingCommentKey = comment.key;
+                    this.editingCommentContent = comment.content || '';
+                    this.$nextTick(() => {
+                        const textarea = document.querySelector('.comment-edit textarea');
+                        if (textarea) textarea.focus();
+                    });
+                }, '开始编辑评论');
+            },
+
+            // 取消编辑评论（作者：liangliang）
+            cancelEditComment() {
+                return safeExecute(() => {
+                    this.editingCommentKey = null;
+                    this.editingCommentContent = '';
+                    this.editingSaving = false;
+                }, '取消编辑评论');
+            },
+
+            // 保存编辑后的评论（作者：liangliang）
+            async saveEditedComment(comment) {
+                return safeExecute(async () => {
+                    if (!comment || !comment.key) return;
+                    const newContent = (this.editingCommentContent || '').trim();
+                    if (!newContent) {
+                        alert('评论内容不能为空');
+                        return;
+                    }
+
+                    // 防重复
+                    if (this.editingSaving) return;
+                    this.editingSaving = true;
+
+                    // 获取项目/版本信息（与面板其他接口保持一致）
+                    let projectId = null;
+                    let versionId = null;
+                    if (window.aicrStore) {
+                        projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
+                        versionId = window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : null;
+                    }
+
+                    // 组装URL
+                    let url = `${window.API_URL}/mongodb/?cname=comments`;
+                    if (projectId) url += `&projectId=${projectId}`;
+                    if (versionId) url += `&versionId=${versionId}`;
+                    url += `&key=${comment.key}`;
+
+                    try {
+                        const { updateData } = await import('/apis/modules/crud.js');
+                        const payload = { key: comment.key, content: newContent, updatedAt: new Date().toISOString() };
+                        const result = await updateData(url, payload);
+                        console.log('[CommentPanel] 评论更新成功:', result);
+
+                        // 本地同步更新，提升体验
+                        const idx = this.mongoComments.findIndex(c => (c.key || c.id) === comment.key);
+                        if (idx !== -1) {
+                            this.mongoComments[idx] = { ...this.mongoComments[idx], content: newContent };
+                        }
+
+                        // 退出编辑态
+                        this.editingCommentKey = null;
+                        this.editingCommentContent = '';
+                        this.editingSaving = false;
+
+                        // 轻量刷新
+                        this.debouncedLoadComments();
+                    } catch (error) {
+                        console.error('[CommentPanel] 评论更新失败:', error);
+                        alert('保存失败：' + (error?.message || '未知错误'));
+                        this.editingSaving = false;
+                    }
+                }, '保存编辑后的评论');
+            },
+
+            // 编辑态键盘事件（作者：liangliang）
+            onEditKeydown(event, comment) {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    this.cancelEditComment();
+                } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                    event.preventDefault();
+                    this.saveEditedComment(comment);
                 }
             },
 

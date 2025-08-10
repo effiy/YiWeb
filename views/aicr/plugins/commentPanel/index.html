@@ -197,7 +197,42 @@
                         </div>
                         <pre class="quote-code" @click="highlightCode(comment)">{{ comment.text }}</pre>
                     </div>
-                    <div class="comment-content md-preview-body" v-html="renderMarkdown(comment.content)"></div>
+                    <!-- 普通展示态 -->
+                    <div 
+                        v-if="editingCommentKey !== comment.key"
+                        class="comment-content md-preview-body" 
+                        v-html="renderMarkdown(comment.content)"></div>
+
+                    <!-- 编辑态（作者：liangliang） -->
+                    <div v-else class="comment-edit">
+                        <textarea 
+                            v-model="editingCommentContent"
+                            class="comment-edit-textarea"
+                            rows="6"
+                            placeholder="编辑评论内容（支持Markdown）。Ctrl/Cmd + Enter 保存，Esc 取消"
+                            @keydown="onEditKeydown($event, comment)"
+                        ></textarea>
+                        <div class="comment-edit-actions">
+                            <button 
+                                class="action-button save-button"
+                                :disabled="editingSaving || !editingCommentContent.trim()"
+                                @click="saveEditedComment(comment)"
+                                title="保存 (Ctrl/Cmd + Enter)"
+                            >
+                                <i class="fas fa-save"></i>
+                                保存
+                            </button>
+                            <button 
+                                class="action-button cancel-button"
+                                :disabled="editingSaving"
+                                @click="cancelEditComment"
+                                title="取消 (Esc)"
+                            >
+                                <i class="fas fa-times"></i>
+                                取消
+                            </button>
+                        </div>
+                    </div>
                     <!-- 改进代码展示区域，仅当有改进代码时显示 -->
                     <div v-if="comment.improvementText" class="comment-improvement">
                         <div class="improvement-header">
@@ -209,6 +244,15 @@
                     
                     <!-- 评论操作 -->
                     <div class="comment-actions">
+                        <button 
+                            v-if="editingCommentKey !== comment.key"
+                            @click="startEditComment(comment)"
+                            class="action-button"
+                            title="编辑评论"
+                        >
+                            <i class="fas fa-pen"></i>
+                            编辑
+                        </button>
                         <button 
                             v-if="comment.status === 'pending'"
                             @click="resolveComment(comment.key)"
