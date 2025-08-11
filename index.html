@@ -14,6 +14,8 @@
     
     <!-- 页面样式 -->
     <link rel="stylesheet" href="/views/welcome/index.css">
+    <!-- 标签统计面板样式 -->
+    <link rel="stylesheet" href="/views/welcome/plugins/tagStatistics/index.css">
 
     <!-- 消息提示样式 -->
     <link rel="stylesheet" href="/css/message.css">
@@ -66,7 +68,7 @@
                         <!-- 动态渲染页面导航按钮 -->
                         <li v-for="(filter, index) in categoryFilters" :key="filter.id">
                             <button 
-                                class="filter-btn" 
+                                class="filter-btn"
                                 type="button" 
                                 :aria-label="filter.ariaLabel" 
                                 :data-action="filter.id" 
@@ -125,14 +127,14 @@
                                         <i :class="card.icon" :aria-label="card.title + '图标'"></i>
                                     </span>
                                     <div class="card-actions">
-                                        <button 
-                                            class="card-badge" 
+                                        <span
                                             type="button"
-                                            @click="copyCardToClipboard(card, $event)"
-                                            :title="'点击复制卡片信息到剪贴板'"
-                                            aria-label="复制卡片信息"
-                                        >{{ card.badge }}</button>
-                                        <!-- 长按3秒删除功能已移除删除按钮 -->
+                                            class="card-badge" 
+                                            @click="editCard(card, $event)"
+                                            style="cursor: pointer;"
+                                            :title="'点击编辑卡片内容'"
+                                            aria-label="编辑卡片内容"
+                                        >{{ card.badge }}</span>
                                     </div>
                                 </header>
                                 <section class="card-content">
@@ -141,8 +143,10 @@
                                     </h3>
                                     <p class="card-description">{{ card.description }}</p>
                                     <ul class="card-features" aria-label="功能特性">
-                                        <li class="feature-tag" v-for="(feature, fidx) in card.features" :key="fidx" @click="generateTask(card, feature, $event)">
-                                            {{ feature.icon }} {{ feature.name }}
+                                        <li class="feature-tag" v-for="(feature, fidx) in card.features" :key="fidx">
+                                            <span class="feature-content" @click="navigateToTasks(card, feature, $event)">
+                                                {{ feature.icon }} {{ feature.name }}
+                                            </span>
                                         </li>
                                     </ul>
                                     <ul class="card-stats" aria-label="统计数据">
@@ -157,6 +161,33 @@
                                             <span class="stat-label">{{ stat.label }}</span>
                                         </li>
                                     </ul>
+                                    <!-- 项目标签显示区域 -->
+                                    <div class="card-tags-section">
+                                        <div class="tags-header">
+                                            <span class="tags-label">
+                                                项目标签
+                                            </span>
+                                        </div>
+                                        <div class="tags-container">
+                                            <div 
+                                                v-for="(tag, tagIndex) in card.tags || []" 
+                                                :key="tagIndex"
+                                                class="tag-item"
+                                            >
+                                                <span class="tag-text">{{ tag.name }}</span>
+                                            </div>
+                                            <div v-if="!card.tags || card.tags.length === 0" class="no-tags">
+                                                暂无标签
+                                            </div>
+                                        </div>
+                                        <div class="tags-stats" v-if="card.tags && card.tags.length > 0">
+                                            <span class="tags-count">
+                                                <i class="fas fa-tag"></i>
+                                                {{ card.tags.length }} 个标签
+                                            </span>
+                                            <span class="tags-hint">点击徽章编辑</span>
+                                        </div>
+                                    </div>
                                 </section>
                                 <footer class="card-footer">
                                     <span class="card-hint">{{ card.hint }}</span>
@@ -168,6 +199,11 @@
                 </section>
             </section>
         </main>
+        
+        <!-- 标签统计面板 -->
+        <div id="tag-statistics-panel"></div>
+        
+
     </div>
 
     <!-- 全局加载指示器 -->
@@ -197,12 +233,15 @@
 
     <!-- 功能卡片主题管理器 -->
     <script src="/views/welcome/plugins/featureCard/index.js"></script>
+    <!-- 标签管理插件 -->
+    <script type="module" src="/views/welcome/plugins/tagManager/index.js"></script>
     <!-- 主功能脚本 -->
     <script type="module" src="/views/welcome/index.js" defer></script>
     <!-- 性能监控脚本 -->
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 
 

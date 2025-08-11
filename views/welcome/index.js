@@ -10,6 +10,8 @@ import { createBaseView } from '/utils/baseView.js';
 // 创建欢迎页面应用
 (async function initWelcomeApp() {
     try {
+        console.log('[欢迎页面] 开始初始化应用');
+        
         const app = await createBaseView({
             createStore,
             useComputed,
@@ -18,16 +20,47 @@ import { createBaseView } from '/utils/baseView.js';
             plugins: [],
             onMounted: (app) => {
                 console.log('[欢迎页面] 应用已挂载');
+                console.log('[欢迎页面] 挂载的应用实例:', app);
                 
                 // 暴露调试函数到全局作用域
-                if (app && app.methods) {
+                if (app) {
                     console.log('[欢迎页面] 调试函数已暴露到全局作用域');
+                    
+                    // 在 Vue 3 中，方法直接暴露在实例上
+                    const availableMethods = Object.keys(app).filter(key => 
+                        typeof app[key] === 'function' && 
+                        !key.startsWith('_') && 
+                        key !== 'constructor'
+                    );
+                    
+                    console.log('[欢迎页面] 可用的方法:', availableMethods);
+                    
+                                    // 验证 editCard 方法是否存在
+                if (app.editCard) {
+                    console.log('[欢迎页面] editCard 方法已找到');
+                } else {
+                    console.error('[欢迎页面] editCard 方法未找到！');
+                    console.log('[欢迎页面] 所有可用方法:', availableMethods);
+                }
+                } else {
+                    console.error('[欢迎页面] 应用实例不存在');
                 }
             }
         });
 
         // 导出应用实例（可选，用于调试）
         window.welcomeApp = app;
+        console.log('[欢迎页面] 应用实例已导出到 window.welcomeApp');
+        
+        // 验证 DOM 挂载
+        const appElement = document.querySelector('#app');
+        if (appElement) {
+            console.log('[欢迎页面] DOM 挂载点 #app 已找到');
+            console.log('[欢迎页面] 挂载点内容:', appElement.innerHTML.substring(0, 200) + '...');
+        } else {
+            console.error('[欢迎页面] DOM 挂载点 #app 未找到！');
+        }
+        
     } catch (error) {
         console.error('[欢迎页面] 应用初始化失败:', error);
     }

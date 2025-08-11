@@ -15,72 +15,81 @@ const computed = typeof Vue !== 'undefined' && Vue.computed ? Vue.computed : (fn
 export const useComputed = (store) => {
     const { featureCards, searchQuery, loading, error } = store;
 
+    // 辅助函数：过滤卡片
+    const filterCards = (cards, query) => {
+        if (!query) return cards;
+        
+        const lowerQuery = query.toLowerCase();
+        return cards.filter(card => {
+            if (!card) return false;
+            
+            // 搜索标题
+            if (card.title && card.title.toLowerCase().includes(lowerQuery)) {
+                return true;
+            }
+            
+            // 搜索描述
+            if (card.description && card.description.toLowerCase().includes(lowerQuery)) {
+                return true;
+            }
+            
+            // 搜索徽章
+            if (card.badge && card.badge.toLowerCase().includes(lowerQuery)) {
+                return true;
+            }
+            
+            // 搜索提示
+            if (card.hint && card.hint.toLowerCase().includes(lowerQuery)) {
+                return true;
+            }
+            
+            // 搜索特性
+            if (card.features && Array.isArray(card.features)) {
+                for (const feature of card.features) {
+                    if (feature.name && feature.name.toLowerCase().includes(lowerQuery)) {
+                        return true;
+                    }
+                    if (feature.desc && feature.desc.toLowerCase().includes(lowerQuery)) {
+                        return true;
+                    }
+                    if (feature.icon && feature.icon.toLowerCase().includes(lowerQuery)) {
+                        return true;
+                    }
+                }
+            }
+            
+            // 搜索统计
+            if (card.stats && Array.isArray(card.stats)) {
+                for (const stat of card.stats) {
+                    if (stat.number && stat.number.toString().toLowerCase().includes(lowerQuery)) {
+                        return true;
+                    }
+                    if (stat.label && stat.label.toLowerCase().includes(lowerQuery)) {
+                        return true;
+                    }
+                }
+            }
+            
+            // 搜索标签
+            if (card.tags && Array.isArray(card.tags)) {
+                for (const tag of card.tags) {
+                    if (tag.name && tag.name.toLowerCase().includes(lowerQuery)) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        });
+    };
+
     return {
         /**
          * 过滤后的功能卡片
          * 根据搜索查询进行过滤
          */
         filteredFeatureCards: computed(() => {
-            let filtered = featureCards.value;
-
-            // 根据搜索查询过滤
-            if (searchQuery.value) {
-                const query = searchQuery.value.toLowerCase();
-                filtered = filtered.filter(card => {
-                    if (!card) return false;
-                    
-                    // 搜索标题
-                    if (card.title && card.title.toLowerCase().includes(query)) {
-                        return true;
-                    }
-                    
-                    // 搜索描述
-                    if (card.description && card.description.toLowerCase().includes(query)) {
-                        return true;
-                    }
-                    
-                    // 搜索徽章
-                    if (card.badge && card.badge.toLowerCase().includes(query)) {
-                        return true;
-                    }
-                    
-                    // 搜索提示
-                    if (card.hint && card.hint.toLowerCase().includes(query)) {
-                        return true;
-                    }
-                    
-                    // 搜索特性
-                    if (card.features && Array.isArray(card.features)) {
-                        for (const feature of card.features) {
-                            if (feature.name && feature.name.toLowerCase().includes(query)) {
-                                return true;
-                            }
-                            if (feature.desc && feature.desc.toLowerCase().includes(query)) {
-                                return true;
-                            }
-                            if (feature.icon && feature.icon.toLowerCase().includes(query)) {
-                                return true;
-                            }
-                        }
-                    }
-                    
-                    // 搜索统计
-                    if (card.stats && Array.isArray(card.stats)) {
-                        for (const stat of card.stats) {
-                            if (stat.number && stat.number.toString().toLowerCase().includes(query)) {
-                                return true;
-                            }
-                            if (stat.label && stat.label.toLowerCase().includes(query)) {
-                                return true;
-                            }
-                        }
-                    }
-                    
-                    return false;
-                });
-            }
-
-            return filtered;
+            return filterCards(featureCards.value, searchQuery.value);
         }),
 
         /**
@@ -96,12 +105,16 @@ export const useComputed = (store) => {
         /**
          * 过滤后的卡片数量
          */
-        filteredFeatureCardsCount: computed(() => filteredFeatureCards.value.length),
+        filteredFeatureCardsCount: computed(() => {
+            return filterCards(featureCards.value, searchQuery.value).length;
+        }),
 
         /**
          * 是否有过滤后的功能卡片
          */
-        hasFilteredFeatureCards: computed(() => filteredFeatureCards.value.length > 0),
+        hasFilteredFeatureCards: computed(() => {
+            return filterCards(featureCards.value, searchQuery.value).length > 0;
+        }),
         
         /**
          * 是否有搜索结果
@@ -123,13 +136,17 @@ export const useComputed = (store) => {
                     ...(card.features || []).map(feature => 
                         `${feature.name || ''} ${feature.desc || ''} ${feature.icon || ''}`
                     ),
-                    // 搜索统计
-                    ...(card.stats || []).map(stat => 
-                        `${stat.number || ''} ${stat.label || ''}`
-                    )
-                ].join(' ').toLowerCase();
-                
-                return searchableText.includes(query.toLowerCase());
+                                    // 搜索统计
+                ...(card.stats || []).map(stat => 
+                    `${stat.number || ''} ${stat.label || ''}`
+                ),
+                // 搜索标签
+                ...(card.tags || []).map(tag => 
+                    tag.name || ''
+                )
+            ].join(' ').toLowerCase();
+            
+            return searchableText.includes(query.toLowerCase());
             });
         }),
 
@@ -198,7 +215,82 @@ export const useComputed = (store) => {
          */
         errorMessage: computed(() => error.value),
 
+        /**
+         * 标签统计信息
+         */
+        tagStats: computed(() => {
+            const tagFrequency = {};
+            let totalTags = 0;
+            
+            featureCards.value.forEach(card => {
+                if (card.tags && Array.isArray(card.tags)) {
+                    card.tags.forEach(tag => {
+                        if (tag.name) {
+                            const tagName = tag.name.toLowerCase();
+                            tagFrequency[tagName] = (tagFrequency[tagName] || 0) + 1;
+                            totalTags++;
+                        }
+                    });
+                }
+            });
+            
+            const uniqueTags = Object.keys(tagFrequency).length;
+            
+            return {
+                totalTags,
+                uniqueTags,
+                tagFrequency,
+                mostUsedTags: Object.entries(tagFrequency)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 10)
+                    .map(([tag, count]) => ({ tag, count }))
+            };
+        }),
+
+        /**
+         * 所有标签列表
+         */
+        allTags: computed(() => {
+            const tags = new Set();
+            
+            featureCards.value.forEach(card => {
+                if (card.tags && Array.isArray(card.tags)) {
+                    card.tags.forEach(tag => {
+                        if (tag.name) {
+                            tags.add(tag.name.toLowerCase());
+                        }
+                    });
+                }
+            });
+            
+            return Array.from(tags).sort();
+        }),
+
+        /**
+         * 按标签分组的卡片
+         */
+        cardsByTag: computed(() => {
+            const grouped = {};
+            
+            featureCards.value.forEach(card => {
+                if (card.tags && Array.isArray(card.tags)) {
+                    card.tags.forEach(tag => {
+                        if (tag.name) {
+                            const tagName = tag.name.toLowerCase();
+                            if (!grouped[tagName]) {
+                                grouped[tagName] = [];
+                            }
+                            grouped[tagName].push(card);
+                        }
+                    });
+                }
+            });
+            
+            return grouped;
+        })
+
 
     };
 };
+
 

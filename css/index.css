@@ -22,3 +22,907 @@
 @import url('/css/button.css');
 @import url('/css/loading.css');
 @import url('/css/message.css');
+
+/* 编辑卡片模态框样式 */
+.edit-card-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    animation: modalFadeIn 0.3s ease-out;
+    overflow: hidden;
+}
+
+.edit-card-content {
+    position: relative;
+    background: var(--bg-primary, #1a1a1a);
+    border: 1px solid var(--border-primary, #333);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: min(90vw, 800px);
+    max-height: min(90vh, 600px);
+    width: 100%;
+    overflow: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    color: var(--text-primary, #fff);
+    animation: modalSlideIn 0.3s ease-out;
+    /* 确保弹框始终居中 */
+    margin: auto;
+    /* 防止内容溢出 */
+    box-sizing: border-box;
+}
+
+/* 弹框内容滚动条样式 */
+.edit-card-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.edit-card-content::-webkit-scrollbar-track {
+    background: var(--bg-secondary, #2a2a2a);
+    border-radius: 4px;
+}
+
+.edit-card-content::-webkit-scrollbar-thumb {
+    background: var(--border-primary, #333);
+    border-radius: 4px;
+}
+
+.edit-card-content::-webkit-scrollbar-thumb:hover {
+    background: var(--primary, #007bff);
+}
+
+/* 编辑卡片模态框标题样式优化 */
+.edit-card-content h3 {
+    position: sticky;
+    top: 0;
+    background: linear-gradient(135deg, 
+        var(--bg-primary, #1a1a1a) 0%, 
+        var(--bg-secondary, #2a2a2a) 100%);
+    z-index: 20;
+    margin: 0 0 24px 0;
+    color: var(--text-primary, #fff);
+    font-size: 22px;
+    font-weight: 700;
+    padding: 20px 24px;
+    border-radius: 8px 8px 0 0;
+    border: none;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* 标题背景装饰 */
+.edit-card-content h3::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, 
+        var(--primary, #007bff) 0%, 
+        var(--success, #28a745) 50%, 
+        var(--warning, #ffc107) 100%);
+    border-radius: 2px;
+    animation: titleBorderGlow 4s ease-in-out infinite;
+}
+
+@keyframes titleBorderGlow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* 标题图标装饰 */
+.edit-card-content h3::after {
+    content: '✏️';
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    opacity: 0.8;
+    animation: titleIconFloat 3s ease-in-out infinite;
+    transition: all 0.3s ease;
+}
+
+.edit-card-content h3:hover::after {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.1);
+}
+
+@keyframes titleIconFloat {
+    0%, 100% { transform: translateY(-50%) rotate(0deg); }
+    50% { transform: translateY(-50%) rotate(10deg); }
+}
+
+/* 标题悬停效果 */
+.edit-card-content h3:hover {
+    background: linear-gradient(135deg, 
+        var(--bg-secondary, #2a2a2a) 0%, 
+        var(--bg-tertiary, #3a3a3a) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* 标题内容样式 */
+.edit-card-content h3 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* 标题文本样式 */
+.edit-card-content h3 span:first-child {
+    background: linear-gradient(135deg, 
+        var(--text-primary, #fff) 0%, 
+        var(--primary, #007bff) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    position: relative;
+}
+
+/* 卡片名称样式 */
+.edit-card-content h3 .card-name {
+    color: var(--primary, #007bff);
+    font-weight: 600;
+    opacity: 0.9;
+    position: relative;
+    padding: 4px 8px;
+    background: rgba(0, 123, 255, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(0, 123, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.edit-card-content h3:hover .card-name {
+    background: rgba(0, 123, 255, 0.15);
+    border-color: rgba(0, 123, 255, 0.3);
+    transform: scale(1.05);
+}
+
+/* 标题进入动画 */
+.edit-card-content h3 {
+    animation: titleSlideDown 0.5s ease-out;
+}
+
+@keyframes titleSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 标题响应式设计 */
+@media (max-width: 768px) {
+    .edit-card-content h3 {
+        font-size: 20px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+        gap: 10px;
+    }
+    
+    .edit-card-content h3::after {
+        right: 20px;
+        font-size: 16px;
+    }
+    
+    .edit-card-content h3 .card-name {
+        padding: 3px 6px;
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .edit-card-content h3 {
+        font-size: 18px;
+        padding: 14px 16px;
+        margin-bottom: 18px;
+        gap: 8px;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+    
+    .edit-card-content h3::after {
+        right: 16px;
+        top: 20px;
+        transform: none;
+        font-size: 14px;
+    }
+    
+    .edit-card-content h3 .card-name {
+        padding: 2px 6px;
+        font-size: 16px;
+        align-self: flex-start;
+    }
+}
+
+.edit-card-content form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* 输入框和文本域样式优化 */
+.edit-card-content input,
+.edit-card-content textarea {
+    padding: 12px;
+    border: 1px solid var(--border-primary, #333);
+    border-radius: 6px;
+    background: var(--bg-secondary, #2a2a2a);
+    color: var(--text-primary, #fff);
+    font-size: 14px;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.edit-card-content textarea {
+    resize: vertical;
+    font-family: inherit;
+    min-height: 80px;
+}
+
+.edit-card-content input:focus,
+.edit-card-content textarea:focus {
+    outline: none;
+    border-color: var(--primary, #007bff);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+/* 标签样式 */
+.edit-card-content label {
+    font-weight: 600;
+    color: var(--text-primary, #fff);
+    font-size: 14px;
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* 功能特性和统计数据容器 */
+.edit-card-content .features-container,
+.edit-card-content .stats-container {
+    background: var(--bg-secondary, #2a2a2a);
+    border: 1px solid var(--border-secondary, #444);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+}
+
+.edit-card-content .features-title,
+.edit-card-content .stats-title {
+    margin: 0 0 16px 0;
+    color: var(--text-primary, #fff);
+    font-size: 16px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-secondary, #444);
+    padding-bottom: 8px;
+}
+
+/* 动态列表项样式 */
+.edit-card-content .feature-item,
+.edit-card-content .stat-item {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--border-secondary, #444);
+    border-radius: 6px;
+    background: var(--bg-primary, #1a1a1a);
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.edit-card-content .feature-item:hover,
+.edit-card-content .stat-item:hover {
+    border-color: var(--primary, #007bff);
+    background: var(--bg-secondary, #2a2a2a);
+}
+
+/* 动态输入框样式 */
+.edit-card-content .feature-item input,
+.edit-card-content .stat-item input {
+    padding: 8px;
+    border: 1px solid var(--border-primary, #333);
+    border-radius: 4px;
+    background: var(--bg-primary, #1a1a1a);
+    color: var(--text-primary, #fff);
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.edit-card-content .feature-item input:focus,
+.edit-card-content .stat-item input:focus {
+    border-color: var(--primary, #007bff);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* 图标输入框固定宽度 */
+.edit-card-content .feature-item input[placeholder="图标"],
+.edit-card-content .stat-item input[placeholder="数字"] {
+    width: 80px;
+    flex-shrink: 0;
+}
+
+/* 名称和描述输入框自适应 */
+.edit-card-content .feature-item input[placeholder="名称"],
+.edit-card-content .feature-item input[placeholder="描述"],
+.edit-card-content .stat-item input[placeholder="标签"],
+.edit-card-content .stat-item input[placeholder="链接 (可选)"] {
+    flex: 1;
+    min-width: 0;
+}
+
+/* 删除按钮样式 */
+.edit-card-content .delete-btn {
+    background: var(--danger, #dc3545);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.edit-card-content .delete-btn:hover {
+    background: var(--danger-hover, #c82333);
+    transform: scale(1.1);
+}
+
+/* 添加按钮样式 */
+.edit-card-content .add-btn {
+    background: var(--primary, #007bff);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 12px;
+    align-self: flex-start;
+    transition: all 0.2s ease;
+    margin-top: 8px;
+}
+
+.edit-card-content .add-btn:hover {
+    background: var(--primary-hover, #0056b3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 按钮容器样式优化 */
+.edit-card-content .button-container {
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 32px;
+    padding: 20px 24px;
+    border-top: 2px solid var(--border-primary, #333);
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(180deg, 
+        rgba(26, 26, 26, 0.95) 0%, 
+        rgba(26, 26, 26, 0.98) 50%, 
+        rgba(26, 26, 26, 1) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 20;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+/* 按钮容器悬停效果 */
+.edit-card-content .button-container:hover {
+    background: linear-gradient(180deg, 
+        rgba(26, 26, 26, 0.98) 0%, 
+        rgba(26, 26, 26, 1) 50%, 
+        rgba(26, 26, 26, 1) 100%);
+    box-shadow: 0 -6px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* 保存和取消按钮基础样式 */
+.edit-card-content .save-btn,
+.edit-card-content .cancel-btn {
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 120px;
+    position: relative;
+    overflow: hidden;
+    border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: inherit;
+}
+
+/* 保存按钮样式 */
+.edit-card-content .save-btn {
+    background: linear-gradient(135deg, 
+        var(--success, #28a745) 0%, 
+        var(--success-hover, #218838) 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.edit-card-content .save-btn:hover {
+    background: linear-gradient(135deg, 
+        var(--success-hover, #218838) 0%, 
+        #1e7e34 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+}
+
+.edit-card-content .save-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.edit-card-content .save-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.3);
+}
+
+/* 取消按钮样式 */
+.edit-card-content .cancel-btn {
+    background: linear-gradient(135deg, 
+        var(--bg-secondary, #2a2a2a) 0%, 
+        var(--bg-tertiary, #3a3a3a) 100%);
+    color: var(--text-primary, #fff);
+    border: 2px solid var(--border-primary, #333);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.edit-card-content .cancel-btn:hover {
+    background: linear-gradient(135deg, 
+        var(--bg-tertiary, #3a3a3a) 0%, 
+        var(--border-primary, #333) 100%);
+    border-color: var(--primary, #007bff);
+    color: var(--primary, #007bff);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.edit-card-content .cancel-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.edit-card-content .cancel-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3);
+}
+
+/* 按钮内部光效 */
+.edit-card-content .save-btn::before,
+.edit-card-content .cancel-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.2), 
+        transparent);
+    transition: left 0.5s;
+}
+
+.edit-card-content .save-btn:hover::before,
+.edit-card-content .cancel-btn:hover::before {
+    left: 100%;
+}
+
+/* 按钮禁用状态 */
+.edit-card-content .save-btn:disabled,
+.edit-card-content .cancel-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* 按钮加载状态 */
+.edit-card-content .save-btn.loading,
+.edit-card-content .cancel-btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.edit-card-content .save-btn.loading::after,
+.edit-card-content .cancel-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: buttonSpin 1s linear infinite;
+}
+
+@keyframes buttonSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 按钮组响应式设计 */
+@media (max-width: 768px) {
+    .edit-card-content .button-container {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px 20px;
+        margin-top: 24px;
+    }
+    
+    .edit-card-content .save-btn,
+    .edit-card-content .cancel-btn {
+        width: 100%;
+        min-width: auto;
+        padding: 16px 24px;
+        font-size: 16px;
+    }
+    
+    .edit-card-content .button-container {
+        border-radius: 0 0 8px 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .edit-card-content .button-container {
+        padding: 12px 16px;
+        margin-top: 20px;
+        gap: 10px;
+    }
+    
+    .edit-card-content .save-btn,
+    .edit-card-content .cancel-btn {
+        padding: 14px 20px;
+        font-size: 15px;
+    }
+}
+
+/* 按钮容器动画 */
+.edit-card-content .button-container {
+    animation: buttonContainerSlideUp 0.4s ease-out;
+}
+
+@keyframes buttonContainerSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 按钮悬停时的容器效果 */
+.edit-card-content .button-container:hover {
+    transform: translateY(-1px);
+}
+
+/* 按钮焦点时的容器效果 */
+.edit-card-content .button-container:focus-within {
+    border-top-color: var(--primary, #007bff);
+    box-shadow: 0 -4px 20px rgba(0, 123, 255, 0.2);
+}
+
+/* 卡片徽章悬停效果 */
+.card-badge:hover {
+    background: var(--primary, #007bff) !important;
+    color: white !important;
+    transform: scale(1.05);
+    transition: all 0.2s ease;
+}
+
+.card-badge:active {
+    transform: scale(0.95);
+}
+
+/* 模态框动画 */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .edit-card-content {
+        max-width: 95vw;
+        max-height: 95vh;
+        padding: 16px;
+        margin: 10px;
+    }
+    
+    .edit-card-content input,
+    .edit-card-content textarea {
+        font-size: 16px; /* 防止iOS缩放 */
+    }
+    
+    .edit-card-content .feature-item,
+    .edit-card-content .stat-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    
+    .edit-card-content .feature-item input,
+    .edit-card-content .stat-item input {
+        width: 100% !important;
+    }
+    
+    .edit-card-content .button-container {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .edit-card-content .save-btn,
+    .edit-card-content .cancel-btn {
+        width: 100%;
+        min-width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .edit-card-content {
+        max-width: 98vw;
+        max-height: 98vh;
+        padding: 12px;
+        margin: 5px;
+    }
+    
+    .edit-card-content h3 {
+        font-size: 18px;
+    }
+    
+    .edit-card-content .features-container,
+    .edit-card-content .stats-container {
+        padding: 12px;
+    }
+}
+
+/* 标签管理区域样式 */
+.edit-card-content .tags-container {
+    background: var(--bg-secondary, #2a2a2a);
+    border: 1px solid var(--border-secondary, #444);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+}
+
+.edit-card-content .tags-title {
+    margin: 0 0 16px 0;
+    color: var(--text-primary, #fff);
+    font-size: 16px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-secondary, #444);
+    padding-bottom: 8px;
+}
+
+.edit-card-content .tags-container .tag-item {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--border-secondary, #444);
+    border-radius: 6px;
+    background: var(--bg-primary, #1a1a1a);
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.edit-card-content .tags-container .tag-item:hover {
+    border-color: var(--primary, #007bff);
+    background: var(--bg-secondary, #2a2a2a);
+}
+
+.edit-card-content .tags-container .tag-item input {
+    padding: 8px;
+    border: 1px solid var(--border-primary, #333);
+    border-radius: 4px;
+    background: var(--bg-primary, #1a1a1a);
+    color: var(--text-primary, #fff);
+    font-size: 12px;
+    flex: 1;
+    transition: all 0.2s ease;
+}
+
+.edit-card-content .tags-container .tag-item input:focus {
+    border-color: var(--primary, #007bff);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* 卡片内标签显示样式优化 */
+.card-tags-section {
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--bg-secondary, #2a2a2a);
+    border-radius: 8px;
+    border: 1px solid var(--border-secondary, #444);
+}
+
+.card-tags-section .tags-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.card-tags-section .tags-label {
+    color: var(--text-secondary, #ccc);
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.card-tags-section .tags-label i {
+    color: var(--primary, #007bff);
+    font-size: 12px;
+}
+
+.card-tags-section .tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 24px;
+}
+
+.card-tags-section .tag-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    background: var(--bg-primary, #1a1a1a);
+    border: 1px solid var(--border-secondary, #444);
+    border-radius: 16px;
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.card-tags-section .tag-item:hover {
+    background: var(--bg-tertiary, #3a3a3a);
+    border-color: var(--primary, #007bff);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+}
+
+.card-tags-section .tag-text {
+    color: var(--text-primary, #fff);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.card-tags-section .no-tags {
+    color: var(--text-tertiary, #888);
+    font-size: 12px;
+    font-style: italic;
+    padding: 8px 0;
+    text-align: center;
+    width: 100%;
+}
+
+/* 标签统计信息样式 */
+.card-tags-section .tags-stats {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-secondary, #444);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--text-tertiary, #888);
+}
+
+.card-tags-section .tags-count {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-tags-section .tags-count i {
+    font-size: 10px;
+}
+
+.card-tags-section .tags-hint {
+    color: var(--text-tertiary, #888);
+    font-size: 10px;
+    font-style: italic;
+}
+
+/* 响应式标签显示 */
+@media (max-width: 768px) {
+    .card-tags-section {
+        padding: 12px;
+        margin-top: 12px;
+    }
+    
+    .card-tags-section .tags-container {
+        gap: 6px;
+    }
+    
+    .card-tags-section .tag-item {
+        padding: 4px 10px;
+    }
+    
+    .card-tags-section .tag-text {
+        font-size: 11px;
+        max-width: 100px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card-tags-section {
+        padding: 10px;
+        margin-top: 10px;
+    }
+    
+    .card-tags-section .tags-container {
+        gap: 4px;
+    }
+    
+    .card-tags-section .tag-item {
+        padding: 3px 8px;
+    }
+    
+    .card-tags-section .tag-text {
+        font-size: 10px;
+        max-width: 80px;
+    }
+}
+

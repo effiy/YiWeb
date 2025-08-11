@@ -169,10 +169,6 @@ export const createStore = () => {
         try {
             const categoryFiltersData = await getData(`${window.DATA_URL}/mock/welcome/categoryFilters.json`);
             categoryFilters.value = categoryFiltersData;
-            // 支持本地mock和远程接口切换
-            const featureCardsData = await getData(`${window.DATA_URL}/mock/welcome/featureCards.json`);
-            console.log('[Store] 加载到的功能卡片数据:', featureCardsData);
-
             const systemPromptData = await getData(`${window.DATA_URL}/prompts/welcome/featureCards.txt`);
 
             const mongoResponse = await getData(`${window.API_URL}/mongodb/?cname=goals`);
@@ -187,7 +183,7 @@ export const createStore = () => {
             
             // 设置系统提示
             if (systemPromptData) {
-                fromSystem.value = systemPromptData + JSON.stringify(featureCardsData);
+                fromSystem.value = systemPromptData;
                 console.log('[Store] 成功设置fromSystem');
                 console.log('[Store] 加载到的系统提示数据:', systemPromptData);
             } else {
@@ -195,19 +191,11 @@ export const createStore = () => {
                 fromSystem.value = null;
             }
             
-            // 确保featureCardsData是数组
-            const mockData = Array.isArray(featureCardsData) ? featureCardsData : [];
+            // 直接使用MongoDB数据
+            featureCards.value = validMongoData;
+            console.log('[Store] 更新featureCards，数量:', validMongoData.length);
             
-            // 合并mock数据和MongoDB数据，并确保视图实时响应
-            const combinedData = [...mockData, ...validMongoData];
-            
-            // 直接更新响应式数据
-            featureCards.value = combinedData;
-            console.log('[Store] 更新featureCards，数量:', combinedData.length);
-            
-
-            
-            console.log('[Store] 合并后的总数据:', combinedData);
+            console.log('[Store] 最终数据:', validMongoData);
         } catch (err) {
             console.error('[Store] 加载数据失败:', err);
             error.value = err && err.message ? err.message : '加载数据失败';
@@ -270,6 +258,7 @@ export const createStore = () => {
         clearError       // 清除错误
     };
 }
+
 
 
 
