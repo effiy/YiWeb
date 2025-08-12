@@ -66,41 +66,8 @@ export function parseUrlParams(url) {
   }
 }
 
-
-
-/**
- * 防抖函数
- * @param {Function} fn - 要防抖的函数
- * @param {number} delay - 延迟时间（毫秒）
- * @returns {Function} - 防抖后的函数
- */
-export function debounce(fn, delay = 300) {
-  let timeoutId;
-  
-  return function (...args) {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => fn.apply(this, args), delay);
-  };
-}
-
-/**
- * 节流函数
- * @param {Function} fn - 要节流的函数
- * @param {number} delay - 延迟时间（毫秒）
- * @returns {Function} - 节流后的函数
- */
-export function throttle(fn, delay = 300) {
-  let lastCall = 0;
-  
-  return function (...args) {
-    const now = Date.now();
-    
-    if (now - lastCall >= delay) {
-      lastCall = now;
-      return fn.apply(this, args);
-    }
-  };
-}
+// 使用通用工具中的防抖与节流，避免重复实现
+export { debounce, throttle } from '/utils/common.js';
 
 /**
  * 格式化错误信息
