@@ -1,22 +1,11 @@
 // 任务列表组件 - 负责任务列表显示和交互功能
 
-// 自动加载相关的CSS文件
-(function loadCSS() {
-  const cssFiles = [
-      '/views/tasks/plugins/taskList/index.css'
-  ];
-  
-  cssFiles.forEach(cssFile => {
-      // 检查是否已经加载过该CSS文件
-      if (!document.querySelector(`link[href*="${cssFile}"]`)) {
-          const link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = cssFile;
-          link.type = 'text/css';
-          document.head.appendChild(link);
-      }
-  });
-})();
+import { loadCSSFiles } from '/utils/baseView.js';
+
+// 自动加载相关的CSS文件（统一使用工具函数）
+loadCSSFiles([
+    '/views/tasks/plugins/taskList/index.css'
+]);
 
 // 异步加载HTML模板
 async function loadTemplate() {

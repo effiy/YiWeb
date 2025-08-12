@@ -21,9 +21,9 @@ class EventManager {
      * @param {Object} options - 选项
      */
     on(element, event, handler, options = {}) {
-        const wrappedHandler = this.wrapHandler(handler, options);
         // 为触摸和滚动事件添加passive选项
         const finalOptions = this.addPassiveOption(event, options);
+        const wrappedHandler = this.wrapHandler(handler, finalOptions, element, event);
         element.addEventListener(event, wrappedHandler, finalOptions);
         
         // 记录监听器以便后续移除
@@ -33,7 +33,7 @@ class EventManager {
             event,
             handler: wrappedHandler,
             originalHandler: handler,
-            options
+            options: finalOptions
         });
     }
 
@@ -60,9 +60,9 @@ class EventManager {
      * @param {Object} options - 选项
      */
     onGlobal(event, handler, options = {}) {
-        const wrappedHandler = this.wrapHandler(handler, options);
         // 为触摸和滚动事件添加passive选项
         const finalOptions = this.addPassiveOption(event, options);
+        const wrappedHandler = this.wrapHandler(handler, finalOptions, document, event);
         document.addEventListener(event, wrappedHandler, finalOptions);
         
         const key = `global_${event}_${this.getHandlerKey(handler)}`;
@@ -70,7 +70,7 @@ class EventManager {
             event,
             handler: wrappedHandler,
             originalHandler: handler,
-            options
+            options: finalOptions
         });
     }
 
@@ -134,7 +134,7 @@ class EventManager {
      * @param {Object} options - 选项
      * @returns {Function} 包装后的处理函数
      */
-    wrapHandler(handler, options = {}) {
+    wrapHandler(handler, options = {}, element, eventName) {
         const { debounce, throttle, once } = options;
         
         let wrappedHandler = handler;
@@ -147,10 +147,18 @@ class EventManager {
         
         if (once) {
             const originalHandler = wrappedHandler;
+            const self = this;
             wrappedHandler = function(...args) {
                 const result = originalHandler.apply(this, args);
-                // 移除监听器
-                this.removeEventListener(event, wrappedHandler, options);
+                // 移除监听器（确保使用相同的目标与选项）
+                try {
+                    const target = element || (self && self.element) || document;
+                    if (target && eventName) {
+                        target.removeEventListener(eventName, wrappedHandler, options);
+                    }
+                } catch (e) {
+                    // 忽略移除失败
+                }
                 return result;
             };
         }
