@@ -61,7 +61,7 @@ export function parseUrlParams(url) {
     
     return params;
   } catch (error) {
-    console.error('解析 URL 参数失败：', error);
+    // 解析失败静默为{}
     return {};
   }
 }

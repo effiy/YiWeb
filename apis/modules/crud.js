@@ -8,6 +8,7 @@ import {
   patchRequest, 
   deleteRequest 
 } from '/apis/helper/requestHelper.js';
+import { logInfo, logWarn, logError } from '/utils/log.js';
 
 /**
  * 简单的内存缓存
@@ -148,7 +149,7 @@ export async function getData(url, options = {}, useCache = true) {
   if (useCache) {
     const cached = CacheManager.get(url);
     if (cached) {
-      console.log('从缓存获取数据：', url);
+      logInfo('从缓存获取数据：', url);
       return cached;
     }
   }
@@ -163,7 +164,7 @@ export async function getData(url, options = {}, useCache = true) {
     
     return data;
   } catch (error) {
-    console.error('获取数据失败：', error);
+    logError('获取数据失败：', error);
     throw error;
   }
 }
@@ -193,7 +194,7 @@ export async function postData(url, data, validationRules = {}, options = {}) {
     
     return result;
   } catch (error) {
-    console.error('创建数据失败：', error);
+    logError('创建数据失败：', error);
     throw error;
   }
 }
@@ -223,7 +224,7 @@ export async function updateData(url, data, validationRules = {}, options = {}) 
     
     return result;
   } catch (error) {
-    console.error('更新数据失败：', error);
+    logError('更新数据失败：', error);
     throw error;
   }
 }
@@ -253,7 +254,7 @@ export async function patchData(url, data, validationRules = {}, options = {}) {
     
     return result;
   } catch (error) {
-    console.error('部分更新数据失败：', error);
+    logError('部分更新数据失败：', error);
     throw error;
   }
 }
@@ -273,7 +274,7 @@ export async function deleteData(url, options = {}) {
     
     return result;
   } catch (error) {
-    console.error('删除数据失败：', error);
+    logError('删除数据失败：', error);
     throw error;
   }
 }

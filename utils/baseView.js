@@ -5,6 +5,7 @@
  */
 
 import { safeExecute } from './error.js';
+import { logInfo, logWarn, logError } from './log.js';
 
 /**
  * 视图配置选项
@@ -18,7 +19,7 @@ export const ViewConfig = {
     
     // 默认错误处理
     DEFAULT_ERROR_HANDLER: (error) => {
-        console.error('[视图错误]', error);
+        logError('[视图错误]', error);
     }
 };
 
@@ -74,9 +75,9 @@ async function registerComponents(app, componentNames) {
     componentNames.forEach(name => {
         if (typeof window[name] !== 'undefined') {
             app.component(name, window[name]);
-            console.log(`[组件注册] 已注册组件: ${name}`);
+            try { logInfo(`[组件注册] 已注册组件: ${name}`); } catch (_) { /* 兼容性静默 */ }
         } else {
-            console.warn(`[组件注册] 组件未找到: ${name}`);
+            try { logWarn(`[组件注册] 组件未找到: ${name}`); } catch (_) { /* 兼容性静默 */ }
         }
     });
 }
@@ -90,9 +91,9 @@ function loadPlugins(app, pluginNames) {
     pluginNames.forEach(pluginName => {
         try {
             // 这里可以扩展插件加载逻辑
-            console.log(`[插件加载] 加载插件: ${pluginName}`);
+            try { logInfo(`[插件加载] 加载插件: ${pluginName}`); } catch (_) { /* 兼容性静默 */ }
         } catch (error) {
-            console.error(`[插件加载] 插件加载失败: ${pluginName}`, error);
+            try { logError(`[插件加载] 插件加载失败: ${pluginName}`, error); } catch (_) { /* 兼容性静默 */ }
         }
     });
 }
@@ -111,7 +112,7 @@ export function mountApp(app, selector = '#app') {
         }
         
         const mountedApp = app.mount(selector);
-        console.log(`[应用挂载] 应用已挂载到: ${selector}`);
+        try { logInfo(`[应用挂载] 应用已挂载到: ${selector}`); } catch (_) { /* 兼容性静默 */ }
         return mountedApp;
     }, '应用挂载');
 }

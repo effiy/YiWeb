@@ -4,6 +4,7 @@
  */
 
 import { checkStatus, isJsonResponse } from '/apis/helper/checkStatus.js';
+import { logDebug, logInfo, logWarn, logError, timeStart, timeEnd } from '/utils/log.js';
 
 /**
  * 默认请求配置
@@ -28,7 +29,7 @@ function requestInterceptor(config) {
   config.timestamp = Date.now();
   
   // 记录请求日志
-  console.log('发送请求：', {
+  logInfo('发送请求：', {
     url: config.url,
     method: config.method,
     timestamp: new Date(config.timestamp).toISOString()
@@ -42,7 +43,7 @@ function requestInterceptor(config) {
  */
 function responseInterceptor(response, config) {
   // 记录响应日志
-  console.log('收到响应：', {
+  logInfo('收到响应：', {
     url: config.url,
     status: response.status,
     duration: Date.now() - config.timestamp + 'ms'
@@ -77,6 +78,13 @@ export async function sendRequest(url, options = {}) {
   const interceptedConfig = requestInterceptor(config);
   
   try {
+    // 计时
+    const timeLabel = `fetch:${config.method || 'GET'} ${url}`;
+    timeStart(timeLabel);
+
+    // 构建可中止的 fetch
+    const controller = new AbortController();
+    const { signal } = controller;
     // 创建请求 Promise
     const requestPromise = fetch(url, {
       method: config.method || 'GET',
@@ -85,11 +93,19 @@ export async function sendRequest(url, options = {}) {
       mode: config.mode,
       credentials: config.credentials,
       cache: config.cache,
+      signal,
       ...config.fetchOptions
     });
     
     // 创建超时 Promise
-    const timeoutPromise = createTimeoutPromise(config.timeout);
+    const timeoutPromise = new Promise((_, reject) => {
+      const timer = setTimeout(() => {
+        try { controller.abort(); } catch (_) {}
+        reject(new Error(`请求超时：${config.timeout}ms`));
+      }, config.timeout);
+      // 将timer挂到signal上，便于后续清理（可选）
+      signal._timer = timer;
+    });
     
     // 竞争：请求 vs 超时
     const response = await Promise.race([requestPromise, timeoutPromise]);
@@ -101,15 +117,15 @@ export async function sendRequest(url, options = {}) {
     await checkStatus(interceptedResponse);
     
     // 根据响应类型返回数据
-    if (isJsonResponse(interceptedResponse)) {
-      return interceptedResponse.json();
-    } else {
-      return interceptedResponse.text();
-    }
+    const result = isJsonResponse(interceptedResponse)
+      ? await interceptedResponse.json()
+      : await interceptedResponse.text();
+    timeEnd(timeLabel);
+    return result;
     
   } catch (error) {
     // 监控错误 - 提供更详细的错误信息
-    console.error('请求错误详情：', {
+    logError('请求错误详情：', {
       url,
       method: config.method,
       error: error.message,
@@ -119,6 +135,13 @@ export async function sendRequest(url, options = {}) {
     });
     
     // 如果是网络错误，提供更友好的错误信息
+    if (error.name === 'AbortError') {
+      const abortError = new Error('请求被取消或超时');
+      abortError.originalError = error;
+      abortError.isAbortError = true;
+      throw abortError;
+    }
+
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
       const networkError = new Error('网络请求失败：无法连接到服务器，请检查网络连接和API地址');
       networkError.originalError = error;

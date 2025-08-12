@@ -2,6 +2,7 @@
 
 // 使用动态导入，与comments代码保持一致
 import { safeExecuteAsync } from '/utils/error.js';
+import { logInfo, logWarn, logError } from '/utils/log.js';
 
     // 兼容Vue2和Vue3的ref获取方式
     const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ value: val });
@@ -39,24 +40,24 @@ export const createStore = () => {
         if (Array.isArray(newData)) {
             // 过滤掉无效的数据
             const validData = newData.filter(item => item && typeof item === 'object');
-            console.log('[Store更新] 过滤后的有效数据数量:', validData.length);
+            logInfo('[Store更新] 过滤后的有效数据数量:', validData.length);
             
             // 使用Vue的响应式更新方法
             if (Vue && Vue.nextTick) {
                 Vue.nextTick(() => {
                     featureCards.value = [...validData];
-                    console.log('[Store更新] 使用nextTick更新featureCards');
+                    logInfo('[Store更新] 使用nextTick更新featureCards');
                 });
             } else {
                 // 备用方法：先清空再赋值
                 featureCards.value = [];
                 setTimeout(() => {
                     featureCards.value = [...validData];
-                    console.log('[Store更新] 使用setTimeout更新featureCards');
+                    logInfo('[Store更新] 使用setTimeout更新featureCards');
                 }, 0);
             }
         } else {
-            console.warn('[Store更新] 数据不是数组格式:', newData);
+            logWarn('[Store更新] 数据不是数组格式:', newData);
             featureCards.value = [];
         }
     };
@@ -68,7 +69,7 @@ export const createStore = () => {
      */
     const removeCardFromLocal = (cardKey) => {
         if (!cardKey) {
-            console.warn('[Store] cardKey为空，无法移除卡片');
+            logWarn('[Store] cardKey为空，无法移除卡片');
             return false;
         }
 
@@ -79,7 +80,7 @@ export const createStore = () => {
         const cardIndex = currentCards.findIndex(card => card && card.key === cardKey);
         
         if (cardIndex === -1) {
-            console.warn('[Store] 未找到要删除的卡片:', cardKey);
+            logWarn('[Store] 未找到要删除的卡片:', cardKey);
             return false;
         }
 
@@ -89,7 +90,7 @@ export const createStore = () => {
         // 更新数组
         featureCards.value = newCards;
         
-        console.log('[Store] 本地移除卡片成功:', {
+        logInfo('[Store] 本地移除卡片成功:', {
             cardKey: cardKey,
             removedIndex: cardIndex,
             beforeCount: initialLength,
@@ -98,7 +99,7 @@ export const createStore = () => {
         });
         
         // 监控卡片数量变化
-        console.log('[Store] 卡片数量监控 - 移除后:', {
+        logInfo('[Store] 卡片数量监控 - 移除后:', {
             count: newCards.length,
             cards: newCards.map(card => ({
                 title: card?.title,
@@ -117,18 +118,18 @@ export const createStore = () => {
      */
     const deleteCard = async (cardKey) => {
         return safeExecuteAsync(async () => {
-            console.log('[Store] 开始删除卡片:', cardKey);
+            logInfo('[Store] 开始删除卡片:', cardKey);
             
             // 检查cardKey是否存在
             if (!cardKey) {
-                console.error('[Store] cardKey为空');
+                logError('[Store] cardKey为空');
                 return false;
             }
             
             // 先检查卡片是否存在于本地数组中
             const cardExists = featureCards.value.some(card => card && card.key === cardKey);
             if (!cardExists) {
-                console.warn('[Store] 卡片不存在于本地数组中:', cardKey);
+                logWarn('[Store] 卡片不存在于本地数组中:', cardKey);
                 return false;
             }
             
@@ -136,7 +137,7 @@ export const createStore = () => {
             // 使用动态导入，与comments代码保持一致
             const { deleteData } = await import('/apis/modules/crud.js');
             const deleteResult = await deleteData(`${window.API_URL}/mongodb/?cname=goals&key=${cardKey}`);
-            console.log('[Store] MongoDB删除结果:', deleteResult);
+            logInfo('[Store] MongoDB删除结果:', deleteResult);
             
             // 验证删除结果
             if (deleteResult && deleteResult.success !== false) {
@@ -144,17 +145,17 @@ export const createStore = () => {
                 const localRemoved = removeCardFromLocal(cardKey);
                 
                 if (localRemoved) {
-                    console.log('[Store] 卡片删除成功:', cardKey, '当前卡片数量:', featureCards.value.length);
+                    logInfo('[Store] 卡片删除成功:', cardKey, '当前卡片数量:', featureCards.value.length);
                     return true;
                 } else {
-                    console.error('[Store] 本地移除卡片失败:', cardKey);
+                    logError('[Store] 本地移除卡片失败:', cardKey);
                     return false;
                 }
             } else {
                 throw new Error('API删除失败：' + (deleteResult?.message || '未知错误'));
             }
         }, '卡片删除', (errorInfo) => {
-            console.error('[Store] 删除卡片失败:', errorInfo);
+            logError('[Store] 删除卡片失败:', errorInfo);
             error.value = errorInfo.message || '删除卡片失败';
             return false;
         });
@@ -169,11 +170,11 @@ export const createStore = () => {
     const loadFeatureCards = async (forceReload = false) => {
         // 防止重复加载
         if (isLoadingFeatureCards && !forceReload) {
-            console.log('[Store] 正在加载中，跳过重复调用');
+            logInfo('[Store] 正在加载中，跳过重复调用');
             return;
         }
         
-        console.log('[Store] 开始加载功能卡片数据');
+        logInfo('[Store] 开始加载功能卡片数据');
         isLoadingFeatureCards = true;
         loading.value = true;
         error.value = null;
@@ -197,36 +198,36 @@ export const createStore = () => {
 
             const mongoData = mongoResponse.data.list || [];
 
-            console.log('[Store] 加载到的mongo数据:', mongoData);
+            logInfo('[Store] 加载到的mongo数据:', mongoData);
             
             // 过滤掉无效的数据
             const validMongoData = mongoData.filter(item => item && item.key);
-            console.log('[Store] 有效的mongo数据:', validMongoData);
+            logInfo('[Store] 有效的mongo数据:', validMongoData);
             
             // 设置系统提示
             if (systemPromptData) {
                 fromSystem.value = systemPromptData;
-                console.log('[Store] 成功设置fromSystem');
-                console.log('[Store] 加载到的系统提示数据:', systemPromptData);
+                logInfo('[Store] 成功设置fromSystem');
+                logInfo('[Store] 加载到的系统提示数据:', systemPromptData);
             } else {
-                console.warn('[Store] 系统提示数据为空');
+                logWarn('[Store] 系统提示数据为空');
                 fromSystem.value = null;
             }
             
             // 直接使用MongoDB数据
             featureCards.value = validMongoData;
-            console.log('[Store] 更新featureCards，数量:', validMongoData.length);
+            logInfo('[Store] 更新featureCards，数量:', validMongoData.length);
             
-            console.log('[Store] 最终数据:', validMongoData);
+            logInfo('[Store] 最终数据:', validMongoData);
         } catch (err) {
-            console.error('[Store] 加载数据失败:', err);
+            logError('[Store] 加载数据失败:', err);
             error.value = err && err.message ? err.message : '加载数据失败';
             featureCards.value = [];
             fromSystem.value = null;
         } finally {
             isLoadingFeatureCards = false;
             loading.value = false;
-            console.log('[Store] 数据加载完成，当前状态:', {
+            logInfo('[Store] 数据加载完成，当前状态:', {
                 featureCardsLength: featureCards.value.length,
                 fromSystem: fromSystem.value ? '已设置' : '未设置',
                 loading: loading.value,

@@ -6,6 +6,7 @@ import { createStore } from '/views/websites/hooks/store.js';
 import { useComputed } from '/views/websites/hooks/useComputed.js';
 import { useMethods } from '/views/websites/hooks/useMethods.js';
 import { createBaseView } from '/utils/baseView.js';
+import { logInfo, logError } from '/utils/log.js';
 
 // 创建网站管理页面应用
 (async function initWebsitesApp() {
@@ -17,7 +18,7 @@ import { createBaseView } from '/utils/baseView.js';
             components: [],
             plugins: [],
             onMounted: (app) => {
-                console.log('[网站管理页面] 应用已挂载');
+                logInfo('[网站管理页面] 应用已挂载');
                 
                 // 初始化标签列表
                 if (app.store && app.store.updateTagsList) {
@@ -29,6 +30,6 @@ import { createBaseView } from '/utils/baseView.js';
         // 导出应用实例（可选，用于调试）
         window.websitesApp = app;
     } catch (error) {
-        console.error('[网站管理页面] 应用初始化失败:', error);
+        logError('[网站管理页面] 应用初始化失败:', error);
     }
 })(); 

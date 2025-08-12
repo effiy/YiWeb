@@ -145,12 +145,7 @@ const updateMessagePosition = () => {
     messageContainer.style.right = `${position.right}px`;
     messageContainer.style.maxWidth = `${position.maxWidth}px`;
     
-    console.log('[消息位置] 更新位置:', {
-        top: position.top,
-        right: position.right,
-        maxWidth: position.maxWidth,
-        viewport: viewportInfo
-    });
+    // 静默，不打印日志以减少生产噪音
 };
 
 /**

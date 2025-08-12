@@ -6,6 +6,7 @@ import { createStore } from '/views/aicr/hooks/store.js';
 import { useComputed } from '/views/aicr/hooks/useComputed.js';
 import { useMethods } from '/views/aicr/hooks/useMethods.js';
 import { createBaseView } from '/utils/baseView.js';
+import { logInfo, logWarn, logError } from '/utils/log.js';
 
 // 获取Vue的computed函数
 const { computed } = Vue;
@@ -153,7 +154,7 @@ const { computed } = Vue;
             // 注意：计算属性现在在 useComputed.js 中定义
             // 这里不再需要重复定义
             onMounted: (mountedApp) => {
-                console.log('[代码审查页面] 应用已挂载');
+                logInfo('[代码审查页面] 应用已挂载');
                 if (store) {
                     // 首先加载项目列表
                     store.loadProjects().then(() => {
@@ -161,17 +162,17 @@ const { computed } = Vue;
                         if (store.projects.value.length > 0) {
                             const defaultProject = store.projects.value[0];
                             store.setSelectedProject(defaultProject.id);
-                            console.log('[代码审查页面] 设置默认项目:', defaultProject);
+                            logInfo('[代码审查页面] 设置默认项目:', defaultProject);
                             
                             // 版本列表现在通过setSelectedProject自动更新
-                            console.log('[代码审查页面] 版本列表已自动更新');
+                            logInfo('[代码审查页面] 版本列表已自动更新');
                         }
                     }).then(() => {
                         // 设置默认版本
                         if (store.availableVersions.value.length > 0) {
                             const defaultVersion = store.availableVersions.value[0];
                             store.setSelectedVersion(defaultVersion.id);
-                            console.log('[代码审查页面] 设置默认版本:', defaultVersion);
+                            logInfo('[代码审查页面] 设置默认版本:', defaultVersion);
                             
                             // 加载文件树和文件数据（不包含评论，因为评论需要项目/版本信息）
                             return Promise.all([
@@ -181,14 +182,14 @@ const { computed } = Vue;
                         }
                     }).then(() => {
                         // 项目/版本信息设置完成，加载评论数据和评论者数据
-                        console.log('[代码审查页面] 项目/版本信息设置完成，开始加载评论和评论者');
+                        logInfo('[代码审查页面] 项目/版本信息设置完成，开始加载评论和评论者');
                         return Promise.all([
                             store.loadComments(),
                             store.loadCommenters()
                         ]);
                     }).then(() => {
                         // 项目/版本信息设置完成，触发评论面板重新加载
-                        console.log('[代码审查页面] 项目/版本信息设置完成，触发评论加载');
+                        logInfo('[代码审查页面] 项目/版本信息设置完成，触发评论加载');
                         // 通过触发一个自定义事件来通知评论面板重新加载
                         setTimeout(() => {
                             window.dispatchEvent(new CustomEvent('projectVersionReady', {
@@ -199,16 +200,16 @@ const { computed } = Vue;
                             }));
                         }, 500);
                     }).then(() => {
-                        console.log('[代码审查页面] 数据加载完成');
+                        logInfo('[代码审查页面] 数据加载完成');
                         // 如果没有选中文件，选择第一个文件
                         if (!store.selectedFileId.value && store.files && store.files.length > 0) {
                             const firstFile = store.files[0];
                             const fileId = firstFile.id || firstFile.path || firstFile.fileId;
                             store.setSelectedFileId(fileId);
-                            console.log('[代码审查页面] 自动选择第一个文件:', firstFile, '文件ID:', fileId);
+                            logInfo('[代码审查页面] 自动选择第一个文件:', firstFile, '文件ID:', fileId);
                         }
                     }).catch(error => {
-                        console.error('[代码审查页面] 数据加载失败:', error);
+                        logError('[代码审查页面] 数据加载失败:', error);
                     });
                 }
                 // 取消聚焦（如点击空白处）
@@ -221,15 +222,15 @@ const { computed } = Vue;
                 // 添加ESC快捷键监听，取消文件选中
                 window.addEventListener('keydown', (e) => {
                     if (e.key === 'Escape') {
-                        console.log('[代码审查页面] ESC键被按下，取消文件选中');
+                        logInfo('[代码审查页面] ESC键被按下，取消文件选中');
                         if (store && store.selectedFileId.value) {
                             const previousFileId = store.selectedFileId.value;
                             store.setSelectedFileId(null);
-                            console.log('[代码审查页面] 已取消文件选中，之前文件ID:', previousFileId);
+                            logInfo('[代码审查页面] 已取消文件选中，之前文件ID:', previousFileId);
                             
                             // 触发评论面板刷新事件，恢复到显示所有评论的状态
                             setTimeout(() => {
-                                console.log('[代码审查页面] 触发评论面板刷新事件，恢复到显示所有评论');
+                                logInfo('[代码审查页面] 触发评论面板刷新事件，恢复到显示所有评论');
                                 window.dispatchEvent(new CustomEvent('reloadComments', {
                                     detail: { 
                                         projectId: store.selectedProject ? store.selectedProject.value : null, 
@@ -248,12 +249,12 @@ const { computed } = Vue;
                 // 监听评论区的代码高亮事件
                 window.addEventListener('highlightCodeLines', (e) => {
                     const { fileId, rangeInfo, comment } = e.detail;
-                    console.log('[代码审查页面] 收到代码高亮事件:', { fileId, rangeInfo, comment });
+                    logInfo('[代码审查页面] 收到代码高亮事件:', { fileId, rangeInfo, comment });
                     
                     if (fileId) {
                         // 如果当前没有选中该文件，先选中文件
                         if (store && store.selectedFileId.value !== fileId) {
-                            console.log('[代码审查页面] 切换到文件:', fileId);
+                            logInfo('[代码审查页面] 切换到文件:', fileId);
                             store.setSelectedFileId(fileId);
                         }
                         
@@ -310,80 +311,80 @@ const { computed } = Vue;
                 // 所有方法现在都在useMethods.js中定义
                 // 添加评论提交事件处理
                 handleCommentSubmit: async function(commentData) {
-                    console.log('[主页面] 收到评论提交事件:', commentData);
+                    logInfo('[主页面] 收到评论提交事件:', commentData);
                     try {
                         // 从useMethods中获取handleCommentSubmit方法
                         const methods = useMethods(store);
                         await methods.handleCommentSubmit(commentData);
                     } catch (error) {
-                        console.error('[主页面] 评论提交失败:', error);
+                        logError('[主页面] 评论提交失败:', error);
                     }
                 },
                 
                 // 添加评论删除事件处理
                 handleCommentDelete: async function(commentId) {
-                    console.log('[主页面] 收到评论删除事件:', commentId);
+                    logInfo('[主页面] 收到评论删除事件:', commentId);
                     try {
                         // 从useMethods中获取handleCommentDelete方法
                         const methods = useMethods(store);
                         await methods.handleCommentDelete(commentId);
                     } catch (error) {
-                        console.error('[主页面] 评论删除失败:', error);
+                        logError('[主页面] 评论删除失败:', error);
                     }
                 },
                 
                 // 添加评论解决事件处理
                 handleCommentResolve: async function(commentId) {
-                    console.log('[主页面] 收到评论解决事件:', commentId);
+                    logInfo('[主页面] 收到评论解决事件:', commentId);
                     try {
                         // 从useMethods中获取handleCommentResolve方法
                         const methods = useMethods(store);
                         await methods.handleCommentResolve(commentId);
                     } catch (error) {
-                        console.error('[主页面] 评论解决失败:', error);
+                        logError('[主页面] 评论解决失败:', error);
                     }
                 },
                 
                 // 添加评论重新打开事件处理
                 handleCommentReopen: async function(commentId) {
-                    console.log('[主页面] 收到评论重新打开事件:', commentId);
+                    logInfo('[主页面] 收到评论重新打开事件:', commentId);
                     try {
                         // 从useMethods中获取handleCommentReopen方法
                         const methods = useMethods(store);
                         await methods.handleCommentReopen(commentId);
                     } catch (error) {
-                        console.error('[主页面] 评论重新打开失败:', error);
+                        logError('[主页面] 评论重新打开失败:', error);
                     }
                 },
                 
                 // 添加评论者选择事件处理
                 handleCommenterSelect: function(commenters) {
-                    console.log('[主页面] 收到评论者选择事件:', commenters);
+                    logInfo('[主页面] 收到评论者选择事件:', commenters);
                     try {
                         const methods = useMethods(store);
                         methods.handleCommenterSelect(commenters);
                     } catch (error) {
-                        console.error('[主页面] 评论者选择处理失败:', error);
+                        logError('[主页面] 评论者选择处理失败:', error);
                     }
                 },
                 
                 // 重构文件选择事件处理 - 避免重复的评论接口请求
                 handleFileSelect: function(fileId) {
-                    console.log('[主页面] 收到文件选择事件:', fileId);
+                    logInfo('[主页面] 收到文件选择事件:', fileId);
                     try {
                         // 检查文件ID是否有效
                         if (!fileId || typeof fileId !== 'string') {
-                            console.warn('[主页面] 无效的文件ID:', fileId);
+                            logWarn('[主页面] 无效的文件ID:', fileId);
                             return;
                         }
                         
                         // 检查是否与当前选中的文件相同
                         if (store.selectedFileId.value === fileId) {
-                            console.log('[主页面] 文件已选中，跳过重复选择:', fileId);
+                            logInfo('[主页面] 文件已选中，跳过重复选择:', fileId);
                             return;
                         }
                         
-                        console.log('[主页面] 设置新的选中文件:', fileId);
+                        logInfo('[主页面] 设置新的选中文件:', fileId);
                         
                         // 设置选中的文件ID
                         store.setSelectedFileId(fileId);
@@ -394,7 +395,7 @@ const { computed } = Vue;
                         
                         // 只有在项目/版本信息完整时才触发评论加载
                         if (projectId && versionId) {
-                            console.log('[主页面] 项目/版本信息完整，触发评论加载');
+                            logInfo('[主页面] 项目/版本信息完整，触发评论加载');
                             
                             // 使用防抖机制，避免短时间内多次触发
                             if (this._commentLoadTimeout) {
@@ -403,12 +404,12 @@ const { computed } = Vue;
                             
                             // 添加请求状态检查，防止重复请求
                             if (this._isLoadingComments) {
-                                console.log('[主页面] 评论正在加载中，跳过重复请求');
+                                logInfo('[主页面] 评论正在加载中，跳过重复请求');
                                 return;
                             }
                             
                             this._commentLoadTimeout = setTimeout(() => {
-                                console.log('[主页面] 延迟触发评论加载');
+                                logInfo('[主页面] 延迟触发评论加载');
                                 
                                 // 设置加载状态
                                 this._isLoadingComments = true;
@@ -429,73 +430,73 @@ const { computed } = Vue;
                                 }, 1000);
                             }, 100); // 100ms防抖延迟
                         } else {
-                            console.log('[主页面] 项目/版本信息不完整，跳过评论加载');
+                            logInfo('[主页面] 项目/版本信息不完整，跳过评论加载');
                         }
                         
                     } catch (error) {
-                        console.error('[主页面] 文件选择处理失败:', error);
+                        logError('[主页面] 文件选择处理失败:', error);
                     }
                 },
                 
                 // 添加文件夹切换事件处理
                 handleFolderToggle: function(folderId) {
-                    console.log('[主页面] 收到文件夹切换事件:', folderId);
+                    logInfo('[主页面] 收到文件夹切换事件:', folderId);
                     try {
                         const methods = useMethods(store);
                         methods.handleFolderToggle(folderId);
                     } catch (error) {
-                        console.error('[主页面] 文件夹切换处理失败:', error);
+                        logError('[主页面] 文件夹切换处理失败:', error);
                     }
                 },
                 
                 // 搜索相关方法
                 handleSearchInput: function(event) {
-                    console.log('[主页面] 收到搜索输入事件');
+                    logInfo('[主页面] 收到搜索输入事件');
                     try {
                         const methods = useMethods(store);
                         methods.handleSearchInput(event);
                     } catch (error) {
-                        console.error('[主页面] 搜索输入处理失败:', error);
+                        logError('[主页面] 搜索输入处理失败:', error);
                     }
                 },
                 
                 clearSearch: function() {
-                    console.log('[主页面] 收到清除搜索事件');
+                    logInfo('[主页面] 收到清除搜索事件');
                     try {
                         const methods = useMethods(store);
                         methods.clearSearch();
                     } catch (error) {
-                        console.error('[主页面] 清除搜索失败:', error);
+                        logError('[主页面] 清除搜索失败:', error);
                     }
                 },
                 
                 handleMessageInput: function(event) {
-                    console.log('[主页面] 收到消息输入事件');
+                    logInfo('[主页面] 收到消息输入事件');
                     try {
                         const methods = useMethods(store);
                         methods.handleMessageInput(event);
                     } catch (error) {
-                        console.error('[主页面] 消息输入处理失败:', error);
+                        logError('[主页面] 消息输入处理失败:', error);
                     }
                 },
                 
                 handleCompositionStart: function(event) {
-                    console.log('[主页面] 收到输入法开始事件');
+                    logInfo('[主页面] 收到输入法开始事件');
                     try {
                         const methods = useMethods(store);
                         methods.handleCompositionStart(event);
                     } catch (error) {
-                        console.error('[主页面] 输入法开始处理失败:', error);
+                        logError('[主页面] 输入法开始处理失败:', error);
                     }
                 },
                 
                 handleCompositionEnd: function(event) {
-                    console.log('[主页面] 收到输入法结束事件');
+                    logInfo('[主页面] 收到输入法结束事件');
                     try {
                         const methods = useMethods(store);
                         methods.handleCompositionEnd(event);
                     } catch (error) {
-                        console.error('[主页面] 输入法结束处理失败:', error);
+                        logError('[主页面] 输入法结束处理失败:', error);
                     }
                 },
                 
@@ -504,46 +505,46 @@ const { computed } = Vue;
 
                 
                 refreshData: function() {
-                    console.log('[主页面] 收到刷新数据事件');
+                    logInfo('[主页面] 收到刷新数据事件');
                     try {
                         const methods = useMethods(store);
                         methods.refreshData();
                     } catch (error) {
-                        console.error('[主页面] 刷新数据处理失败:', error);
+                        logError('[主页面] 刷新数据处理失败:', error);
                     }
                 },
                 
                 // 侧边栏和评论区切换
                 toggleSidebar: function() {
-                    console.log('[主页面] 收到侧边栏切换事件');
+                    logInfo('[主页面] 收到侧边栏切换事件');
                     try {
                         const methods = useMethods(store);
                         methods.toggleSidebar();
                     } catch (error) {
-                        console.error('[主页面] 侧边栏切换处理失败:', error);
+                        logError('[主页面] 侧边栏切换处理失败:', error);
                     }
                 },
                 
                 toggleComments: function() {
-                    console.log('[主页面] 收到评论区切换事件');
+                    logInfo('[主页面] 收到评论区切换事件');
                     try {
                         const methods = useMethods(store);
                         methods.toggleComments();
                     } catch (error) {
-                        console.error('[主页面] 评论区切换处理失败:', error);
+                        logError('[主页面] 评论区切换处理失败:', error);
                     }
                 },
                 
                 // 处理评论输入
                 handleCommentInput: function(event) {
-                    console.log('[主页面] 收到评论输入事件');
+                    logInfo('[主页面] 收到评论输入事件');
                     try {
                         // 更新newComment数据
                         this.newComment = event.target.value;
                         const methods = useMethods(store);
                         methods.handleCommentInput(event);
                     } catch (error) {
-                        console.error('[主页面] 评论输入处理失败:', error);
+                        logError('[主页面] 评论输入处理失败:', error);
                     }
                 }
             }
@@ -552,7 +553,7 @@ const { computed } = Vue;
         window.aicrStore = store;
         
         // 确保store中的评论者方法可用
-        console.log('[代码审查页面] store已暴露到全局，评论者方法:', {
+        logInfo('[代码审查页面] store已暴露到全局，评论者方法:', {
             loadCommenters: !!store.loadCommenters,
             addCommenter: !!store.addCommenter,
             updateCommenter: !!store.updateCommenter,
@@ -563,12 +564,12 @@ const { computed } = Vue;
         if (window.aicrApp && window.aicrApp.reload) {
             const oldReload = window.aicrApp.reload;
             window.aicrApp.reload = function() {
-                console.log('[AICR主页面] reload 被调用');
+                logInfo('[AICR主页面] reload 被调用');
                 oldReload.apply(this, arguments);
             };
         }
     } catch (error) {
-        console.error('[代码审查页面] 应用初始化失败:', error);
+        logError('[代码审查页面] 应用初始化失败:', error);
     }
 })();
 
