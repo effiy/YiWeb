@@ -4,7 +4,6 @@
  */
 
 import { checkStatus, isJsonResponse } from '/apis/helper/checkStatus.js';
-import { generateRequestId } from '/apis/helper/apiUtils.js';
 
 /**
  * 默认请求配置
@@ -12,8 +11,13 @@ import { generateRequestId } from '/apis/helper/apiUtils.js';
 const DEFAULT_CONFIG = {
   timeout: 5 * 60 * 1000, // 5分钟
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  // 默认采用 CORS 模式，确保跨域请求行为一致
+  mode: 'cors',
+  // 显式声明凭据策略，避免意外携带 Cookie 导致的 CORS 失败
+  credentials: 'omit'
 };
 
 /**
@@ -78,6 +82,9 @@ export async function sendRequest(url, options = {}) {
       method: config.method || 'GET',
       headers: config.headers,
       body: config.body,
+      mode: config.mode,
+      credentials: config.credentials,
+      cache: config.cache,
       ...config.fetchOptions
     });
     
@@ -348,5 +355,6 @@ export const post = postRequest;
 export const put = putRequest;
 export const patch = patchRequest;
 export const del = deleteRequest;
+
 
 

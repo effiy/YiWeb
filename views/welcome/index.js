@@ -35,13 +35,26 @@ import { createBaseView } from '/utils/baseView.js';
                     
                     console.log('[欢迎页面] 可用的方法:', availableMethods);
                     
-                                    // 验证 editCard 方法是否存在
-                if (app.editCard) {
-                    console.log('[欢迎页面] editCard 方法已找到');
-                } else {
-                    console.error('[欢迎页面] editCard 方法未找到！');
-                    console.log('[欢迎页面] 所有可用方法:', availableMethods);
-                }
+                    // 验证 editCard 方法是否存在
+                    if (app.editCard) {
+                        console.log('[欢迎页面] editCard 方法已找到');
+                        
+                        // 测试编辑卡片功能
+                        window.testEditCard = () => {
+                            console.log('[测试] 开始测试编辑卡片功能');
+                            if (app.store && app.store.featureCards && app.store.featureCards.value.length > 0) {
+                                const testCard = app.store.featureCards.value[0];
+                                console.log('[测试] 使用测试卡片:', testCard);
+                                app.editCard(testCard, null);
+                            } else {
+                                console.warn('[测试] 没有可用的测试卡片');
+                            }
+                        };
+                        console.log('[欢迎页面] 测试函数已暴露到 window.testEditCard');
+                    } else {
+                        console.error('[欢迎页面] editCard 方法未找到！');
+                        console.log('[欢迎页面] 所有可用方法:', availableMethods);
+                    }
                 } else {
                     console.error('[欢迎页面] 应用实例不存在');
                 }
@@ -65,3 +78,4 @@ import { createBaseView } from '/utils/baseView.js';
         console.error('[欢迎页面] 应用初始化失败:', error);
     }
 })();
+

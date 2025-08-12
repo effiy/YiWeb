@@ -1,0 +1,819 @@
+/**
+ * EditCard 插件
+ * 参考其他 plugins 的结构，将编辑卡片的 UI 与逻辑从 useMethods 解耦
+ * 提供 openEditCardModal(card, store) 方法
+ */
+
+import { showError, showSuccess } from '/utils/message.js';
+
+function addPassiveEventListener(element, event, handler, options = {}) {
+  const finalOptions = { passive: true, ...options };
+  element.addEventListener(event, handler, finalOptions);
+}
+
+export async function openEditCardModal(card, store) {
+  if (!card) {
+    showError('无效的卡片数据');
+    return;
+  }
+
+  try {
+    // 创建模态框容器
+    const modal = document.createElement('div');
+    modal.className = 'edit-card-modal';
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      animation: modalFadeIn 0.2s ease-out;
+      overflow: hidden;
+    `;
+
+    // 创建模态框内容
+    const modalContent = document.createElement('div');
+    modalContent.className = 'edit-card-content';
+    modalContent.style.cssText = `
+      background: var(--bg-primary, #1a1a1a);
+      border: 1px solid var(--border-primary, #333);
+      border-radius: 8px;
+      padding: 0;
+      max-width: min(95vw, 900px);
+      max-height: min(90vh, 600px);
+      width: 100%;
+      overflow: auto;
+      position: relative;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      color: var(--text-primary, #fff);
+      margin: auto;
+      box-sizing: border-box;
+      animation: modalSlideIn 0.2s ease-out;
+    `;
+
+    // 标题
+    const modalTitle = document.createElement('h3');
+    modalTitle.innerHTML = `
+      <span>编辑卡片</span>
+      <span class="card-name">${card.title || ''}</span>
+    `;
+    modalTitle.style.cssText = `
+      margin: 0 0 20px 0;
+      color: var(--text-primary, #fff);
+      font-size: 18px;
+      font-weight: 600;
+      padding: 16px 20px;
+      border-radius: 8px 8px 0 0;
+      border: none;
+      background: var(--bg-secondary, #2a2a2a);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    `;
+
+    // 表单
+    const form = document.createElement('form');
+    form.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      padding: 0 20px 20px;
+      gap: 16px;
+    `;
+
+    // 字段配置
+    const fields = [
+      { key: 'title', label: '标题', type: 'text', required: true },
+      { key: 'description', label: '描述', type: 'textarea', required: true },
+      { key: 'icon', label: '图标类名', type: 'text', required: false },
+      { key: 'badge', label: '徽章文本', type: 'text', required: false },
+      { key: 'link', label: '链接地址', type: 'url', required: false },
+      { key: 'hint', label: '提示文本', type: 'text', required: false },
+      { key: 'footerIcon', label: '底部图标', type: 'text', required: false }
+    ];
+
+    const formData = { ...card };
+
+    fields.forEach(field => {
+      const fieldContainer = document.createElement('div');
+      fieldContainer.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      `;
+
+      const label = document.createElement('label');
+      label.textContent = field.label;
+      label.style.cssText = `
+        font-weight: 600;
+        color: var(--text-primary, #fff);
+        font-size: 13px;
+        margin-bottom: 4px;
+        display: block;
+      `;
+
+      let input;
+      if (field.type === 'textarea') {
+        input = document.createElement('textarea');
+        input.rows = 3;
+        input.style.cssText = `
+          padding: 10px;
+          border: 1px solid var(--border-primary, #333);
+          border-radius: 4px;
+          background: var(--bg-secondary, #2a2a2a);
+          color: var(--text-primary, #fff);
+          font-size: 13px;
+          resize: vertical;
+          font-family: inherit;
+          min-height: 60px;
+          box-sizing: border-box;
+          width: 100%;
+        `;
+      } else {
+        input = document.createElement('input');
+        input.type = field.type;
+        input.style.cssText = `
+          padding: 10px;
+          border: 1px solid var(--border-primary, #333);
+          border-radius: 4px;
+          background: var(--bg-secondary, #2a2a2a);
+          color: var(--text-primary, #fff);
+          font-size: 13px;
+          box-sizing: border-box;
+          width: 100%;
+        `;
+      }
+
+      input.value = formData[field.key] || '';
+      input.required = field.required;
+      addPassiveEventListener(input, 'input', (e) => {
+        formData[field.key] = e.target.value;
+      });
+
+      fieldContainer.appendChild(label);
+      fieldContainer.appendChild(input);
+      form.appendChild(fieldContainer);
+    });
+
+    // 功能特性编辑
+    const featuresContainer = document.createElement('div');
+    featuresContainer.className = 'features-container';
+    featuresContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 16px;
+      background: var(--bg-secondary, #2a2a2a);
+      border: 1px solid var(--border-secondary, #444);
+      border-radius: 8px;
+      padding: 16px;
+    `;
+
+    const featuresTitle = document.createElement('h4');
+    featuresTitle.textContent = '功能特性';
+    featuresTitle.style.cssText = `
+      margin: 0 0 16px 0;
+      color: var(--text-primary, #fff);
+      font-size: 16px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-secondary, #444);
+      padding-bottom: 8px;
+    `;
+
+    const featuresList = document.createElement('div');
+    featuresList.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    `;
+
+    if (!formData.features) formData.features = [];
+
+    const renderFeatures = () => {
+      featuresList.innerHTML = '';
+      formData.features.forEach((feature, index) => {
+        const featureItem = document.createElement('div');
+        featureItem.className = 'feature-item';
+        featureItem.style.cssText = `
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          padding: 12px;
+          border: 1px solid var(--border-secondary, #444);
+          border-radius: 6px;
+          background: var(--bg-primary, #1a1a1a);
+          margin-bottom: 8px;
+          transition: all 0.2s ease;
+        `;
+
+        const iconInput = document.createElement('input');
+        iconInput.type = 'text';
+        iconInput.placeholder = '图标';
+        iconInput.value = feature.icon || '';
+        iconInput.style.cssText = `
+          padding: 8px;
+          border: 1px solid var(--border-primary, #333);
+          border-radius: 4px;
+          background: var(--bg-primary, #1a1a1a);
+          color: var(--text-primary, #fff);
+          font-size: 12px;
+          width: 90px;
+          flex-shrink: 0;
+        `;
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.placeholder = '名称';
+        nameInput.value = feature.name || '';
+        nameInput.style.cssText = `
+          padding: 8px;
+          border: 1px solid var(--border-primary, #333);
+          border-radius: 4px;
+          background: var(--bg-primary, #1a1a1a);
+          color: var(--text-primary, #fff);
+          font-size: 12px;
+          width: 90px;
+          flex-shrink: 0;
+        `;
+
+        const descInput = document.createElement('input');
+        descInput.type = 'text';
+        descInput.placeholder = '描述';
+        descInput.value = feature.desc || '';
+        descInput.style.cssText = `
+          padding: 8px;
+          border: 1px solid var(--border-primary, #333);
+          border-radius: 4px;
+          background: var(--bg-primary, #1a1a1a);
+          color: var(--text-primary, #fff);
+          font-size: 12px;
+          flex: 1;
+          min-width: 280px;
+        `;
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '×';
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.style.cssText = `
+          background: var(--danger, #dc3545);
+          color: white;
+          border: none;
+          border-radius: 4px;
+          width: 24px;
+          height: 24px;
+          cursor: pointer;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.2s ease;
+        `;
+
+        iconInput.addEventListener('input', (e) => {
+          formData.features[index].icon = e.target.value;
+        });
+        nameInput.addEventListener('input', (e) => {
+          formData.features[index].name = e.target.value;
+        });
+        descInput.addEventListener('input', (e) => {
+          formData.features[index].desc = e.target.value;
+        });
+
+        deleteBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          formData.features.splice(index, 1);
+          renderFeatures();
+        });
+
+        featureItem.appendChild(iconInput);
+        featureItem.appendChild(nameInput);
+        featureItem.appendChild(descInput);
+        featureItem.appendChild(deleteBtn);
+        featuresList.appendChild(featureItem);
+      });
+    };
+
+    const addFeatureBtn = document.createElement('button');
+    addFeatureBtn.textContent = '+ 添加功能特性';
+    addFeatureBtn.type = 'button';
+    addFeatureBtn.className = 'add-btn';
+    addFeatureBtn.style.cssText = `
+      background: var(--primary, #007bff);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 12px;
+      align-self: flex-start;
+      transition: all 0.2s ease;
+      margin-top: 8px;
+    `;
+    addFeatureBtn.addEventListener('click', () => {
+      formData.features.push({ icon: '', name: '', desc: '' });
+      renderFeatures();
+    });
+
+    featuresContainer.appendChild(featuresTitle);
+    featuresContainer.appendChild(featuresList);
+    featuresContainer.appendChild(addFeatureBtn);
+
+    // 统计数据编辑
+    const statsContainer = document.createElement('div');
+    statsContainer.className = 'stats-container';
+    statsContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 16px;
+      background: var(--bg-secondary, #2a2a2a);
+      border: 1px solid var(--border-secondary, #444);
+      border-radius: 8px;
+      padding: 16px;
+      position: relative;
+      overflow: visible;
+      min-width: 0;
+      width: 100%;
+    `;
+
+    const statsTitle = document.createElement('h4');
+    statsTitle.textContent = '统计数据';
+    statsTitle.style.cssText = `
+      margin: 0 0 16px 0;
+      color: var(--text-primary, #fff);
+      font-size: 16px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-secondary, #444);
+      padding-bottom: 8px;
+    `;
+
+    const statsList = document.createElement('div');
+    statsList.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+      width: 100%;
+    `;
+
+    if (!formData.stats) formData.stats = [];
+
+    const renderStats = () => {
+      statsList.innerHTML = '';
+      formData.stats.forEach((stat, index) => {
+        const statItem = document.createElement('div');
+        statItem.className = 'stat-item';
+        statItem.style.cssText = `
+          display: flex;
+          flex-direction: row;
+          gap: 8px;
+          align-items: center;
+          padding: 8px;
+          border: 1px solid var(--border-secondary, #444);
+          border-radius: 6px;
+          background: var(--bg-primary, #1a1a1a);
+          margin-bottom: 8px;
+          transition: all 0.2s ease;
+          flex-wrap: nowrap;
+          min-width: 0;
+          width: 100%;
+          box-sizing: border-box;
+        `;
+
+        const numberInput = document.createElement('input');
+        numberInput.type = 'text';
+        numberInput.placeholder = '数字';
+        numberInput.value = stat.number || '';
+        numberInput.style.cssText = `
+          padding: 6px 6px;
+          border: 1px solid var(--border-primary, #333);
+          border-radius: 4px;
+          background: var(--bg-primary, #1a1a1a);
+          color: var(--text-primary, #fff);
+          font-size: 12px;
+          width: 70px;
+          text-align: center;
+          font-weight: 600;
+          flex-shrink: 0;
+        `;
+
+        const labelInput = document.createElement('input');
+        labelInput.type = 'text';
+        labelInput.placeholder = '标签名称';
+        labelInput.value = stat.label || '';
+        labelInput.style.cssText = `
+          padding: 6px 6px;
+          border: 1px solid var(--border-primary, #333);
+          border-radius: 4px;
+          background: var(--bg-primary, #1a1a1a);
+          color: var(--text-primary, #fff);
+          font-size: 12px;
+          width: 100px;
+          flex-shrink: 0;
+        `;
+
+        const linkInput = document.createElement('input');
+        linkInput.type = 'url';
+        linkInput.placeholder = '链接地址 (可选)';
+        linkInput.value = stat.link || '';
+        linkInput.style.cssText = `
+          padding: 6px 6px;
+          border: 1px solid var(--border-primary, #333);
+          border-radius: 4px;
+          background: var(--bg-primary, #1a1a1a);
+          color: var(--text-primary, #fff);
+          font-size: 12px;
+          width: 200px;
+          min-width: 150px;
+          flex: 1;
+          flex-shrink: 1;
+        `;
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '×';
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.style.cssText = `
+          background: var(--danger, #dc3545);
+          color: white;
+          border: none;
+          border-radius: 4px;
+          width: 20px;
+          height: 20px;
+          cursor: pointer;
+          font-size: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.2s ease;
+        `;
+
+        numberInput.addEventListener('input', (e) => {
+          formData.stats[index].number = e.target.value;
+        });
+        labelInput.addEventListener('input', (e) => {
+          formData.stats[index].label = e.target.value;
+        });
+        linkInput.addEventListener('input', (e) => {
+          formData.stats[index].link = e.target.value;
+        });
+        deleteBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          formData.stats.splice(index, 1);
+          renderStats();
+        });
+
+        statItem.appendChild(numberInput);
+        statItem.appendChild(labelInput);
+        statItem.appendChild(linkInput);
+        statItem.appendChild(deleteBtn);
+        statsList.appendChild(statItem);
+      });
+    };
+
+    const addStatBtn = document.createElement('button');
+    addStatBtn.textContent = '+ 添加统计数据';
+    addStatBtn.type = 'button';
+    addStatBtn.className = 'add-btn';
+    addStatBtn.style.cssText = `
+      background: var(--primary, #007bff);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 12px;
+      align-self: flex-start;
+      transition: all 0.2s ease;
+      margin-top: 8px;
+    `;
+    addStatBtn.addEventListener('click', () => {
+      formData.stats.push({ number: '', label: '', link: '' });
+      renderStats();
+    });
+
+    statsContainer.appendChild(statsTitle);
+    statsContainer.appendChild(statsList);
+    statsContainer.appendChild(addStatBtn);
+
+    // 标签编辑
+    const tagsContainer = document.createElement('div');
+    tagsContainer.className = 'tags-container';
+    tagsContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 16px;
+      background: var(--bg-secondary, #2a2a2a);
+      border: 1px solid var(--border-secondary, #444);
+      border-radius: 8px;
+      padding: 16px;
+    `;
+
+    const tagsTitle = document.createElement('h4');
+    tagsTitle.textContent = '项目标签';
+    tagsTitle.style.cssText = `
+      margin: 0 0 16px 0;
+      color: var(--text-primary, #fff);
+      font-size: 16px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-secondary, #444);
+      padding-bottom: 8px;
+    `;
+
+    const tagsList = document.createElement('div');
+    tagsList.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    `;
+
+    if (!formData.tags) formData.tags = [];
+
+    const renderTags = () => {
+      tagsList.innerHTML = '';
+      formData.tags.forEach((tag, index) => {
+        const tagItem = document.createElement('div');
+        tagItem.className = 'tag-item';
+        tagItem.style.cssText = `
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          padding: 12px;
+          border: 1px solid var(--border-secondary, #444);
+          border-radius: 6px;
+          background: var(--bg-primary, #1a1a1a);
+          margin-bottom: 8px;
+          transition: all 0.2s ease;
+        `;
+
+        const tagInput = document.createElement('input');
+        tagInput.type = 'text';
+        tagInput.placeholder = '标签名称';
+        tagInput.value = tag.name || '';
+        tagInput.style.cssText = `
+          padding: 8px;
+          border: 1px solid var(--border-primary, #333);
+          border-radius: 4px;
+          background: var(--bg-primary, #1a1a1a);
+          color: var(--text-primary, #fff);
+          font-size: 12px;
+          flex: 1;
+          transition: all 0.2s ease;
+        `;
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '×';
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.style.cssText = `
+          background: var(--danger, #dc3545);
+          color: white;
+          border: none;
+          border-radius: 4px;
+          width: 24px;
+          height: 24px;
+          cursor: pointer;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.2s ease;
+        `;
+
+        tagInput.addEventListener('input', (e) => {
+          formData.tags[index].name = e.target.value;
+        });
+        tagInput.addEventListener('blur', (e) => {
+          const tagName = (e.target.value || '').trim();
+          if (!tagName) {
+            formData.tags.splice(index, 1);
+            renderTags();
+            return;
+          }
+          const duplicateIndex = formData.tags.findIndex((t, i) => i !== index && (t.name || '').trim().toLowerCase() === tagName.toLowerCase());
+          if (duplicateIndex !== -1) {
+            showError(`标签 "${tagName}" 已存在`);
+            formData.tags.splice(index, 1);
+            renderTags();
+            return;
+          }
+          formData.tags[index].name = tagName;
+        });
+        tagInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            tagInput.blur();
+          }
+        });
+        deleteBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          formData.tags.splice(index, 1);
+          renderTags();
+        });
+
+        tagItem.appendChild(tagInput);
+        tagItem.appendChild(deleteBtn);
+        tagsList.appendChild(tagItem);
+      });
+    };
+
+    const addTagBtn = document.createElement('button');
+    addTagBtn.textContent = '+ 添加标签';
+    addTagBtn.type = 'button';
+    addTagBtn.className = 'add-btn';
+    addTagBtn.style.cssText = `
+      background: var(--primary, #007bff);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 12px;
+      align-self: flex-start;
+      transition: all 0.2s ease;
+      margin-top: 8px;
+    `;
+    addTagBtn.addEventListener('click', () => {
+      const hasEmpty = formData.tags.some(t => !(t.name || '').trim());
+      if (hasEmpty) {
+        showError('请先填写现有标签名称');
+        return;
+      }
+      formData.tags.push({ name: '' });
+      renderTags();
+      const newTagInput = tagsList.lastElementChild?.querySelector('input');
+      if (newTagInput) newTagInput.focus();
+    });
+
+    tagsContainer.appendChild(tagsTitle);
+    tagsContainer.appendChild(tagsList);
+    tagsContainer.appendChild(addTagBtn);
+
+    // 操作按钮
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.cssText = `
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-primary, #333);
+    `;
+
+    const saveButton = document.createElement('button');
+    saveButton.textContent = '保存更改';
+    saveButton.type = 'button';
+    saveButton.style.cssText = `
+      background: var(--success, #28a745);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 12px 24px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      min-width: 100px;
+    `;
+
+    const cancelButton = document.createElement('button');
+    cancelButton.textContent = '取消';
+    cancelButton.type = 'button';
+    cancelButton.style.cssText = `
+      background: var(--bg-secondary, #2a2a2a);
+      color: var(--text-primary, #fff);
+      border: 1px solid var(--border-primary, #333);
+      border-radius: 6px;
+      padding: 12px 24px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 100px;
+    `;
+
+    addPassiveEventListener(saveButton, 'click', async () => {
+      try {
+        if (!formData.title || !formData.description) {
+          showError('标题和描述为必填字段');
+          return;
+        }
+
+        if (navigator.vibrate) navigator.vibrate(30);
+
+        saveButton.disabled = true;
+        cancelButton.disabled = true;
+        saveButton.classList.add('updating');
+
+        // 更新本地对象
+        Object.assign(card, formData);
+
+        // DB 持久化
+        if (card.key) {
+          try {
+            const { updateData } = await import('/apis/modules/crud.js');
+            const url = `${window.API_URL}/mongodb/?cname=goals`;
+            const payload = {
+              key: card.key,
+              title: formData.title,
+              description: formData.description,
+              icon: card.icon || '',
+              badge: card.badge || '',
+              link: card.link || '',
+              hint: card.hint || '',
+              footerIcon: card.footerIcon || '',
+              features: card.features || [],
+              stats: card.stats || [],
+              tags: formData.tags || card.tags || [],
+              updatedAt: new Date().toISOString()
+            };
+            await updateData(url, payload);
+          } catch (dbError) {
+            console.error('[EditCardPlugin] 数据库更新失败:', dbError);
+            showError('数据库更新失败，但本地更改已保存');
+          }
+        }
+
+        modal.remove();
+        showSuccess(`卡片"${card.title}"已更新`);
+
+        // 刷新数据
+        if (store && typeof store.loadFeatureCards === 'function') {
+          setTimeout(() => {
+            store.loadFeatureCards().catch(() => {});
+          }, 300);
+        }
+      } catch (err) {
+        console.error('[EditCardPlugin] 保存失败:', err);
+        showError('保存失败，请稍后重试');
+      } finally {
+        saveButton.disabled = false;
+        cancelButton.disabled = false;
+        saveButton.classList.remove('updating');
+      }
+    });
+
+    addPassiveEventListener(cancelButton, 'click', () => {
+      modal.remove();
+    });
+
+    buttonContainer.appendChild(cancelButton);
+    buttonContainer.appendChild(saveButton);
+
+    // 组装
+    form.appendChild(featuresContainer);
+    form.appendChild(statsContainer);
+    form.appendChild(tagsContainer);
+    form.appendChild(buttonContainer);
+
+    modalContent.appendChild(modalTitle);
+    modalContent.appendChild(form);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    // 初始渲染
+    renderFeatures();
+    renderStats();
+    renderTags();
+
+    const firstInput = form.querySelector('input, textarea');
+    if (firstInput) firstInput.focus();
+
+    // 点击遮罩关闭
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    }, { passive: true });
+
+    // ESC 关闭
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        modal.remove();
+        document.removeEventListener('keydown', handleEsc);
+      }
+    };
+    document.addEventListener('keydown', handleEsc, { passive: true });
+    modal.addEventListener('remove', () => {
+      document.removeEventListener('keydown', handleEsc);
+    });
+  } catch (error) {
+    console.error('[EditCardPlugin] 打开编辑器失败:', error);
+    showError('创建编辑界面失败，请稍后重试');
+  }
+}
+
+console.log('[EditCardPlugin] 已加载');
+
+
+

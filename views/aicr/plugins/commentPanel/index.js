@@ -676,23 +676,15 @@ const createCommentPanel = async () => {
 
                     // 组装URL
                     let url = `${window.API_URL}/mongodb/?cname=comments`;
-                    if (projectId) url += `&projectId=${projectId}`;
-                    if (versionId) url += `&versionId=${versionId}`;
-                    url += `&key=${this.editingComment.key}`;
 
                     try {
                         const { updateData } = await import('/apis/modules/crud.js');
                         
-                        // 处理时间戳
-                        let newTimestamp = this.editingComment.timestamp;
-                        if (this.editingCommentTimestamp) {
-                            newTimestamp = new Date(this.editingCommentTimestamp).toISOString();
-                        }
-                        
                         const payload = {
                             key: this.editingComment.key,
                             author: newAuthor,
-                            timestamp: newTimestamp,
+                            projectId: projectId,
+                            versionId: versionId,
                             content: newContent,
                             text: this.editingCommentText || null,
                             rangeInfo: this.editingRangeInfo,
@@ -711,7 +703,6 @@ const createCommentPanel = async () => {
                             this.mongoComments[idx] = { 
                                 ...this.mongoComments[idx], 
                                 author: newAuthor,
-                                timestamp: newTimestamp,
                                 content: newContent,
                                 text: this.editingCommentText || null,
                                 rangeInfo: this.editingRangeInfo,
@@ -1564,6 +1555,7 @@ const createCommentPanel = async () => {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
+
 
 
 

@@ -725,10 +725,6 @@ export const useMethods = (store) => {
                     url += `&versionId=${versionId}`;
                 }
 
-                // 添加评论key参数
-                url += `&key=${commentId}`;
-                url += `&status=resolved`;
-
                 console.log('[评论解决] 调用解决接口:', url);
 
                 // 调用更新接口
@@ -1114,6 +1110,7 @@ export const useMethods = (store) => {
         handleCompositionEnd
     };
 };
+
 
 
 

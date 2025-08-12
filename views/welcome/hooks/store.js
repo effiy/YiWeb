@@ -1,6 +1,6 @@
 // author: liangliang
 
-import { getData, deleteData } from '/apis/index.js';
+// 使用动态导入，与comments代码保持一致
 import { safeExecuteAsync } from '/utils/error.js';
 
     // 兼容Vue2和Vue3的ref获取方式
@@ -133,6 +133,8 @@ export const createStore = () => {
             }
             
             // 从MongoDB中删除数据
+            // 使用动态导入，与comments代码保持一致
+            const { deleteData } = await import('/apis/modules/crud.js');
             const deleteResult = await deleteData(`${window.API_URL}/mongodb/?cname=goals&key=${cardKey}`);
             console.log('[Store] MongoDB删除结果:', deleteResult);
             
@@ -162,16 +164,36 @@ export const createStore = () => {
      * 异步加载功能卡片数据
      * 支持多次调用，自动处理加载状态和错误
      */
-    const loadFeatureCards = async () => {
+    let isLoadingFeatureCards = false; // 防重复加载标志
+    
+    const loadFeatureCards = async (forceReload = false) => {
+        // 防止重复加载
+        if (isLoadingFeatureCards && !forceReload) {
+            console.log('[Store] 正在加载中，跳过重复调用');
+            return;
+        }
+        
         console.log('[Store] 开始加载功能卡片数据');
+        isLoadingFeatureCards = true;
         loading.value = true;
         error.value = null;
+        
         try {
+            // 使用动态导入，与comments代码保持一致
+            const { getData } = await import('/apis/modules/crud.js');
             const categoryFiltersData = await getData(`${window.DATA_URL}/mock/welcome/categoryFilters.json`);
             categoryFilters.value = categoryFiltersData;
             const systemPromptData = await getData(`${window.DATA_URL}/prompts/welcome/featureCards.txt`);
 
-            const mongoResponse = await getData(`${window.API_URL}/mongodb/?cname=goals`);
+            // 添加时间戳防止缓存干扰
+            const timestamp = Date.now();
+            const mongoResponse = await getData(`${window.API_URL}/mongodb/?cname=goals`, { 
+                cache: 'no-cache',
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            });
 
             const mongoData = mongoResponse.data.list || [];
 
@@ -202,6 +224,7 @@ export const createStore = () => {
             featureCards.value = [];
             fromSystem.value = null;
         } finally {
+            isLoadingFeatureCards = false;
             loading.value = false;
             console.log('[Store] 数据加载完成，当前状态:', {
                 featureCardsLength: featureCards.value.length,
@@ -258,6 +281,7 @@ export const createStore = () => {
         clearError       // 清除错误
     };
 }
+
 
 
 

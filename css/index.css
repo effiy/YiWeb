@@ -359,15 +359,30 @@
 }
 
 /* 图标输入框固定宽度 */
-.edit-card-content .feature-item input[placeholder="图标"],
-.edit-card-content .stat-item input[placeholder="数字"] {
-    width: 80px;
+.edit-card-content .feature-item input[placeholder="图标"] {
+    width: 90px;
     flex-shrink: 0;
 }
 
-/* 名称和描述输入框自适应 */
-.edit-card-content .feature-item input[placeholder="名称"],
-.edit-card-content .feature-item input[placeholder="描述"],
+/* 统计项数字输入框固定宽度 */
+.edit-card-content .stat-item input[placeholder="数字"] {
+    width: 70px;
+    flex-shrink: 0;
+}
+
+/* 名称输入框固定宽度 */
+.edit-card-content .feature-item input[placeholder="名称"] {
+    width: 90px;
+    flex-shrink: 0;
+}
+
+/* 描述输入框自适应宽度 */
+.edit-card-content .feature-item input[placeholder="描述"] {
+    flex: 1;
+    min-width: 280px;
+}
+
+/* 统计项输入框自适应 */
 .edit-card-content .stat-item input[placeholder="标签"],
 .edit-card-content .stat-item input[placeholder="链接 (可选)"] {
     flex: 1;
@@ -925,4 +940,5 @@
         max-width: 80px;
     }
 }
+
 
