@@ -1,22 +1,11 @@
 // 日历组件 - 负责日期导航和小日历显示
 
-// 自动加载相关的CSS文件
-(function loadCSS() {
-  const cssFiles = [
-      '/plugins/calendar/index.css'
-  ];
-  
-  cssFiles.forEach(cssFile => {
-      // 检查是否已经加载过该CSS文件
-      if (!document.querySelector(`link[href*="${cssFile}"]`)) {
-          const link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = cssFile;
-          link.type = 'text/css';
-          document.head.appendChild(link);
-      }
-  });
-})();
+import { loadCSSFiles } from '/utils/baseView.js';
+
+// 自动加载相关的CSS文件（统一使用工具函数）
+loadCSSFiles([
+    '/plugins/calendar/index.css'
+]);
 // 异步加载HTML模板
 async function loadTemplate() {
     try {

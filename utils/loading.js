@@ -18,9 +18,7 @@ class GlobalLoadingManager {
      */
     init() {
         this.indicator = document.getElementById('global-loading-indicator');
-        if (!this.indicator) {
-            console.warn('[GlobalLoadingManager] 全局加载指示器未找到');
-        }
+        // 保持静默，不使用动态导入
     }
 
     /**
@@ -40,10 +38,6 @@ class GlobalLoadingManager {
             const loadingText = this.indicator.querySelector('#loading-text');
             if (loadingText && message) {
                 loadingText.textContent = message;
-            }
-            
-            if (message) {
-                console.log('[GlobalLoadingManager] 显示加载指示器:', message);
             }
         }
     }
