@@ -31,8 +31,8 @@
     box-shadow: var(--shadow-sm);
     color: var(--text-secondary);
     font-size: 12px;
-    backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
 }
 
 .file-tree-toggle:hover {
@@ -134,6 +134,7 @@
     margin: 1px 0;
     position: relative;
     border: 1px solid transparent;
+    min-width: 0; /* 允许子项正确收缩，配合省略号 */
 }
 
 .file-tree-item::before {
@@ -224,11 +225,12 @@
 
 /* ========== 文件名 ========== */
 .file-name {
-    flex: 1;
+    flex: 1 1 auto;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 13px;
+    min-width: 0; /* 使省略号生效 */
 }
 
 .file-tree-item.selected .file-name {
@@ -247,6 +249,7 @@
     text-align: center;
     opacity: 0.7;
     transition: all 0.2s ease;
+    flex: 0 0 auto; /* 防止挤压文件名 */
 }
 
 .file-tree-item:hover .folder-count {
@@ -497,6 +500,44 @@
     opacity: 0;
 } 
 
+/* ========== 行内操作按钮 ========== */
+.file-actions {
+    display: none; /* 默认不占位，避免压缩文件名 */
+    gap: 6px;
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.file-tree-item:hover .file-actions,
+.file-tree-item:focus-within .file-actions {
+    display: inline-flex;
+    opacity: 1;
+}
+
+.file-actions .action-btn {
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.file-actions .action-btn:hover {
+    color: var(--primary);
+    background: var(--bg-glass);
+    border-color: var(--border-primary);
+}
+
+.file-actions .action-btn i {
+    font-size: 12px;
+}
+
 /* ========== 评论数量显示 ========== */
 .comment-count {
     display: inline-flex;
@@ -548,5 +589,6 @@
         padding: 1px 4px;
     }
 }
+
 
 

@@ -36,6 +36,14 @@ export const useMethods = (store) => {
         loadFileTree,
         loadFiles,
         refreshData,
+        // 文件树CRUD
+        createFolder,
+        createFile,
+        renameItem,
+        deleteItem,
+         // 本地持久化
+         persistProjects,
+         setProjects,
 
         // 搜索相关状态
         searchQuery,
@@ -960,10 +968,11 @@ export const useMethods = (store) => {
                     setSelectedProject(projectId);
                     console.log('[项目切换] 项目已设置:', projectId);
                     
-                    // 清空版本选择
-                    setSelectedVersion('');
+                    // 在加载前清空当前选择与数据，避免旧数据闪烁
+                    // 清空文件选择
+                    setSelectedFileId(null);
                     
-                    // 清空评论数据，等待版本选择后重新加载
+                    // 清空评论数据
                     comments.value = [];
                     
                     // 清空评论者数据
@@ -971,16 +980,60 @@ export const useMethods = (store) => {
                         store.commenters.value = [];
                         console.log('[项目切换] 评论者数据已清空');
                     }
-                    
-                    // 清空文件选择
-                    setSelectedFileId(null);
-                    
-                    // 版本列表现在通过setSelectedProject自动更新
-                    console.log('[项目切换] 版本列表已自动更新');
-                    
-                    // 显示成功消息
-                    showSuccessMessage(`已切换到项目: ${projectId}`);
-                    
+
+                    // 自动选择第一个版本（优先从项目直接获取，避免异步时序问题）
+                    const versionsForProject = (typeof getVersionsByProject === 'function') 
+                        ? getVersionsByProject(projectId) 
+                        : (availableVersions?.value || []);
+                    if (versionsForProject && versionsForProject.length > 0) {
+                        const firstVersion = versionsForProject[0];
+                        const firstVersionId = (typeof firstVersion === 'string') 
+                            ? firstVersion 
+                            : (firstVersion.id || firstVersion.value || firstVersion.versionId || firstVersion.date || firstVersion.name);
+                        const firstVersionName = (typeof firstVersion === 'string') 
+                            ? firstVersion 
+                            : (firstVersion.name || firstVersion.label || firstVersionId);
+                        setSelectedVersion(firstVersionId);
+                        console.log('[项目切换] 自动选择第一个版本:', { id: firstVersionId, name: firstVersionName, raw: firstVersion });
+                        
+                        // 加载文件树和文件数据
+                        console.log('[项目切换] 开始加载文件树和文件数据...');
+                        await Promise.all([
+                            loadFileTree(projectId, firstVersionId),
+                            loadFiles(projectId, firstVersionId)
+                        ]);
+                        console.log('[项目切换] 文件树和文件数据加载完成');
+                        
+                        // 加载评论数据
+                        console.log('[项目切换] 开始加载评论数据...');
+                        await loadComments(projectId, firstVersionId);
+                        console.log('[项目切换] 评论数据加载完成');
+                        
+                        // 重新加载评论者数据
+                        console.log('[项目切换] 开始重新加载评论者数据...');
+                        if (store.loadCommenters) {
+                            await store.loadCommenters(projectId, firstVersionId);
+                            console.log('[项目切换] 评论者数据重新加载完成');
+                        }
+                        
+                        // 触发项目/版本就绪事件，通知评论面板重新加载
+                        console.log('[项目切换] 触发projectVersionReady事件');
+                        window.dispatchEvent(new CustomEvent('projectVersionReady', {
+                            detail: {
+                                projectId: projectId,
+                                versionId: firstVersionId
+                            }
+                        }));
+                        
+                        // 显示成功消息
+                        showSuccessMessage(`已切换到项目: ${projectId}，版本: ${firstVersionName}`);
+                    } else {
+                        // 如果没有可用版本，清空版本选择
+                        setSelectedVersion('');
+                        console.log('[项目切换] 项目没有可用版本');
+                        showSuccessMessage(`已切换到项目: ${projectId}`);
+                    }
+
                 } catch (error) {
                     console.error('[项目切换] 项目切换失败:', error);
                     throw createError(`项目切换失败: ${error.message}`, ErrorTypes.API, '项目切换');
@@ -1084,6 +1137,57 @@ export const useMethods = (store) => {
         openLink,
         handleFileSelect,
         handleFolderToggle,
+        // 文件树CRUD
+        handleCreateFolder: async (payload) => {
+            return safeExecute(async () => {
+                const parentId = payload && payload.parentId;
+                const name = window.prompt('新建文件夹名称：');
+                if (!name) return;
+                const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
+                const versionId = selectedVersion?.value || (document.getElementById('versionSelect')?.value) || '';
+                await createFolder({ parentId, name, projectId, versionId });
+                showSuccessMessage('文件夹创建成功');
+            }, '新建文件夹');
+        },
+        handleCreateFile: async (payload) => {
+            return safeExecute(async () => {
+                const parentId = payload && payload.parentId;
+                const name = window.prompt('新建文件名称（含扩展名）：');
+                if (!name) return;
+                const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
+                const versionId = selectedVersion?.value || (document.getElementById('versionSelect')?.value) || '';
+                await createFile({ parentId, name, content: '', projectId, versionId });
+                showSuccessMessage('文件创建成功');
+            }, '新建文件');
+        },
+        handleRenameItem: async (payload) => {
+            return safeExecute(async () => {
+                const itemId = payload && payload.itemId;
+                const oldName = payload && payload.name;
+                if (!itemId) return;
+                const newName = window.prompt('输入新名称：', oldName || '');
+                if (!newName) return;
+                const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
+                const versionId = selectedVersion?.value || (document.getElementById('versionSelect')?.value) || '';
+                await renameItem({ itemId, newName, projectId, versionId });
+                showSuccessMessage('重命名成功');
+            }, '重命名');
+        },
+        handleDeleteItem: async (payload) => {
+            return safeExecute(async () => {
+                const itemId = payload && payload.itemId;
+                if (!itemId) return;
+                if (!confirm('确定删除该项及其子项？此操作不可撤销。')) return;
+                const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
+                const versionId = selectedVersion?.value || (document.getElementById('versionSelect')?.value) || '';
+                await deleteItem({ itemId, projectId, versionId });
+                showSuccessMessage('删除成功');
+                // 若删除的是当前选中文件，则清空选择
+                if (selectedFileId?.value && (selectedFileId.value === itemId || selectedFileId.value.startsWith(itemId + '/'))) {
+                    setSelectedFileId(null);
+                }
+            }, '删除');
+        },
         handleCommentSubmit,
         handleCommentInput,
         handleCommentKeydown,
@@ -1107,9 +1211,183 @@ export const useMethods = (store) => {
         clearSearch,
         handleMessageInput,
         handleCompositionStart,
-        handleCompositionEnd
+        handleCompositionEnd,
+        // =============== 项目与版本维护 ===============
+        openProjectVersionManager: () => {
+            try {
+                const current = Array.isArray(store.projects?.value) ? store.projects.value : [];
+                store.pvProjects.value = JSON.parse(JSON.stringify(current));
+                const currentId = store.selectedProject?.value || '';
+                const exists = store.pvProjects.value.find(p => p.id === currentId);
+                store.pvSelectedProjectId.value = exists ? currentId : (store.pvProjects.value[0]?.id || '');
+                store.pvDirty.value = false;
+                store.pvError.value = '';
+                store.showPvManager.value = true;
+            } catch (e) {
+                console.error('[PV管理] 打开失败:', e);
+                store.showPvManager.value = true;
+            }
+        },
+        closeProjectVersionManager: () => {
+            store.showPvManager.value = false;
+            store.pvNewProjectId.value = '';
+            store.pvNewProjectName.value = '';
+            store.pvNewVersionId.value = '';
+            store.pvNewVersionName.value = '';
+        },
+        pvSelectProject: (projectId) => { 
+            store.pvSelectedProjectId.value = projectId; 
+            store.pvError.value = '';
+        },
+        pvAddProject: () => {
+            const id = (store.pvNewProjectId.value || '').trim();
+            if (!id) return;
+            if (store.pvProjects.value.find(p => p.id === id)) return;
+            store.pvProjects.value.push({ id, versions: [] });
+            store.pvSelectedProjectId.value = id;
+            store.pvNewProjectId.value = '';
+            store.pvNewProjectName.value = '';
+            store.pvDirty.value = true;
+            store.pvError.value = '';
+        },
+        pvDeleteProject: (projectId) => {
+            store.pvProjects.value = store.pvProjects.value.filter(p => p.id !== projectId);
+            if (store.pvSelectedProjectId.value === projectId) {
+                store.pvSelectedProjectId.value = store.pvProjects.value[0]?.id || '';
+            }
+            store.pvDirty.value = true;
+            store.pvError.value = '';
+        },
+        pvAddVersion: () => {
+            if (!store.pvSelectedProjectId.value) return;
+            const id = (store.pvNewVersionId.value || '').trim();
+            if (!id) return;
+            const proj = store.pvProjects.value.find(p => p.id === store.pvSelectedProjectId.value);
+            if (!proj) return;
+            proj.versions = Array.isArray(proj.versions) ? proj.versions : [];
+            if (proj.versions.find(v => (typeof v === 'string' ? v : v.id) === id)) return;
+            proj.versions.push(id);
+            store.pvNewVersionId.value = '';
+            store.pvNewVersionName.value = '';
+            store.pvDirty.value = true;
+            store.pvError.value = '';
+        },
+        pvDeleteVersion: (versionId) => {
+            if (!store.pvSelectedProjectId.value) return;
+            const proj = store.pvProjects.value.find(p => p.id === store.pvSelectedProjectId.value);
+            if (!proj) return;
+            proj.versions = (proj.versions || []).filter(v => (typeof v === 'string' ? v : v.id) !== versionId);
+            store.pvDirty.value = true;
+            store.pvError.value = '';
+        },
+        pvSave: async () => {
+            try {
+                // 1) 规整化本地编辑后的列表
+                const cleanList = (store.pvProjects.value || []).map(p => ({
+                    id: p.id,
+                    versions: Array.isArray(p.versions)
+                        ? p.versions.map(v => (typeof v === 'string' ? v : (v.id || ''))).filter(Boolean)
+                        : []
+                }));
+
+                // 校验：至少一个项目、每个项目至少一个版本
+                if (cleanList.length === 0) {
+                    store.pvError.value = '请至少添加一个项目';
+                    return;
+                }
+                for (const p of cleanList) {
+                    if (!p.id || p.versions.length === 0) {
+                        store.pvError.value = `项目 ${p.id || '(未命名)'} 至少需要一个版本`;
+                        return;
+                    }
+                }
+
+                // 2) 计算增删改集合
+                const originalList = Array.isArray(store.projects?.value) ? store.projects.value : [];
+                const originalMap = new Map(originalList.map(item => [item.id, item]));
+                const nextMap = new Map(cleanList.map(item => [item.id, item]));
+
+                const normalize = (arr) => (arr || [])
+                    .map(v => (typeof v === 'string' ? v : v?.id))
+                    .filter(Boolean)
+                    .sort()
+                    .join(',');
+
+                const toAdd = cleanList.filter(item => !originalMap.has(item.id));
+                const toDelete = originalList.filter(item => !nextMap.has(item.id));
+                const toUpdate = cleanList.filter(item => {
+                    const old = originalMap.get(item.id);
+                    if (!old) return false;
+                    return normalize(old.versions) !== normalize(item.versions);
+                });
+
+                // 3) 调用后端 CRUD 接口
+                const { postData, updateData, deleteData, getData } = await import('/apis/modules/crud.js');
+                const url = `${window.API_URL}/mongodb/?cname=projectVersions`;
+
+                // 新增
+                for (const item of toAdd) {
+                    await postData(url, { id: item.id, versions: item.versions });
+                }
+
+                // 更新（需要 key）
+                for (const item of toUpdate) {
+                    const old = originalMap.get(item.id) || {};
+                    const key = old.key;
+                    if (!key) {
+                        // 若无key，回退为新增
+                        await postData(url, { id: item.id, versions: item.versions });
+                    } else {
+                        await updateData(url, { key, id: item.id, versions: item.versions });
+                    }
+                }
+
+                // 删除（使用 key）
+                for (const item of toDelete) {
+                    if (item && item.key) {
+                        await deleteData(`${url}&key=${item.key}`);
+                    }
+                }
+
+                // 4) 刷新远端数据并更新到 store
+                const refreshed = await getData(url, {}, false);
+                const remoteList = refreshed?.data?.list || [];
+                if (setProjects) setProjects(remoteList);
+
+                // 5) 对齐当前选中的项目/版本
+                const currentProject = selectedProject?.value || '';
+                const currentVersion = selectedVersion?.value || '';
+                const newProject = remoteList.find(p => p.id === currentProject) || remoteList[0];
+                if (newProject) {
+                    setSelectedProject(newProject.id);
+                    const versions = Array.isArray(newProject.versions)
+                        ? newProject.versions.map(v => (typeof v === 'string' ? v : v.id)).filter(Boolean)
+                        : [];
+                    const versionExists = versions.includes(currentVersion);
+                    const targetVersion = versionExists ? currentVersion : (versions[0] || '');
+                    if (targetVersion) {
+                        setSelectedVersion(targetVersion);
+                        await refreshData();
+                    } else {
+                        setSelectedVersion('');
+                    }
+                } else {
+                    setSelectedProject('');
+                    setSelectedVersion('');
+                }
+
+                // 6) 收尾
+                store.showPvManager.value = false;
+                store.pvDirty.value = false;
+                store.pvError.value = '';
+            } catch (e) {
+                console.error('[PV管理] 保存失败:', e);
+                store.pvError.value = e?.message || '保存失败';
+            }
+        }
     };
 };
+
 
 
 

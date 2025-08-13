@@ -35,6 +35,10 @@
                     :comments="comments"
                     @file-select="$emit('file-select', $event)"
                     @folder-toggle="$emit('folder-toggle', $event)"
+                    @create-folder="$emit('create-folder', $event)"
+                    @create-file="$emit('create-file', $event)"
+                    @rename-item="$emit('rename-item', $event)"
+                    @delete-item="$emit('delete-item', $event)"
                 ></file-tree-node>
             </template>
         </ul>
@@ -49,6 +53,7 @@
         <div class="empty-subtitle">请检查文件目录或联系管理员</div>
     </div>
 </aside>
+
 
 
 

@@ -151,7 +151,7 @@
     position: relative;
     /* 允许内部滚动区域完全可见，避免被裁切 */
     overflow: visible;
-    min-height: 190px;
+    min-height: 300px;
     width: 100%;
 }
 
@@ -3373,3 +3373,4 @@
     background: var(--bg-tertiary);
     border: 1px solid var(--border-tertiary);
 }
+

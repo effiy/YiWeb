@@ -51,7 +51,7 @@ const createFileTreeNode = () => {
                 _lastClickTime: null
             };
         },
-        emits: ['file-select', 'folder-toggle'],
+        emits: ['file-select', 'folder-toggle', 'create-folder', 'create-file', 'rename-item', 'delete-item'],
         methods: {
             // 切换文件夹展开状态
             toggleFolder(folderId) {
@@ -62,6 +62,48 @@ const createFileTreeNode = () => {
                     
                     this.$emit('folder-toggle', folderId);
                 }, '文件夹切换处理');
+            },
+            // 新建子文件夹
+            createSubFolder(event, parentId) {
+                return safeExecute(() => {
+                    event && event.stopPropagation && event.stopPropagation();
+                    if (!parentId || typeof parentId !== 'string') {
+                        throw createError('父级目录ID无效', ErrorTypes.VALIDATION, '新建文件夹');
+                    }
+                    this.$emit('create-folder', { parentId });
+                }, '新建子文件夹');
+            },
+            // 新建子文件
+            createSubFile(event, parentId) {
+                return safeExecute(() => {
+                    event && event.stopPropagation && event.stopPropagation();
+                    if (!parentId || typeof parentId !== 'string') {
+                        throw createError('父级目录ID无效', ErrorTypes.VALIDATION, '新建文件');
+                    }
+                    this.$emit('create-file', { parentId });
+                }, '新建子文件');
+            },
+            // 重命名
+            renameItem(event, item) {
+                return safeExecute(() => {
+                    event && event.stopPropagation && event.stopPropagation();
+                    const itemId = item && item.id;
+                    const name = item && item.name;
+                    if (!itemId || typeof itemId !== 'string') {
+                        throw createError('目标ID无效', ErrorTypes.VALIDATION, '重命名');
+                    }
+                    this.$emit('rename-item', { itemId, name });
+                }, '重命名');
+            },
+            // 删除
+            deleteItem(event, itemId) {
+                return safeExecute(() => {
+                    event && event.stopPropagation && event.stopPropagation();
+                    if (!itemId || typeof itemId !== 'string') {
+                        throw createError('目标ID无效', ErrorTypes.VALIDATION, '删除');
+                    }
+                    this.$emit('delete-item', { itemId });
+                }, '删除');
             },
             
             // 检查文件夹是否展开
@@ -74,19 +116,20 @@ const createFileTreeNode = () => {
             // 选择文件
             selectFile(fileId) {
                 return safeExecute(() => {
-                    if (!fileId || typeof fileId !== 'string') {
+                    if (fileId == null) {
                         throw createError('文件ID无效', ErrorTypes.VALIDATION, '文件选择');
                     }
+                    const idStr = String(fileId);
                     
                     // 添加防抖机制，避免快速连续点击
                     if (this._lastClickTime && Date.now() - this._lastClickTime < 300) {
-                        console.log('[FileTreeNode] 点击间隔过短，跳过重复选择:', fileId);
+                        console.log('[FileTreeNode] 点击间隔过短，跳过重复选择:', idStr);
                         return;
                     }
                     
                     this._lastClickTime = Date.now();
-                    console.log('[FileTreeNode] 选择文件:', fileId);
-                    this.$emit('file-select', fileId);
+                    console.log('[FileTreeNode] 选择文件:', idStr);
+                    this.$emit('file-select', idStr);
                 }, '文件选择处理');
             },
             
@@ -105,8 +148,17 @@ const createFileTreeNode = () => {
                         return this.isFolderExpanded(item.id) ? '📂' : '📁';
                     }
                     
-                    // 根据文件扩展名返回不同图标
-                    const ext = item.name.split('.').pop().toLowerCase();
+					// 根据文件扩展名返回不同图标（兼容缺失 name 的情况）
+					const fileNameSource = (item && typeof item.name === 'string' && item.name)
+						? item.name
+						: (typeof item.path === 'string' && item.path
+							? item.path.split('/').pop()
+							: (typeof item.id === 'string'
+								? item.id.split('/').pop()
+								: ''));
+					const ext = fileNameSource && fileNameSource.includes('.')
+						? fileNameSource.split('.').pop().toLowerCase()
+						: '';
                     const iconMap = {
                         'js': '📄',
                         'ts': '📘',
@@ -184,12 +236,18 @@ const createFileTreeNode = () => {
                     @keydown.enter="toggleFolder(item.id)"
                     @keydown.space="toggleFolder(item.id)"
                 >
-                    <span class="folder-toggle" aria-hidden="true">
+                    <span class="folder-toggle" aria-hidden="true" @click.stop="toggleFolder(item.id)">
                         <i :class="['fas', isFolderExpanded(item.id) ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
                     </span>
-                    <span class="file-icon" aria-hidden="true">{{ getFileIcon(item) }}</span>
+                    <span class="file-icon" aria-hidden="true" @click.stop="toggleFolder(item.id)">{{ getFileIcon(item) }}</span>
                     <span class="file-name">{{ item.name }}</span>
                     <span v-if="item.children" class="folder-count">({{ item.children.length }})</span>
+                    <span class="file-actions" @click.stop>
+                        <button class="action-btn" :title="'在 ' + item.name + ' 下新建文件夹'" @click="createSubFolder($event, item.id)"><i class="fas fa-folder-plus"></i></button>
+                        <button class="action-btn" :title="'在 ' + item.name + ' 下新建文件'" @click="createSubFile($event, item.id)"><i class="fas fa-file"></i></button>
+                        <button class="action-btn" :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
+                        <button class="action-btn" :title="'删除 ' + item.name" @click="deleteItem($event, item.id)"><i class="fas fa-trash"></i></button>
+                    </span>
                 </div>
                 
                 <!-- 文件 -->
@@ -205,11 +263,12 @@ const createFileTreeNode = () => {
                     @keydown.space="selectFile(item.id)"
                 >
                     <span class="folder-toggle file-toggle-placeholder" aria-hidden="true"></span>
-                    <span class="file-icon" aria-hidden="true">{{ getFileIcon(item) }}</span>
+                    <span class="file-icon" aria-hidden="true" @click.stop="selectFile(item.id)">{{ getFileIcon(item) }}</span>
                     <span class="file-name">{{ item.name }}</span>
                     <span v-if="getFileSizeDisplay(item)" class="file-size">{{ getFileSizeDisplay(item) }}</span>
-                    <span v-if="getCommentCount(item.id) > 0" class="comment-count" :title="\`\${getCommentCount(item.id)} 条评论\`">
-                        💬 {{ getCommentCount(item.id) }}
+                    <span class="file-actions" @click.stop>
+                        <button class="action-btn" :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
+                        <button class="action-btn" :title="'删除 ' + item.name" @click="deleteItem($event, item.id)"><i class="fas fa-trash"></i></button>
                     </span>
                 </div>
                 
@@ -226,7 +285,11 @@ const createFileTreeNode = () => {
                             :expanded-folders="expandedFolders"
                             :comments="comments"
                             @file-select="$emit('file-select', $event)"
-                            @folder-toggle="$emit('folder-toggle', $event)"
+                             @folder-toggle="$emit('folder-toggle', $event)"
+                             @create-folder="$emit('create-folder', $event)"
+                             @create-file="$emit('create-file', $event)"
+                             @rename-item="$emit('rename-item', $event)"
+                             @delete-item="$emit('delete-item', $event)"
                         ></file-tree-node>
                     </template>
                 </ul>
@@ -274,7 +337,7 @@ const createFileTree = async () => {
                 default: false
             }
         },
-        emits: ['file-select', 'folder-toggle', 'toggle-collapse'],
+        emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item'],
         methods: {
             // 切换收起状态
             toggleCollapse() {
@@ -305,12 +368,12 @@ const createFileTree = async () => {
             // 选择文件
             selectFile(fileId) {
                 return safeExecute(() => {
-                    if (!fileId || typeof fileId !== 'string') {
+                    if (fileId == null) {
                         throw createError('文件ID无效', ErrorTypes.VALIDATION, '文件选择');
                     }
-                    
-                    console.log('[FileTree] 选择文件:', fileId);
-                    this.$emit('file-select', fileId);
+                    const idStr = String(fileId);
+                    console.log('[FileTree] 选择文件:', idStr);
+                    this.$emit('file-select', idStr);
                 }, '文件选择处理');
             },
             
@@ -329,8 +392,17 @@ const createFileTree = async () => {
                         return this.isFolderExpanded(item.id) ? '📂' : '📁';
                     }
                     
-                    // 根据文件扩展名返回不同图标
-                    const ext = item.name.split('.').pop().toLowerCase();
+					// 根据文件扩展名返回不同图标（兼容缺失 name 的情况）
+					const fileNameSource = (item && typeof item.name === 'string' && item.name)
+						? item.name
+						: (typeof item.path === 'string' && item.path
+							? item.path.split('/').pop()
+							: (typeof item.id === 'string'
+								? item.id.split('/').pop()
+								: ''));
+					const ext = fileNameSource && fileNameSource.includes('.')
+						? fileNameSource.split('.').pop().toLowerCase()
+						: '';
                     const iconMap = {
                         'js': '📄',
                         'ts': '📘',
@@ -441,6 +513,7 @@ const createFileTree = async () => {
         console.error('FileTree 组件初始化失败:', error);
     }
 })();
+
 
 
 

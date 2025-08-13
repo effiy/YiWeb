@@ -5,7 +5,7 @@ import { safeExecute } from '/utils/error.js';
 import { loadCSSFiles } from '/utils/baseView.js';
 import { showGlobalLoading, hideGlobalLoading } from '/utils/loading.js';
 
-import { postData, getData } from '/apis/index.js';
+import { postData, getData, updateData } from '/apis/index.js';
 
 // 自动加载相关的CSS文件
 loadCSSFiles([
@@ -151,7 +151,13 @@ const createCodeView = async () => {
                 manualSubmitting: false,
                 manualMaxLength: 2000,
                 // 预览折叠状态
-                manualPreviewCollapsed: false
+                manualPreviewCollapsed: false,
+                // 编辑态
+                isEditing: false,
+                editableContent: '',
+                originalContentBackup: '',
+                saving: false,
+                saveError: ''
             };
         },
         computed: {
@@ -267,9 +273,126 @@ const createCodeView = async () => {
             canSubmitManualComment() {
                 const len = (this.manualCommentText || '').trim().length;
                 return len > 0 && len <= this.manualMaxLength && !this.manualSubmitting;
+            },
+            // 编辑：是否可保存
+            canSaveEdit() {
+                if (!this.isEditing) return false;
+                return (this.editableContent ?? '') !== (this.originalContentBackup ?? '');
             }
         },
         methods: {
+            // 启动编辑
+            startEdit() {
+                return safeExecute(() => {
+                    if (!this.file) return;
+                    this.isEditing = true;
+                    this.editableContent = this.file.content || '';
+                    this.originalContentBackup = this.file.content || '';
+                    this.saveError = '';
+                    this.$nextTick(() => {
+                        this.autoResizeEditor();
+                    });
+                }, '开始编辑');
+            },
+            // 取消编辑
+            cancelEdit() {
+                return safeExecute(() => {
+                    if (!this.isEditing) return;
+                    this.isEditing = false;
+                    this.editableContent = '';
+                    this.originalContentBackup = '';
+                    this.saveError = '';
+                }, '取消编辑');
+            },
+            // 保存编辑内容
+            async saveEdit() {
+                return safeExecute(async () => {
+                    if (!this.file) return;
+                    if (!this.isEditing) return;
+                    const newContent = this.editableContent ?? '';
+                    if (newContent === (this.originalContentBackup ?? '')) return;
+                    this.saving = true;
+                    this.saveError = '';
+
+                    try {
+                        // 获取项目/版本
+                        const projectId = window.aicrStore?.selectedProject?.value;
+                        const versionId = window.aicrStore?.selectedVersion?.value;
+                        const fileId = this.file.fileId || this.file.id || this.file.path || this.file.name;
+                        if (!fileId) throw new Error('缺少文件标识');
+
+                        // 约定使用 projectVersionFiles 集合更新，需提供 key 或匹配条件
+                        // 尝试从当前文件对象上提取 key
+                        const key = this.file.key || this.file.data?.key || null;
+                        const payloadBase = {
+                            projectId: projectId || '',
+                            versionId: versionId || '',
+                            fileId: fileId,
+                            path: this.file.path || '',
+                            name: this.file.name || '',
+                            content: newContent
+                        };
+
+                        // 优先 PUT 更新；若无 key，退化为 POST 新版本
+                        let result;
+                        if (key) {
+                            result = await updateData(`${window.API_URL}/mongodb/?cname=projectVersionFiles`, { ...payloadBase, key });
+                        } else {
+                            result = await postData(`${window.API_URL}/mongodb/?cname=projectVersionFiles`, payloadBase);
+                        }
+
+                        // 同步到本地 file 对象，避免重新加载前的闪烁
+                        if (this.file) {
+                            this.file.content = newContent;
+                            if (result?.data?.key && !this.file.key) this.file.key = result.data.key;
+                        }
+
+                        // 退出编辑态
+                        this.isEditing = false;
+                        this.originalContentBackup = '';
+
+                        // 触发文件与评论刷新（评论标记可能基于行号变动）
+                        await this.$nextTick();
+                        await this.loadFileComments();
+
+                        // 通知外部刷新 files 列表
+                        setTimeout(() => {
+                            try {
+                                window.aicrStore?.loadFiles?.();
+                            } catch (_) {}
+                        }, 100);
+                    } catch (err) {
+                        this.saveError = err?.message || '保存失败';
+                    } finally {
+                        this.saving = false;
+                    }
+                }, '保存编辑内容');
+            },
+            // 编辑区快捷键：Cmd/Ctrl+S 保存，Esc 取消
+            handleEditorKeydown(event) {
+                return safeExecute(() => {
+                    const isSave = (event.metaKey || event.ctrlKey) && (event.key === 's' || event.key === 'S');
+                    const isEsc = event.key === 'Escape';
+                    if (isSave) {
+                        event.preventDefault();
+                        if (this.canSaveEdit && !this.saving) this.saveEdit();
+                    } else if (isEsc) {
+                        event.preventDefault();
+                        if (!this.saving) this.cancelEdit();
+                    }
+                }, '编辑器快捷键');
+            },
+            // 自适应高度
+            autoResizeEditor() {
+                return safeExecute(() => {
+                    const ta = this.$refs && this.$refs.editTextarea;
+                    if (!ta) return;
+                    // 先重置高度以计算真实 scrollHeight
+                    ta.style.height = 'auto';
+                    const max = Math.max(240, Math.min(window.innerHeight * 0.7, ta.scrollHeight + 6));
+                    ta.style.height = max + 'px';
+                }, '编辑器自适应高度');
+            },
             // 清洗选中文本：移除行号、公共缩进与多余空白
             sanitizeSelectedText(rawText) {
                 return safeExecute(() => {
@@ -581,6 +704,12 @@ const createCodeView = async () => {
                         this.hideCommentDetail();
                     } else if (this.showCommentPreviewPopup) {
                         this.hideCommentPreview();
+                    }
+                } else if ((event.metaKey || event.ctrlKey) && (event.key === 'e' || event.key === 'E')) {
+                    // 快捷键：Cmd/Ctrl + E 进入编辑模式
+                    event.preventDefault();
+                    if (!this.isEditing && this.file) {
+                        this.startEdit();
                     }
                 }
             },
@@ -1273,6 +1402,22 @@ const createCodeView = async () => {
                         console.log('[CodeView] codeContent引用不存在，无法绑定选择事件');
                         return;
                     }
+
+                    // 编辑模式下禁用划词评论
+                    if (this.isEditing) {
+                        // 清理并隐藏动作容器
+                        const container = codeContent.querySelector('#comment-action-container');
+                        if (container) {
+                            container.innerHTML = '';
+                            container.style.display = 'none';
+                        }
+                        // 移除监听以防冲突
+                        codeContent.removeEventListener('mouseup', this.handleSelection, { passive: false });
+                        codeContent.removeEventListener('touchend', this.handleSelection, { passive: false });
+                        codeContent.removeEventListener('mousedown', this.handleMouseDown, { passive: false });
+                        console.log('[CodeView] 编辑模式启用，已禁用划词评论事件绑定');
+                        return;
+                    }
                     
                     console.log('[CodeView] 开始绑定选择事件');
                     
@@ -1293,6 +1438,7 @@ const createCodeView = async () => {
             // 处理鼠标按下事件
             handleMouseDown(event) {
                 return safeExecute(() => {
+                    if (this.isEditing) return; // 编辑中不处理
                     console.log('[CodeView] 鼠标按下事件触发');
                     
                     // 如果点击的是评论按钮或其容器，不处理
@@ -1310,6 +1456,7 @@ const createCodeView = async () => {
             // 处理文本选择
             handleSelection(event) {
                 return safeExecute(() => {
+                    if (this.isEditing) return; // 编辑中不处理
                     // 如果点击的是评论按钮或其容器，不处理选择
                     if (event.target.closest('#comment-action-container')) {
                         console.log('[CodeView] 点击的是评论按钮容器，跳过选择处理');
@@ -2380,6 +2527,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

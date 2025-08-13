@@ -17,6 +17,8 @@ const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ val
 export const createStore = () => {
     // 文件目录树
     const fileTree = vueRef([]);
+    // 文件树对应的后端文档key（用于持久化更新）
+    const fileTreeDocKey = vueRef('');
     // 代码文件内容
     const files = vueRef([]);
     // 评论数据
@@ -41,6 +43,17 @@ export const createStore = () => {
     const selectedProject = vueRef('');
     const selectedVersion = vueRef('');
     const availableVersions = vueRef([]); // 当前选中项目的版本列表
+    
+    // UI：项目/版本维护弹框与表单
+    const showPvManager = vueRef(false);
+    const pvProjects = vueRef([]);
+    const pvSelectedProjectId = vueRef('');
+    const pvNewProjectId = vueRef('');
+    const pvNewProjectName = vueRef('');
+    const pvNewVersionId = vueRef('');
+    const pvNewVersionName = vueRef('');
+    const pvDirty = vueRef(false);
+    const pvError = vueRef('');
     
     // 搜索相关状态
     const searchQuery = vueRef('');
@@ -67,16 +80,26 @@ export const createStore = () => {
             // 构建动态URL
             const project = projectId || selectedProject.value || 'YiAi';
             const version = versionId || selectedVersion.value || '2025-07-30';
-            const url = `${window.DATA_URL}/aicr/${project}/${version}/tree.json`;
+            const tree_url = `${window.API_URL}/mongodb/?cname=projectVersionTree&projectId=${project}&versionId=${version}`;
             
-            const response = await getData(url);
-            
-            if (!response || typeof response !== 'object') {
-                throw createError('文件树数据格式错误', ErrorTypes.API, '文件树加载');
+            const response = await getData(tree_url);
+
+            // 检查响应结构和数据有效性
+            if (
+                !response ||
+                typeof response !== 'object' ||
+                !response.data ||
+                !Array.isArray(response.data.list) ||
+                response.data.list.length === 0
+            ) {
+                throw createError('文件树数据格式错误或无数据', ErrorTypes.API, '文件树加载');
             }
-            
-            // 将单个文件树对象包装成数组，以符合组件期望的格式
-            fileTree.value = [response];
+
+            // 只取第一个文件树对象，确保格式正确
+            const treeDoc = response.data.list[0];
+            fileTree.value = [treeDoc.data]; 
+            // 保存文档key用于后续更新
+            fileTreeDocKey.value = treeDoc.key || treeDoc._id || treeDoc.id || '';
             console.log(`[loadFileTree] 成功加载文件树数据`);
 
             // 默认展开所有文件夹
@@ -98,7 +121,8 @@ export const createStore = () => {
                 });
             }
             const allFolders = new Set();
-            collectAllFolderIds(response, allFolders);
+            // 使用实际的文件树数据进行收集，确保默认展开
+            collectAllFolderIds(fileTree.value, allFolders);
             expandedFolders.value = allFolders;
             
             return response;
@@ -106,9 +130,304 @@ export const createStore = () => {
             error.value = errorInfo.message;
             errorMessage.value = errorInfo.message;
             fileTree.value = [];
+            fileTreeDocKey.value = '';
         }).finally(() => {
             loading.value = false;
         });
+    };
+
+    /**
+     * 展开当前树的所有文件夹（本地）
+     */
+    const expandAllFolders = () => {
+        const all = new Set();
+        const collect = (nodes) => {
+            if (!nodes) return;
+            if (!Array.isArray(nodes)) {
+                if (nodes.type === 'folder') {
+                    all.add(nodes.id);
+                    if (nodes.children) collect(nodes.children);
+                }
+                return;
+            }
+            nodes.forEach(n => {
+                if (n.type === 'folder') {
+                    all.add(n.id);
+                    if (n.children) collect(n.children);
+                }
+            });
+        };
+        collect(fileTree.value);
+        expandedFolders.value = all;
+    };
+
+    /**
+     * 在树中查找节点及其父节点
+     */
+    function findNodeAndParentById(rootNodes, targetId) {
+        const stack = Array.isArray(rootNodes) ? rootNodes.map(n => ({ node: n, parent: null })) : [{ node: rootNodes, parent: null }];
+        while (stack.length) {
+            const { node, parent } = stack.pop();
+            if (!node) continue;
+            if (node.id === targetId) return { node, parent };
+            if (node.type === 'folder' && Array.isArray(node.children)) {
+                for (const child of node.children) {
+                    stack.push({ node: child, parent: node });
+                }
+            }
+        }
+        return { node: null, parent: null };
+    }
+
+    /**
+     * 持久化文件树到后端
+     */
+    const persistFileTree = async (projectId = null, versionId = null) => {
+        return safeExecuteAsync(async () => {
+            const project = projectId || selectedProject.value;
+            const version = versionId || selectedVersion.value;
+            if (!fileTreeDocKey.value) {
+                throw createError('缺少文件树文档key，无法持久化', ErrorTypes.API, '文件树保存');
+            }
+            const payload = {
+                key: fileTreeDocKey.value,
+                projectId: project,
+                versionId: version,
+                data: Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value
+            };
+            const url = `${window.API_URL}/mongodb/?cname=projectVersionTree`;
+            const res = await updateData(url, payload);
+            return res;
+        }, '文件树持久化');
+    };
+
+    /**
+     * 创建文件夹
+     */
+    const createFolder = async ({ parentId, name, projectId = null, versionId = null }) => {
+        return safeExecuteAsync(async () => {
+            if (!name || !name.trim()) {
+                throw createError('文件夹名称不能为空', ErrorTypes.VALIDATION, '新建文件夹');
+            }
+            const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
+            if (!root || typeof root !== 'object') throw createError('文件树未加载', ErrorTypes.API, '新建文件夹');
+
+            let parentNode = null;
+            if (!parentId) {
+                parentNode = root;
+            } else {
+                parentNode = findNodeAndParentById(root, parentId).node;
+            }
+            if (!parentNode || parentNode.type !== 'folder') {
+                throw createError('父级目录无效', ErrorTypes.VALIDATION, '新建文件夹');
+            }
+
+            parentNode.children = Array.isArray(parentNode.children) ? parentNode.children : [];
+            // 保证同级唯一
+            const exists = parentNode.children.find(ch => ch.name === name);
+            if (exists) throw createError('同名文件或文件夹已存在', ErrorTypes.VALIDATION, '新建文件夹');
+
+            const newId = (parentNode.id ? `${parentNode.id}/` : '') + name;
+            parentNode.children.push({ id: newId, name, type: 'folder', children: [] });
+            // 保持全部展开
+            expandAllFolders();
+
+            await persistFileTree(projectId, versionId);
+            return newId;
+        }, '创建文件夹');
+    };
+
+    /**
+     * 创建文件
+     */
+    const createFile = async ({ parentId, name, content = '', projectId = null, versionId = null }) => {
+        return safeExecuteAsync(async () => {
+            if (!name || !name.trim()) {
+                throw createError('文件名称不能为空', ErrorTypes.VALIDATION, '新建文件');
+            }
+            const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
+            if (!root || typeof root !== 'object') throw createError('文件树未加载', ErrorTypes.API, '新建文件');
+
+            let parentNode = null;
+            if (!parentId) {
+                parentNode = root;
+            } else {
+                parentNode = findNodeAndParentById(root, parentId).node;
+            }
+            if (!parentNode || parentNode.type !== 'folder') {
+                throw createError('父级目录无效', ErrorTypes.VALIDATION, '新建文件');
+            }
+
+            parentNode.children = Array.isArray(parentNode.children) ? parentNode.children : [];
+            if (parentNode.children.find(ch => ch.name === name)) {
+                throw createError('同名文件或文件夹已存在', ErrorTypes.VALIDATION, '新建文件');
+            }
+
+            const newId = (parentNode.id ? `${parentNode.id}/` : '') + name;
+            const now = Date.now();
+            parentNode.children.push({ id: newId, name, type: 'file', size: content ? content.length : 0, modified: now });
+            // 保持全部展开
+            expandAllFolders();
+
+            // 先持久化树
+            await persistFileTree(projectId, versionId);
+
+            // 在文件集合中新增占位（远端与本地）
+            try {
+                const filesUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles`;
+                await postData(filesUrl, {
+                    projectId: projectId || selectedProject.value,
+                    versionId: versionId || selectedVersion.value,
+                    fileId: newId,
+                    id: newId,
+                    path: newId,
+                    name,
+                    content: content || ''
+                });
+            } catch (e) {
+                // 不中断主流程
+                console.warn('[createFile] 创建文件内容文档失败（已忽略）:', e?.message);
+            }
+
+            // 更新本地files列表
+            if (Array.isArray(files.value)) {
+                files.value.push({ fileId: newId, id: newId, path: newId, name, content });
+            }
+            return newId;
+        }, '创建文件');
+    };
+
+    /**
+     * 重命名节点
+     */
+    const renameItem = async ({ itemId, newName, projectId = null, versionId = null }) => {
+        return safeExecuteAsync(async () => {
+            if (!itemId) throw createError('缺少目标ID', ErrorTypes.VALIDATION, '重命名');
+            if (!newName || !newName.trim()) throw createError('名称不能为空', ErrorTypes.VALIDATION, '重命名');
+            const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
+            const { node, parent } = findNodeAndParentById(root, itemId);
+            if (!node) throw createError('未找到目标节点', ErrorTypes.API, '重命名');
+            const siblings = parent ? (parent.children || []) : [node];
+            if (siblings.some(ch => ch !== node && ch.name === newName)) {
+                throw createError('同级存在同名项', ErrorTypes.VALIDATION, '重命名');
+            }
+
+            // 计算新ID（基于父级路径）
+            const basePath = parent ? (parent.id ? `${parent.id}/` : '') : '';
+            const oldId = node.id;
+            const newId = basePath + newName;
+            node.name = newName;
+
+            // 记录变更前的文件列表用于远端同步
+            const prevFiles = Array.isArray(files.value) ? files.value.slice() : [];
+
+            const updateIdsRecursively = (n, fromPrefix, toPrefix) => {
+                if (n.id && typeof n.id === 'string') {
+                    if (n.id === oldId) {
+                        n.id = newId;
+                    } else if (n.id.startsWith(fromPrefix + '/')) {
+                        n.id = n.id.replace(fromPrefix + '/', toPrefix + '/');
+                    }
+                }
+                if (n.type === 'folder' && Array.isArray(n.children)) {
+                    n.children.forEach(child => updateIdsRecursively(child, fromPrefix, toPrefix));
+                }
+            };
+            updateIdsRecursively(node, oldId, newId);
+            // 保持全部展开
+            expandAllFolders();
+
+            // 更新本地files列表（仅当是文件或其子层级文件）
+            if (Array.isArray(files.value)) {
+                files.value = files.value.map(f => {
+                    const ids = [f.fileId, f.id, f.path].filter(Boolean);
+                    const matched = ids.some(v => String(v) === oldId || String(v).startsWith(oldId + '/'));
+                    if (matched) {
+                        const replacedPath = String(f.path || f.id || f.fileId).replace(oldId, newId);
+                        const newNameFromPath = replacedPath.split('/').pop();
+                        return { ...f, fileId: replacedPath, id: replacedPath, path: replacedPath, name: newNameFromPath };
+                    }
+                    return f;
+                });
+            }
+
+            await persistFileTree(projectId, versionId);
+
+            // 同步远端文件集合
+            try {
+                const filesUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles`;
+                const affected = prevFiles.filter(f => {
+                    const ids = [f.fileId, f.id, f.path].filter(Boolean);
+                    return ids.some(v => String(v) === oldId || String(v).startsWith(oldId + '/'));
+                });
+                for (const f of affected) {
+                    const oldPath = String(f.path || f.id || f.fileId);
+                    const newPath = oldPath.replace(oldId, newId);
+                    const key = f.key || f._id || f.idKey;
+                    if (key) {
+                        await updateData(filesUrl, { key, projectId: projectId || selectedProject.value, versionId: versionId || selectedVersion.value, fileId: newPath, id: newPath, path: newPath, name: newPath.split('/').pop(), content: f.content || (f.data && f.data.content) || '' });
+                    } else {
+                        // 无 key 时，尝试新增并删除旧文档
+                        await postData(filesUrl, { projectId: projectId || selectedProject.value, versionId: versionId || selectedVersion.value, fileId: newPath, id: newPath, path: newPath, name: newPath.split('/').pop(), content: f.content || (f.data && f.data.content) || '' });
+                        try { await deleteData(`${filesUrl}&fileId=${encodeURIComponent(oldPath)}`); } catch (e) {}
+                    }
+                }
+            } catch (e) {
+                console.warn('[renameItem] 远端文件同步失败（已忽略）:', e?.message);
+            }
+            return newId;
+        }, '重命名');
+    };
+
+    /**
+     * 删除节点
+     */
+    const deleteItem = async ({ itemId, projectId = null, versionId = null }) => {
+        return safeExecuteAsync(async () => {
+            if (!itemId) throw createError('缺少目标ID', ErrorTypes.VALIDATION, '删除');
+            const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
+            const { node, parent } = findNodeAndParentById(root, itemId);
+            if (!node) throw createError('未找到目标节点', ErrorTypes.API, '删除');
+            if (!parent) {
+                throw createError('不允许删除根节点', ErrorTypes.VALIDATION, '删除');
+            }
+            const prevFiles = Array.isArray(files.value) ? files.value.slice() : [];
+            parent.children = (parent.children || []).filter(ch => ch.id !== itemId);
+            // 保持全部展开
+            expandAllFolders();
+
+            // 同步本地files列表（若删除文件或文件夹）
+            if (Array.isArray(files.value)) {
+                files.value = files.value.filter(f => {
+                    const ids = [f.fileId, f.id, f.path].filter(Boolean);
+                    const matched = ids.some(v => String(v) === itemId || String(v).startsWith(itemId + '/'));
+                    return !matched;
+                });
+            }
+
+            await persistFileTree(projectId, versionId);
+
+            // 远端删除受影响文件
+            try {
+                const filesUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles`;
+                const affected = prevFiles.filter(f => {
+                    const ids = [f.fileId, f.id, f.path].filter(Boolean);
+                    return ids.some(v => String(v) === itemId || String(v).startsWith(itemId + '/'));
+                });
+                for (const f of affected) {
+                    if (f && (f.key || f._id)) {
+                        const key = f.key || f._id;
+                        await deleteData(`${filesUrl}&key=${key}`);
+                    } else {
+                        const path = String(f.path || f.id || f.fileId);
+                        try { await deleteData(`${filesUrl}&fileId=${encodeURIComponent(path)}`); } catch (e) {}
+                    }
+                }
+            } catch (e) {
+                console.warn('[deleteItem] 远端文件删除失败（已忽略）:', e?.message);
+            }
+            return true;
+        }, '删除节点');
     };
 
     /**
@@ -120,19 +439,69 @@ export const createStore = () => {
             
             // 构建动态URL
             const project = projectId || selectedProject.value || 'YiAi';
-            const version = versionId || selectedVersion.value || '2025-07-30';
-            const url = `${window.DATA_URL}/aicr/${project}/${version}/files.json`;
+            const version = versionId || selectedVersion.value || '2025-08-08';
+            const files_url = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${project}&versionId=${version}`;
             
-            const response = await getData(url);
+            const response = await getData(files_url, {}, false);
             
-            if (!Array.isArray(response)) {
+            let list = [];
+            if (response && response.data && Array.isArray(response.data.list)) {
+                list = response.data.list;
+            } else if (Array.isArray(response)) {
+                list = response;
+            } else {
                 throw createError('代码文件数据格式错误', ErrorTypes.API, '代码文件加载');
             }
             
-            files.value = response;
-            console.log(`[loadFiles] 成功加载 ${response.length} 个代码文件`);
+            // 规范化文件数据，确保与文件树的文件ID可匹配，且包含内容字段
+            const normalizedList = (list || []).map((item) => {
+                const data = (item && typeof item === 'object' && item.data && typeof item.data === 'object') ? item.data : {};
+                const pickFirstString = (...vals) => {
+                    for (const v of vals) {
+                        if (typeof v === 'string' && v) return v;
+                    }
+                    return '';
+                };
+
+                const identifier = pickFirstString(
+                    item?.fileId, item?.id, item?.path, item?.file, item?.name,
+                    data?.fileId, data?.id, data?.path, data?.file, data?.name
+                );
+                const path = pickFirstString(data?.path, item?.path, identifier);
+                const name = pickFirstString(data?.name, item?.name, (typeof path === 'string' ? path.split('/').pop() : ''));
+
+                // 兼容多种可能的内容字段（顶层与 data.*）
+                let content = '';
+                const tryJoin = (val) => Array.isArray(val) ? val.join('\n') : (typeof val === 'string' ? val : '');
+                content = pickFirstString(
+                    tryJoin(item?.content), tryJoin(item?.code), tryJoin(item?.text), tryJoin(item?.source), tryJoin(item?.lines),
+                    tryJoin(data?.content), tryJoin(data?.code), tryJoin(data?.text), tryJoin(data?.source), tryJoin(data?.lines),
+                    item?.raw, item?.body, item?.value, item?.data,
+                    data?.raw, data?.body, data?.value, data?.data
+                );
+                if (!content) {
+                    // base64内容兜底（顶层与 data.*）
+                    const b64 = item?.contentBase64 || item?.base64 || item?.b64 || data?.contentBase64 || data?.base64 || data?.b64;
+                    if (typeof b64 === 'string') {
+                        try { content = atob(b64); } catch (e) { content = ''; }
+                    }
+                }
+
+                // 返回带有统一字段的对象（不破坏原有属性），并保留原有 data
+                return {
+                    ...item,
+                    fileId: identifier,
+                    id: identifier,
+                    path,
+                    name,
+                    content
+                };
+            });
+
+            files.value = normalizedList;
+            console.log(`[loadFiles] 成功加载 ${normalizedList.length} 个代码文件`);
             
-            return response;
+            return normalizedList;
         }, '代码文件数据加载', (errorInfo) => {
             error.value = errorInfo.message;
             errorMessage.value = errorInfo.message;
@@ -454,9 +823,25 @@ export const createStore = () => {
      * @param {string} fileId - 文件ID
      */
     const setSelectedFileId = (fileId) => {
-        if (typeof fileId === 'string' || fileId === null) {
-            selectedFileId.value = fileId;
+        if (fileId === null) {
+            selectedFileId.value = null;
+            return;
         }
+        // 统一为字符串并规范路径，提升匹配成功率
+        const toNormalizedId = (v) => {
+            try {
+                if (v == null) return '';
+                let s = String(v);
+                s = s.replace(/\\\\/g, '/'); // Windows路径转正斜杠
+                s = s.replace(/^\.\//, '');   // 去掉开头的./
+                s = s.replace(/^\/+/, '');     // 去掉多余的起始/
+                s = s.replace(/\/\/+/, '/');  // 合并重复的/
+                return s;
+            } catch (e) {
+                return String(v);
+            }
+        };
+        selectedFileId.value = toNormalizedId(fileId);
     };
 
     /**
@@ -506,19 +891,34 @@ export const createStore = () => {
     };
 
     /**
+     * 设置项目列表
+     */
+    const setProjects = (list) => {
+        projects.value = Array.isArray(list) ? list : [];
+        // 如果当前选中的项目不在新列表中，则清空
+        if (!projects.value.find(p => p.id === selectedProject.value)) {
+            selectedProject.value = '';
+            selectedVersion.value = '';
+            availableVersions.value = [];
+        } else {
+            availableVersions.value = getVersionsByProject(selectedProject.value);
+        }
+    };
+
+    /**
      * 加载项目列表（重构后包含版本信息）
      */
     const loadProjects = async () => {
         return safeExecuteAsync(async () => {
             console.log('[loadProjects] 正在加载项目列表...');
-            
-            // 重构后的项目数据结构：一个项目对应多个版本
-            const mockProjects = await getData(`${window.DATA_URL}/mock/aicr/projects.json`);
-            
-            projects.value = mockProjects;
-            console.log('[loadProjects] 成功加载项目列表:', mockProjects);
-            
-            return mockProjects;
+            let url = `${window.API_URL}/mongodb/?cname=projectVersions`;
+            const response = await getData(url, {}, false);   
+            if (response && response.data && response.data.list) {
+                projects.value = response.data.list;
+                return response.data.list;
+            } else {
+                return [];
+            }
         }, '项目列表加载', (errorInfo) => {
             error.value = errorInfo.message;
             errorMessage.value = errorInfo.message;
@@ -531,7 +931,9 @@ export const createStore = () => {
      */
     const getVersionsByProject = (projectId) => {
         const project = projects.value.find(p => p.id === projectId);
-        return project ? project.versions : [];
+        // 统一输出为版本ID数组
+        const versions = project ? project.versions : [];
+        return Array.isArray(versions) ? versions.map(v => (typeof v === 'string' ? v : v.id)).filter(Boolean) : [];
     };
 
     /**
@@ -544,8 +946,9 @@ export const createStore = () => {
         // 根据选中的项目更新可用版本列表
         if (projectId) {
             const versions = getVersionsByProject(projectId);
-            availableVersions.value = versions;
-            console.log(`[setSelectedProject] 项目 ${projectId} 的版本列表:`, versions);
+            // 仅保留版本ID列表
+            availableVersions.value = (versions || []).map(v => (typeof v === 'string' ? v : v.id)).filter(Boolean);
+            console.log(`[setSelectedProject] 项目 ${projectId} 的版本列表(IDs):`, availableVersions.value);
         } else {
             availableVersions.value = [];
         }
@@ -610,6 +1013,7 @@ export const createStore = () => {
     return {
         // 响应式数据
         fileTree,
+        fileTreeDocKey,
         files,
         comments,
         selectedFileId,
@@ -625,6 +1029,16 @@ export const createStore = () => {
         selectedProject,
         selectedVersion,
         availableVersions,
+        // UI：PV管理
+        showPvManager,
+        pvProjects,
+        pvSelectedProjectId,
+        pvNewProjectId,
+        pvNewProjectName,
+        pvNewVersionId,
+        pvNewVersionName,
+        pvDirty,
+        pvError,
         
         // 搜索相关状态
         searchQuery,
@@ -639,6 +1053,12 @@ export const createStore = () => {
         // 方法
         loadFileTree,
         loadFiles,
+        expandAllFolders,
+        persistFileTree,
+        createFolder,
+        createFile,
+        renameItem,
+        deleteItem,
         loadComments,
         loadCommenters,
         addCommenter,
@@ -651,6 +1071,7 @@ export const createStore = () => {
         toggleSidebar,
         toggleComments,
         loadProjects,
+        setProjects,
         getVersionsByProject, // 新增方法
         setSelectedProject,
         setSelectedVersion,
@@ -659,6 +1080,7 @@ export const createStore = () => {
         clearError
     };
 };
+
 
 
 

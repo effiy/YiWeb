@@ -149,18 +149,20 @@ export const useComputed = (store) => {
          * 选中的版本名称
          */
         selectedVersionName: computed(() => {
+            // 仅使用版本ID模式时，此处返回ID
             if (!store.selectedVersion?.value) return '';
-            const version = store.availableVersions?.value?.find(v => v.id === store.selectedVersion.value);
-            return version ? version.name : '';
+            const id = store.selectedVersion.value;
+            // 若 future 再次支持对象，可在此兼容
+            return id;
         }),
 
         /**
          * 选中的项目名称
          */
         selectedProjectName: computed(() => {
+            // 仅使用项目ID模式时，此处返回ID
             if (!store.selectedProject?.value) return '';
-            const project = store.projects?.value?.find(p => p.id === store.selectedProject.value);
-            return project ? project.name : '';
+            return store.selectedProject.value;
         }),
 
         /**
@@ -267,12 +269,12 @@ export const useComputed = (store) => {
          * 选中的版本名称
          */
         selectedVersionName: computed(() => {
-            if (!store.selectedVersion?.value || !store.availableVersions?.value) return '';
-            const selectedVersion = store.availableVersions.value.find(v => v.id === store.selectedVersion.value);
-            return selectedVersion ? selectedVersion.name : '';
+            if (!store.selectedVersion?.value) return '';
+            return store.selectedVersion.value;
         })
     };
 };
+
 
 
 
