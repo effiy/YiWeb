@@ -488,16 +488,34 @@ export const useMethods = (store) => {
                     await postData(`${window.API_URL}/mongodb/?cname=projectVersionFiles`, payload);
                 }
 
-                // 刷新本地数据
+                // 刷新本地数据，并自动切换到最新上传的项目/版本
                 try {
                     if (typeof store.loadProjects === 'function') {
                         await store.loadProjects();
                     }
                 } catch (_) {}
-                await Promise.all([ loadFileTree(projectId, versionId), loadFiles(projectId, versionId) ]);
+
+                // 更新选择到刚上传的项目与版本
+                try { setSelectedProject(projectId); } catch (_) {}
+                try { setSelectedVersion(versionId); } catch (_) {}
+
+                // 加载界面所需数据
+                await Promise.all([
+                    loadFileTree(projectId, versionId),
+                    loadFiles(projectId, versionId),
+                    (async () => { try { await loadComments(projectId, versionId); } catch (_) {} })()
+                ]);
+
+                // 可选：同步评论者数据
+                try { if (typeof store.loadCommenters === 'function') { await store.loadCommenters(projectId, versionId); } } catch (_) {}
+
+                // 广播项目/版本就绪事件
+                try {
+                    window.dispatchEvent(new CustomEvent('projectVersionReady', { detail: { projectId, versionId } }));
+                } catch (_) {}
 
                 const { showSuccess } = await import('/utils/message.js');
-                const msg = `上传完成：导入 ${processed} 个文件，跳过大文件 ${skippedLarge} 个，跳过排除项 ${skippedExcluded} 个`;
+                const msg = `上传完成：导入 ${processed} 个文件，跳过大文件 ${skippedLarge} 个，跳过排除项 ${skippedExcluded} 个。已切换到 ${projectId}/${versionId}`;
                 showSuccess(msg);
             } finally {
                 try { hideGlobalLoading(); } catch (_) {}
