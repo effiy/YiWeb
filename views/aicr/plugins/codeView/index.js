@@ -883,10 +883,6 @@ const createCodeView = async () => {
                     if (!this.editingCommentDetail || !this.editingCommentDetail.key) return;
 
                     const newContent = (this.editingCommentContent || '').trim();
-                    if (!newContent) {
-                        alert('评论内容不能为空');
-                        return;
-                    }
 
                     const newAuthor = (this.editingCommentAuthor || '').trim();
                     if (!newAuthor) {

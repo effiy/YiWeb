@@ -271,7 +271,7 @@
                         <button 
                             @click="saveEditedCommentDetail"
                             class="action-button save-button"
-                            :disabled="editingSaving || !(editingCommentContent || '').trim()"
+                            :disabled="editingSaving"
                             title="保存 (⌘/Ctrl+Enter)"
                         >
                             <i class="fas" :class="editingSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i>

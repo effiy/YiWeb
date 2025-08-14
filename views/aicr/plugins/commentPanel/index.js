@@ -640,10 +640,6 @@ const createCommentPanel = async () => {
                     if (!this.editingComment || !this.editingComment.key) return;
                     
                     const newContent = (this.editingCommentContent || '').trim();
-                    if (!newContent) {
-                        alert('评论内容不能为空');
-                        return;
-                    }
 
                     // 验证评论者姓名
                     const newAuthor = (this.editingCommentAuthor || '').trim();

@@ -552,8 +552,8 @@
                     <div class="form-actions">
                         <button 
                             @click="saveEditedComment"
-                            class="save-btn"
-                            :disabled="editingSaving || !editingCommentContent.trim()"
+                                class="save-btn"
+                                :disabled="editingSaving"
                         >
                             <i class="fas fa-save"></i>
                             保存
