@@ -609,7 +609,10 @@ export const useMethods = (store) => {
     const triggerUploadProjectVersion = () => {
         return safeExecute(() => {
             const input = document.getElementById('aicrUploadZipInput');
-            if (input && typeof input.click === 'function') input.click();
+            if (input) {
+                try { input.value = ''; } catch (_) {}
+                if (typeof input.click === 'function') input.click();
+            }
         }, '触发上传选择');
     };
 
