@@ -309,7 +309,7 @@ export const useMethods = (store) => {
 
             // 动态加载依赖与工具
             const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
-            showGlobalLoading(`正在上传并解析 ${projectId}/${versionId} ...`);
+            let __uploadLoadingShown = false;
             try {
                 // 1) 校验项目/版本是否已存在；不存在则补充创建
                 const { getData, postData, updateData, deleteData } = await import('/apis/modules/crud.js');
@@ -322,23 +322,75 @@ export const useMethods = (store) => {
                 const versionExists = projectVersions.includes(versionId);
 
                 if (versionExists) {
-                    const { showWarning } = await import('/utils/message.js');
-                    showWarning(`项目版本已存在：${projectId}/${versionId}`);
-                    return; // 终止上传
+                    const { showMessage } = await import('/utils/message.js');
+                    const userChoice = await new Promise((resolve) => {
+                        showMessage({
+                            type: 'warning',
+                            title: '项目版本已存在',
+                            content: `检测到 ${projectId}/${versionId} 已存在。请选择操作：`,
+                            actions: [
+                                { text: '覆盖导入', type: 'primary', action: () => resolve('overwrite') },
+                                { text: '更改版本号', action: () => resolve('rename') },
+                                { text: '取消', action: () => resolve('cancel') }
+                            ],
+                            duration: 0
+                        });
+                    });
+                    if (userChoice === 'cancel') {
+                        return; // 用户取消
+                    }
+                    if (userChoice === 'rename') {
+                        // 建议下一个版本号
+                        const suggestNext = (v) => {
+                            try {
+                                const m = String(v).match(/^(\d+)\.(\d+)\.(\d+)(.*)?$/);
+                                if (m) {
+                                    const major = parseInt(m[1], 10);
+                                    const minor = parseInt(m[2], 10);
+                                    const patch = parseInt(m[3], 10) + 1;
+                                    return `${major}.${minor}.${patch}`;
+                                }
+                            } catch (_) {}
+                            return `${v}-new`;
+                        };
+                        const input = window.prompt('输入新的版本号：', suggestNext(versionId));
+                        if (!input || !input.trim()) return;
+                        const newVersion = input.trim();
+                        // 重新校验是否仍然存在
+                        const stillExists = projectVersions.includes(newVersion);
+                        if (stillExists) {
+                            const { showWarning } = await import('/utils/message.js');
+                            showWarning(`版本已存在：${projectId}/${newVersion}`);
+                            return;
+                        }
+                        versionId = newVersion; // 使用新版本号继续
+                    }
+                    // 若选择覆盖，则继续后续流程（不需要在PV中新增版本）
                 }
 
                 // 不存在则新建/更新项目版本信息
                 if (projectDoc) {
                     const key = projectDoc?.key || projectDoc?._id || projectDoc?.id;
                     if (key) {
-                        const nextVersions = Array.from(new Set([...projectVersions, versionId]));
-                        await updateData(pvUrl, { key, id: projectId, versions: nextVersions });
+                        // 仅在该版本尚不存在时追加
+                        if (!projectVersions.includes(versionId)) {
+                            const nextVersions = Array.from(new Set([...projectVersions, versionId]));
+                            await updateData(pvUrl, { key, id: projectId, versions: nextVersions });
+                        }
                     } else {
                         // 无key容错：直接新增
-                        await postData(pvUrl, { id: projectId, versions: [versionId] });
+                        if (!projectVersions.includes(versionId)) {
+                            await postData(pvUrl, { id: projectId, versions: [versionId] });
+                        }
                     }
                 } else {
                     await postData(pvUrl, { id: projectId, versions: [versionId] });
+                }
+
+                // 显示loading（至此确定会继续进行上传/覆盖）
+                if (!__uploadLoadingShown) {
+                    showGlobalLoading(`正在上传并解析 ${projectId}/${versionId} ...`);
+                    __uploadLoadingShown = true;
                 }
 
                 // 读取ZIP
@@ -518,7 +570,7 @@ export const useMethods = (store) => {
                 const msg = `上传完成：导入 ${processed} 个文件，跳过大文件 ${skippedLarge} 个，跳过排除项 ${skippedExcluded} 个。已切换到 ${projectId}/${versionId}`;
                 showSuccess(msg);
             } finally {
-                try { hideGlobalLoading(); } catch (_) {}
+                try { if (__uploadLoadingShown) hideGlobalLoading(); } catch (_) {}
             }
         }, '项目版本上传');
     };
