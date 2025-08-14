@@ -411,12 +411,6 @@ export const useMethods = (store) => {
                 const EXCLUDED_DIRS = ['.git', 'node_modules', '.svn', '.hg', '__MACOSX'];
                 const EXCLUDED_FILES = ['.DS_Store', 'Thumbs.db'];
                 const normalizePath = (p) => String(p || '').replace(/\\/g, '/').replace(/^\/+/, '');
-                // 计算是否需要去掉打包时多出的一层根目录（若所有条目都以同一首段开头，则剥离该首段）
-                const normalizedPathsForStrip = entries.map(e => normalizePath(e.path)).filter(Boolean);
-                const firstSegments = normalizedPathsForStrip.map(p => p.split('/')[0]).filter(Boolean);
-                const candidateFirst = firstSegments[0] || '';
-                const shouldStripFirstSegment = !!candidateFirst && firstSegments.every(seg => seg === candidateFirst);
-                const STRIP_PREFIX = shouldStripFirstSegment ? (candidateFirst + '/') : '';
                 const hasExcludedSegment = (p) => {
                     const segs = p.split('/');
                     return segs.some(seg => EXCLUDED_DIRS.includes(seg));
@@ -425,6 +419,42 @@ export const useMethods = (store) => {
                     const name = p.split('/').pop();
                     return EXCLUDED_FILES.includes(name);
                 };
+                // 计算是否需要去掉打包时多出的根目录：
+                // - 忽略排除项后再判断统一前缀
+                // - 优先剥离 projectId/versionId 或 projectId
+                // - 否则剥离所有条目共有的单一（或多级）根目录（最多两级，避免过度剥离）
+                const normalizedAll = entries.map(e => normalizePath(e.path)).filter(Boolean);
+                const candidates = normalizedAll.filter(p => !hasExcludedSegment(p) && !isExcludedFile(p));
+                const basis = candidates.length > 0 ? candidates : normalizedAll;
+                const splitToSegs = (p) => p.split('/').filter(Boolean);
+                const listSegs = basis.map(splitToSegs);
+                const allStartsWith = (prefixSegs) => {
+                    if (!prefixSegs || prefixSegs.length === 0) return false;
+                    return listSegs.length > 0 && listSegs.every(segs => prefixSegs.every((s, i) => segs[i] === s));
+                };
+                let stripSegs = [];
+                // 优先匹配 projectId/versionId 前缀
+                if (projectId && versionId && allStartsWith([projectId, versionId])) {
+                    stripSegs = [projectId, versionId];
+                } else if (projectId && allStartsWith([projectId])) {
+                    stripSegs = [projectId];
+                } else {
+                    // 退化策略：取所有条目的最长公共前缀（按段），最多两级
+                    if (listSegs.length > 0) {
+                        const first = listSegs[0].slice();
+                        let common = [];
+                        for (let i = 0; i < first.length; i++) {
+                            const candidate = first[i];
+                            const ok = listSegs.every(segs => segs[i] === candidate);
+                            if (ok) common.push(candidate); else break;
+                        }
+                        // 限制最多两级，避免剥离过深（例如 "src" 等非项目级根）
+                        if (common.length > 0) {
+                            stripSegs = common.slice(0, Math.min(2, common.length));
+                        }
+                    }
+                }
+                const STRIP_PREFIX = stripSegs.length > 0 ? (stripSegs.join('/') + '/') : '';
                 let skippedExcluded = 0;
                 let skippedLarge = 0;
                 let processed = 0;
