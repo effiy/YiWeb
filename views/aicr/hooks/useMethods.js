@@ -299,6 +299,36 @@ export const useMethods = (store) => {
             const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
             showGlobalLoading(`正在上传并解析 ${projectId}/${versionId} ...`);
             try {
+                // 1) 校验项目/版本是否已存在；不存在则补充创建
+                const { getData, postData, updateData, deleteData } = await import('/apis/modules/crud.js');
+                const pvUrl = `${window.API_URL}/mongodb/?cname=projectVersions`;
+                const pvResp = await getData(pvUrl, {}, false);
+                const pvList = pvResp?.data?.list || [];
+                const projectDoc = pvList.find(p => p && p.id === projectId);
+                const extractId = (v) => (typeof v === 'string' ? v : (v && (v.id || v.value)));
+                const projectVersions = Array.isArray(projectDoc?.versions) ? projectDoc.versions.map(extractId).filter(Boolean) : [];
+                const versionExists = projectVersions.includes(versionId);
+
+                if (versionExists) {
+                    const { showWarning } = await import('/utils/message.js');
+                    showWarning(`项目版本已存在：${projectId}/${versionId}`);
+                    return; // 终止上传
+                }
+
+                // 不存在则新建/更新项目版本信息
+                if (projectDoc) {
+                    const key = projectDoc?.key || projectDoc?._id || projectDoc?.id;
+                    if (key) {
+                        const nextVersions = Array.from(new Set([...projectVersions, versionId]));
+                        await updateData(pvUrl, { key, id: projectId, versions: nextVersions });
+                    } else {
+                        // 无key容错：直接新增
+                        await postData(pvUrl, { id: projectId, versions: [versionId] });
+                    }
+                } else {
+                    await postData(pvUrl, { id: projectId, versions: [versionId] });
+                }
+
                 // 读取ZIP
                 const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip || (await import('jszip')).default;
                 const zip = await JSZip.loadAsync(zipFile);
@@ -411,7 +441,7 @@ export const useMethods = (store) => {
                 }
 
                 // 覆盖远端：先删除当前 project/version 的树与文件，再写入新内容
-                const { getData, deleteData, postData } = await import('/apis/modules/crud.js');
+                // 提示：前面已导入 CRUD
                 // 删除树
                 try {
                     const treeQuery = `${window.API_URL}/mongodb/?cname=projectVersionTree&projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}`;
@@ -447,13 +477,16 @@ export const useMethods = (store) => {
                 }
 
                 // 刷新本地数据
-                await Promise.all([
-                    loadFileTree(projectId, versionId),
-                    loadFiles(projectId, versionId)
-                ]);
+                try {
+                    if (typeof store.loadProjects === 'function') {
+                        await store.loadProjects();
+                    }
+                } catch (_) {}
+                await Promise.all([ loadFileTree(projectId, versionId), loadFiles(projectId, versionId) ]);
 
+                const { showSuccess } = await import('/utils/message.js');
                 const msg = `上传完成：导入 ${processed} 个文件，跳过大文件 ${skippedLarge} 个，跳过排除项 ${skippedExcluded} 个`;
-                showSuccessMessage(msg);
+                showSuccess(msg);
             } finally {
                 try { hideGlobalLoading(); } catch (_) {}
             }
