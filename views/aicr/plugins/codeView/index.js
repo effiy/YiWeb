@@ -2763,7 +2763,7 @@ const createCodeView = async () => {
                                 if (store && typeof store.loadFileById === 'function') {
                                     const projectId = store.selectedProject ? store.selectedProject.value : null;
                                     const versionId = store.selectedVersion ? store.selectedVersion.value : null;
-                                    const fileId = newFile.fileId || newFile.id || newFile.path || newFile.name;
+                                    const fileId = (newFile.fileId || newFile.id || newFile.path || newFile.name || '').toString();
                                     if (projectId && versionId && fileId) {
                                         await store.loadFileById(projectId, versionId, fileId);
                                         // 强制刷新，确保 codeLines 重新计算
@@ -2774,6 +2774,11 @@ const createCodeView = async () => {
                             }
                         } catch (e) {
                             console.warn('[CodeView] 按需加载内容失败:', e?.message || e);
+                        }
+                        // 如果仍无内容，显示最小占位提示
+                        if (!this.file || !this.file.content) {
+                            console.log('[CodeView] 仍无内容，设置最小占位内容以保证渲染');
+                            this.file = { ...(this.file || newFile || {}), content: (this.file && this.file.content) || '' };
                         }
                         await this.loadFileComments();
                     }
