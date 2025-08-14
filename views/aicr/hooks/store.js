@@ -434,7 +434,7 @@ export const createStore = () => {
                             }
                         }
                     }
-                    // 删除远端文件集合
+                    // 删除远端文件集合（含无key回退fileId删除）
                     if (project && version) {
                         const filesQueryUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(project)}&versionId=${encodeURIComponent(version)}`;
                         const filesResp = await getData(filesQueryUrl, {}, false);
@@ -443,18 +443,89 @@ export const createStore = () => {
                             const fileKey = f?.key || f?._id || f?.id;
                             if (fileKey) {
                                 await deleteData(`${filesQueryUrl}&key=${fileKey}`);
+                            } else {
+                                const path = String(f?.path || f?.id || f?.fileId || '');
+                                if (path) {
+                                    try { await deleteData(`${filesQueryUrl}&fileId=${encodeURIComponent(path)}`); } catch (_) {}
+                                }
+                            }
+                        }
+                    }
+                    // 删除远端评论集合（该项目/版本）
+                    if (project && version) {
+                        const commentsQueryUrl = `${window.API_URL}/mongodb/?cname=comments&projectId=${encodeURIComponent(project)}&versionId=${encodeURIComponent(version)}`;
+                        const commentsResp = await getData(commentsQueryUrl, {}, false);
+                        const commentsList = commentsResp?.data?.list || [];
+                        for (const c of commentsList) {
+                            const cKey = c?.key || c?._id || c?.id;
+                            if (cKey) {
+                                await deleteData(`${commentsQueryUrl}&key=${cKey}`);
+                            }
+                        }
+                    }
+                    // 从项目版本集合中移除该版本；如版本清空则删除该项目项
+                    {
+                        const pvUrl = `${window.API_URL}/mongodb/?cname=projectVersions`;
+                        const pvResp = await getData(pvUrl, {}, false);
+                        const pvList = pvResp?.data?.list || [];
+                        const target = pvList.find(p => p?.id === project);
+                        if (target) {
+                            const key = target?.key || target?._id || target?.id;
+                            const rawVersions = Array.isArray(target?.versions) ? target.versions : [];
+                            const extractId = (v) => (typeof v === 'string' ? v : (v && (v.id || v.value)));
+                            const nextVersions = rawVersions
+                                .map(extractId)
+                                .filter(Boolean)
+                                .filter(v => v !== version);
+                            if (nextVersions.length > 0) {
+                                if (key) {
+                                    await updateData(pvUrl, { key, id: project, versions: nextVersions });
+                                }
+                            } else {
+                                if (key) {
+                                    await deleteData(`${pvUrl}&key=${key}`);
+                                }
                             }
                         }
                     }
                 } catch (cleanupErr) {
-                    console.warn('[deleteItem] 根节点级联删除失败（忽略继续）:', cleanupErr?.message || cleanupErr);
+                    console.warn('[deleteItem] 根节点级联删除失败（已忽略）:', cleanupErr?.message || cleanupErr);
                 }
                 // 清空本地状态
                 fileTree.value = [];
                 fileTreeDocKey.value = '';
                 files.value = [];
+                comments.value = [];
                 selectedFileId.value = null;
                 expandedFolders.value = new Set();
+                // 刷新项目/版本列表并对齐UI
+                try {
+                    const refreshed = await loadProjects();
+                    const list = Array.isArray(refreshed) ? refreshed : (projects?.value || []);
+                    const pj = list.find(p => p?.id === project);
+                    if (pj && Array.isArray(pj.versions) && pj.versions.length > 0) {
+                        const nextVersionId = (typeof pj.versions[0] === 'string') ? pj.versions[0] : (pj.versions[0]?.id || '');
+                        setSelectedProject(project);
+                        setSelectedVersion(nextVersionId);
+                        await refreshData();
+                    } else {
+                        if (list.length > 0) {
+                            const first = list[0];
+                            setSelectedProject(first.id);
+                            const verArr = Array.isArray(first.versions) ? first.versions : [];
+                            const firstVer = verArr.length > 0 ? (typeof verArr[0] === 'string' ? verArr[0] : (verArr[0]?.id || '')) : '';
+                            if (firstVer) {
+                                setSelectedVersion(firstVer);
+                                await refreshData();
+                            } else {
+                                setSelectedVersion('');
+                            }
+                        } else {
+                            setSelectedProject('');
+                            setSelectedVersion('');
+                        }
+                    }
+                } catch (_) {}
                 return true;
             }
 

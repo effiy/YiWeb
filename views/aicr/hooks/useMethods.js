@@ -312,14 +312,63 @@ export const useMethods = (store) => {
                     throw createError('ZIP 中未发现文件', ErrorTypes.VALIDATION, '项目版本上传');
                 }
 
-                // 读取所有文本文件内容
+                // 过滤规则
+                const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+                const EXCLUDED_DIRS = ['.git', 'node_modules', '.svn', '.hg', '__MACOSX'];
+                const EXCLUDED_FILES = ['.DS_Store', 'Thumbs.db'];
                 const normalizePath = (p) => String(p || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                // 计算是否需要去掉打包时多出的一层根目录（若所有条目都以同一首段开头，则剥离该首段）
+                const normalizedPathsForStrip = entries.map(e => normalizePath(e.path)).filter(Boolean);
+                const firstSegments = normalizedPathsForStrip.map(p => p.split('/')[0]).filter(Boolean);
+                const candidateFirst = firstSegments[0] || '';
+                const shouldStripFirstSegment = !!candidateFirst && firstSegments.every(seg => seg === candidateFirst);
+                const STRIP_PREFIX = shouldStripFirstSegment ? (candidateFirst + '/') : '';
+                const hasExcludedSegment = (p) => {
+                    const segs = p.split('/');
+                    return segs.some(seg => EXCLUDED_DIRS.includes(seg));
+                };
+                const isExcludedFile = (p) => {
+                    const name = p.split('/').pop();
+                    return EXCLUDED_FILES.includes(name);
+                };
+                let skippedExcluded = 0;
+                let skippedLarge = 0;
+                let processed = 0;
                 const filesPayload = [];
                 for (const { path, file } of entries) {
+                    let normPath = normalizePath(path);
+                    if (STRIP_PREFIX && normPath.startsWith(STRIP_PREFIX)) {
+                        normPath = normPath.slice(STRIP_PREFIX.length);
+                    }
+                    if (!normPath) continue;
+                    // 目录/文件名过滤
+                    if (hasExcludedSegment(normPath) || isExcludedFile(normPath)) {
+                        skippedExcluded++;
+                        continue;
+                    }
+                    // 大小过滤：优先用内部尺寸；否则读取为blob判断大小
+                    let size = (file && file._data && Number.isFinite(file._data.uncompressedSize)) ? file._data.uncompressedSize : null;
+                    let blob = null;
+                    if (!size) {
+                        try {
+                            blob = await file.async('blob');
+                            size = blob.size;
+                        } catch (_) {
+                            size = 0;
+                        }
+                    }
+                    if (size > MAX_SIZE) {
+                        skippedLarge++;
+                        continue;
+                    }
+                    // 读取文本内容（尽量复用 blob）
                     let content = '';
                     try {
-                        // 尝试以文本方式读取；若失败则读取为 base64 并跳过（或可保留）
-                        content = await file.async('string');
+                        if (blob) {
+                            content = await blob.text();
+                        } else {
+                            content = await file.async('string');
+                        }
                     } catch (_) {
                         try {
                             const b64 = await file.async('base64');
@@ -328,8 +377,6 @@ export const useMethods = (store) => {
                             content = '';
                         }
                     }
-                    const normPath = normalizePath(path);
-                    if (!normPath) continue;
                     filesPayload.push({
                         projectId,
                         versionId,
@@ -339,6 +386,7 @@ export const useMethods = (store) => {
                         name: normPath.split('/').pop(),
                         content: content || ''
                     });
+                    processed++;
                 }
 
                 // 构建树（基于路径）
@@ -404,7 +452,8 @@ export const useMethods = (store) => {
                     loadFiles(projectId, versionId)
                 ]);
 
-                showSuccessMessage('上传并覆盖完成');
+                const msg = `上传完成：导入 ${processed} 个文件，跳过大文件 ${skippedLarge} 个，跳过排除项 ${skippedExcluded} 个`;
+                showSuccessMessage(msg);
             } finally {
                 try { hideGlobalLoading(); } catch (_) {}
             }
