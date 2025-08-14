@@ -1409,6 +1409,30 @@ const createCommentPanel = async () => {
                 }
             });
             
+            // 监听 CodeView 发来的评论更新请求（在弹框内编辑时触发）
+            window.addEventListener('updateComment', async (event) => {
+                try {
+                    const payload = event.detail || {};
+                    if (!payload || !payload.key) return;
+                    console.log('[CommentPanel] 收到评论更新请求:', payload.key);
+
+                    // 复用本组件的保存流程，落库并轻量刷新
+                    this.editingComment = { key: payload.key };
+                    this.editingCommentContent = payload.content || '';
+                    this.editingCommentAuthor = payload.author || '';
+                    this.editingCommentText = payload.text || '';
+                    this.editingRangeInfo = payload.rangeInfo || { startLine: 1, endLine: 1 };
+                    this.editingImprovementText = payload.improvementText || '';
+                    this.editingCommentType = payload.type || '';
+                    this.editingCommentStatus = payload.status || 'pending';
+                    this.editingSaving = false;
+
+                    await this.saveEditedComment();
+                } catch (e) {
+                    console.error('[CommentPanel] 处理评论更新请求失败:', e);
+                }
+            });
+            
             // 监听addNewComment事件，处理从codeView组件发送的新评论
             window.addEventListener('addNewComment', (event) => {
                 console.log('[CommentPanel] 收到addNewComment事件');
@@ -1555,6 +1579,7 @@ const createCommentPanel = async () => {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
+
 
 
 

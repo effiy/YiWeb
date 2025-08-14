@@ -35,6 +35,7 @@ export const useMethods = (store) => {
         getVersionsByProject, // 重构后的方法
         loadFileTree,
         loadFiles,
+        loadFileById,
         refreshData,
         // 文件树CRUD
         createFolder,
@@ -226,24 +227,59 @@ export const useMethods = (store) => {
      * @param {string} url - 链接地址
      */
     const openLink = (url) => {
-        if (url) {
-            window.open(url, '_blank');
+        if (!url) return;
+        if (/^https?:\/\//.test(url)) {
+            window.open(url, '_blank', 'noopener,noreferrer');
+        } else {
+            window.location.href = url;
         }
     };
 
     /**
      * 处理文件选择
-     * @param {string} fileId - 文件ID
+     * @param {string|Object} fileId - 文件ID或节点对象
      */
     const handleFileSelect = (fileId) => {
-        return safeExecute(() => {
-            if (!fileId || typeof fileId !== 'string') {
+        return safeExecute(async () => {
+            // 支持对象入参：优先使用 path 作为标识
+            if (fileId && typeof fileId === 'object') {
+                const node = fileId;
+                const prefer = node.path || node.id || node.fileId || node.name || '';
+                fileId = prefer;
+            }
+
+            // 归一化
+            const normalize = (v) => {
+                try {
+                    if (v == null) return '';
+                    let s = String(v);
+                    s = s.replace(/\\\\/g, '/');
+                    s = s.replace(/^\.\//, '');
+                    s = s.replace(/^\/+/, '');
+                    s = s.replace(/\/\/+/g, '/');
+                    return s;
+                } catch (e) {
+                    return String(v);
+                }
+            };
+            const idNorm = normalize(fileId);
+            if (!idNorm) {
                 throw createError('文件ID无效', ErrorTypes.VALIDATION, '文件选择');
             }
 
-            setSelectedFileId(fileId);
-            showSuccessMessage(`已选择文件: ${fileId}`);
-            console.log(`[文件选择] 选择文件: ${fileId}`);
+            setSelectedFileId(idNorm);
+            console.log('[文件选择] 选择文件(规范化):', idNorm);
+
+            // 若项目/版本就绪，尝试按需加载内容
+            try {
+                const pj = selectedProject?.value;
+                const ver = selectedVersion?.value;
+                if (pj && ver && typeof loadFileById === 'function') {
+                    await loadFileById(pj, ver, idNorm);
+                }
+            } catch (e) {
+                console.warn('[文件选择] 按需加载失败(忽略):', e?.message || e);
+            }
         }, '文件选择处理');
     };
 
@@ -1349,6 +1385,55 @@ export const useMethods = (store) => {
                     }
                 }
 
+                // 3.1) 计算被移除的版本（用于级联删除tree与files）
+                const extractVersionIds = (vers) => (Array.isArray(vers) ? vers.map(v => (typeof v === 'string' ? v : v?.id)).filter(Boolean) : []);
+                const removedByProject = new Map();
+                for (const oldItem of originalList) {
+                    const oldVersions = extractVersionIds(oldItem.versions);
+                    const nextItem = nextMap.get(oldItem.id);
+                    let removed = [];
+                    if (!nextItem) {
+                        removed = oldVersions.slice();
+                    } else {
+                        const newVersions = extractVersionIds(nextItem.versions);
+                        removed = oldVersions.filter(v => !newVersions.includes(v));
+                    }
+                    if (removed.length > 0) {
+                        removedByProject.set(oldItem.id, removed);
+                    }
+                }
+
+                // 3.2) 对每个被移除的 (projectId, versionId) 执行级联删除
+                for (const [projectId, removedVersions] of removedByProject.entries()) {
+                    for (const versionId of removedVersions) {
+                        try {
+                            // 删除对应的文件树
+                            const treeQueryUrl = `${window.API_URL}/mongodb/?cname=projectVersionTree&projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}`;
+                            const treeResp = await getData(treeQueryUrl, {}, false);
+                            const treeList = treeResp?.data?.list || [];
+                            for (const doc of treeList) {
+                                const treeKey = doc?.key || doc?._id || doc?.id;
+                                if (treeKey) {
+                                    await deleteData(`${treeQueryUrl}&key=${treeKey}`);
+                                }
+                            }
+
+                            // 删除对应的文件集合
+                            const filesQueryUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}`;
+                            const filesResp = await getData(filesQueryUrl, {}, false);
+                            const fileList = filesResp?.data?.list || [];
+                            for (const f of fileList) {
+                                const fileKey = f?.key || f?._id || f?.id;
+                                if (fileKey) {
+                                    await deleteData(`${filesQueryUrl}&key=${fileKey}`);
+                                }
+                            }
+                        } catch (cleanupErr) {
+                            console.warn('[PV管理] 级联删除失败（忽略继续）:', projectId, versionId, cleanupErr);
+                        }
+                    }
+                }
+
                 // 4) 刷新远端数据并更新到 store
                 const refreshed = await getData(url, {}, false);
                 const remoteList = refreshed?.data?.list || [];
@@ -1387,6 +1472,7 @@ export const useMethods = (store) => {
         }
     };
 };
+
 
 
 

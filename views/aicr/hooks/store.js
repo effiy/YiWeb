@@ -77,9 +77,15 @@ export const createStore = () => {
             
             console.log('[loadFileTree] 正在加载文件树数据...', { projectId, versionId });
             
-            // 构建动态URL
-            const project = projectId || selectedProject.value || 'YiAi';
-            const version = versionId || selectedVersion.value || '2025-07-30';
+            // 需要明确的项目与版本
+            const project = projectId || selectedProject.value;
+            const version = versionId || selectedVersion.value;
+            if (!project || !version) {
+                console.warn('[loadFileTree] 缺少项目/版本，跳过文件树加载');
+                fileTree.value = [];
+                fileTreeDocKey.value = '';
+                return [];
+            }
             const tree_url = `${window.API_URL}/mongodb/?cname=projectVersionTree&projectId=${project}&versionId=${version}`;
             
             const response = await getData(tree_url);
@@ -97,7 +103,25 @@ export const createStore = () => {
 
             // 只取第一个文件树对象，确保格式正确
             const treeDoc = response.data.list[0];
-            fileTree.value = [treeDoc.data]; 
+            // 在内存中为每个节点补充 path 字段，避免后端缺失
+            const rootNode = treeDoc.data;
+            const ensureName = (node) => node && (node.name || (typeof node.id === 'string' ? node.id.split('/').pop() : ''));
+            const addPaths = (node, parentPath = '') => {
+                if (!node || typeof node !== 'object') return;
+                const name = ensureName(node) || '';
+                const currentPath = parentPath ? `${parentPath}/${name}` : name;
+                if (!node.path || typeof node.path !== 'string') {
+                    node.path = currentPath;
+                }
+                if (!node.id || typeof node.id !== 'string' || node.id.trim() === '') {
+                    node.id = currentPath;
+                }
+                if (node.type === 'folder' && Array.isArray(node.children)) {
+                    node.children.forEach(child => addPaths(child, currentPath));
+                }
+            };
+            addPaths(rootNode, '');
+            fileTree.value = [rootNode]; 
             // 保存文档key用于后续更新
             fileTreeDocKey.value = treeDoc.key || treeDoc._id || treeDoc.id || '';
             console.log(`[loadFileTree] 成功加载文件树数据`);
@@ -273,9 +297,10 @@ export const createStore = () => {
             await persistFileTree(projectId, versionId);
 
             // 在文件集合中新增占位（远端与本地）
+            let createdKey = null;
             try {
                 const filesUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles`;
-                await postData(filesUrl, {
+                const createResult = await postData(filesUrl, {
                     projectId: projectId || selectedProject.value,
                     versionId: versionId || selectedVersion.value,
                     fileId: newId,
@@ -284,14 +309,16 @@ export const createStore = () => {
                     name,
                     content: content || ''
                 });
+                // 记录后端返回的唯一标识，供后续首次保存使用
+                createdKey = createResult?.data?.key || createResult?.key || null;
             } catch (e) {
                 // 不中断主流程
                 console.warn('[createFile] 创建文件内容文档失败（已忽略）:', e?.message);
             }
 
-            // 更新本地files列表
+            // 更新本地files列表，携带后端返回的key，确保首次保存可PUT更新
             if (Array.isArray(files.value)) {
-                files.value.push({ fileId: newId, id: newId, path: newId, name, content });
+                files.value.push({ fileId: newId, id: newId, path: newId, name, content, key: createdKey });
             }
             return newId;
         }, '创建文件');
@@ -437,9 +464,14 @@ export const createStore = () => {
         return safeExecuteAsync(async () => {
             console.log('[loadFiles] 正在加载代码文件数据...', { projectId, versionId });
             
-            // 构建动态URL
-            const project = projectId || selectedProject.value || 'YiAi';
-            const version = versionId || selectedVersion.value || '2025-08-08';
+            // 需要明确的项目与版本
+            const project = projectId || selectedProject.value;
+            const version = versionId || selectedVersion.value;
+            if (!project || !version) {
+                console.warn('[loadFiles] 缺少项目/版本，跳过代码文件加载');
+                files.value = [];
+                return [];
+            }
             const files_url = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${project}&versionId=${version}`;
             
             const response = await getData(files_url, {}, false);
@@ -456,9 +488,40 @@ export const createStore = () => {
             // 规范化文件数据，确保与文件树的文件ID可匹配，且包含内容字段
             const normalizedList = (list || []).map((item) => {
                 const data = (item && typeof item === 'object' && item.data && typeof item.data === 'object') ? item.data : {};
+
                 const pickFirstString = (...vals) => {
                     for (const v of vals) {
                         if (typeof v === 'string' && v) return v;
+                    }
+                    return '';
+                };
+
+                // 深度提取字符串/数组形式的内容
+                const toStringContent = (val) => {
+                    if (Array.isArray(val)) return val.map(v => (v == null ? '' : String(v))).join('\n');
+                    return (typeof val === 'string') ? val : '';
+                };
+
+                const tryKeysDeep = (obj, keys, depth = 0) => {
+                    if (!obj || typeof obj !== 'object' || depth > 3) return '';
+                    // 先直接命中常见键
+                    for (const k of keys) {
+                        if (k in obj) {
+                            const v = obj[k];
+                            const s = toStringContent(v);
+                            if (s) return s;
+                        }
+                    }
+                    // 递归遍历有限深度
+                    for (const k of Object.keys(obj)) {
+                        const v = obj[k];
+                        if (v && typeof v === 'object') {
+                            const found = tryKeysDeep(v, keys, depth + 1);
+                            if (found) return found;
+                        } else {
+                            const s = toStringContent(v);
+                            if (s && keys.includes(k)) return s;
+                        }
                     }
                     return '';
                 };
@@ -467,31 +530,67 @@ export const createStore = () => {
                     item?.fileId, item?.id, item?.path, item?.file, item?.name,
                     data?.fileId, data?.id, data?.path, data?.file, data?.name
                 );
-                const path = pickFirstString(data?.path, item?.path, identifier);
+                // 优先选择 path 类字段作为标识，避免被后端文档 key 覆盖
+                const idCandidates = [
+                    data?.path, item?.path,
+                    item?.fileId, data?.fileId,
+                    item?.id, data?.id,
+                    item?.file, data?.file,
+                    data?.name, item?.name
+                ].filter(Boolean);
+                const isPathLike = (s) => typeof s === 'string' && (s.includes('/') || s.includes('\\'));
+                const preferredId = (idCandidates.find(isPathLike) || idCandidates[0] || identifier || '');
+                const path = pickFirstString(data?.path, item?.path, preferredId);
                 const name = pickFirstString(data?.name, item?.name, (typeof path === 'string' ? path.split('/').pop() : ''));
 
-                // 兼容多种可能的内容字段（顶层与 data.*）
+                // 兼容多种可能的内容字段（支持嵌套与数组、base64），优先顶层，再 data，再深层
+                const commonKeys = ['content', 'code', 'text', 'source', 'lines', 'raw', 'body', 'value'];
                 let content = '';
-                const tryJoin = (val) => Array.isArray(val) ? val.join('\n') : (typeof val === 'string' ? val : '');
-                content = pickFirstString(
-                    tryJoin(item?.content), tryJoin(item?.code), tryJoin(item?.text), tryJoin(item?.source), tryJoin(item?.lines),
-                    tryJoin(data?.content), tryJoin(data?.code), tryJoin(data?.text), tryJoin(data?.source), tryJoin(data?.lines),
-                    item?.raw, item?.body, item?.value, item?.data,
-                    data?.raw, data?.body, data?.value, data?.data
-                );
+
+                // 顶层快速命中
+                content = toStringContent(item?.content) || toStringContent(item?.code) || toStringContent(item?.text) || toStringContent(item?.source) || toStringContent(item?.lines) || pickFirstString(item?.raw, item?.body, item?.value);
+                // data 层快速命中
                 if (!content) {
-                    // base64内容兜底（顶层与 data.*）
-                    const b64 = item?.contentBase64 || item?.base64 || item?.b64 || data?.contentBase64 || data?.base64 || data?.b64;
-                    if (typeof b64 === 'string') {
+                    content = toStringContent(data?.content) || toStringContent(data?.code) || toStringContent(data?.text) || toStringContent(data?.source) || toStringContent(data?.lines) || pickFirstString(data?.raw, data?.body, data?.value);
+                }
+                // 深度兜底（处理 data.data.content 等层级）
+                if (!content) {
+                    content = tryKeysDeep(item, commonKeys) || tryKeysDeep(data, commonKeys);
+                }
+                // base64 兜底（任意层）
+                if (!content) {
+                    const pickBase64 = (obj) => {
+                        if (!obj || typeof obj !== 'object') return '';
+                        const b64 = obj.contentBase64 || obj.base64 || obj.b64;
+                        return typeof b64 === 'string' ? b64 : '';
+                    };
+                    let b64 = pickBase64(item) || pickBase64(data);
+                    if (!b64) {
+                        // 深度搜索 base64 键
+                        const findB64Deep = (obj, depth = 0) => {
+                            if (!obj || typeof obj !== 'object' || depth > 3) return '';
+                            const direct = pickBase64(obj);
+                            if (direct) return direct;
+                            for (const k of Object.keys(obj)) {
+                                const v = obj[k];
+                                if (v && typeof v === 'object') {
+                                    const found = findB64Deep(v, depth + 1);
+                                    if (found) return found;
+                                }
+                            }
+                            return '';
+                        };
+                        b64 = findB64Deep(item) || findB64Deep(data);
+                    }
+                    if (b64) {
                         try { content = atob(b64); } catch (e) { content = ''; }
                     }
                 }
 
-                // 返回带有统一字段的对象（不破坏原有属性），并保留原有 data
                 return {
                     ...item,
-                    fileId: identifier,
-                    id: identifier,
+                    fileId: preferredId,
+                    id: preferredId,
                     path,
                     name,
                     content
@@ -507,6 +606,187 @@ export const createStore = () => {
             errorMessage.value = errorInfo.message;
             files.value = [];
         });
+    };
+
+    /**
+     * 按需加载单个文件（当列表中缺少内容或未找到时使用）
+     */
+    const loadFileById = async (projectId = null, versionId = null, targetFileId = null) => {
+        return safeExecuteAsync(async () => {
+            const project = projectId || selectedProject.value;
+            const version = versionId || selectedVersion.value;
+            const fileId = targetFileId || selectedFileId.value;
+            if (!project || !version || !fileId) return null;
+
+            console.log('[loadFileById] 尝试加载文件:', fileId, '项目:', project, '版本:', version);
+            const url = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(project)}&versionId=${encodeURIComponent(version)}&fileId=${encodeURIComponent(fileId)}`;
+            console.log('[loadFileById] 请求URL:', url);
+            const response = await getData(url, {}, false);
+            let list = (response?.data?.list && Array.isArray(response.data.list)) ? response.data.list : (Array.isArray(response) ? response : []);
+            console.log('[loadFileById] 精确查询结果数量:', list.length);
+            // 若精确查询无结果，退化为全量加载后本地匹配
+            if (!list.length) {
+                console.log('[loadFileById] 精确查询无结果，尝试全量加载后匹配');
+                console.log('[loadFileById] 原始fileId:', fileId);
+                console.log('[loadFileById] 编码后的fileId:', encodeURIComponent(fileId));
+                try {
+                    await loadFiles(project, version);
+                    console.log('[loadFileById] 全量加载完成，文件总数:', files.value?.length || 0);
+                    const normalizeId = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                    const targetNorm = normalizeId(fileId);
+                    const matched = (files.value || []).find(f => {
+                        const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
+                        const candidates = [f?.fileId, f?.id, f?.path, f?.name, d?.fileId, d?.id, d?.path, d?.name].filter(Boolean).map(normalizeId);
+                        const isMatch = candidates.some(c => {
+                            // 完全匹配
+                            if (c === targetNorm) {
+                                console.log('[loadFileById] 完全匹配成功:', c, '===', targetNorm);
+                                return true;
+                            }
+                            // 路径结尾匹配  
+                            if (c.endsWith('/' + targetNorm) || targetNorm.endsWith('/' + c)) {
+                                console.log('[loadFileById] 路径结尾匹配成功:', c, '<->', targetNorm);
+                                return true;
+                            }
+                            // 文件名匹配（去除路径）
+                            const cName = c.split('/').pop();
+                            const targetName = targetNorm.split('/').pop();
+                            if (cName && targetName && cName === targetName) {
+                                console.log('[loadFileById] 文件名匹配成功:', cName, '===', targetName);
+                                return true;
+                            }
+                            return false;
+                        });
+                        if (!isMatch && candidates.length > 0) {
+                            console.log('[loadFileById] 未匹配，候选项:', candidates.join(', '), '目标:', targetNorm);
+                        }
+                        return isMatch;
+                    });
+                    if (matched) {
+                        list = [matched];
+                    }
+                } catch (_) {}
+            }
+            if (!list.length) return null;
+
+            // 复用 loadFiles 的归一化逻辑，对单个元素处理
+            const item = list[0];
+            const data = (item && typeof item === 'object' && item.data && typeof item.data === 'object') ? item.data : {};
+
+            const pickFirstString = (...vals) => {
+                for (const v of vals) {
+                    if (typeof v === 'string' && v) return v;
+                }
+                return '';
+            };
+            const toStringContent = (val) => {
+                if (Array.isArray(val)) return val.map(v => (v == null ? '' : String(v))).join('\n');
+                return (typeof val === 'string') ? val : '';
+            };
+            const tryKeysDeep = (obj, keys, depth = 0) => {
+                if (!obj || typeof obj !== 'object' || depth > 3) return '';
+                for (const k of keys) {
+                    if (k in obj) {
+                        const v = obj[k];
+                        const s = toStringContent(v);
+                        if (s) return s;
+                    }
+                }
+                for (const k of Object.keys(obj)) {
+                    const v = obj[k];
+                    if (v && typeof v === 'object') {
+                        const found = tryKeysDeep(v, keys, depth + 1);
+                        if (found) return found;
+                    } else {
+                        const s = toStringContent(v);
+                        if (s && keys.includes(k)) return s;
+                    }
+                }
+                return '';
+            };
+
+            const identifier = pickFirstString(
+                item?.fileId, item?.id, item?.path, item?.file, item?.name,
+                data?.fileId, data?.id, data?.path, data?.file, data?.name
+            );
+            // 优先选择 path 类字段作为标识，避免被后端文档 key 覆盖
+            const idCandidates = [
+                data?.path, item?.path,
+                item?.fileId, data?.fileId,
+                item?.id, data?.id,
+                item?.file, data?.file,
+                data?.name, item?.name
+            ].filter(Boolean);
+            const isPathLike = (s) => typeof s === 'string' && (s.includes('/') || s.includes('\\'));
+            const preferredId = (idCandidates.find(isPathLike) || idCandidates[0] || identifier || '');
+            const path = pickFirstString(data?.path, item?.path, preferredId);
+            const name = pickFirstString(data?.name, item?.name, (typeof path === 'string' ? path.split('/').pop() : ''));
+
+            const commonKeys = ['content', 'code', 'text', 'source', 'lines', 'raw', 'body', 'value'];
+            let content = '';
+            content = toStringContent(item?.content) || toStringContent(item?.code) || toStringContent(item?.text) || toStringContent(item?.source) || toStringContent(item?.lines) || pickFirstString(item?.raw, item?.body, item?.value);
+            if (!content) {
+                content = toStringContent(data?.content) || toStringContent(data?.code) || toStringContent(data?.text) || toStringContent(data?.source) || toStringContent(data?.lines) || pickFirstString(data?.raw, data?.body, data?.value);
+            }
+            if (!content) {
+                content = tryKeysDeep(item, commonKeys) || tryKeysDeep(data, commonKeys);
+            }
+            if (!content) {
+                const pickBase64 = (obj) => {
+                    if (!obj || typeof obj !== 'object') return '';
+                    const b64 = obj.contentBase64 || obj.base64 || obj.b64;
+                    return typeof b64 === 'string' ? b64 : '';
+                };
+                let b64 = pickBase64(item) || pickBase64(data);
+                if (!b64) {
+                    const findB64Deep = (obj, depth = 0) => {
+                        if (!obj || typeof obj !== 'object' || depth > 3) return '';
+                        const direct = pickBase64(obj);
+                        if (direct) return direct;
+                        for (const k of Object.keys(obj)) {
+                            const v = obj[k];
+                            if (v && typeof v === 'object') {
+                                const found = findB64Deep(v, depth + 1);
+                                if (found) return found;
+                            }
+                        }
+                        return '';
+                    };
+                    b64 = findB64Deep(item) || findB64Deep(data);
+                }
+                if (b64) {
+                    try { content = atob(b64); } catch (e) { content = ''; }
+                }
+            }
+
+            const normalized = { ...item, fileId: preferredId, id: preferredId, path, name, content };
+
+            // 合并/去重更新到 files 列表（使用等值或 endsWith 规则匹配）
+            if (!Array.isArray(files.value)) files.value = [];
+            const normalizeId = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+            const targetNorm = normalizeId(identifier || fileId);
+            const matches = (f) => {
+                const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
+                const candidates = [f?.fileId, f?.id, f?.path, f?.name, d?.fileId, d?.id, d?.path, d?.name].filter(Boolean).map(normalizeId);
+                return candidates.some(c => {
+                    // 完全匹配
+                    if (c === targetNorm) return true;
+                    // 路径结尾匹配
+                    if (c.endsWith('/' + targetNorm) || targetNorm.endsWith('/' + c)) return true;
+                    // 文件名匹配（去除路径）
+                    const cName = c.split('/').pop();
+                    const targetName = targetNorm.split('/').pop();
+                    if (cName && targetName && cName === targetName) return true;
+                    return false;
+                });
+            };
+            // 删除旧的匹配项，插入标准化后的最新项，避免 find 命中旧的无内容项
+            const remaining = files.value.filter(f => !matches(f));
+            remaining.push(normalized);
+            files.value = remaining;
+
+            return normalized;
+        }, '按需加载单个文件');
     };
 
     /**
@@ -832,10 +1112,10 @@ export const createStore = () => {
             try {
                 if (v == null) return '';
                 let s = String(v);
-                s = s.replace(/\\\\/g, '/'); // Windows路径转正斜杠
+                s = s.replace(/\\/g, '/'); // Windows路径转正斜杠
                 s = s.replace(/^\.\//, '');   // 去掉开头的./
                 s = s.replace(/^\/+/, '');     // 去掉多余的起始/
-                s = s.replace(/\/\/+/, '/');  // 合并重复的/
+                s = s.replace(/\/\/+/g, '/');  // 合并重复的/
                 return s;
             } catch (e) {
                 return String(v);
@@ -1080,6 +1360,7 @@ export const createStore = () => {
         clearError
     };
 };
+
 
 
 

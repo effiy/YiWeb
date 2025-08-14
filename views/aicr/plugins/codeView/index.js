@@ -155,6 +155,18 @@ const createCodeView = async () => {
                 // 编辑态
                 isEditing: false,
                 editableContent: '',
+                // 评论详情编辑态
+                isEditingCommentDetail: false,
+                editingCommentDetail: null,
+                editingCommentContent: '',
+                editingCommentAuthor: '',
+                editingCommentTimestamp: '',
+                editingCommentText: '',
+                editingRangeInfo: { startLine: 1, endLine: 1 },
+                editingImprovementText: '',
+                editingCommentType: '',
+                editingCommentStatus: 'pending',
+                editingSaving: false,
                 originalContentBackup: '',
                 saving: false,
                 saveError: ''
@@ -802,6 +814,144 @@ const createCodeView = async () => {
                         this.hideCommentDetail();
                     }
                 }, '删除评论详情');
+            },
+            
+            // 新增：开始在详情弹窗内编辑
+            startEditCommentDetail(comment) {
+                return safeExecute(() => {
+                    if (!comment || !comment.key) return;
+                    console.log('[CodeView] 开始在弹窗内编辑评论:', comment.key);
+                    this.editingCommentDetail = { ...comment };
+                    this.editingCommentContent = comment.content || '';
+                    this.editingCommentAuthor = comment.author || '';
+                    if (comment.timestamp) {
+                        const date = new Date(comment.timestamp);
+                        this.editingCommentTimestamp = date.toISOString().slice(0, 16);
+                    } else {
+                        this.editingCommentTimestamp = new Date().toISOString().slice(0, 16);
+                    }
+                    this.editingCommentText = comment.text || '';
+                    this.editingRangeInfo = comment.rangeInfo ? { ...comment.rangeInfo } : { startLine: 1, endLine: 1 };
+                    this.editingImprovementText = comment.improvementText || '';
+                    this.editingCommentType = comment.type || '';
+                    this.editingCommentStatus = comment.status || 'pending';
+                    this.editingSaving = false;
+                    this.isEditingCommentDetail = true;
+                }, '开始弹窗内编辑评论');
+            },
+
+            // 新增：取消在详情弹窗内编辑
+            cancelEditCommentDetail() {
+                return safeExecute(() => {
+                    this.isEditingCommentDetail = false;
+                    this.editingCommentDetail = null;
+                    this.editingCommentContent = '';
+                    this.editingCommentAuthor = '';
+                    this.editingCommentTimestamp = '';
+                    this.editingCommentText = '';
+                    this.editingRangeInfo = { startLine: 1, endLine: 1 };
+                    this.editingImprovementText = '';
+                    this.editingCommentType = '';
+                    this.editingCommentStatus = 'pending';
+                    this.editingSaving = false;
+                }, '取消弹窗内编辑评论');
+            },
+
+            // 新增：保存在详情弹窗内的编辑
+            async saveEditedCommentDetail() {
+                return safeExecute(async () => {
+                    if (!this.editingCommentDetail || !this.editingCommentDetail.key) return;
+
+                    const newContent = (this.editingCommentContent || '').trim();
+                    if (!newContent) {
+                        alert('评论内容不能为空');
+                        return;
+                    }
+
+                    const newAuthor = (this.editingCommentAuthor || '').trim();
+                    if (!newAuthor) {
+                        alert('评论者姓名不能为空');
+                        return;
+                    }
+
+                    if (this.editingRangeInfo.startLine < 1 || this.editingRangeInfo.endLine < 1) {
+                        alert('行号必须大于0');
+                        return;
+                    }
+                    if (this.editingRangeInfo.startLine > this.editingRangeInfo.endLine) {
+                        alert('开始行号不能大于结束行号');
+                        return;
+                    }
+
+                    if (this.editingSaving) return;
+                    this.editingSaving = true;
+
+                    try {
+                        // 通知父级/主页面去调用后端更新（沿用现有 commentPanel 的 update 流程）
+                        // 这里直接发出一个自定义事件，交给上层 methods 处理实际更新
+                        const payload = {
+                            key: this.editingCommentDetail.key,
+                            author: newAuthor,
+                            content: newContent,
+                            text: this.editingCommentText || null,
+                            rangeInfo: this.editingRangeInfo,
+                            improvementText: this.editingImprovementText || null,
+                            type: this.editingCommentType || null,
+                            status: this.editingCommentStatus
+                        };
+
+                        window.dispatchEvent(new CustomEvent('updateComment', { detail: payload }));
+
+                        // 本地同步：更新当前文件的评论列表
+                        const idx = this.fileComments.findIndex(c => (c.key || c.id) === this.editingCommentDetail.key);
+                        if (idx !== -1) {
+                            this.fileComments[idx] = {
+                                ...this.fileComments[idx],
+                                author: newAuthor,
+                                content: newContent,
+                                text: this.editingCommentText || null,
+                                rangeInfo: this.editingRangeInfo,
+                                improvementText: this.editingImprovementText || null,
+                                type: this.editingCommentType || null,
+                                status: this.editingCommentStatus
+                            };
+                        }
+
+                        // 退出编辑态并刷新详情内容
+                        this.isEditingCommentDetail = false;
+                        if (idx !== -1) {
+                            this.currentCommentDetail = { ...this.fileComments[idx] };
+                        } else {
+                            // 若未在本地列表中找到，回退为基于编辑数据的对象
+                            this.currentCommentDetail = {
+                                ...(this.currentCommentDetail || {}),
+                                author: newAuthor,
+                                content: newContent,
+                                text: this.editingCommentText || null,
+                                rangeInfo: this.editingRangeInfo,
+                                improvementText: this.editingImprovementText || null,
+                                type: this.editingCommentType || null,
+                                status: this.editingCommentStatus
+                            };
+                        }
+
+                        // 轻量刷新标记映射
+                        this.updateCommentMarkers();
+                    } finally {
+                        this.editingSaving = false;
+                    }
+                }, '保存弹窗内编辑评论');
+            },
+
+            // 新增：弹窗内编辑快捷键
+            onCommentDetailEditKeydown(event) {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    this.cancelEditCommentDetail();
+                } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                    event.preventDefault();
+                    this.saveEditedCommentDetail();
+                }
             },
             
             // 新增：显示评论预览（悬停）
@@ -1498,6 +1648,9 @@ const createCodeView = async () => {
                     if (container) {
                         container.innerHTML = '';
                         container.style.display = 'none';
+                        container.style.opacity = '0';
+                        container.style.visibility = 'hidden';
+                        container.style.pointerEvents = 'none';
                     }
                     
                     // 清除文本选择
@@ -1518,6 +1671,7 @@ const createCodeView = async () => {
                     // 清空容器内容
                     container.innerHTML = '';
                     container.style.display = 'block';
+                    container.style.pointerEvents = 'auto';
                     
                     // 添加容器状态指示器
                     const indicator = document.createElement('div');
@@ -1952,6 +2106,7 @@ const createCodeView = async () => {
                     container.style.visibility = 'visible';
                     container.style.transform = 'scale(0.9) translateX(10px)';
                     container.style.display = 'flex';
+                    container.style.pointerEvents = 'auto';
                     
                     // 使用 requestAnimationFrame 确保位置设置完成后再显示
                     requestAnimationFrame(() => {
@@ -2456,6 +2611,26 @@ const createCodeView = async () => {
                 handler: async function(newFile, oldFile) {
                     if (newFile !== oldFile) {
                         console.log('[CodeView] 文件已变化，重新加载评论数据');
+                        // 若没有内容，尝试按需加载文件内容
+                        try {
+                            if (newFile && (!newFile.content || newFile.content.length === 0)) {
+                                console.log('[CodeView] 发现文件内容缺失，尝试按需加载');
+                                const store = window.aicrStore;
+                                if (store && typeof store.loadFileById === 'function') {
+                                    const projectId = store.selectedProject ? store.selectedProject.value : null;
+                                    const versionId = store.selectedVersion ? store.selectedVersion.value : null;
+                                    const fileId = newFile.fileId || newFile.id || newFile.path || newFile.name;
+                                    if (projectId && versionId && fileId) {
+                                        await store.loadFileById(projectId, versionId, fileId);
+                                        // 强制刷新，确保 codeLines 重新计算
+                                        this.$forceUpdate();
+                                        console.log('[CodeView] 按需加载完成并触发刷新');
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('[CodeView] 按需加载内容失败:', e?.message || e);
+                        }
                         await this.loadFileComments();
                     }
                 },
@@ -2527,6 +2702,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

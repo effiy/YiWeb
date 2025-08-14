@@ -129,7 +129,10 @@ const createFileTreeNode = () => {
                     
                     this._lastClickTime = Date.now();
                     console.log('[FileTreeNode] 选择文件:', idStr);
-                    this.$emit('file-select', idStr);
+                    console.log('[FileTreeNode] 文件对象:', this.item);
+                    console.log('[FileTreeNode] 文件路径深度:', idStr.split('/').length);
+                    const payload = { fileId: idStr, id: idStr, path: (this.item && this.item.path) || idStr, name: (this.item && this.item.name) || (idStr.split('/').pop()) };
+                    this.$emit('file-select', payload);
                 }, '文件选择处理');
             },
             
@@ -513,6 +516,7 @@ const createFileTree = async () => {
         console.error('FileTree 组件初始化失败:', error);
     }
 })();
+
 
 
 

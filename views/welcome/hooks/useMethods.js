@@ -1046,6 +1046,33 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 从标签跳转到AICR页面
+     * 标签格式：projectId/versionId
+     */
+    const openAicrFromTag = (tagName, event) => {
+        if (event) event.stopPropagation();
+        try {
+            const raw = (tagName || '').trim();
+            if (!raw) {
+                showError('无效的标签');
+                return;
+            }
+            const parts = raw.split('/').map(s => s.trim()).filter(Boolean);
+            if (parts.length < 2) {
+                showError('标签格式应为 项目ID/版本ID');
+                return;
+            }
+            const projectId = encodeURIComponent(parts[0]);
+            const versionId = encodeURIComponent(parts[1]);
+            const url = `/views/aicr/index.html?projectId=${projectId}&versionId=${versionId}`;
+            window.open(url, '_blank');
+        } catch (e) {
+            console.error('[openAicrFromTag] 失败:', e);
+            showError('打开AICR失败');
+        }
+    };
+
+    /**
      * 获取标签统计信息
      * @returns {Object} 标签统计信息
      */
@@ -1121,9 +1148,11 @@ export const useMethods = (store) => {
         searchTags,
         getTagStats,
         navigateToTasks,
+        openAicrFromTag,
         editCard
     };
 };
+
 
 
 

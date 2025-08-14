@@ -20,6 +20,31 @@
     box-shadow: var(--shadow-sm);
 }
 
+/* 编辑态下的代码区域尺寸与滚动优化 */
+.code-content.editing {
+    /* 占满视口减去头部和外边距高度，数值可根据实际布局微调 */
+    max-height: calc(100vh - 180px);
+    min-height: calc(100vh - 260px);
+    overflow: hidden; /* 由内部容器控制滚动 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* 让编辑容器在编辑态下占满剩余高度并内部滚动 */
+.code-content.editing .edit-container {
+    flex: 1 1 auto;
+    min-height: 0; /* 允许子元素正确收缩 */
+    overflow: auto;
+}
+
+/* 让 textarea 自适应高度并在需要时滚动 */
+.code-content.editing .edit-textarea {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow: auto;
+}
+
 /* 顶部工具条 */
 .code-header {
     display: flex;
@@ -27,7 +52,7 @@
     justify-content: space-between;
     padding: 8px 6px 10px 6px;
     border-bottom: 1px solid var(--border-primary);
-    margin: -8px -10px 8px -10px;
+    margin: 0px -10px 8px -10px;
     background: var(--bg-tertiary);
     position: sticky;
     top: 0;
@@ -319,6 +344,27 @@
 }
 
 /* ========== 评论详情弹窗样式 ========== */
+/* 遮罩层（优化：柔和渐变与更细腻的模糊） */
+.comment-detail-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(17, 24, 39, 0.36) 0%,
+        rgba(17, 24, 39, 0.44) 40%,
+        rgba(17, 24, 39, 0.50) 100%
+    );
+    -webkit-backdrop-filter: saturate(110%) blur(3px);
+    backdrop-filter: saturate(110%) blur(3px);
+    z-index: 999998; /* 在弹框下方一层 */
+    opacity: 0;
+    animation: overlayFadeIn 0.18s ease-out forwards;
+}
+
+@keyframes overlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 /* 评论详情弹窗 - 始终居中显示 */
 .comment-detail-popup {
     position: fixed; /* 固定定位，确保不受父容器影响 */
@@ -329,10 +375,11 @@
     border: 1px solid var(--border-primary);
     border-radius: 12px;
     box-shadow: var(--shadow-lg);
-    max-width: 90vw; /* 最大宽度为视口宽度的90% */
-    min-width: 360px; /* 最小宽度 */
-    width: 600px; /* 默认宽度 */
-    max-height: 90vh; /* 最大高度为视口高度的90% */
+    max-width: 86vw; /* 固定最大宽度为 86vw */
+    min-width: 420px; /* 最小宽度 */
+    width: 86vw; /* 固定宽度为 86vw */
+    height: 91vh; /* 固定高度为 91vh */
+    max-height: 91vh; /* 最大高度为 91vh */
     z-index: 999999; /* 最高层级 */
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
@@ -553,7 +600,7 @@
 
 .comment-detail-body {
     padding: 24px; /* 增加内边距，提供更好的内容间距 */
-    max-height: 450px; /* 增加最大高度，提供更多内容展示空间 */
+    max-height: calc(91vh - 120px); /* 与弹框高度联动，预留头部和底部空间 */
     overflow-y: auto;
     background: var(--bg-secondary);
     /* 优化滚动条样式 */
@@ -1789,11 +1836,11 @@
     position: fixed; /* 改为 fixed 定位，确保不受父容器影响 */
     /* 移除默认的 top/right 定位，由 JavaScript 动态设置 */
     z-index: 999997; /* 提高层级，确保不被评论区遮挡 */
-    display: flex;
+    display: none; /* 默认隐藏，无划词不显示 */
     gap: 8px;
-    opacity: 1;
+    opacity: 0; /* 默认透明 */
     transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    pointer-events: auto;
+    pointer-events: none; /* 默认不响应事件 */
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     padding: 8px 12px;
@@ -2593,6 +2640,7 @@
         letter-spacing: 0.1px;
     }
 }
+
 
 
 

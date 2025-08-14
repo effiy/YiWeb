@@ -81,6 +81,39 @@ export async function openEditCardModal(card, store) {
       z-index: 1;
     `;
 
+    // 关闭按钮（右上角）
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'edit-card-close';
+    closeButton.setAttribute('aria-label', '关闭');
+    closeButton.title = '关闭';
+    closeButton.innerHTML = '&times;';
+    closeButton.style.cssText = `
+      margin-left: auto;
+      width: 32px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-primary, #fff);
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+      transition: all 0.2s ease;
+    `;
+    closeButton.addEventListener('mouseenter', () => {
+      closeButton.style.background = 'rgba(255,255,255,0.06)';
+    }, { passive: true });
+    closeButton.addEventListener('mouseleave', () => {
+      closeButton.style.background = 'transparent';
+    }, { passive: true });
+    addPassiveEventListener(closeButton, 'click', () => {
+      modal.remove();
+    });
+
     // 表单
     const form = document.createElement('form');
     form.style.cssText = `
@@ -540,6 +573,9 @@ export async function openEditCardModal(card, store) {
 
     if (!formData.tags) formData.tags = [];
 
+    // 拖拽排序状态
+    let draggingIndex = null;
+
     const renderTags = () => {
       tagsList.innerHTML = '';
       formData.tags.forEach((tag, index) => {
@@ -557,6 +593,38 @@ export async function openEditCardModal(card, store) {
           transition: all 0.2s ease;
         `;
 
+        // 拖拽手柄，仅手柄可拖动，避免影响输入框编辑
+        const dragHandle = document.createElement('span');
+        dragHandle.textContent = '≡';
+        dragHandle.title = '拖拽以排序';
+        dragHandle.setAttribute('aria-label', '拖拽以排序');
+        dragHandle.draggable = true;
+        dragHandle.style.cssText = `
+          cursor: grab;
+          user-select: none;
+          color: var(--text-secondary, #aaa);
+          padding: 4px 6px;
+          border-radius: 4px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+        `;
+
+        dragHandle.addEventListener('dragstart', (e) => {
+          draggingIndex = index;
+          e.dataTransfer.effectAllowed = 'move';
+          try { e.dataTransfer.setData('text/plain', String(index)); } catch (_) {}
+          // 视觉反馈
+          tagItem.style.opacity = '0.6';
+        });
+
+        dragHandle.addEventListener('dragend', () => {
+          draggingIndex = null;
+          tagItem.style.opacity = '';
+          tagItem.style.outline = '';
+        });
+
         const tagInput = document.createElement('input');
         tagInput.type = 'text';
         tagInput.placeholder = '标签名称';
@@ -571,6 +639,33 @@ export async function openEditCardModal(card, store) {
           flex: 1;
           transition: all 0.2s ease;
         `;
+
+        // 拖拽放置目标（在每个条目容器上）
+        tagItem.addEventListener('dragover', (e) => {
+          if (draggingIndex === null) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          tagItem.style.outline = '2px dashed var(--primary, #007bff)';
+        });
+
+        tagItem.addEventListener('dragleave', () => {
+          tagItem.style.outline = '';
+        });
+
+        tagItem.addEventListener('drop', (e) => {
+          if (draggingIndex === null) return;
+          e.preventDefault();
+          tagItem.style.outline = '';
+          const srcIndex = draggingIndex;
+          let dstIndex = index;
+          if (srcIndex === dstIndex) return;
+          // 重新排序并渲染
+          const [moved] = formData.tags.splice(srcIndex, 1);
+          const insertIndex = srcIndex < dstIndex ? dstIndex - 1 : dstIndex;
+          formData.tags.splice(insertIndex, 0, moved);
+          draggingIndex = null;
+          renderTags();
+        });
 
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = '×';
@@ -622,6 +717,7 @@ export async function openEditCardModal(card, store) {
           renderTags();
         });
 
+        tagItem.appendChild(dragHandle);
         tagItem.appendChild(tagInput);
         tagItem.appendChild(deleteBtn);
         tagsList.appendChild(tagItem);
@@ -776,6 +872,7 @@ export async function openEditCardModal(card, store) {
     form.appendChild(tagsContainer);
     form.appendChild(buttonContainer);
 
+    modalTitle.appendChild(closeButton);
     modalContent.appendChild(modalTitle);
     modalContent.appendChild(form);
     modal.appendChild(modalContent);
@@ -814,6 +911,7 @@ export async function openEditCardModal(card, store) {
 }
 
 console.log('[EditCardPlugin] 已加载');
+
 
 
 

@@ -55,6 +55,7 @@
                             <button 
                                 @click="clearSearch"
                                 class="clear-search-btn"
+                                type="button"
                                 title="清除搜索"
                                 aria-label="清除搜索内容"
                             >
@@ -131,7 +132,6 @@
                                             type="button"
                                             class="card-badge" 
                                             @click="editCard(card, $event)"
-                                            style="cursor: pointer;"
                                             :title="'点击编辑卡片内容'"
                                             aria-label="编辑卡片内容"
                                         >{{ card.badge }}</span>
@@ -174,7 +174,11 @@
                                                 :key="tagIndex"
                                                 class="tag-item"
                                             >
-                                                <span class="tag-text">{{ tag.name }}</span>
+                                                <span 
+                                                    class="tag-text"
+                                                    :title="'打开AICR: ' + tag.name"
+                                                    @click="openAicrFromTag(tag.name, $event)"
+                                                >{{ tag.name }}</span>
                                             </div>
                                             <div v-if="!card.tags || card.tags.length === 0" class="no-tags">
                                                 暂无标签
@@ -235,6 +239,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 
 

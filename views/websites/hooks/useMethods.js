@@ -51,8 +51,11 @@ export const useMethods = (store, computed) => {
      * @param {string} url - 链接地址
      */
     const openLink = (url) => {
-        if (url) {
-            window.open(url, '_blank');
+        if (!url) return;
+        if (/^https?:\/\//.test(url)) {
+            window.open(url, '_blank', 'noopener,noreferrer');
+        } else {
+            window.location.href = url;
         }
     };
 
@@ -181,3 +184,4 @@ export const useMethods = (store, computed) => {
         isUrlOverflow             // 检查URL是否溢出
     };
 }; 
+

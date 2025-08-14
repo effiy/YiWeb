@@ -212,14 +212,6 @@
                     <!-- 评论操作 -->
                     <div class="comment-actions">
                         <button 
-                            @click="openCommentEditor(comment)"
-                            class="action-button"
-                            title="编辑评论"
-                        >
-                            <i class="fas fa-pen"></i>
-                            编辑
-                        </button>
-                        <button 
                             v-if="comment.status === 'pending'"
                             @click="resolveComment(comment.key)"
                             class="action-button resolve-button"
@@ -576,6 +568,7 @@
         </div>
     </div>
 </aside>
+
 
 
 

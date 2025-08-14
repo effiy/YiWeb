@@ -35,8 +35,8 @@
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
     animation: modalFadeIn 0.3s ease-out;
     overflow: hidden;
 }
@@ -126,28 +126,7 @@
     50% { opacity: 0.7; }
 }
 
-/* 标题图标装饰 */
-.edit-card-content h3::after {
-    content: '✏️';
-    position: absolute;
-    right: 24px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 18px;
-    opacity: 0.8;
-    animation: titleIconFloat 3s ease-in-out infinite;
-    transition: all 0.3s ease;
-}
-
-.edit-card-content h3:hover::after {
-    opacity: 1;
-    transform: translateY(-50%) scale(1.1);
-}
-
-@keyframes titleIconFloat {
-    0%, 100% { transform: translateY(-50%) rotate(0deg); }
-    50% { transform: translateY(-50%) rotate(10deg); }
-}
+/* 移除非交互式标题装饰图标，改用可点击关闭按钮（见 JS 动态添加） */
 
 /* 标题悬停效果 */
 .edit-card-content h3:hover {
@@ -446,8 +425,8 @@
         rgba(26, 26, 26, 0.95) 0%, 
         rgba(26, 26, 26, 0.98) 50%, 
         rgba(26, 26, 26, 1) 100%);
-    backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
     z-index: 20;
     border-radius: 0 0 12px 12px;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
@@ -940,5 +919,6 @@
         max-width: 80px;
     }
 }
+
 
 

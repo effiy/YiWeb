@@ -15,7 +15,7 @@
     </div>
 
     <!-- 代码内容 -->
-    <div v-else-if="file" class="code-content" ref="codeContent">
+    <div v-else-if="file" :class="['code-content', isEditing ? 'editing' : '']" ref="codeContent">
         <div class="code-header">
             <div class="file-name" :title="file.path || file.name">
                 <i class="fas fa-file-code"></i>
@@ -104,6 +104,15 @@
         <!-- 划词评论按钮和弹窗容器 -->
         <div id="comment-action-container"></div>
         
+        <!-- 评论详情遮罩 -->
+        <div 
+            v-if="showCommentDetailPopup"
+            class="comment-detail-overlay"
+            role="presentation"
+            aria-hidden="true"
+            @click="hideCommentDetail"
+        ></div>
+
         <!-- 评论详情弹窗 -->
         <div 
             v-if="showCommentDetailPopup && currentCommentDetail" 
@@ -140,69 +149,202 @@
             </div>
             
             <div class="comment-detail-body">
-                <!-- 代码位置信息 -->
-                <div v-if="currentCommentDetail.rangeInfo" class="comment-location">
-                    <i class="fas fa-code"></i>
-                    <span class="location-text">
-                        第 {{ currentCommentDetail.rangeInfo.startLine }}{{ currentCommentDetail.rangeInfo.endLine !== currentCommentDetail.rangeInfo.startLine ? `-${currentCommentDetail.rangeInfo.endLine}` : '' }} 行
-                    </span>
-                </div>
-                
-                <!-- 引用的代码 -->
-                <div v-if="currentCommentDetail.text" class="comment-quote">
-                    <div class="quote-header">
-                        <i class="fas fa-quote-left"></i>
-                        <span>引用代码</span>
+                <!-- 编辑模式 -->
+                <div v-if="isEditingCommentDetail" class="comment-edit-form">
+                    <div class="form-row">
+                        <div class="form-group half-width">
+                            <label>评论者:</label>
+                            <input 
+                                v-model="editingCommentAuthor"
+                                type="text" 
+                                class="form-input"
+                                placeholder="输入评论者姓名"
+                            />
+                        </div>
+                        <div class="form-group half-width">
+                            <label>时间:</label>
+                            <input 
+                                v-model="editingCommentTimestamp"
+                                type="datetime-local" 
+                                class="form-input"
+                                title="编辑时间"
+                            />
+                        </div>
                     </div>
-                    <pre class="quote-code" @click="highlightCode(currentCommentDetail)">
-                        <code>{{ currentCommentDetail.text }}</code>
-                    </pre>
-                </div>
-                
-                <!-- 评论内容（Markdown渲染，含图片） -->
-                <div class="comment-content md-preview-body" v-html="currentCommentDetailHtml"></div>
-                
-                <!-- 改进代码 -->
-                <div v-if="currentCommentDetail.improvementText" class="comment-improvement">
-                    <div class="improvement-header">
-                        <i class="fas fa-magic"></i>
-                        <span>改进代码</span>
+
+                    <div v-if="currentCommentDetail && currentCommentDetail.rangeInfo" class="form-row">
+                        <div class="form-group half-width">
+                            <label>开始行:</label>
+                            <input 
+                                v-model.number="editingRangeInfo.startLine"
+                                type="number" 
+                                min="1"
+                                class="form-input"
+                                placeholder="开始行号"
+                            />
+                        </div>
+                        <div class="form-group half-width">
+                            <label>结束行:</label>
+                            <input 
+                                v-model.number="editingRangeInfo.endLine"
+                                type="number" 
+                                min="1"
+                                class="form-input"
+                                placeholder="结束行号"
+                            />
+                        </div>
                     </div>
-                    <pre class="improvement-code">
-                        <code>{{ currentCommentDetail.improvementText }}</code>
-                    </pre>
+
+                    <div class="form-group">
+                        <label>引用代码:</label>
+                        <textarea 
+                            v-model="editingCommentText"
+                            class="form-textarea quoted-code-textarea"
+                            placeholder="输入引用的代码（可选）"
+                            rows="12"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>评论内容:</label>
+                        <textarea 
+                            v-model="editingCommentContent"
+                            class="form-textarea comment-content-textarea"
+                            placeholder="编辑评论内容（支持Markdown）"
+                            rows="12"
+                            @keydown="onCommentDetailEditKeydown"
+                        ></textarea>
+                        <div class="textarea-hint">
+                            <i class="fas fa-info-circle"></i>
+                            支持Markdown格式，Ctrl/Cmd + Enter 保存，Esc 取消
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>改进代码 (可选):</label>
+                        <textarea 
+                            v-model="editingImprovementText"
+                            class="form-textarea improvement-textarea"
+                            placeholder="输入改进后的代码（可选）"
+                            rows="6"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group half-width">
+                            <label>评论类型:</label>
+                            <select v-model="editingCommentType" class="form-select" title="选择评论类型">
+                                <option value="">无类型</option>
+                                <option value="suggestion">建议</option>
+                                <option value="question">问题</option>
+                                <option value="bug">错误</option>
+                                <option value="discussion">讨论</option>
+                                <option value="praise">表扬</option>
+                                <option value="nitpick">细节</option>
+                            </select>
+                        </div>
+                        <div class="form-group half-width">
+                            <label>状态:</label>
+                            <select v-model="editingCommentStatus" class="form-select" title="选择状态">
+                                <option value="pending">待处理</option>
+                                <option value="resolved">已解决</option>
+                                <option value="closed">已关闭</option>
+                                <option value="wontfix">不修复</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="comment-detail-actions">
+                        <button 
+                            @click="saveEditedCommentDetail"
+                            class="action-button save-button"
+                            :disabled="editingSaving || !(editingCommentContent || '').trim()"
+                            title="保存 (⌘/Ctrl+Enter)"
+                        >
+                            <i class="fas" :class="editingSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                            保存
+                        </button>
+                        <button @click="cancelEditCommentDetail" class="action-button cancel-button" :disabled="editingSaving" title="取消 (Esc)">
+                            <i class="fas fa-times"></i>
+                            取消
+                        </button>
+                    </div>
                 </div>
-                
-                <!-- 评论操作按钮 -->
-                <div class="comment-detail-actions">
-                    <button 
-                        v-if="currentCommentDetail.status === 'pending'"
-                        @click="resolveCommentDetail(currentCommentDetail.key)"
-                        class="action-button resolve-button"
-                        title="标记为已解决"
-                    >
-                        <i class="fas fa-check"></i>
-                        解决
-                    </button>
+
+                <!-- 查看模式 -->
+                <div v-else>
+                    <!-- 代码位置信息 -->
+                    <div v-if="currentCommentDetail.rangeInfo" class="comment-location">
+                        <i class="fas fa-code"></i>
+                        <span class="location-text">
+                            第 {{ currentCommentDetail.rangeInfo.startLine }}{{ currentCommentDetail.rangeInfo.endLine !== currentCommentDetail.rangeInfo.startLine ? `-${currentCommentDetail.rangeInfo.endLine}` : '' }} 行
+                        </span>
+                    </div>
                     
-                    <button 
-                        v-if="currentCommentDetail.status === 'resolved'"
-                        @click="reopenCommentDetail(currentCommentDetail.key)"
-                        class="action-button reopen-button"
-                        title="重新打开"
-                    >
-                        <i class="fas fa-undo"></i>
-                        重开
-                    </button>
+                    <!-- 引用的代码 -->
+                    <div v-if="currentCommentDetail.text" class="comment-quote">
+                        <div class="quote-header">
+                            <i class="fas fa-quote-left"></i>
+                            <span>引用代码</span>
+                        </div>
+                        <pre class="quote-code" @click="highlightCode(currentCommentDetail)">
+                            <code>{{ currentCommentDetail.text }}</code>
+                        </pre>
+                    </div>
                     
-                    <button 
-                        @click="deleteCommentDetail(currentCommentDetail.key)"
-                        class="action-button delete-button"
-                        title="删除评论"
-                    >
-                        <i class="fas fa-trash"></i>
-                        删除
-                    </button>
+                    <!-- 评论内容（Markdown渲染，含图片） -->
+                    <div class="comment-content md-preview-body" v-html="currentCommentDetailHtml"></div>
+                    
+                    <!-- 改进代码 -->
+                    <div v-if="currentCommentDetail.improvementText" class="comment-improvement">
+                        <div class="improvement-header">
+                            <i class="fas fa-magic"></i>
+                            <span>改进代码</span>
+                        </div>
+                        <pre class="improvement-code">
+                            <code>{{ currentCommentDetail.improvementText }}</code>
+                        </pre>
+                    </div>
+                    
+                    <!-- 评论操作按钮 -->
+                    <div class="comment-detail-actions">
+                        <button 
+                            @click="startEditCommentDetail(currentCommentDetail)"
+                            class="action-button edit-button"
+                            title="编辑评论"
+                        >
+                            <i class="fas fa-pen"></i>
+                            编辑
+                        </button>
+                        <button 
+                            v-if="currentCommentDetail.status === 'pending'"
+                            @click="resolveCommentDetail(currentCommentDetail.key)"
+                            class="action-button resolve-button"
+                            title="标记为已解决"
+                        >
+                            <i class="fas fa-check"></i>
+                            解决
+                        </button>
+                        
+                        <button 
+                            v-if="currentCommentDetail.status === 'resolved'"
+                            @click="reopenCommentDetail(currentCommentDetail.key)"
+                            class="action-button reopen-button"
+                            title="重新打开"
+                        >
+                            <i class="fas fa-undo"></i>
+                            重开
+                        </button>
+                        
+                        <button 
+                            @click="deleteCommentDetail(currentCommentDetail.key)"
+                            class="action-button delete-button"
+                            title="删除评论"
+                        >
+                            <i class="fas fa-trash"></i>
+                            删除
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -341,6 +483,7 @@
         <div class="empty-subtitle">从左侧文件树中选择要查看的文件</div>
     </div>
 </section>
+
 
 
 

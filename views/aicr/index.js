@@ -136,7 +136,7 @@ const { computed } = Vue;
                         let s = String(v).replace(/\\\\/g, '/');
                         s = s.replace(/^\.\//, '');
                         s = s.replace(/^\/+/, '');
-                        s = s.replace(/\/\/+/, '/');
+                        s = s.replace(/\/\/+/g, '/');
                         return s;
                     };
                     const target = normalize(fileId);
@@ -145,12 +145,28 @@ const { computed } = Vue;
                         const candidates = [f.fileId, f.id, f.path, f.name, d.fileId, d.id, d.path, d.name].filter(Boolean);
                         const matched = candidates.some(c => {
                             const n = normalize(c);
-                            return n === target || n.endsWith('/' + target) || target.endsWith('/' + n);
+                            // 完全匹配
+                            if (n === target) return true;
+                            // 路径结尾匹配
+                            if (n.endsWith('/' + target) || target.endsWith('/' + n)) return true;
+                            // 文件名匹配（去除路径后比较）
+                            const nName = n.split('/').pop();
+                            const targetName = target.split('/').pop();
+                            if (nName && targetName && nName === targetName) {
+                                // 如果只有文件名相同，可能是文件树传递的简单ID
+                                return true;
+                            }
+                            return false;
                         });
                         console.log('[主页面] currentFile计算 - 检查文件:', f.name, '候选:', candidates, '匹配:', matched);
                         return matched;
                     }) : null;
                     console.log('[主页面] currentFile计算 - 找到的文件:', currentFile);
+                    // 若未找到文件，但已选中文件ID，返回占位对象以触发code-view懒加载
+                    if (!currentFile && target) {
+                        const name = target.split('/').pop();
+                        return { fileId: target, id: target, path: target, name, content: '' };
+                    }
                     return currentFile;
                 }),
                 currentComments: computed(() => {
@@ -181,27 +197,75 @@ const { computed } = Vue;
                 if (store) {
                     // 首先加载项目列表
                     store.loadProjects().then(() => {
-                        // 设置默认项目
-                        if (store.projects.value.length > 0) {
+                        // 支持通过URL参数指定 projectId 与 versionId
+                        const params = new URLSearchParams(window.location.search);
+                        const projectParam = params.get('projectId');
+                        const versionParam = params.get('versionId');
+
+                        if (projectParam) {
+                            const hasProject = Array.isArray(store.projects.value) && store.projects.value.some(p => p && p.id === projectParam);
+                            if (hasProject) {
+                                store.setSelectedProject(projectParam);
+                                logInfo('[代码审查页面] 通过URL设置项目:', projectParam);
+                            }
+                        }
+
+                        // 如果URL未提供或无效，则使用第一个项目作为默认
+                        if (!store.selectedProject.value && store.projects.value.length > 0) {
                             const defaultProject = store.projects.value[0];
                             store.setSelectedProject(defaultProject.id);
                             logInfo('[代码审查页面] 设置默认项目:', defaultProject);
-                            
-                            // 版本列表现在通过setSelectedProject自动更新
-                            logInfo('[代码审查页面] 版本列表已自动更新');
                         }
                     }).then(() => {
-                        // 设置默认版本（使用ID字符串）
-                        if (store.availableVersions.value.length > 0) {
-                            const defaultVersionId = store.availableVersions.value[0];
+                        // 根据URL或默认设置版本
+                        const params = new URLSearchParams(window.location.search);
+                        const versionParam = params.get('versionId');
+                        const versions = store.availableVersions.value || [];
+                        if (versionParam && versions.includes(versionParam)) {
+                            store.setSelectedVersion(versionParam);
+                            logInfo('[代码审查页面] 通过URL设置版本:', versionParam);
+                        } else if (versions.length > 0) {
+                            const defaultVersionId = versions[0];
                             store.setSelectedVersion(defaultVersionId);
                             logInfo('[代码审查页面] 设置默认版本:', defaultVersionId);
-                            
+                        }
+
+                        if (store.selectedProject.value && store.selectedVersion.value) {
                             // 加载文件树和文件数据（不包含评论，因为评论需要项目/版本信息）
                             return Promise.all([
-                                store.loadFileTree(),
-                                store.loadFiles()
-                            ]);
+                                store.loadFileTree(store.selectedProject.value, store.selectedVersion.value),
+                                store.loadFiles(store.selectedProject.value, store.selectedVersion.value)
+                            ]).then(() => {
+                                // 如果URL带了fileId，尝试预选并按需加载
+                                const params2 = new URLSearchParams(window.location.search);
+                                const fileParam = params2.get('fileId');
+                                if (fileParam) {
+                                    const norm = String(fileParam).replace(/\\\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                                    store.setSelectedFileId(norm);
+                                    if (typeof store.loadFileById === 'function') {
+                                        store.loadFileById(store.selectedProject?.value, store.selectedVersion?.value, norm).catch(() => {});
+                                    }
+                                }
+                                // 初次加载后若存在挂起文件或当前选中文件无内容，尝试一次补载
+                                setTimeout(() => {
+                                    try {
+                                        const pending = window.__aicrPendingFileId;
+                                        const currentId = pending || (store.selectedFileId ? store.selectedFileId.value : null);
+                                        if (currentId && typeof store.loadFileById === 'function') {
+                                            const normalize3 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                                            const idNorm = normalize3(currentId);
+                                            const pj = store.selectedProject ? store.selectedProject.value : null;
+                                            const ver = store.selectedVersion ? store.selectedVersion.value : null;
+                                            // 无论是否已有内容，项目/版本就绪后都按需加载一次，避免刷新后首次点击缺内容
+                                            if (pj && ver) {
+                                                store.loadFileById(pj, ver, idNorm).finally(() => { window.__aicrPendingFileId = null; });
+                                            }
+                                        }
+                                    } catch (e) {
+                                        logWarn('[主页面] 初次加载后的懒加载检查异常:', e?.message || e);
+                                    }
+                                }, 300);
+                            });
                         }
                     }).then(() => {
                         // 项目/版本信息设置完成，加载评论数据和评论者数据
@@ -221,6 +285,23 @@ const { computed } = Vue;
                                     versionId: store.selectedVersion.value
                                 }
                             }));
+                            // 版本就绪后，如存在待加载文件或当前选中文件无内容，执行补载
+                            try {
+                                const pending = window.__aicrPendingFileId;
+                                const currentId = pending || (store.selectedFileId ? store.selectedFileId.value : null);
+                                if (currentId && typeof store.loadFileById === 'function') {
+                                    const normalize4 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                                    const idNorm = normalize4(currentId);
+                                    const pj = store.selectedProject ? store.selectedProject.value : null;
+                                    const ver = store.selectedVersion ? store.selectedVersion.value : null;
+                                    // 版本就绪后，无论是否已有内容，确保按需加载一次
+                                    if (pj && ver) {
+                                        store.loadFileById(pj, ver, idNorm).finally(() => { window.__aicrPendingFileId = null; });
+                                    }
+                                }
+                            } catch (e) {
+                                logWarn('[主页面] 版本就绪懒加载检查异常:', e?.message || e);
+                            }
                         }, 500);
                     }).then(() => {
                         logInfo('[代码审查页面] 数据加载完成');
@@ -388,6 +469,12 @@ const { computed } = Vue;
                 handleFileSelect: function(fileId) {
                     logInfo('[主页面] 收到文件选择事件:', fileId);
                     try {
+                        // 如果传入的是树节点，把 path 提升为 fileId
+                        if (typeof fileId === 'object' && fileId !== null) {
+                            const node = fileId;
+                            const prefer = node.path || node.id || node.name;
+                            fileId = prefer;
+                        }
                         // 规范化文件ID，兼容多类型与路径格式
                         if (!fileId && fileId !== 0) {
                             logWarn('[主页面] 无效的文件ID:', fileId);
@@ -396,10 +483,10 @@ const { computed } = Vue;
                         const normalize = (v) => {
                             try {
                                 let s = String(v);
-                                s = s.replace(/\\\\/g, '/');
+                                s = s.replace(/\\/g, '/');
                                 s = s.replace(/^\.\//, '');
                                 s = s.replace(/^\/+/, '');
-                                s = s.replace(/\/\/+/, '/');
+                                s = s.replace(/\/\/+/g, '/');
                                 return s;
                             } catch (e) {
                                 return String(v);
@@ -417,6 +504,55 @@ const { computed } = Vue;
                         
                         // 设置选中的文件ID
                         store.setSelectedFileId(idNorm);
+
+                        // 若内容缺失，按需加载该文件
+                        try {
+                            const normalize2 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                            const hasContent = Array.isArray(store.files?.value) && store.files.value.some(f => {
+                                const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
+                                const candidates = [f.fileId, f.id, f.path, f.name, d.fileId, d.id, d.path, d.name].filter(Boolean);
+                                const matched = candidates.some(c => {
+                                    const n = normalize2(c);
+                                    // 完全匹配
+                                    if (n === idNorm) return true;
+                                    // 路径结尾匹配
+                                    if (n.endsWith('/' + idNorm) || idNorm.endsWith('/' + n)) return true;
+                                    // 文件名匹配
+                                    const nName = n.split('/').pop();
+                                    const idName = idNorm.split('/').pop();
+                                    if (nName && idName && nName === idName) return true;
+                                    return false;
+                                });
+                                return matched && typeof f.content === 'string' && f.content.length > 0;
+                            });
+                            if (!hasContent && typeof store.loadFileById === 'function') {
+                                logInfo('[主页面] 当前文件无内容，尝试按需加载:', idNorm);
+                                const pj = store.selectedProject ? store.selectedProject.value : null;
+                                const ver = store.selectedVersion ? store.selectedVersion.value : null;
+                                if (pj && ver) {
+                                    store.loadFileById(pj, ver, idNorm).then(() => {
+                                        logInfo('[主页面] 按需加载完成:', idNorm);
+                                        // 强制触发视图更新
+                                        this.$forceUpdate();
+                                    }).catch(e => {
+                                        logWarn('[主页面] 按需加载失败:', e?.message || e);
+                                        // 重试一次
+                                        setTimeout(() => {
+                                            logInfo('[主页面] 重试按需加载:', idNorm);
+                                            store.loadFileById(pj, ver, idNorm).catch(e2 => {
+                                                logError('[主页面] 重试加载失败:', e2?.message || e2);
+                                            });
+                                        }, 1000);
+                                    });
+                                } else {
+                                    // 项目/版本未就绪，记录待加载文件ID
+                                    window.__aicrPendingFileId = idNorm;
+                                    logInfo('[主页面] 项目/版本未就绪，记录待加载文件:', idNorm);
+                                }
+                            }
+                        } catch (e) {
+                            logWarn('[主页面] 按需加载检查异常:', e?.message || e);
+                        }
                         
                         // 获取项目/版本信息
                         const projectId = store.selectedProject ? store.selectedProject.value : null;
@@ -690,6 +826,7 @@ const { computed } = Vue;
         logError('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
 
 
 
