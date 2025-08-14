@@ -260,7 +260,7 @@ export const useMethods = (store) => {
                 }
 
                 const blob = await zip.generateAsync({ type: 'blob' });
-                const fileName = `${projectId}-${versionId}.zip`;
+                const fileName = `${projectId}／${versionId}.zip`;
 
                 // 触发下载
                 const url = URL.createObjectURL(blob);
