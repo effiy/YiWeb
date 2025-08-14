@@ -407,7 +407,7 @@ export const useMethods = (store) => {
                 }
 
                 // 过滤规则
-                const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+                const MAX_SIZE = 500 * 1024 * 1024; // 500MB
                 const EXCLUDED_DIRS = ['.git', 'node_modules', '.svn', '.hg', '__MACOSX'];
                 const EXCLUDED_FILES = ['.DS_Store', 'Thumbs.db'];
                 const normalizePath = (p) => String(p || '').replace(/\\/g, '/').replace(/^\/+/, '');
