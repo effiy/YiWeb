@@ -656,12 +656,18 @@ const { computed } = Vue;
                 handleDeleteItem: async function(payload) {
                     try {
                         const methods = useMethods(store);
-                        await methods.handleDeleteItem(payload);
-                        if (store && store.selectedProject.value && store.selectedVersion.value) {
-                            await Promise.all([
-                                store.loadFileTree(store.selectedProject.value, store.selectedVersion.value),
-                                store.loadFiles(store.selectedProject.value, store.selectedVersion.value)
-                            ]);
+                        const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
+                        showGlobalLoading('正在删除，请稍候...');
+                        try {
+                            await methods.handleDeleteItem(payload);
+                            if (store && store.selectedProject.value && store.selectedVersion.value) {
+                                await Promise.all([
+                                    store.loadFileTree(store.selectedProject.value, store.selectedVersion.value),
+                                    store.loadFiles(store.selectedProject.value, store.selectedVersion.value)
+                                ]);
+                            }
+                        } finally {
+                            try { hideGlobalLoading(); } catch (_) {}
                         }
                     } catch (error) {
                         logError('[主页面] 删除失败:', error);
