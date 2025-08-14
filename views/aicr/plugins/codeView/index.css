@@ -59,6 +59,39 @@
     z-index: 2;
 }
 
+/* 引用代码输入框下方操作区域 */
+.textarea-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+}
+
+.label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.textarea-actions.inline {
+    margin-top: 0;
+}
+
+/* 与 commentPanel 保持一致的引用代码编辑区外观 */
+.quoted-code-textarea {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-tertiary);
+    -moz-tab-size: 4;
+    tab-size: 4;
+    white-space: pre; /* 强一致：编辑与查看按等宽预格式化展示 */
+    overflow: auto;
+    padding: 16px; /* 与查看态 .quote-code 一致的内边距，修复首行留白差异 */
+    box-sizing: border-box; /* 保证内边距计算一致 */
+}
+
 .code-header .file-name {
     display: inline-flex;
     align-items: center;
@@ -662,19 +695,20 @@
 }
 
 .quote-code {
-    margin: 0;
+    margin: 0; /* 确保与textarea视觉对齐 */
     padding: 16px; /* 增加内边距 */
-    background: var(--bg-secondary);
+    background: var(--bg-tertiary); /* 与编辑态textarea保持一致 */
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 12px;
     line-height: 1.4; /* 增加行高，提高可读性 */
     color: var(--text-primary);
-    white-space: pre-wrap;
+    white-space: pre; /* 与编辑态保持一致的换行与缩进呈现 */
     word-break: break-word;
     /* 移除高度限制和滚动条 */
     max-height: none;
     overflow: visible;
-    border-radius: 0 0 8px 8px;
+    border-radius: 8px; /* 与 textarea 统一圆角（外观一致） */
+    border: 1px solid var(--border-tertiary);
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
@@ -683,6 +717,22 @@
     /* 添加代码区域的滚动条样式 */
     scrollbar-width: thin;
     scrollbar-color: var(--border-primary) transparent;
+    /* 统一 Tab 显示宽度为 4 个空格 */
+    -moz-tab-size: 4;
+    tab-size: 4;
+}
+
+/* 确保 <code> 与 textarea 内容完全一致的渲染模型 */
+.quote-code > code {
+    display: block;
+    margin: 0;
+    padding: 0;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    white-space: inherit;
+    -moz-tab-size: inherit;
+    tab-size: inherit;
 }
 
 .quote-code::-webkit-scrollbar {
@@ -2640,6 +2690,7 @@
         letter-spacing: 0.1px;
     }
 }
+
 
 
 

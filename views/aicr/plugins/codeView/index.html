@@ -196,12 +196,25 @@
                     </div>
 
                     <div class="form-group">
-                        <label>引用代码:</label>
+                        <div class="label-row">
+                            <label>引用代码:</label>
+                            <div class="textarea-actions inline">
+                                <button class="action-button" type="button" title="格式美化（缩进/去空行）" @click="beautifyQuotedCode">
+                                    <i class="fas fa-broom"></i>
+                                    美化代码
+                                </button>
+                            </div>
+                        </div>
                         <textarea 
                             v-model="editingCommentText"
                             class="form-textarea quoted-code-textarea"
                             placeholder="输入引用的代码（可选）"
                             rows="12"
+                            wrap="off"
+                            spellcheck="false"
+                            autocapitalize="off"
+                            autocorrect="off"
+                            @keydown="handleQuotedCodeKeydown"
                         ></textarea>
                     </div>
 
@@ -288,7 +301,7 @@
                             <span>引用代码</span>
                         </div>
                         <pre class="quote-code" @click="highlightCode(currentCommentDetail)">
-                            <code>{{ currentCommentDetail.text }}</code>
+                            <code>{{ currentCommentDetailTextDisplay }}</code>
                         </pre>
                     </div>
                     
@@ -483,6 +496,7 @@
         <div class="empty-subtitle">从左侧文件树中选择要查看的文件</div>
     </div>
 </section>
+
 
 
 

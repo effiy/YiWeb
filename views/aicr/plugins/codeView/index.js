@@ -128,6 +128,7 @@ const createCodeView = async () => {
                 commentMarkers: {}, // 评论标记映射 {lineNumber: [comments]} - 改为响应式对象
                 showCommentDetailPopup: false, // 是否显示评论详情弹窗
                 currentCommentDetail: null, // 当前显示的评论详情
+                currentCommentDetailKey: null, // 当前详情对应的评论key（用于保持一致性）
                 commentDetailPosition: { x: 0, y: 0 }, // 评论详情位置
                 showCommentPreviewPopup: false, // 是否显示评论预览弹窗
                 currentCommentPreview: null, // 当前显示的评论预览
@@ -275,6 +276,12 @@ const createCodeView = async () => {
             currentCommentDetailHtml() {
                 const content = this.currentCommentDetail && this.currentCommentDetail.content ? this.currentCommentDetail.content : '';
                 return this.renderMarkdown(content);
+            },
+            // 新增：统一显示用的引用代码文本（Tab -> 4 空格，去除回车）
+            currentCommentDetailTextDisplay() {
+                const text = this.currentCommentDetail && this.currentCommentDetail.text ? String(this.currentCommentDetail.text) : '';
+                if (!text) return '';
+                return text.replace(/\r\n?/g, '\n').replace(/\t/g, '    ');
             },
             // 新增：评论预览Markdown渲染
             currentCommentPreviewHtml() {
@@ -607,7 +614,16 @@ const createCodeView = async () => {
                     // 互斥显示：先隐藏预览弹窗
                     this.hideCommentPreview();
                     
-                    this.currentCommentDetail = comment;
+                    // 记录并同步 key，确保弹窗内容与点击项严格对应
+                    const key = comment?.key || comment?.id || null;
+                    this.currentCommentDetailKey = key;
+                    // 优先以最新 fileComments 中的同 key 项作为来源，避免对象引用过期导致错位
+                    if (key) {
+                        const latest = this.fileComments.find(c => (c.key || c.id) === key);
+                        this.currentCommentDetail = latest ? { ...latest } : { ...comment };
+                    } else {
+                        this.currentCommentDetail = { ...comment };
+                    }
                     this.showCommentDetailPopup = true;
                     
                     // 等待DOM更新后计算位置
@@ -735,11 +751,13 @@ const createCodeView = async () => {
                     setTimeout(() => {
                         this.showCommentDetailPopup = false;
                         this.currentCommentDetail = null;
+                        this.currentCommentDetailKey = null;
                         console.log('[CodeView] 详情弹窗已关闭，可以重新显示预览弹窗');
                     }, 200);
                 } else {
                     this.showCommentDetailPopup = false;
                     this.currentCommentDetail = null;
+                    this.currentCommentDetailKey = null;
                     console.log('[CodeView] 详情弹窗已关闭，可以重新显示预览弹窗');
                 }
             },
@@ -830,7 +848,9 @@ const createCodeView = async () => {
                     } else {
                         this.editingCommentTimestamp = new Date().toISOString().slice(0, 16);
                     }
-                    this.editingCommentText = comment.text || '';
+                    // 与查看态保持一致：CRLF->LF、Tab->4空格
+                    const rawQuoted = comment.text || '';
+                    this.editingCommentText = String(rawQuoted).replace(/\r\n?/g, '\n').replace(/\t/g, '    ');
                     this.editingRangeInfo = comment.rangeInfo ? { ...comment.rangeInfo } : { startLine: 1, endLine: 1 };
                     this.editingImprovementText = comment.improvementText || '';
                     this.editingCommentType = comment.type || '';
@@ -941,6 +961,134 @@ const createCodeView = async () => {
                         this.editingSaving = false;
                     }
                 }, '保存弹窗内编辑评论');
+            },
+
+            // 新增：编辑态引用代码的简单格式美化（只处理缩进和去除空行）
+            beautifyQuotedCode() {
+                return safeExecute(() => {
+                    let text = this.editingCommentText || '';
+                    if (!text.trim()) return;
+
+                    // 统一换行符、Tab -> 4 空格，并去除行尾空白
+                    const rawLines = String(text)
+                        .replace(/\r\n?/g, '\n')
+                        .split('\n')
+                        .map(l => l.replace(/\t/g, '    ').replace(/[ \t]+$/g, ''));
+
+                    // 移除全部空行
+                    const nonEmptyLines = rawLines.filter(l => l.trim().length > 0);
+                    if (nonEmptyLines.length === 0) { this.editingCommentText = ''; return; }
+
+                    // 计算公共缩进（空格数最小值）
+                    const leadingCounts = nonEmptyLines.map(l => (l.match(/^([ ]+)/) || ['', ''])[1].length);
+                    const commonIndent = leadingCounts.length > 0 ? Math.min(...leadingCounts) : 0;
+
+                    // 去除公共缩进
+                    const stripped = nonEmptyLines.map(line =>
+                        commonIndent > 0 ? line.replace(new RegExp(`^[ ]{0,${commonIndent}}`), '') : line
+                    );
+
+                    // 推断原始最小缩进步长（使用所有非零前导空格的最大公约数）
+                    const countsAfterStrip = stripped
+                        .map(l => (l.match(/^( +)/) || ['', ''])[1].length)
+                        .filter(n => n > 0);
+
+                    const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+                    const baseStep = countsAfterStrip.length > 0
+                        ? countsAfterStrip.reduce((acc, n) => gcd(acc, n))
+                        : 0;
+
+                    const STEP = baseStep > 0 ? baseStep : 4; // 无法推断时默认 4
+                    const INDENT_UNIT = 4;
+
+                    // 以推断步长为层级，将层级映射为 4 空格单位的缩进
+                    const normalized = stripped.map(l => {
+                        const m = l.match(/^( +)/);
+                        const leading = m ? m[1].length : 0;
+                        const content = l.slice(leading);
+                        // 向下取整到不扩大的最近层级，并将每层映射为4空格
+                        const level = leading === 0 ? 0 : Math.floor(leading / STEP);
+                        const target = Math.max(0, level * INDENT_UNIT);
+                        return (target > 0 ? ' '.repeat(target) : '') + content;
+                    });
+
+                    this.editingCommentText = normalized.join('\n');
+                }, '编辑态引用代码美化');
+            },
+
+            // 新增：引用代码编辑框 Tab/Shift+Tab 缩进控制
+            handleQuotedCodeKeydown(event) {
+                return safeExecute(() => {
+                    if (event.key !== 'Tab') return;
+                    event.preventDefault();
+
+                    const textarea = event.target;
+                    const INDENT = '    ';
+                    let value = this.editingCommentText || '';
+                    let start = textarea.selectionStart ?? 0;
+                    let end = textarea.selectionEnd ?? 0;
+                    const hasSelection = end > start;
+
+                    const getLineStart = (pos) => {
+                        const idx = value.lastIndexOf('\n', Math.max(0, pos - 1));
+                        return idx === -1 ? 0 : idx + 1;
+                    };
+                    const getLineEnd = (pos) => {
+                        const idx = value.indexOf('\n', pos);
+                        return idx === -1 ? value.length : idx;
+                    };
+
+                    if (!hasSelection) {
+                        const lineStart = getLineStart(start);
+                        if (event.shiftKey) {
+                            const ahead = value.slice(lineStart, Math.min(lineStart + INDENT.length, value.length));
+                            const removeCount = Math.min(INDENT.length, (ahead.match(/^ +/) || ['', ''])[0].length);
+                            if (removeCount > 0) {
+                                value = value.slice(0, lineStart) + value.slice(lineStart + removeCount);
+                                const delta = removeCount;
+                                const newPos = Math.max(lineStart, start - delta);
+                                this.editingCommentText = value;
+                                this.$nextTick(() => textarea.setSelectionRange(newPos, newPos));
+                            }
+                        } else {
+                            value = value.slice(0, start) + INDENT + value.slice(start);
+                            const newPos = start + INDENT.length;
+                            this.editingCommentText = value;
+                            this.$nextTick(() => textarea.setSelectionRange(newPos, newPos));
+                        }
+                        return;
+                    }
+
+                    const blockStart = getLineStart(start);
+                    const blockEnd = getLineEnd(end);
+                    const before = value.slice(0, blockStart);
+                    const block = value.slice(blockStart, blockEnd);
+                    const after = value.slice(blockEnd);
+
+                    if (event.shiftKey) {
+                        const lines = block.split('\n');
+                        const processed = lines.map(line => line.replace(/^ {1,4}/, ''));
+                        const newBlock = processed.join('\n');
+                        const newValue = before + newBlock + after;
+                        this.editingCommentText = newValue;
+                        this.$nextTick(() => {
+                            const newStart = blockStart;
+                            const newEnd = blockStart + newBlock.length;
+                            textarea.setSelectionRange(newStart, newEnd);
+                        });
+                    } else {
+                        const lines = block.split('\n');
+                        const processed = lines.map(line => INDENT + line);
+                        const newBlock = processed.join('\n');
+                        const newValue = before + newBlock + after;
+                        this.editingCommentText = newValue;
+                        this.$nextTick(() => {
+                            const newStart = blockStart;
+                            const newEnd = blockStart + newBlock.length;
+                            textarea.setSelectionRange(newStart, newEnd);
+                        });
+                    }
+                }, '引用代码编辑框Tab缩进行为');
             },
 
             // 新增：弹窗内编辑快捷键
@@ -2635,6 +2783,21 @@ const createCodeView = async () => {
                     }
                 },
                 immediate: false
+            },
+            // 当文件评论列表变化时，如果详情弹窗打开，依据 key 同步当前详情内容
+            fileComments: {
+                handler(newList) {
+                    try {
+                        if (!this.showCommentDetailPopup || !this.currentCommentDetailKey) return;
+                        const latest = (newList || []).find(c => (c.key || c.id) === this.currentCommentDetailKey);
+                        if (latest) {
+                            this.currentCommentDetail = { ...latest };
+                        }
+                    } catch (e) {
+                        // noop
+                    }
+                },
+                deep: true
             }
         },
         
@@ -2702,6 +2865,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

@@ -3365,12 +3365,15 @@
 
 /* 引用代码编辑区域 */
 .quoted-code-textarea {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 13px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 12px;
     line-height: 1.4;
     resize: vertical;
     min-height: 120px;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-tertiary);
+    -moz-tab-size: 4;
+    tab-size: 4;
 }
+
 
