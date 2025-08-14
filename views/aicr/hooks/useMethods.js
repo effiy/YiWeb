@@ -1638,11 +1638,7 @@ export const useMethods = (store) => {
                         : []
                 }));
 
-                // 校验：至少一个项目、每个项目至少一个版本
-                if (cleanList.length === 0) {
-                    store.pvError.value = '请至少添加一个项目';
-                    return;
-                }
+                // 校验：每个项目至少一个版本（允许为空项目列表）
                 for (const p of cleanList) {
                     if (!p.id || p.versions.length === 0) {
                         store.pvError.value = `项目 ${p.id || '(未命名)'} 至少需要一个版本`;
