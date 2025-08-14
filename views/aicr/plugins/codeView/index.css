@@ -939,6 +939,18 @@
     transform: scale(1.1);
 }
 
+.comment-detail-actions .cancel-button {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+}
+
+.comment-detail-actions .cancel-button:hover {
+    background: var(--bg-tertiary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
 .comment-detail-actions .resolve-button {
     background: var(--success-gradient);
     color: var(--text-on-accent);

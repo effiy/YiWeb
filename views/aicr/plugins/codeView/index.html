@@ -322,6 +322,14 @@
                     <!-- 评论操作按钮 -->
                     <div class="comment-detail-actions">
                         <button 
+                            @click="hideCommentDetail"
+                            class="action-button cancel-button"
+                            title="取消"
+                        >
+                            <i class="fas fa-times"></i>
+                            取消
+                        </button>
+                        <button 
                             @click="startEditCommentDetail(currentCommentDetail)"
                             class="action-button edit-button"
                             title="编辑评论"
