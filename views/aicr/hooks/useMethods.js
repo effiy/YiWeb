@@ -289,10 +289,22 @@ export const useMethods = (store) => {
             if (zipFileOrEvent && zipFileOrEvent.target && zipFileOrEvent.target.files) {
                 zipFile = zipFileOrEvent.target.files[0];
             }
-            const projectId = selectedProject?.value;
-            const versionId = selectedVersion?.value;
-            if (!projectId || !versionId) {
-                throw createError('请先选择项目与版本', ErrorTypes.VALIDATION, '项目版本上传');
+
+            // 从文件名解析 项目/版本（优先使用文件名；无版本则默认为 1.0.0）
+            // 同时兼容全角斜杠 “／” 和反斜杠 “\\”
+            const uiProject = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
+            const uiVersion = selectedVersion?.value || (document.getElementById('versionSelect')?.value) || '';
+            let baseName = '';
+            try {
+                const rawName = (zipFile && zipFile.name) ? String(zipFile.name) : '';
+                baseName = rawName.replace(/\.[Zz][Ii][Pp]$/i, '');
+            } catch (_) { baseName = ''; }
+            const parts = baseName.split(/[\/\\／]/).filter(Boolean);
+            let projectId = parts[0] || uiProject || '';
+            let versionId = (parts[1] || '') || uiVersion || '';
+            if (!versionId) versionId = '1.0.0';
+            if (!projectId) {
+                throw createError('无法从文件名解析项目。请将压缩包命名为 “项目/版本.zip”（或“项目／版本.zip”）或先选择项目', ErrorTypes.VALIDATION, '项目版本上传');
             }
 
             // 动态加载依赖与工具
