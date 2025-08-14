@@ -415,10 +415,50 @@ export const createStore = () => {
             const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
             const { node, parent } = findNodeAndParentById(root, itemId);
             if (!node) throw createError('未找到目标节点', ErrorTypes.API, '删除');
-            if (!parent) {
-                throw createError('不允许删除根节点', ErrorTypes.VALIDATION, '删除');
-            }
+            const project = projectId || selectedProject.value;
+            const version = versionId || selectedVersion.value;
             const prevFiles = Array.isArray(files.value) ? files.value.slice() : [];
+            
+            // 如果删除的是根节点：执行整棵树与对应文件集合的清理
+            if (!parent) {
+                try {
+                    // 删除远端树文档
+                    if (project && version) {
+                        const treeQueryUrl = `${window.API_URL}/mongodb/?cname=projectVersionTree&projectId=${encodeURIComponent(project)}&versionId=${encodeURIComponent(version)}`;
+                        const treeResp = await getData(treeQueryUrl, {}, false);
+                        const treeList = treeResp?.data?.list || [];
+                        for (const doc of treeList) {
+                            const treeKey = doc?.key || doc?._id || doc?.id;
+                            if (treeKey) {
+                                await deleteData(`${treeQueryUrl}&key=${treeKey}`);
+                            }
+                        }
+                    }
+                    // 删除远端文件集合
+                    if (project && version) {
+                        const filesQueryUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(project)}&versionId=${encodeURIComponent(version)}`;
+                        const filesResp = await getData(filesQueryUrl, {}, false);
+                        const fileList = filesResp?.data?.list || [];
+                        for (const f of fileList) {
+                            const fileKey = f?.key || f?._id || f?.id;
+                            if (fileKey) {
+                                await deleteData(`${filesQueryUrl}&key=${fileKey}`);
+                            }
+                        }
+                    }
+                } catch (cleanupErr) {
+                    console.warn('[deleteItem] 根节点级联删除失败（忽略继续）:', cleanupErr?.message || cleanupErr);
+                }
+                // 清空本地状态
+                fileTree.value = [];
+                fileTreeDocKey.value = '';
+                files.value = [];
+                selectedFileId.value = null;
+                expandedFolders.value = new Set();
+                return true;
+            }
+
+            // 非根节点删除逻辑
             parent.children = (parent.children || []).filter(ch => ch.id !== itemId);
             // 保持全部展开
             expandAllFolders();

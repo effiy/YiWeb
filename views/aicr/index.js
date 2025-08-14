@@ -729,6 +729,27 @@ const { computed } = Vue;
                         alert('下载失败：' + (error?.message || '未知错误'));
                     }
                 },
+                // 触发选择ZIP
+                triggerUploadProjectVersion: function() {
+                    try {
+                        const methods = useMethods(store);
+                        methods.triggerUploadProjectVersion();
+                    } catch (e) {
+                        logError('[主页面] 触发上传选择失败:', e);
+                    }
+                },
+                // 处理上传ZIP
+                handleUploadProjectVersion: async function(e) {
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleUploadProjectVersion(e);
+                    } catch (error) {
+                        logError('[主页面] 项目版本上传失败:', error);
+                        alert('上传失败：' + (error?.message || '未知错误'));
+                    } finally {
+                        try { e.target.value = ''; } catch (_) {}
+                    }
+                },
                 
 
                 

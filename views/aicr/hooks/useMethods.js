@@ -280,6 +280,146 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 上传ZIP并覆盖当前项目/版本
+     */
+    const handleUploadProjectVersion = async (zipFileOrEvent) => {
+        return safeExecute(async () => {
+            // 兼容事件或直接传入 File
+            let zipFile = zipFileOrEvent;
+            if (zipFileOrEvent && zipFileOrEvent.target && zipFileOrEvent.target.files) {
+                zipFile = zipFileOrEvent.target.files[0];
+            }
+            const projectId = selectedProject?.value;
+            const versionId = selectedVersion?.value;
+            if (!projectId || !versionId) {
+                throw createError('请先选择项目与版本', ErrorTypes.VALIDATION, '项目版本上传');
+            }
+
+            // 动态加载依赖与工具
+            const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
+            showGlobalLoading(`正在上传并解析 ${projectId}/${versionId} ...`);
+            try {
+                // 读取ZIP
+                const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip || (await import('jszip')).default;
+                const zip = await JSZip.loadAsync(zipFile);
+
+                // 展平文件列表（忽略目录项）
+                const entries = [];
+                zip.forEach((relativePath, fileObj) => {
+                    if (!fileObj.dir) entries.push({ path: relativePath, file: fileObj });
+                });
+                if (entries.length === 0) {
+                    throw createError('ZIP 中未发现文件', ErrorTypes.VALIDATION, '项目版本上传');
+                }
+
+                // 读取所有文本文件内容
+                const normalizePath = (p) => String(p || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                const filesPayload = [];
+                for (const { path, file } of entries) {
+                    let content = '';
+                    try {
+                        // 尝试以文本方式读取；若失败则读取为 base64 并跳过（或可保留）
+                        content = await file.async('string');
+                    } catch (_) {
+                        try {
+                            const b64 = await file.async('base64');
+                            content = atob(b64);
+                        } catch (e) {
+                            content = '';
+                        }
+                    }
+                    const normPath = normalizePath(path);
+                    if (!normPath) continue;
+                    filesPayload.push({
+                        projectId,
+                        versionId,
+                        fileId: normPath,
+                        id: normPath,
+                        path: normPath,
+                        name: normPath.split('/').pop(),
+                        content: content || ''
+                    });
+                }
+
+                // 构建树（基于路径）
+                const root = { id: projectId, name: projectId, type: 'folder', children: [] };
+                const folderMap = new Map();
+                folderMap.set('', root);
+                const ensureFolder = (folderPath) => {
+                    const norm = normalizePath(folderPath);
+                    if (folderMap.has(norm)) return folderMap.get(norm);
+                    const parentPath = norm.split('/').slice(0, -1).join('/');
+                    const parent = ensureFolder(parentPath);
+                    const name = norm.split('/').pop();
+                    const node = { id: norm, name, type: 'folder', children: [] };
+                    parent.children.push(node);
+                    folderMap.set(norm, node);
+                    return node;
+                };
+                for (const f of filesPayload) {
+                    const dir = f.path.includes('/') ? f.path.split('/').slice(0, -1).join('/') : '';
+                    const parent = ensureFolder(dir);
+                    parent.children.push({ id: f.path, name: f.name, type: 'file', size: (f.content || '').length, modified: Date.now() });
+                }
+
+                // 覆盖远端：先删除当前 project/version 的树与文件，再写入新内容
+                const { getData, deleteData, postData } = await import('/apis/modules/crud.js');
+                // 删除树
+                try {
+                    const treeQuery = `${window.API_URL}/mongodb/?cname=projectVersionTree&projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}`;
+                    const treeResp = await getData(treeQuery, {}, false);
+                    const treeList = treeResp?.data?.list || [];
+                    for (const doc of treeList) {
+                        const key = doc?.key || doc?._id || doc?.id;
+                        if (key) await deleteData(`${treeQuery}&key=${key}`);
+                    }
+                } catch (e) {}
+
+                // 删除文件集合
+                try {
+                    const filesQuery = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}`;
+                    const filesResp = await getData(filesQuery, {}, false);
+                    const list = filesResp?.data?.list || [];
+                    for (const doc of list) {
+                        const key = doc?.key || doc?._id || doc?.id;
+                        if (key) await deleteData(`${filesQuery}&key=${key}`);
+                    }
+                } catch (e) {}
+
+                // 写入树
+                await postData(`${window.API_URL}/mongodb/?cname=projectVersionTree`, {
+                    projectId,
+                    versionId,
+                    data: root
+                });
+
+                // 批量写入文件
+                for (const payload of filesPayload) {
+                    await postData(`${window.API_URL}/mongodb/?cname=projectVersionFiles`, payload);
+                }
+
+                // 刷新本地数据
+                await Promise.all([
+                    loadFileTree(projectId, versionId),
+                    loadFiles(projectId, versionId)
+                ]);
+
+                showSuccessMessage('上传并覆盖完成');
+            } finally {
+                try { hideGlobalLoading(); } catch (_) {}
+            }
+        }, '项目版本上传');
+    };
+
+    // 触发隐藏的文件选择
+    const triggerUploadProjectVersion = () => {
+        return safeExecute(() => {
+            const input = document.getElementById('aicrUploadZipInput');
+            if (input && typeof input.click === 'function') input.click();
+        }, '触发上传选择');
+    };
+
+    /**
      * 打开链接
      * @param {string} url - 链接地址
      */
@@ -1306,6 +1446,8 @@ export const useMethods = (store) => {
         handleCompositionStart,
         handleCompositionEnd,
         handleDownloadProjectVersion,
+        handleUploadProjectVersion,
+        triggerUploadProjectVersion,
         // =============== 项目与版本维护 ===============
         openProjectVersionManager: () => {
             try {

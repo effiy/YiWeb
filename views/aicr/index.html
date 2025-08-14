@@ -119,6 +119,26 @@
                             <span>下载</span>
                         </button>
                     </li>
+                     <!-- 上传当前项目版本（ZIP） -->
+                     <li>
+                         <button 
+                             type="button"
+                             class="filter-btn"
+                             @click="triggerUploadProjectVersion"
+                             :disabled="loading || !selectedProject || !selectedVersion"
+                             :title="selectedProject && selectedVersion ? `上传 ${selectedProject} / ${selectedVersion}` : '请选择项目与版本后上传'">
+                             <i class="fas fa-upload" aria-hidden="true"></i>
+                             <span>上传</span>
+                         </button>
+                        <input 
+                            id="aicrUploadZipInput"
+                            ref="uploadZip"
+                            type="file" 
+                            accept=".zip"
+                            @change="handleUploadProjectVersion"
+                            style="display:none" 
+                            aria-label="上传项目版本ZIP">
+                     </li>
                 </ul>
             </nav>
             
