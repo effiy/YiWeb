@@ -107,6 +107,18 @@
                             <span>维护</span>
                         </button>
                     </li>
+                    <!-- 下载当前项目版本 -->
+                    <li>
+                        <button 
+                            type="button"
+                            class="filter-btn"
+                            @click="handleDownloadProjectVersion"
+                            :disabled="loading || !selectedProject || !selectedVersion"
+                            :title="selectedProject && selectedVersion ? `下载 ${selectedProject} / ${selectedVersion}` : '请选择项目与版本后下载'">
+                            <i class="fas fa-download" aria-hidden="true"></i>
+                            <span>下载</span>
+                        </button>
+                    </li>
                 </ul>
             </nav>
             

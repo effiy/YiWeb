@@ -718,6 +718,17 @@ const { computed } = Vue;
                         logError('[主页面] 输入法结束处理失败:', error);
                     }
                 },
+                // 下载当前项目版本（打包为ZIP）
+                handleDownloadProjectVersion: async function() {
+                    logInfo('[主页面] 触发项目版本下载');
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleDownloadProjectVersion();
+                    } catch (error) {
+                        logError('[主页面] 项目版本下载失败:', error);
+                        alert('下载失败：' + (error?.message || '未知错误'));
+                    }
+                },
                 
 
                 

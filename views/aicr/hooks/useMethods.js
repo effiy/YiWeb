@@ -49,7 +49,8 @@ export const useMethods = (store) => {
         // 搜索相关状态
         searchQuery,
         // 加载状态
-        loading
+        loading,
+        files
     } = store;
 
     // 搜索相关状态
@@ -220,6 +221,62 @@ export const useMethods = (store) => {
             // 输入法结束后执行搜索
             performSearch(event.target.value);
         }, '输入法结束处理');
+    };
+
+    /**
+     * 下载当前项目版本为ZIP
+     */
+    const handleDownloadProjectVersion = async () => {
+        return safeExecute(async () => {
+            const projectId = selectedProject?.value;
+            const versionId = selectedVersion?.value;
+            if (!projectId || !versionId) {
+                throw createError('请先选择项目与版本', ErrorTypes.VALIDATION, '项目版本下载');
+            }
+
+            // 动态加载依赖
+            const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
+            showGlobalLoading(`正在打包 ${projectId}/${versionId} ...`);
+            try {
+                // 确保文件列表已加载
+                if (!Array.isArray(files?.value) || files.value.length === 0) {
+                    await loadFiles(projectId, versionId);
+                }
+                const allFiles = Array.isArray(files?.value) ? files.value : [];
+                if (allFiles.length === 0) {
+                    throw createError('当前项目版本下没有文件可下载', ErrorTypes.VALIDATION, '项目版本下载');
+                }
+
+                // 按路径构建ZIP
+                const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip || (await import('jszip')).default;
+                const zip = new JSZip();
+
+                const normalizePath = (p) => String(p || '').replace(/\\/g, '/').replace(/^\/+/, '');
+
+                for (const f of allFiles) {
+                    const path = normalizePath(f.path || f.id || f.fileId || f.name);
+                    const content = (typeof f.content === 'string') ? f.content : (f.data && typeof f.data.content === 'string' ? f.data.content : '');
+                    zip.file(path || 'unknown.txt', content || '');
+                }
+
+                const blob = await zip.generateAsync({ type: 'blob' });
+                const fileName = `${projectId}-${versionId}.zip`;
+
+                // 触发下载
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                showSuccessMessage('打包完成，开始下载');
+            } finally {
+                try { hideGlobalLoading(); } catch (_) {}
+            }
+        }, '项目版本下载');
     };
 
     /**
@@ -1248,6 +1305,7 @@ export const useMethods = (store) => {
         handleMessageInput,
         handleCompositionStart,
         handleCompositionEnd,
+        handleDownloadProjectVersion,
         // =============== 项目与版本维护 ===============
         openProjectVersionManager: () => {
             try {
