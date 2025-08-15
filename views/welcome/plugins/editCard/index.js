@@ -71,8 +71,22 @@ export async function openEditCardModal(card, store) {
     closeButton.addEventListener('mouseleave', () => {
       closeButton.style.background = 'transparent';
     }, { passive: true });
+    // 统一关闭与清理
+    const unlockScroll = () => {
+      try {
+        document.documentElement.style.overflow = prevHtmlOverflow || '';
+        document.body.style.overflow = prevBodyOverflow || '';
+      } catch (_) {}
+    };
+
+    const closeModal = () => {
+      unlockScroll();
+      try { document.removeEventListener('keydown', handleEsc); } catch (_) {}
+      try { modal.remove(); } catch (_) {}
+    };
+
     addPassiveEventListener(closeButton, 'click', () => {
-      modal.remove();
+      closeModal();
     });
 
     // 表单
@@ -863,7 +877,7 @@ export async function openEditCardModal(card, store) {
     });
 
     addPassiveEventListener(cancelButton, 'click', () => {
-      modal.remove();
+      closeModal();
     });
 
     buttonContainer.appendChild(cancelButton);
@@ -900,26 +914,17 @@ export async function openEditCardModal(card, store) {
     // 点击遮罩关闭
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
-        modal.remove();
+        closeModal();
       }
     }, { passive: true });
 
     // ESC 关闭
     const handleEsc = (e) => {
       if (e.key === 'Escape') {
-        modal.remove();
-        document.removeEventListener('keydown', handleEsc);
+        closeModal();
       }
     };
     document.addEventListener('keydown', handleEsc, { passive: true });
-    modal.addEventListener('remove', () => {
-      document.removeEventListener('keydown', handleEsc);
-      // 恢复滚动状态
-      try {
-        document.documentElement.style.overflow = prevHtmlOverflow || '';
-        document.body.style.overflow = prevBodyOverflow || '';
-      } catch (_) {}
-    });
 
     // 聚焦弹框，提升可达性并避免滚动跳动
     setTimeout(() => { try { modalContent.focus(); } catch (_) {} }, 0);
