@@ -56,10 +56,6 @@ export const createStore = () => {
             
             console.log('[loadTasksData] 正在加载任务数据...');
             
-            // 从本地文件加载任务数据
-            const tasksResponseData = await getData(`${window.DATA_URL}/mock/tasks/tasks.json`);
-
-            console.log('[loadTasksData] 加载到的任务数据:', tasksResponseData);
 
             // 根据浏览器请求参数拼接featureName和cardTitle进行条件查询
             const urlParams = new URLSearchParams(window.location.search);
@@ -78,8 +74,8 @@ export const createStore = () => {
 
             console.log('[loadTasksData] 加载到的mongo数据:', mongoData);
             
-            // 合并数据并去重，避免重复的任务
-            const allTasks = [...tasksResponseData, ...mongoData];
+            // 去重，避免重复的任务
+            const allTasks = Array.isArray(mongoData) ? mongoData : [];
             const uniqueTasks = [];
             const seenTitles = new Set();
             
@@ -108,7 +104,7 @@ export const createStore = () => {
                 console.warn('[loadTasksData] 警告：存在重复的key，这可能导致Vue渲染问题');
             }
             
-            return tasksResponseData;
+            return uniqueTasks;
         }, '任务数据加载', (errorInfo) => {
             error.value = errorInfo.message;
             errorMessage.value = errorInfo.message;
@@ -309,6 +305,7 @@ export function categorizeTask(task) {
     
     return 'development'; // 默认分类
 } 
+
 
 
 
