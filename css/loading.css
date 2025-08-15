@@ -279,20 +279,22 @@
 .loading-indicator {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  z-index: 10000;
+  inset: 0;
+  width: 100dvw;
+  height: 100dvh;
+  z-index: 20000; /* 高于编辑弹窗(10000)，确保可见 */
   display: none;
   opacity: 0;
-  transition: opacity 0.3s ease;
-  background: rgba(0, 0, 0, 0.3);
+  transition: opacity 0.2s ease;
+  background: rgba(0, 0, 0, 0.35);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 
 .loading-indicator.show {
-  display: flex;
+  display: grid;
   opacity: 1;
-  align-items: center;
-  justify-content: center;
+  place-items: center;
 }
 
 .loading-indicator .loading-spinner {
@@ -307,8 +309,7 @@
 
 /* 加载指示器内容容器 */
 .loading-indicator .loading-content {
-  position: sticky;
-  top: 20vh;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -320,6 +321,9 @@
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: loadingContentPop 0.18s ease-out;
+  max-width: min(90vw, 480px);
+  transform: translateZ(0);
 }
 
 /* 加载文本样式 */
@@ -332,9 +336,31 @@
   white-space: nowrap;
 }
 
+/* 内容弹出动画 */
+@keyframes loadingContentPop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 480px) {
+  .loading-indicator .loading-content {
+    width: calc(100vw - 32px);
+    margin: 0 16px;
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+  }
+}
+
 /* ========== 动画辅助 ========== */
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0;}
   to { transform: translateX(0); opacity: 1;}
 }
+
 

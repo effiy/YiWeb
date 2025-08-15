@@ -553,6 +553,7 @@ export const useMethods = (store) => {
 
         // 显示加载状态
         showGlobalLoading('正在生成任务，请稍候...');
+        const tasksUrl = `/views/tasks/index.html?featureName=${encodeURIComponent(feature.name)}&cardTitle=${encodeURIComponent(card.title)}`;
 
         try {
             const target = feature.name + '-' + feature.desc;
@@ -581,14 +582,22 @@ export const useMethods = (store) => {
 
             // 隐藏加载状态
             hideGlobalLoading();
-
-            window.open(`/views/tasks/index.html?featureName=${feature.name}&cardTitle=${card.title}`, '_blank');
+            // 所有请求完成后再跳转：优先尝试新标签页，若被拦截则回退为当前页跳转
+            try {
+                const newTab = window.open(tasksUrl, '_blank');
+                if (!newTab || newTab.closed) {
+                    window.location.href = tasksUrl;
+                }
+            } catch (_) {
+                window.location.href = tasksUrl;
+            }
 
         } catch (err) {
             // 隐藏加载状态
             hideGlobalLoading();
             showError('生成任务失败，请稍后重试');
             console.error('[生成任务] 生成任务失败:', err);
+            // 保持在当前页面，用户可重试
         }
     };
 
@@ -1149,9 +1158,11 @@ export const useMethods = (store) => {
         getTagStats,
         navigateToTasks,
         openAicrFromTag,
-        editCard
+        editCard,
+        loadFeatureCards: store.loadFeatureCards  // 暴露重新加载数据的方法
     };
 };
+
 
 
 

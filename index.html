@@ -31,7 +31,7 @@
         <header class="header-row" role="banner">
             <section class="search-row">
                 <form class="search-box" role="search" aria-label="智能助手搜索">
-                    <span class="search-logo" aria-hidden="true">
+                    <span class="search-logo" aria-hidden="true" @click="openLink('/index.html')">
                         <i class="fas fa-brain" aria-label="AI大脑图标"></i>
                     </span>
                     <div class="search-input-wrapper">
@@ -147,6 +147,7 @@
                                             <span class="feature-content" @click="navigateToTasks(card, feature, $event)">
                                                 {{ feature.icon }} {{ feature.name }}
                                             </span>
+                                            
                                         </li>
                                     </ul>
                                     <ul class="card-stats" aria-label="统计数据">
@@ -239,6 +240,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 
 

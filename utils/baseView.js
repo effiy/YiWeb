@@ -37,7 +37,8 @@ export async function createVueApp(options = {}) {
         setup,
         components = ViewConfig.DEFAULT_COMPONENTS,
         plugins = ViewConfig.DEFAULT_PLUGINS,
-        onError = ViewConfig.DEFAULT_ERROR_HANDLER
+        onError = ViewConfig.DEFAULT_ERROR_HANDLER,
+        rootTemplate = null
     } = options;
 
     // 验证必需参数
@@ -48,7 +49,9 @@ export async function createVueApp(options = {}) {
     // 创建Vue应用
     const app = Vue.createApp({
         setup,
-        name: 'App'
+        name: 'App',
+        // 如果提供了根模板，则使用它而不是解析现有DOM
+        ...(rootTemplate ? { template: rootTemplate } : {})
     });
 
     // 注册组件（异步）
@@ -111,7 +114,8 @@ export function mountApp(app, selector = '#app') {
             throw new Error(`DOM元素未找到: ${selector}`);
         }
         
-        const mountedApp = app.mount(selector);
+        // 直接传入 DOM 元素，避免某些环境下 selector 触发的内部 nextSibling 错误
+        const mountedApp = app.mount(element);
         try { logInfo(`[应用挂载] 应用已挂载到: ${selector}`); } catch (_) { /* 兼容性静默 */ }
         return mountedApp;
     }, '应用挂载');
@@ -124,8 +128,35 @@ export function mountApp(app, selector = '#app') {
  * @returns {Promise<Object>} 挂载后的应用实例
  */
 export async function createAndMountApp(options = {}, selector = '#app') {
-    const app = await createVueApp(options);
-    return mountApp(app, selector);
+    // 在挂载前，从目标元素抓取静态模板并清空，避免DOM不一致导致的挂载错误
+    const element = document.querySelector(selector);
+    if (!element) {
+        throw new Error(`DOM元素未找到: ${selector}`);
+    }
+    const rootTemplate = element.innerHTML;
+    element.innerHTML = '';
+
+    const app = await createVueApp({ ...options, rootTemplate });
+    try {
+        return mountApp(app, selector);
+    } catch (e) {
+        // 回退方案：在body末尾创建全新容器再尝试一次，以规避个别环境DOM解析异常
+        try {
+            const fallbackId = 'app-fallback';
+            let fallback = document.getElementById(fallbackId);
+            if (!fallback) {
+                fallback = document.createElement('div');
+                fallback.id = fallbackId;
+                document.body.appendChild(fallback);
+            } else {
+                fallback.innerHTML = '';
+            }
+            const app2 = await createVueApp({ ...options, rootTemplate });
+            return mountApp(app2, '#' + fallbackId);
+        } catch (_) {
+            throw e;
+        }
+    }
 }
 
 /**
@@ -274,4 +305,5 @@ export function loadJSFiles(jsFiles) {
     
     return Promise.all(loadPromises);
 } 
+
 

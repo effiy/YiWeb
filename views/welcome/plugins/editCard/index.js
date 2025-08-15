@@ -18,45 +18,21 @@ export async function openEditCardModal(card, store) {
   }
 
   try {
+    // 记录滚动状态，用于关闭时恢复
+    let prevHtmlOverflow = '';
+    let prevBodyOverflow = '';
     // 创建模态框容器
     const modal = document.createElement('div');
     modal.className = 'edit-card-modal';
-    modal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-      backdrop-filter: blur(3px);
-      -webkit-backdrop-filter: blur(3px);
-      animation: modalFadeIn 0.2s ease-out;
-      overflow: hidden;
-    `;
+    modal.style.cssText = ``; // 样式使用全局CSS，避免内联覆盖导致偏移
 
     // 创建模态框内容
     const modalContent = document.createElement('div');
     modalContent.className = 'edit-card-content';
-    modalContent.style.cssText = `
-      background: var(--bg-primary, #1a1a1a);
-      border: 1px solid var(--border-primary, #333);
-      border-radius: 8px;
-      padding: 0;
-      max-width: min(95vw, 900px);
-      max-height: min(90vh, 600px);
-      width: 100%;
-      overflow: auto;
-      position: relative;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-      color: var(--text-primary, #fff);
-      margin: auto;
-      box-sizing: border-box;
-      animation: modalSlideIn 0.2s ease-out;
-    `;
+    modalContent.style.cssText = ``; // 交由全局样式控制
+    modalContent.setAttribute('role', 'dialog');
+    modalContent.setAttribute('aria-modal', 'true');
+    modalContent.setAttribute('tabindex', '-1');
 
     // 标题
     const modalTitle = document.createElement('h3');
@@ -64,22 +40,7 @@ export async function openEditCardModal(card, store) {
       <span>编辑卡片</span>
       <span class="card-name">${card.title || ''}</span>
     `;
-    modalTitle.style.cssText = `
-      margin: 0 0 20px 0;
-      color: var(--text-primary, #fff);
-      font-size: 18px;
-      font-weight: 600;
-      padding: 16px 20px;
-      border-radius: 8px 8px 0 0;
-      border: none;
-      background: var(--bg-secondary, #2a2a2a);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    `;
+    modalTitle.style.cssText = ``;
 
     // 关闭按钮（右上角）
     const closeButton = document.createElement('button');
@@ -246,6 +207,7 @@ export async function openEditCardModal(card, store) {
           background: var(--bg-primary, #1a1a1a);
           margin-bottom: 8px;
           transition: all 0.2s ease;
+          flex-wrap: wrap;
         `;
 
         const iconInput = document.createElement('input');
@@ -293,6 +255,29 @@ export async function openEditCardModal(card, store) {
           min-width: 280px;
         `;
 
+        // 生成任务按钮
+        const genTaskBtn = document.createElement('button');
+        genTaskBtn.type = 'button';
+        genTaskBtn.innerHTML = '<i class="fas fa-list-check" aria-hidden="true"></i>';
+        genTaskBtn.setAttribute('aria-label', '生成任务');
+        genTaskBtn.title = '根据该功能特性生成任务';
+        genTaskBtn.style.cssText = `
+          background: var(--primary, #007bff);
+          color: #fff;
+          border: none;
+          border-radius: 50%;
+          width: 28px;
+          height: 28px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 14px;
+          flex-shrink: 0;
+          transition: all 0.2s ease;
+          margin-left: 4px;
+        `;
+
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = '×';
         deleteBtn.className = 'delete-btn';
@@ -322,6 +307,23 @@ export async function openEditCardModal(card, store) {
           formData.features[index].desc = e.target.value;
         });
 
+        genTaskBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const currentFeature = formData.features[index] || {};
+          if (!currentFeature.name || !currentFeature.desc) {
+            showError('请先填写功能特性的名称和描述');
+            return;
+          }
+          try {
+            const { useMethods } = await import('/views/welcome/hooks/useMethods.js');
+            const methods = useMethods(store);
+            await methods.generateTask(formData, currentFeature, e);
+          } catch (err) {
+            console.error('[EditCardPlugin] 调用生成任务失败:', err);
+            showError('生成任务失败，请稍后重试');
+          }
+        });
+
         deleteBtn.addEventListener('click', (e) => {
           e.preventDefault();
           formData.features.splice(index, 1);
@@ -331,6 +333,7 @@ export async function openEditCardModal(card, store) {
         featureItem.appendChild(iconInput);
         featureItem.appendChild(nameInput);
         featureItem.appendChild(descInput);
+        featureItem.appendChild(genTaskBtn);
         featureItem.appendChild(deleteBtn);
         featuresList.appendChild(featureItem);
       });
@@ -878,6 +881,14 @@ export async function openEditCardModal(card, store) {
     modal.appendChild(modalContent);
     document.body.appendChild(modal);
 
+    // 显示时锁定背景滚动，避免交互错位
+    try {
+      prevHtmlOverflow = document.documentElement.style.overflow;
+      prevBodyOverflow = document.body.style.overflow;
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    } catch (_) {}
+
     // 初始渲染
     renderFeatures();
     renderStats();
@@ -903,7 +914,15 @@ export async function openEditCardModal(card, store) {
     document.addEventListener('keydown', handleEsc, { passive: true });
     modal.addEventListener('remove', () => {
       document.removeEventListener('keydown', handleEsc);
+      // 恢复滚动状态
+      try {
+        document.documentElement.style.overflow = prevHtmlOverflow || '';
+        document.body.style.overflow = prevBodyOverflow || '';
+      } catch (_) {}
     });
+
+    // 聚焦弹框，提升可达性并避免滚动跳动
+    setTimeout(() => { try { modalContent.focus(); } catch (_) {} }, 0);
   } catch (error) {
     console.error('[EditCardPlugin] 打开编辑器失败:', error);
     showError('创建编辑界面失败，请稍后重试');
@@ -911,6 +930,7 @@ export async function openEditCardModal(card, store) {
 }
 
 console.log('[EditCardPlugin] 已加载');
+
 
 
 

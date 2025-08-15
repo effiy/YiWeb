@@ -39,6 +39,18 @@ class GlobalLoadingManager {
             if (loadingText && message) {
                 loadingText.textContent = message;
             }
+
+            // 无障碍：标记其可见
+            this.indicator.setAttribute('aria-hidden', 'false');
+            // 禁止背景滚动，避免视觉偏移
+            if (document && document.documentElement) {
+                this._prevOverflow = document.documentElement.style.overflow;
+                document.documentElement.style.overflow = 'hidden';
+            }
+            if (document && document.body) {
+                this._prevBodyOverflow = document.body.style.overflow;
+                document.body.style.overflow = 'hidden';
+            }
         }
     }
 
@@ -49,6 +61,16 @@ class GlobalLoadingManager {
         if (this.indicator) {
             this.indicator.classList.remove('show');
             this.isVisible = false;
+            this.indicator.setAttribute('aria-hidden', 'true');
+            // 恢复页面滚动
+            if (document && document.documentElement && this._prevOverflow !== undefined) {
+                document.documentElement.style.overflow = this._prevOverflow;
+                this._prevOverflow = undefined;
+            }
+            if (document && document.body && this._prevBodyOverflow !== undefined) {
+                document.body.style.overflow = this._prevBodyOverflow;
+                this._prevBodyOverflow = undefined;
+            }
         }
     }
 
@@ -95,4 +117,5 @@ if (typeof window !== 'undefined') {
     window.hideGlobalLoading = hideGlobalLoading;
     window.withGlobalLoading = withGlobalLoading;
 } 
+
 
