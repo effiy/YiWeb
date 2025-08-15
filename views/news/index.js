@@ -18,7 +18,8 @@ import { createBaseView } from '/utils/baseView.js';
                 'SearchHeader',
                 'NewsList',
                 'Calendar',
-                'TagStatistics'
+                'TagStatistics',
+                'CommentsList'
             ],
             plugins: [],
             onMounted: (app) => {

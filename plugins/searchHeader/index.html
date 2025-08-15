@@ -72,7 +72,7 @@
                     v-for="category in categories" 
                     :key="category.key"
                     @click="$emit('toggle-category', category.key)"
-                    :class="['filter-btn', { active: selectedCategories.has(category.key) }]"
+                    :class="['filter-btn', { active: (activeCategory ? activeCategory === category.key : selectedCategories.has(category.key)) }]"
                     :data-category="category.key"
                     :title="category.title"
                 >
@@ -94,3 +94,4 @@
         </div>
     </div>
 </header> 
+

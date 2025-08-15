@@ -27,6 +27,7 @@
             v-model:search-query="searchQuery"
             :categories="categories"
             :selected-categories="selectedCategories"
+            :active-category="activeCategory"
             :sidebar-collapsed="sidebarCollapsed"
             @search-keydown="handleSearchKeydown"
             @clear-search="handleClearSearch"
@@ -39,6 +40,7 @@
             <section class="container">
                 <!-- 新闻列表组件模板 -->
                 <news-list
+                    v-show="activeCategory === 'all' || activeCategory === 'news'"
                     :loading="loading"
                     :error="error"
                     :current-date-display="currentDateDisplay"
@@ -47,10 +49,15 @@
                     :display-categories="displayCategories"
                     :selected-categories="selectedCategories"
                     :clicked-items="clickedItems"
+                    :read-items="readItems"
+                    :favorite-items="favoriteItems"
                     :has-news-data="hasNewsData"
                     @load-news-data="handleLoadNewsData"
                     @news-click="handleNewsClick"
+                    @toggle-favorite="handleToggleFavorite"
                 ></news-list>
+                <!-- 评论列表（与 AICR 风格一致） -->
+                <comments-list v-show="activeCategory === 'all' || activeCategory === 'comments'" :date-str="currentDateSubtitle"></comments-list>
                 <aside class="sidebar-navigation" :class="{ collapsed: sidebarCollapsed }" role="complementary" aria-label="日期导航">
                     <calendar
                         :current-date="currentDate"
@@ -91,9 +98,11 @@
     <script type="module" src="/plugins/calendar/index.js"></script>
     <script type="module" src="/views/news/plugins/newsList/index.js"></script>
     <script type="module" src="/views/news/plugins/tagStatistics/index.js"></script>
+    <script type="module" src="/views/news/plugins/commentsList/index.js"></script>
     <script type="module" src="/views/news/index.js"></script>
     <!-- 性能监控脚本 -->
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 

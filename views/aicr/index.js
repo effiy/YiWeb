@@ -239,11 +239,44 @@ const { computed } = Vue;
                                 // 如果URL带了fileId，尝试预选并按需加载
                                 const params2 = new URLSearchParams(window.location.search);
                                 const fileParam = params2.get('fileId');
+                                // 读取高亮范围（兼容旧参数）与评论Key
+                                const startLineParam = parseInt(params2.get('startLine'), 10);
+                                const endLineParamRaw = params2.get('endLine');
+                                const endLineParam = endLineParamRaw !== null ? parseInt(endLineParamRaw, 10) : NaN;
+                                const commentKeyParam = params2.get('commentKey');
+                                let pendingHighlightRange = null;
+                                if (Number.isFinite(startLineParam)) {
+                                    pendingHighlightRange = {
+                                        startLine: startLineParam,
+                                        endLine: Number.isFinite(endLineParam) ? endLineParam : startLineParam
+                                    };
+                                    window.__aicrPendingHighlightRangeInfo = pendingHighlightRange;
+                                }
+                                if (commentKeyParam) {
+                                    window.__aicrPendingCommentKey = commentKeyParam;
+                                }
                                 if (fileParam) {
                                     const norm = String(fileParam).replace(/\\\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
                                     store.setSelectedFileId(norm);
                                     if (typeof store.loadFileById === 'function') {
-                                        store.loadFileById(store.selectedProject?.value, store.selectedVersion?.value, norm).catch(() => {});
+                                        store.loadFileById(store.selectedProject?.value, store.selectedVersion?.value, norm).then(() => {
+                                            try {
+                                                const rangeInfo = window.__aicrPendingHighlightRangeInfo || pendingHighlightRange;
+                                                if (rangeInfo) {
+                                                    setTimeout(() => {
+                                                        try {
+                                                            window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                                                detail: {
+                                                                    fileId: norm,
+                                                                    rangeInfo
+                                                                }
+                                                            }));
+                                                            logInfo('[代码審查] URL触发高亮事件', rangeInfo);
+                                                        } catch (e) { logWarn('[代码審查] 触发高亮事件失败', e); }
+                                                    }, 300);
+                                                }
+                                            } catch (e) { logWarn('[代码審查] URL高亮处理失败', e); }
+                                        }).catch(() => {});
                                     }
                                 }
                                 // 初次加载后若存在挂起文件或当前选中文件无内容，尝试一次补载
@@ -296,7 +329,61 @@ const { computed } = Vue;
                                     const ver = store.selectedVersion ? store.selectedVersion.value : null;
                                     // 版本就绪后，无论是否已有内容，确保按需加载一次
                                     if (pj && ver) {
-                                        store.loadFileById(pj, ver, idNorm).finally(() => { window.__aicrPendingFileId = null; });
+                                        store.loadFileById(pj, ver, idNorm).finally(() => {
+                                            try {
+                                                const rangeInfo = window.__aicrPendingHighlightRangeInfo;
+                                                if (rangeInfo) {
+                                                    setTimeout(() => {
+                                                        try {
+                                                            window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                                                detail: {
+                                                                    fileId: idNorm,
+                                                                    rangeInfo
+                                                                }
+                                                            }));
+                                                            logInfo('[代码審查] 版本就绪后触发高亮事件', rangeInfo);
+                                                        } catch (e) { logWarn('[代码審查] 触发高亮事件失败', e); }
+                                                    }, 300);
+                                                }
+                                            } catch (e) { logWarn('[代码審查] 版本就绪高亮处理失败', e); }
+                                            // 新增：按 commentKey 触发高亮
+                                            try {
+                                                const pendingKey = window.__aicrPendingCommentKey;
+                                                if (pendingKey && Array.isArray(store.comments?.value)) {
+                                                    const all = store.comments.value;
+                                                    const target = all.find(c => (c.key || c.id) === pendingKey);
+                                                    if (target && target.rangeInfo) {
+                                                        const wantedRaw = target.fileId || (target.fileInfo && target.fileInfo.path) || idNorm;
+                                                        const normalize4b = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/, '/');
+                                                        const wantedId = normalize4b(wantedRaw);
+                                                        if (wantedId && store.selectedFileId && store.selectedFileId.value !== wantedId) {
+                                                            store.setSelectedFileId(wantedId);
+                                                        }
+                                                        const r = target.rangeInfo;
+                                                        const normalizedRange = {
+                                                            startLine: Number(r.startLine) >= 1 ? Number(r.startLine) : 1,
+                                                            endLine: Number(r.endLine) >= 1 ? Number(r.endLine) : (Number(r.startLine) || 1),
+                                                            startChar: r.startChar,
+                                                            endChar: r.endChar
+                                                        };
+                                                        setTimeout(() => {
+                                                            try {
+                                                                window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                                                    detail: {
+                                                                        fileId: wantedId,
+                                                                        rangeInfo: normalizedRange,
+                                                                        comment: target
+                                                                    }
+                                                                }));
+                                                                logInfo('[代码審查] 版本就绪后按commentKey触发高亮', { key: pendingKey, range: normalizedRange });
+                                                            } catch (e) { logWarn('[代码審查] 按commentKey触发高亮失败', e); }
+                                                        }, 500);
+                                                        window.__aicrPendingCommentKey = null;
+                                                    }
+                                                }
+                                            } catch (e) { logWarn('[代码審查] commentKey高亮处理失败', e); }
+                                            window.__aicrPendingFileId = null;
+                                        });
                                     }
                                 }
                             } catch (e) {
@@ -864,6 +951,7 @@ const { computed } = Vue;
         logError('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
 
 
 

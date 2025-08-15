@@ -77,10 +77,14 @@ export const useComputed = (store) => {
         }),
 
         /**
-         * 分类配置
+         * 顶部分类（仅用于头部筛选按钮）
          */
         categories: computed(() => {
-            return getCategoriesConfig();
+            return [
+                { key: 'all', icon: 'fas fa-layer-group', title: '全部' },
+                { key: 'news', icon: 'fas fa-newspaper', title: '新闻' },
+                { key: 'comments', icon: 'fas fa-comments', title: '评论' }
+            ];
         }),
 
         /**
@@ -358,4 +362,5 @@ export const useComputed = (store) => {
         })
     };
 };
+
 

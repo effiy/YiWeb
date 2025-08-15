@@ -1,0 +1,101 @@
+<!-- 新闻页评论列表（样式复用 AICR 评论面板） -->
+<aside class="comment-panel-container" :class="{ 'collapsed': internalCollapsed }" role="complementary" aria-label="新闻评论列表">
+  
+
+  <!-- 加载状态 -->
+  <div v-if="loading" class="loading-container" role="status" aria-live="polite">
+    <div class="loading-spinner" aria-hidden="true"></div>
+    <div class="loading-text">正在加载评论...</div>
+  </div>
+
+  <!-- 错误状态 -->
+  <div v-else-if="error" class="error-container" role="alert" aria-live="polite">
+    <div class="error-icon" aria-hidden="true">
+      <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    <div class="error-text">{{ error }}</div>
+  </div>
+
+  <!-- 评论内容 -->
+  <div v-else class="comment-panel-content">
+    <!-- 评论统计 -->
+    <div v-if="comments.length > 0" class="comment-stats">
+      <div class="stats-item stats-item-total">
+        <span class="stats-number">{{ comments.length }}</span>
+        <span class="stats-label">评论</span>
+      </div>
+      <div class="stats-item stats-item-resolved">
+        <span class="stats-number">{{ comments.filter(c => c.status === 'resolved').length }}</span>
+        <span class="stats-label">已解决</span>
+      </div>
+      <div class="stats-item stats-item-pending">
+        <span class="stats-number">{{ comments.filter(c => !c.status || c.status === 'pending').length }}</span>
+        <span class="stats-label">待处理</span>
+      </div>
+    </div>
+
+    <!-- 评论列表 -->
+    <div v-if="comments && comments.length > 0" class="comment-list" role="list">
+      <article 
+        v-for="comment in comments" 
+        :key="comment.key"
+        class="comment-item"
+        :class="getCommentStatusClass(comment.status)"
+        role="listitem"
+        @click="openInAicr(comment)"
+        :title="'在AICR中打开相关文件'">
+        <div class="comment-header-section">
+          <div class="comment-meta">
+            <div class="comment-author-info">
+              <div class="comment-avatar" :style="getAuthorAvatar(comment.author)">{{ getAuthorAvatar(comment.author).text }}</div>
+              <div class="comment-author-details">
+                <span class="comment-author">{{ comment.author || '匿名' }}</span>
+                <time class="comment-time" :datetime="comment.timestamp">{{ formatTime(comment.timestamp) }}</time>
+              </div>
+            </div>
+            <div class="comment-badges">
+              <span v-if="comment.type" class="comment-type" :class="`type-${comment.type}`">
+                <i :class="getCommentTypeIcon(comment.type)"></i>
+                {{ getCommentTypeLabel(comment.type) }}
+              </span>
+              <span v-if="comment.status" class="comment-status" :class="`status-${comment.status}`">
+                <i :class="getCommentStatusIcon(comment.status)"></i>
+                {{ getCommentStatusLabel(comment.status) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="comment-body">
+          <div v-if="comment.text" class="comment-quote">
+            <div class="quote-header">
+              <i class="fas fa-quote-left"></i>
+              <span>引用</span>
+            </div>
+            <pre class="quote-code">{{ comment.text }}</pre>
+          </div>
+          <div v-if="comment.content" class="comment-content md-preview-body" v-html="comment.content"></div>
+          <div v-if="comment.improvementText" class="comment-improvement">
+            <div class="improvement-header">
+              <i class="fas fa-magic"></i>
+              <span>改进建议</span>
+            </div>
+            <pre class="improvement-code">{{ comment.improvementText }}</pre>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- 空状态 -->
+    <div v-else class="no-comments-state" role="status">
+      <div class="no-comments-icon" aria-hidden="true">
+        <i class="fas fa-comment-slash"></i>
+      </div>
+      <div class="no-comments-title">暂无评论</div>
+      <div class="no-comments-subtitle">从服务端未获取到评论数据</div>
+    </div>
+  </div>
+</aside>
+
+
+

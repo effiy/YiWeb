@@ -1,0 +1,11 @@
+/* 新闻页评论列表容器（复用 AICR 样式变量） */
+.news-comments-wrapper { grid-area: news; }
+
+/* 可在需要时覆写少量样式（其余复用 AICR 的 commentPanel 样式） */
+comments-list { display: block; width: 100%; }
+comments-list .comment-panel-container { height: auto; max-height: none; }
+comments-list .comment-panel-content { min-height: auto; }
+comments-list .comment-list { overflow: visible; }
+
+
+

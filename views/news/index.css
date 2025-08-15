@@ -14,6 +14,11 @@
     max-width: 100%;
 }
 
+/* 评论列表区块间距 */
+.news-comments-section {
+    margin-top: var(--spacing-2xl);
+}
+
 /* 侧边栏组件样式 */
 
 /* 侧边栏导航主容器 */
@@ -26,7 +31,7 @@
     width: 320px;
     min-width: 320px;
     transition: all var(--transition-normal);
-    margin-top: 0;
+    margin: 0 0 0 16px;
 }
 
 /* 侧边栏收缩状态 */
@@ -172,4 +177,5 @@
         font-size: 0.8rem;
     }
 } 
+
 

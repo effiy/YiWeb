@@ -25,8 +25,11 @@ export const useMethods = (store) => {
         searchHistory,
         sidebarCollapsed,
         tagStatistics,
+        readItems,
+        favoriteItems,
         loadNewsData,
         setSearchQuery,
+        setActiveCategory,
         toggleCategory,
         toggleTag,
         setCurrentDate,
@@ -35,7 +38,9 @@ export const useMethods = (store) => {
         addClickedItem,
         addSearchHistory,
         clearSearch,
-        clearError
+        clearError,
+        markItemRead,
+        toggleFavorite
     } = store;
 
     /**
@@ -102,6 +107,27 @@ export const useMethods = (store) => {
                 throw createError('分类参数无效', ErrorTypes.VALIDATION, '分类切换');
             }
 
+            // 顶部分类：全部/新闻/评论
+            if (['all', 'news', 'comments'].includes(category)) {
+                setActiveCategory(category);
+
+                // 点击后请求对应接口
+                if (category === 'all') {
+                    // 同时刷新新闻与评论
+                    loadNewsData();
+                    window.dispatchEvent(new CustomEvent('ReloadComments'));
+                } else if (category === 'news') {
+                    loadNewsData();
+                } else if (category === 'comments') {
+                    window.dispatchEvent(new CustomEvent('ReloadComments'));
+                }
+
+                showSuccessMessage(`已切换到: ${category === 'all' ? '全部' : category === 'news' ? '新闻' : '评论'}`);
+                console.log(`[顶部分类切换] 切换到: ${category}`);
+                return;
+            }
+
+            // 兼容：旧的新闻内部分类开关
             toggleCategory(category);
             showSuccessMessage(`已切换分类: ${category}`);
             console.log(`[分类切换] 切换到: ${category}`);
@@ -136,6 +162,8 @@ export const useMethods = (store) => {
 
             const itemKey = item.link || item.title;
             addClickedItem(itemKey);
+            // 标记为已读
+            markItemRead(itemKey);
             
             setTimeout(() => clickedItems.value.delete(itemKey), 300);
 
@@ -146,6 +174,20 @@ export const useMethods = (store) => {
                 throw createError('新闻链接无效', ErrorTypes.VALIDATION, '新闻点击');
             }
         }, '新闻点击处理');
+    };
+
+    /**
+     * 切换收藏
+     * @param {Object} item
+     */
+    const handleToggleFavorite = (item) => {
+        return safeExecute(() => {
+            if (!item) {
+                throw createError('新闻项无效', ErrorTypes.VALIDATION, '收藏切换');
+            }
+            const itemKey = item.link || item.title;
+            toggleFavorite(itemKey);
+        }, '收藏切换');
     };
 
     /**
@@ -337,6 +379,7 @@ export const useMethods = (store) => {
         // 界面控制方法
         handleToggleSidebar,
         handleLoadNewsData,
+        handleToggleFavorite,
         
         // 工具方法
         updateUrlParams,
@@ -346,3 +389,4 @@ export const useMethods = (store) => {
         shouldShowCategory
     };
 }; 
+

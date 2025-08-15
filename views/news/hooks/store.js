@@ -24,6 +24,8 @@ export const createStore = () => {
     const selectedCategories = vueRef(new Set());
     // 当前选中的标签
     const selectedTags = vueRef(new Set());
+    // 顶部分类（全部/新闻/评论）
+    const activeCategory = vueRef('all');
     // 当前日期
     const currentDate = vueRef(new Date());
     // 日历月份
@@ -44,6 +46,10 @@ export const createStore = () => {
     const sidebarCollapsed = vueRef(false);
     // 标签统计
     const tagStatistics = vueRef({});
+    // 已读新闻集合（本地持久化）
+    const readItems = vueRef(new Set());
+    // 收藏新闻集合（本地持久化）
+    const favoriteItems = vueRef(new Set());
 
     /**
      * 异步加载新闻数据
@@ -84,6 +90,76 @@ export const createStore = () => {
         }).finally(() => {
             loading.value = false;
         });
+    };
+
+    /**
+     * 从本地存储恢复状态
+     */
+    const restorePersistence = () => {
+        try {
+            const readRaw = localStorage.getItem('newsReadItems');
+            const favRaw = localStorage.getItem('newsFavoriteItems');
+            if (readRaw) {
+                const parsed = JSON.parse(readRaw);
+                if (Array.isArray(parsed)) {
+                    readItems.value = new Set(parsed);
+                }
+            }
+            if (favRaw) {
+                const parsed = JSON.parse(favRaw);
+                if (Array.isArray(parsed)) {
+                    favoriteItems.value = new Set(parsed);
+                }
+            }
+        } catch (e) {
+            console.warn('[news/store] 恢复本地持久化失败', e);
+        }
+    };
+
+    /**
+     * 保存已读集合到本地
+     */
+    const persistRead = () => {
+        try {
+            localStorage.setItem('newsReadItems', JSON.stringify(Array.from(readItems.value)));
+        } catch (e) {
+            console.warn('[news/store] 保存已读状态失败', e);
+        }
+    };
+
+    /**
+     * 保存收藏集合到本地
+     */
+    const persistFavorites = () => {
+        try {
+            localStorage.setItem('newsFavoriteItems', JSON.stringify(Array.from(favoriteItems.value)));
+        } catch (e) {
+            console.warn('[news/store] 保存收藏状态失败', e);
+        }
+    };
+
+    /**
+     * 标记新闻为已读
+     * @param {string} itemKey
+     */
+    const markItemRead = (itemKey) => {
+        if (!itemKey) return;
+        readItems.value.add(itemKey);
+        persistRead();
+    };
+
+    /**
+     * 切换收藏
+     * @param {string} itemKey
+     */
+    const toggleFavorite = (itemKey) => {
+        if (!itemKey) return;
+        if (favoriteItems.value.has(itemKey)) {
+            favoriteItems.value.delete(itemKey);
+        } else {
+            favoriteItems.value.add(itemKey);
+        }
+        persistFavorites();
     };
 
     /**
@@ -184,10 +260,24 @@ export const createStore = () => {
         errorMessage.value = '';
     };
 
+    /**
+     * 设置顶部分类
+     * @param {('all'|'news'|'comments')} key
+     */
+    const setActiveCategory = (key) => {
+        const allowed = new Set(['all', 'news', 'comments']);
+        if (allowed.has(key)) {
+            activeCategory.value = key;
+        }
+    };
+
     // 自动初始化加载 - 延迟执行以确保组件完全初始化
     setTimeout(() => {
         loadNewsData();
     }, 100);
+
+    // 恢复本地持久化
+    restorePersistence();
 
     // 返回状态和方法
     return {
@@ -196,6 +286,7 @@ export const createStore = () => {
         searchQuery,
         selectedCategories,
         selectedTags,
+        activeCategory,
         currentDate,
         calendarMonth,
         today,
@@ -206,6 +297,8 @@ export const createStore = () => {
         searchHistory,
         sidebarCollapsed,
         tagStatistics,
+        readItems,
+        favoriteItems,
         
         // 方法
         loadNewsData,
@@ -218,7 +311,11 @@ export const createStore = () => {
         addClickedItem,
         addSearchHistory,
         clearSearch,
-        clearError
+        clearError,
+        setActiveCategory,
+        // 持久化相关
+        markItemRead,
+        toggleFavorite
     };
 };
 
@@ -227,6 +324,7 @@ export const createStore = () => {
  * @returns {Array} 分类配置数组
  */
 export function getCategoriesConfig() {
+    // 注意：此配置用于新闻内部分类与渲染，不影响顶部（全部/新闻/评论）分类
     return [
         { key: 'data-analysis', icon: 'fas fa-chart-line', title: '数据分析', badge: '数据分析' },
         { key: 'code-assistant', icon: 'fas fa-code', title: '代码助手', badge: '代码编写' },

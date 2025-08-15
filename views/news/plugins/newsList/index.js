@@ -66,12 +66,20 @@ const createNewsList = async () => {
                 type: Set,
                 default: () => new Set()
             },
+            readItems: {
+                type: Set,
+                default: () => new Set()
+            },
+            favoriteItems: {
+                type: Set,
+                default: () => new Set()
+            },
             hasNewsData: {
                 type: Boolean,
                 default: false
             }
         },
-        emits: ['load-news-data', 'news-click'],
+        emits: ['load-news-data', 'news-click', 'toggle-favorite'],
         methods: {
             // 检查是否应该显示某个分类
             shouldShowCategory(categoryKey) {
@@ -146,15 +154,47 @@ const createNewsList = async () => {
             // 获取新闻统计信息
             getNewsStats() {
                 return safeExecute(() => {
-                    const total = this.searchResults.length;
+                    const items = this.getDisplayedItems();
+                    const total = items.length;
+                    const read = items.reduce((acc, it) => acc + (this.isRead(it) ? 1 : 0), 0);
+                    const fav = items.reduce((acc, it) => acc + (this.isFavorited(it) ? 1 : 0), 0);
                     const categorized = Object.keys(this.displayCategories).length;
                     
                     return {
                         total,
+                        read,
+                        fav,
                         categorized,
                         hasData: total > 0
                     };
                 }, '新闻统计计算');
+            },
+            // 当前展示的条目集合
+            getDisplayedItems() {
+                return safeExecute(() => {
+                    if (this.searchQuery && this.searchResults && this.searchResults.length) {
+                        return this.searchResults;
+                    }
+                    const all = [];
+                    Object.values(this.displayCategories || {}).forEach(cat => {
+                        if (cat && Array.isArray(cat.news)) all.push(...cat.news);
+                    });
+                    return all;
+                }, '获取展示条目');
+            },
+            // 已读判断
+            isRead(item) {
+                return safeExecute(() => {
+                    const key = item.link || item.title;
+                    return this.readItems && this.readItems.has(key);
+                }, '已读判断');
+            },
+            // 收藏判断
+            isFavorited(item) {
+                return safeExecute(() => {
+                    const key = item.link || item.title;
+                    return this.favoriteItems && this.favoriteItems.has(key);
+                }, '收藏判断');
             },
             
             // 检查是否有搜索结果
@@ -192,3 +232,4 @@ const createNewsList = async () => {
         console.error('NewsList 组件初始化失败:', error);
     }
 })();
+

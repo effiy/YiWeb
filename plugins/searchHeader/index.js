@@ -42,6 +42,11 @@ const createSearchHeader = async () => {
                 type: Set,
                 default: () => new Set()
             },
+            // 新增：顶部分类（all/news/comments）
+            activeCategory: {
+                type: String,
+                default: ''
+            },
             sidebarCollapsed: {
                 type: Boolean,
                 default: false
@@ -305,4 +310,5 @@ const createSearchHeader = async () => {
         console.error('SearchHeader 组件初始化失败:', error);
     }
 })(); 
+
 
