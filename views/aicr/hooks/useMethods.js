@@ -501,6 +501,13 @@ export const useMethods = (store) => {
                             content = '';
                         }
                     }
+                    // 记录精确字节数，优先用上面计算到的 size；若不可用则回退用 TextEncoder 重新计算
+                    const payloadSize = Number.isFinite(size)
+                        ? size
+                        : ((typeof TextEncoder !== 'undefined' && typeof content === 'string')
+                            ? new TextEncoder().encode(content).length
+                            : ((content || '').length));
+
                     filesPayload.push({
                         projectId,
                         versionId,
@@ -508,7 +515,8 @@ export const useMethods = (store) => {
                         id: normPath,
                         path: normPath,
                         name: normPath.split('/').pop(),
-                        content: content || ''
+                        content: content || '',
+                        size: payloadSize
                     });
                     processed++;
                 }
@@ -531,7 +539,7 @@ export const useMethods = (store) => {
                 for (const f of filesPayload) {
                     const dir = f.path.includes('/') ? f.path.split('/').slice(0, -1).join('/') : '';
                     const parent = ensureFolder(dir);
-                    parent.children.push({ id: f.path, name: f.name, type: 'file', size: (f.content || '').length, modified: Date.now() });
+                    parent.children.push({ id: f.path, name: f.name, type: 'file', size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)), modified: Date.now() });
                 }
 
                 // 覆盖远端：先删除当前 project/version 的树与文件，再写入新内容

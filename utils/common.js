@@ -298,15 +298,23 @@ export function detectDevice() {
  * @returns {string} 格式化后的文件大小
  */
 export function formatFileSize(bytes, decimals = 2) {
-    if (bytes === 0) return '0 Bytes';
-    
+    const n = Number(bytes);
+    if (!Number.isFinite(n) || n < 0) return '0 Bytes';
+    if (n === 0) return '0 Bytes';
+    const units = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    let idx = 0;
+    let val = n;
+    while (val >= k && idx < units.length - 1) {
+        val = val / k;
+        idx++;
+    }
+    const dm = idx === 0 ? 0 : (decimals < 0 ? 0 : decimals);
+    const factor = Math.pow(10, dm);
+    const truncated = Math.floor(val * factor) / factor;
+    return dm === 0
+        ? `${truncated} ${units[idx]}`
+        : `${truncated.toFixed(dm)} ${units[idx]}`;
 }
 
 // 导出默认工具对象

@@ -9,6 +9,25 @@ loadCSSFiles([
     '/views/aicr/plugins/fileTree/index.css'
 ]);
 
+// 统一的文件大小格式化（截断不进位，避免边界显示进位）
+function formatFileSizeCompact(bytes) {
+    const n = Number(bytes);
+    if (!Number.isFinite(n) || n <= 0) return '';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const k = 1024;
+    let idx = 0;
+    let val = n;
+    while (val >= k && idx < units.length - 1) {
+        val = val / k;
+        idx++;
+    }
+    const decimals = idx === 0 ? 0 : 1;
+    const factor = Math.pow(10, decimals);
+    // 截断而非四舍五入，避免如 1023.99KB -> 1024.0KB 的进位
+    const truncated = Math.floor(val * factor) / factor;
+    return decimals === 0 ? `${truncated}${units[idx]}` : `${truncated.toFixed(decimals)}${units[idx]}`;
+}
+
 // 异步加载HTML模板
 async function loadTemplate() {
     try {
@@ -182,11 +201,7 @@ const createFileTreeNode = () => {
             getFileSizeDisplay(item) {
                 return safeExecute(() => {
                     if (item.type === 'folder' || !item.size) return '';
-                    
-                    const size = item.size;
-                    if (size < 1024) return `${size}B`;
-                    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)}KB`;
-                    return `${(size / (1024 * 1024)).toFixed(1)}MB`;
+                    return formatFileSizeCompact(item.size);
                 }, '文件大小计算');
             },
             
@@ -425,11 +440,7 @@ const createFileTree = async () => {
             getFileSizeDisplay(item) {
                 return safeExecute(() => {
                     if (item.type === 'folder' || !item.size) return '';
-                    
-                    const size = item.size;
-                    if (size < 1024) return `${size}B`;
-                    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)}KB`;
-                    return `${(size / (1024 * 1024)).toFixed(1)}MB`;
+                    return formatFileSizeCompact(item.size);
                 }, '文件大小计算');
             },
             
