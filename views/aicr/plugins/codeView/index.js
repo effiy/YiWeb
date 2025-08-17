@@ -70,6 +70,23 @@ const createCodeView = async () => {
                 showAdvancedOptions: false
             };
         },
+        watch: {
+            // 监听评论数据变化，处理挂起的评论Key
+            comments: {
+                handler(newComments, oldComments) {
+                    // 当评论数据首次加载或发生变化时，尝试处理挂起的评论Key
+                    if (newComments && newComments.length > 0) {
+                        console.log('[CodeView] 评论数据已加载，尝试处理挂起的评论Key');
+                        this.$nextTick(() => {
+                            setTimeout(() => {
+                                this.handlePendingCommentKey();
+                            }, 200);
+                        });
+                    }
+                },
+                immediate: true
+            }
+        },
         computed: {
             codeLines() {
                 const content = (this.file && typeof this.file.content === 'string') ? this.file.content : '';
@@ -272,24 +289,182 @@ const createCodeView = async () => {
                 html = html.replace(/(?:^|\n)(https?:[^\s]+\.(?:png|jpe?g|gif|webp|svg))(?:\n|$)/gi, (m, url) => `\n<p><img src="${url}" alt="image" class="md-image"\/><\/p>\n`);
                 return html;
             },
-            // 响应外部的代码高亮事件（轻量实现：仅记录行号并滚动到视区）
+            // 响应外部的代码高亮事件（增强版：支持评论定位和自动打开）
             handleHighlightEvent(detail) {
                 return safeExecute(() => {
                     const range = detail && detail.rangeInfo ? detail.rangeInfo : null;
+                    const comment = detail && detail.comment ? detail.comment : null;
+                    
                     if (!range) return;
+                    
                     const start = Number(range.startLine) || 1;
                     const end = Number(range.endLine) || start;
+                    
+                    console.log('[CodeView] 处理高亮事件:', { range, comment, start, end });
+                    
+                    // 更新高亮行
                     this.highlightedLines = [];
                     for (let i = start; i <= end; i++) this.highlightedLines.push(i);
-                    this.$nextTick(() => {
-                        try {
-                            const el = this.$el && this.$el.querySelector(`[data-line="${start}"]`);
-                            if (el && typeof el.scrollIntoView === 'function') {
-                                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }
-                        } catch (_) {}
-                    });
+                    
+                    // 延迟执行滚动和评论打开，确保DOM已更新
+                    setTimeout(() => {
+                        this.scrollToCommentPosition(start, comment);
+                    }, 100);
+                    
                 }, '处理代码高亮事件');
+            },
+            
+            // 滚动到评论位置并可选择性打开评论详情
+            scrollToCommentPosition(startLine, comment = null) {
+                // 使用递归重试机制，确保DOM元素已渲染
+                const attemptScroll = (retryCount = 0) => {
+                    try {
+                        // 优先尝试滚动到评论标记位置
+                        let targetElement = null;
+                        
+                        if (comment && comment.key) {
+                            // 先尝试找到具体的评论标记
+                            const markers = this.$el ? this.$el.querySelectorAll('.comment-marker') : [];
+                            for (const marker of markers) {
+                                if (marker.dataset.commentKey === comment.key) {
+                                    targetElement = marker;
+                                    console.log('[CodeView] 找到评论标记:', comment.key);
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // 如果没找到评论标记，则滚动到代码行
+                        if (!targetElement && startLine) {
+                            targetElement = this.$el ? this.$el.querySelector(`[data-line="${startLine}"]`) : null;
+                            console.log('[CodeView] 滚动到代码行:', startLine);
+                        }
+                        
+                        // 执行滚动
+                        if (targetElement && typeof targetElement.scrollIntoView === 'function') {
+                            // 先高亮目标行
+                            this.highlightedLines = [];
+                            if (comment && comment.rangeInfo) {
+                                const start = Number(comment.rangeInfo.startLine) || 1;
+                                const end = Number(comment.rangeInfo.endLine) || start;
+                                for (let i = start; i <= end; i++) {
+                                    this.highlightedLines.push(i);
+                                }
+                            } else if (startLine) {
+                                this.highlightedLines.push(Number(startLine));
+                            }
+                            
+                            // 执行平滑滚动
+                            targetElement.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'center',
+                                inline: 'nearest'
+                            });
+                            
+                            console.log('[CodeView] 成功滚动到位置:', { startLine, comment: comment?.key });
+                            
+                            // 如果有评论信息，延迟后自动打开评论详情
+                            if (comment && comment.key) {
+                                setTimeout(() => {
+                                    this.autoOpenCommentDetail(comment);
+                                }, 1000); // 等待滚动动画完成
+                            }
+                            
+                            return true; // 成功
+                        } else {
+                            // 如果找不到目标元素且重试次数未达上限，继续重试
+                            if (retryCount < 5) {
+                                console.log(`[CodeView] 未找到目标元素，第${retryCount + 1}次重试...`);
+                                setTimeout(() => {
+                                    attemptScroll(retryCount + 1);
+                                }, 300);
+                            } else {
+                                console.warn('[CodeView] 达到最大重试次数，停止尝试滚动');
+                            }
+                        }
+                        
+                    } catch (error) {
+                        console.warn('[CodeView] 滚动到评论位置失败:', error);
+                    }
+                    
+                    return false;
+                };
+                
+                // 开始尝试滚动
+                attemptScroll();
+            },
+            
+            // 自动打开指定评论的详情
+            autoOpenCommentDetail(comment) {
+                try {
+                    if (!comment || !comment.key) return;
+                    
+                    console.log('[CodeView] 自动打开评论详情:', comment.key);
+                    
+                    // 检查评论是否在当前评论列表中
+                    const comments = this.comments || [];
+                    const foundComment = comments.find(c => c.key === comment.key || c.id === comment.key);
+                    
+                    if (foundComment) {
+                        // 直接打开评论详情
+                        this.showCommentDetail(foundComment);
+                        console.log('[CodeView] 成功打开评论详情:', foundComment.key);
+                    } else {
+                        console.warn('[CodeView] 在当前评论列表中未找到指定评论:', comment.key);
+                        
+                        // 尝试从URL参数重新获取评论信息
+                        this.handlePendingCommentKey();
+                    }
+                    
+                } catch (error) {
+                    console.warn('[CodeView] 自动打开评论详情失败:', error);
+                }
+            },
+            
+            // 处理挂起的评论Key（从URL参数）
+            handlePendingCommentKey() {
+                try {
+                    const pendingKey = window.__aicrPendingCommentKey;
+                    const pendingRange = window.__aicrPendingHighlightRangeInfo;
+                    
+                    // 如果有挂起的评论Key，优先处理
+                    if (pendingKey) {
+                        console.log('[CodeView] 处理挂起的评论Key:', pendingKey);
+                        
+                        // 查找评论
+                        const comments = this.comments || [];
+                        const targetComment = comments.find(c => (c.key || c.id) === pendingKey);
+                        
+                        if (targetComment) {
+                            console.log('[CodeView] 找到挂起的评论，自动定位:', targetComment);
+                            
+                            // 先滚动到评论位置
+                            if (targetComment.rangeInfo) {
+                                const startLine = targetComment.rangeInfo.startLine || 1;
+                                this.scrollToCommentPosition(startLine, targetComment);
+                            }
+                            
+                            // 清除挂起状态
+                            window.__aicrPendingCommentKey = null;
+                            
+                        } else {
+                            console.warn('[CodeView] 未找到挂起的评论:', pendingKey);
+                        }
+                    } 
+                    // 如果没有评论Key但有高亮范围，处理高亮范围
+                    else if (pendingRange) {
+                        console.log('[CodeView] 处理挂起的高亮范围:', pendingRange);
+                        
+                        const startLine = Number(pendingRange.startLine) || 1;
+                        this.scrollToCommentPosition(startLine, null);
+                        
+                        // 清除挂起状态
+                        window.__aicrPendingHighlightRangeInfo = null;
+                    }
+                    
+                } catch (error) {
+                    console.warn('[CodeView] 处理挂起参数失败:', error);
+                }
             },
             // 从选择对象中提取纯代码内容（去除行号）
             extractCodeContent(selection) {
@@ -1600,6 +1775,13 @@ const createCodeView = async () => {
                 this.$emit('reload-comments', e.detail);
             };
             window.addEventListener('reloadComments', this._reloadCommentsListener);
+            
+            // 延迟处理挂起的评论Key，确保评论数据已加载
+            this.$nextTick(() => {
+                setTimeout(() => {
+                    this.handlePendingCommentKey();
+                }, 500);
+            });
             
             // 监听窗口尺寸变化，重新计算预览弹窗位置
             this._resizeListener = () => {
