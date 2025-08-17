@@ -64,7 +64,10 @@ const createCodeView = async () => {
                 editingCommentType: '',
                 editingCommentStatus: 'pending',
                 editingRangeInfo: { startLine: 1, endLine: 1 },
-                editingSaving: false
+                editingSaving: false,
+                
+                // 界面控制
+                showAdvancedOptions: false
             };
         },
         computed: {
@@ -1875,128 +1878,177 @@ const createCodeView = async () => {
                         <div class="comment-detail-body">
                             <!-- 编辑模式 -->
                             <div v-if="isEditingCommentDetail" class="comment-edit-form">
-                                <div class="form-row">
-                                    <div class="form-group half-width">
-                                        <label>评论者:</label>
-                                        <input 
-                                            v-model="editingCommentAuthor"
-                                            type="text" 
-                                            class="form-input"
-                                            placeholder="输入评论者姓名"
-                                        />
+                                <!-- 主要内容区 -->
+                                <div class="edit-form-main">
+                                    <div class="form-group priority-field">
+                                        <label class="form-label primary">
+                                            <i class="fas fa-comment-dots"></i>
+                                            评论内容
+                                        </label>
+                                        <textarea 
+                                            v-model="editingCommentContent"
+                                            class="form-textarea comment-content-textarea primary-textarea"
+                                            placeholder="编辑评论内容（支持Markdown格式）"
+                                            rows="8"
+                                            @keydown="onCommentDetailEditKeydown"
+                                        ></textarea>
+                                        <div class="textarea-hint">
+                                            <i class="fas fa-info-circle"></i>
+                                            支持Markdown格式，Ctrl/Cmd + Enter 保存，Esc 取消
+                                        </div>
                                     </div>
-                                    <div class="form-group half-width">
-                                        <label>时间:</label>
-                                        <input 
-                                            v-model="editingCommentTimestamp"
-                                            type="datetime-local" 
-                                            class="form-input"
-                                            title="编辑时间"
-                                        />
+
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            <i class="fas fa-code"></i>
+                                            引用代码
+                                        </label>
+                                        <textarea 
+                                            v-model="editingCommentText"
+                                            class="form-textarea quoted-code-textarea"
+                                            placeholder="输入引用的代码（可选）"
+                                            rows="6"
+                                            wrap="off"
+                                            spellcheck="false"
+                                            autocapitalize="off"
+                                            autocorrect="off"
+                                            @keydown="handleQuotedCodeKeydown"
+                                        ></textarea>
+                                    </div>
+
+                                    <div class="form-group" v-if="editingImprovementText || showAdvancedOptions">
+                                        <label class="form-label">
+                                            <i class="fas fa-magic"></i>
+                                            改进建议
+                                        </label>
+                                        <textarea 
+                                            v-model="editingImprovementText"
+                                            class="form-textarea improvement-textarea"
+                                            placeholder="输入改进后的代码（可选）"
+                                            rows="5"
+                                        ></textarea>
                                     </div>
                                 </div>
 
-                                <div v-if="currentCommentDetail && currentCommentDetail.rangeInfo" class="form-row">
-                                    <div class="form-group half-width">
-                                        <label>开始行:</label>
-                                        <input 
-                                            v-model.number="editingRangeInfo.startLine"
-                                            type="number" 
-                                            min="1"
-                                            class="form-input"
-                                            placeholder="开始行号"
-                                        />
+                                <!-- 元信息区 -->
+                                <div class="edit-form-meta">
+                                    <div class="form-section">
+                                        <div class="section-title">
+                                            <i class="fas fa-tags"></i>
+                                            评论分类
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group half-width">
+                                                <label class="form-label compact">类型</label>
+                                                <select v-model="editingCommentType" class="form-select" title="选择评论类型">
+                                                    <option value="">无类型</option>
+                                                    <option value="suggestion">💡 建议</option>
+                                                    <option value="question">❓ 问题</option>
+                                                    <option value="bug">🐛 错误</option>
+                                                    <option value="discussion">💬 讨论</option>
+                                                    <option value="praise">👍 表扬</option>
+                                                    <option value="nitpick">🔍 细节</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group half-width">
+                                                <label class="form-label compact">状态</label>
+                                                <select v-model="editingCommentStatus" class="form-select" title="选择状态">
+                                                    <option value="pending">⏳ 待处理</option>
+                                                    <option value="resolved">✅ 已解决</option>
+                                                    <option value="closed">🔒 已关闭</option>
+                                                    <option value="wontfix">❌ 不修复</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="form-group half-width">
-                                        <label>结束行:</label>
-                                        <input 
-                                            v-model.number="editingRangeInfo.endLine"
-                                            type="number" 
-                                            min="1"
-                                            class="form-input"
-                                            placeholder="结束行号"
-                                        />
+
+                                    <div class="form-section">
+                                        <div class="section-title">
+                                            <i class="fas fa-info-circle"></i>
+                                            详细信息
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group half-width">
+                                                <label class="form-label compact">评论者</label>
+                                                <input 
+                                                    v-model="editingCommentAuthor"
+                                                    type="text" 
+                                                    class="form-input"
+                                                    placeholder="输入评论者姓名"
+                                                />
+                                            </div>
+                                            <div class="form-group half-width">
+                                                <label class="form-label compact">时间</label>
+                                                <input 
+                                                    v-model="editingCommentTimestamp"
+                                                    type="datetime-local" 
+                                                    class="form-input"
+                                                    title="编辑时间"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div v-if="currentCommentDetail && currentCommentDetail.rangeInfo" class="form-row">
+                                            <div class="form-group half-width">
+                                                <label class="form-label compact">开始行</label>
+                                                <input 
+                                                    v-model.number="editingRangeInfo.startLine"
+                                                    type="number" 
+                                                    min="1"
+                                                    class="form-input"
+                                                    placeholder="开始行号"
+                                                />
+                                            </div>
+                                            <div class="form-group half-width">
+                                                <label class="form-label compact">结束行</label>
+                                                <input 
+                                                    v-model.number="editingRangeInfo.endLine"
+                                                    type="number" 
+                                                    min="1"
+                                                    class="form-input"
+                                                    placeholder="结束行号"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 高级选项切换 -->
+                                    <div class="form-section" v-if="!showAdvancedOptions && !editingImprovementText">
+                                        <button 
+                                            type="button"
+                                            @click="showAdvancedOptions = true"
+                                            class="toggle-advanced-btn"
+                                        >
+                                            <i class="fas fa-chevron-down"></i>
+                                            显示高级选项
+                                        </button>
                                     </div>
                                 </div>
 
-                                <div class="form-group">
-                                    <label>引用代码:</label>
-                                    <textarea 
-                                        v-model="editingCommentText"
-                                        class="form-textarea quoted-code-textarea"
-                                        placeholder="输入引用的代码（可选）"
-                                        rows="12"
-                                        wrap="off"
-                                        spellcheck="false"
-                                        autocapitalize="off"
-                                        autocorrect="off"
-                                        @keydown="handleQuotedCodeKeydown"
-                                    ></textarea>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>评论内容:</label>
-                                    <textarea 
-                                        v-model="editingCommentContent"
-                                        class="form-textarea comment-content-textarea"
-                                        placeholder="编辑评论内容（支持Markdown）"
-                                        rows="12"
-                                        @keydown="onCommentDetailEditKeydown"
-                                    ></textarea>
-                                    <div class="textarea-hint">
-                                        <i class="fas fa-info-circle"></i>
-                                        支持Markdown格式，Ctrl/Cmd + Enter 保存，Esc 取消
+                                <!-- 操作按钮区 -->
+                                <div class="comment-detail-actions enhanced">
+                                    <div class="action-group primary">
+                                        <button 
+                                            @click="saveEditedCommentDetail"
+                                            class="action-button save-button primary"
+                                            :disabled="editingSaving"
+                                            title="保存修改 (⌘/Ctrl+Enter)"
+                                        >
+                                            <i class="fas" :class="editingSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                                            <span>保存修改</span>
+                                        </button>
                                     </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>改进代码 (可选):</label>
-                                    <textarea 
-                                        v-model="editingImprovementText"
-                                        class="form-textarea improvement-textarea"
-                                        placeholder="输入改进后的代码（可选）"
-                                        rows="6"
-                                    ></textarea>
-                                </div>
-
-                                <div class="form-row">
-                                    <div class="form-group half-width">
-                                        <label>评论类型:</label>
-                                        <select v-model="editingCommentType" class="form-select" title="选择评论类型">
-                                            <option value="">无类型</option>
-                                            <option value="suggestion">建议</option>
-                                            <option value="question">问题</option>
-                                            <option value="bug">错误</option>
-                                            <option value="discussion">讨论</option>
-                                            <option value="praise">表扬</option>
-                                            <option value="nitpick">细节</option>
-                                        </select>
+                                    <div class="action-group secondary">
+                                        <button 
+                                            @click="cancelEditCommentDetail" 
+                                            class="action-button cancel-button" 
+                                            :disabled="editingSaving" 
+                                            title="取消编辑 (Esc)"
+                                        >
+                                            <i class="fas fa-times"></i>
+                                            <span>取消</span>
+                                        </button>
                                     </div>
-                                    <div class="form-group half-width">
-                                        <label>状态:</label>
-                                        <select v-model="editingCommentStatus" class="form-select" title="选择状态">
-                                            <option value="pending">待处理</option>
-                                            <option value="resolved">已解决</option>
-                                            <option value="closed">已关闭</option>
-                                            <option value="wontfix">不修复</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="comment-detail-actions">
-                                    <button 
-                                        @click="saveEditedCommentDetail"
-                                        class="action-button save-button"
-                                        :disabled="editingSaving"
-                                        title="保存 (⌘/Ctrl+Enter)"
-                                    >
-                                        <i class="fas" :class="editingSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-                                        保存
-                                    </button>
-                                    <button @click="cancelEditCommentDetail" class="action-button cancel-button" :disabled="editingSaving" title="取消 (Esc)">
-                                        <i class="fas fa-times"></i>
-                                        取消
-                                    </button>
                                 </div>
                             </div>
 

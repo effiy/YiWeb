@@ -3130,3 +3130,258 @@
     transform: none;
 }
 
+/* ========== 优化的评论编辑表单样式 ========== */
+.comment-edit-form {
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
+    padding: 0;
+}
+
+/* 主要内容区域 */
+.edit-form-main {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-secondary);
+    background: var(--bg-primary);
+}
+
+/* 元信息区域 */
+.edit-form-meta {
+    padding: 16px 24px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+/* 表单分组 */
+.form-section {
+    margin-bottom: 20px;
+}
+
+.form-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-tertiary);
+}
+
+.section-title i {
+    color: var(--primary);
+    font-size: 12px;
+}
+
+/* 优先级字段 */
+.priority-field {
+    margin-bottom: 24px;
+}
+
+/* 表单标签优化 */
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.form-label.primary {
+    font-size: 14px;
+    color: var(--primary);
+    margin-bottom: 10px;
+}
+
+.form-label.compact {
+    font-size: 11px;
+    margin-bottom: 6px;
+}
+
+.form-label i {
+    color: var(--primary);
+    font-size: 11px;
+}
+
+/* 主要文本区域 */
+.primary-textarea {
+    background: rgba(59, 130, 246, 0.05);
+    border: 2px solid rgba(59, 130, 246, 0.2);
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 140px;
+}
+
+.primary-textarea:focus {
+    border-color: var(--primary);
+    background: rgba(59, 130, 246, 0.08);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 高级选项切换按钮 */
+.toggle-advanced-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px dashed var(--border-secondary);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    justify-content: center;
+}
+
+.toggle-advanced-btn:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    border-color: var(--primary);
+}
+
+.toggle-advanced-btn i {
+    transition: transform 0.2s ease;
+}
+
+/* 增强的操作按钮区 */
+.comment-detail-actions.enhanced {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-primary);
+    gap: 12px;
+}
+
+.action-group {
+    display: flex;
+    gap: 8px;
+}
+
+.action-group.primary {
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.action-group.secondary {
+    flex-shrink: 0;
+}
+
+/* 主要保存按钮 */
+.action-button.save-button.primary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    min-width: 120px;
+}
+
+.action-button.save-button.primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.action-button.save-button.primary:disabled {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* 增强按钮样式 */
+.comment-detail-actions.enhanced .action-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.comment-detail-actions.enhanced .action-button span {
+    font-weight: 500;
+}
+
+.comment-detail-actions.enhanced .cancel-button {
+    background: rgba(107, 114, 128, 0.1);
+    color: var(--text-secondary);
+    border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+.comment-detail-actions.enhanced .cancel-button:hover:not(:disabled) {
+    background: rgba(107, 114, 128, 0.2);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+/* emoji 选项样式 */
+.form-select option {
+    padding: 8px 12px;
+}
+
+/* 响应式优化 - 编辑表单 */
+@media (max-width: 768px) {
+    .edit-form-main,
+    .edit-form-meta {
+        padding: 16px;
+    }
+    
+    .comment-detail-actions.enhanced {
+        flex-direction: column-reverse;
+        gap: 12px;
+        padding: 16px;
+    }
+    
+    .action-group {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .action-button.save-button.primary {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .form-section {
+        margin-bottom: 16px;
+    }
+    
+    .section-title {
+        font-size: 12px;
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .edit-form-main,
+    .edit-form-meta {
+        padding: 12px;
+    }
+    
+    .comment-detail-actions.enhanced {
+        padding: 12px;
+    }
+    
+    .primary-textarea {
+        min-height: 120px;
+        font-size: 13px;
+    }
+}
+
