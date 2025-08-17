@@ -1084,45 +1084,113 @@ const createCodeView = async () => {
             
             // 处理引用代码键盘事件
             handleQuotedCodeKeydown(e) {
-                // Tab键插入制表符而不是切换焦点
                 if (e.key === 'Tab') {
                     e.preventDefault();
-                    const textarea = e.target;
-                    const start = textarea.selectionStart;
-                    const end = textarea.selectionEnd;
-                    const value = textarea.value;
-                    
-                    // 插入制表符
-                    textarea.value = value.substring(0, start) + '\t' + value.substring(end);
-                    textarea.selectionStart = textarea.selectionEnd = start + 1;
-                    
-                    // 触发input事件更新v-model
-                    textarea.dispatchEvent(new Event('input'));
+                    this.handleCodeIndentation(e.target, e.shiftKey);
                 }
             },
             
-            // 美化引用代码
-            beautifyQuotedCode() {
-                try {
-                    let code = this.editingCommentText;
-                    if (!code) return;
+            // 处理代码缩进/反缩进
+            handleCodeIndentation(textarea, isReverse = false) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const value = textarea.value;
+                const indentChar = '    '; // 使用4个空格缩进
+                
+                // 获取选中文本和行范围
+                const lines = value.split('\n');
+                let startLine = value.substring(0, start).split('\n').length - 1;
+                let endLine = value.substring(0, end).split('\n').length - 1;
+                
+                // 如果选择了多行或者光标在行首，处理多行缩进
+                if (start !== end || this.isAtLineStart(value, start)) {
+                    const result = this.processMultiLineIndentation(lines, startLine, endLine, indentChar, isReverse);
                     
-                    // 移除多余的空行
-                    code = code.replace(/\n\s*\n\s*\n/g, '\n\n');
+                    // 更新textarea内容
+                    textarea.value = result.newValue;
                     
-                    // 标准化缩进（将制表符转换为4个空格）
-                    code = code.replace(/\t/g, '    ');
-                    
-                    // 移除行尾空格
-                    code = code.replace(/[ \t]+$/gm, '');
-                    
-                    // 更新值
-                    this.editingCommentText = code;
-                    
-                    console.log('[CodeView] 代码美化完成');
-                } catch (error) {
-                    console.error('[CodeView] 代码美化失败:', error);
+                    // 重新设置选择范围
+                    textarea.selectionStart = result.newStart;
+                    textarea.selectionEnd = result.newEnd;
+                } else {
+                    // 单行处理
+                    if (isReverse) {
+                        // Shift+Tab: 删除光标前的缩进
+                        const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                        const lineText = lines[startLine];
+                        const leadingSpaces = lineText.match(/^(\s*)/)[1];
+                        
+                        if (leadingSpaces.length > 0) {
+                            // 计算要删除的字符数（最多删除一个缩进单位）
+                            const deleteCount = Math.min(leadingSpaces.length, indentChar.length);
+                            const newValue = value.substring(0, lineStart) + 
+                                           lineText.substring(deleteCount) + 
+                                           value.substring(lineStart + lineText.length);
+                            
+                            textarea.value = newValue;
+                            textarea.selectionStart = textarea.selectionEnd = start - deleteCount;
+                        }
+                    } else {
+                        // Tab: 插入缩进
+                        textarea.value = value.substring(0, start) + indentChar + value.substring(end);
+                        textarea.selectionStart = textarea.selectionEnd = start + indentChar.length;
+                    }
                 }
+                
+                // 触发input事件更新v-model
+                textarea.dispatchEvent(new Event('input'));
+            },
+            
+            // 判断光标是否在行首或行首空白处
+            isAtLineStart(text, position) {
+                const lineStart = text.lastIndexOf('\n', position - 1) + 1;
+                const beforeCursor = text.substring(lineStart, position);
+                return /^\s*$/.test(beforeCursor);
+            },
+            
+            // 处理多行缩进
+            processMultiLineIndentation(lines, startLine, endLine, indentChar, isReverse) {
+                let newStart, newEnd;
+                let startOffset = 0;
+                let endOffset = 0;
+                
+                for (let i = startLine; i <= endLine; i++) {
+                    const line = lines[i];
+                    
+                    if (isReverse) {
+                        // 反向缩进：删除行首的缩进
+                        if (line.startsWith(indentChar)) {
+                            lines[i] = line.substring(indentChar.length);
+                            if (i === startLine) startOffset = -indentChar.length;
+                            if (i === endLine) endOffset = -indentChar.length;
+                        } else if (line.match(/^\s+/)) {
+                            // 如果不是标准缩进，删除最多4个空格或制表符
+                            const leadingSpaces = line.match(/^(\s*)/)[1];
+                            const deleteCount = Math.min(leadingSpaces.length, indentChar.length);
+                            lines[i] = line.substring(deleteCount);
+                            if (i === startLine) startOffset = -deleteCount;
+                            if (i === endLine) endOffset = -deleteCount;
+                        }
+                    } else {
+                        // 正向缩进：在行首添加缩进（跳过空行）
+                        if (line.trim() !== '') {
+                            lines[i] = indentChar + line;
+                            if (i === startLine) startOffset = indentChar.length;
+                            if (i === endLine) endOffset = indentChar.length;
+                        }
+                    }
+                }
+                
+                const newValue = lines.join('\n');
+                
+                // 计算新的选择范围
+                const originalStart = lines.slice(0, startLine).join('\n').length + (startLine > 0 ? 1 : 0);
+                const originalEnd = lines.slice(0, endLine + 1).join('\n').length;
+                
+                newStart = originalStart + startOffset;
+                newEnd = newValue.length - (lines.slice(endLine + 1).join('\n').length + (endLine < lines.length - 1 ? 1 : 0)) + endOffset;
+                
+                return { newValue, newStart, newEnd };
             },
             
             // 高亮代码（点击引用代码时触发）
@@ -1595,15 +1663,7 @@ const createCodeView = async () => {
                                 </div>
 
                                 <div class="form-group">
-                                    <div class="label-row">
-                                        <label>引用代码:</label>
-                                        <div class="textarea-actions inline">
-                                            <button class="action-button" type="button" title="格式美化（缩进/去空行）" @click="beautifyQuotedCode">
-                                                <i class="fas fa-broom"></i>
-                                                美化代码
-                                            </button>
-                                        </div>
-                                    </div>
+                                    <label>引用代码:</label>
                                     <textarea 
                                         v-model="editingCommentText"
                                         class="form-textarea quoted-code-textarea"

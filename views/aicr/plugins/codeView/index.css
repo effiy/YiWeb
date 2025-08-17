@@ -90,6 +90,15 @@
     overflow: auto;
     padding: 16px; /* 与查看态 .quote-code 一致的内边距，修复首行留白差异 */
     box-sizing: border-box; /* 保证内边距计算一致 */
+    resize: vertical;
+    min-height: 120px;
+    transition: all 0.2s ease;
+}
+
+.quoted-code-textarea:focus {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
 .code-header .file-name {
@@ -2953,10 +2962,4 @@
     cursor: not-allowed;
     transform: none;
 }
-
-
-
-
-
-
 
