@@ -1784,15 +1784,6 @@ const createCodeView = async () => {
                                 </button>
                             </div>
                             <div class="manual-improvement-body">
-                                <!-- 引用代码区域（独立显示在编辑框外） -->
-                                <div v-if="lastSelectionText" class="quote-section">
-                                    <div class="quote-header">
-                                        <i class="fas fa-quote-left"></i>
-                                        <span>引用代码</span>
-                                    </div>
-                                    <pre class="quote-code">{{ lastSelectionText }}</pre>
-                                </div>
-                                
                                 <div class="md-input-preview" :class="{ 'preview-collapsed': manualPreviewCollapsed }">
                                     <div class="md-input">
                                         <div class="md-toolbar" role="toolbar" aria-label="Markdown工具栏">
