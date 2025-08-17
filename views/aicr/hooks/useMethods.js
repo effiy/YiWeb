@@ -1094,7 +1094,10 @@ export const useMethods = (store) => {
                 const result = await deleteData(url);
 
                 console.log('[评论删除] 删除成功:', result);
-                showSuccessMessage('评论删除成功');
+                
+                // 显示成功消息
+                const { showSuccess } = await import('/utils/message.js');
+                showSuccess('评论删除成功');
 
                 // 重新加载评论数据
                 if (selectedProject.value && selectedVersion.value) {
@@ -1106,7 +1109,12 @@ export const useMethods = (store) => {
                     setTimeout(() => {
                         console.log('[评论删除] 发送reloadComments事件');
                         window.dispatchEvent(new CustomEvent('reloadComments', {
-                            detail: { projectId: selectedProject.value, versionId: selectedVersion.value }
+                            detail: { 
+                                projectId: selectedProject.value, 
+                                versionId: selectedVersion.value,
+                                forceReload: true,
+                                immediateReload: true
+                            }
                         }));
                     }, 200); // 增加延迟时间到200ms
                 }
