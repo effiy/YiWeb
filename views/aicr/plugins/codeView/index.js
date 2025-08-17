@@ -110,17 +110,87 @@ const createCodeView = async () => {
                         startLine = endLine = comment.line;
                     }
                     
-                    // 如果有有效的行号，添加到对应行
+                    // 如果有有效的行号，添加到对应的所有行
                     if (startLine && startLine > 0) {
-                        // 对于跨行评论，在起始行显示评论标记
-                        const lineNum = parseInt(startLine);
-                        if (!result[lineNum]) {
-                            result[lineNum] = [];
+                        const start = parseInt(startLine);
+                        const end = parseInt(endLine) || start;
+                        
+                        // 为评论涉及的每一行都添加评论标记
+                        for (let lineNum = start; lineNum <= end; lineNum++) {
+                            if (!result[lineNum]) {
+                                result[lineNum] = [];
+                            }
+                            result[lineNum].push({
+                                ...comment,
+                                key: comment.key || comment.id || comment._id || `comment_${Date.now()}_${Math.random()}`,
+                                // 标记这是否为评论的起始行
+                                isStartLine: lineNum === start,
+                                // 标记这是否为评论的结束行
+                                isEndLine: lineNum === end,
+                                // 标记评论的总行数范围
+                                commentRange: { start, end }
+                            });
                         }
-                        result[lineNum].push({
-                            ...comment,
-                            key: comment.key || comment.id || comment._id || `comment_${Date.now()}_${Math.random()}`
+                    }
+                });
+                
+                return result;
+            },
+            // 获取每行的主要评论标记（用于显示）
+            lineCommentMarkers() {
+                const result = {};
+                const lineComments = this.lineComments;
+                
+                Object.keys(lineComments).forEach(lineNumber => {
+                    const comments = lineComments[lineNumber];
+                    if (comments && comments.length > 0) {
+                        // 优先级：待处理 > 重新打开 > 已解决 > 其他
+                        const priorityOrder = {
+                            'pending': 1,
+                            'reopened': 2, 
+                            'resolved': 3,
+                            'closed': 4,
+                            'wontfix': 5
+                        };
+                        
+                        // 找到优先级最高的评论作为主要标记
+                        const primaryComment = comments.reduce((highest, current) => {
+                            const currentPriority = priorityOrder[current.status] || 999;
+                            const highestPriority = priorityOrder[highest.status] || 999;
+                            return currentPriority < highestPriority ? current : highest;
                         });
+                        
+                        // 去重处理：获取该行独特的评论（基于原始评论ID）
+                        const uniqueComments = [];
+                        const seenCommentIds = new Set();
+                        comments.forEach(comment => {
+                            const originalId = comment.key || comment.id || comment._id;
+                            if (!seenCommentIds.has(originalId)) {
+                                seenCommentIds.add(originalId);
+                                uniqueComments.push(comment);
+                            }
+                        });
+                        
+                        // 检查是否为跨行评论的一部分
+                        const isMultiLine = primaryComment.commentRange && 
+                                          primaryComment.commentRange.start !== primaryComment.commentRange.end;
+                        const isStartLine = primaryComment.isStartLine;
+                        const isEndLine = primaryComment.isEndLine;
+                        
+                        result[lineNumber] = {
+                            ...primaryComment,
+                            count: uniqueComments.length,
+                            allComments: uniqueComments,
+                            hasMultiple: uniqueComments.length > 1,
+                            // 跨行评论相关标识
+                            isMultiLine: isMultiLine,
+                            isStartLine: isStartLine,
+                            isEndLine: isEndLine,
+                            // 跨行评论的标记类型
+                            markerType: isMultiLine ? 
+                                (isStartLine ? 'start' : isEndLine ? 'end' : 'middle') : 
+                                'single'
+                        };
                     }
                 });
                 
@@ -1220,6 +1290,195 @@ const createCodeView = async () => {
                     this.hideCommentPreview();
                 }
             },
+            
+            // 处理评论标记点击事件
+            handleCommentMarkerClick(marker, event) {
+                console.log('[CodeView] 评论标记点击:', marker);
+                
+                if (!marker.hasMultiple) {
+                    // 只有一个评论，直接显示详情
+                    this.showCommentDetail(marker, event);
+                } else {
+                    // 有多个评论，显示选择列表
+                    this.showCommentSelectMenu(marker, event);
+                }
+            },
+            
+            // 显示评论选择菜单
+            showCommentSelectMenu(marker, event) {
+                console.log('[CodeView] 显示评论选择菜单:', marker);
+                
+                // 创建临时菜单容器
+                const menu = document.createElement('div');
+                menu.className = 'comment-select-menu';
+                
+                // 计算菜单位置
+                const rect = event.target.getBoundingClientRect();
+                const position = this.calculateOptimalPreviewPosition(rect);
+                
+                menu.style.cssText = `
+                    position: fixed;
+                    left: ${position.x}px;
+                    top: ${position.y}px;
+                    background: var(--bg-secondary);
+                    border: 1px solid var(--border-primary);
+                    border-radius: 8px;
+                    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.16);
+                    z-index: 999999;
+                    max-width: 300px;
+                    max-height: 400px;
+                    overflow-y: auto;
+                    padding: 8px 0;
+                `;
+                
+                // 添加标题
+                const header = document.createElement('div');
+                header.className = 'comment-select-header';
+                header.innerHTML = `
+                    <div style="padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--text-primary); border-bottom: 1px solid var(--border-secondary);">
+                        <i class="fas fa-comments" style="margin-right: 6px; color: var(--primary);"></i>
+                        该行评论 (${marker.count})
+                    </div>
+                `;
+                menu.appendChild(header);
+                
+                // 添加评论选项
+                marker.allComments.forEach((comment, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'comment-select-item';
+                    item.style.cssText = `
+                        padding: 8px 12px;
+                        cursor: pointer;
+                        border-bottom: 1px solid var(--border-tertiary);
+                        transition: background 0.2s ease;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    `;
+                    
+                    const statusColor = this.getStatusColor(comment.status);
+                    
+                    item.innerHTML = `
+                        <div class="comment-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor}; flex-shrink: 0;"></div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 12px; font-weight: 500; color: var(--text-primary); margin-bottom: 2px;">
+                                ${comment.author || '匿名用户'}
+                                <span style="font-size: 10px; color: var(--text-muted); margin-left: 6px;">
+                                    ${this.formatTime(comment.timestamp)}
+                                </span>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${comment.content ? comment.content.substring(0, 50) + (comment.content.length > 50 ? '...' : '') : '代码评论'}
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 悬停效果
+                    item.addEventListener('mouseenter', () => {
+                        item.style.background = 'var(--hover-bg)';
+                    });
+                    item.addEventListener('mouseleave', () => {
+                        item.style.background = 'transparent';
+                    });
+                    
+                    // 点击事件
+                    item.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.showCommentDetail(comment, event);
+                        removeMenuSafely();
+                    });
+                    
+                    menu.appendChild(item);
+                });
+                
+                // 添加到页面
+                document.body.appendChild(menu);
+                
+                // 安全移除菜单的函数
+                const removeMenuSafely = () => {
+                    if (menu && menu.parentNode === document.body && !menu.dataset.removed) {
+                        menu.dataset.removed = 'true'; // 标记为已移除，防止重复操作
+                        try {
+                            document.body.removeChild(menu);
+                        } catch (error) {
+                            console.warn('[CodeView] 菜单移除失败:', error);
+                        }
+                    }
+                    document.removeEventListener('click', closeMenu);
+                };
+                
+                // 点击外部关闭菜单
+                const closeMenu = (e) => {
+                    if (menu && !menu.contains(e.target)) {
+                        removeMenuSafely();
+                    }
+                };
+                
+                setTimeout(() => {
+                    document.addEventListener('click', closeMenu);
+                }, 0);
+            },
+            
+            // 获取状态对应的颜色
+            getStatusColor(status) {
+                switch (status) {
+                    case 'pending':
+                        return '#f59e0b'; // warning
+                    case 'resolved':
+                        return '#10b981'; // success
+                    case 'closed':
+                    case 'reopened':
+                        return '#ef4444'; // error
+                    default:
+                        return '#6366f1'; // primary
+                }
+            },
+            
+            // 获取评论标记的标题
+            getCommentMarkerTitle(marker) {
+                if (!marker) return '';
+                
+                let title = '';
+                
+                if (marker.hasMultiple) {
+                    title = `该行有 ${marker.count} 个评论，点击查看全部`;
+                } else {
+                    title = `${marker.author || '匿名用户'} - ${this.formatTime(marker.timestamp)}`;
+                }
+                
+                // 如果是跨行评论，添加范围信息
+                if (marker.isMultiLine && marker.commentRange) {
+                    const { start, end } = marker.commentRange;
+                    title += ` (第${start}-${end}行)`;
+                }
+                
+                return title;
+            },
+            
+            // 获取评论标记的图标
+            getCommentMarkerIcon(marker) {
+                if (!marker) return 'fas fa-comment';
+                
+                // 根据标记类型和状态选择图标
+                if (marker.hasMultiple) {
+                    return 'fas fa-comments';
+                }
+                
+                if (marker.isMultiLine) {
+                    switch (marker.markerType) {
+                        case 'start':
+                            return 'fas fa-angle-double-down'; // 开始标记
+                        case 'middle':
+                            return 'fas fa-minus'; // 中间标记
+                        case 'end':
+                            return 'fas fa-angle-double-up'; // 结束标记
+                        default:
+                            return 'fas fa-comment';
+                    }
+                }
+                
+                return 'fas fa-comment';
+            },
             // 显示评论预览
             showCommentPreview(comment, event) {
                 console.log('[CodeView] 显示评论预览:', comment);
@@ -1478,23 +1737,30 @@ const createCodeView = async () => {
                             <span class="line-content" v-html="escapeHtml(line)"></span>
                             
                             <!-- 评论标记 -->
-                            <div v-if="lineComments[index + 1] && lineComments[index + 1].length > 0" class="comment-markers">
+                            <div v-if="lineCommentMarkers[index + 1]" class="comment-markers">
                                 <div 
-                                    v-for="(comment, commentIndex) in lineComments[index + 1]" 
-                                    :key="comment.key || commentIndex"
                                     class="comment-marker"
-                                    :class="getCommentStatusClass(comment.status)"
-                                    :data-comment-key="comment.key"
-                                    @click="showCommentDetail(comment, $event)"
-                                    @mouseenter="handleCommentMarkerMouseEvents(comment, $event)"
-                                    @mouseleave="handleCommentMarkerMouseEvents(comment, $event)"
-                                    :title="(comment.author || '匿名用户') + ' - ' + formatTime(comment.timestamp)"
+                                    :class="[
+                                        getCommentStatusClass(lineCommentMarkers[index + 1].status), 
+                                        { 
+                                            'has-multiple': lineCommentMarkers[index + 1].hasMultiple,
+                                            'multi-line': lineCommentMarkers[index + 1].isMultiLine,
+                                            'start-line': lineCommentMarkers[index + 1].markerType === 'start',
+                                            'middle-line': lineCommentMarkers[index + 1].markerType === 'middle',
+                                            'end-line': lineCommentMarkers[index + 1].markerType === 'end'
+                                        }
+                                    ]"
+                                    :data-comment-key="lineCommentMarkers[index + 1].key"
+                                    @click="handleCommentMarkerClick(lineCommentMarkers[index + 1], $event)"
+                                    @mouseenter="handleCommentMarkerMouseEvents(lineCommentMarkers[index + 1], $event)"
+                                    @mouseleave="handleCommentMarkerMouseEvents(lineCommentMarkers[index + 1], $event)"
+                                    :title="getCommentMarkerTitle(lineCommentMarkers[index + 1])"
                                     role="button"
                                     tabindex="0"
                                 >
-                                    <i class="fas fa-comment"></i>
-                                    <span class="comment-count" v-if="lineComments[index + 1].length > 1">
-                                        {{ lineComments[index + 1].length }}
+                                    <i :class="getCommentMarkerIcon(lineCommentMarkers[index + 1])"></i>
+                                    <span class="comment-count" v-if="lineCommentMarkers[index + 1].count > 1 && lineCommentMarkers[index + 1].markerType !== 'middle'">
+                                        {{ lineCommentMarkers[index + 1].count }}
                                     </span>
                                 </div>
                             </div>
