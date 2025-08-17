@@ -541,6 +541,18 @@ const { computed } = Vue;
                     }
                 },
                 
+                // 添加评论重新加载事件处理
+                handleReloadComments: async function(detail) {
+                    logInfo('[主页面] 收到评论重新加载事件:', detail);
+                    try {
+                        // 从useMethods中获取handleReloadComments方法
+                        const methods = useMethods(store);
+                        await methods.handleReloadComments(detail);
+                    } catch (error) {
+                        logError('[主页面] 评论重新加载失败:', error);
+                    }
+                },
+                
                 // 添加评论者选择事件处理
                 handleCommenterSelect: function(commenters) {
                     logInfo('[主页面] 收到评论者选择事件:', commenters);

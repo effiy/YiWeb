@@ -12,21 +12,25 @@ const createCodeView = async () => {
     // 按既有模板结构组织最小可用的显示
     return {
         name: 'CodeView',
-        props: {
-            file: {
-                type: Object,
-                default: null
-            },
-            loading: {
-                type: Boolean,
-                default: false
-            },
-            error: {
-                type: String,
-                default: ''
-            }
+            props: {
+        file: {
+            type: Object,
+            default: null
         },
-        emits: ['comment-delete', 'comment-resolve', 'comment-reopen'],
+        loading: {
+            type: Boolean,
+            default: false
+        },
+        error: {
+            type: String,
+            default: ''
+        },
+        comments: {
+            type: Array,
+            default: () => []
+        }
+    },
+        emits: ['comment-delete', 'comment-resolve', 'comment-reopen', 'reload-comments'],
         data() {
             return {
                 highlightedLines: [],
@@ -65,6 +69,42 @@ const createCodeView = async () => {
             },
             manualCommentPreviewHtml() {
                 return this.renderMarkdown(this.manualCommentText || '');
+            },
+            // 按行号分组的评论数据
+            lineComments() {
+                const result = {};
+                if (!this.comments || !Array.isArray(this.comments)) {
+                    return result;
+                }
+                
+                this.comments.forEach(comment => {
+                    // 从评论的rangeInfo中获取行号信息
+                    let startLine = null;
+                    let endLine = null;
+                    
+                    if (comment.rangeInfo) {
+                        startLine = comment.rangeInfo.startLine;
+                        endLine = comment.rangeInfo.endLine || startLine;
+                    } else if (comment.line) {
+                        // 兼容旧的line字段
+                        startLine = endLine = comment.line;
+                    }
+                    
+                    // 如果有有效的行号，添加到对应行
+                    if (startLine && startLine > 0) {
+                        // 对于跨行评论，在起始行显示评论标记
+                        const lineNum = parseInt(startLine);
+                        if (!result[lineNum]) {
+                            result[lineNum] = [];
+                        }
+                        result[lineNum].push({
+                            ...comment,
+                            key: comment.key || comment.id || comment._id || `comment_${Date.now()}_${Math.random()}`
+                        });
+                    }
+                });
+                
+                return result;
             }
         },
         methods: {
@@ -618,6 +658,97 @@ const createCodeView = async () => {
                         hideGlobalLoading();
                     } catch (_) {}
                 }
+            },
+            // 获取评论状态对应的CSS类名
+            getCommentStatusClass(status) {
+                switch (status) {
+                    case 'pending':
+                        return 'status-pending';
+                    case 'resolved':
+                        return 'status-resolved';
+                    case 'closed':
+                    case 'reopened':
+                        return 'status-reopened';
+                    default:
+                        return 'status-pending';
+                }
+            },
+            // 格式化时间显示
+            formatTime(timestamp) {
+                if (!timestamp) return '未知时间';
+                try {
+                    const date = new Date(timestamp);
+                    if (isNaN(date.getTime())) return '无效时间';
+                    
+                    const now = new Date();
+                    const diff = now - date;
+                    const seconds = Math.floor(diff / 1000);
+                    const minutes = Math.floor(seconds / 60);
+                    const hours = Math.floor(minutes / 60);
+                    const days = Math.floor(hours / 24);
+                    
+                    if (days > 0) {
+                        return `${days}天前`;
+                    } else if (hours > 0) {
+                        return `${hours}小时前`;
+                    } else if (minutes > 0) {
+                        return `${minutes}分钟前`;
+                    } else {
+                        return '刚刚';
+                    }
+                } catch (e) {
+                    return '时间格式错误';
+                }
+            },
+            // 显示评论详情弹窗（暂时简化实现，触发事件让父组件处理）
+            showCommentDetail(comment, event) {
+                console.log('[CodeView] 显示评论详情:', comment);
+                
+                // 触发自定义事件，让父组件或评论面板处理
+                window.dispatchEvent(new CustomEvent('showCommentDetail', {
+                    detail: {
+                        comment: comment,
+                        source: 'codeView',
+                        event: event
+                    }
+                }));
+                
+                // 同时尝试直接调用评论面板的方法（如果存在）
+                if (window.CommentPanel && typeof window.CommentPanel.showCommentDetail === 'function') {
+                    window.CommentPanel.showCommentDetail(comment);
+                }
+            },
+            // 处理评论标记的鼠标事件（悬停预览等）
+            handleCommentMarkerMouseEvents(comment, event) {
+                const eventType = event.type;
+                console.log('[CodeView] 评论标记鼠标事件:', eventType, comment);
+                
+                if (eventType === 'mouseenter') {
+                    // 显示评论预览提示
+                    this.showCommentPreview(comment, event);
+                } else if (eventType === 'mouseleave') {
+                    // 隐藏评论预览
+                    this.hideCommentPreview();
+                }
+            },
+            // 显示评论预览（简化版，可以后续完善）
+            showCommentPreview(comment, event) {
+                // 触发自定义事件，让其他组件处理预览显示
+                window.dispatchEvent(new CustomEvent('showCommentPreview', {
+                    detail: {
+                        comment: comment,
+                        event: event,
+                        source: 'codeView'
+                    }
+                }));
+            },
+            // 隐藏评论预览
+            hideCommentPreview() {
+                window.dispatchEvent(new CustomEvent('hideCommentPreview', {
+                    detail: {
+                        source: 'codeView'
+                    }
+                }));
             }
         },
         mounted() {
@@ -626,6 +757,14 @@ const createCodeView = async () => {
             // 监听全局高亮事件
             this._hlListener = (e) => this.handleHighlightEvent(e.detail);
             window.addEventListener('highlightCodeLines', this._hlListener);
+            
+            // 监听评论重新加载事件
+            this._reloadCommentsListener = (e) => {
+                console.log('[CodeView] 收到评论重新加载事件:', e.detail);
+                // 触发父组件重新获取评论数据
+                this.$emit('reload-comments', e.detail);
+            };
+            window.addEventListener('reloadComments', this._reloadCommentsListener);
             
             // 监听选择变化
             this._selListener = () => {
@@ -685,6 +824,10 @@ const createCodeView = async () => {
                 window.removeEventListener('highlightCodeLines', this._hlListener);
                 this._hlListener = null;
             }
+            if (this._reloadCommentsListener) {
+                window.removeEventListener('reloadComments', this._reloadCommentsListener);
+                this._reloadCommentsListener = null;
+            }
             if (this._selListener) {
                 document.removeEventListener('selectionchange', this._selListener);
                 this._selListener = null;
@@ -731,6 +874,28 @@ const createCodeView = async () => {
                         >
                             <span class="line-number">{{ index + 1 }}</span>
                             <span class="line-content" v-html="escapeHtml(line)"></span>
+                            
+                            <!-- 评论标记 -->
+                            <div v-if="lineComments[index + 1] && lineComments[index + 1].length > 0" class="comment-markers">
+                                <div 
+                                    v-for="(comment, commentIndex) in lineComments[index + 1]" 
+                                    :key="comment.key || commentIndex"
+                                    class="comment-marker"
+                                    :class="getCommentStatusClass(comment.status)"
+                                    :data-comment-key="comment.key"
+                                    @click="showCommentDetail(comment, $event)"
+                                    @mouseenter="handleCommentMarkerMouseEvents(comment, $event)"
+                                    @mouseleave="handleCommentMarkerMouseEvents(comment, $event)"
+                                    :title="(comment.author || '匿名用户') + ' - ' + formatTime(comment.timestamp)"
+                                    role="button"
+                                    tabindex="0"
+                                >
+                                    <i class="fas fa-comment"></i>
+                                    <span class="comment-count" v-if="lineComments[index + 1].length > 1">
+                                        {{ lineComments[index + 1].length }}
+                                    </span>
+                                </div>
+                            </div>
                         </code>
                     </pre>
                     <!-- 划词评论按钮容器（全局唯一，通过脚本定位） -->

@@ -1306,6 +1306,58 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 处理评论重新加载事件
+     * @param {Object} detail - 事件详情
+     */
+    const handleReloadComments = async (detail) => {
+        return safeExecute(async () => {
+            console.log('[评论重新加载] 收到重新加载评论的请求:', detail);
+            
+            try {
+                // 从选择器获取项目/版本信息
+                const projectSelect = document.getElementById('projectSelect');
+                const versionSelect = document.getElementById('versionSelect');
+                
+                let projectId = null;
+                let versionId = null;
+                
+                if (projectSelect) {
+                    projectId = projectSelect.value;
+                }
+                
+                if (versionSelect) {
+                    versionId = versionSelect.value;
+                }
+                
+                // 如果详情中有项目/版本信息，优先使用
+                if (detail && detail.projectId) {
+                    projectId = detail.projectId;
+                }
+                
+                if (detail && detail.versionId) {
+                    versionId = detail.versionId;
+                }
+                
+                console.log('[评论重新加载] 使用的项目/版本:', { projectId, versionId });
+                
+                // 调用加载评论方法
+                await loadComments(projectId, versionId);
+                
+                console.log('[评论重新加载] 评论重新加载完成');
+                
+            } catch (error) {
+                console.error('[评论重新加载] 重新加载评论失败:', error);
+                
+                // 显示错误消息
+                try {
+                    const { showError } = await import('/utils/message.js');
+                    showError('重新加载评论失败: ' + error.message);
+                } catch (_) {}
+            }
+        }, '评论重新加载处理');
+    };
+
+    /**
      * 加载评论数据
      * @param {string} projectId - 项目ID
      * @param {string} versionId - 版本ID
@@ -1644,6 +1696,7 @@ export const useMethods = (store) => {
         handleCommentDelete,
         handleCommentResolve,
         handleCommentReopen,
+        handleReloadComments,
         loadComments,
         updateCommentFromSystem,
         toggleSidebar: handleToggleSidebar,

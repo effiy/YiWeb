@@ -178,9 +178,11 @@
                     :file="currentFile" 
                     :loading="loading" 
                     :error="errorMessage"
+                    :comments="currentComments"
                     @comment-delete="handleCommentDelete"
                     @comment-resolve="handleCommentResolve"
                     @comment-reopen="handleCommentReopen"
+                    @reload-comments="handleReloadComments"
                 ></code-view>
             </section>
             <aside class="aicr-comments" aria-label="评论区" v-show="!commentsCollapsed">
