@@ -997,20 +997,49 @@
     max-width: 650px; /* 进一步增加预览弹窗的最大宽度 */
     min-width: 400px; /* 增加最小宽度 */
     width: 550px; /* 增加默认宽度 */
-    max-height: 450px; /* 增加最大高度以显示更多内容 */
+    max-height: 70vh; /* 使用视口高度限制，提供更好的适应性 */
     z-index: 999998; /* 提高层级，仅次于评论详情弹窗 */
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
-    animation: commentPreviewFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
     border: 1px solid var(--border-glass);
     background: var(--bg-elevated);
     /* 确保预览弹窗不会被遮挡 */
     isolation: isolate;
-    /* 添加更好的视觉层次 */
-    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.12));
     /* 移除固定的margin-left偏移，由JavaScript动态控制位置 */
     overflow: hidden;
+    
+    /* 优化的动画效果 */
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: optimizedPreviewFadeIn 0.2s ease-out forwards;
+    
+    /* 增强的阴影效果 */
+    box-shadow: 
+        0 10px 32px rgba(0, 0, 0, 0.16),
+        0 6px 18px rgba(0, 0, 0, 0.12),
+        0 2px 6px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(255, 255, 255, 0.06);
+    
+    /* 提升视觉层次 */
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+}
+
+/* 优化的预览弹窗显示动画 */
+@keyframes optimizedPreviewFadeIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.92) translateY(-8px);
+    }
+    60% {
+        opacity: 0.8;
+        transform: scale(0.98) translateY(-2px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 /* 手动改进弹框 */
@@ -1800,10 +1829,10 @@
     }
     
     .comment-preview-popup {
-        max-width: 580px; /* 增加中等屏幕预览弹窗的最大宽度 */
-        min-width: 400px; /* 增加最小宽度 */
-        width: 500px; /* 增加默认宽度 */
-        max-height: 400px; /* 增加最大高度 */
+        max-width: min(500px, 90vw); /* 增加中等屏幕预览弹窗的最大宽度，同时适应视口 */
+        min-width: min(400px, 85vw); /* 增加最小宽度，但不超过视口宽度 */
+        width: min(500px, 88vw); /* 增加默认宽度，响应式适配 */
+        max-height: min(450px, 65vh); /* 使用视口高度，更好的适应性 */
     }
     
     .comment-marker {
@@ -1895,10 +1924,10 @@
     }
     
     .comment-preview-popup {
-        max-width: 480px; /* 增加小屏幕预览弹窗的最大宽度 */
-        min-width: 380px; /* 增加最小宽度 */
-        width: 420px; /* 增加默认宽度 */
-        max-height: 380px; /* 增加最大高度 */
+        max-width: min(420px, 95vw); /* 增加小屏幕预览弹窗的最大宽度，完全适应视口 */
+        min-width: min(280px, 85vw); /* 调整最小宽度，适应更小的屏幕 */
+        width: min(420px, 92vw); /* 增加默认宽度，响应式适配 */
+        max-height: min(400px, 70vh); /* 使用视口高度，适应移动设备 */
     }
     
     .preview-content {
@@ -2771,12 +2800,159 @@
     }
 }
 
+/* ========== 表单组件样式（用于评论编辑） ========== */
+.form-group {
+    margin-bottom: 16px;
+    flex-shrink: 0;
+}
 
+.form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 
+.form-input, .form-textarea {
+    width: 100%;
+    background: rgba(51,65,85,0.6);
+    border: 1px solid rgba(79,70,229,0.2);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
 
+.form-input:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--primary, #4f46e5);
+    background: rgba(51,65,85,0.8);
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+}
 
+.form-input::placeholder, .form-textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+}
 
+.form-textarea {
+    resize: vertical;
+    min-height: 120px;
+    font-family: inherit;
+    flex: 1;
+}
 
+/* 表单行布局 */
+.form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.form-group.half-width {
+    flex: 1;
+}
+
+/* 选择框样式 */
+.form-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-select:hover {
+    border-color: var(--border-hover);
+}
+
+/* 文本提示样式 */
+.textarea-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.textarea-hint i {
+    color: var(--primary);
+}
+
+/* 改进文本区域样式 */
+.improvement-textarea {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-tertiary);
+    -moz-tab-size: 4;
+    tab-size: 4;
+}
+
+/* 响应式设计 - 表单 */
+@media (max-width: 640px) {
+    .form-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .comment-content-textarea {
+        min-height: 150px;
+    }
+    
+    .improvement-textarea {
+        min-height: 120px;
+    }
+}
+
+/* ========== 编辑按钮样式优化 ========== */
+.comment-detail-actions .edit-button {
+    background: var(--primary-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(79, 70, 229, 0.3);
+}
+
+.comment-detail-actions .edit-button:hover {
+    background: var(--primary-gradient-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.comment-detail-actions .save-button {
+    background: var(--success-gradient);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.comment-detail-actions .save-button:hover {
+    background: var(--success-gradient-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.comment-detail-actions .save-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
 
 
 

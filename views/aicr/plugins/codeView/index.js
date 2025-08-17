@@ -12,24 +12,24 @@ const createCodeView = async () => {
     // 按既有模板结构组织最小可用的显示
     return {
         name: 'CodeView',
-            props: {
-        file: {
-            type: Object,
-            default: null
-        },
-        loading: {
-            type: Boolean,
-            default: false
-        },
-        error: {
-            type: String,
-            default: ''
+        props: {
+            file: {
+                type: Object,
+                default: null
+            },
+            loading: {
+                type: Boolean,
+                default: false
+            },
+            error: {
+                type: String,
+                default: ''
         },
         comments: {
             type: Array,
             default: () => []
-        }
-    },
+            }
+        },
         emits: ['comment-delete', 'comment-resolve', 'comment-reopen', 'reload-comments'],
         data() {
             return {
@@ -40,11 +40,31 @@ const createCodeView = async () => {
                 manualPreviewCollapsed: false,
                 manualMaxLength: 4000,
                 manualCommentError: '',
+                manualSubmitting: false,
                 lastSelectionText: '',
                 lastSelectionRange: null, // 用于评论定位，不在界面显示
                 _containerHover: false,
                 _lastShowTs: 0,
-                _buttonVisible: false
+                _buttonVisible: false,
+                
+                // 评论详情弹窗相关数据
+                showCommentDetailPopup: false,
+                currentCommentDetail: null,
+                showCommentPreviewPopup: false,
+                currentCommentPreview: null,
+                commentPreviewPosition: { x: 0, y: 0 },
+                
+                // 评论编辑相关数据
+                isEditingCommentDetail: false,
+                editingCommentAuthor: '',
+                editingCommentTimestamp: '',
+                editingCommentContent: '',
+                editingCommentText: '',
+                editingImprovementText: '',
+                editingCommentType: '',
+                editingCommentStatus: 'pending',
+                editingRangeInfo: { startLine: 1, endLine: 1 },
+                editingSaving: false
             };
         },
         computed: {
@@ -105,6 +125,29 @@ const createCodeView = async () => {
                 });
                 
                 return result;
+            },
+            // 当前评论详情的HTML内容
+            currentCommentDetailHtml() {
+                if (!this.currentCommentDetail || !this.currentCommentDetail.content) {
+                    return '';
+                }
+                return this.renderMarkdown(this.currentCommentDetail.content);
+            },
+            // 当前评论详情的文本显示（处理长文本）
+            currentCommentDetailTextDisplay() {
+                if (!this.currentCommentDetail || !this.currentCommentDetail.text) {
+                    return '';
+                }
+                const text = this.currentCommentDetail.text;
+                // 如果文本太长，截取显示
+                return text.length > 500 ? text.substring(0, 500) + '...' : text;
+            },
+            // 评论预览的HTML内容
+            currentCommentPreviewHtml() {
+                if (!this.currentCommentPreview || !this.currentCommentPreview.content) {
+                    return '';
+                }
+                return this.renderMarkdown(this.currentCommentPreview.content);
             }
         },
         methods: {
@@ -572,6 +615,7 @@ const createCodeView = async () => {
                 try {
                     // 显示提交状态
                     this.manualCommentError = '';
+                    this.manualSubmitting = true;
                     const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
                     showGlobalLoading('正在提交评论...');
 
@@ -657,6 +701,9 @@ const createCodeView = async () => {
                         const { hideGlobalLoading } = await import('/utils/loading.js');
                         hideGlobalLoading();
                     } catch (_) {}
+                } finally {
+                    // 重置提交状态
+                    this.manualSubmitting = false;
                 }
             },
             // 获取评论状态对应的CSS类名
@@ -700,22 +747,396 @@ const createCodeView = async () => {
                     return '时间格式错误';
                 }
             },
-            // 显示评论详情弹窗（暂时简化实现，触发事件让父组件处理）
+            // 显示评论详情弹窗
             showCommentDetail(comment, event) {
                 console.log('[CodeView] 显示评论详情:', comment);
                 
-                // 触发自定义事件，让父组件或评论面板处理
-                window.dispatchEvent(new CustomEvent('showCommentDetail', {
-                    detail: {
-                        comment: comment,
-                        source: 'codeView',
-                        event: event
-                    }
-                }));
+                if (!comment) return;
                 
-                // 同时尝试直接调用评论面板的方法（如果存在）
-                if (window.CommentPanel && typeof window.CommentPanel.showCommentDetail === 'function') {
-                    window.CommentPanel.showCommentDetail(comment);
+                // 设置当前评论
+                this.currentCommentDetail = { ...comment };
+                
+                // 隐藏预览弹窗（如果有）
+                this.hideCommentPreview();
+                
+                // 显示详情弹窗
+                this.showCommentDetailPopup = true;
+                
+                // 重置编辑状态
+                this.isEditingCommentDetail = false;
+                
+                console.log('[CodeView] 评论详情弹窗已显示');
+            },
+            
+            // 隐藏评论详情弹窗
+            hideCommentDetail() {
+                console.log('[CodeView] 隐藏评论详情弹窗');
+                this.showCommentDetailPopup = false;
+                this.currentCommentDetail = null;
+                this.isEditingCommentDetail = false;
+                this.resetEditingData();
+            },
+            
+            // 开始编辑评论详情
+            startEditCommentDetail(comment) {
+                console.log('[CodeView] 开始编辑评论:', comment);
+                
+                if (!comment) return;
+                
+                // 填充编辑数据
+                this.editingCommentAuthor = comment.author || '';
+                this.editingCommentContent = comment.content || '';
+                this.editingCommentText = comment.text || '';
+                this.editingImprovementText = comment.improvementText || '';
+                this.editingCommentType = comment.type || '';
+                this.editingCommentStatus = comment.status || 'pending';
+                
+                // 处理时间戳
+                if (comment.timestamp) {
+                    try {
+                        const date = new Date(comment.timestamp);
+                        this.editingCommentTimestamp = date.toISOString().slice(0, 16);
+                    } catch (e) {
+                        this.editingCommentTimestamp = new Date().toISOString().slice(0, 16);
+                    }
+                } else {
+                    this.editingCommentTimestamp = new Date().toISOString().slice(0, 16);
+                }
+                
+                // 处理位置信息
+                if (comment.rangeInfo) {
+                    this.editingRangeInfo = { ...comment.rangeInfo };
+                } else {
+                    this.editingRangeInfo = { startLine: 1, endLine: 1 };
+                }
+                
+                // 切换到编辑模式
+                this.isEditingCommentDetail = true;
+                
+                // 聚焦到评论内容输入框
+                this.$nextTick(() => {
+                    const textarea = this.$el && this.$el.querySelector('.comment-content-textarea');
+                    if (textarea) {
+                        textarea.focus();
+                    }
+                });
+            },
+            
+            // 取消编辑评论详情
+            cancelEditCommentDetail() {
+                console.log('[CodeView] 取消编辑评论');
+                this.isEditingCommentDetail = false;
+                this.resetEditingData();
+            },
+            
+            // 重置编辑数据
+            resetEditingData() {
+                this.editingCommentAuthor = '';
+                this.editingCommentTimestamp = '';
+                this.editingCommentContent = '';
+                this.editingCommentText = '';
+                this.editingImprovementText = '';
+                this.editingCommentType = '';
+                this.editingCommentStatus = 'pending';
+                this.editingRangeInfo = { startLine: 1, endLine: 1 };
+                this.editingSaving = false;
+            },
+            
+            // 保存编辑后的评论详情
+            async saveEditedCommentDetail() {
+                console.log('[CodeView] 保存编辑后的评论');
+                
+                if (!this.currentCommentDetail || !this.currentCommentDetail.key) {
+                    console.error('[CodeView] 没有有效的评论数据');
+                    return;
+                }
+                
+                // 验证必填字段
+                if (!this.editingCommentContent.trim()) {
+                    alert('评论内容不能为空');
+                    return;
+                }
+                
+                this.editingSaving = true;
+                
+                try {
+                    // 显示全局loading
+                    const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
+                    showGlobalLoading('正在保存评论...');
+                    
+                    // 获取项目和版本信息
+                    const projectSelect = document.getElementById('projectSelect');
+                    const versionSelect = document.getElementById('versionSelect');
+                    const projectId = projectSelect ? projectSelect.value : null;
+                    const versionId = versionSelect ? versionSelect.value : null;
+                    
+                    // 构建更新数据
+                    const updateData = {
+                        key: this.currentCommentDetail.key,
+                        author: this.editingCommentAuthor.trim(),
+                        content: this.editingCommentContent.trim(),
+                        text: this.editingCommentText.trim(),
+                        improvementText: this.editingImprovementText.trim(),
+                        type: this.editingCommentType,
+                        status: this.editingCommentStatus,
+                        rangeInfo: {
+                            startLine: parseInt(this.editingRangeInfo.startLine) || 1,
+                            endLine: parseInt(this.editingRangeInfo.endLine) || parseInt(this.editingRangeInfo.startLine) || 1
+                        },
+                        timestamp: new Date(this.editingCommentTimestamp).toISOString(),
+                        projectId,
+                        versionId,
+                        fileId: this.currentCommentDetail.fileId
+                    };
+                    
+                    console.log('[CodeView] 更新评论数据:', updateData);
+                    
+                    // 调用API更新评论
+                    const { updateData: apiUpdate } = await import('/apis/modules/crud.js');
+                    const response = await apiUpdate(`${window.API_URL}/mongodb/?cname=comments`, updateData);
+                    
+                    console.log('[CodeView] 评论更新成功:', response);
+                    
+                    // 显示成功消息
+                    const { showSuccess } = await import('/utils/message.js');
+                    showSuccess('评论保存成功');
+                    
+                    // 更新当前评论详情
+                    this.currentCommentDetail = { ...this.currentCommentDetail, ...updateData };
+                    
+                    // 退出编辑模式
+                    this.isEditingCommentDetail = false;
+                    
+                    // 触发重新加载评论
+                    this.$emit('reload-comments', { 
+                        forceReload: true, 
+                        fileId: this.currentCommentDetail.fileId,
+                        projectId,
+                        versionId
+                    });
+                    
+                    hideGlobalLoading();
+                    
+                } catch (error) {
+                    console.error('[CodeView] 保存评论失败:', error);
+                    
+                    // 显示错误消息
+                    try {
+                        const { showError } = await import('/utils/message.js');
+                        showError('保存评论失败: ' + error.message);
+                        const { hideGlobalLoading } = await import('/utils/loading.js');
+                        hideGlobalLoading();
+                    } catch (_) {}
+                } finally {
+                    this.editingSaving = false;
+                }
+            },
+            
+            // 删除评论详情
+            async deleteCommentDetail(commentKey) {
+                console.log('[CodeView] 删除评论:', commentKey);
+                
+                if (!commentKey) return;
+                
+                if (!confirm('确定要删除这条评论吗？此操作不可恢复。')) {
+                    return;
+                }
+                
+                try {
+                    // 显示全局loading
+                    const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
+                    showGlobalLoading('正在删除评论...');
+                    
+                    // 调用API删除评论
+                    const { deleteData } = await import('/apis/modules/crud.js');
+                    const response = await deleteData(`${window.API_URL}/mongodb/?cname=comments&key=${commentKey}`);
+                    
+                    console.log('[CodeView] 评论删除成功:', response);
+                    
+                    // 显示成功消息
+                    const { showSuccess } = await import('/utils/message.js');
+                    showSuccess('评论删除成功');
+                    
+                    // 隐藏详情弹窗
+                    this.hideCommentDetail();
+                    
+                    // 触发重新加载评论
+                    this.$emit('reload-comments', { 
+                        forceReload: true, 
+                        fileId: this.file ? (this.file.fileId || this.file.id || this.file.path) : null
+                    });
+                    
+                    hideGlobalLoading();
+                    
+                } catch (error) {
+                    console.error('[CodeView] 删除评论失败:', error);
+                    
+                    // 显示错误消息
+                    try {
+                        const { showError } = await import('/utils/message.js');
+                        showError('删除评论失败: ' + error.message);
+                        const { hideGlobalLoading } = await import('/utils/loading.js');
+                        hideGlobalLoading();
+                    } catch (_) {}
+                }
+            },
+            
+            // 解决评论详情
+            async resolveCommentDetail(commentKey) {
+                console.log('[CodeView] 解决评论:', commentKey);
+                await this.updateCommentStatus(commentKey, 'resolved', '评论已标记为已解决');
+            },
+            
+            // 重新打开评论详情
+            async reopenCommentDetail(commentKey) {
+                console.log('[CodeView] 重新打开评论:', commentKey);
+                await this.updateCommentStatus(commentKey, 'pending', '评论已重新打开');
+            },
+            
+            // 更新评论状态的通用方法
+            async updateCommentStatus(commentKey, newStatus, successMessage) {
+                if (!commentKey) return;
+                
+                try {
+                    // 显示全局loading
+                    const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
+                    showGlobalLoading('正在更新评论状态...');
+                    
+                    // 获取项目和版本信息
+                    const projectSelect = document.getElementById('projectSelect');
+                    const versionSelect = document.getElementById('versionSelect');
+                    const projectId = projectSelect ? projectSelect.value : null;
+                    const versionId = versionSelect ? versionSelect.value : null;
+                    
+                    // 构建更新数据
+                    const updateData = {
+                        key: commentKey,
+                        status: newStatus,
+                        projectId,
+                        versionId
+                    };
+                    
+                    // 调用API更新评论状态
+                    const { updateData: apiUpdate } = await import('/apis/modules/crud.js');
+                    const response = await apiUpdate(`${window.API_URL}/mongodb/?cname=comments`, updateData);
+                    
+                    console.log('[CodeView] 评论状态更新成功:', response);
+                    
+                    // 显示成功消息
+                    const { showSuccess } = await import('/utils/message.js');
+                    showSuccess(successMessage);
+                    
+                    // 更新当前评论详情的状态
+                    if (this.currentCommentDetail && this.currentCommentDetail.key === commentKey) {
+                        this.currentCommentDetail.status = newStatus;
+                    }
+                    
+                    // 触发重新加载评论
+                    this.$emit('reload-comments', { 
+                        forceReload: true, 
+                        fileId: this.file ? (this.file.fileId || this.file.id || this.file.path) : null,
+                        projectId,
+                        versionId
+                    });
+                    
+                    hideGlobalLoading();
+                    
+                } catch (error) {
+                    console.error('[CodeView] 更新评论状态失败:', error);
+                    
+                    // 显示错误消息
+                    try {
+                        const { showError } = await import('/utils/message.js');
+                        showError('更新评论状态失败: ' + error.message);
+                        const { hideGlobalLoading } = await import('/utils/loading.js');
+                        hideGlobalLoading();
+                    } catch (_) {}
+                }
+            },
+            
+            // 获取评论状态标签
+            getCommentStatusLabel(status) {
+                switch (status) {
+                    case 'pending':
+                        return '待处理';
+                    case 'resolved':
+                        return '已解决';
+                    case 'closed':
+                        return '已关闭';
+                    case 'reopened':
+                        return '重新打开';
+                    default:
+                        return '待处理';
+                }
+            },
+            
+            // 处理编辑键盘事件
+            onCommentDetailEditKeydown(e) {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    this.saveEditedCommentDetail();
+                }
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.cancelEditCommentDetail();
+                }
+            },
+            
+            // 处理引用代码键盘事件
+            handleQuotedCodeKeydown(e) {
+                // Tab键插入制表符而不是切换焦点
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const textarea = e.target;
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const value = textarea.value;
+                    
+                    // 插入制表符
+                    textarea.value = value.substring(0, start) + '\t' + value.substring(end);
+                    textarea.selectionStart = textarea.selectionEnd = start + 1;
+                    
+                    // 触发input事件更新v-model
+                    textarea.dispatchEvent(new Event('input'));
+                }
+            },
+            
+            // 美化引用代码
+            beautifyQuotedCode() {
+                try {
+                    let code = this.editingCommentText;
+                    if (!code) return;
+                    
+                    // 移除多余的空行
+                    code = code.replace(/\n\s*\n\s*\n/g, '\n\n');
+                    
+                    // 标准化缩进（将制表符转换为4个空格）
+                    code = code.replace(/\t/g, '    ');
+                    
+                    // 移除行尾空格
+                    code = code.replace(/[ \t]+$/gm, '');
+                    
+                    // 更新值
+                    this.editingCommentText = code;
+                    
+                    console.log('[CodeView] 代码美化完成');
+                } catch (error) {
+                    console.error('[CodeView] 代码美化失败:', error);
+                }
+            },
+            
+            // 高亮代码（点击引用代码时触发）
+            highlightCode(comment) {
+                console.log('[CodeView] 高亮代码:', comment);
+                
+                if (comment && comment.rangeInfo) {
+                    // 触发代码高亮事件
+                    window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                        detail: {
+                            fileId: comment.fileId,
+                            rangeInfo: comment.rangeInfo
+                        }
+                    }));
                 }
             },
             // 处理评论标记的鼠标事件（悬停预览等）
@@ -731,24 +1152,108 @@ const createCodeView = async () => {
                     this.hideCommentPreview();
                 }
             },
-            // 显示评论预览（简化版，可以后续完善）
+            // 显示评论预览
             showCommentPreview(comment, event) {
-                // 触发自定义事件，让其他组件处理预览显示
-                window.dispatchEvent(new CustomEvent('showCommentPreview', {
-                    detail: {
-                        comment: comment,
-                        event: event,
-                        source: 'codeView'
-                    }
-                }));
+                console.log('[CodeView] 显示评论预览:', comment);
+                
+                if (!comment || !event) return;
+                
+                // 设置预览评论
+                this.currentCommentPreview = { ...comment };
+                
+                // 智能计算预览弹窗位置
+                const rect = event.target.getBoundingClientRect();
+                const position = this.calculateOptimalPreviewPosition(rect);
+                this.commentPreviewPosition = position;
+                
+                // 显示预览弹窗
+                this.showCommentPreviewPopup = true;
+                
+                console.log('[CodeView] 评论预览已显示，位置:', position);
             },
+            
+            // 计算最佳预览弹窗位置
+            calculateOptimalPreviewPosition(targetRect) {
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                const scrollX = window.scrollX || document.documentElement.scrollLeft;
+                const scrollY = window.scrollY || document.documentElement.scrollTop;
+                
+                // 根据屏幕宽度确定弹窗尺寸
+                let popupWidth, popupHeight;
+                if (viewportWidth <= 640) {
+                    popupWidth = Math.min(420, viewportWidth * 0.92); // 小屏幕
+                    popupHeight = Math.min(400, viewportHeight * 0.7); // 预估高度，考虑视口
+                } else if (viewportWidth <= 950) {
+                    popupWidth = Math.min(500, viewportWidth * 0.88); // 中屏幕
+                    popupHeight = Math.min(450, viewportHeight * 0.65);
+                } else {
+                    popupWidth = Math.min(550, viewportWidth * 0.8); // 大屏幕
+                    popupHeight = Math.min(500, viewportHeight * 0.7);
+                }
+                
+                const padding = 16; // 边距
+                const offset = 12; // 与目标元素的距离
+                
+                // 计算水平位置（优先右侧）
+                let x, y;
+                
+                // 尝试在右侧显示
+                if (targetRect.right + offset + popupWidth + padding <= viewportWidth) {
+                    x = targetRect.right + offset;
+                } 
+                // 尝试在左侧显示
+                else if (targetRect.left - offset - popupWidth >= padding) {
+                    x = targetRect.left - offset - popupWidth;
+                }
+                // 居中显示（当左右都放不下时）
+                else {
+                    x = Math.max(padding, (viewportWidth - popupWidth) / 2);
+                }
+                
+                // 计算垂直位置（优先与目标垂直居中对齐）
+                const targetCenterY = targetRect.top + targetRect.height / 2;
+                const idealY = targetCenterY - popupHeight / 2;
+                
+                // 检查上下边界，考虑滚动位置
+                const topBoundary = scrollY + padding;
+                const bottomBoundary = scrollY + viewportHeight - padding;
+                
+                if (idealY >= topBoundary && idealY + popupHeight <= bottomBoundary) {
+                    // 理想位置可用（垂直居中）
+                    y = idealY;
+                } else if (targetRect.bottom + offset + popupHeight <= bottomBoundary) {
+                    // 在目标下方显示
+                    y = targetRect.bottom + offset;
+                } else if (targetRect.top - offset - popupHeight >= topBoundary) {
+                    // 在目标上方显示
+                    y = targetRect.top - offset - popupHeight;
+                } else {
+                    // 调整到可见区域内，优先显示更多内容
+                    if (targetRect.top > scrollY + viewportHeight / 2) {
+                        // 目标在视口下半部分，弹窗向上对齐
+                        y = Math.max(topBoundary, bottomBoundary - popupHeight);
+                    } else {
+                        // 目标在视口上半部分，弹窗向下对齐
+                        y = Math.min(topBoundary, bottomBoundary - popupHeight);
+                    }
+                }
+                
+                // 确保最终位置不会导致弹窗超出视口
+                x = Math.max(padding, Math.min(x, viewportWidth - popupWidth - padding));
+                y = Math.max(topBoundary, Math.min(y, bottomBoundary - popupHeight));
+                
+                return {
+                    x: Math.round(x),
+                    y: Math.round(y)
+                };
+            },
+            
             // 隐藏评论预览
             hideCommentPreview() {
-                window.dispatchEvent(new CustomEvent('hideCommentPreview', {
-                    detail: {
-                        source: 'codeView'
-                    }
-                }));
+                console.log('[CodeView] 隐藏评论预览');
+                this.showCommentPreviewPopup = false;
+                this.currentCommentPreview = null;
             }
         },
         mounted() {
@@ -765,6 +1270,27 @@ const createCodeView = async () => {
                 this.$emit('reload-comments', e.detail);
             };
             window.addEventListener('reloadComments', this._reloadCommentsListener);
+            
+            // 监听窗口尺寸变化，重新计算预览弹窗位置
+            this._resizeListener = () => {
+                if (this.showCommentPreviewPopup && this.currentCommentPreview) {
+                    // 延迟重新计算位置，避免频繁计算
+                    clearTimeout(this._resizeTimer);
+                    this._resizeTimer = setTimeout(() => {
+                        // 尝试获取原始目标元素重新计算位置
+                        const markers = document.querySelectorAll('.comment-marker');
+                        for (const marker of markers) {
+                            if (marker.dataset.commentKey === this.currentCommentPreview.key) {
+                                const rect = marker.getBoundingClientRect();
+                                const newPosition = this.calculateOptimalPreviewPosition(rect);
+                                this.commentPreviewPosition = newPosition;
+                                break;
+                            }
+                        }
+                    }, 150);
+                }
+            };
+            window.addEventListener('resize', this._resizeListener);
             
             // 监听选择变化
             this._selListener = () => {
@@ -827,6 +1353,14 @@ const createCodeView = async () => {
             if (this._reloadCommentsListener) {
                 window.removeEventListener('reloadComments', this._reloadCommentsListener);
                 this._reloadCommentsListener = null;
+            }
+            if (this._resizeListener) {
+                window.removeEventListener('resize', this._resizeListener);
+                this._resizeListener = null;
+            }
+            if (this._resizeTimer) {
+                clearTimeout(this._resizeTimer);
+                this._resizeTimer = null;
             }
             if (this._selListener) {
                 document.removeEventListener('selectionchange', this._selListener);
@@ -966,6 +1500,336 @@ const createCodeView = async () => {
                                     <i class="fas fa-paper-plane"></i> 提交
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 评论详情遮罩 -->
+                    <div 
+                        v-if="showCommentDetailPopup"
+                        class="comment-detail-overlay"
+                        role="presentation"
+                        aria-hidden="true"
+                        @click="hideCommentDetail"
+                    ></div>
+
+                    <!-- 评论详情弹窗 -->
+                    <div 
+                        v-if="showCommentDetailPopup && currentCommentDetail" 
+                        class="comment-detail-popup"
+                        role="dialog"
+                        aria-label="评论详情"
+                    >
+                        <div class="comment-detail-header">
+                            <div class="comment-author-info">
+                                <div class="comment-author-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="comment-author-details">
+                                    <div class="author-name-row">
+                                        <span class="comment-author">{{ currentCommentDetail.author }}</span>
+                                        <!-- 评论状态 - 移到作者名旁边 -->
+                                        <span v-if="currentCommentDetail.status" class="status-badge-inline" :class="getCommentStatusClass(currentCommentDetail.status)">
+                                            {{ getCommentStatusLabel(currentCommentDetail.status) }}
+                                        </span>
+                                    </div>
+                                    <time class="comment-time" :datetime="currentCommentDetail.timestamp">
+                                        {{ formatTime(currentCommentDetail.timestamp) }}
+                                    </time>
+                                </div>
+                            </div>
+                            <button 
+                                @click="hideCommentDetail"
+                                class="close-button"
+                                title="关闭"
+                                aria-label="关闭评论详情"
+                            >
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="comment-detail-body">
+                            <!-- 编辑模式 -->
+                            <div v-if="isEditingCommentDetail" class="comment-edit-form">
+                                <div class="form-row">
+                                    <div class="form-group half-width">
+                                        <label>评论者:</label>
+                                        <input 
+                                            v-model="editingCommentAuthor"
+                                            type="text" 
+                                            class="form-input"
+                                            placeholder="输入评论者姓名"
+                                        />
+                                    </div>
+                                    <div class="form-group half-width">
+                                        <label>时间:</label>
+                                        <input 
+                                            v-model="editingCommentTimestamp"
+                                            type="datetime-local" 
+                                            class="form-input"
+                                            title="编辑时间"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div v-if="currentCommentDetail && currentCommentDetail.rangeInfo" class="form-row">
+                                    <div class="form-group half-width">
+                                        <label>开始行:</label>
+                                        <input 
+                                            v-model.number="editingRangeInfo.startLine"
+                                            type="number" 
+                                            min="1"
+                                            class="form-input"
+                                            placeholder="开始行号"
+                                        />
+                                    </div>
+                                    <div class="form-group half-width">
+                                        <label>结束行:</label>
+                                        <input 
+                                            v-model.number="editingRangeInfo.endLine"
+                                            type="number" 
+                                            min="1"
+                                            class="form-input"
+                                            placeholder="结束行号"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="label-row">
+                                        <label>引用代码:</label>
+                                        <div class="textarea-actions inline">
+                                            <button class="action-button" type="button" title="格式美化（缩进/去空行）" @click="beautifyQuotedCode">
+                                                <i class="fas fa-broom"></i>
+                                                美化代码
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <textarea 
+                                        v-model="editingCommentText"
+                                        class="form-textarea quoted-code-textarea"
+                                        placeholder="输入引用的代码（可选）"
+                                        rows="12"
+                                        wrap="off"
+                                        spellcheck="false"
+                                        autocapitalize="off"
+                                        autocorrect="off"
+                                        @keydown="handleQuotedCodeKeydown"
+                                    ></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>评论内容:</label>
+                                    <textarea 
+                                        v-model="editingCommentContent"
+                                        class="form-textarea comment-content-textarea"
+                                        placeholder="编辑评论内容（支持Markdown）"
+                                        rows="12"
+                                        @keydown="onCommentDetailEditKeydown"
+                                    ></textarea>
+                                    <div class="textarea-hint">
+                                        <i class="fas fa-info-circle"></i>
+                                        支持Markdown格式，Ctrl/Cmd + Enter 保存，Esc 取消
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>改进代码 (可选):</label>
+                                    <textarea 
+                                        v-model="editingImprovementText"
+                                        class="form-textarea improvement-textarea"
+                                        placeholder="输入改进后的代码（可选）"
+                                        rows="6"
+                                    ></textarea>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group half-width">
+                                        <label>评论类型:</label>
+                                        <select v-model="editingCommentType" class="form-select" title="选择评论类型">
+                                            <option value="">无类型</option>
+                                            <option value="suggestion">建议</option>
+                                            <option value="question">问题</option>
+                                            <option value="bug">错误</option>
+                                            <option value="discussion">讨论</option>
+                                            <option value="praise">表扬</option>
+                                            <option value="nitpick">细节</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group half-width">
+                                        <label>状态:</label>
+                                        <select v-model="editingCommentStatus" class="form-select" title="选择状态">
+                                            <option value="pending">待处理</option>
+                                            <option value="resolved">已解决</option>
+                                            <option value="closed">已关闭</option>
+                                            <option value="wontfix">不修复</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="comment-detail-actions">
+                                    <button 
+                                        @click="saveEditedCommentDetail"
+                                        class="action-button save-button"
+                                        :disabled="editingSaving"
+                                        title="保存 (⌘/Ctrl+Enter)"
+                                    >
+                                        <i class="fas" :class="editingSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                                        保存
+                                    </button>
+                                    <button @click="cancelEditCommentDetail" class="action-button cancel-button" :disabled="editingSaving" title="取消 (Esc)">
+                                        <i class="fas fa-times"></i>
+                                        取消
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 查看模式 -->
+                            <div v-else>
+                                <!-- 代码位置信息 -->
+                                <div v-if="currentCommentDetail.rangeInfo" class="comment-location">
+                                    <i class="fas fa-code"></i>
+                                    <span class="location-text">
+                                        第 {{ currentCommentDetail.rangeInfo.startLine }}{{ currentCommentDetail.rangeInfo.endLine !== currentCommentDetail.rangeInfo.startLine ? "-" + currentCommentDetail.rangeInfo.endLine : "" }} 行
+                                    </span>
+                                </div>
+                                
+                                <!-- 引用的代码 -->
+                                <div v-if="currentCommentDetail.text" class="comment-quote">
+                                    <div class="quote-header">
+                                        <i class="fas fa-quote-left"></i>
+                                        <span>引用代码</span>
+                                    </div>
+                                    <pre class="quote-code" @click="highlightCode(currentCommentDetail)">
+                                        <code>{{ currentCommentDetailTextDisplay }}</code>
+                                    </pre>
+                                </div>
+                                
+                                <!-- 评论内容（Markdown渲染，含图片） -->
+                                <div class="comment-content md-preview-body" v-html="currentCommentDetailHtml"></div>
+                                
+                                <!-- 改进代码 -->
+                                <div v-if="currentCommentDetail.improvementText" class="comment-improvement">
+                                    <div class="improvement-header">
+                                        <i class="fas fa-magic"></i>
+                                        <span>改进代码</span>
+                                    </div>
+                                    <pre class="improvement-code">
+                                        <code>{{ currentCommentDetail.improvementText }}</code>
+                                    </pre>
+                                </div>
+                                
+                                <!-- 评论操作按钮 -->
+                                <div class="comment-detail-actions">
+                                    <button 
+                                        @click="hideCommentDetail"
+                                        class="action-button cancel-button"
+                                        title="取消"
+                                    >
+                                        <i class="fas fa-times"></i>
+                                        取消
+                                    </button>
+                                    <button 
+                                        @click="startEditCommentDetail(currentCommentDetail)"
+                                        class="action-button edit-button"
+                                        title="编辑评论"
+                                    >
+                                        <i class="fas fa-pen"></i>
+                                        编辑
+                                    </button>
+                                    <button 
+                                        v-if="currentCommentDetail.status === 'pending'"
+                                        @click="resolveCommentDetail(currentCommentDetail.key)"
+                                        class="action-button resolve-button"
+                                        title="标记为已解决"
+                                    >
+                                        <i class="fas fa-check"></i>
+                                        解决
+                                    </button>
+                                    
+                                    <button 
+                                        v-if="currentCommentDetail.status === 'resolved'"
+                                        @click="reopenCommentDetail(currentCommentDetail.key)"
+                                        class="action-button reopen-button"
+                                        title="重新打开"
+                                    >
+                                        <i class="fas fa-undo"></i>
+                                        重开
+                                    </button>
+                                    
+                                    <button 
+                                        @click="deleteCommentDetail(currentCommentDetail.key)"
+                                        class="action-button delete-button"
+                                        title="删除评论"
+                                    >
+                                        <i class="fas fa-trash"></i>
+                                        删除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 评论预览弹窗（悬停显示） -->
+                    <div 
+                        v-if="showCommentPreviewPopup && currentCommentPreview" 
+                        class="comment-preview-popup"
+                        :style="{
+                            left: commentPreviewPosition.x + 'px',
+                            top: commentPreviewPosition.y + 'px'
+                        }"
+                        role="tooltip"
+                        aria-label="评论预览"
+                    >
+                        <div class="preview-header">
+                            <div class="preview-author-info">
+                                <div class="preview-author-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="preview-author-details">
+                                    <div class="preview-author-name-row">
+                                        <span class="preview-author">{{ currentCommentPreview.author }}</span>
+                                        <!-- 评论状态 - 移到作者名旁边 -->
+                                        <span v-if="currentCommentPreview.status" class="preview-status-badge-inline" :class="getCommentStatusClass(currentCommentPreview.status)">
+                                            {{ getCommentStatusLabel(currentCommentPreview.status) }}
+                                        </span>
+                                    </div>
+                                    <time class="preview-time" :datetime="currentCommentPreview.timestamp">
+                                        {{ formatTime(currentCommentPreview.timestamp) }}
+                                    </time>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="preview-body">
+                            <!-- 评论内容预览（Markdown渲染，含图片） -->
+                            <div class="preview-content md-preview-body" v-html="currentCommentPreviewHtml"></div>
+                            
+                            <!-- 引用的代码预览（如果有） -->
+                            <div v-if="currentCommentPreview.text" class="preview-quote">
+                                <div class="preview-quote-header">
+                                    <i class="fas fa-quote-left"></i>
+                                    <span>引用代码</span>
+                                </div>
+                                <pre class="preview-quote-code">
+                                    <code>{{ currentCommentPreview.text }}</code>
+                                </pre>
+                            </div>
+                            
+                            <!-- 改进代码预览（如果有） -->
+                            <div v-if="currentCommentPreview.improvementText" class="preview-improvement">
+                                <div class="preview-improvement-header">
+                                    <i class="fas fa-magic"></i>
+                                    <span>改进建议</span>
+                                </div>
+                                <pre class="preview-improvement-code">
+                                    <code>{{ currentCommentPreview.improvementText }}</code>
+                                </pre>
+                            </div>
+                        </div>
+                        
+                        <!-- 点击查看详情提示 -->
+                        <div class="preview-footer">
+                            <span class="preview-hint">点击查看完整详情</span>
                         </div>
                     </div>
                 </div>
