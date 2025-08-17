@@ -574,51 +574,650 @@
     from { opacity: 0; }
     to { opacity: 1; }
 }
-/* 评论详情弹窗 - 始终居中显示 */
-.comment-detail-popup {
-    position: fixed; /* 固定定位，确保不受父容器影响 */
-    top: 50% !important; /* 强制垂直居中 */
-    left: 50% !important; /* 强制水平居中 */
-    transform: translate(-50%, -50%) !important; /* 使用transform确保完美居中 */
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 12px;
-    box-shadow: var(--shadow-lg);
-    max-width: 86vw; /* 固定最大宽度为 86vw */
-    min-width: 420px; /* 最小宽度 */
-    width: 86vw; /* 固定宽度为 86vw */
-    height: 91vh; /* 固定高度为 91vh */
-    max-height: 91vh; /* 最大高度为 91vh */
-    z-index: 999999; /* 最高层级 */
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-    animation: commentPopupFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid var(--border-glass);
-    background: var(--bg-elevated);
-    /* 确保弹窗不会被遮挡 */
-    pointer-events: auto;
-    /* 防止内容溢出 */
-    overflow: hidden;
-    /* 确保弹窗在边界情况下也能显示 */
-    overflow-y: auto;
-    /* 添加更好的视觉效果 */
-    transform-origin: center;
-    /* 添加微妙的阴影效果 */
+/* ========== 现代化评论详情弹窗 ========== */
+.comment-detail-popup.modern-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(145deg, 
+        rgba(255, 255, 255, 0.95) 0%, 
+        rgba(255, 255, 255, 0.98) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
     box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.1),
-        0 8px 16px rgba(0, 0, 0, 0.05),
-        0 0 0 1px rgba(79, 70, 229, 0.1);
-    /* 添加边框渐变效果 */
-    border: 1px solid rgba(79, 70, 229, 0.2);
-    /* 确保弹窗在滚动时保持可见 */
-    transform: translate(-50%, -50%) translateZ(0);
-    /* 确保弹窗在边界情况下也能显示 */
-    will-change: transform;
-    /* 确保弹窗不会被其他元素遮挡 */
+        0 32px 64px rgba(0, 0, 0, 0.12),
+        0 16px 32px rgba(0, 0, 0, 0.08),
+        0 8px 16px rgba(0, 0, 0, 0.04),
+        0 0 0 1px rgba(59, 130, 246, 0.1);
+    max-width: min(920px, 92vw);
+    min-width: 420px;
+    max-height: min(720px, 85vh);
+    min-height: 400px;
+    z-index: 999999;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    animation: modernDialogFadeIn 0.4s cubic-bezier(0.34, 1.26, 0.64, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    
+    /* 现代化效果 */
+    transform-origin: center;
+    will-change: transform, opacity;
     isolation: isolate;
-    /* 添加更好的视觉层次 */
-    filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.15));
-    /* 移除之前的margin-left偏移 */
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+    .comment-detail-popup.modern-dialog {
+        background: linear-gradient(145deg, 
+            rgba(17, 24, 39, 0.95) 0%, 
+            rgba(17, 24, 39, 0.98) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}
+
+@keyframes modernDialogFadeIn {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9) translateY(20px);
+        filter: blur(4px);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1) translateY(0);
+        filter: blur(0);
+    }
+}
+
+/* ========== 现代化头部区域 ========== */
+.comment-detail-header.modern-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 24px 28px;
+    background: linear-gradient(135deg, 
+        rgba(59, 130, 246, 0.05) 0%, 
+        rgba(147, 197, 253, 0.08) 100%);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+    border-radius: 20px 20px 0 0;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.comment-detail-header.modern-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(59, 130, 246, 0.3) 50%, 
+        transparent 100%);
+}
+
+.header-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    flex: 1;
+}
+
+/* 增强的作者信息 */
+.comment-author-info.enhanced {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.comment-author-avatar.premium {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    flex-shrink: 0;
+}
+
+.avatar-ring {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #3b82f6, #8b5cf6, #06b6d4);
+    border-radius: 14px;
+    z-index: -1;
+    opacity: 0.6;
+    animation: avatarPulse 2s ease-in-out infinite;
+}
+
+@keyframes avatarPulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+.comment-author-details.enhanced {
+    flex: 1;
+    min-width: 0;
+}
+
+.author-name-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.comment-author.premium {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.comment-type-icon {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+}
+
+.meta-info-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.comment-time.enhanced {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: rgba(107, 114, 128, 0.1);
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.location-info.compact {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--primary);
+    background: rgba(59, 130, 246, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+/* 头部状态区域 */
+.header-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.status-badge.modern {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 现代化关闭按钮 */
+.close-button.modern {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    background: rgba(107, 114, 128, 0.1);
+    border: 1px solid rgba(107, 114, 128, 0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.close-button.modern:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #dc2626;
+    transform: scale(1.05);
+}
+
+.close-button-bg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(239, 68, 68, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.3s ease;
+    z-index: -1;
+}
+
+.close-button.modern:active .close-button-bg {
+    width: 100px;
+    height: 100px;
+}
+
+/* ========== 现代化内容区域 ========== */
+.comment-detail-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.comment-view-content.modern-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px 28px;
+    overflow-y: auto;
+}
+
+/* 主要内容区域 */
+.primary-content {
+    flex-shrink: 0;
+}
+
+.comment-content.enhanced-content {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-primary);
+    background: rgba(59, 130, 246, 0.02);
+    padding: 20px;
+    border-radius: 12px;
+    border-left: 4px solid var(--primary);
+    min-height: 60px;
+}
+
+.comment-content.enhanced-content p {
+    margin-bottom: 12px;
+}
+
+.comment-content.enhanced-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* 代码相关内容区域 */
+.code-content-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+    min-height: 0;
+}
+
+/* 现代化引用代码 */
+.comment-quote.modern-quote {
+    background: linear-gradient(135deg, 
+        rgba(107, 114, 128, 0.03) 0%, 
+        rgba(156, 163, 175, 0.05) 100%);
+    border: 1px solid rgba(107, 114, 128, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.quote-header.modern,
+.improvement-header.modern {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, 
+        rgba(107, 114, 128, 0.08) 0%, 
+        rgba(156, 163, 175, 0.12) 100%);
+    border-bottom: 1px solid rgba(107, 114, 128, 0.1);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.header-icon {
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+}
+
+.header-text {
+    flex: 1;
+}
+
+.highlight-code-btn {
+    padding: 4px 8px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 6px;
+    color: var(--primary);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.highlight-code-btn:hover {
+    background: rgba(59, 130, 246, 0.2);
+    transform: translateY(-1px);
+}
+
+.quote-code-container,
+.improvement-code-container {
+    position: relative;
+}
+
+.quote-code.modern,
+.improvement-code.modern {
+    background: var(--bg-primary);
+    padding: 16px;
+    margin: 0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    border: none;
+    border-radius: 0;
+    overflow-x: auto;
+    white-space: pre;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quote-code.modern:hover {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.code-overlay {
+    position: absolute;
+    bottom: 8px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    opacity: 0;
+    transition: all 0.2s ease;
+    pointer-events: none;
+}
+
+.quote-code-container:hover .code-overlay {
+    opacity: 1;
+}
+
+/* 现代化改进代码 */
+.comment-improvement.modern-improvement {
+    background: linear-gradient(135deg, 
+        rgba(16, 185, 129, 0.03) 0%, 
+        rgba(5, 150, 105, 0.05) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.improvement-header.modern .header-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.improvement-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.improvement-code.modern {
+    background: rgba(16, 185, 129, 0.05);
+    border-left: 3px solid #10b981;
+}
+
+/* 滚动条优化 */
+.comment-view-content.modern-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.comment-view-content.modern-content::-webkit-scrollbar-track {
+    background: rgba(107, 114, 128, 0.1);
+    border-radius: 3px;
+}
+
+.comment-view-content.modern-content::-webkit-scrollbar-thumb {
+    background: rgba(107, 114, 128, 0.3);
+    border-radius: 3px;
+}
+
+.comment-view-content.modern-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(107, 114, 128, 0.5);
+}
+
+/* ========== 响应式设计 - 现代化弹窗 ========== */
+@media (max-width: 768px) {
+    .comment-detail-popup.modern-dialog {
+        max-width: 95vw;
+        min-width: 320px;
+        max-height: 90vh;
+        border-radius: 16px;
+        margin: 20px;
+    }
+    
+    .comment-detail-header.modern-header {
+        flex-direction: column;
+        gap: 16px;
+        padding: 20px;
+    }
+    
+    .header-main {
+        width: 100%;
+    }
+    
+    .comment-author-info.enhanced {
+        gap: 12px;
+    }
+    
+    .comment-author-avatar.premium {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+        border-radius: 10px;
+    }
+    
+    .comment-author.premium {
+        font-size: 15px;
+    }
+    
+    .meta-info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .header-status {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .close-button.modern {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 36px;
+        height: 36px;
+    }
+    
+    .comment-view-content.modern-content {
+        padding: 20px;
+        gap: 16px;
+    }
+    
+    .comment-content.enhanced-content {
+        padding: 16px;
+        font-size: 14px;
+    }
+    
+    .quote-header.modern,
+    .improvement-header.modern {
+        padding: 10px 14px;
+        font-size: 12px;
+    }
+    
+    .quote-code.modern,
+    .improvement-code.modern {
+        padding: 12px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .comment-detail-popup.modern-dialog {
+        max-width: 98vw;
+        min-width: 280px;
+        max-height: 95vh;
+        border-radius: 12px;
+        margin: 10px;
+    }
+    
+    .comment-detail-header.modern-header {
+        padding: 16px;
+    }
+    
+    .comment-author-avatar.premium {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+        border-radius: 8px;
+    }
+    
+    .comment-author.premium {
+        font-size: 14px;
+    }
+    
+    .comment-type-icon {
+        width: 20px;
+        height: 20px;
+        font-size: 9px;
+    }
+    
+    .comment-time.enhanced,
+    .location-info.compact {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+    
+    .status-badge.modern {
+        padding: 6px 12px;
+        font-size: 11px;
+    }
+    
+    .close-button.modern {
+        width: 32px;
+        height: 32px;
+        top: 12px;
+        right: 12px;
+    }
+    
+    .comment-view-content.modern-content {
+        padding: 16px;
+    }
+    
+    .comment-content.enhanced-content {
+        padding: 14px;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+    
+    .quote-header.modern,
+    .improvement-header.modern {
+        padding: 8px 12px;
+        font-size: 11px;
+    }
+    
+    .header-icon {
+        width: 16px;
+        height: 16px;
+        font-size: 8px;
+    }
+    
+    .highlight-code-btn {
+        padding: 3px 6px;
+        font-size: 10px;
+    }
+    
+    .quote-code.modern,
+    .improvement-code.modern {
+        padding: 10px;
+        font-size: 11px;
+        line-height: 1.4;
+    }
+    
+    .improvement-badge {
+        padding: 3px 6px;
+        font-size: 9px;
+    }
+}
+
+/* 超小屏幕适配 */
+@media (max-width: 360px) {
+    .comment-detail-popup.modern-dialog {
+        margin: 5px;
+        border-radius: 10px;
+    }
+    
+    .comment-detail-header.modern-header {
+        padding: 12px;
+    }
+    
+    .comment-view-content.modern-content {
+        padding: 12px;
+    }
+    
+    .comment-content.enhanced-content {
+        padding: 12px;
+    }
 }
 
 /* 添加边界检测和自动调整的样式 */
@@ -1970,19 +2569,7 @@
         font-size: 10px;
     }
     
-    .comment-detail-popup {
-        max-width: 90vw; /* 最大宽度为视口宽度的90% */
-        min-width: 320px; /* 最小宽度 */
-        width: 520px; /* 设置默认宽度 */
-        /* 确保在中等屏幕上也能正确显示 */
-        max-height: 85vh; /* 最大高度为视口高度的85% */
-        /* 保持居中显示 */
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        /* 确保层级足够高 */
-        z-index: 999999;
-    }
+    /* 旧样式已被modern-dialog替代 */
     
     .comment-detail-header {
         padding: 12px 16px;
@@ -2062,19 +2649,7 @@
         right: -4px;
     }
     
-    .comment-detail-popup {
-        max-width: 95vw; /* 最大宽度为视口宽度的95% */
-        min-width: 280px; /* 最小宽度 */
-        width: 90vw; /* 设置默认宽度为视口宽度的90% */
-        /* 确保在小屏幕上也能正确显示 */
-        max-height: 90vh; /* 最大高度为视口高度的90% */
-        /* 保持居中显示 */
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        /* 确保层级足够高 */
-        z-index: 999999;
-    }
+    /* 旧样式已被modern-dialog替代 */
     
     .comment-detail-header {
         padding: 10px 12px;

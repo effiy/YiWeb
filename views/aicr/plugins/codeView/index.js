@@ -968,6 +968,32 @@ const createCodeView = async () => {
                         return 'status-pending';
                 }
             },
+            
+            // 获取评论类型标签
+            getCommentTypeLabel(type) {
+                const typeLabelMap = {
+                    'suggestion': '建议',
+                    'question': '问题',
+                    'bug': '错误',
+                    'discussion': '讨论',
+                    'praise': '表扬',
+                    'nitpick': '细节'
+                };
+                return typeLabelMap[type] || '评论';
+            },
+            
+            // 获取评论类型图标
+            getCommentTypeIcon(type) {
+                const typeIconMap = {
+                    'suggestion': 'fa-lightbulb',
+                    'question': 'fa-question-circle',
+                    'bug': 'fa-bug',
+                    'discussion': 'fa-comments',
+                    'praise': 'fa-thumbs-up',
+                    'nitpick': 'fa-search-plus'
+                };
+                return typeIconMap[type] || 'fa-comment';
+            },
             // 格式化时间显示
             formatTime(timestamp) {
                 if (!timestamp) return '未知时间';
@@ -2025,35 +2051,68 @@ const createCodeView = async () => {
                     <!-- 评论详情弹窗 -->
                     <div 
                         v-if="showCommentDetailPopup && currentCommentDetail" 
-                        class="comment-detail-popup"
+                        class="comment-detail-popup modern-dialog"
                         role="dialog"
                         aria-label="评论详情"
                     >
-                        <div class="comment-detail-header">
-                            <div class="comment-author-info">
-                                <div class="comment-author-avatar">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                                <div class="comment-author-details">
-                                    <div class="author-name-row">
-                                        <span class="comment-author">{{ currentCommentDetail.author }}</span>
-                                        <!-- 评论状态 - 移到作者名旁边 -->
-                                        <span v-if="currentCommentDetail.status" class="status-badge-inline" :class="getCommentStatusClass(currentCommentDetail.status)">
-                                            {{ getCommentStatusLabel(currentCommentDetail.status) }}
-                                        </span>
+                        <!-- 优化的头部区域 -->
+                        <div class="comment-detail-header modern-header">
+                            <div class="header-main">
+                                <div class="comment-author-info enhanced">
+                                    <div class="comment-author-avatar premium">
+                                        <i class="fas fa-user-tie"></i>
+                                        <div class="avatar-ring"></div>
                                     </div>
-                                    <time class="comment-time" :datetime="currentCommentDetail.timestamp">
-                                        {{ formatTime(currentCommentDetail.timestamp) }}
-                                    </time>
+                                    <div class="comment-author-details enhanced">
+                                        <div class="author-name-row">
+                                            <span class="comment-author premium">{{ currentCommentDetail.author }}</span>
+                                            <!-- 评论类型图标 -->
+                                            <div v-if="currentCommentDetail.type" class="comment-type-icon" :title="getCommentTypeLabel(currentCommentDetail.type)">
+                                                <i class="fas" :class="getCommentTypeIcon(currentCommentDetail.type)"></i>
+                                            </div>
+                                        </div>
+                                        <div class="meta-info-row">
+                                            <time class="comment-time enhanced" :datetime="currentCommentDetail.timestamp">
+                                                <i class="fas fa-clock"></i>
+                                                {{ formatTime(currentCommentDetail.timestamp) }}
+                                            </time>
+                                            <!-- 代码位置信息 -->
+                                            <div v-if="currentCommentDetail.rangeInfo" class="location-info compact">
+                                                <i class="fas fa-code"></i>
+                                                第 {{ currentCommentDetail.rangeInfo.startLine }}{{ currentCommentDetail.rangeInfo.endLine !== currentCommentDetail.rangeInfo.startLine ? "-" + currentCommentDetail.rangeInfo.endLine : "" }} 行
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 状态指示器移到头部 -->
+                                <div class="header-status">
+                                    <span class="status-badge modern" :class="'status-' + currentCommentDetail.status">
+                                        <i class="fas" :class="{
+                                            'fa-clock': currentCommentDetail.status === 'pending',
+                                            'fa-check-circle': currentCommentDetail.status === 'resolved',
+                                            'fa-lock': currentCommentDetail.status === 'closed',
+                                            'fa-times-circle': currentCommentDetail.status === 'wontfix'
+                                        }"></i>
+                                        {{ {
+                                            'pending': '待处理',
+                                            'resolved': '已解决',
+                                            'closed': '已关闭',
+                                            'wontfix': '不修复'
+                                        }[currentCommentDetail.status] || '未知状态' }}
+                                    </span>
                                 </div>
                             </div>
+                            
+                            <!-- 关闭按钮 -->
                             <button 
                                 @click="hideCommentDetail"
-                                class="close-button"
-                                title="关闭"
+                                class="close-button modern"
+                                title="关闭弹窗"
                                 aria-label="关闭评论详情"
                             >
                                 <i class="fas fa-times"></i>
+                                <div class="close-button-bg"></div>
                             </button>
                         </div>
                         
@@ -2238,38 +2297,53 @@ const createCodeView = async () => {
                             </div>
 
                             <!-- 查看模式 -->
-                            <div v-else>
-                                <!-- 代码位置信息 -->
-                                <div v-if="currentCommentDetail.rangeInfo" class="comment-location">
-                                    <i class="fas fa-code"></i>
-                                    <span class="location-text">
-                                        第 {{ currentCommentDetail.rangeInfo.startLine }}{{ currentCommentDetail.rangeInfo.endLine !== currentCommentDetail.rangeInfo.startLine ? "-" + currentCommentDetail.rangeInfo.endLine : "" }} 行
-                                    </span>
+                            <div v-else class="comment-view-content modern-content">
+                                <!-- 主要评论内容 -->
+                                <div class="primary-content">
+                                    <div class="comment-content enhanced-content md-preview-body" v-html="currentCommentDetailHtml"></div>
                                 </div>
                                 
-                                <!-- 引用的代码 -->
-                                <div v-if="currentCommentDetail.text" class="comment-quote">
-                                    <div class="quote-header">
-                                        <i class="fas fa-quote-left"></i>
-                                        <span>引用代码</span>
+                                <!-- 代码相关内容 -->
+                                <div v-if="currentCommentDetail.text || currentCommentDetail.improvementText" class="code-content-section">
+                                    <!-- 引用的代码 -->
+                                    <div v-if="currentCommentDetail.text" class="comment-quote modern-quote">
+                                        <div class="quote-header modern">
+                                            <div class="header-icon">
+                                                <i class="fas fa-quote-left"></i>
+                                            </div>
+                                            <span class="header-text">引用代码</span>
+                                            <button class="highlight-code-btn" @click="highlightCode(currentCommentDetail)" title="在代码中高亮显示">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </button>
+                                        </div>
+                                        <div class="quote-code-container">
+                                            <pre class="quote-code modern" @click="highlightCode(currentCommentDetail)">
+                                                <code>{{ currentCommentDetailTextDisplay }}</code>
+                                            </pre>
+                                            <div class="code-overlay">
+                                                <span class="click-hint">点击查看代码位置</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <pre class="quote-code" @click="highlightCode(currentCommentDetail)">
-                                        <code>{{ currentCommentDetailTextDisplay }}</code>
-                                    </pre>
-                                </div>
-                                
-                                <!-- 评论内容（Markdown渲染，含图片） -->
-                                <div class="comment-content md-preview-body" v-html="currentCommentDetailHtml"></div>
-                                
-                                <!-- 改进代码 -->
-                                <div v-if="currentCommentDetail.improvementText" class="comment-improvement">
-                                    <div class="improvement-header">
-                                        <i class="fas fa-magic"></i>
-                                        <span>改进代码</span>
+                                    
+                                    <!-- 改进代码 -->
+                                    <div v-if="currentCommentDetail.improvementText" class="comment-improvement modern-improvement">
+                                        <div class="improvement-header modern">
+                                            <div class="header-icon">
+                                                <i class="fas fa-magic"></i>
+                                            </div>
+                                            <span class="header-text">改进建议</span>
+                                            <div class="improvement-badge">
+                                                <i class="fas fa-star"></i>
+                                                优化
+                                            </div>
+                                        </div>
+                                        <div class="improvement-code-container">
+                                            <pre class="improvement-code modern">
+                                                <code>{{ currentCommentDetail.improvementText }}</code>
+                                            </pre>
+                                        </div>
                                     </div>
-                                    <pre class="improvement-code">
-                                        <code>{{ currentCommentDetail.improvementText }}</code>
-                                    </pre>
                                 </div>
                                 
                                 <!-- 评论操作按钮 -->
