@@ -3254,7 +3254,7 @@
     transition: transform 0.2s ease;
 }
 
-/* 增强的操作按钮区 */
+/* ========== 增强的操作按钮区 ========== */
 .comment-detail-actions.enhanced {
     display: flex;
     justify-content: space-between;
@@ -3262,12 +3262,74 @@
     padding: 16px 24px;
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-primary);
-    gap: 12px;
+    gap: 16px;
+    min-height: 72px;
 }
 
+/* 编辑模式和查看模式的差异化 */
+.comment-detail-actions.enhanced.edit-mode {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+    border-top: 2px solid rgba(16, 185, 129, 0.2);
+}
+
+.comment-detail-actions.enhanced.view-mode {
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-secondary);
+}
+
+/* ========== 状态指示器 ========== */
+.comment-status-indicator {
+    display: flex;
+    align-items: center;
+}
+
+.status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.status-badge i {
+    font-size: 11px;
+}
+
+/* 状态颜色 */
+.status-badge.status-pending {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #92400e;
+    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+}
+
+.status-badge.status-resolved {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    color: #065f46;
+    box-shadow: 0 2px 8px rgba(52, 211, 153, 0.3);
+}
+
+.status-badge.status-closed {
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+    color: #374151;
+    box-shadow: 0 2px 8px rgba(156, 163, 175, 0.3);
+}
+
+.status-badge.status-wontfix {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+    color: #7f1d1d;
+    box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
+}
+
+/* 按钮组布局 */
 .action-group {
     display: flex;
-    gap: 8px;
+    gap: 10px;
+    align-items: center;
 }
 
 .action-group.primary {
@@ -3279,56 +3341,213 @@
     flex-shrink: 0;
 }
 
-/* 主要保存按钮 */
-.action-button.save-button.primary {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: 8px;
-    border: none;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    min-width: 120px;
-}
-
-.action-button.save-button.primary:hover:not(:disabled) {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
-}
-
-.action-button.save-button.primary:disabled {
-    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-    box-shadow: none;
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* 增强按钮样式 */
+/* ========== 基础按钮样式 ========== */
 .comment-detail-actions.enhanced .action-button {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 16px;
+    padding: 9px 16px;
     border-radius: 6px;
-    transition: all 0.2s ease;
+    border: none;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    min-width: 80px;
+    justify-content: center;
+}
+
+.comment-detail-actions.enhanced .action-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none !important;
 }
 
 .comment-detail-actions.enhanced .action-button span {
-    font-weight: 500;
+    font-weight: inherit;
+    white-space: nowrap;
 }
 
-.comment-detail-actions.enhanced .cancel-button {
+.comment-detail-actions.enhanced .action-button i {
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+/* ========== 按钮类型样式 ========== */
+/* 成功类型（保存、解决） */
+.action-button.success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
+}
+
+.action-button.success:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+}
+
+/* 主要类型（编辑） */
+.action-button.primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
+}
+
+.action-button.primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+}
+
+/* 警告类型（重开） */
+.action-button.warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);
+}
+
+.action-button.warning:hover:not(:disabled) {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4);
+}
+
+/* 危险类型（删除） */
+.action-button.danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    box-shadow: 0 3px 10px rgba(239, 68, 68, 0.3);
+}
+
+.action-button.danger:hover:not(:disabled) {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+}
+
+/* 中性类型（取消、关闭） */
+.action-button.neutral {
     background: rgba(107, 114, 128, 0.1);
     color: var(--text-secondary);
     border: 1px solid rgba(107, 114, 128, 0.3);
+    box-shadow: none;
 }
 
-.comment-detail-actions.enhanced .cancel-button:hover:not(:disabled) {
+.action-button.neutral:hover:not(:disabled) {
     background: rgba(107, 114, 128, 0.2);
     color: var(--text-primary);
+    border-color: rgba(107, 114, 128, 0.5);
     transform: translateY(-1px);
+}
+
+/* ========== 按钮尺寸变体 ========== */
+.action-button.large {
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 140px;
+    border-radius: 8px;
+}
+
+.action-button.large i {
+    font-size: 14px;
+}
+
+/* ========== 特殊效果 ========== */
+/* 涟漪效果 */
+.comment-detail-actions.enhanced .action-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.comment-detail-actions.enhanced .action-button:active::after {
+    width: 100px;
+    height: 100px;
+}
+
+/* 禁用状态的特殊处理 */
+.action-button.success:disabled {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    box-shadow: none;
+}
+
+/* ========== 响应式设计 ========== */
+@media (max-width: 768px) {
+    .comment-detail-actions.enhanced {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+        min-height: auto;
+    }
+    
+    /* 状态指示器在移动端居中显示 */
+    .comment-status-indicator {
+        justify-content: center;
+        order: -1;
+    }
+    
+    .action-group {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .action-group.primary {
+        justify-content: center;
+        order: 1;
+    }
+    
+    .action-group.secondary {
+        order: 2;
+    }
+    
+    .comment-detail-actions.enhanced .action-button {
+        flex: 1;
+        min-width: 120px;
+    }
+    
+    .action-button.large {
+        padding: 14px 24px;
+        font-size: 15px;
+    }
+    
+    .status-badge {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .comment-detail-actions.enhanced {
+        padding: 12px;
+        gap: 10px;
+    }
+    
+    .comment-detail-actions.enhanced .action-button {
+        padding: 12px 16px;
+        font-size: 14px;
+        min-width: 100px;
+    }
+    
+    .action-button.large {
+        padding: 14px 20px;
+    }
+    
+    .status-badge {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
 }
 
 /* emoji 选项样式 */
@@ -3341,22 +3560,6 @@
     .edit-form-main,
     .edit-form-meta {
         padding: 16px;
-    }
-    
-    .comment-detail-actions.enhanced {
-        flex-direction: column-reverse;
-        gap: 12px;
-        padding: 16px;
-    }
-    
-    .action-group {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .action-button.save-button.primary {
-        width: 100%;
-        min-width: auto;
     }
     
     .form-section {
@@ -3372,10 +3575,6 @@
 @media (max-width: 480px) {
     .edit-form-main,
     .edit-form-meta {
-        padding: 12px;
-    }
-    
-    .comment-detail-actions.enhanced {
         padding: 12px;
     }
     

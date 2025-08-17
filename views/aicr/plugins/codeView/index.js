@@ -2026,27 +2026,30 @@ const createCodeView = async () => {
                                 </div>
 
                                 <!-- 操作按钮区 -->
-                                <div class="comment-detail-actions enhanced">
+                                <div class="comment-detail-actions enhanced edit-mode">
+                                    <!-- 主要操作组 -->
                                     <div class="action-group primary">
                                         <button 
                                             @click="saveEditedCommentDetail"
-                                            class="action-button save-button primary"
+                                            class="action-button save-button success large"
                                             :disabled="editingSaving"
-                                            title="保存修改 (⌘/Ctrl+Enter)"
+                                            title="保存所有修改 (⌘/Ctrl+Enter)"
                                         >
                                             <i class="fas" :class="editingSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-                                            <span>保存修改</span>
+                                            <span>{{ editingSaving ? '保存中...' : '保存修改' }}</span>
                                         </button>
                                     </div>
+                                    
+                                    <!-- 次要操作组 -->
                                     <div class="action-group secondary">
                                         <button 
                                             @click="cancelEditCommentDetail" 
-                                            class="action-button cancel-button" 
+                                            class="action-button cancel-button neutral" 
                                             :disabled="editingSaving" 
-                                            title="取消编辑 (Esc)"
+                                            title="放弃修改并返回 (Esc)"
                                         >
-                                            <i class="fas fa-times"></i>
-                                            <span>取消</span>
+                                            <i class="fas fa-arrow-left"></i>
+                                            <span>放弃修改</span>
                                         </button>
                                     </div>
                                 </div>
@@ -2088,51 +2091,77 @@ const createCodeView = async () => {
                                 </div>
                                 
                                 <!-- 评论操作按钮 -->
-                                <div class="comment-detail-actions">
-                                    <button 
-                                        @click="hideCommentDetail"
-                                        class="action-button cancel-button"
-                                        title="取消"
-                                    >
-                                        <i class="fas fa-times"></i>
-                                        取消
-                                    </button>
-                                    <button 
-                                        @click="startEditCommentDetail(currentCommentDetail)"
-                                        class="action-button edit-button"
-                                        title="编辑评论"
-                                    >
-                                        <i class="fas fa-pen"></i>
-                                        编辑
-                                    </button>
-                                    <button 
-                                        v-if="currentCommentDetail.status === 'pending'"
-                                        @click="resolveCommentDetail(currentCommentDetail.key)"
-                                        class="action-button resolve-button"
-                                        title="标记为已解决"
-                                    >
-                                        <i class="fas fa-check"></i>
-                                        解决
-                                    </button>
+                                <div class="comment-detail-actions enhanced view-mode">
+                                    <!-- 状态指示器 -->
+                                    <div class="comment-status-indicator">
+                                        <span class="status-badge" :class="'status-' + currentCommentDetail.status">
+                                            <i class="fas" :class="{
+                                                'fa-clock': currentCommentDetail.status === 'pending',
+                                                'fa-check-circle': currentCommentDetail.status === 'resolved',
+                                                'fa-lock': currentCommentDetail.status === 'closed',
+                                                'fa-times-circle': currentCommentDetail.status === 'wontfix'
+                                            }"></i>
+                                            {{ {
+                                                'pending': '待处理',
+                                                'resolved': '已解决',
+                                                'closed': '已关闭',
+                                                'wontfix': '不修复'
+                                            }[currentCommentDetail.status] || '未知状态' }}
+                                        </span>
+                                    </div>
                                     
-                                    <button 
-                                        v-if="currentCommentDetail.status === 'resolved'"
-                                        @click="reopenCommentDetail(currentCommentDetail.key)"
-                                        class="action-button reopen-button"
-                                        title="重新打开"
-                                    >
-                                        <i class="fas fa-undo"></i>
-                                        重开
-                                    </button>
+                                    <!-- 主要操作组 -->
+                                    <div class="action-group primary">
+                                        <button 
+                                            @click="startEditCommentDetail(currentCommentDetail)"
+                                            class="action-button edit-button primary"
+                                            title="编辑评论内容"
+                                        >
+                                            <i class="fas fa-edit"></i>
+                                            <span>编辑评论</span>
+                                        </button>
+                                        
+                                        <button 
+                                            v-if="currentCommentDetail.status === 'pending'"
+                                            @click="resolveCommentDetail(currentCommentDetail.key)"
+                                            class="action-button resolve-button success"
+                                            title="标记为已解决"
+                                        >
+                                            <i class="fas fa-check-circle"></i>
+                                            <span>标记解决</span>
+                                        </button>
+                                        
+                                        <button 
+                                            v-if="currentCommentDetail.status === 'resolved'"
+                                            @click="reopenCommentDetail(currentCommentDetail.key)"
+                                            class="action-button reopen-button warning"
+                                            title="重新打开评论"
+                                        >
+                                            <i class="fas fa-redo"></i>
+                                            <span>重新打开</span>
+                                        </button>
+                                    </div>
                                     
-                                    <button 
-                                        @click="deleteCommentDetail(currentCommentDetail.key)"
-                                        class="action-button delete-button"
-                                        title="删除评论"
-                                    >
-                                        <i class="fas fa-trash"></i>
-                                        删除
-                                    </button>
+                                    <!-- 次要操作组 -->
+                                    <div class="action-group secondary">
+                                        <button 
+                                            @click="deleteCommentDetail(currentCommentDetail.key)"
+                                            class="action-button delete-button danger"
+                                            title="永久删除此评论"
+                                        >
+                                            <i class="fas fa-trash-alt"></i>
+                                            <span>删除</span>
+                                        </button>
+                                        
+                                        <button 
+                                            @click="hideCommentDetail"
+                                            class="action-button close-button neutral"
+                                            title="关闭弹窗"
+                                        >
+                                            <i class="fas fa-times"></i>
+                                            <span>关闭</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
