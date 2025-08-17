@@ -572,7 +572,7 @@ const createCommentPanel = async () => {
 
 
 
-            // 打开评论编辑器（作者：liangliang）
+            // 打开评论编辑器
             openCommentEditor(comment) {
                 return safeExecute(() => {
                     if (!comment || !comment.key) return;
@@ -615,7 +615,7 @@ const createCommentPanel = async () => {
                 }, '打开评论编辑器');
             },
 
-            // 关闭评论编辑器（作者：liangliang）
+            // 关闭评论编辑器
             closeCommentEditor() {
                 return safeExecute(() => {
                     console.log('[CommentPanel] 关闭评论编辑器');
@@ -1209,12 +1209,6 @@ const createCommentPanel = async () => {
                 return modelNames[model] || model;
             },
             
-            // 测试方法
-            testAddCommenter() {
-                console.log('[CommentPanel] 测试添加评论者方法');
-                this.addNewCommenter();
-            },
-            
             // 设置store监听器
             setupStoreWatcher() {
                 console.log('[CommentPanel] 设置store监听器');
@@ -1542,35 +1536,6 @@ const createCommentPanel = async () => {
 
         console.log('[CommentPanel] 代码评审评论面板组件初始化完成');
         console.log('[CommentPanel] 组件对象:', CommentPanel);
-        
-        // 添加全局测试函数
-        window.testCommentPanelAddCommenter = () => {
-            console.log('[Test] 测试添加评论者功能');
-            if (window.CommentPanel && window.CommentPanel.methods) {
-                console.log('[Test] 找到CommentPanel组件，测试addNewCommenter方法');
-                // 这里可以添加更多测试逻辑
-            } else {
-                console.error('[Test] CommentPanel组件未找到');
-            }
-        };
-        
-        // 添加简单的测试方法
-        window.testAddCommenter = () => {
-            console.log('[Test] 直接测试添加评论者');
-            // 查找评论面板组件实例
-            const commentPanelElement = document.querySelector('.comment-panel-container');
-            if (commentPanelElement && commentPanelElement.__vueParentComponent) {
-                const component = commentPanelElement.__vueParentComponent.component;
-                if (component && component.methods && component.methods.addNewCommenter) {
-                    console.log('[Test] 找到组件实例，调用addNewCommenter方法');
-                    component.methods.addNewCommenter.call(component);
-                } else {
-                    console.error('[Test] 组件实例或方法未找到');
-                }
-            } else {
-                console.error('[Test] 评论面板DOM元素未找到');
-            }
-        };
     } catch (error) {
         console.error('CommentPanel 组件初始化失败:', error);
     }
