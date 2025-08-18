@@ -64,21 +64,116 @@
                         </div>
                     </div>
                 </form>
-                <nav class="category-filters" id="category-filters" role="toolbar" aria-label="页面导航">
+                <!-- 时间选择器和功能按钮 -->
+                <nav class="time-filters" id="time-filters" role="toolbar" aria-label="时间选择和功能操作">
                     <ul class="filter-buttons">
-                        <!-- 动态渲染页面导航按钮 -->
-                        <li v-for="(filter, index) in categoryFilters" :key="filter.id">
+                        <!-- 时间选择器：年度 -> 季度 -> 月度 -> 全部 -->
+                        <li class="cascader-container">
+                            <div class="cascader">
+                              <!-- 全部按钮 -->
+                              <button 
+                                  type="button"
+                                  class="filter-btn all-select"
+                                  @click="handleAllSelect"
+                                  :class="{ 'active': !selectedYear, 'reverse': isAllSelected }"
+                                  :disabled="loading"
+                                  :title="isAllSelected ? '恢复当前月份状态' : '查询全部数据'"
+                                  :aria-label="isAllSelected ? '恢复当前月份状态' : '查询全部数据'">
+                                  <i :class="isAllSelected ? 'fas fa-undo' : 'fas fa-globe'" aria-hidden="true"></i>
+                                  <span>{{ isAllSelected ? '恢复' : '全部' }}</span>
+                                </button>
+                                <label class="visually-hidden" for="yearSelect">年度选择器</label>
+                                <select 
+                                    id="yearSelect"
+                                    class="filter-btn year-select"
+                                    v-model="selectedYear"
+                                    @change="handleYearChange($event.target.value)"
+                                    :disabled="loading"
+                                    :title="selectedYear ? `当前年度: ${selectedYear}` : '选择年度'"
+                                    aria-label="年度选择器"
+                                >
+                                    <option value="" disabled>选择年度</option>
+                                    <option 
+                                        v-for="year in years" 
+                                        :key="year" 
+                                        :value="year"
+                                        :title="`选择年度: ${year}`">
+                                        {{ year }}年
+                                    </option>
+                                </select>
+                                <label class="visually-hidden" for="quarterSelect">季度选择器</label>
+                                <select 
+                                    id="quarterSelect"
+                                    class="filter-btn quarter-select"
+                                    v-model="selectedQuarter"
+                                    @change="handleQuarterChange"
+                                    :disabled="!selectedYear || loading"
+                                    :title="selectedQuarter ? `当前季度: ${selectedQuarter}` : (selectedYear ? '选择季度' : '请先选择年度')"
+                                    aria-label="季度选择器"
+                                >
+                                    <option value="" disabled>{{ selectedYear ? '选择季度' : '请先选择年度' }}</option>
+                                    <option 
+                                        v-for="quarter in quarters" 
+                                        :key="quarter.value" 
+                                        :value="quarter.value"
+                                        :title="`选择季度: ${quarter.label}`">
+                                        {{ quarter.label }}
+                                    </option>
+                                </select>
+                                <label class="visually-hidden" for="monthSelect">月度选择器</label>
+                                <select 
+                                    id="monthSelect"
+                                    class="filter-btn month-select"
+                                    v-model="selectedMonth"
+                                    @change="handleMonthChange"
+                                    :disabled="!selectedQuarter || loading"
+                                    :title="selectedMonth ? `当前月度: ${selectedMonth}` : (selectedQuarter ? '选择月度' : '请先选择季度')"
+                                    aria-label="月度选择器"
+                                >
+                                    <option value="" disabled>{{ selectedQuarter ? '选择月度' : '请先选择季度' }}</option>
+                                    <option 
+                                        v-for="month in getMonthsByQuarter(selectedQuarter)" 
+                                        :key="month.value" 
+                                        :value="month.value"
+                                        :title="`选择月度: ${month.label}`">
+                                        {{ month.label }}
+                                    </option>
+                                </select>
+                            </div>
+                        </li>
+                        
+                        <!-- 下载功能按钮 -->
+                        <li>
                             <button 
+                                type="button"
                                 class="filter-btn"
-                                type="button" 
-                                :aria-label="filter.ariaLabel" 
-                                :data-action="filter.id" 
-                                @click="openLink(filter.link)"
-                                :title="filter.description"
-                            >
-                                <i :class="filter.icon" aria-hidden="true"></i>
-                                <span>{{ filter.label }}</span>
+                                @click="handleDownloadData"
+                                :disabled="loading || !selectedMonth"
+                                :title="selectedMonth ? `下载 ${selectedYear}年${selectedQuarter}季度${selectedMonth}月数据` : '请完成时间选择后下载'">
+                                <i class="fas fa-download" aria-hidden="true"></i>
+                                <span>下载</span>
                             </button>
+                        </li>
+                        
+                        <!-- 上传功能按钮 -->
+                        <li>
+                            <button 
+                                type="button"
+                                class="filter-btn"
+                                @click="triggerUploadData"
+                                :disabled="loading"
+                                title="上传数据文件">
+                                <i class="fas fa-upload" aria-hidden="true"></i>
+                                <span>上传</span>
+                            </button>
+                            <input 
+                                id="dataUploadInput"
+                                ref="uploadInput"
+                                type="file" 
+                                accept=".zip,.json"
+                                @change="handleUploadData"
+                                class="hidden" 
+                                aria-label="上传数据文件">
                         </li>
                     </ul>
                 </nav>
@@ -240,6 +335,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 
 

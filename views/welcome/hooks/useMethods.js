@@ -11,6 +11,7 @@
 import { getData, postData } from '/apis/index.js';
 import { showError, showSuccess } from '/utils/message.js';
 import { showGlobalLoading, hideGlobalLoading } from '/utils/loading.js';
+import { formatTimeRangeText, validateTimeParams } from '/utils/timeParams.js';
 
 export const useMethods = (store) => {
     // 辅助函数：添加被动事件监听器
@@ -650,6 +651,934 @@ export const useMethods = (store) => {
         console.log('[搜索过滤] 清空搜索');
     };
 
+    // 处理全部选择/恢复
+    const handleAllSelect = async () => {
+        try {
+            if (store.isAllSelected.value) {
+                // 反选：恢复默认当前月份状态
+                console.log('[时间选择] 恢复默认当前月份状态');
+                
+                // 获取当前日期
+                const now = new Date();
+                const currentYear = now.getFullYear().toString();
+                const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
+                const currentQuarter = `Q${Math.ceil((now.getMonth() + 1) / 3)}`;
+                
+                // 设置当前年月
+                store.selectedYear.value = currentYear;
+                store.selectedQuarter.value = currentQuarter;
+                store.selectedMonth.value = currentMonth;
+                
+                // 更新全部选择状态
+                store.isAllSelected.value = false;
+                
+                // 重新加载数据
+                if (store.loadFeatureCards) {
+                    console.log('[时间选择] 恢复当前月份，重新加载功能卡片');
+                    await store.loadFeatureCards(true);
+                }
+            } else {
+                // 选择全部：查询全部数据
+                console.log('[时间选择] 选择查询全部数据');
+                
+                // 清空所有时间选择
+                store.selectedYear.value = '';
+                store.selectedQuarter.value = '';
+                store.selectedMonth.value = '';
+                
+                // 更新全部选择状态
+                store.isAllSelected.value = true;
+                
+                // 重新加载全部数据
+                if (store.loadFeatureCards) {
+                    console.log('[时间选择] 查询全部数据，重新加载功能卡片');
+                    await store.loadFeatureCards(true);
+                }
+            }
+        } catch (error) {
+            handleError(error, '全部选择');
+        }
+    };
+
+    // 处理年度选择变化
+    const handleYearChange = async (year) => {
+        try {
+            console.log('[时间选择] 年度选择变化:', year);
+            store.selectedYear.value = year;
+            // 重置季度和月度选择
+            store.selectedQuarter.value = '';
+            store.selectedMonth.value = '';
+            
+            // 更新全部选择状态（选择具体时间时，退出全部选择状态）
+            store.isAllSelected.value = false;
+            
+            // 自动重新加载数据
+            if (year && store.loadFeatureCards) {
+                console.log('[时间选择] 年度变化，重新加载功能卡片数据');
+                await store.loadFeatureCards(true);
+            }
+        } catch (error) {
+            handleError(error, '年度选择');
+        }
+    };
+
+    // 处理季度选择变化
+    const handleQuarterChange = async () => {
+        try {
+            console.log('[时间选择] 季度选择变化:', store.selectedQuarter.value);
+            // 重置月度选择
+            store.selectedMonth.value = '';
+            
+            // 更新全部选择状态（选择具体时间时，退出全部选择状态）
+            store.isAllSelected.value = false;
+            
+            // 自动重新加载数据
+            if (store.selectedQuarter.value && store.selectedYear.value && store.loadFeatureCards) {
+                console.log('[时间选择] 季度变化，重新加载功能卡片数据');
+                await store.loadFeatureCards(true);
+            }
+        } catch (error) {
+            handleError(error, '季度选择');
+        }
+    };
+
+    // 处理月度选择变化
+    const handleMonthChange = async () => {
+        try {
+            console.log('[时间选择] 月度选择变化:', store.selectedMonth.value);
+            console.log('[时间选择] 当前选择:', {
+                year: store.selectedYear.value,
+                quarter: store.selectedQuarter.value,
+                month: store.selectedMonth.value
+            });
+            
+            // 更新全部选择状态（选择具体时间时，退出全部选择状态）
+            store.isAllSelected.value = false;
+            
+            // 自动重新加载数据
+            if (store.selectedMonth.value && store.selectedQuarter.value && store.selectedYear.value && store.loadFeatureCards) {
+                console.log('[时间选择] 月度变化，重新加载功能卡片数据');
+                await store.loadFeatureCards(true);
+            }
+        } catch (error) {
+            handleError(error, '月度选择');
+        }
+    };
+
+    // 根据季度获取月份列表
+    const getMonthsByQuarter = (quarter) => {
+        const monthsMap = {
+            'Q1': [
+                { value: '01', label: '1月' },
+                { value: '02', label: '2月' },
+                { value: '03', label: '3月' }
+            ],
+            'Q2': [
+                { value: '04', label: '4月' },
+                { value: '05', label: '5月' },
+                { value: '06', label: '6月' }
+            ],
+            'Q3': [
+                { value: '07', label: '7月' },
+                { value: '08', label: '8月' },
+                { value: '09', label: '9月' }
+            ],
+            'Q4': [
+                { value: '10', label: '10月' },
+                { value: '11', label: '11月' },
+                { value: '12', label: '12月' }
+            ]
+        };
+        return monthsMap[quarter] || [];
+    };
+
+    // 处理下载数据
+    const handleDownloadData = async () => {
+        try {
+            const { year, quarter, month } = {
+                year: store.selectedYear.value,
+                quarter: store.selectedQuarter.value,
+                month: store.selectedMonth.value
+            };
+            
+            // 使用时间工具函数验证参数
+            const timeValidation = validateTimeParams(year, quarter, month);
+            if (!timeValidation.isValid) {
+                showError('时间参数无效：' + timeValidation.errors.join(', '));
+                return;
+            }
+            
+            if (!year || !quarter || !month) {
+                showError('请先完成时间选择');
+                return;
+            }
+
+            const timeRangeText = formatTimeRangeText(year, quarter, month);
+            showGlobalLoading(`正在查询${timeRangeText}功能特征任务列表...`);
+            console.log('[下载] 开始下载数据:', { 
+                year, quarter, month,
+                timeRange: timeRangeText
+            });
+
+            // 1. 获取功能卡片数据
+            const featureCards = store.featureCards.value || [];
+            
+            // 2. 为每个功能卡片查询对应的任务列表
+            const { getData } = await import('/apis/modules/crud.js');
+            const taskPromises = [];
+            
+            for (const card of featureCards) {
+                if (!card.title) continue;
+                
+                // 为每个功能特征查询任务
+                if (card.features && Array.isArray(card.features)) {
+                    for (const feature of card.features) {
+                        if (!feature.name) continue;
+                        
+                        const taskPromise = getData(
+                            `${window.API_URL}/mongodb/?cname=tasks&featureName=${encodeURIComponent(feature.name)}&cardTitle=${encodeURIComponent(card.title)}`
+                        ).then(response => ({
+                            cardTitle: card.title,
+                            featureName: feature.name,
+                            tasks: response?.data?.list || []
+                        })).catch(error => {
+                            console.warn(`[下载] 查询任务失败 - ${card.title}/${feature.name}:`, error);
+                            return {
+                                cardTitle: card.title,
+                                featureName: feature.name,
+                                tasks: []
+                            };
+                        });
+                        
+                        taskPromises.push(taskPromise);
+                    }
+                }
+            }
+
+            showGlobalLoading('正在查询任务数据...');
+            const taskResults = await Promise.all(taskPromises);
+            
+            // 3. 构建tree.json数据结构
+            const treeData = {
+                name: `${year}年${quarter}季度${month}月`,
+                type: 'root',
+                children: []
+            };
+
+            const cardNodes = {};
+            
+            // 为每个功能卡片创建节点
+            for (const card of featureCards) {
+                if (!card.title) continue;
+                
+                const cardNode = {
+                    name: card.title,
+                    type: 'card',
+                    description: card.description || '',
+                    badge: card.badge || '',
+                    children: []
+                };
+                
+                cardNodes[card.title] = cardNode;
+                treeData.children.push(cardNode);
+            }
+            
+            // 添加功能特征和任务
+            for (const result of taskResults) {
+                const cardNode = cardNodes[result.cardTitle];
+                if (!cardNode) continue;
+                
+                const featureNode = {
+                    name: result.featureName,
+                    type: 'feature',
+                    taskCount: result.tasks.length,
+                    children: result.tasks.map(task => ({
+                        name: task.title || 'Untitled Task',
+                        type: 'task',
+                        key: task.key || task.id,
+                        status: task.status || 'pending',
+                        priority: task.priority || 'medium',
+                        createTime: task.createTime || new Date().toISOString(),
+                        // 新增：关键特征信息在树结构中显示
+                        hasWeeklyReport: task.weeklyReport?.enabled || false,
+                        hasDailyReport: task.dailyReport?.enabled || false,
+                        difficulty: task.features?.difficulty || 'medium',
+                        type: task.features?.type || 'development',
+                        estimatedHours: task.features?.estimatedHours || 0,
+                        actualHours: task.features?.actualHours || 0,
+                        progress: task.progress?.percentage || 0,
+                        assignee: task.features?.assignee || '',
+                        deadline: task.timeTracking?.deadline || null,
+                        businessValue: task.features?.businessValue || 'medium'
+                    }))
+                };
+                
+                cardNode.children.push(featureNode);
+            }
+
+            // 4. 构建file.json数据结构
+            const fileData = {};
+            let fileIndex = 1;
+            
+            for (const result of taskResults) {
+                const pathPrefix = `${result.cardTitle}/${result.featureName}`;
+                
+                for (const task of result.tasks) {
+                    const fileName = `task_${fileIndex.toString().padStart(3, '0')}.json`;
+                    const filePath = `${pathPrefix}/${fileName}`;
+                    
+                    fileData[filePath] = {
+                        // 基础属性
+                        id: task.key || task.id,
+                        title: task.title || 'Untitled Task',
+                        description: task.description || '',
+                        content: task.content || '',
+                        status: task.status || 'pending',
+                        priority: task.priority || 'medium',
+                        category: task.category || '',
+                        tags: task.tags || [],
+                        steps: task.steps || [],
+                        createTime: task.createTime || new Date().toISOString(),
+                        updateTime: task.updateTime || new Date().toISOString(),
+                        featureName: result.featureName,
+                        cardTitle: result.cardTitle,
+                        timeRange: { year, quarter, month },
+                        
+                        // 周报属性
+                        weeklyReport: task.weeklyReport || {
+                            enabled: false,
+                            frequency: 'weekly',
+                            dayOfWeek: 1,
+                            reportTemplate: '',
+                            lastSubmitted: null,
+                            nextDue: null,
+                            history: []
+                        },
+                        
+                        // 日报属性
+                        dailyReport: task.dailyReport || {
+                            enabled: false,
+                            frequency: 'daily',
+                            timeOfDay: '18:00',
+                            reportTemplate: '',
+                            lastSubmitted: null,
+                            nextDue: null,
+                            history: [],
+                            weekends: false
+                        },
+                        
+                        // 任务特征属性
+                        features: task.features || {
+                            estimatedHours: 0,
+                            actualHours: 0,
+                            difficulty: 'medium',
+                            type: 'development',
+                            dependencies: [],
+                            milestone: '',
+                            assignee: '',
+                            reviewer: '',
+                            labels: [],
+                            businessValue: 'medium',
+                            urgency: 'medium',
+                            complexity: 'medium'
+                        },
+                        
+                        // 进度跟踪
+                        progress: task.progress || {
+                            percentage: 0,
+                            milestones: [],
+                            blockers: [],
+                            notes: []
+                        },
+                        
+                        // 时间跟踪
+                        timeTracking: task.timeTracking || {
+                            startDate: null,
+                            endDate: null,
+                            deadline: null,
+                            estimatedDuration: 0,
+                            actualDuration: 0,
+                            timeEntries: []
+                        }
+                    };
+                    
+                    fileIndex++;
+                }
+            }
+
+            // 5. 使用JSZip创建压缩包（参考aicr实现）
+            showGlobalLoading('正在生成下载包...');
+            const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip;
+            const zip = new JSZip();
+
+            // 添加tree.json
+            zip.file('tree.json', JSON.stringify(treeData, null, 2));
+            
+            // 添加files.json
+            zip.file('files.json', JSON.stringify(fileData, null, 2));
+            
+            // 计算统计信息（用于下载成功提示）
+            const stats = {
+                totalTasks: Object.keys(fileData).length,
+                weeklyReportTasks: Object.values(fileData).filter(task => task.weeklyReport?.enabled).length,
+                dailyReportTasks: Object.values(fileData).filter(task => task.dailyReport?.enabled).length,
+                completedTasks: Object.values(fileData).filter(task => task.status === 'completed').length,
+                avgProgress: Object.values(fileData).reduce((sum, task) => sum + (task.progress?.percentage || 0), 0) / Object.keys(fileData).length,
+                urgentTasks: Object.values(fileData).filter(task => task.features?.urgency === 'high').length,
+                totalEstimatedHours: Object.values(fileData).reduce((sum, task) => sum + (task.features?.estimatedHours || 0), 0),
+                totalActualHours: Object.values(fileData).reduce((sum, task) => sum + (task.features?.actualHours || 0), 0)
+            };
+
+            // 生成并下载ZIP文件
+            const blob = await zip.generateAsync({ type: 'blob' });
+            const fileName = `${year}-${quarter}-${month}.zip`;
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            hideGlobalLoading();
+            
+            // 显示详细的下载成功信息
+            const downloadStats = getTasksStatistics(Object.values(fileData));
+            const successMessage = `${year}年${quarter}季度${month}月数据包下载成功！
+📊 任务统计：
+• 总任务数：${downloadStats.total} 个
+• 完成率：${downloadStats.completionRate}%
+• 启用周报：${downloadStats.withWeeklyReport} 个
+• 启用日报：${downloadStats.withDailyReport} 个
+• 预估工时：${downloadStats.totalEstimatedHours} 小时
+• 实际工时：${downloadStats.totalActualHours} 小时`;
+            
+            showSuccess(successMessage);
+            console.log('[下载] 数据下载完成:', {
+                featureCards: featureCards.length,
+                tasks: Object.keys(fileData).length,
+                statistics: downloadStats,
+                structure: treeData
+            });
+
+        } catch (error) {
+            hideGlobalLoading();
+            handleError(error, '下载数据');
+            showError('下载失败: ' + (error?.message || '未知错误'));
+        }
+    };
+
+    // 触发上传文件选择
+    const triggerUploadData = () => {
+        try {
+            const uploadInput = document.getElementById('dataUploadInput');
+            if (uploadInput) {
+                uploadInput.click();
+            }
+        } catch (error) {
+            handleError(error, '触发上传');
+        }
+    };
+
+    // 处理上传数据
+    const handleUploadData = async (event) => {
+        try {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showGlobalLoading('正在处理上传文件...');
+            console.log('[上传] 开始处理文件:', file.name, '类型:', file.type);
+
+            // 判断文件类型并处理
+            if (file.name.toLowerCase().endsWith('.zip')) {
+                await handleZipUpload(file);
+            } else if (file.name.toLowerCase().endsWith('.json')) {
+                await handleJsonUpload(file);
+            } else {
+                throw new Error('不支持的文件格式，请上传 ZIP 或 JSON 文件');
+            }
+
+            // 清除文件输入
+            event.target.value = '';
+
+        } catch (error) {
+            hideGlobalLoading();
+            handleError(error, '上传数据');
+            showError('上传失败: ' + (error?.message || '未知错误'));
+            // 清除文件输入
+            event.target.value = '';
+        }
+    };
+
+    // 处理ZIP文件上传（参考aicr实现）
+    const handleZipUpload = async (zipFile) => {
+        try {
+            showGlobalLoading('正在解析ZIP文件...');
+            
+            // 动态加载JSZip
+            const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip;
+            const zip = new JSZip();
+            
+            // 读取ZIP文件
+            const zipContent = await zip.loadAsync(zipFile);
+            
+            let treeData = null;
+            let filesData = null;
+            
+            // 查找并读取tree.json和files.json
+            const treeFile = zipContent.file('tree.json');
+            const filesFile = zipContent.file('files.json');
+            
+            if (!treeFile && !filesFile) {
+                throw new Error('ZIP文件中未找到 tree.json 或 files.json');
+            }
+            
+            if (treeFile) {
+                const treeContent = await treeFile.async('text');
+                treeData = JSON.parse(treeContent);
+                console.log('[上传] 解析tree.json成功:', treeData);
+            }
+            
+            if (filesFile) {
+                const filesContent = await filesFile.async('text');
+                filesData = JSON.parse(filesContent);
+                console.log('[上传] 解析files.json成功，文件数量:', Object.keys(filesData).length);
+            }
+            
+            showGlobalLoading('正在导入任务数据...');
+            
+            // 导入任务数据到数据库
+            if (filesData) {
+                const { postData } = await import('/apis/modules/crud.js');
+                let importedCount = 0;
+                let skippedCount = 0;
+                
+                for (const [filePath, taskData] of Object.entries(filesData)) {
+                    try {
+                        // 构建要保存的任务对象（新增周报日报属性）
+                        const taskToSave = {
+                            // 基础属性
+                            title: taskData.title,
+                            description: taskData.description,
+                            content: taskData.content,
+                            status: taskData.status,
+                            priority: taskData.priority,
+                            category: taskData.category,
+                            tags: taskData.tags,
+                            steps: taskData.steps,
+                            featureName: taskData.featureName,
+                            cardTitle: taskData.cardTitle,
+                            createTime: taskData.createTime,
+                            updateTime: new Date().toISOString(),
+                            
+                            // 新增：周报属性
+                            weeklyReport: taskData.weeklyReport || {
+                                enabled: false,          // 是否启用周报
+                                frequency: 'weekly',     // 频率：weekly
+                                dayOfWeek: 1,           // 周几提交（1=周一，7=周日）
+                                reportTemplate: '',      // 周报模板
+                                lastSubmitted: null,     // 最后提交时间
+                                nextDue: null,          // 下次到期时间
+                                history: []             // 历史周报记录
+                            },
+                            
+                            // 新增：日报属性
+                            dailyReport: taskData.dailyReport || {
+                                enabled: false,          // 是否启用日报
+                                frequency: 'daily',      // 频率：daily
+                                timeOfDay: '18:00',     // 每日提交时间
+                                reportTemplate: '',      // 日报模板
+                                lastSubmitted: null,     // 最后提交时间
+                                nextDue: null,          // 下次到期时间
+                                history: [],            // 历史日报记录
+                                weekends: false         // 是否包含周末
+                            },
+                            
+                            // 新增：任务特征属性
+                            features: taskData.features || {
+                                estimatedHours: 0,       // 预估工时
+                                actualHours: 0,          // 实际工时
+                                difficulty: 'medium',    // 难度：easy, medium, hard
+                                type: 'development',     // 类型：development, research, meeting, review
+                                dependencies: [],        // 依赖的其他任务ID
+                                milestone: '',           // 所属里程碑
+                                assignee: '',           // 负责人
+                                reviewer: '',           // 审核人
+                                labels: [],             // 自定义标签
+                                businessValue: 'medium', // 业务价值：low, medium, high
+                                urgency: 'medium',      // 紧急程度：low, medium, high
+                                complexity: 'medium'    // 复杂度：low, medium, high
+                            },
+                            
+                            // 新增：进度跟踪
+                            progress: taskData.progress || {
+                                percentage: 0,           // 完成百分比
+                                milestones: [],         // 进度里程碑
+                                blockers: [],           // 阻塞因素
+                                notes: []               // 进度备注
+                            },
+                            
+                            // 新增：时间跟踪
+                            timeTracking: taskData.timeTracking || {
+                                startDate: null,        // 开始日期
+                                endDate: null,          // 结束日期
+                                deadline: null,         // 截止日期
+                                estimatedDuration: 0,   // 预估时长（小时）
+                                actualDuration: 0,      // 实际时长（小时）
+                                timeEntries: []         // 时间记录条目
+                            }
+                        };
+                        
+                        // 保存到tasks集合
+                        const saveResult = await postData(`${window.API_URL}/mongodb/?cname=tasks`, taskToSave);
+                        
+                        if (saveResult && saveResult.success !== false) {
+                            importedCount++;
+                        } else {
+                            console.warn('[上传] 任务保存失败:', filePath, saveResult);
+                            skippedCount++;
+                        }
+                        
+                    } catch (taskError) {
+                        console.warn('[上传] 任务导入失败:', filePath, taskError);
+                        skippedCount++;
+                    }
+                }
+                
+                hideGlobalLoading();
+                
+                if (importedCount > 0) {
+                    showSuccess(`ZIP导入成功！导入 ${importedCount} 个任务${skippedCount > 0 ? `，跳过 ${skippedCount} 个` : ''}`);
+                    
+                    // 刷新功能卡片数据
+                    if (store.loadFeatureCards) {
+                        store.loadFeatureCards(true);
+                    }
+                } else {
+                    showError('没有成功导入任何任务');
+                }
+                
+                console.log('[上传] ZIP导入完成:', {
+                    imported: importedCount,
+                    skipped: skippedCount,
+                    total: Object.keys(filesData).length
+                });
+                
+            } else {
+                hideGlobalLoading();
+                showError('ZIP文件中缺少有效的files.json数据');
+            }
+            
+        } catch (error) {
+            hideGlobalLoading();
+            console.error('[上传] ZIP处理失败:', error);
+            throw new Error('ZIP文件处理失败: ' + (error?.message || '未知错误'));
+        }
+    };
+
+    // 处理JSON文件上传（兼容原有功能）
+    const handleJsonUpload = async (jsonFile) => {
+        try {
+            showGlobalLoading('正在处理JSON文件...');
+            
+            const fileContent = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(jsonFile);
+            });
+
+            let uploadData;
+            try {
+                uploadData = JSON.parse(fileContent);
+            } catch (parseError) {
+                throw new Error('JSON文件格式不正确，请检查文件内容');
+            }
+
+            // 验证数据格式
+            if (uploadData.featureCards && Array.isArray(uploadData.featureCards)) {
+                // 原有的功能卡片数据格式
+                store.updateFeatureCards(uploadData.featureCards);
+                hideGlobalLoading();
+                showSuccess(`成功上传 ${uploadData.featureCards.length} 个功能卡片`);
+                console.log('[上传] 功能卡片数据上传完成:', uploadData.featureCards.length);
+                
+            } else if (uploadData.name && uploadData.type === 'root' && uploadData.children) {
+                // tree.json格式
+                hideGlobalLoading();
+                showSuccess('tree.json格式文件上传成功，但建议使用完整的ZIP包');
+                console.log('[上传] tree.json数据上传完成:', uploadData);
+                
+            } else {
+                throw new Error('JSON文件格式不正确，请上传包含featureCards数组的数据或完整的ZIP包');
+            }
+            
+        } catch (error) {
+            hideGlobalLoading();
+            console.error('[上传] JSON处理失败:', error);
+            throw error;
+        }
+    };
+
+    // ===================== 任务对象工具函数 =====================
+
+    /**
+     * 创建标准任务对象
+     * @param {Object} baseTask - 基础任务信息
+     * @returns {Object} 完整的任务对象
+     */
+    const createStandardTask = (baseTask = {}) => {
+        const now = new Date().toISOString();
+        
+        return {
+            // 基础属性
+            title: baseTask.title || '',
+            description: baseTask.description || '',
+            content: baseTask.content || '',
+            status: baseTask.status || 'pending',
+            priority: baseTask.priority || 'medium',
+            category: baseTask.category || '',
+            tags: baseTask.tags || [],
+            steps: baseTask.steps || [],
+            featureName: baseTask.featureName || '',
+            cardTitle: baseTask.cardTitle || '',
+            createTime: baseTask.createTime || now,
+            updateTime: now,
+            
+            // 周报属性
+            weeklyReport: {
+                enabled: false,
+                frequency: 'weekly',
+                dayOfWeek: 1, // 默认周一
+                reportTemplate: '本周工作总结：\n\n1. 已完成工作：\n   - \n\n2. 遇到的问题：\n   - \n\n3. 下周计划：\n   - ',
+                lastSubmitted: null,
+                nextDue: null,
+                history: [],
+                ...baseTask.weeklyReport
+            },
+            
+            // 日报属性
+            dailyReport: {
+                enabled: false,
+                frequency: 'daily',
+                timeOfDay: '18:00',
+                reportTemplate: '今日工作总结：\n\n1. 已完成：\n   - \n\n2. 进行中：\n   - \n\n3. 遇到问题：\n   - \n\n4. 明日计划：\n   - ',
+                lastSubmitted: null,
+                nextDue: null,
+                history: [],
+                weekends: false,
+                ...baseTask.dailyReport
+            },
+            
+            // 任务特征属性
+            features: {
+                estimatedHours: 0,
+                actualHours: 0,
+                difficulty: 'medium',
+                type: 'development',
+                dependencies: [],
+                milestone: '',
+                assignee: '',
+                reviewer: '',
+                labels: [],
+                businessValue: 'medium',
+                urgency: 'medium',
+                complexity: 'medium',
+                ...baseTask.features
+            },
+            
+            // 进度跟踪
+            progress: {
+                percentage: 0,
+                milestones: [],
+                blockers: [],
+                notes: [],
+                ...baseTask.progress
+            },
+            
+            // 时间跟踪
+            timeTracking: {
+                startDate: null,
+                endDate: null,
+                deadline: null,
+                estimatedDuration: 0,
+                actualDuration: 0,
+                timeEntries: [],
+                ...baseTask.timeTracking
+            }
+        };
+    };
+
+    /**
+     * 启用任务周报
+     * @param {Object} task - 任务对象
+     * @param {Object} options - 周报配置选项
+     * @returns {Object} 更新后的任务对象
+     */
+    const enableWeeklyReport = (task, options = {}) => {
+        const updatedTask = { ...task };
+        updatedTask.weeklyReport = {
+            ...updatedTask.weeklyReport,
+            enabled: true,
+            dayOfWeek: options.dayOfWeek || 1,
+            reportTemplate: options.reportTemplate || updatedTask.weeklyReport.reportTemplate,
+            nextDue: calculateNextWeeklyDue(options.dayOfWeek || 1)
+        };
+        updatedTask.updateTime = new Date().toISOString();
+        return updatedTask;
+    };
+
+    /**
+     * 启用任务日报
+     * @param {Object} task - 任务对象
+     * @param {Object} options - 日报配置选项
+     * @returns {Object} 更新后的任务对象
+     */
+    const enableDailyReport = (task, options = {}) => {
+        const updatedTask = { ...task };
+        updatedTask.dailyReport = {
+            ...updatedTask.dailyReport,
+            enabled: true,
+            timeOfDay: options.timeOfDay || '18:00',
+            weekends: options.weekends || false,
+            reportTemplate: options.reportTemplate || updatedTask.dailyReport.reportTemplate,
+            nextDue: calculateNextDailyDue(options.timeOfDay || '18:00', options.weekends || false)
+        };
+        updatedTask.updateTime = new Date().toISOString();
+        return updatedTask;
+    };
+
+    /**
+     * 计算下次周报到期时间
+     * @param {number} dayOfWeek - 周几（1=周一，7=周日）
+     * @returns {string} ISO时间字符串
+     */
+    const calculateNextWeeklyDue = (dayOfWeek) => {
+        const now = new Date();
+        const currentDay = now.getDay() === 0 ? 7 : now.getDay(); // 转换为1-7格式
+        let daysUntilDue = dayOfWeek - currentDay;
+        
+        if (daysUntilDue <= 0) {
+            daysUntilDue += 7; // 下周的这一天
+        }
+        
+        const dueDate = new Date(now);
+        dueDate.setDate(now.getDate() + daysUntilDue);
+        dueDate.setHours(18, 0, 0, 0); // 默认下午6点
+        
+        return dueDate.toISOString();
+    };
+
+    /**
+     * 计算下次日报到期时间
+     * @param {string} timeOfDay - 每日时间，格式如 "18:00"
+     * @param {boolean} weekends - 是否包含周末
+     * @returns {string} ISO时间字符串
+     */
+    const calculateNextDailyDue = (timeOfDay, weekends) => {
+        const [hours, minutes] = timeOfDay.split(':').map(Number);
+        const now = new Date();
+        const today = new Date(now);
+        today.setHours(hours, minutes, 0, 0);
+        
+        let nextDue = today;
+        
+        // 如果今天的时间已过，或者今天是周末且不包含周末，则计算下一个工作日
+        if (today <= now || (!weekends && (today.getDay() === 0 || today.getDay() === 6))) {
+            do {
+                nextDue.setDate(nextDue.getDate() + 1);
+            } while (!weekends && (nextDue.getDay() === 0 || nextDue.getDay() === 6));
+        }
+        
+        return nextDue.toISOString();
+    };
+
+    /**
+     * 更新任务进度
+     * @param {Object} task - 任务对象
+     * @param {number} percentage - 进度百分比 (0-100)
+     * @param {string} note - 进度备注
+     * @returns {Object} 更新后的任务对象
+     */
+    const updateTaskProgress = (task, percentage, note = '') => {
+        const updatedTask = { ...task };
+        updatedTask.progress = {
+            ...updatedTask.progress,
+            percentage: Math.max(0, Math.min(100, percentage))
+        };
+        
+        if (note) {
+            updatedTask.progress.notes.push({
+                content: note,
+                timestamp: new Date().toISOString(),
+                percentage: percentage
+            });
+        }
+        
+        // 如果进度达到100%，自动更新状态为已完成
+        if (percentage >= 100) {
+            updatedTask.status = 'completed';
+            if (!updatedTask.timeTracking.endDate) {
+                updatedTask.timeTracking.endDate = new Date().toISOString();
+            }
+        }
+        
+        updatedTask.updateTime = new Date().toISOString();
+        return updatedTask;
+    };
+
+    /**
+     * 添加时间记录
+     * @param {Object} task - 任务对象
+     * @param {number} hours - 工作小时数
+     * @param {string} description - 工作描述
+     * @returns {Object} 更新后的任务对象
+     */
+    const addTimeEntry = (task, hours, description = '') => {
+        const updatedTask = { ...task };
+        const timeEntry = {
+            date: new Date().toISOString().split('T')[0],
+            hours: hours,
+            description: description,
+            timestamp: new Date().toISOString()
+        };
+        
+        updatedTask.timeTracking.timeEntries.push(timeEntry);
+        updatedTask.features.actualHours += hours;
+        updatedTask.updateTime = new Date().toISOString();
+        
+        return updatedTask;
+    };
+
+    /**
+     * 获取任务统计信息
+     * @param {Array} tasks - 任务数组
+     * @returns {Object} 统计信息
+     */
+    const getTasksStatistics = (tasks) => {
+        const stats = {
+            total: tasks.length,
+            completed: tasks.filter(t => t.status === 'completed').length,
+            inProgress: tasks.filter(t => t.status === 'in-progress').length,
+            pending: tasks.filter(t => t.status === 'pending').length,
+            withWeeklyReport: tasks.filter(t => t.weeklyReport?.enabled).length,
+            withDailyReport: tasks.filter(t => t.dailyReport?.enabled).length,
+            totalEstimatedHours: tasks.reduce((sum, t) => sum + (t.features?.estimatedHours || 0), 0),
+            totalActualHours: tasks.reduce((sum, t) => sum + (t.features?.actualHours || 0), 0),
+            avgProgress: tasks.length > 0 ? tasks.reduce((sum, t) => sum + (t.progress?.percentage || 0), 0) / tasks.length : 0,
+            highPriority: tasks.filter(t => t.priority === 'high').length,
+            highUrgency: tasks.filter(t => t.features?.urgency === 'high').length,
+            overdue: tasks.filter(t => t.timeTracking?.deadline && new Date(t.timeTracking.deadline) < new Date()).length
+        };
+        
+        stats.completionRate = stats.total > 0 ? (stats.completed / stats.total * 100).toFixed(1) : 0;
+        stats.efficiency = stats.totalEstimatedHours > 0 ? (stats.totalEstimatedHours / Math.max(stats.totalActualHours, 1) * 100).toFixed(1) : 0;
+        
+        return stats;
+    };
+
 
 
     /**
@@ -1135,6 +2064,8 @@ export const useMethods = (store) => {
 
 
 
+
+
     // 返回方法集合
     return {
         openLink,
@@ -1149,6 +2080,27 @@ export const useMethods = (store) => {
         handleSearchInput,
         handleSearchKeydown,
         clearSearch,
+        // 时间选择器相关方法
+        handleAllSelect,
+        handleYearChange,
+        handleQuarterChange,
+        handleMonthChange,
+        getMonthsByQuarter,
+        // 上传下载相关方法
+        handleDownloadData,
+        triggerUploadData,
+        handleUploadData,
+        handleZipUpload,
+        handleJsonUpload,
+        // 任务对象工具函数
+        createStandardTask,
+        enableWeeklyReport,
+        enableDailyReport,
+        updateTaskProgress,
+        addTimeEntry,
+        getTasksStatistics,
+        calculateNextWeeklyDue,
+        calculateNextDailyDue,
         addNewTag,
         editTag,
         saveTag,
@@ -1162,6 +2114,7 @@ export const useMethods = (store) => {
         loadFeatureCards: store.loadFeatureCards  // 暴露重新加载数据的方法
     };
 };
+
 
 
 

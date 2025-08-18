@@ -3,6 +3,7 @@
 // 使用动态导入，与comments代码保持一致
 import { safeExecuteAsync } from '/utils/error.js';
 import { logInfo, logWarn, logError } from '/utils/log.js';
+import { buildTimeQueryParams, validateTimeParams, formatTimeRangeText } from '/utils/timeParams.js';
 
     // 兼容Vue2和Vue3的ref获取方式
     const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ value: val });
@@ -29,8 +30,30 @@ export const createStore = () => {
     // 错误信息
     const error = vueRef(null);
     
-    // 导航分类过滤器配置
-    const categoryFilters = vueRef([]);
+    // 获取当前日期信息
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // getMonth()返回0-11，需要+1
+    const currentQuarter = Math.ceil(currentMonth / 3); // 1-3月为Q1，4-6月为Q2，依此类推
+    
+    // 时间选择器相关状态 - 默认选中当前年月
+    const selectedYear = vueRef(currentYear.toString());
+    const selectedQuarter = vueRef(`Q${currentQuarter}`);
+    const selectedMonth = vueRef(currentMonth.toString().padStart(2, '0')); // 格式化为两位数
+    
+    // 全部选择状态跟踪
+    const isAllSelected = vueRef(false);
+    
+    // 年度列表（可以根据需要动态生成）
+    const years = vueRef([]);
+    
+    // 季度列表
+    const quarters = vueRef([
+        { value: 'Q1', label: '第一季度' },
+        { value: 'Q2', label: '第二季度' },
+        { value: 'Q3', label: '第三季度' },
+        { value: 'Q4', label: '第四季度' }
+    ]);
 
     /**
      * 强制触发Vue响应式更新
@@ -182,13 +205,60 @@ export const createStore = () => {
         try {
             // 使用动态导入，与comments代码保持一致
             const { getData } = await import('/apis/modules/crud.js');
-            const categoryFiltersData = await getData(`${window.DATA_URL}/mock/welcome/categoryFilters.json`);
-            categoryFilters.value = categoryFiltersData;
+            
+            // 初始化年度列表（生成最近10年）
+            const yearsList = [];
+            for (let i = currentYear - 5; i <= currentYear + 5; i++) {
+                yearsList.push(i);
+            }
+            years.value = yearsList;
+            
+            logInfo('[Store] 时间选择器默认值设置:', {
+                year: selectedYear.value,
+                quarter: selectedQuarter.value,
+                month: selectedMonth.value,
+                currentDate: currentDate.toISOString().split('T')[0]
+            });
+            
             const systemPromptData = await getData(`${window.DATA_URL}/prompts/welcome/featureCards.txt`);
+
+            // 构建查询URL，加入时间参数
+            let mongoUrl = `${window.API_URL}/mongodb/?cname=goals`;
+            
+            // 检查是否为查询全部数据
+            if (selectedYear.value) {
+                // 验证时间参数并构建查询参数
+                const timeValidation = validateTimeParams(
+                    selectedYear.value, 
+                    selectedQuarter.value, 
+                    selectedMonth.value
+                );
+                
+                if (timeValidation.isValid) {
+                    const timeParams = buildTimeQueryParams(
+                        selectedYear.value, 
+                        selectedQuarter.value, 
+                        selectedMonth.value
+                    );
+                    
+                    if (timeParams) {
+                        mongoUrl += `&${timeParams}`;
+                        logInfo('[Store] 使用时间参数查询:', {
+                            timeRange: formatTimeRangeText(selectedYear.value, selectedQuarter.value, selectedMonth.value),
+                            params: timeParams
+                        });
+                    }
+                } else {
+                    logWarn('[Store] 时间参数验证失败，使用默认查询:', timeValidation.errors);
+                }
+            } else {
+                // 查询全部数据，不添加时间参数
+                logInfo('[Store] 查询全部数据，不添加时间参数');
+            }
 
             // 添加时间戳防止缓存干扰
             const timestamp = Date.now();
-            const mongoResponse = await getData(`${window.API_URL}/mongodb/?cname=goals`, { 
+            const mongoResponse = await getData(mongoUrl, { 
                 cache: 'no-cache',
                 headers: {
                     'Cache-Control': 'no-cache',
@@ -265,23 +335,30 @@ export const createStore = () => {
         loadFeatureCards();
     }, 100);
 
-    // 便于扩展：后续可添加更多数据和方法
-    return {
-        featureCards,   // 功能卡片数据
-        searchQuery,    // 搜索查询
-        loading,        // 加载状态
-        error,          // 错误信息
-        fromSystem,     // 系统提示信息
-        categoryFilters, // 导航分类过滤器配置
-        updateFeatureCards,  // 更新方法
-        deleteCard,     // 删除卡片方法
-        removeCardFromLocal, // 本地移除卡片方法
-        loadFeatureCards, // 重新加载数据方法
-        setSearchQuery,  // 设置搜索查询
-        clearSearch,     // 清除搜索
-        clearError       // 清除错误
-    };
+            // 便于扩展：后续可添加更多数据和方法
+        return {
+            featureCards,   // 功能卡片数据
+            searchQuery,    // 搜索查询
+            loading,        // 加载状态
+            error,          // 错误信息
+            fromSystem,     // 系统提示信息
+            // 时间选择器相关
+            selectedYear,
+            selectedQuarter, 
+            selectedMonth,
+            years,
+            quarters,
+            isAllSelected,  // 全部选择状态
+            updateFeatureCards,  // 更新方法
+            deleteCard,     // 删除卡片方法
+            removeCardFromLocal, // 本地移除卡片方法
+            loadFeatureCards, // 重新加载数据方法
+            setSearchQuery,  // 设置搜索查询
+            clearSearch,     // 清除搜索
+            clearError       // 清除错误
+        };
 }
+
 
 
 

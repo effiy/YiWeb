@@ -98,18 +98,441 @@ export async function openEditCardModal(card, store) {
       gap: 16px;
     `;
 
+    const formData = { ...card };
+
+    // 初始化时间属性 - 将年度、季度、月度提升到顶层
+    formData.year = card.year || card.timeProperties?.year || '';
+    formData.quarter = card.quarter || card.timeProperties?.quarter || '';
+    formData.month = card.month || card.timeProperties?.month || '';
+
+    // ==================== 时间属性选择器 ====================
+    const timePropertiesContainer = document.createElement('div');
+    timePropertiesContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    `;
+
+    const timeTitle = document.createElement('h4');
+    timeTitle.textContent = '时间属性';
+    timeTitle.style.cssText = `
+      font-weight: 600;
+      color: var(--text-primary, #fff);
+      font-size: 14px;
+      margin: 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-primary, #333);
+    `;
+
+    // 时间选择器容器
+    const timeSelectorsContainer = document.createElement('div');
+    timeSelectorsContainer.style.cssText = `
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    `;
+
+    // 年度选择器
+    const yearContainer = document.createElement('div');
+    yearContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 100px;
+    `;
+
+    const yearLabel = document.createElement('label');
+    yearLabel.textContent = '年度';
+    yearLabel.style.cssText = `
+      font-size: 12px;
+      color: var(--text-secondary, #ccc);
+      font-weight: 500;
+    `;
+
+    const yearSelect = document.createElement('select');
+    yearSelect.style.cssText = `
+      padding: 6px 8px;
+      border: 1px solid var(--border-primary, #333);
+      border-radius: 4px;
+      background: var(--bg-secondary, #2a2a2a);
+      color: var(--text-primary, #fff);
+      font-size: 12px;
+      cursor: pointer;
+    `;
+
+    // 初始化年度选项
+    const currentYear = new Date().getFullYear();
+    const yearOption = document.createElement('option');
+    yearOption.value = '';
+    yearOption.textContent = '选择年度';
+    yearSelect.appendChild(yearOption);
+    
+    for (let i = currentYear - 5; i <= currentYear + 5; i++) {
+      const option = document.createElement('option');
+      option.value = i;
+      option.textContent = `${i}年`;
+      if (formData.year === i.toString()) {
+        option.selected = true;
+      }
+      yearSelect.appendChild(option);
+    }
+
+    // 季度选择器
+    const quarterContainer = document.createElement('div');
+    quarterContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 100px;
+    `;
+
+    const quarterLabel = document.createElement('label');
+    quarterLabel.textContent = '季度';
+    quarterLabel.style.cssText = `
+      font-size: 12px;
+      color: var(--text-secondary, #ccc);
+      font-weight: 500;
+    `;
+
+    const quarterSelect = document.createElement('select');
+    quarterSelect.style.cssText = `
+      padding: 6px 8px;
+      border: 1px solid var(--border-primary, #333);
+      border-radius: 4px;
+      background: var(--bg-secondary, #2a2a2a);
+      color: var(--text-primary, #fff);
+      font-size: 12px;
+      cursor: pointer;
+    `;
+    quarterSelect.disabled = !formData.year;
+
+    // 月度选择器
+    const monthContainer = document.createElement('div');
+    monthContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 100px;
+    `;
+
+    const monthLabel = document.createElement('label');
+    monthLabel.textContent = '月度';
+    monthLabel.style.cssText = `
+      font-size: 12px;
+      color: var(--text-secondary, #ccc);
+      font-weight: 500;
+    `;
+
+    const monthSelect = document.createElement('select');
+    monthSelect.style.cssText = `
+      padding: 6px 8px;
+      border: 1px solid var(--border-primary, #333);
+      border-radius: 4px;
+      background: var(--bg-secondary, #2a2a2a);
+      color: var(--text-primary, #fff);
+      font-size: 12px;
+      cursor: pointer;
+    `;
+    monthSelect.disabled = !formData.quarter;
+
+    // 查询结果显示区域
+    const queryResultContainer = document.createElement('div');
+    queryResultContainer.style.cssText = `
+      margin-top: 8px;
+      padding: 8px;
+      border: 1px solid var(--border-primary, #333);
+      border-radius: 4px;
+      background: var(--bg-primary, #1a1a1a);
+      color: var(--text-secondary, #ccc);
+      font-size: 12px;
+      min-height: 40px;
+      display: none;
+    `;
+
+    // API查询函数
+    const queryTimeData = async (year, quarter, month) => {
+      try {
+        queryResultContainer.style.display = 'block';
+        queryResultContainer.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 16px; height: 16px; border: 2px solid var(--primary, #007bff); border-top: 2px solid transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <span>正在查询 ${year}年${quarter}季度${month ? month + '月' : ''}相关数据...</span>
+          </div>
+        `;
+
+        // 添加旋转动画样式
+        if (!document.querySelector('#editcard-spin-style')) {
+          const style = document.createElement('style');
+          style.id = 'editcard-spin-style';
+          style.textContent = `
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `;
+          document.head.appendChild(style);
+        }
+
+        // 调用API查询 - 先获取所有任务，然后在客户端过滤
+        let queryUrl = `${window.API_URL}/mongodb/?cname=tasks`;
+        console.log('[时间属性查询] 查询URL:', queryUrl);
+
+        const { getData } = await import('/apis/modules/crud.js');
+        const response = await getData(queryUrl);
+        const allTasks = response?.data?.list || [];
+        
+        // 客户端过滤任务
+        let tasks = allTasks;
+        
+        // 按时间范围过滤
+        if (year || quarter || month) {
+          tasks = allTasks.filter(task => {
+            // 检查任务的timeRange属性
+            const timeRange = task.timeRange;
+            if (!timeRange) return false;
+            
+            // 年度过滤
+            if (year && timeRange.year !== year) return false;
+            
+            // 季度过滤
+            if (quarter && timeRange.quarter !== quarter) return false;
+            
+            // 月度过滤
+            if (month && timeRange.month !== month) return false;
+            
+            return true;
+          });
+        }
+        
+        console.log('[时间属性查询] 过滤结果:', {
+          allTasksCount: allTasks.length,
+          filteredTasksCount: tasks.length,
+          filters: { year, quarter, month }
+        });
+
+        // 显示查询结果
+        const taskCount = tasks.length;
+        const completedCount = tasks.filter(task => task.status === 'completed').length;
+        const inProgressCount = tasks.filter(task => task.status === 'in-progress').length;
+        
+        const waitingCount = taskCount - completedCount - inProgressCount;
+        
+        queryResultContainer.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="font-weight: 600; color: var(--text-primary, #fff); display: flex; align-items: center; gap: 8px;">
+              📊 查询结果：${year}年${quarter}季度${month ? month + '月' : ''}
+              <span style="font-size: 11px; color: var(--text-secondary, #999); font-weight: normal;">
+                (从 ${allTasks.length} 个任务中筛选)
+              </span>
+            </div>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+              <span>总任务：<strong style="color: var(--primary, #007bff);">${taskCount}</strong> 个</span>
+              <span>已完成：<strong style="color: var(--success, #28a745);">${completedCount}</strong> 个</span>
+              <span>进行中：<strong style="color: var(--warning, #ffc107);">${inProgressCount}</strong> 个</span>
+              <span>待处理：<strong style="color: var(--info, #17a2b8);">${waitingCount}</strong> 个</span>
+            </div>
+            ${taskCount === 0 ? `
+              <div style="margin-top: 4px; padding: 8px; background: rgba(255, 193, 7, 0.1); border-radius: 4px; color: var(--warning, #ffc107); font-size: 12px;">
+                💡 提示：未找到匹配的任务，可能该时间段暂无相关任务数据
+              </div>
+            ` : ''}
+          </div>
+        `;
+
+        console.log('[时间属性查询] 查询结果:', {
+          year,
+          quarter,
+          month,
+          taskCount,
+          completedCount,
+          inProgressCount,
+          tasks
+        });
+
+      } catch (error) {
+        console.error('[时间属性查询] 查询失败:', error);
+        queryResultContainer.innerHTML = `
+          <div style="color: var(--danger, #dc3545);">
+            ❌ 查询失败：${error?.message || '未知错误'}
+          </div>
+        `;
+      }
+    };
+
+
+
+
+
+    // 季度选项数据
+    const quarters = [
+      { value: 'Q1', label: '第一季度' },
+      { value: 'Q2', label: '第二季度' },
+      { value: 'Q3', label: '第三季度' },
+      { value: 'Q4', label: '第四季度' }
+    ];
+
+    // 月份映射
+    const monthsByQuarter = {
+      'Q1': [
+        { value: '01', label: '1月' },
+        { value: '02', label: '2月' },
+        { value: '03', label: '3月' }
+      ],
+      'Q2': [
+        { value: '04', label: '4月' },
+        { value: '05', label: '5月' },
+        { value: '06', label: '6月' }
+      ],
+      'Q3': [
+        { value: '07', label: '7月' },
+        { value: '08', label: '8月' },
+        { value: '09', label: '9月' }
+      ],
+      'Q4': [
+        { value: '10', label: '10月' },
+        { value: '11', label: '11月' },
+        { value: '12', label: '12月' }
+      ]
+    };
+
+    // 更新季度选择器
+    const updateQuarterSelect = () => {
+      quarterSelect.innerHTML = '';
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = formData.year ? '选择季度' : '请先选择年度';
+      quarterSelect.appendChild(emptyOption);
+
+      if (formData.year) {
+        quarters.forEach(quarter => {
+          const option = document.createElement('option');
+          option.value = quarter.value;
+          option.textContent = quarter.label;
+          if (formData.quarter === quarter.value) {
+            option.selected = true;
+          }
+          quarterSelect.appendChild(option);
+        });
+        quarterSelect.disabled = false;
+      } else {
+        quarterSelect.disabled = true;
+      }
+    };
+
+    // 更新月度选择器
+    const updateMonthSelect = () => {
+      monthSelect.innerHTML = '';
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = formData.quarter ? '选择月度' : '请先选择季度';
+      monthSelect.appendChild(emptyOption);
+
+      if (formData.quarter) {
+        const months = monthsByQuarter[formData.quarter] || [];
+        months.forEach(month => {
+          const option = document.createElement('option');
+          option.value = month.value;
+          option.textContent = month.label;
+          if (formData.month === month.value) {
+            option.selected = true;
+          }
+          monthSelect.appendChild(option);
+        });
+        monthSelect.disabled = false;
+      } else {
+        monthSelect.disabled = true;
+      }
+    };
+
+    // 年度选择事件
+    yearSelect.addEventListener('change', async (e) => {
+      formData.year = e.target.value;
+      formData.quarter = '';
+      formData.month = '';
+      
+      updateQuarterSelect();
+      updateMonthSelect();
+      
+      if (formData.year) {
+        await queryTimeData(formData.year, '', '');
+      } else {
+        queryResultContainer.style.display = 'none';
+      }
+    });
+
+    // 季度选择事件
+    quarterSelect.addEventListener('change', async (e) => {
+      formData.quarter = e.target.value;
+      formData.month = '';
+      
+      updateMonthSelect();
+      
+      if (formData.year && formData.quarter) {
+        await queryTimeData(formData.year, formData.quarter, '');
+      }
+    });
+
+    // 月度选择事件
+    monthSelect.addEventListener('change', async (e) => {
+      formData.month = e.target.value;
+      
+      if (formData.year && formData.quarter && formData.month) {
+        await queryTimeData(formData.year, formData.quarter, formData.month);
+      }
+    });
+
+    // 初始化选择器状态
+    updateQuarterSelect();
+    updateMonthSelect();
+
+    // 组装时间选择器
+    yearContainer.appendChild(yearLabel);
+    yearContainer.appendChild(yearSelect);
+    quarterContainer.appendChild(quarterLabel);
+    quarterContainer.appendChild(quarterSelect);
+    monthContainer.appendChild(monthLabel);
+    monthContainer.appendChild(monthSelect);
+
+    timeSelectorsContainer.appendChild(yearContainer);
+    timeSelectorsContainer.appendChild(quarterContainer);
+    timeSelectorsContainer.appendChild(monthContainer);
+
+    timePropertiesContainer.appendChild(timeTitle);
+    timePropertiesContainer.appendChild(timeSelectorsContainer);
+    timePropertiesContainer.appendChild(queryResultContainer);
+
+    // 如果有初始值，触发查询
+    if (formData.year && formData.quarter && formData.month) {
+      setTimeout(() => {
+        queryTimeData(formData.year, formData.quarter, formData.month);
+      }, 100);
+    }
+
+    // 时间属性已添加到基础字段容器的第一位
+
+    // 基础字段容器
+    const basicFieldsContainer = document.createElement('div');
+    basicFieldsContainer.className = 'basic-fields-container';
+    basicFieldsContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    `;
+
+    // 将时间属性添加到基础字段容器的第一位
+    basicFieldsContainer.appendChild(timePropertiesContainer);
+
     // 字段配置
     const fields = [
       { key: 'title', label: '标题', type: 'text', required: true },
       { key: 'description', label: '描述', type: 'textarea', required: true },
       { key: 'icon', label: '图标类名', type: 'text', required: false },
       { key: 'badge', label: '徽章文本', type: 'text', required: false },
-      { key: 'link', label: '链接地址', type: 'url', required: false },
       { key: 'hint', label: '提示文本', type: 'text', required: false },
       { key: 'footerIcon', label: '底部图标', type: 'text', required: false }
     ];
-
-    const formData = { ...card };
 
     fields.forEach(field => {
       const fieldContainer = document.createElement('div');
@@ -169,7 +592,7 @@ export async function openEditCardModal(card, store) {
 
       fieldContainer.appendChild(label);
       fieldContainer.appendChild(input);
-      form.appendChild(fieldContainer);
+      basicFieldsContainer.appendChild(fieldContainer);
     });
 
     // 功能特性编辑
@@ -472,22 +895,7 @@ export async function openEditCardModal(card, store) {
           flex-shrink: 0;
         `;
 
-        const linkInput = document.createElement('input');
-        linkInput.type = 'url';
-        linkInput.placeholder = '链接地址 (可选)';
-        linkInput.value = stat.link || '';
-        linkInput.style.cssText = `
-          padding: 6px 6px;
-          border: 1px solid var(--border-primary, #333);
-          border-radius: 4px;
-          background: var(--bg-primary, #1a1a1a);
-          color: var(--text-primary, #fff);
-          font-size: 12px;
-          width: 200px;
-          min-width: 150px;
-          flex: 1;
-          flex-shrink: 1;
-        `;
+
 
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = '×';
@@ -514,9 +922,7 @@ export async function openEditCardModal(card, store) {
         labelInput.addEventListener('input', (e) => {
           formData.stats[index].label = e.target.value;
         });
-        linkInput.addEventListener('input', (e) => {
-          formData.stats[index].link = e.target.value;
-        });
+
         deleteBtn.addEventListener('click', (e) => {
           e.preventDefault();
           formData.stats.splice(index, 1);
@@ -525,7 +931,6 @@ export async function openEditCardModal(card, store) {
 
         statItem.appendChild(numberInput);
         statItem.appendChild(labelInput);
-        statItem.appendChild(linkInput);
         statItem.appendChild(deleteBtn);
         statsList.appendChild(statItem);
       });
@@ -548,13 +953,15 @@ export async function openEditCardModal(card, store) {
       margin-top: 8px;
     `;
     addStatBtn.addEventListener('click', () => {
-      formData.stats.push({ number: '', label: '', link: '' });
+      formData.stats.push({ number: '', label: '' });
       renderStats();
     });
 
     statsContainer.appendChild(statsTitle);
     statsContainer.appendChild(statsList);
     statsContainer.appendChild(addStatBtn);
+
+
 
     // 标签编辑
     const tagsContainer = document.createElement('div');
@@ -842,12 +1249,14 @@ export async function openEditCardModal(card, store) {
               description: formData.description,
               icon: card.icon || '',
               badge: card.badge || '',
-              link: card.link || '',
               hint: card.hint || '',
               footerIcon: card.footerIcon || '',
               features: card.features || [],
               stats: card.stats || [],
               tags: formData.tags || card.tags || [],
+              year: formData.year || '',
+              quarter: formData.quarter || '',
+              month: formData.month || '',
               updatedAt: new Date().toISOString()
             };
             await updateData(url, payload);
@@ -883,7 +1292,8 @@ export async function openEditCardModal(card, store) {
     buttonContainer.appendChild(cancelButton);
     buttonContainer.appendChild(saveButton);
 
-    // 组装
+    // 组装 - 时间属性在基础字段容器内的第一位
+    form.appendChild(basicFieldsContainer);
     form.appendChild(featuresContainer);
     form.appendChild(statsContainer);
     form.appendChild(tagsContainer);
@@ -935,6 +1345,7 @@ export async function openEditCardModal(card, store) {
 }
 
 console.log('[EditCardPlugin] 已加载');
+
 
 
 
