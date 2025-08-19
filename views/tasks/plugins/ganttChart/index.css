@@ -1,0 +1,663 @@
+/* 甘特图组件样式 */
+
+.gantt-chart-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+/* 甘特图工具栏 */
+.gantt-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    gap: var(--spacing-lg);
+}
+
+.gantt-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.gantt-toolbar-left h3 {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.gantt-toolbar-left h3 i {
+    color: var(--primary);
+}
+
+.date-range-selector {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.date-range-selector label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.date-input {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-alpha);
+}
+
+.gantt-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+/* 缩放控制 */
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs);
+    background: var(--bg-primary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-primary);
+}
+
+.zoom-btn {
+    padding: var(--spacing-xs);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+}
+
+.zoom-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.zoom-level {
+    padding: 0 var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    min-width: 40px;
+    text-align: center;
+}
+
+/* 视图控制 */
+.view-controls {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.view-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    transition: all var(--transition-fast);
+}
+
+.view-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.view-btn.active {
+    background: var(--primary);
+    color: var(--text-on-primary);
+    border-color: var(--primary);
+}
+
+/* 甘特图包装器 */
+.gantt-chart-wrapper {
+    flex: 1;
+    position: relative;
+    overflow: auto;
+    background: var(--bg-primary);
+}
+
+.gantt-chart {
+    min-width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+/* 甘特图头部 */
+.gantt-header {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-secondary);
+    border-bottom: 2px solid var(--border-primary);
+}
+
+.gantt-task-header {
+    width: 300px;
+    min-width: 300px;
+    display: flex;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-primary);
+}
+
+.task-column-title,
+.duration-column-title,
+.progress-column-title {
+    padding: var(--spacing-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    border-right: 1px solid var(--border-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-sm);
+}
+
+.task-column-title {
+    flex: 2;
+    justify-content: flex-start;
+}
+
+.duration-column-title,
+.progress-column-title {
+    flex: 1;
+}
+
+/* 时间轴头部 */
+.gantt-timeline-header {
+    flex: 1;
+    min-width: 0;
+}
+
+.timeline-months {
+    display: flex;
+    height: 30px;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.timeline-month {
+    border-right: 1px solid var(--border-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    font-size: var(--font-size-sm);
+}
+
+.timeline-days {
+    display: flex;
+    height: 40px;
+}
+
+.timeline-day {
+    border-right: 1px solid var(--border-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    position: relative;
+}
+
+.timeline-day.weekend {
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+}
+
+.timeline-day.today {
+    background: var(--primary-alpha);
+    color: var(--primary);
+    font-weight: var(--font-weight-bold);
+}
+
+.timeline-day.today::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 100%;
+    background: var(--primary);
+}
+
+.day-number {
+    font-weight: var(--font-weight-bold);
+}
+
+.day-name {
+    font-size: 10px;
+    margin-top: 2px;
+}
+
+/* 甘特图内容 */
+.gantt-content {
+    flex: 1;
+    min-height: 0;
+}
+
+.gantt-row {
+    display: flex;
+    min-height: 60px;
+    border-bottom: 1px solid var(--border-secondary);
+    position: relative;
+    transition: background-color var(--transition-fast);
+}
+
+.gantt-row:hover {
+    background: var(--bg-highlight);
+}
+
+.gantt-row.odd-row {
+    background: var(--bg-tertiary);
+}
+
+.gantt-row.odd-row:hover {
+    background: var(--bg-highlight);
+}
+
+.gantt-row.selected {
+    background: var(--primary-alpha) !important;
+    border-color: var(--primary);
+}
+
+.gantt-row.dragging {
+    opacity: 0.7;
+    transform: scale(1.02);
+    z-index: 50;
+}
+
+/* 任务信息区域 */
+.gantt-task-info {
+    width: 300px;
+    min-width: 300px;
+    display: flex;
+    border-right: 1px solid var(--border-primary);
+    background: var(--bg-primary);
+}
+
+.task-info-item {
+    padding: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    border-right: 1px solid var(--border-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.task-info-item.task-title {
+    flex: 2;
+    gap: var(--spacing-xs);
+    min-width: 0;
+}
+
+.task-info-item.task-title span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.task-info-item.task-title i {
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.task-info-item.task-duration {
+    flex: 1;
+    justify-content: center;
+}
+
+
+
+/* 时间线内容区域 */
+.gantt-timeline-content {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+}
+
+.gantt-task-bar-container {
+    height: 100%;
+    position: relative;
+}
+
+/* 依赖关系线 */
+.dependency-lines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.dependency-line {
+    stroke: var(--warning);
+    stroke-width: 2;
+    stroke-dasharray: 4, 4;
+    fill: none;
+}
+
+/* 任务条 */
+.gantt-task-bar {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 24px;
+    border-radius: var(--radius-sm);
+    cursor: move;
+    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    z-index: 10;
+    transition: all var(--transition-fast);
+    min-width: 20px;
+}
+
+.gantt-task-bar:hover {
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: var(--shadow-lg);
+    z-index: 20;
+}
+
+.gantt-task-bar.todo {
+    background: linear-gradient(90deg, var(--info), var(--info-light));
+    border-color: var(--info);
+}
+
+.gantt-task-bar.in-progress {
+    background: linear-gradient(90deg, var(--warning), var(--warning-light));
+    border-color: var(--warning);
+}
+
+.gantt-task-bar.completed {
+    background: linear-gradient(90deg, var(--success), var(--success-light));
+    border-color: var(--success);
+}
+
+.gantt-task-bar.overdue {
+    background: linear-gradient(90deg, var(--error), var(--error-light));
+    border-color: var(--error);
+}
+
+
+
+/* 任务标签 */
+.task-bar-label {
+    padding: 0 var(--spacing-xs);
+    color: var(--text-on-primary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    min-width: 0;
+    overflow: hidden;
+}
+
+.task-bar-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.task-bar-duration {
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+/* 调整大小手柄 */
+.resize-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: ew-resize;
+    background: rgba(255, 255, 255, 0.3);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.gantt-task-bar:hover .resize-handle {
+    opacity: 1;
+}
+
+.resize-handle.resize-left {
+    left: -3px;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.resize-handle.resize-right {
+    right: -3px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* 里程碑标记 */
+.milestone-marker {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    background: var(--accent);
+    border: 2px solid var(--text-on-accent);
+    border-radius: 50% 50% 50% 0;
+    transform: translateY(-50%) rotate(45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 15;
+}
+
+.milestone-marker i {
+    color: var(--text-on-accent);
+    font-size: 10px;
+    transform: rotate(-45deg);
+}
+
+/* 拖拽辅助线 */
+.drag-guide-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--primary);
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+/* 甘特图底部 */
+.gantt-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-primary);
+    gap: var(--spacing-lg);
+}
+
+.gantt-stats {
+    display: flex;
+    gap: var(--spacing-lg);
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.stat-item i {
+    color: var(--primary);
+}
+
+.gantt-legend {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-xs);
+    border: 1px solid var(--border-primary);
+}
+
+.legend-color.todo {
+    background: var(--info);
+}
+
+.legend-color.in-progress {
+    background: var(--warning);
+}
+
+.legend-color.completed {
+    background: var(--success);
+}
+
+.legend-color.overdue {
+    background: var(--error);
+}
+
+/* 空状态 */
+.gantt-empty-state {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xxl);
+}
+
+.empty-state-content {
+    text-align: center;
+    max-width: 400px;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: var(--border-secondary);
+    margin-bottom: var(--spacing-lg);
+}
+
+.empty-state-content h3 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.empty-state-content p {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.5;
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+    .gantt-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-md);
+    }
+    
+    .gantt-toolbar-left,
+    .gantt-toolbar-right {
+        justify-content: space-between;
+    }
+    
+    .date-range-selector {
+        flex-wrap: wrap;
+    }
+    
+    .gantt-task-header {
+        width: 250px;
+        min-width: 250px;
+    }
+    
+    .gantt-task-info {
+        width: 250px;
+        min-width: 250px;
+    }
+}
+
+@media (max-width: 768px) {
+    .gantt-toolbar-left h3 span {
+        display: none;
+    }
+    
+    .view-btn span {
+        display: none;
+    }
+    
+    .gantt-stats {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+    
+    .gantt-legend {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+    
+    .task-bar-label {
+        font-size: 10px;
+    }
+    
+    .task-bar-duration {
+        display: none;
+    }
+}
+

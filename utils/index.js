@@ -1,42 +1,8 @@
 // author: liangliang
-// 工具库聚合出口（barrel）——非破坏性重构：统一对外导出，保留原有按文件导入方式
+// 工具库聚合 - 全局变量方式加载（兼容非模块环境）
 
-// 独立命名导出，保持树摇友好
-export * from '/utils/baseView.js';
-export * from '/utils/dom.js';
-export * from '/utils/error.js';
-export * from '/utils/events.js';
-export * from '/utils/loading.js';
-export * from '/utils/message.js';
-export * from '/utils/performance.js';
-export * from '/utils/date.js';
-export * from '/utils/common.js';
-export * from '/utils/template.js';
+// 注意：此文件已转换为全局变量方式，避免ES6模块语法错误
+// 所有工具函数将通过其他工具文件以全局变量方式暴露
+console.log('[Utils] 工具库聚合文件已加载');
 
-// 默认导出一个整合对象，便于一次性引入
-import * as BaseView from '/utils/baseView.js';
-import * as Dom from '/utils/dom.js';
-import * as ErrorUtils from '/utils/error.js';
-import * as Events from '/utils/events.js';
-import * as Loading from '/utils/loading.js';
-import * as Message from '/utils/message.js';
-import * as Performance from '/utils/performance.js';
-import * as DateUtils from '/utils/date.js';
-import * as Common from '/utils/common.js';
-import * as Template from '/utils/template.js';
-
-const Utils = {
-  BaseView,
-  Dom,
-  ErrorUtils,
-  Events,
-  Loading,
-  Message,
-  Performance,
-  DateUtils,
-  Common,
-  Template,
-};
-
-export default Utils;
 

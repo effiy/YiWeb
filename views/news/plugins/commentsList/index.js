@@ -4,6 +4,8 @@
 import { loadCSSFiles } from '/utils/baseView.js';
 import { getData } from '/apis/index.js';
 import { formatDate } from '/utils/date.js';
+// 导入日志工具，确保 window.logError 等函数可用
+import '/utils/log.js';
 
 // 直接复用 AICR 评论面板样式，确保视觉与交互一致
 loadCSSFiles([
@@ -198,6 +200,7 @@ const createCommentsList = async () => {
         console.error('[CommentsList] 组件初始化失败:', e);
     }
 })();
+
 
 
 

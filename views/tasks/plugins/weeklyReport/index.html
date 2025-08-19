@@ -1,0 +1,331 @@
+<!-- 周报视图组件模板 -->
+<div class="weekly-report-container" v-if="showWeeklyReport">
+    <!-- 周报头部 -->
+    <div class="weekly-header">
+        <div class="weekly-header-left">
+            <h3>
+                <i class="fas fa-calendar-week"></i>
+                周报视图
+            </h3>
+            <div class="week-selector">
+                <button @click="previousWeek" class="week-nav-btn" title="上一周">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="current-week-info">
+                    <span class="week-range">{{ currentWeekRange }}</span>
+                    <span class="week-number">第{{ currentWeek }}周</span>
+                </div>
+                <button @click="nextWeek" class="week-nav-btn" title="下一周">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button @click="goToCurrentWeek" class="week-nav-btn current-week-btn" title="回到本周">
+                    <i class="fas fa-calendar-day"></i>
+                    本周
+                </button>
+            </div>
+        </div>
+        <div class="weekly-header-right">
+            <div class="weekly-actions">
+                <button @click="exportWeeklyReport" class="action-btn" title="导出周报">
+                    <i class="fas fa-download"></i>
+                    导出
+                </button>
+                <button @click="printWeeklyReport" class="action-btn" title="打印周报">
+                    <i class="fas fa-print"></i>
+                    打印
+                </button>
+                <button @click="refreshWeeklyData" class="action-btn" title="刷新数据">
+                    <i class="fas fa-sync-alt"></i>
+                    刷新
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 周报统计概览 -->
+    <div class="weekly-stats-overview">
+        <div class="stat-card total-tasks">
+            <div class="stat-icon">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ weeklyStats.totalTasks }}</div>
+                <div class="stat-label">本周任务</div>
+            </div>
+        </div>
+        
+        <div class="stat-card completed-tasks">
+            <div class="stat-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ weeklyStats.completedTasks }}</div>
+                <div class="stat-label">已完成</div>
+                <div class="stat-percent">{{ getCompletionRate() }}%</div>
+            </div>
+        </div>
+        
+        <div class="stat-card in-progress-tasks">
+            <div class="stat-icon">
+                <i class="fas fa-play-circle"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ weeklyStats.inProgressTasks }}</div>
+                <div class="stat-label">进行中</div>
+                <div class="stat-percent">{{ getInProgressRate() }}%</div>
+            </div>
+        </div>
+        
+        <div class="stat-card pending-tasks">
+            <div class="stat-icon">
+                <i class="fas fa-hourglass-start"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ weeklyStats.pendingTasks }}</div>
+                <div class="stat-label">待开始</div>
+                <div class="stat-percent">{{ getPendingRate() }}%</div>
+            </div>
+        </div>
+        
+        <div class="stat-card overdue-tasks">
+            <div class="stat-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ weeklyStats.overdueTasks }}</div>
+                <div class="stat-label">已逾期</div>
+                <div class="stat-percent text-error">{{ getOverdueRate() }}%</div>
+            </div>
+        </div>
+        
+        <div class="stat-card time-spent">
+            <div class="stat-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">{{ weeklyStats.totalHours }}h</div>
+                <div class="stat-label">总工时</div>
+                <div class="stat-percent">{{ getEfficiencyRate() }}%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 周进度图表 -->
+    <div class="weekly-progress-charts">
+        <div class="chart-container">
+            <div class="chart-header">
+                <h4><i class="fas fa-chart-pie"></i> 任务状态分布</h4>
+            </div>
+            <div class="chart-content">
+                <div class="pie-chart" ref="statusPieChart">
+                    <canvas width="200" height="200"></canvas>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item" v-for="item in statusLegend" :key="item.key">
+                        <div class="legend-color" :style="{ backgroundColor: item.color }"></div>
+                        <span class="legend-label">{{ item.label }}</span>
+                        <span class="legend-value">{{ item.value }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-header">
+                <h4><i class="fas fa-chart-bar"></i> 每日任务完成趋势</h4>
+            </div>
+            <div class="chart-content">
+                <div class="bar-chart" ref="dailyProgressChart">
+                    <div class="chart-grid">
+                        <div class="grid-lines">
+                            <div v-for="i in 5" :key="i" class="grid-line" :style="{ bottom: (i * 20) + '%' }">
+                                <span class="grid-label">{{ i * 20 }}%</span>
+                            </div>
+                        </div>
+                        <div class="chart-bars">
+                            <div 
+                                v-for="day in weekDays" 
+                                :key="day.key"
+                                class="bar-group"
+                            >
+                                <div 
+                                    class="progress-bar" 
+                                    :style="{ height: day.completionRate + '%' }"
+                                    :title="`${day.name}: ${day.completionRate}% 完成`"
+                                ></div>
+                                <div class="bar-label">{{ day.name }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 每日任务详情 -->
+    <div class="daily-tasks-section">
+        <div class="section-header">
+            <h4><i class="fas fa-calendar-day"></i> 每日任务详情</h4>
+            <div class="view-toggle">
+                <button 
+                    :class="['toggle-btn', { active: dailyViewMode === 'grid' }]"
+                    @click="setDailyViewMode('grid')"
+                    title="网格视图"
+                >
+                    <i class="fas fa-th"></i>
+                </button>
+                <button 
+                    :class="['toggle-btn', { active: dailyViewMode === 'list' }]"
+                    @click="setDailyViewMode('list')"
+                    title="列表视图"
+                >
+                    <i class="fas fa-list"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div :class="['daily-tasks-content', dailyViewMode]">
+            <div 
+                v-for="day in weekDays" 
+                :key="day.key"
+                :class="['daily-task-card', { 
+                    'is-today': day.isToday,
+                    'is-weekend': day.isWeekend,
+                    'has-tasks': day.tasks.length > 0
+                }]"
+            >
+                <div class="daily-card-header">
+                    <div class="day-info">
+                        <span class="day-name">{{ day.name }}</span>
+                        <span class="day-date">{{ formatDate(day.date) }}</span>
+                    </div>
+                    <div class="day-stats">
+                        <span class="task-count">{{ day.tasks.length }}个任务</span>
+                        <span class="completion-rate">{{ day.completionRate }}%</span>
+                    </div>
+                </div>
+                
+                <div class="daily-card-content">
+                    <div v-if="day.tasks.length === 0" class="no-tasks">
+                        <i class="fas fa-coffee"></i>
+                        <span>今日无任务</span>
+                    </div>
+                    
+                    <div v-else class="task-list">
+                        <div 
+                            v-for="task in day.tasks" 
+                            :key="task.key"
+                            :class="['task-item', getTaskStatusClass(task)]"
+                            @click="selectTask(task)"
+                        >
+                            <div class="task-priority" :class="getTaskPriority(task)">
+                                <i class="fas fa-circle"></i>
+                            </div>
+                            <div class="task-info">
+                                <div class="task-header">
+                                    <div class="task-status">
+                                        <i :class="getTaskStatusIcon(task)"></i>
+                                    </div>
+                                    <div class="task-title">{{ task.title }}</div>
+                                </div>
+                                <div class="task-meta">
+                                    <span class="task-category">{{ getTaskCategory(task) }}</span>
+                                    <span class="task-duration">{{ getTaskDuration(task) }}h</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="daily-card-footer">
+                    <div class="progress-indicator">
+                        <div class="progress-track">
+                            <div 
+                                class="progress-fill" 
+                                :style="{ width: day.completionRate + '%' }"
+                            ></div>
+                        </div>
+                    </div>
+                    <div class="time-summary">
+                        <span class="spent-time">{{ day.spentHours }}h</span>
+                        <span class="estimated-time">/ {{ day.estimatedHours }}h</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 周报总结 -->
+    <div class="weekly-summary">
+        <div class="summary-header">
+            <h4><i class="fas fa-clipboard-list"></i> 本周总结</h4>
+        </div>
+        
+        <div class="summary-content">
+            <div class="summary-section">
+                <h5><i class="fas fa-trophy"></i> 主要成就</h5>
+                <ul class="achievement-list">
+                    <li v-for="achievement in weeklyAchievements" :key="achievement">
+                        {{ achievement }}
+                    </li>
+                    <li v-if="weeklyAchievements.length === 0" class="empty-item">
+                        本周暂无重大成就记录
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="summary-section">
+                <h5><i class="fas fa-exclamation-circle"></i> 待改进项</h5>
+                <ul class="improvement-list">
+                    <li v-for="improvement in weeklyImprovements" :key="improvement">
+                        {{ improvement }}
+                    </li>
+                    <li v-if="weeklyImprovements.length === 0" class="empty-item">
+                        本周工作表现良好
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="summary-section">
+                <h5><i class="fas fa-calendar-plus"></i> 下周计划</h5>
+                <ul class="plan-list">
+                    <li v-for="plan in nextWeekPlans" :key="plan">
+                        {{ plan }}
+                    </li>
+                    <li v-if="nextWeekPlans.length === 0" class="empty-item">
+                        下周计划待制定
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="summary-actions">
+            <button @click="addAchievement" class="summary-btn">
+                <i class="fas fa-plus"></i>
+                添加成就
+            </button>
+            <button @click="addImprovement" class="summary-btn">
+                <i class="fas fa-plus"></i>
+                添加改进项
+            </button>
+            <button @click="addNextWeekPlan" class="summary-btn">
+                <i class="fas fa-plus"></i>
+                添加下周计划
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 空状态 -->
+<div v-else class="weekly-empty-state">
+    <div class="empty-state-content">
+        <i class="fas fa-calendar-week empty-icon"></i>
+        <h3>暂无周报数据</h3>
+        <p>当前周期内没有任务数据，请添加任务或选择其他时间范围</p>
+        <button @click="loadTasksData" class="btn btn-primary">
+            <i class="fas fa-refresh"></i>
+            刷新数据
+        </button>
+    </div>
+</div>
+

@@ -51,7 +51,22 @@
             >
                 <header class="task-header">
                     <div class="task-header-content">
-                        <h3 class="task-title" :id="`task-${index}-title`">{{ task.title }}</h3>
+                        <!-- 任务状态指示器 -->
+                        <div class="task-status-indicator" v-if="getTaskSteps(task).total > 0">
+                            <div class="status-ring">
+                                <svg class="status-circle" viewBox="0 0 36 36">
+                                    <path class="status-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                    <path class="status-progress" 
+                                          :stroke-dasharray="`${(getTaskSteps(task).completed / getTaskSteps(task).total) * 100}, 100`"
+                                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                </svg>
+                                <span class="status-text">{{ Math.round((getTaskSteps(task).completed / getTaskSteps(task).total) * 100) }}%</span>
+                            </div>
+                        </div>
+                        <!-- 任务标题 -->
+                        <h3 class="task-title" :id="`task-${index}-title`">
+                            <span class="task-title-text">{{ task.title }}</span>
+                        </h3>
                         <!-- 标签区域 -->
                         <div class="task-tags" v-if="task.featureName || task.cardTitle">
                             <span class="task-tag feature-tag" v-if="task.featureName" :title="task.featureName">
@@ -67,18 +82,18 @@
                 </header>
                 
                 <div class="task-description" :id="`task-${index}-description`">
-                  <div 
+                  <button 
                         v-if="task.description && task.description.length > 100"
                         @click="toggleDescriptionExpanded(task.title)"
                         class="description-toggle-btn"
                         :class="{ 'expanded': isDescriptionExpanded(task.title) }"
                         :title="isDescriptionExpanded(task.title) ? '收起描述' : '展开描述'"
-                        aria-label="切换描述显示"
+                        :aria-label="`${isDescriptionExpanded(task.title) ? '收起' : '展开'}任务描述`"
                     >
                         <i class="fas fa-chevron-down" v-if="!isDescriptionExpanded(task.title)"></i>
                         <i class="fas fa-chevron-up" v-else></i>
                         <span>{{ isDescriptionExpanded(task.title) ? '收起' : '展开' }}</span>
-                  </div>
+                  </button>
                   <div class="description-content" :class="{ 'expanded': isDescriptionExpanded(task.title) }">  
                       {{ task.description }}
                   </div>
@@ -106,8 +121,9 @@
                           class="steps-toggle-btn"
                           :class="{ 'expanded': isStepsExpanded(task.title) }"
                           :title="isStepsExpanded(task.title) ? '收起步骤' : '展开全部步骤'"
-                          aria-label="切换步骤显示"
+                          :aria-label="`${isStepsExpanded(task.title) ? '收起' : '展开'}任务 ${task.title} 的步骤`"
                       >
+                          <span class="sr-only">{{ isStepsExpanded(task.title) ? '收起步骤' : '展开全部步骤' }}</span>
                           <i class="fas fa-chevron-down" v-if="!isStepsExpanded(task.title)"></i>
                           <i class="fas fa-chevron-up" v-else></i>
                       </button>
@@ -120,19 +136,16 @@
                           :class="{ 'completed': step.completed }"
                           :title="step.text"
                       >
-                          <div 
+                          <button 
                               class="step-preview-checkbox"
                               @click="toggleStepComplete(task.title, step.number, step.completed)"
-                              :title="step.completed ? '取消完成' : '标记完成'"
-                              role="button"
-                              tabindex="0"
+                              :title="`步骤 ${step.number}: ${step.completed ? '取消完成' : '标记完成'}`"
                               :aria-label="`步骤 ${step.number}: ${step.completed ? '取消完成' : '标记完成'}`"
-                              @keydown.enter="toggleStepComplete(task.title, step.number, step.completed)"
-                              @keydown.space="toggleStepComplete(task.title, step.number, step.completed)"
                           >
+                              <span class="sr-only">{{ step.completed ? '取消完成' : '标记完成' }}</span>
                               <i class="fas fa-check" v-if="step.completed"></i>
                               <i class="fas fa-circle" v-else></i>
-                          </div>
+                          </button>
                           <span class="step-preview-number">{{ step.number }}</span>
                           <span class="step-preview-text">{{ step.text }}</span>
                       </div>
@@ -143,6 +156,7 @@
                               @click="toggleStepsExpanded(task.title)"
                               class="expand-steps-btn"
                               title="点击展开全部步骤"
+                              :aria-label="`展开任务 ${task.title} 的全部步骤`"
                           >
                               展开全部
                           </button>
@@ -153,6 +167,7 @@
         </div>
     </div>
 </div> 
+
 
 
 

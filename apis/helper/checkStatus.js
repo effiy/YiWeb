@@ -20,7 +20,7 @@ const STATUS_MESSAGES = {
  * @param {Response} response - fetch 的响应对象
  * @returns {Response} - 如果成功返回响应，否则抛出错误
  */
-export function checkStatus(response) {
+function checkStatus(response) {
   if (response.ok) {
     return response;
   }
@@ -53,7 +53,28 @@ export function checkStatus(response) {
  * @param {Response} response - fetch 的响应对象
  * @returns {boolean} - 是否为 JSON 格式
  */
-export function isJsonResponse(response) {
+function isJsonResponse(response) {
   const contentType = response.headers.get('content-type');
   return contentType && contentType.includes('application/json');
 }
+
+// 在全局作用域中暴露（用于非模块环境）
+if (typeof window !== 'undefined') {
+    window.checkStatus = checkStatus;
+    window.isJsonResponse = isJsonResponse;
+}
+
+// ES6模块导出（用于模块环境）
+export {
+    checkStatus,
+    isJsonResponse
+};
+
+// 确保在ES6模块环境中也能全局访问
+// 这对于混合使用模块和传统script标签的页面很重要
+if (typeof window !== 'undefined') {
+    // 如果函数还没有暴露到全局，则暴露它们
+    if (!window.checkStatus) window.checkStatus = checkStatus;
+    if (!window.isJsonResponse) window.isJsonResponse = isJsonResponse;
+}
+

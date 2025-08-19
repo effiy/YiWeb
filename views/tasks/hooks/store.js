@@ -3,18 +3,30 @@
  * author: liangliang
  */
 
-import { getData, deleteData } from '/apis/index.js';
-import { safeExecuteAsync } from '/utils/error.js';
+// 模块依赖改为全局方式
+// import { getData, deleteData } from '/apis/index.js';
+// import { safeExecuteAsync } from '/utils/error.js';
 
 // 兼容Vue2和Vue3的ref获取方式
 const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ value: val });
+
+/**
+ * 获取周数
+ * @param {Date} date - 日期对象
+ * @returns {number} 周数
+ */
+const getWeekNumber = (date) => {
+    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+};
 
 /**
  * 数据存储工厂函数
  * 管理任务数据、搜索状态、加载状态和错误信息
  * @returns {Object} store对象，包含tasksData, searchQuery, loading, error等方法
  */
-export const createStore = () => {
+window.createStore = () => {
     // 任务数据
     const tasksData = vueRef([]);
     // 搜索查询
@@ -35,6 +47,20 @@ export const createStore = () => {
     const selectedTask = vueRef(null);
     // 详情面板是否可见
     const isDetailVisible = vueRef(false);
+    // 当前视图模式：list、gantt、weekly、daily
+    const currentView = vueRef('list');
+    // 日期范围
+    const dateRange = vueRef({
+        start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+        end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+    });
+    // 时间视图过滤器
+    const timeFilter = vueRef({
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
+        week: getWeekNumber(new Date()),
+        day: new Date().toISOString().split('T')[0]
+    });
 
     /**
      * 生成唯一ID
@@ -49,7 +75,7 @@ export const createStore = () => {
      * 支持多次调用，自动处理加载状态和错误
      */
     const loadTasksData = async () => {
-        return safeExecuteAsync(async () => {
+        return window.safeExecuteAsync(async () => {
             loading.value = true;
             error.value = null;
             errorMessage.value = '';
@@ -68,7 +94,7 @@ export const createStore = () => {
             if (cardTitle) {
                 queryUrl += `&cardTitle=${encodeURIComponent(cardTitle)}`;
             }
-            const mongoResponse = await getData(queryUrl);
+            const mongoResponse = await window.getData(queryUrl);
 
             const mongoData = mongoResponse.data.list;
 
@@ -120,7 +146,7 @@ export const createStore = () => {
      * @returns {boolean} 删除是否成功
      */
     const deleteTask = async (task) => {
-        return safeExecuteAsync(async () => {
+        return window.safeExecuteAsync(async () => {
             console.log('[deleteTask] 开始删除任务:', task.title);
             
             // 构建删除API的URL
@@ -130,7 +156,7 @@ export const createStore = () => {
             console.log('[deleteTask] 删除API URL:', deleteUrl);
             
             // 调用API删除任务
-            const deleteResult = await deleteData(deleteUrl);
+            const deleteResult = await window.deleteData(deleteUrl);
             
             console.log('[deleteTask] API删除结果:', deleteResult);
             
@@ -241,6 +267,96 @@ export const createStore = () => {
         isDetailVisible.value = false;
     };
 
+    /**
+     * 切换视图模式
+     * @param {string} view - 视图模式 ('list', 'gantt', 'weekly', 'daily')
+     */
+    const setCurrentView = (view) => {
+        if (['list', 'gantt', 'weekly', 'daily'].includes(view)) {
+            currentView.value = view;
+            console.log(`[视图切换] 切换到${view}视图`);
+        }
+    };
+
+    /**
+     * 设置日期范围
+     * @param {Object} range - 日期范围对象
+     */
+    const setDateRange = (range) => {
+        if (range.start && range.end) {
+            dateRange.value = {
+                start: new Date(range.start),
+                end: new Date(range.end)
+            };
+        }
+    };
+
+    /**
+     * 设置时间过滤器
+     * @param {Object} filter - 时间过滤器对象
+     */
+    const setTimeFilter = (filter) => {
+        timeFilter.value = { ...timeFilter.value, ...filter };
+    };
+
+    /**
+     * 获取任务的扩展时间属性
+     * @param {Object} task - 任务对象
+     * @returns {Object} 扩展的时间属性
+     */
+    const getTaskTimeData = (task) => {
+        // 如果任务没有时间数据，生成默认值
+        if (!task.timeData) {
+            const now = new Date();
+            const startDate = new Date(now);
+            const endDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 默认7天后结束
+            
+            return {
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0],
+                estimatedHours: 8,
+                actualHours: 0,
+                priority: 'medium',
+                status: 'todo',
+                progress: 0,
+                dependencies: [],
+                category: 'development',
+                assignee: '',
+                tags: task.tags || [],
+                createdAt: now.toISOString(),
+                updatedAt: now.toISOString()
+            };
+        }
+        return task.timeData;
+    };
+
+    /**
+     * 更新任务时间数据
+     * @param {Object} task - 任务对象
+     * @param {Object} timeData - 时间数据
+     */
+    const updateTaskTimeData = async (task, timeData) => {
+        try {
+            // 找到对应的任务并更新
+            const taskIndex = tasksData.value.findIndex(t => t.key === task.key);
+            if (taskIndex !== -1) {
+                tasksData.value[taskIndex].timeData = {
+                    ...getTaskTimeData(task),
+                    ...timeData,
+                    updatedAt: new Date().toISOString()
+                };
+                
+                // 这里可以调用API更新后端数据
+                console.log(`[时间数据更新] 任务 ${task.title} 的时间数据已更新`);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('[时间数据更新] 更新失败:', error);
+            return false;
+        }
+    };
+
     return {
         // 响应式数据
         tasksData,
@@ -253,6 +369,9 @@ export const createStore = () => {
         searchHistory,
         selectedTask,
         isDetailVisible,
+        currentView,
+        dateRange,
+        timeFilter,
 
         // 方法
         loadTasksData,
@@ -265,7 +384,12 @@ export const createStore = () => {
         clearError,
         selectTask,
         closeTaskDetail,
-        generateUniqueId
+        generateUniqueId,
+        setCurrentView,
+        setDateRange,
+        setTimeFilter,
+        getTaskTimeData,
+        updateTaskTimeData
     };
 };
 
@@ -273,7 +397,7 @@ export const createStore = () => {
  * 获取任务分类配置
  * @returns {Array} 分类配置数组
  */
-export function getCategoriesConfig() {
+window.getCategoriesConfig = function() {
     return [
         { key: 'development', name: '开发任务', icon: 'fas fa-code', color: '#3b82f6' },
         { key: 'design', name: '设计任务', icon: 'fas fa-palette', color: '#8b5cf6' },
@@ -288,7 +412,7 @@ export function getCategoriesConfig() {
  * @param {Object} task - 任务对象
  * @returns {string} 分类键
  */
-export function categorizeTask(task) {
+window.categorizeTask = function(task) {
     const title = task.title.toLowerCase();
     
     if (title.includes('开发') || title.includes('功能') || title.includes('模块') || title.includes('代码')) {
@@ -305,6 +429,7 @@ export function categorizeTask(task) {
     
     return 'development'; // 默认分类
 } 
+
 
 
 

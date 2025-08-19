@@ -32,30 +32,30 @@ function shouldDebug() {
   return !!env.DEBUG;
 }
 
-export function logDebug(...args) {
+function logDebug(...args) {
   if (shouldDebug()) console.debug('[DEBUG]', ...args);
 }
 
-export function logInfo(...args) {
+function logInfo(...args) {
   if (shouldDebug()) console.info('[INFO ]', ...args);
 }
 
-export function logWarn(...args) {
+function logWarn(...args) {
   if (shouldDebug()) console.warn('[WARN ]', ...args);
 }
 
-export function logError(...args) {
+function logError(...args) {
   // 错误始终打印
   console.error('[ERROR]', ...args);
 }
 
 // 简易计时工具
 const timers = new Map();
-export function timeStart(label) {
+function timeStart(label) {
   if (!shouldDebug()) return;
   timers.set(label, performance.now());
 }
-export function timeEnd(label) {
+function timeEnd(label) {
   if (!shouldDebug()) return;
   const start = timers.get(label);
   if (start != null) {
@@ -64,5 +64,42 @@ export function timeEnd(label) {
     timers.delete(label);
   }
 }
+
+// 在全局作用域中暴露（用于非模块环境）
+if (typeof window !== 'undefined') {
+    window.logDebug = logDebug;
+    window.logInfo = logInfo;
+    window.logWarn = logWarn;
+    window.logError = logError;
+    window.timeStart = timeStart;
+    window.timeEnd = timeEnd;
+}
+
+// ES6模块导出（用于模块环境）
+export {
+    logDebug,
+    logInfo,
+    logWarn,
+    logError,
+    timeStart,
+    timeEnd
+};
+
+// 确保在ES6模块环境中也能全局访问
+// 这对于混合使用模块和传统script标签的页面很重要
+if (typeof window !== 'undefined') {
+    // 如果函数还没有暴露到全局，则暴露它们
+    if (!window.logDebug) window.logDebug = logDebug;
+    if (!window.logInfo) window.logInfo = logInfo;
+    if (!window.logWarn) window.logWarn = logWarn;
+    if (!window.logError) window.logError = logError;
+    if (!window.timeStart) window.timeStart = timeStart;
+    if (!window.timeEnd) window.timeEnd = timeEnd;
+}
+
+// 注意：由于HTML使用普通script标签，不支持ES6模块语法
+// 如果需要ES6模块支持，请将script标签改为 type="module"
+// 或者使用动态import()语法
+
 
 

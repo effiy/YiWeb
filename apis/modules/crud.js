@@ -1,14 +1,19 @@
 // 提供 CRUD 操作的模块
 // 作者：liangliang
 
-import { 
-  getRequest, 
-  postRequest, 
-  putRequest, 
-  patchRequest, 
-  deleteRequest 
-} from '/apis/helper/requestHelper.js';
-import { logInfo, logWarn, logError } from '/utils/log.js';
+// 模块依赖改为全局方式
+// import { 
+//   window.getRequest, 
+//   window.postRequest, 
+//   window.putRequest, 
+//   window.patchRequest, 
+//   window.deleteRequest 
+// } from '/apis/helper/requestHelper.js';
+// import { window.logInfo, logWarn, window.logError } from '/utils/log.js';
+// 导入日志工具，确保 window.logError 等函数可用
+import '/utils/log.js';
+// 导入请求工具，确保 window.getRequest、window.postRequest 等函数可用
+import '/apis/helper/requestHelper.js';
 
 /**
  * 简单的内存缓存
@@ -144,18 +149,18 @@ class CacheManager {
  * @param {boolean} useCache - 是否使用缓存
  * @returns {Promise} - 返回数据
  */
-export async function getData(url, options = {}, useCache = true) {
+async function getData(url, options = {}, useCache = true) {
   // 检查缓存
   if (useCache) {
     const cached = CacheManager.get(url);
     if (cached) {
-      logInfo('从缓存获取数据：', url);
+      window.logInfo('从缓存获取数据：', url);
       return cached;
     }
   }
   
   try {
-    const data = await getRequest(url, options);
+    const data = await window.getRequest(url, options);
     
     // 设置缓存
     if (useCache) {
@@ -164,7 +169,7 @@ export async function getData(url, options = {}, useCache = true) {
     
     return data;
   } catch (error) {
-    logError('获取数据失败：', error);
+    window.logError('获取数据失败：', error);
     throw error;
   }
 }
@@ -177,7 +182,7 @@ export async function getData(url, options = {}, useCache = true) {
  * @param {Object} options - 请求选项
  * @returns {Promise} - 返回创建结果
  */
-export async function postData(url, data, validationRules = {}, options = {}) {
+async function postData(url, data, validationRules = {}, options = {}) {
   // 数据验证
   if (Object.keys(validationRules).length > 0) {
     const validation = validateData(data, validationRules);
@@ -187,14 +192,14 @@ export async function postData(url, data, validationRules = {}, options = {}) {
   }
   
   try {
-    const result = await postRequest(url, data, options);
+    const result = await window.postRequest(url, data, options);
     
     // 清除相关缓存
     CacheManager.clear();
     
     return result;
   } catch (error) {
-    logError('创建数据失败：', error);
+    window.logError('创建数据失败：', error);
     throw error;
   }
 }
@@ -207,7 +212,7 @@ export async function postData(url, data, validationRules = {}, options = {}) {
  * @param {Object} options - 请求选项
  * @returns {Promise} - 返回更新结果
  */
-export async function updateData(url, data, validationRules = {}, options = {}) {
+async function updateData(url, data, validationRules = {}, options = {}) {
   // 数据验证
   if (Object.keys(validationRules).length > 0) {
     const validation = validateData(data, validationRules);
@@ -217,14 +222,14 @@ export async function updateData(url, data, validationRules = {}, options = {}) 
   }
   
   try {
-    const result = await putRequest(url, data, options);
+    const result = await window.putRequest(url, data, options);
     
     // 清除相关缓存
     CacheManager.clear();
     
     return result;
   } catch (error) {
-    logError('更新数据失败：', error);
+    window.logError('更新数据失败：', error);
     throw error;
   }
 }
@@ -237,7 +242,7 @@ export async function updateData(url, data, validationRules = {}, options = {}) 
  * @param {Object} options - 请求选项
  * @returns {Promise} - 返回更新结果
  */
-export async function patchData(url, data, validationRules = {}, options = {}) {
+async function patchData(url, data, validationRules = {}, options = {}) {
   // 数据验证
   if (Object.keys(validationRules).length > 0) {
     const validation = validateData(data, validationRules);
@@ -247,14 +252,14 @@ export async function patchData(url, data, validationRules = {}, options = {}) {
   }
   
   try {
-    const result = await patchRequest(url, data, options);
+    const result = await window.patchRequest(url, data, options);
     
     // 清除相关缓存
     CacheManager.clear();
     
     return result;
   } catch (error) {
-    logError('部分更新数据失败：', error);
+    window.logError('部分更新数据失败：', error);
     throw error;
   }
 }
@@ -265,16 +270,16 @@ export async function patchData(url, data, validationRules = {}, options = {}) {
  * @param {Object} options - 请求选项
  * @returns {Promise} - 返回删除结果
  */
-export async function deleteData(url, options = {}) {
+async function deleteData(url, options = {}) {
   try {
-    const result = await deleteRequest(url, options);
+    const result = await window.deleteRequest(url, options);
     
     // 清除相关缓存
     CacheManager.clear();
     
     return result;
   } catch (error) {
-    logError('删除数据失败：', error);
+    window.logError('删除数据失败：', error);
     throw error;
   }
 }
@@ -284,7 +289,7 @@ export async function deleteData(url, options = {}) {
  * @param {Array} operations - 操作数组
  * @returns {Promise} - 返回所有操作结果
  */
-export async function batchOperations(operations) {
+async function batchOperations(operations) {
   const results = [];
   const errors = [];
   
@@ -325,6 +330,46 @@ export async function batchOperations(operations) {
 }
 
 // 导出缓存管理器
-export { CacheManager };
+// CacheManager 已通过全局暴露可用
+
+// 在全局作用域中暴露（用于非模块环境）
+if (typeof window !== 'undefined') {
+    window.getData = getData;
+    window.postData = postData;
+    window.updateData = updateData;
+    window.patchData = patchData;
+    window.deleteData = deleteData;
+    window.batchOperations = batchOperations;
+    window.CacheManager = CacheManager;
+}
+
+// ES6模块导出（用于模块环境）
+export {
+    getData,
+    postData,
+    updateData,
+    patchData,
+    deleteData,
+    batchOperations,
+    CacheManager
+};
+
+// 确保在ES6模块环境中也能全局访问
+// 这对于混合使用模块和传统script标签的页面很重要
+if (typeof window !== 'undefined') {
+    // 如果函数还没有暴露到全局，则暴露它们
+    if (!window.getData) window.getData = getData;
+    if (!window.postData) window.postData = postData;
+    if (!window.updateData) window.updateData = updateData;
+    if (!window.patchData) window.patchData = patchData;
+    if (!window.deleteData) window.deleteData = deleteData;
+    if (!window.batchOperations) window.batchOperations = batchOperations;
+    if (!window.CacheManager) window.CacheManager = CacheManager;
+}
+
+// 注意：由于HTML使用普通script标签，不支持ES6模块语法
+// 如果需要ES6模块支持，请将script标签改为 type="module"
+// 或者使用动态import()语法
+
 
 

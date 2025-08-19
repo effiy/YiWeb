@@ -4,13 +4,18 @@
  * author: liangliang
  */
 
-import { safeExecute } from './error.js';
-import { logInfo, logWarn, logError } from './log.js';
+// 模块依赖改为全局方式
+// import { window.safeExecute } from './error.js';
+// import { window.logInfo, window.logWarn, window.logError } from './log.js';
+// 导入日志工具，确保 window.logError 等函数可用
+import './log.js';
+// 导入错误处理工具，确保 window.safeExecute 函数可用
+import './error.js';
 
 /**
  * 视图配置选项
  */
-export const ViewConfig = {
+const ViewConfig = {
     // 默认组件注册列表
     DEFAULT_COMPONENTS: [],
     
@@ -19,7 +24,7 @@ export const ViewConfig = {
     
     // 默认错误处理
     DEFAULT_ERROR_HANDLER: (error) => {
-        logError('[视图错误]', error);
+        window.logError('[视图错误]', error);
     }
 };
 
@@ -32,7 +37,7 @@ export const ViewConfig = {
  * @param {Function} options.onError - 错误处理函数
  * @returns {Promise<Object>} Vue应用实例
  */
-export async function createVueApp(options = {}) {
+async function createVueApp(options = {}) {
     const {
         setup,
         components = ViewConfig.DEFAULT_COMPONENTS,
@@ -78,9 +83,9 @@ async function registerComponents(app, componentNames) {
     componentNames.forEach(name => {
         if (typeof window[name] !== 'undefined') {
             app.component(name, window[name]);
-            try { logInfo(`[组件注册] 已注册组件: ${name}`); } catch (_) { /* 兼容性静默 */ }
+            try { window.logInfo(`[组件注册] 已注册组件: ${name}`); } catch (_) { /* 兼容性静默 */ }
         } else {
-            try { logWarn(`[组件注册] 组件未找到: ${name}`); } catch (_) { /* 兼容性静默 */ }
+            try { window.logWarn(`[组件注册] 组件未找到: ${name}`); } catch (_) { /* 兼容性静默 */ }
         }
     });
 }
@@ -94,9 +99,9 @@ function loadPlugins(app, pluginNames) {
     pluginNames.forEach(pluginName => {
         try {
             // 这里可以扩展插件加载逻辑
-            try { logInfo(`[插件加载] 加载插件: ${pluginName}`); } catch (_) { /* 兼容性静默 */ }
+            try { window.logInfo(`[插件加载] 加载插件: ${pluginName}`); } catch (_) { /* 兼容性静默 */ }
         } catch (error) {
-            try { logError(`[插件加载] 插件加载失败: ${pluginName}`, error); } catch (_) { /* 兼容性静默 */ }
+            try { window.logError(`[插件加载] 插件加载失败: ${pluginName}`, error); } catch (_) { /* 兼容性静默 */ }
         }
     });
 }
@@ -107,8 +112,8 @@ function loadPlugins(app, pluginNames) {
  * @param {string} selector - DOM选择器
  * @returns {Object} 挂载后的应用实例
  */
-export function mountApp(app, selector = '#app') {
-    return safeExecute(() => {
+function mountApp(app, selector = '#app') {
+    return window.safeExecute(() => {
         const element = document.querySelector(selector);
         if (!element) {
             throw new Error(`DOM元素未找到: ${selector}`);
@@ -116,7 +121,7 @@ export function mountApp(app, selector = '#app') {
         
         // 直接传入 DOM 元素，避免某些环境下 selector 触发的内部 nextSibling 错误
         const mountedApp = app.mount(element);
-        try { logInfo(`[应用挂载] 应用已挂载到: ${selector}`); } catch (_) { /* 兼容性静默 */ }
+        try { window.logInfo(`[应用挂载] 应用已挂载到: ${selector}`); } catch (_) { /* 兼容性静默 */ }
         return mountedApp;
     }, '应用挂载');
 }
@@ -127,7 +132,7 @@ export function mountApp(app, selector = '#app') {
  * @param {string} selector - DOM选择器
  * @returns {Promise<Object>} 挂载后的应用实例
  */
-export async function createAndMountApp(options = {}, selector = '#app') {
+async function createAndMountApp(options = {}, selector = '#app') {
     // 在挂载前，从目标元素抓取静态模板并清空，避免DOM不一致导致的挂载错误
     const element = document.querySelector(selector);
     if (!element) {
@@ -172,7 +177,7 @@ export async function createAndMountApp(options = {}, selector = '#app') {
  * @param {string} config.selector - DOM选择器
  * @returns {Promise<Object>} 挂载后的应用实例
  */
-export async function createBaseView(config = {}) {
+async function createBaseView(config = {}) {
     const {
         createStore,
         useComputed,
@@ -230,7 +235,7 @@ export async function createBaseView(config = {}) {
 
     // 执行挂载后回调
     if (typeof onMounted === 'function') {
-        safeExecute(() => {
+        window.safeExecute(() => {
             onMounted(app);
         }, '挂载后回调');
     }
@@ -244,7 +249,7 @@ export async function createBaseView(config = {}) {
  * @param {number} timeout - 超时时间(毫秒)
  * @returns {Promise} 等待完成的Promise
  */
-export function waitForComponents(componentNames, timeout = 5000) {
+function waitForComponents(componentNames, timeout = 5000) {
     return new Promise((resolve, reject) => {
         const startTime = Date.now();
         
@@ -274,7 +279,7 @@ export function waitForComponents(componentNames, timeout = 5000) {
  * 自动加载CSS文件
  * @param {Array} cssFiles - CSS文件路径列表
  */
-export function loadCSSFiles(cssFiles) {
+function loadCSSFiles(cssFiles) {
     cssFiles.forEach(cssFile => {
         if (!document.querySelector(`link[href*="${cssFile}"]`)) {
             const link = document.createElement('link');
@@ -291,7 +296,7 @@ export function loadCSSFiles(cssFiles) {
  * @param {Array} jsFiles - JavaScript文件路径列表
  * @returns {Promise} 加载完成的Promise
  */
-export function loadJSFiles(jsFiles) {
+function loadJSFiles(jsFiles) {
     const loadPromises = jsFiles.map(jsFile => {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
@@ -304,6 +309,49 @@ export function loadJSFiles(jsFiles) {
     });
     
     return Promise.all(loadPromises);
-} 
+}
+
+// 在全局作用域中暴露（用于非模块环境）
+if (typeof window !== 'undefined') {
+    window.ViewConfig = ViewConfig;
+    window.createVueApp = createVueApp;
+    window.mountApp = mountApp;
+    window.createAndMountApp = createAndMountApp;
+    window.createBaseView = createBaseView;
+    window.waitForComponents = waitForComponents;
+    window.loadCSSFiles = loadCSSFiles;
+    window.loadJSFiles = loadJSFiles;
+}
+
+// ES6模块导出（用于模块环境）
+export {
+    ViewConfig,
+    createVueApp,
+    mountApp,
+    createAndMountApp,
+    createBaseView,
+    waitForComponents,
+    loadCSSFiles,
+    loadJSFiles
+};
+
+// 确保在ES6模块环境中也能全局访问
+// 这对于混合使用模块和传统script标签的页面很重要
+if (typeof window !== 'undefined') {
+    // 如果函数还没有暴露到全局，则暴露它们
+    if (!window.ViewConfig) window.ViewConfig = ViewConfig;
+    if (!window.createVueApp) window.createVueApp = createVueApp;
+    if (!window.mountApp) window.mountApp = mountApp;
+    if (!window.createAndMountApp) window.createAndMountApp = createAndMountApp;
+    if (!window.createBaseView) window.createBaseView = createBaseView;
+    if (!window.waitForComponents) window.waitForComponents = waitForComponents;
+    if (!window.loadCSSFiles) window.loadCSSFiles = loadCSSFiles;
+    if (!window.loadJSFiles) window.loadJSFiles = loadJSFiles;
+}
+
+// 注意：由于HTML使用普通script标签，不支持ES6模块语法
+// 如果需要ES6模块支持，请将script标签改为 type="module"
+// 或者使用动态import()语法 
+
 
 

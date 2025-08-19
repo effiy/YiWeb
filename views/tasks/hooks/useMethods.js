@@ -4,9 +4,10 @@
  * author: liangliang
  */
 
-import { showGlobalLoading, hideGlobalLoading } from '/utils/loading.js';
-import { showError, showSuccess } from '/utils/message.js';
-import { getData, postData } from '/apis/index.js';
+// 模块依赖改为全局方式
+// import { window.showGlobalLoading, window.hideGlobalLoading } from '/utils/loading.js';
+// import { window.showError, window.showSuccess } from '/utils/message.js';
+// import { window.getData, window.postData } from '/apis/index.js';
 
 /**
  * 方法工厂函数
@@ -15,13 +16,18 @@ import { getData, postData } from '/apis/index.js';
  * @param {Object} computed - 计算属性对象
  * @returns {Object} 方法对象
  */
-export const useMethods = (store, computed) => {
+window.useMethods = (store, computed) => {
     const {
         loadTasksData,
         toggleCategory,
         addSearchHistory,
         clearSearch,
-        clearError
+        clearError,
+        setCurrentView,
+        setDateRange,
+        setTimeFilter,
+        getTaskTimeData,
+        updateTaskTimeData
     } = store;
 
     // 长按删除相关变量
@@ -354,7 +360,7 @@ export const useMethods = (store, computed) => {
             // 检查task是否存在
             if (!task) {
                 console.error('[删除任务] task参数为空');
-                showError('删除失败：任务数据无效');
+                window.showError('删除失败：任务数据无效');
                 isDeleting = false;
                 return;
             }
@@ -362,7 +368,7 @@ export const useMethods = (store, computed) => {
             // 验证任务数据完整性
             if (!validateTask(task)) {
                 console.error('[删除任务] 任务数据验证失败');
-                showError('删除失败：任务数据不完整');
+                window.showError('删除失败：任务数据不完整');
                 isDeleting = false;
                 return;
             }
@@ -374,7 +380,7 @@ export const useMethods = (store, computed) => {
             }
             
             // 显示删除中提示
-            showGlobalLoading('正在删除任务...');
+            window.showGlobalLoading('正在删除任务...');
             
             // 添加删除成功反馈
             if (navigator.vibrate) {
@@ -413,7 +419,7 @@ export const useMethods = (store, computed) => {
                     await loadTasksData();
                 }
                 
-                showSuccess(`已删除任务"${task.title}"`);
+                window.showSuccess(`已删除任务"${task.title}"`);
                 console.log('[删除任务] 删除成功:', task.title);
                 
                 // 播放删除成功声音
@@ -449,10 +455,10 @@ export const useMethods = (store, computed) => {
             }
         } catch (error) {
             console.error('[删除任务] 删除失败:', error);
-            showError('删除任务失败，请稍后重试');
+            window.showError('删除任务失败，请稍后重试');
         } finally {
             // 隐藏加载提示
-            hideGlobalLoading();
+            window.hideGlobalLoading();
             // 确保删除状态被重置
             isDeleting = false;
         }
@@ -464,12 +470,12 @@ export const useMethods = (store, computed) => {
      */
     const handleLoadTasksData = async () => {
         try {
-            showGlobalLoading('正在加载任务数据...');
+            window.showGlobalLoading('正在加载任务数据...');
             await loadTasksData();
         } catch (error) {
             console.error('[handleLoadTasksData] 加载失败:', error);
         } finally {
-            hideGlobalLoading();
+            window.hideGlobalLoading();
         }
     };
 
@@ -485,11 +491,11 @@ export const useMethods = (store, computed) => {
                 
                 // 调用prompt接口生成新任务
                 try {
-                    showGlobalLoading('正在生成任务，请稍候...');
+                    window.showGlobalLoading('正在生成任务，请稍候...');
                     
-                    const fromSystem = await getData(`${window.DATA_URL}/prompts/tasks/tasks.txt`);
+                    const fromSystem = await window.getData(`${window.DATA_URL}/prompts/tasks/tasks.txt`);
                     
-                    const response = await postData(`${window.API_URL}/prompt`, {
+                    const response = await window.postData(`${window.API_URL}/prompt`, {
                         fromSystem,
                         fromUser: query
                     });
@@ -497,19 +503,19 @@ export const useMethods = (store, computed) => {
                     if (Array.isArray(response.data) && response.data.length > 0) {
                         await Promise.all(
                             response.data.map(item =>
-                                postData(`${window.API_URL}/mongodb/?cname=tasks`, item)
+                                window.postData(`${window.API_URL}/mongodb/?cname=tasks`, item)
                             )
                         );
                         store.setSearchQuery('');
                         // 重新加载任务数据
                         await loadTasksData();
-                        showSuccess('已生成新任务');
+                        window.showSuccess('已生成新任务');
                     }
                 } catch (error) {
-                    showError('生成任务失败，请稍后重试');
+                    window.showError('生成任务失败，请稍后重试');
                     console.error('生成任务失败:', error);
                 } finally {
-                    hideGlobalLoading();
+                    window.hideGlobalLoading();
                 }
             }
         }
@@ -666,6 +672,31 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         document.removeEventListener('keydown', handleKeyboardShortcuts, { passive: true });
     };
 
+    /**
+     * 获取当前视图名称
+     */
+    const getCurrentViewName = () => {
+        const viewMap = {
+            'list': '列表视图',
+            'kanban': '看板视图',
+            'gantt': '甘特图',
+            'calendar': '日历视图',
+
+            'table': '表格视图',
+            'matrix': '矩阵视图'
+        };
+        return viewMap[store.currentView] || '未知视图';
+    };
+
+    /**
+     * 打开设置面板
+     */
+    const openSettings = () => {
+        console.log('[设置] 打开设置面板');
+        // 这里可以添加打开设置面板的逻辑
+        window.showSuccess('设置功能开发中...');
+    };
+
     return {
         // 主要处理方法
         handleLoadTasksData,
@@ -679,9 +710,69 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         handleExportTask,
         handleClearError,
         deleteTask,
-        cleanupEventListeners
+        cleanupEventListeners,
+
+        // 视图管理方法
+        setCurrentView,
+        setDateRange,
+        setTimeFilter,
+
+        // 任务选择和更新方法
+        handleTaskSelect: (task) => {
+            console.log('[任务选择] 选中任务:', task.title);
+            store.selectTask(task);
+        },
+
+        // 任务更新方法
+        handleTaskUpdate: async (updateData) => {
+            const { task, timeData } = updateData;
+            console.log('[任务更新] 更新任务时间数据:', task.title, timeData);
+            
+            const success = await updateTaskTimeData(task, timeData);
+            if (success) {
+                console.log('[任务更新] 更新成功');
+                // 重新加载任务数据
+                await loadTasksData();
+            } else {
+                console.error('[任务更新] 更新失败');
+            }
+        },
+
+        // 任务创建方法
+        handleTaskCreate: async (newTask) => {
+            try {
+                console.log('[任务创建] 创建新任务:', newTask.title);
+                
+                // 这里可以调用API创建任务
+                const response = await window.postData(`${window.API_URL}/mongodb/?cname=tasks`, newTask);
+                
+                if (response && response.success !== false) {
+                    console.log('[任务创建] 创建成功');
+                    // 重新加载任务数据
+                    await loadTasksData();
+                } else {
+                    throw new Error('API创建失败');
+                }
+            } catch (error) {
+                console.error('[任务创建] 创建失败:', error);
+                window.showError('创建任务失败，请稍后重试');
+            }
+        },
+
+        // 日期范围变化处理
+        handleDateRangeChange: (dateRange) => {
+            console.log('[日期范围变化]', dateRange);
+            setDateRange(dateRange);
+        },
+
+        // 获取当前视图名称
+        getCurrentViewName,
+
+        // 设置相关方法
+        openSettings
     };
 }; 
+
 
 
 

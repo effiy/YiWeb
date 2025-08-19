@@ -1,0 +1,246 @@
+<!-- 甘特图组件模板 -->
+<div class="gantt-chart-container" v-if="showGanttChart">
+    <!-- 甘特图头部工具栏 -->
+    <div class="gantt-toolbar">
+        <div class="gantt-toolbar-left">
+            <h3><i class="fas fa-chart-bar"></i> 甘特图</h3>
+            <div class="date-range-selector">
+                <label>
+                    <i class="fas fa-calendar-alt"></i>
+                    开始日期：
+                    <input 
+                        type="date" 
+                        v-model="ganttDateRange.start" 
+                        @change="updateDateRange"
+                        class="date-input"
+                    >
+                </label>
+                <label>
+                    结束日期：
+                    <input 
+                        type="date" 
+                        v-model="ganttDateRange.end" 
+                        @change="updateDateRange"
+                        class="date-input"
+                    >
+                </label>
+            </div>
+        </div>
+        <div class="gantt-toolbar-right">
+            <div class="zoom-controls">
+                <button @click="zoomOut" class="zoom-btn" title="缩小">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <span class="zoom-level">{{ zoomLevel }}%</span>
+                <button @click="zoomIn" class="zoom-btn" title="放大">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div class="view-controls">
+                <button 
+                    v-for="view in viewModes" 
+                    :key="view.key"
+                    @click="setViewMode(view.key)"
+                    :class="['view-btn', { active: currentViewMode === view.key }]"
+                    :title="view.name"
+                >
+                    <i :class="view.icon"></i>
+                    <span>{{ view.name }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 甘特图主体 -->
+    <div class="gantt-chart-wrapper" ref="ganttWrapper">
+        <div class="gantt-chart" ref="ganttChart" :style="ganttChartStyle">
+            <!-- 时间轴头部 -->
+            <div class="gantt-header">
+                <!-- 任务列标题 -->
+                <div class="gantt-task-header">
+                    <div class="task-column-title">任务</div>
+                    <div class="duration-column-title">工期</div>
+                    <div class="progress-column-title">进度</div>
+                </div>
+                
+                <!-- 日期时间轴 -->
+                <div class="gantt-timeline-header" ref="timelineHeader">
+                    <div class="timeline-months">
+                        <div 
+                            v-for="month in timelineMonths" 
+                            :key="month.key"
+                            :style="{ width: month.width + 'px' }"
+                            class="timeline-month"
+                        >
+                            {{ month.label }}
+                        </div>
+                    </div>
+                    <div class="timeline-days">
+                        <div 
+                            v-for="day in timelineDays" 
+                            :key="day.key"
+                            :style="{ width: dayWidth + 'px' }"
+                            :class="['timeline-day', { 
+                                'weekend': day.isWeekend,
+                                'today': day.isToday 
+                            }]"
+                        >
+                            <span class="day-number">{{ day.number }}</span>
+                            <span class="day-name">{{ day.name }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 甘特图内容区域 -->
+            <div class="gantt-content" ref="ganttContent">
+                <!-- 任务行 -->
+                <div 
+                    v-for="(task, index) in filteredTasks" 
+                    :key="task.key || task.title"
+                    :class="['gantt-row', { 
+                        'odd-row': index % 2 === 1,
+                        'selected': isTaskSelected(task),
+                        'dragging': draggingTask === task
+                    }]"
+                    @click="selectTask(task)"
+                >
+                    <!-- 任务信息列 -->
+                    <div class="gantt-task-info">
+                        <div class="task-info-item task-title" :title="task.title">
+                            <i :class="getTaskIcon(task)"></i>
+                            <span>{{ task.title }}</span>
+                        </div>
+                        <div class="task-info-item task-duration">
+                            {{ getTaskDuration(task) }}天
+                        </div>
+
+                    </div>
+
+                    <!-- 任务时间条 -->
+                    <div class="gantt-timeline-content">
+                        <div 
+                            class="gantt-task-bar-container"
+                            :style="{ width: totalTimelineWidth + 'px' }"
+                        >
+                            <!-- 依赖关系线 -->
+                            <svg 
+                                v-if="task.dependencies && task.dependencies.length > 0"
+                                class="dependency-lines"
+                                :width="totalTimelineWidth"
+                                height="100%"
+                            >
+                                <line
+                                    v-for="dependency in getTaskDependencyLines(task)"
+                                    :key="dependency.key"
+                                    :x1="dependency.x1"
+                                    :y1="dependency.y1"
+                                    :x2="dependency.x2"
+                                    :y2="dependency.y2"
+                                    class="dependency-line"
+                                />
+                            </svg>
+
+                            <!-- 任务条 -->
+                            <div 
+                                class="gantt-task-bar"
+                                :style="getTaskBarStyle(task)"
+                                :title="getTaskBarTitle(task)"
+                                @mousedown="startDrag($event, task)"
+                                @click.stop="selectTask(task)"
+                            >
+
+                                
+                                <!-- 任务标签 -->
+                                <div class="task-bar-label">
+                                    <span class="task-bar-title">{{ task.title }}</span>
+                                    <span class="task-bar-duration">{{ getTaskDuration(task) }}d</span>
+                                </div>
+
+                                <!-- 调整大小手柄 -->
+                                <div 
+                                    class="resize-handle resize-left"
+                                    @mousedown.stop="startResize($event, task, 'left')"
+                                ></div>
+                                <div 
+                                    class="resize-handle resize-right"
+                                    @mousedown.stop="startResize($event, task, 'right')"
+                                ></div>
+                            </div>
+
+                            <!-- 里程碑标记 -->
+                            <div 
+                                v-if="isMilestone(task)"
+                                class="milestone-marker"
+                                :style="getMilestoneStyle(task)"
+                            >
+                                <i class="fas fa-flag"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 拖拽辅助线 -->
+        <div 
+            v-if="isDragging" 
+            class="drag-guide-line"
+            :style="dragGuideLineStyle"
+        ></div>
+    </div>
+
+    <!-- 甘特图底部信息 -->
+    <div class="gantt-footer">
+        <div class="gantt-stats">
+            <span class="stat-item">
+                <i class="fas fa-tasks"></i>
+                总任务: {{ filteredTasks.length }}
+            </span>
+            <span class="stat-item">
+                <i class="fas fa-check-circle"></i>
+                已完成: {{ getCompletedTasksCount() }}
+            </span>
+            <span class="stat-item">
+                <i class="fas fa-clock"></i>
+                进行中: {{ getInProgressTasksCount() }}
+            </span>
+            <span class="stat-item">
+                <i class="fas fa-hourglass-start"></i>
+                未开始: {{ getPendingTasksCount() }}
+            </span>
+        </div>
+        <div class="gantt-legend">
+            <div class="legend-item">
+                <div class="legend-color todo"></div>
+                <span>待开始</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color in-progress"></div>
+                <span>进行中</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color completed"></div>
+                <span>已完成</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color overdue"></div>
+                <span>已逾期</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 空状态 -->
+<div v-else class="gantt-empty-state">
+    <div class="empty-state-content">
+        <i class="fas fa-chart-bar empty-icon"></i>
+        <h3>暂无甘特图数据</h3>
+        <p>请先添加包含时间信息的任务，然后切换到甘特图视图</p>
+        <button @click="loadTasksData" class="btn btn-primary">
+            <i class="fas fa-refresh"></i>
+            刷新数据
+        </button>
+    </div>
+</div>
+

@@ -3,8 +3,13 @@
  * 作者：liangliang
  */
 
-import { checkStatus, isJsonResponse } from '/apis/helper/checkStatus.js';
-import { logDebug, logInfo, logWarn, logError, timeStart, timeEnd } from '/utils/log.js';
+// 模块依赖改为全局方式
+// import { window.checkStatus, window.isJsonResponse } from '/apis/helper/window.checkStatus.js';
+// import { logDebug, window.logInfo, logWarn, window.logError, window.timeStart, window.timeEnd } from '/utils/log.js';
+// 导入日志工具，确保 window.logInfo、window.timeStart 等函数可用
+import '/utils/log.js';
+// 导入状态检查工具，确保 window.checkStatus 和 window.isJsonResponse 函数可用
+import '/apis/helper/checkStatus.js';
 
 /**
  * 默认请求配置
@@ -29,7 +34,7 @@ function requestInterceptor(config) {
   config.timestamp = Date.now();
   
   // 记录请求日志
-  logInfo('发送请求：', {
+  window.logInfo('发送请求：', {
     url: config.url,
     method: config.method,
     timestamp: new Date(config.timestamp).toISOString()
@@ -43,7 +48,7 @@ function requestInterceptor(config) {
  */
 function responseInterceptor(response, config) {
   // 记录响应日志
-  logInfo('收到响应：', {
+  window.logInfo('收到响应：', {
     url: config.url,
     status: response.status,
     duration: Date.now() - config.timestamp + 'ms'
@@ -66,7 +71,7 @@ function createTimeoutPromise(timeout) {
 /**
  * 发送通用请求
  */
-export async function sendRequest(url, options = {}) {
+async function sendRequest(url, options = {}) {
   // 合并默认配置
   const config = {
     ...DEFAULT_CONFIG,
@@ -80,7 +85,7 @@ export async function sendRequest(url, options = {}) {
   try {
     // 计时
     const timeLabel = `fetch:${config.method || 'GET'} ${url}`;
-    timeStart(timeLabel);
+    window.timeStart(timeLabel);
 
     // 构建可中止的 fetch
     const controller = new AbortController();
@@ -114,18 +119,18 @@ export async function sendRequest(url, options = {}) {
     const interceptedResponse = responseInterceptor(response, interceptedConfig);
     
     // 检查状态
-    await checkStatus(interceptedResponse);
+    await window.checkStatus(interceptedResponse);
     
     // 根据响应类型返回数据
-    const result = isJsonResponse(interceptedResponse)
+    const result = window.isJsonResponse(interceptedResponse)
       ? await interceptedResponse.json()
       : await interceptedResponse.text();
-    timeEnd(timeLabel);
+    window.timeEnd(timeLabel);
     return result;
     
   } catch (error) {
     // 监控错误 - 提供更详细的错误信息
-    logError('请求错误详情：', {
+    window.logError('请求错误详情：', {
       url,
       method: config.method,
       error: error.message,
@@ -164,14 +169,14 @@ export async function sendRequest(url, options = {}) {
 /**
  * 发送 GET 请求
  */
-export async function getRequest(url, options = {}) {
+async function getRequest(url, options = {}) {
   return sendRequest(url, { ...options, method: 'GET' });
 }
 
 /**
  * 发送 POST 请求
  */
-export async function postRequest(url, data, options = {}) {
+async function postRequest(url, data, options = {}) {
   return sendRequest(url, {
     ...options,
     method: 'POST',
@@ -182,7 +187,7 @@ export async function postRequest(url, data, options = {}) {
 /**
  * 发送 PUT 请求
  */
-export async function putRequest(url, data, options = {}) {
+async function putRequest(url, data, options = {}) {
   return sendRequest(url, {
     ...options,
     method: 'PUT',
@@ -193,7 +198,7 @@ export async function putRequest(url, data, options = {}) {
 /**
  * 发送 PATCH 请求
  */
-export async function patchRequest(url, data, options = {}) {
+async function patchRequest(url, data, options = {}) {
   return sendRequest(url, {
     ...options,
     method: 'PATCH',
@@ -204,14 +209,14 @@ export async function patchRequest(url, data, options = {}) {
 /**
  * 发送 DELETE 请求
  */
-export async function deleteRequest(url, options = {}) {
+async function deleteRequest(url, options = {}) {
   return sendRequest(url, { ...options, method: 'DELETE' });
 }
 
 /**
  * 批量请求工具
  */
-export async function batchRequests(requests) {
+async function batchRequests(requests) {
   const results = {};
   const errors = {};
   
@@ -244,7 +249,7 @@ export async function batchRequests(requests) {
 /**
  * 重试请求工具
  */
-export async function retryRequest(requestFn, options = {}) {
+async function retryRequest(requestFn, options = {}) {
   const {
     maxRetries = 3,
     retryDelay = 1000,
@@ -279,7 +284,7 @@ export async function retryRequest(requestFn, options = {}) {
 /**
  * 缓存请求工具
  */
-export class CachedRequest {
+class CachedRequest {
   constructor(options = {}) {
     this.cache = new Map();
     this.maxAge = options.maxAge || 5 * 60 * 1000; // 5分钟
@@ -368,16 +373,58 @@ export class CachedRequest {
 /**
  * 创建缓存请求实例
  */
-export function createCachedRequest(options = {}) {
+function createCachedRequest(options = {}) {
   return new CachedRequest(options);
 }
 
-// 导出便捷函数
-export const get = getRequest;
-export const post = postRequest;
-export const put = putRequest;
-export const patch = patchRequest;
-export const del = deleteRequest;
+// 在全局作用域中暴露（用于非模块环境）
+if (typeof window !== 'undefined') {
+    window.getRequest = getRequest;
+    window.postRequest = postRequest;
+    window.putRequest = putRequest;
+    window.patchRequest = patchRequest;
+    window.deleteRequest = deleteRequest;
+    window.sendRequest = sendRequest;
+    window.batchRequests = batchRequests;
+    window.retryRequest = retryRequest;
+    window.CachedRequest = CachedRequest;
+    window.createCachedRequest = createCachedRequest;
+}
+
+// ES6模块导出（用于模块环境）
+export {
+    getRequest,
+    postRequest,
+    putRequest,
+    patchRequest,
+    deleteRequest,
+    sendRequest,
+    batchRequests,
+    retryRequest,
+    CachedRequest,
+    createCachedRequest
+};
+
+// 确保在ES6模块环境中也能全局访问
+// 这对于混合使用模块和传统script标签的页面很重要
+if (typeof window !== 'undefined') {
+    // 如果函数还没有暴露到全局，则暴露它们
+    if (!window.getRequest) window.getRequest = getRequest;
+    if (!window.postRequest) window.postRequest = postRequest;
+    if (!window.putRequest) window.putRequest = putRequest;
+    if (!window.patchRequest) window.patchRequest = patchRequest;
+    if (!window.deleteRequest) window.deleteRequest = deleteRequest;
+    if (!window.sendRequest) window.sendRequest = sendRequest;
+    if (!window.batchRequests) window.batchRequests = batchRequests;
+    if (!window.retryRequest) window.retryRequest = retryRequest;
+    if (!window.CachedRequest) window.CachedRequest = CachedRequest;
+    if (!window.createCachedRequest) window.createCachedRequest = createCachedRequest;
+}
+
+// 注意：由于HTML使用普通script标签，不支持ES6模块语法
+// 如果需要ES6模块支持，请将script标签改为 type="module"
+// 或者使用动态import()语法
+
 
 
 

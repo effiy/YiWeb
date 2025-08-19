@@ -34,22 +34,15 @@ const createSearchHeader = async () => {
                 type: String,
                 default: ''
             },
-            categories: {
+            // 新增：当前视图
+            currentView: {
+                type: String,
+                default: 'list'
+            },
+            // 新增：可用视图列表
+            availableViews: {
                 type: Array,
                 default: () => []
-            },
-            selectedCategories: {
-                type: Set,
-                default: () => new Set()
-            },
-            // 新增：顶部分类（all/news/comments）
-            activeCategory: {
-                type: String,
-                default: ''
-            },
-            sidebarCollapsed: {
-                type: Boolean,
-                default: false
             },
             // 新增：原始数据源，用于生成搜索建议
             originalData: {
@@ -57,7 +50,7 @@ const createSearchHeader = async () => {
                 default: () => []
             }
         },
-        emits: ['update:searchQuery', 'search-keydown', 'clear-search', 'toggle-category', 'toggle-sidebar', 'filter-change'],
+        emits: ['update:searchQuery', 'search-keydown', 'clear-search', 'set-current-view', 'filter-change'],
         data() {
             return {
                 // 搜索建议相关
@@ -156,7 +149,9 @@ const createSearchHeader = async () => {
              */
             hasSuggestions() {
                 return this.computedSearchSuggestions.length > 0;
-            }
+            },
+
+
         },
         methods: {
             goHome() {
@@ -310,5 +305,6 @@ const createSearchHeader = async () => {
         console.error('SearchHeader 组件初始化失败:', error);
     }
 })(); 
+
 
 

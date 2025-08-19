@@ -3,7 +3,8 @@
  * author: liangliang
  */
 
-import { getCategoriesConfig, categorizeTask } from '/views/tasks/hooks/store.js';
+// 模块依赖改为全局方式
+// import { getCategoriesConfig, categorizeTask } from '/views/tasks/hooks/store.js';
 
 // 兼容Vue2和Vue3的computed获取方式
 const computed = typeof Vue !== 'undefined' && Vue.computed ? Vue.computed : (fn) => fn;
@@ -13,21 +14,24 @@ const computed = typeof Vue !== 'undefined' && Vue.computed ? Vue.computed : (fn
  * @param {Object} store - 数据存储对象
  * @returns {Object} 计算属性对象
  */
-export const useComputed = (store) => {
+window.useComputed = (store) => {
     const {
         tasksData,
         searchQuery,
         selectedCategories,
         clickedItems,
         selectedTask,
-        isDetailVisible
+        isDetailVisible,
+        currentView,
+        dateRange,
+        timeFilter
     } = store;
 
     return {
         /**
          * 获取分类配置
          */
-        categories: computed(() => getCategoriesConfig()),
+        categories: computed(() => window.window.getCategoriesConfig()),
 
         /**
          * 过滤后的任务数据
@@ -99,7 +103,7 @@ export const useComputed = (store) => {
             // 根据选中的分类过滤
             if (selectedCategories.value.size > 0) {
                 filtered = filtered.filter(task => {
-                    const taskCategory = categorizeTask(task);
+                    const taskCategory = window.window.categorizeTask(task);
                     return selectedCategories.value.has(taskCategory);
                 });
             }
@@ -126,11 +130,11 @@ export const useComputed = (store) => {
          * 根据当前任务数据动态生成
          */
         displayCategories: computed(() => {
-            const categories = getCategoriesConfig();
+            const categories = window.getCategoriesConfig();
             const taskCategories = new Set();
             
             tasksData.value.forEach(task => {
-                taskCategories.add(categorizeTask(task));
+                taskCategories.add(window.categorizeTask(task));
             });
 
             return categories.filter(category => taskCategories.has(category.key));
@@ -147,13 +151,13 @@ export const useComputed = (store) => {
             };
 
             // 按分类统计
-            const categories = getCategoriesConfig();
+            const categories = window.getCategoriesConfig();
             categories.forEach(category => {
                 stats.categories[category.key] = 0;
             });
 
             tasksData.value.forEach(task => {
-                const category = categorizeTask(task);
+                const category = window.categorizeTask(task);
                 if (stats.categories[category] !== undefined) {
                     stats.categories[category]++;
                 }
@@ -235,7 +239,7 @@ export const useComputed = (store) => {
             }
 
             // 根据分类添加样式
-            const category = categorizeTask(task);
+            const category = window.categorizeTask(task);
             classes.push(`category-${category}`);
 
             return classes.join(' ');
@@ -246,8 +250,8 @@ export const useComputed = (store) => {
          * 获取任务的分类信息
          */
         getTaskCategoryInfo: (task) => {
-            const category = categorizeTask(task);
-            const categories = getCategoriesConfig();
+            const category = window.categorizeTask(task);
+            const categories = window.getCategoriesConfig();
             return categories.find(cat => cat.key === category) || categories[0];
         },
 
@@ -259,8 +263,56 @@ export const useComputed = (store) => {
         /**
          * 详情面板是否可见
          */
-        isDetailVisible: computed(() => isDetailVisible.value)
+        isDetailVisible: computed(() => isDetailVisible.value),
+
+        /**
+         * 当前视图模式
+         */
+        currentView: computed(() => currentView.value),
+
+        /**
+         * 可用视图列表
+         */
+        availableViews: computed(() => [
+            {
+                key: 'list',
+                name: '列表视图',
+                icon: 'fas fa-list',
+                description: '以列表形式查看和管理任务'
+            },
+            {
+                key: 'gantt',
+                name: '甘特图',
+                icon: 'fas fa-chart-bar',
+                description: '以时间线方式查看任务进度和依赖关系'
+            },
+            {
+                key: 'weekly',
+                name: '周报',
+                icon: 'fas fa-calendar-week',
+                description: '查看本周任务统计和完成情况'
+            },
+            {
+                key: 'daily',
+                name: '日报',
+                icon: 'fas fa-calendar-day',
+                description: '管理今日任务和时间安排'
+            }
+        ]),
+
+
+
+        /**
+         * 日期范围
+         */
+        dateRange: computed(() => dateRange.value),
+
+        /**
+         * 时间过滤器
+         */
+        timeFilter: computed(() => timeFilter.value)
     };
 }; 
+
 
 

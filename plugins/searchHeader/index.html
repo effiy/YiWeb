@@ -66,32 +66,22 @@
                 </div>
             </div>
         </div>
-        <div class="category-filters">
-            <div class="filter-buttons">
+        <div class="view-switcher-container">
+            <div class="view-switcher">
                 <button 
-                    v-for="category in categories" 
-                    :key="category.key"
-                    @click="$emit('toggle-category', category.key)"
-                    :class="['filter-btn', { active: (activeCategory ? activeCategory === category.key : selectedCategories.has(category.key)) }]"
-                    :data-category="category.key"
-                    :title="category.title"
+                    v-for="view in availableViews" 
+                    :key="view.key"
+                    @click="$emit('set-current-view', view.key)"
+                    :class="['view-btn', { active: currentView === view.key }]"
+                    :title="view.description"
+                    :aria-label="view.description"
                 >
-                    <i :class="category.icon"></i>
-                    {{ category.title }}
+                    <i :class="view.icon"></i>
+                    <span>{{ view.name }}</span>
                 </button>
             </div>
-            <!-- 收缩按钮 -->
-            <button 
-                @click="$emit('toggle-sidebar')"
-                class="sidebar-toggle-btn"
-                :title="sidebarCollapsed ? '展开侧边栏' : '收缩侧边栏'"
-                :aria-label="sidebarCollapsed ? '展开侧边栏' : '收缩侧边栏'"
-                :aria-expanded="!sidebarCollapsed"
-            >
-                <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" aria-hidden="true"></i>
-                <span class="sr-only">{{ sidebarCollapsed ? '展开侧边栏' : '收缩侧边栏' }}</span>
-            </button>
         </div>
     </div>
 </header> 
+
 

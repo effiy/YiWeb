@@ -1,43 +1,37 @@
-// API 模块入口文件
+// API 模块入口文件 - 全局变量版本
 // 作者：liangliang
 
-// 导出所有辅助函数
-export * from '/apis/helper/checkStatus.js';
-export * from '/apis/helper/requestHelper.js';
-export * from '/apis/helper/apiUtils.js';
+// 注意：此文件已转换为全局变量方式，避免ES6模块语法错误
+// API函数将通过其他API文件以全局变量方式暴露
+console.log('[APIs] API模块聚合文件已加载');
 
-// 导出所有 CRUD 操作
-export * from '/apis/modules/crud.js';
+// ES6模块导出（用于模块环境）
+// 重新导出所有API函数，确保模块导入正常工作
 
-// 导出常用组合函数
-import { getData, postData, updateData, patchData, deleteData, batchOperations, CacheManager } from '/apis/modules/crud.js';
-import { buildUrl, debounce, throttle, isOnline } from '/apis/helper/apiUtils.js';
+// 从checkStatus.js导出
+export { checkStatus, isJsonResponse } from './helper/checkStatus.js';
 
-/**
- * 简化的 API 客户端
- */
-export const apiClient = {
-  // 基础 CRUD 操作
-  get: getData,
-  post: postData,
-  put: updateData,
-  patch: patchData,
-  delete: deleteData,
-  
-  // 批量操作
-  batch: batchOperations,
-  
-  // 缓存管理
-  cache: CacheManager,
-  
-  // 工具函数
-  buildUrl,
+// 从requestHelper.js导出
+export {
+    getRequest,
+    postRequest,
+    putRequest,
+    patchRequest,
+    deleteRequest,
+    sendRequest,
+    batchRequests,
+    retryRequest,
+    CachedRequest,
+    createCachedRequest
+} from './helper/requestHelper.js';
 
-  debounce,
-  throttle,
-  isOnline
-};
-
-// 默认导出 API 客户端
-export default apiClient;
-
+// 从crud.js导出
+export {
+    getData,
+    postData,
+    updateData,
+    patchData,
+    deleteData,
+    batchOperations,
+    CacheManager
+} from './modules/crud.js';

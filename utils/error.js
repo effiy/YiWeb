@@ -304,4 +304,19 @@ export async function safeExecuteAsync(fn, context = '', onError = null) {
 }
 
 // 导出错误记录器实例
-export { errorLogger }; 
+export { errorLogger };
+
+// 在全局作用域中暴露（用于非模块环境）
+if (typeof window !== 'undefined') {
+    window.ErrorTypes = ErrorTypes;
+    window.ErrorLevels = ErrorLevels;
+    window.createError = createError;
+    window.handleError = handleError;
+    window.showErrorMessage = showErrorMessage;
+    window.showSuccessMessage = showSuccessMessage;
+    window.validateParameter = validateParameter;
+    window.safeExecute = safeExecute;
+    window.safeExecuteAsync = safeExecuteAsync;
+    window.errorLogger = errorLogger;
+} 
+

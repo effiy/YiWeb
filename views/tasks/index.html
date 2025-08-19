@@ -3,80 +3,349 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="任务管理助手，为您提供任务规划、进度跟踪、时间管理等多种智能服务">
-    <meta name="keywords" content="任务管理, 项目管理, 时间管理, 进度跟踪, YiWeb">
-    <meta name="author" content="liangliang">
+    <title>TaskPro Enterprise | 世界级专业任务管理系统</title>
     
-    <!-- DNS 预解析优化 -->
-    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
-    
-    <title>YiWeb - 智能任务助手</title>
-    
-    <!-- 页面样式 -->
+    <!-- 引入CSS文件 -->
+    <link rel="stylesheet" href="/css/index.css">
     <link rel="stylesheet" href="/views/tasks/index.css">
-    <!-- 图标库 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="/views/tasks/plugins/kanbanBoard/index.css">
+    <link rel="stylesheet" href="/views/tasks/plugins/enhancedGanttChart/index.css">
+    <link rel="stylesheet" href="/views/tasks/plugins/calendarView/index.css">
+    <link rel="stylesheet" href="/views/tasks/plugins/matrixView/index.css">
 
-
-    <!-- Vue3 CDN -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- 引入字体图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 引入专业字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- 元信息 -->
+    <meta name="description" content="世界级专业任务管理系统，支持敏捷开发、项目管理、团队协作">
+    <meta name="keywords" content="任务管理,项目管理,敏捷开发,团队协作,看板,甘特图,专业版">
+    <meta name="author" content="TaskPro Enterprise Team">
+    
+    <!-- 专业性样式 -->
+    <style>
+        * { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        body {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            overflow-x: hidden;
+        }
+        
+        input, textarea, [contenteditable], .selectable {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+        
+        .global-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 1;
+            visibility: visible;
+            transition: all 0.5s ease;
+        }
+        
+        .global-loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loader-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .loader-logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            animation: pulse 2s infinite;
+        }
+        
+        .loader-text {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+        }
+        
+        .loader-progress {
+            width: 200px;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        
+        .loader-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #fff, rgba(255,255,255,0.8));
+            border-radius: 2px;
+            animation: loadingBar 3s ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        @keyframes loadingBar {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+    </style>
 </head>
 <body>
+    <!-- 全局加载器 -->
+    <div id="globalLoader" class="global-loader">
+        <div class="loader-content">
+            <div class="loader-logo">
+                <i class="fas fa-layer-group"></i>
+            </div>
+            <div class="loader-text">TaskPro Enterprise</div>
+            <div class="loader-progress">
+                <div class="loader-bar"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="app">
-        <!-- 顶部搜索与分类区域 -->
-        <search-header
-            v-model:search-query="searchQuery"
-            :categories="categories"
-            :selected-categories="selectedCategories"
-            :original-data="tasksData"
-            @search-keydown="handleSearchKeydown"
-            @clear-search="handleClearSearch"
-            @toggle-category="handleToggleCategory"
-            @filter-change="handleFilterChange"
-        ></search-header>
-        
+        <!-- 主要内容区域 -->
+        <div class="main-layout">
+            <!-- 主内容区 -->
         <main class="main-content" role="main">
-            <!-- 功能卡片区域 -->
-            <section class="container">
-                <!-- 任务列表组件模板 -->
-                <task-list
+                <!-- 高级工具栏 - 重构为与首页header-row一致的布局 -->
+                <div class="advanced-toolbar">
+                    <div class="toolbar-row">
+                        <div class="toolbar-left">
+                            <!-- Logo - 与首页header-row保持一致 -->
+                            <span class="toolbar-logo" aria-hidden="true" @click="goToHome">
+                                <i class="fas fa-brain" aria-label="AI大脑图标"></i>
+                            </span>
+                            
+                            <!-- 快速搜索 -->
+                            <div class="quick-search">
+                                <input type="text" 
+                                       v-model="searchQuery"
+                                       @input="handleQuickSearch"
+                                       placeholder="搜索任务内容，支持标题、描述、输入输出、步骤等..."
+                                       class="quick-search-input">
+                                <button v-if="searchQuery" @click="clearSearch" class="clear-search-btn" title="清除搜索" aria-label="清除搜索">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="toolbar-right">
+                            <!-- 视图切换 - 重构为与首页cascader一致的交互 -->
+                            <div class="view-switcher">
+                                <div class="view-cascader">
+                                    <button v-for="view in availableViews" :key="view.key"
+                                            @click="setCurrentView(view.key)"
+                                            :class="['view-btn', { active: currentView === view.key }]"
+                                            :title="view.description"
+                                            :aria-label="`切换到${view.name}视图`">
+                                        <i :class="view.icon" aria-hidden="true"></i>
+                                        <span>{{ view.name }}</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 批量操作 -->
+                            <div v-if="selectedTasks.length > 0" class="batch-actions">
+                                <span class="selected-count">已选择 {{ selectedTasks.length }} 项</span>
+                                <button @click="batchUpdateStatus" class="batch-btn" title="批量更新状态">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button @click="batchDelete" class="batch-btn danger" title="批量删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- 视图选项 -->
+                            <div class="view-options">
+                                <button @click="toggleFullscreen" class="option-btn">
+                                    <i class="fas fa-expand"></i>
+                                    <span>全屏</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 任务视图内容区 -->
+                <div class="content-area" :class="{ 'has-detail-panel': showDetailPanel }">
+                    <!-- 任务列表视图 -->
+                    <enhanced-task-list
+                        v-if="currentView === 'list'"
+                        :tasks="filteredTasks"
                     :loading="loading"
                     :error="error"
-                    :search-query="searchQuery"
-                    :search-results="filteredTasksData"
-                    :display-categories="displayCategories"
-                    :selected-categories="selectedCategories"
-                    :clicked-items="clickedItems"
-                    :has-tasks-data="hasTasksData"
-                    :selected-task="selectedTask"
-                    :is-detail-visible="isDetailVisible"
-                    @load-tasks-data="handleLoadTasksData"
+                        :selected-tasks="selectedTasks"
+                        @task-select="handleTaskSelect"
                     @task-click="handleTaskClick"
-                    @delete-task="deleteTask"
-                ></task-list>
-            </section>
+                        @task-update="handleTaskUpdate"
+                        @task-delete="handleTaskDelete"
+                        @selection-change="handleSelectionChange"
+                    ></enhanced-task-list>
+                    
+                    <!-- 看板视图 -->
+                    <kanban-board
+                        v-if="currentView === 'kanban'"
+                        :tasks="filteredTasks"
+                        @task-move="handleTaskMove"
+                        @task-select="handleTaskSelect"
+                        @task-create="handleTaskCreate"
+                    ></kanban-board>
+                    
+                    <!-- 甘特图视图 -->
+                    <enhanced-gantt-chart
+                        v-if="currentView === 'gantt'"
+                        :tasks="filteredTasks"
+                        @task-update="handleTaskUpdate"
+                    ></enhanced-gantt-chart>
+                    
+                    <!-- 周报视图 -->
+                    <weekly-report
+                        v-if="currentView === 'weekly'"
+                        :tasks="filteredTasks"
+                        :current-view="currentView"
+                        @task-select="handleTaskSelect"
+                    ></weekly-report>
+                    
+                    <!-- 日报视图 -->
+                    <daily-report
+                        v-if="currentView === 'daily'"
+                        :tasks="filteredTasks"
+                        :current-view="currentView"
+                        @task-select="handleTaskSelect"
+                    ></daily-report>
+                    
+
+                    
+
+                    
+                    <!-- 矩阵视图 -->
+                    <matrix-view
+                        v-if="currentView === 'matrix'"
+                        :tasks="filteredTasks"
+                        @task-select="handleTaskSelect"
+                    ></matrix-view>
+                </div>
+                
+                <!-- 任务详情面板 -->
+                <aside v-if="showDetailPanel" class="detail-panel" role="complementary">
+                    <enhanced-task-detail
+                        :task="selectedTask"
+                        @task-update="handleTaskUpdate"
+                        @close="closeDetailPanel"
+                    ></enhanced-task-detail>
+                </aside>
         </main>
     </div>
 
+        
+    </div>
+
+    <!-- 引入Vue.js -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     
+    <!-- 引入工具类（使用ES6模块） -->
+    <script src="/utils/index.js"></script>
+    <script type="module" src="/utils/log.js"></script>
+    <script type="module" src="/utils/baseView.js"></script>
+    
+    <!-- 引入API模块（使用ES6模块） -->
+    <script type="module" src="/apis/index.js"></script>
+    <script type="module" src="/apis/helper/checkStatus.js"></script>
+    <script type="module" src="/apis/helper/requestHelper.js"></script>
+    <script type="module" src="/apis/modules/crud.js"></script>
+    
+    <!-- 引入数据（必须在其他脚本之前加载） -->
+    <script src="/views/tasks/data/mockData.js"></script>
+    
+    <!-- 引入hooks逻辑 -->
+    <script src="/views/tasks/hooks/store.js"></script>
+    <script src="/views/tasks/hooks/useComputed.js"></script>
+    <script src="/views/tasks/hooks/useMethods.js"></script>
+    
+    <!-- 引入新组件（优先兼容现有组件） -->
+    <script src="/views/tasks/plugins/enhancedTaskList/index.js"></script>
+    <script src="/views/tasks/plugins/kanbanBoard/index.js"></script>
+    <script src="/views/tasks/plugins/enhancedGanttChart/index.js"></script>
 
-    <!-- 错误提示 -->
-    <section id="error-message" class="error-message" role="alert" aria-live="assertive" hidden></section>
-
-    <!-- 通知容器 -->
-    <section id="notifications" class="notifications-container" role="region" aria-label="通知区域"></section>
-
-    <script type="module" src="/config.js"></script>
-
-
-
-    <!-- 主功能脚本 -->
-    <script type="module" src="/plugins/searchHeader/index.js"></script>
-    <script type="module" src="/views/tasks/plugins/taskList/index.js"></script>
-    <script type="module" src="/views/tasks/index.js"></script>
-    <!-- 性能监控脚本 -->
-    <script type="module" src="/utils/performance.js"></script>
+    <script src="/views/tasks/plugins/matrixView/index.js"></script>
+    <script src="/views/tasks/plugins/enhancedTaskDetail/index.js"></script>
+    
+    <!-- 兼容现有组件 -->
+    <script src="/views/tasks/plugins/taskList/index.js"></script>
+    <script src="/views/tasks/plugins/ganttChart/index.js"></script>
+    <script src="/views/tasks/plugins/weeklyReport/index.js"></script>
+    <script src="/views/tasks/plugins/dailyReport/index.js"></script>
+    
+    <!-- 引入页面逻辑 -->
+    <script src="/views/tasks/index.js"></script>
+    
+    <!-- 初始化脚本 -->
+    <script>
+        // 页面加载完成后隐藏加载器
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                const loader = document.getElementById('globalLoader');
+                if (loader) {
+                    loader.classList.add('hidden');
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                    }, 500);
+                }
+            }, 1000);
+        });
+        
+        // 快捷键支持
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                const searchInput = document.querySelector('.global-search-input');
+                if (searchInput) {
+                    searchInput.focus();
+                }
+            }
+            
+            if (e.key === 'F1') {
+                e.preventDefault();
+            }
+            
+            if (e.key >= '1' && e.key <= '7' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                e.preventDefault();
+            }
+        });
+        
+        // 禁用右键菜单，增强专业性
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+    </script>
 </body>
 </html> 
-
 

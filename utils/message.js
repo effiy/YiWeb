@@ -555,4 +555,16 @@ export const updateMessagePositionManually = () => {
 };
 
 // 导出消息类型
-export { MESSAGE_TYPES }; 
+export { MESSAGE_TYPES };
+
+// 在全局作用域中暴露（用于非模块环境）
+if (typeof window !== 'undefined') {
+    window.showMessage = showMessage;
+    window.showSuccess = showSuccess;
+    window.showError = showError;
+    window.showWarning = showWarning;
+    window.showInfo = showInfo;
+    window.clearMessages = clearMessages;
+    window.MESSAGE_TYPES = MESSAGE_TYPES;
+} 
+
