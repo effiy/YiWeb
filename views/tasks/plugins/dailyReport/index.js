@@ -53,6 +53,10 @@ const createDailyReport = async () => {
             selectedTask: {
                 type: Object,
                 default: null
+            },
+            getTaskTimeData: {
+                type: Function,
+                default: null
             }
         },
         
@@ -415,7 +419,7 @@ const createDailyReport = async () => {
              */
             getHourTasks(hour) {
                 return this.todayTasks.filter(task => {
-                    const timeData = this.getTaskTimeData(task);
+                    const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                     const startTime = timeData.startTime || '09:00';
                     const startHour = parseInt(startTime.split(':')[0]);
                     const duration = (timeData.estimatedHours || 1) * 60; // 转换为分钟
@@ -436,7 +440,7 @@ const createDailyReport = async () => {
              * 获取任务状态
              */
             getTaskStatus(task) {
-                const timeData = this.getTaskTimeData(task);
+                const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                 return timeData.status || 'todo';
             },
             
@@ -451,7 +455,7 @@ const createDailyReport = async () => {
              * 获取任务优先级
              */
             getTaskPriority(task) {
-                const timeData = this.getTaskTimeData(task);
+                const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                 return timeData.priority || 'medium';
             },
             
@@ -459,7 +463,7 @@ const createDailyReport = async () => {
              * 获取任务分类
              */
             getTaskCategory(task) {
-                const timeData = this.getTaskTimeData(task);
+                const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                 const categoryMap = {
                     'development': '开发',
                     'design': '设计',
@@ -474,7 +478,7 @@ const createDailyReport = async () => {
              * 获取任务时间范围
              */
             getTaskTimeRange(task) {
-                const timeData = this.getTaskTimeData(task);
+                const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                 const startTime = timeData.startTime || '09:00';
                 const duration = (timeData.estimatedHours || 1) * 60; // 分钟
                 
@@ -493,7 +497,7 @@ const createDailyReport = async () => {
              * 获取任务持续时间（分钟）
              */
             getTaskDuration(task) {
-                const timeData = this.getTaskTimeData(task);
+                const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                 return (timeData.estimatedHours || 1) * 60;
             },
             
@@ -501,7 +505,7 @@ const createDailyReport = async () => {
              * 获取任务进度
              */
             getTaskProgress(task) {
-                const timeData = this.getTaskTimeData(task);
+                const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                 return timeData.progress || 0;
             },
             
@@ -509,7 +513,7 @@ const createDailyReport = async () => {
              * 获取任务已花费时间
              */
             getTaskSpentTime(task) {
-                const timeData = this.getTaskTimeData(task);
+                const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                 return (timeData.actualHours || 0) * 60;
             },
             
@@ -639,7 +643,7 @@ const createDailyReport = async () => {
                     const elapsedHours = elapsed / 60;
                     
                     // 更新任务实际用时
-                    const timeData = this.getTaskTimeData(task);
+                    const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                     const newActualHours = (timeData.actualHours || 0) + elapsedHours;
                     
                     this.updateTaskTimeData(task, {
@@ -674,7 +678,7 @@ const createDailyReport = async () => {
              * 更新任务状态
              */
             updateTaskStatus(task, status) {
-                const timeData = this.getTaskTimeData(task);
+                const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                 this.updateTaskTimeData(task, {
                     ...timeData,
                     status: status
@@ -871,6 +875,34 @@ const createDailyReport = async () => {
              */
             loadTasksData() {
                 this.$emit('load-tasks-data');
+            },
+            
+            /**
+             * 获取默认任务时间数据
+             */
+            getDefaultTaskTimeData(task) {
+                if (!task.timeData) {
+                    const now = new Date();
+                    const startDate = new Date(now);
+                    const endDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                    
+                    return {
+                        startDate: startDate.toISOString().split('T')[0],
+                        endDate: endDate.toISOString().split('T')[0],
+                        estimatedHours: 8,
+                        actualHours: 0,
+                        priority: 'medium',
+                        status: 'todo',
+                        progress: 0,
+                        dependencies: [],
+                        category: 'development',
+                        assignee: '',
+                        tags: task.tags || [],
+                        createdAt: now.toISOString(),
+                        updatedAt: now.toISOString()
+                    };
+                }
+                return task.timeData;
             }
         },
         
@@ -909,5 +941,6 @@ const createDailyReport = async () => {
         console.error('DailyReport 组件初始化失败:', error);
     }
 })();
+
 
 

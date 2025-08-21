@@ -577,6 +577,36 @@ class TaskProApp {
                     }
                 },
                 methods: {
+                    // 从store.methods获取方法
+                    getTaskTimeData(task) {
+                        if (window.store && window.store.methods && window.store.methods.getTaskTimeData) {
+                            return window.store.methods.getTaskTimeData(task);
+                        }
+                        // 如果没有store方法，返回默认值
+                        if (!task.timeData) {
+                            const now = new Date();
+                            const startDate = new Date(now);
+                            const endDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                            
+                            return {
+                                startDate: startDate.toISOString().split('T')[0],
+                                endDate: endDate.toISOString().split('T')[0],
+                                estimatedHours: 8,
+                                actualHours: 0,
+                                priority: 'medium',
+                                status: 'todo',
+                                progress: 0,
+                                dependencies: [],
+                                category: 'development',
+                                assignee: '',
+                                tags: task.tags || [],
+                                createdAt: now.toISOString(),
+                                updatedAt: now.toISOString()
+                            };
+                        }
+                        return task.timeData;
+                    },
+                    
                     // 加载任务数据
                     async loadTasksData() {
                         try {
@@ -2104,5 +2134,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
+
 
 

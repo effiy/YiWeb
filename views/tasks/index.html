@@ -388,6 +388,7 @@
                         v-if="currentView === 'weekly'"
                         :tasks="filteredTasks"
                         :current-view="currentView"
+                        :get-task-time-data="getTaskTimeData"
                         @task-select="handleTaskSelect"
                     ></weekly-report>
                     
@@ -396,6 +397,7 @@
                         v-if="currentView === 'daily'"
                         :tasks="filteredTasks"
                         :current-view="currentView"
+                        :get-task-time-data="getTaskTimeData"
                         @task-select="handleTaskSelect"
                     ></daily-report>
                     <!-- 矩阵视图 -->
@@ -594,5 +596,6 @@
     </script>
 </body>
 </html> 
+
 
 

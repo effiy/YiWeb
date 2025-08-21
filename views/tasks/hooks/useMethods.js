@@ -714,24 +714,212 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
             }
             console.log('[下载] 开始下载任务数据，任务数量:', tasks.length);
 
-            // 构建下载数据结构
+            // 构建下载数据结构 - 与mockData.js保持一致
             const downloadData = {
                 exportTime: new Date().toISOString(),
                 totalTasks: tasks.length,
+                // 导出枚举定义，确保数据结构完整性
+                enums: {
+                    TASK_PRIORITY: {
+                        CRITICAL: { value: 'critical', label: '紧急', color: '#ff4757', weight: 4 },
+                        HIGH: { value: 'high', label: '高优先级', color: '#ff6b35', weight: 3 },
+                        MEDIUM: { value: 'medium', label: '中等优先级', color: '#ffa726', weight: 2 },
+                        LOW: { value: 'low', label: '低优先级', color: '#66bb6a', weight: 1 },
+                        NONE: { value: 'none', label: '无优先级', color: '#9e9e9e', weight: 0 }
+                    },
+                    TASK_STATUS: {
+                        BACKLOG: { value: 'backlog', label: '待办', color: '#9e9e9e', category: 'todo' },
+                        TODO: { value: 'todo', label: '计划中', color: '#2196f3', category: 'todo' },
+                        IN_PROGRESS: { value: 'in_progress', label: '进行中', color: '#ff9800', category: 'active' },
+                        IN_REVIEW: { value: 'in_review', label: '待审核', color: '#9c27b0', category: 'active' },
+                        TESTING: { value: 'testing', label: '测试中', color: '#673ab7', category: 'active' },
+                        COMPLETED: { value: 'completed', label: '已完成', color: '#4caf50', category: 'done' },
+                        CANCELLED: { value: 'cancelled', label: '已取消', color: '#f44336', category: 'done' },
+                        ON_HOLD: { value: 'on_hold', label: '暂停', color: '#795548', category: 'blocked' }
+                    },
+                    TASK_TYPE: {
+                        FEATURE: { value: 'feature', label: '功能开发', icon: 'fas fa-plus-circle', color: '#2196f3' },
+                        BUG: { value: 'bug', label: '缺陷修复', icon: 'fas fa-bug', color: '#f44336' },
+                        IMPROVEMENT: { value: 'improvement', label: '优化改进', icon: 'fas fa-arrow-up', color: '#ff9800' },
+                        DOCUMENTATION: { value: 'documentation', label: '文档编写', icon: 'fas fa-file-alt', color: '#9c27b0' },
+                        RESEARCH: { value: 'research', label: '研究调研', icon: 'fas fa-search', color: '#00bcd4' },
+                        MAINTENANCE: { value: 'maintenance', label: '维护', icon: 'fas fa-tools', color: '#795548' },
+                        MEETING: { value: 'meeting', label: '会议', icon: 'fas fa-users', color: '#607d8b' },
+                        REVIEW: { value: 'review', label: '评审', icon: 'fas fa-eye', color: '#9c27b0' }
+                    },
+                    TASK_COMPLEXITY: {
+                        XS: { value: 'xs', label: 'XS (0.5天)', points: 1, hours: 4 },
+                        S: { value: 's', label: 'S (1天)', points: 2, hours: 8 },
+                        M: { value: 'm', label: 'M (2-3天)', points: 3, hours: 20 },
+                        L: { value: 'l', label: 'L (1周)', points: 5, hours: 40 },
+                        XL: { value: 'xl', label: 'XL (2周)', points: 8, hours: 80 },
+                        XXL: { value: 'xxl', label: 'XXL (1月)', points: 13, hours: 160 }
+                    }
+                },
+                // 导出标签数据
+                labels: [
+                    { id: 'label-001', name: '认证', color: '#2196f3' },
+                    { id: 'label-002', name: '安全', color: '#f44336' },
+                    { id: 'label-003', name: '重构', color: '#ff9800' },
+                    { id: 'label-004', name: '监控', color: '#9c27b0' },
+                    { id: 'label-005', name: '仪表板', color: '#00bcd4' },
+                    { id: 'label-006', name: '性能', color: '#4caf50' },
+                    { id: 'label-007', name: '移动端', color: '#e91e63' },
+                    { id: 'label-008', name: '响应式', color: '#673ab7' },
+                    { id: 'label-009', name: '用户体验', color: '#ff5722' },
+                    { id: 'label-010', name: '数据库', color: '#607d8b' },
+                    { id: 'label-011', name: '优化', color: '#ff9800' },
+                    { id: 'label-012', name: '漏洞', color: '#e91e63' },
+                    { id: 'label-013', name: 'API', color: '#3f51b5' },
+                    { id: 'label-014', name: '架构', color: '#795548' },
+                    { id: 'label-015', name: '微服务', color: '#607d8b' },
+                    { id: 'label-016', name: '设计', color: '#9c27b0' },
+                    { id: 'label-017', name: '组件库', color: '#2196f3' },
+                    { id: 'label-018', name: '前端', color: '#00bcd4' },
+                    { id: 'label-019', name: '设计系统', color: '#9c27b0' },
+                    { id: 'label-020', name: '测试', color: '#4caf50' },
+                    { id: 'label-021', name: '自动化', color: '#ff9800' },
+                    { id: 'label-022', name: '质量保证', color: '#2196f3' },
+                    { id: 'label-023', name: '用户反馈', color: '#e91e63' },
+                    { id: 'label-024', name: '产品功能', color: '#ff5722' },
+                    { id: 'label-025', name: '容器化', color: '#00bcd4' },
+                    { id: 'label-026', name: 'DevOps', color: '#607d8b' },
+                    { id: 'label-027', name: '部署', color: '#795548' },
+                    { id: 'label-028', name: '会议', color: '#607d8b' },
+                    { id: 'label-029', name: '评审', color: '#9c27b0' },
+                    { id: 'label-030', name: '技术决策', color: '#2196f3' },
+                    { id: 'label-031', name: '文档', color: '#9c27b0' },
+                    { id: 'label-032', name: '维护', color: '#795548' },
+                    { id: 'label-033', name: '告警', color: '#f44336' },
+                    { id: 'label-034', name: '运维', color: '#607d8b' },
+                    { id: 'label-035', name: '代码质量', color: '#4caf50' },
+                    { id: 'label-036', name: 'CI/CD', color: '#ff9800' },
+                    { id: 'label-037', name: '工具集成', color: '#2196f3' },
+                    { id: 'label-038', name: '数据分析', color: '#00bcd4' },
+                    { id: 'label-039', name: '用户行为', color: '#e91e63' },
+                    { id: 'label-040', name: '产品决策', color: '#ff5722' },
+                    { id: 'label-041', name: '云原生', color: '#00bcd4' },
+                    { id: 'label-042', name: '机器学习', color: '#9c27b0' },
+                    { id: 'label-043', name: '区块链', color: '#ff9800' },
+                    { id: 'label-044', name: '物联网', color: '#4caf50' },
+                    { id: 'label-045', name: '人工智能', color: '#e91e63' },
+                    { id: 'label-046', name: '大数据', color: '#3f51b5' },
+                    { id: 'label-047', name: '云计算', color: '#00bcd4' },
+                    { id: 'label-048', name: '移动开发', color: '#ff5722' },
+                    { id: 'label-049', name: 'Web开发', color: '#2196f3' },
+                    { id: 'label-050', name: '后端开发', color: '#795548' }
+                ],
+                // 工作流状态配置
+                workflowConfig: {
+                    'feature': [
+                        'backlog',
+                        'todo',
+                        'in_progress',
+                        'in_review',
+                        'testing',
+                        'completed'
+                    ],
+                    'bug': [
+                        'todo',
+                        'in_progress',
+                        'in_review',
+                        'testing',
+                        'completed',
+                        'cancelled'
+                    ],
+                    'improvement': [
+                        'backlog',
+                        'todo',
+                        'in_progress',
+                        'completed'
+                    ]
+                },
+                // 转换任务数据为mockData.js格式
                 tasks: tasks.map(task => ({
-                    id: task.key || task.id,
+                    // 基本信息 - 与mockData.js保持一致
+                    id: task.key || task.id || `TASK-${Date.now()}`,
                     title: task.title || 'Untitled Task',
-                    description: task.description || '',
-                    content: task.content || '',
-                    status: task.status || 'pending',
+                    description: task.description || task.content || '',
+                    type: task.type || 'feature',
+                    status: task.status || 'todo',
                     priority: task.priority || 'medium',
-                    category: task.category || '',
-                    tags: task.tags || [],
-                    steps: task.steps || [],
-                    createTime: task.createTime || new Date().toISOString(),
-                    updateTime: task.updateTime || new Date().toISOString(),
+                    complexity: task.complexity || 'm',
                     
-                    // 周报属性
+                    // 时间信息 - 使用ISO格式
+                    createdAt: task.createTime || task.createdAt || new Date().toISOString(),
+                    updatedAt: task.updateTime || task.updatedAt || new Date().toISOString(),
+                    dueDate: task.dueDate || task.deadline || null,
+                    startDate: task.startDate || task.startTime || null,
+                    
+                    // 工作量信息
+                    estimatedHours: task.estimatedHours || task.estimatedDuration || 0,
+                    actualHours: task.actualHours || task.actualDuration || 0,
+                    progress: task.progress || 0,
+                    
+                    // 子任务统计
+                    completedSubtasks: task.completedSubtasks || 0,
+                    totalSubtasks: task.totalSubtasks || 0,
+                    
+                    // 特征信息 - 从URL或任务数据获取
+                    featureName: task.featureName || '',
+                    cardTitle: task.cardTitle || '',
+                    
+                    // 输入输出
+                    input: task.input || '',
+                    output: task.output || '',
+                    
+                    // 步骤信息
+                    steps: task.steps || {},
+                    
+                    // 标签 - 转换为mockData.js格式
+                    labels: (task.tags || task.labels || []).map((tag, index) => ({
+                        id: tag.id || `label-${String(index + 1).padStart(3, '0')}`,
+                        name: tag.name || tag,
+                        color: tag.color || '#2196f3'
+                    })),
+                    
+                    // Epic信息
+                    epic: task.epic || {
+                        id: 'epic-default',
+                        name: '默认Epic',
+                        code: 'DEFAULT'
+                    },
+                    
+                    // 依赖关系
+                    dependencies: {
+                        blockedBy: task.blockedBy || [],
+                        blocking: task.blocking || [],
+                        relatedTo: task.relatedTo || []
+                    },
+                    
+                    // 子任务 - 转换为mockData.js格式
+                    subtasks: (task.subtasks || []).map((subtask, index) => ({
+                        id: subtask.id || `SUB-${String(index + 1).padStart(3, '0')}`,
+                        title: subtask.title || subtask.name || `子任务 ${index + 1}`,
+                        status: subtask.status || 'todo',
+                        estimatedHours: subtask.estimatedHours || subtask.estimatedDuration || 0,
+                        actualHours: subtask.actualHours || subtask.actualDuration || 0
+                    })),
+                    
+                    // 自定义字段
+                    customFields: {
+                        testingRequired: task.testingRequired || false,
+                        securityReviewRequired: task.securityReviewRequired || false,
+                        documentationRequired: task.documentationRequired || false,
+                        customerImpact: task.customerImpact || 'medium',
+                        technicalRisk: task.technicalRisk || 'low'
+                    },
+                    
+                    // 时间记录
+                    timeEntries: (task.timeEntries || []).map((entry, index) => ({
+                        id: entry.id || `time-${String(index + 1).padStart(3, '0')}`,
+                        description: entry.description || entry.note || '时间记录',
+                        startTime: entry.startTime || entry.start || new Date().toISOString(),
+                        endTime: entry.endTime || entry.end || new Date().toISOString(),
+                        duration: entry.duration || 0
+                    })),
+                    
+                    // 保留原有扩展字段
                     weeklyReport: task.weeklyReport || {
                         enabled: false,
                         frequency: 'weekly',
@@ -741,8 +929,6 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
                         nextDue: null,
                         history: []
                     },
-                    
-                    // 日报属性
                     dailyReport: task.dailyReport || {
                         enabled: false,
                         frequency: 'daily',
@@ -753,32 +939,17 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
                         history: [],
                         weekends: false
                     },
-                    
-                    // 任务特征属性
                     features: task.features || {
-                        estimatedHours: 0,
-                        actualHours: 0,
                         difficulty: 'medium',
-                        type: 'development',
-                        dependencies: [],
-                        milestone: '',
-                        assignee: '',
-                        reviewer: '',
-                        labels: [],
                         businessValue: 'medium',
-                        urgency: 'medium',
-                        complexity: 'medium'
+                        urgency: 'medium'
                     },
-                    
-                    // 进度跟踪
                     progress: task.progress || {
                         percentage: 0,
                         milestones: [],
                         blockers: [],
                         notes: []
                     },
-                    
-                    // 时间跟踪
                     timeTracking: task.timeTracking || {
                         startDate: null,
                         endDate: null,
@@ -864,7 +1035,10 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
 • 总任务数：${downloadData.totalTasks} 个
 • 导出时间：${new Date(downloadData.exportTime).toLocaleString()}
 • 文件大小：${(jsonContent.length / 1024).toFixed(2)} KB
-• 文件名：${fileName}`;
+• 文件名：${fileName}
+• 数据结构：与mockData.js保持一致
+• 包含枚举：${Object.keys(downloadData.enums).length} 个
+• 包含标签：${downloadData.labels.length} 个`;
             
             // 安全检查：确保message函数存在
             if (window.showSuccess) {
@@ -875,7 +1049,8 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
             console.log('[下载] 任务数据下载完成:', {
                 totalTasks: downloadData.totalTasks,
                 fileName: fileName,
-                fileSize: (jsonContent.length / 1024).toFixed(2) + ' KB'
+                fileSize: (jsonContent.length / 1024).toFixed(2) + ' KB',
+                dataStructure: '与mockData.js保持一致'
             });
 
         } catch (error) {
@@ -1640,7 +1815,20 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
 📊 导入统计：
 • 成功导入：${importedCount} 个任务
 • 跳过任务：${skippedCount} 个
-• 总处理：${Object.keys(filesData).length} 个文件`;
+• 总处理：${Object.keys(filesData).length} 个文件
+• 导入成功率：${((importedCount / Object.keys(filesData).length) * 100).toFixed(1)}%
+
+🔍 数据质量：
+• 数据结构：与mockData.js保持一致
+• 字段映射：自动转换完成
+• 枚举验证：已通过有效性检查
+• 时间格式：已标准化为ISO格式
+
+📝 导入详情：
+• 支持的任务类型：feature, bug, improvement, documentation, research, maintenance, meeting, review
+• 支持的状态：backlog, todo, in_progress, in_review, testing, completed, cancelled, on_hold
+• 支持的优先级：critical, high, medium, low, none
+• 支持的复杂度：xs, s, m, l, xl, xxl`;
                 
                 window.showSuccess(resultMessage);
                 
@@ -1683,26 +1871,172 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
 
             for (const taskData of uploadData.tasks) {
                 try {
-                    // 构建要保存的任务对象
+                    // 构建要保存的任务对象 - 优化后的数据结构
                     const taskToSave = {
-                        title: taskData.title,
-                        description: taskData.description,
-                        content: taskData.content,
-                        status: taskData.status,
-                        priority: taskData.priority,
-                        category: taskData.category,
+                        // 基本信息 - 与mockData.js保持一致
+                        title: taskData.title || 'Untitled Task',
+                        description: taskData.description || taskData.content || '',
+                        content: taskData.description || taskData.content || '',
+                        
+                        // 任务属性 - 使用标准化的枚举值
+                        type: taskData.type || 'feature',
+                        status: taskData.status || 'todo',
+                        priority: taskData.priority || 'medium',
+                        complexity: taskData.complexity || 'm',
+                        category: taskData.category || 'development',
+                        
+                        // 特征信息 - 从数据或URL获取
                         featureName: taskData.featureName || featureName || '',
                         cardTitle: taskData.cardTitle || cardTitle || '',
-                        tags: taskData.tags,
-                        steps: taskData.steps,
-                        createTime: createSafeDate(taskData.createTime),
+                        
+                        // 时间信息 - 统一时间格式处理
+                        createTime: createSafeDate(taskData.createdAt || taskData.createTime),
                         updateTime: createSafeDate(new Date()),
-                        weeklyReport: taskData.weeklyReport,
-                        dailyReport: taskData.dailyReport,
-                        features: taskData.features,
-                        progress: taskData.progress,
-                        timeTracking: taskData.timeTracking
+                        startDate: createSafeDate(taskData.startDate || taskData.startTime),
+                        dueDate: createSafeDate(taskData.dueDate || taskData.deadline),
+                        
+                        // 工作量信息 - 标准化字段名
+                        estimatedHours: taskData.estimatedHours || taskData.estimatedDuration || 0,
+                        actualHours: taskData.actualHours || taskData.actualDuration || 0,
+                        progress: taskData.progress || 0,
+                        
+                        // 子任务统计
+                        completedSubtasks: taskData.completedSubtasks || 0,
+                        totalSubtasks: taskData.totalSubtasks || 0,
+                        
+                        // 输入输出信息
+                        input: taskData.input || '',
+                        output: taskData.output || '',
+                        
+                        // 步骤信息
+                        steps: taskData.steps || {},
+                        
+                        // 标签系统 - 转换为标准格式
+                        tags: (taskData.labels || taskData.tags || []).map(tag => {
+                            if (typeof tag === 'string') {
+                                return tag;
+                            }
+                            return {
+                                id: tag.id || `label-${Date.now()}`,
+                                name: tag.name || tag,
+                                color: tag.color || '#2196f3'
+                            };
+                        }),
+                        
+                        // Epic信息
+                        epic: taskData.epic || {
+                            id: 'epic-default',
+                            name: '默认Epic',
+                            code: 'DEFAULT'
+                        },
+                        
+                        // 依赖关系
+                        dependencies: taskData.dependencies || {
+                            blockedBy: taskData.blockedBy || [],
+                            blocking: taskData.blocking || [],
+                            relatedTo: taskData.relatedTo || []
+                        },
+                        
+                        // 子任务 - 转换为标准格式
+                        subtasks: (taskData.subtasks || []).map((subtask, index) => ({
+                            id: subtask.id || `SUB-${String(index + 1).padStart(3, '0')}`,
+                            title: subtask.title || subtask.name || `子任务 ${index + 1}`,
+                            status: subtask.status || 'todo',
+                            estimatedHours: subtask.estimatedHours || subtask.estimatedDuration || 0,
+                            actualHours: subtask.actualHours || subtask.actualDuration || 0
+                        })),
+                        
+                        // 自定义字段
+                        customFields: taskData.customFields || {
+                            testingRequired: taskData.testingRequired || false,
+                            securityReviewRequired: taskData.securityReviewRequired || false,
+                            documentationRequired: taskData.documentationRequired || false,
+                            customerImpact: taskData.customerImpact || 'medium',
+                            technicalRisk: taskData.technicalRisk || 'low'
+                        },
+                        
+                        // 时间记录 - 转换为标准格式
+                        timeEntries: (taskData.timeEntries || []).map((entry, index) => ({
+                            id: entry.id || `time-${String(index + 1).padStart(3, '0')}`,
+                            description: entry.description || entry.note || '时间记录',
+                            startTime: createSafeDate(entry.startTime || entry.start),
+                            endTime: createSafeDate(entry.endTime || entry.end),
+                            duration: entry.duration || 0
+                        })),
+                        
+                        // 保留原有扩展字段
+                        weeklyReport: taskData.weeklyReport || {
+                            enabled: false,
+                            frequency: 'weekly',
+                            dayOfWeek: 1,
+                            reportTemplate: '',
+                            lastSubmitted: null,
+                            nextDue: null,
+                            history: []
+                        },
+                        dailyReport: taskData.dailyReport || {
+                            enabled: false,
+                            frequency: 'daily',
+                            timeOfDay: '18:00',
+                            reportTemplate: '',
+                            lastSubmitted: null,
+                            nextDue: null,
+                            history: [],
+                            weekends: false
+                        },
+                        features: taskData.features || {
+                            difficulty: taskData.difficulty || 'medium',
+                            businessValue: taskData.businessValue || 'medium',
+                            urgency: taskData.urgency || 'medium'
+                        },
+                        progress: taskData.progress || {
+                            percentage: taskData.progress || 0,
+                            milestones: taskData.milestones || [],
+                            blockers: taskData.blockers || [],
+                            notes: taskData.notes || []
+                        },
+                        timeTracking: taskData.timeTracking || {
+                            startDate: createSafeDate(taskData.startDate || taskData.startTime),
+                            endDate: createSafeDate(taskData.endDate),
+                            deadline: createSafeDate(taskData.dueDate || taskData.deadline),
+                            estimatedDuration: taskData.estimatedHours || taskData.estimatedDuration || 0,
+                            actualDuration: taskData.actualHours || taskData.actualDuration || 0,
+                            timeEntries: []
+                        }
                     };
+                    
+                    // 数据验证和清理
+                    if (!taskToSave.title || taskToSave.title.trim() === '') {
+                        console.warn(`[上传] 跳过无效任务（标题为空）:`, taskData);
+                        skippedCount++;
+                        continue;
+                    }
+                    
+                    // 验证枚举值的有效性
+                    const validStatuses = ['backlog', 'todo', 'in_progress', 'in_review', 'testing', 'completed', 'cancelled', 'on_hold'];
+                    const validPriorities = ['critical', 'high', 'medium', 'low', 'none'];
+                    const validTypes = ['feature', 'bug', 'improvement', 'documentation', 'research', 'maintenance', 'meeting', 'review'];
+                    const validComplexities = ['xs', 's', 'm', 'l', 'xl', 'xxl'];
+                    
+                    if (!validStatuses.includes(taskToSave.status)) {
+                        console.warn(`[上传] 任务状态无效，使用默认值: ${taskData.title} (${taskData.status})`);
+                        taskToSave.status = 'todo';
+                    }
+                    
+                    if (!validPriorities.includes(taskToSave.priority)) {
+                        console.warn(`[上传] 任务优先级无效，使用默认值: ${taskData.title} (${taskData.priority})`);
+                        taskToSave.priority = 'medium';
+                    }
+                    
+                    if (!validTypes.includes(taskToSave.type)) {
+                        console.warn(`[上传] 任务类型无效，使用默认值: ${taskData.title} (${taskData.type})`);
+                        taskToSave.type = 'feature';
+                    }
+                    
+                    if (!validComplexities.includes(taskToSave.complexity)) {
+                        console.warn(`[上传] 任务复杂度无效，使用默认值: ${taskData.title} (${taskData.complexity})`);
+                        taskToSave.complexity = 'm';
+                    }
                     
                     // 先尝试通过标题匹配现有任务，决定是更新还是新建
                     const existing = (store.tasksData.value || []).find(t => t && t.title === taskData.title);
@@ -1723,7 +2057,13 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
                     
                     if (response && response.success !== false) {
                         importedCount++;
-                        console.log(`[上传] 导入任务成功: ${taskData.title}`);
+                        console.log(`[上传] 导入任务成功: ${taskData.title}`, {
+                            type: taskToSave.type,
+                            status: taskToSave.status,
+                            priority: taskToSave.priority,
+                            complexity: taskToSave.complexity,
+                            tags: taskToSave.tags.length
+                        });
                     } else {
                         skippedCount++;
                         console.warn(`[上传] 跳过任务: ${taskData.title}`);
@@ -1741,7 +2081,20 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
 📊 导入统计：
 • 成功导入：${importedCount} 个任务
 • 跳过任务：${skippedCount} 个
-• 总处理：${uploadData.tasks.length} 个任务`;
+• 总处理：${uploadData.tasks.length} 个任务
+• 导入成功率：${((importedCount / uploadData.tasks.length) * 100).toFixed(1)}%
+
+🔍 数据质量：
+• 数据结构：与mockData.js保持一致
+• 字段映射：自动转换完成
+• 枚举验证：已通过有效性检查
+• 时间格式：已标准化为ISO格式
+
+📝 导入详情：
+• 支持的任务类型：feature, bug, improvement, documentation, research, maintenance, meeting, review
+• 支持的状态：backlog, todo, in_progress, in_review, testing, completed, cancelled, on_hold
+• 支持的优先级：critical, high, medium, low, none
+• 支持的复杂度：xs, s, m, l, xl, xxl`;
             
             window.showSuccess(resultMessage);
             
@@ -1773,6 +2126,10 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         setCurrentView,
         setDateRange,
         setTimeFilter,
+
+        // 时间数据方法
+        getTaskTimeData,
+        updateTaskTimeData,
 
         // 任务选择和更新方法
         handleTaskSelect: (task) => {
@@ -1835,6 +2192,7 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         handleUploadTasks
     };
 }; 
+
 
 
 

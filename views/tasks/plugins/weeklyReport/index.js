@@ -53,6 +53,10 @@ const createWeeklyReport = async () => {
             selectedTask: {
                 type: Object,
                 default: null
+            },
+            getTaskTimeData: {
+                type: Function,
+                default: null
             }
         },
         
@@ -374,7 +378,7 @@ const createWeeklyReport = async () => {
                 const dateStr = date.toISOString().split('T')[0];
                 
                 return this.currentWeekTasks.filter(task => {
-                    const timeData = this.getTaskTimeData(task);
+                    const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                     const taskStart = new Date(timeData.startDate);
                     const taskEnd = new Date(timeData.endDate);
                     
@@ -391,7 +395,7 @@ const createWeeklyReport = async () => {
                 let estimatedHours = 0;
                 
                 tasks.forEach(task => {
-                    const timeData = this.getTaskTimeData(task);
+                    const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                     const status = this.getTaskStatus(task);
                     
                     if (status === 'completed') {
@@ -415,7 +419,7 @@ const createWeeklyReport = async () => {
              * 获取任务状态
              */
             getTaskStatus(task) {
-                const timeData = this.getTaskTimeData(task);
+                const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                 const now = new Date();
                 const endDate = new Date(timeData.endDate);
                 
@@ -434,7 +438,7 @@ const createWeeklyReport = async () => {
              * 获取任务优先级
              */
             getTaskPriority(task) {
-                const timeData = this.getTaskTimeData(task);
+                const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                 return timeData.priority || 'medium';
             },
             
@@ -442,7 +446,7 @@ const createWeeklyReport = async () => {
              * 获取任务分类
              */
             getTaskCategory(task) {
-                const timeData = this.getTaskTimeData(task);
+                const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                 const categoryMap = {
                     'development': '开发',
                     'design': '设计',
@@ -457,7 +461,7 @@ const createWeeklyReport = async () => {
              * 获取任务持续时间
              */
             getTaskDuration(task) {
-                const timeData = this.getTaskTimeData(task);
+                const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                 return timeData.estimatedHours || 0;
             },
             
@@ -534,7 +538,7 @@ const createWeeklyReport = async () => {
             getEfficiencyRate() {
                 // 简单的效率计算：实际工时/估计工时的百分比
                 const estimatedTotal = this.currentWeekTasks.reduce((sum, task) => {
-                    const timeData = this.getTaskTimeData(task);
+                    const timeData = this.getTaskTimeData ? this.getTaskTimeData(task) : this.getDefaultTaskTimeData(task);
                     return sum + (timeData.estimatedHours || 0);
                 }, 0);
                 
@@ -718,6 +722,34 @@ const createWeeklyReport = async () => {
              */
             loadTasksData() {
                 this.$emit('load-tasks-data');
+            },
+            
+            /**
+             * 获取默认任务时间数据
+             */
+            getDefaultTaskTimeData(task) {
+                if (!task.timeData) {
+                    const now = new Date();
+                    const startDate = new Date(now);
+                    const endDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                    
+                    return {
+                        startDate: startDate.toISOString().split('T')[0],
+                        endDate: endDate.toISOString().split('T')[0],
+                        estimatedHours: 8,
+                        actualHours: 0,
+                        priority: 'medium',
+                        status: 'todo',
+                        progress: 0,
+                        dependencies: [],
+                        category: 'development',
+                        assignee: '',
+                        tags: task.tags || [],
+                        createdAt: now.toISOString(),
+                        updatedAt: now.toISOString()
+                    };
+                }
+                return task.timeData;
             }
         },
         
@@ -745,4 +777,5 @@ const createWeeklyReport = async () => {
         console.error('WeeklyReport 组件初始化失败:', error);
     }
 })();
+
 
