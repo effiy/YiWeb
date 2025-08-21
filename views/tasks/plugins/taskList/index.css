@@ -358,6 +358,181 @@
     margin-bottom: var(--spacing-md);
 }
 
+/* 输入输出信息样式 */
+.task-io-section {
+    margin-bottom: var(--spacing-md);
+    border-top: 1px solid var(--border-tertiary);
+    padding-top: var(--spacing-md);
+}
+
+.task-input,
+.task-output {
+    margin-bottom: var(--spacing-sm);
+}
+
+.task-input:last-child,
+.task-output:last-child {
+    margin-bottom: 0;
+}
+
+.io-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.io-label i {
+    font-size: 10px;
+    width: 12px;
+    text-align: center;
+}
+
+.io-content {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: var(--line-height-relaxed);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-tertiary);
+    border-radius: var(--radius-sm);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/* 步骤信息样式 */
+.task-steps-section {
+    margin-bottom: var(--spacing-md);
+    border-top: 1px solid var(--border-tertiary);
+    padding-top: var(--spacing-md);
+}
+
+.steps-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.steps-label i {
+    font-size: 10px;
+    width: 12px;
+    text-align: center;
+}
+
+.steps-progress {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-tertiary);
+}
+
+.steps-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-tertiary);
+    border-radius: var(--radius-sm);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+}
+
+.step-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--border-secondary);
+}
+
+/* 步骤复选框样式 */
+.step-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.step-checkbox:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.step-check-icon {
+    font-size: 14px;
+    color: var(--text-tertiary);
+    transition: all 0.2s ease;
+}
+
+.step-check-icon.fa-check-circle {
+    color: var(--success);
+}
+
+.step-check-icon.fa-circle {
+    color: var(--text-tertiary);
+}
+
+.step-checkbox:hover .step-check-icon.fa-circle {
+    color: var(--primary);
+}
+
+.step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    background: var(--primary);
+    color: white;
+    font-size: 10px;
+    font-weight: var(--font-weight-bold);
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.step-number.completed {
+    background: var(--success);
+    transform: scale(0.9);
+}
+
+.step-text {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: var(--line-height-relaxed);
+    flex: 1;
+    transition: all 0.2s ease;
+}
+
+.step-text.completed {
+    color: var(--text-muted);
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
 .task-header-content {
     display: flex;
     flex-direction: column;
@@ -1639,6 +1814,7 @@
     
 
 } 
+
 
 
 

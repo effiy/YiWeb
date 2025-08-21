@@ -8,19 +8,14 @@
     <!-- 引入CSS文件 -->
     <link rel="stylesheet" href="/css/index.css">
     <link rel="stylesheet" href="/views/tasks/index.css">
+    <link rel="stylesheet" href="/plugins/searchHeader/index.css">
     <link rel="stylesheet" href="/views/tasks/plugins/kanbanBoard/index.css">
     <link rel="stylesheet" href="/views/tasks/plugins/enhancedGanttChart/index.css">
     <link rel="stylesheet" href="/views/tasks/plugins/calendarView/index.css">
     <link rel="stylesheet" href="/views/tasks/plugins/matrixView/index.css">
 
-    
     <!-- 引入字体图标 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- 引入专业字体 -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- 元信息 -->
     <meta name="description" content="世界级专业任务管理系统，支持敏捷开发、项目管理、团队协作">
@@ -30,7 +25,6 @@
     <!-- 专业性样式 -->
     <style>
         * { 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
@@ -105,6 +99,106 @@
             animation: loadingBar 3s ease-in-out;
         }
         
+        /* 错误显示样式 */
+        .initialization-error,
+        .startup-error {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+        }
+        
+        .error-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .error-content i {
+            font-size: 3rem;
+            color: #ef4444;
+            margin-bottom: 1rem;
+        }
+        
+        .error-content h3 {
+            color: #1f2937;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .error-content p {
+            color: #6b7280;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        
+        .error-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        
+        .retry-btn,
+        .details-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .retry-btn {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .retry-btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        
+        .details-btn {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .details-btn:hover {
+            background: #e5e7eb;
+        }
+        
+        .error-details {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 8px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .error-details pre {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.1); }
@@ -139,25 +233,49 @@
                 <div class="advanced-toolbar">
                     <div class="toolbar-row">
                         <div class="toolbar-left">
-                            <!-- Logo - 与首页header-row保持一致 -->
-                            <span class="toolbar-logo" aria-hidden="true" @click="goToHome">
-                                <i class="fas fa-brain" aria-label="AI大脑图标"></i>
-                            </span>
-                            
                             <!-- 快速搜索 -->
-                            <div class="quick-search">
-                                <input type="text" 
-                                       v-model="searchQuery"
-                                       @input="handleQuickSearch"
-                                       placeholder="搜索任务内容，支持标题、描述、输入输出、步骤等..."
-                                       class="quick-search-input">
-                                <button v-if="searchQuery" @click="clearSearch" class="clear-search-btn" title="清除搜索" aria-label="清除搜索">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                            <div class="search-box" role="search" aria-label="任务搜索">
+                                <span class="search-logo" aria-hidden="true" @click="goToHome">
+                                    <i class="fas fa-brain" aria-label="AI大脑图标"></i>
+                                </span>
+                                <div class="search-input-wrapper">
+                                    <label for="taskSearchInput" class="visually-hidden">任务搜索输入框</label>
+                                    <textarea 
+                                        id="taskSearchInput" 
+                                        v-model="searchQuery"
+                                        @input="handleQuickSearch"
+                                        placeholder="搜索任务内容，支持标题、描述、输入输出、步骤等..." 
+                                        rows="1" 
+                                        maxlength="2000"
+                                        aria-label="任务搜索输入框"
+                                        autocomplete="off"
+                                        spellcheck="false"
+                                        class="search-input"></textarea>
+                                    
+                                    <!-- 清除搜索按钮 -->
+                                    <div class="search-clear" v-if="searchQuery">
+                                        <button 
+                                            @click="clearSearch"
+                                            class="clear-search-btn"
+                                            type="button"
+                                            title="清除搜索"
+                                            aria-label="清除搜索内容"
+                                        >
+                                            <i class="fas fa-times" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
                         <div class="toolbar-right">
+                          <!-- 视图选项 -->
+                          <div class="view-options">
+                              <button @click="toggleFullscreen" class="option-btn">
+                                  <i class="fas fa-expand"></i>
+                                  <span>全屏</span>
+                              </button>
+                          </div>
                             <!-- 视图切换 - 重构为与首页cascader一致的交互 -->
                             <div class="view-switcher">
                                 <div class="view-cascader">
@@ -183,19 +301,58 @@
                                 </button>
                             </div>
                             
-                            <!-- 视图选项 -->
-                            <div class="view-options">
-                                <button @click="toggleFullscreen" class="option-btn">
-                                    <i class="fas fa-expand"></i>
-                                    <span>全屏</span>
+                            <!-- 下载功能按钮 -->
+                            <div class="download-section">
+                                <button 
+                                    type="button"
+                                    class="option-btn"
+                                    @click="handleDownloadTasks"
+                                    :disabled="loading || !filteredTasks.length"
+                                    :title="filteredTasks.length ? `下载 ${filteredTasks.length} 个任务数据` : '没有可下载的任务'">
+                                    <i class="fas fa-download" aria-hidden="true"></i>
+                                    <span>下载</span>
                                 </button>
+                            </div>
+                            
+                            <!-- 下载上传样例按钮 -->
+                            <div class="download-sample-section">
+                                <button 
+                                    type="button"
+                                    class="option-btn"
+                                    @click="handleDownloadSample"
+                                    :disabled="loading"
+                                    title="下载上传样例数据，可直接上传使用">
+                                    <i class="fas fa-file-code" aria-hidden="true"></i>
+                                    <span>样例</span>
+                                </button>
+                            </div>
+                            
+                            <!-- 上传功能按钮 -->
+                            <div class="upload-section">
+                                <button 
+                                    type="button"
+                                    class="option-btn"
+                                    @click="triggerUploadTasks"
+                                    :disabled="loading"
+                                    title="上传任务数据文件">
+                                    <i class="fas fa-upload" aria-hidden="true"></i>
+                                    <span>上传</span>
+                                </button>
+                                <input 
+                                    id="tasksUploadInput"
+                                    ref="uploadInput"
+                                    type="file" 
+                                    accept=".zip,.json"
+                                    @change="handleUploadTasks"
+                                    class="hidden" 
+                                    aria-label="上传任务数据文件">
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- 任务视图内容区 -->
-                <div class="content-area" :class="{ 'has-detail-panel': showDetailPanel }">
+                <div class="content-area">
                     <!-- 任务列表视图 -->
                     <enhanced-task-list
                         v-if="currentView === 'list'"
@@ -241,11 +398,6 @@
                         :current-view="currentView"
                         @task-select="handleTaskSelect"
                     ></daily-report>
-                    
-
-                    
-
-                    
                     <!-- 矩阵视图 -->
                     <matrix-view
                         v-if="currentView === 'matrix'"
@@ -253,15 +405,6 @@
                         @task-select="handleTaskSelect"
                     ></matrix-view>
                 </div>
-                
-                <!-- 任务详情面板 -->
-                <aside v-if="showDetailPanel" class="detail-panel" role="complementary">
-                    <enhanced-task-detail
-                        :task="selectedTask"
-                        @task-update="handleTaskUpdate"
-                        @close="closeDetailPanel"
-                    ></enhanced-task-detail>
-                </aside>
         </main>
     </div>
 
@@ -272,9 +415,12 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     
     <!-- 引入工具类（使用ES6模块） -->
+    <script type="module" src="/config.js"></script>
     <script src="/utils/index.js"></script>
     <script type="module" src="/utils/log.js"></script>
     <script type="module" src="/utils/baseView.js"></script>
+    <script type="module" src="/utils/loading.js"></script>
+    <script type="module" src="/utils/message.js"></script>
     
     <!-- 引入API模块（使用ES6模块） -->
     <script type="module" src="/apis/index.js"></script>
@@ -296,7 +442,6 @@
     <script src="/views/tasks/plugins/enhancedGanttChart/index.js"></script>
 
     <script src="/views/tasks/plugins/matrixView/index.js"></script>
-    <script src="/views/tasks/plugins/enhancedTaskDetail/index.js"></script>
     
     <!-- 兼容现有组件 -->
     <script src="/views/tasks/plugins/taskList/index.js"></script>
@@ -307,10 +452,104 @@
     <!-- 引入页面逻辑 -->
     <script src="/views/tasks/index.js"></script>
     
-    <!-- 初始化脚本 -->
+    <!-- 工具函数安全检查脚本 -->
     <script>
-        // 页面加载完成后隐藏加载器
+        // 确保必要的工具函数存在
+        function ensureUtilityFunctions() {
+            // 检查并创建loading函数的fallback
+            if (!window.showGlobalLoading) {
+                console.warn('[TaskPro] showGlobalLoading未定义，创建fallback实现');
+                window.showGlobalLoading = function(message) {
+                    console.log('[Loading]', message || '加载中...');
+                };
+            }
+            
+            if (!window.hideGlobalLoading) {
+                console.warn('[TaskPro] hideGlobalLoading未定义，创建fallback实现');
+                window.hideGlobalLoading = function() {
+                    console.log('[Loading] 加载完成');
+                };
+            }
+            
+            // 检查并创建message函数的fallback
+            if (!window.showSuccess) {
+                console.warn('[TaskPro] showSuccess未定义，创建fallback实现');
+                window.showSuccess = function(message) {
+                    console.log('[Success]', message);
+                    // 简单的成功提示
+                    if (typeof alert !== 'undefined') {
+                        alert('成功: ' + message);
+                    }
+                };
+            }
+            
+            if (!window.showError) {
+                console.warn('[TaskPro] showError未定义，创建fallback实现');
+                window.showError = function(message) {
+                    console.error('[Error]', message);
+                    // 简单的错误提示
+                    if (typeof alert !== 'undefined') {
+                        alert('错误: ' + message);
+                    }
+                };
+            }
+        }
+        
+        // 在DOM加载完成后立即检查工具函数
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[TaskPro] 检查工具函数...');
+            ensureUtilityFunctions();
+        });
+        
+        // 组件注册脚本
+        function ensureComponentsLoaded() {
+            const requiredComponents = [
+                'EnhancedTaskList',
+                'KanbanBoard', 
+                'EnhancedGanttChart',
+                'WeeklyReport',
+                'DailyReport',
+                'MatrixView'
+            ];
+            
+            console.log('[TaskPro] 检查组件加载状态...');
+            console.log('[TaskPro] 当前全局组件:', Object.keys(window).filter(key => 
+                requiredComponents.includes(key)
+            ));
+            
+            const missingComponents = requiredComponents.filter(name => !window[name]);
+            
+            if (missingComponents.length > 0) {
+                console.warn('[TaskPro] 等待组件加载:', missingComponents);
+                setTimeout(ensureComponentsLoaded, 100);
+                return;
+            }
+            
+            console.log('[TaskPro] 所有组件已加载，可以启动应用');
+            
+            // 触发组件加载完成事件
+            window.dispatchEvent(new CustomEvent('TaskProComponentsReady'));
+        }
+        
+        // DOM内容加载完成后立即检查组件状态
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[TaskPro] DOM内容加载完成，开始检查组件状态');
+            // 延迟一点时间确保脚本执行完成
+            setTimeout(ensureComponentsLoaded, 50);
+        });
+        
+        // 监听KanbanBoard组件加载事件
+        window.addEventListener('KanbanBoardLoaded', function(event) {
+            console.log('[TaskPro] 收到KanbanBoard组件加载事件:', event.detail);
+        });
+        
+        // 页面加载完成后的统一处理
         window.addEventListener('load', function() {
+            console.log('[TaskPro] 页面加载完成，再次检查组件状态');
+            // 检查组件加载状态
+            ensureComponentsLoaded();
+            
+            // 隐藏加载器
             setTimeout(() => {
                 const loader = document.getElementById('globalLoader');
                 if (loader) {
@@ -322,6 +561,13 @@
             }, 1000);
         });
         
+        // 立即检查一次组件状态（作为备用）
+        console.log('[TaskPro] 立即检查组件状态...');
+        setTimeout(ensureComponentsLoaded, 100);
+    </script>
+    
+    <!-- 快捷键支持 -->
+    <script>
         // 快捷键支持
         document.addEventListener('keydown', function(e) {
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -348,4 +594,5 @@
     </script>
 </body>
 </html> 
+
 

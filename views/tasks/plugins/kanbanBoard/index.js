@@ -43,14 +43,54 @@ const createKanbanBoard = () => {
                                 
                                 <div class="task-title">{{ task.title }}</div>
                                 
+                                <!-- 输入输出信息 -->
+                                <div class="task-io-section" v-if="task.input || task.output">
+                                    <div class="task-input" v-if="task.input">
+                                        <div class="io-label">
+                                            <i class="fas fa-arrow-down"></i>
+                                            <span>输入</span>
+                                        </div>
+                                        <div class="io-content">{{ task.input }}</div>
+                                    </div>
+                                    <div class="task-output" v-if="task.output">
+                                        <div class="io-label">
+                                            <i class="fas fa-arrow-up"></i>
+                                            <span>输出</span>
+                                        </div>
+                                        <div class="io-content">{{ task.output }}</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 步骤信息 -->
+                                <div class="task-steps-section" v-if="task.steps && Object.keys(task.steps).length > 0">
+                                    <div class="steps-label">
+                                        <i class="fas fa-list-ol"></i>
+                                        <span>执行步骤</span>
+                                        <span class="steps-progress" v-if="getStepsProgress(task).total > 0">
+                                            ({{ getStepsProgress(task).completed }}/{{ getStepsProgress(task).total }})
+                                        </span>
+                                    </div>
+                                    <div class="steps-content">
+                                        <div v-for="(step, stepKey) in task.steps" :key="stepKey" class="step-item">
+                                            <div class="step-checkbox" @click.stop="toggleStepComplete(task.id, stepKey)">
+                                                <i :class="getStepCheckIcon(task, stepKey)" class="step-check-icon"></i>
+                                            </div>
+                                            <span class="step-number" :class="{ 'completed': isStepCompleted(task, stepKey) }">
+                                                {{ getStepNumber(stepKey) }}
+                                            </span>
+                                            <span class="step-text" :class="{ 'completed': isStepCompleted(task, stepKey) }">
+                                                {{ getStepText(step) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <div class="task-meta">
                                     <div class="task-due-date" v-if="task.dueDate">
                                         <i class="fas fa-calendar"></i>
                                         <span>{{ formatDate(task.dueDate) }}</span>
                                     </div>
                                 </div>
-                                
-
                             </div>
                             
                             <div class="add-task-btn" @click="createTask(status.value)">
@@ -161,12 +201,99 @@ const createKanbanBoard = () => {
             
             createTask(status) {
                 this.$emit('task-create', { status });
+            },
+            
+            getStepNumber(stepKey) {
+                // 从stepKey中提取步骤编号
+                if (typeof stepKey !== 'string') {
+                    return stepKey;
+                }
+                const match = stepKey.match(/step(\d+)/);
+                return match ? match[1] : stepKey;
+            },
+
+            getStepText(step) {
+                // 根据步骤内容返回文本
+                if (typeof step === 'string') {
+                    return step;
+                } else if (typeof step === 'object' && step !== null && 'text' in step) {
+                    return step.text;
+                }
+                return '';
+            },
+
+            getStepsProgress(task) {
+                if (!task.steps) return { total: 0, completed: 0 };
+                const totalSteps = Object.keys(task.steps).length;
+                const completedSteps = Object.keys(task.steps).filter(key => task.steps[key].completed).length;
+                return { total: totalSteps, completed: completedSteps };
+            },
+
+            isStepCompleted(task, stepKey) {
+                return task.steps && task.steps[stepKey] && task.steps[stepKey].completed;
+            },
+
+            toggleStepComplete(taskId, stepKey) {
+                const task = this.tasks.find(t => t.id === taskId);
+                if (task) {
+                    if (!task.steps) {
+                        task.steps = {};
+                    }
+                    if (task.steps[stepKey]) {
+                        task.steps[stepKey].completed = !task.steps[stepKey].completed;
+                    } else {
+                        task.steps[stepKey] = { completed: true }; // 默认完成
+                    }
+                    this.$emit('task-move', task); // 通知父组件任务状态已更新
+                }
+            },
+
+            getStepCheckIcon(task, stepKey) {
+                if (task.steps && task.steps[stepKey] && task.steps[stepKey].completed) {
+                    return 'fas fa-check-circle';
+                }
+                return 'fas fa-circle';
             }
         }
     };
 };
 
 // 全局暴露组件
-window.KanbanBoard = createKanbanBoard();
-console.log('[KanbanBoard] 组件已加载');
+try {
+    window.KanbanBoard = createKanbanBoard();
+    console.log('[KanbanBoard] 组件已成功加载到全局');
+    console.log('[KanbanBoard] 组件对象:', window.KanbanBoard);
+    console.log('[KanbanBoard] 组件名称:', window.KanbanBoard.name);
+    
+    // 验证组件是否正确暴露
+    if (window.KanbanBoard && window.KanbanBoard.name === 'KanbanBoard') {
+        console.log('[KanbanBoard] 组件验证成功');
+        // 触发自定义事件通知组件已加载
+        window.dispatchEvent(new CustomEvent('KanbanBoardLoaded', {
+            detail: { component: window.KanbanBoard }
+        }));
+    } else {
+        console.error('[KanbanBoard] 组件验证失败');
+    }
+} catch (error) {
+    console.error('[KanbanBoard] 组件加载失败:', error);
+    // 尝试重新加载
+    setTimeout(() => {
+        try {
+            window.KanbanBoard = createKanbanBoard();
+            console.log('[KanbanBoard] 组件重新加载成功');
+            
+            // 验证重新加载的组件
+            if (window.KanbanBoard && window.KanbanBoard.name === 'KanbanBoard') {
+                console.log('[KanbanBoard] 重新加载的组件验证成功');
+                window.dispatchEvent(new CustomEvent('KanbanBoardLoaded', {
+                    detail: { component: window.KanbanBoard }
+                }));
+            }
+        } catch (retryError) {
+            console.error('[KanbanBoard] 组件重新加载失败:', retryError);
+        }
+    }, 100);
+}
+
 

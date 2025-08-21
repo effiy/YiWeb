@@ -43,10 +43,7 @@ window.createStore = () => {
     const clickedItems = vueRef(new Set());
     // 搜索历史
     const searchHistory = vueRef([]);
-    // 选中的任务
-    const selectedTask = vueRef(null);
-    // 详情面板是否可见
-    const isDetailVisible = vueRef(false);
+
     // 当前视图模式：list、gantt、weekly、daily
     const currentView = vueRef('list');
     // 日期范围
@@ -162,17 +159,51 @@ window.createStore = () => {
             
             // 验证删除结果
             if (deleteResult && deleteResult.success !== false) {
-                // 从本地任务数据中移除任务
-                const updatedTasks = tasksData.value.filter(t => t.title !== task.title);
-                tasksData.value = updatedTasks;
+                // 记录删除前的任务数量
+                const beforeCount = tasksData.value.length;
+                console.log('[deleteTask] 删除前任务数量:', beforeCount);
                 
-                // 如果删除的是当前选中的任务，关闭详情
-                if (selectedTask.value && selectedTask.value.title === task.title) {
-                    closeTaskDetail();
+                // 从本地任务数据中移除任务 - 使用多种匹配方式
+                const taskIndex = tasksData.value.findIndex(t => 
+                    (t.key && t.key === task.key) ||
+                    (t.title && t.title === task.title) ||
+                    (t.id && t.id === task.id)
+                );
+                
+                if (taskIndex !== -1) {
+                    // 使用splice确保Vue响应式更新
+                    const deletedTask = tasksData.value[taskIndex];
+                    tasksData.value.splice(taskIndex, 1);
+                    console.log('[deleteTask] 从store中移除任务，索引:', taskIndex, '标题:', deletedTask.title);
+                    
+                    // 验证删除后的任务数量
+                    const afterCount = tasksData.value.length;
+                    const expectedCount = beforeCount - 1;
+                    
+                    console.log('[deleteTask] 删除后验证:', {
+                        beforeCount,
+                        afterCount,
+                        expectedCount,
+                        isCorrect: afterCount === expectedCount
+                    });
+                    
+                    if (afterCount !== expectedCount) {
+                        console.warn('[deleteTask] 任务数量不正确，可能存在数据不一致');
+                    }
+                } else {
+                    console.warn('[deleteTask] 在store中未找到要删除的任务:', task.title);
+                    // 即使没找到，也认为删除成功（可能已经被其他地方删除了）
                 }
                 
                 // 从点击记录中移除
                 clickedItems.value.delete(task.title);
+                
+                // 强制触发Vue响应式更新
+                if (window.Vue && window.Vue.nextTick) {
+                    window.Vue.nextTick(() => {
+                        console.log('[deleteTask] Vue响应式更新完成，当前任务数量:', tasksData.value.length);
+                    });
+                }
                 
                 console.log('[deleteTask] 任务删除成功:', task.title);
                 return true;
@@ -250,22 +281,9 @@ window.createStore = () => {
         errorMessage.value = '';
     };
 
-    /**
-     * 选择任务
-     * @param {Object} task - 任务对象
-     */
-    const selectTask = (task) => {
-        selectedTask.value = task;
-        isDetailVisible.value = true;
-    };
 
-    /**
-     * 关闭任务详情
-     */
-    const closeTaskDetail = () => {
-        selectedTask.value = null;
-        isDetailVisible.value = false;
-    };
+
+
 
     /**
      * 切换视图模式
@@ -367,8 +385,7 @@ window.createStore = () => {
         errorMessage,
         clickedItems,
         searchHistory,
-        selectedTask,
-        isDetailVisible,
+
         currentView,
         dateRange,
         timeFilter,
@@ -382,8 +399,7 @@ window.createStore = () => {
         addSearchHistory,
         clearSearch,
         clearError,
-        selectTask,
-        closeTaskDetail,
+
         generateUniqueId,
         setCurrentView,
         setDateRange,
@@ -430,7 +446,5 @@ window.categorizeTask = function(task) {
     return 'development'; // 默认分类
 } 
 
-
-
-
-
+// 创建全局store实例
+window.store = window.createStore();

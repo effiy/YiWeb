@@ -17,15 +17,12 @@ class TaskProApp {
     constructor() {
         this.app = null;
         this.isInitialized = false;
+        this.componentsRegistered = false; // 添加组件注册状态标志
         
         // 应用状态
         this.state = Vue.reactive({
             // 基础数据
             tasks: [],
-            users: [],
-            projects: [],
-            currentProject: null,
-            currentUser: null,
             
             // 视图状态
             currentView: 'list',
@@ -35,8 +32,6 @@ class TaskProApp {
                 { key: 'gantt', name: '甘特图', icon: 'fas fa-chart-gantt', description: '时间线和依赖关系' },
                 { key: 'weekly', name: '周报', icon: 'fas fa-calendar-week', description: '周报视图管理' },
                 { key: 'daily', name: '日报', icon: 'fas fa-calendar-day', description: '日报视图管理' },
-
-
                 { key: 'matrix', name: '矩阵', icon: 'fas fa-th', description: '矩阵分析视图' }
             ],
             
@@ -44,10 +39,7 @@ class TaskProApp {
             loading: false,
             error: null,
             sidebarCollapsed: false,
-            showDetailPanel: false,
-            showProjectDropdown: false,
             showNotifications: false,
-
             showSearchSuggestions: false,
             showAdvancedFilters: false,
             showSortDropdown: false,
@@ -59,7 +51,6 @@ class TaskProApp {
             selectedTasks: [],
             activeFilters: [],
             selectedLabels: [],
-            selectedMembers: [],
             selectedStatuses: [],
             selectedPriorities: [],
             selectedTypes: [],
@@ -74,7 +65,6 @@ class TaskProApp {
                 { key: 'dueDate', name: '截止日期', icon: 'fas fa-calendar' },
                 { key: 'created', name: '创建时间', icon: 'fas fa-clock' },
                 { key: 'updated', name: '更新时间', icon: 'fas fa-edit' },
-
                 { key: 'status', name: '状态', icon: 'fas fa-tasks' }
             ],
             
@@ -85,12 +75,6 @@ class TaskProApp {
             
             // 批量操作
             batchActionsVisible: false,
-            
-            // 任务详情
-            selectedTask: null,
-            taskComments: [],
-            taskTimeEntries: [],
-            taskAttachments: [],
             
             // 通知系统
             notifications: [],
@@ -104,8 +88,6 @@ class TaskProApp {
             
             // 侧边栏数据
             quickFilters: [
-
-
                 { id: 'due-today', name: '今天到期', icon: 'fas fa-calendar-day', count: 0 },
                 { id: 'overdue', name: '已逾期', icon: 'fas fa-exclamation-triangle', count: 0 },
                 { id: 'high-priority', name: '高优先级', icon: 'fas fa-flag', count: 0 },
@@ -114,20 +96,12 @@ class TaskProApp {
             customViews: [],
             activeCustomView: null,
             labels: [],
-            teamMembers: [],
             
             // 状态栏数据
             totalTasks: 0,
             completedTasks: 0,
             inProgressTasks: 0,
-            overdueTasks: 0,
-            syncStatus: 'synced',
-            syncStatusIcon: 'fas fa-check-circle',
-            syncStatusText: '已同步',
-            currentWorkspace: 'TaskPro Enterprise',
-            
-            // 键盘快捷键
-            showShortcutHelp: false
+            overdueTasks: 0
         });
         
         // 计算属性（现在直接在Vue应用中定义）
@@ -136,143 +110,215 @@ class TaskProApp {
     
     // 初始化应用
     async init() {
-        if (this.isInitialized) return;
-        
         try {
-            console.log('[TaskPro] 初始化专业任务管理系统...');
-            
-            // 等待关键组件加载完成
+            // 等待关键组件加载
             await this.waitForComponents();
             
-            // 加载数据
-            await this.loadData();
+            // 初始化store和useMethods
+            await this.initializeStore();
             
-            // 创建Vue应用
+            // 创建Vue应用（组件注册已在其中进行）
             this.createVueApp();
             
             // 初始化事件监听
             this.initEventListeners();
             
-            // 更新统计数据
-            this.updateStats();
-            
-            // 确保初始视图正确设置
-            console.log('[TaskPro] 初始视图设置为:', this.state.currentView);
-            console.log('[TaskPro] 当前任务数量:', this.state.tasks.length);
+            // 加载初始数据
+            await this.loadInitialData();
             
             this.isInitialized = true;
-            console.log('[TaskPro] 系统初始化完成');
             
         } catch (error) {
             console.error('[TaskPro] 初始化失败:', error);
-            this.state.error = '系统初始化失败，请刷新页面重试';
+            // 显示用户友好的错误信息
+            this.showInitializationError(error);
         }
     }
     
-    // 等待关键组件加载完成
-    async waitForComponents() {
-        const requiredComponents = ['WeeklyReport', 'DailyReport'];
-        const maxWaitTime = 10000; // 最大等待10秒
-        const startTime = Date.now();
-        
-        console.log('[TaskPro] 等待关键组件加载...');
-        
-        while (Date.now() - startTime < maxWaitTime) {
-            const missingComponents = requiredComponents.filter(name => !window[name]);
-            
-            if (missingComponents.length === 0) {
-                console.log('[TaskPro] 所有关键组件已加载完成');
-                return;
-            }
-            
-            console.log('[TaskPro] 等待组件加载:', missingComponents);
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        console.warn('[TaskPro] 组件加载超时，继续初始化');
-    }
-    
-    // 加载数据
-    async loadData() {
-        this.state.loading = true;
-        
+    // 初始化store和useMethods
+    async initializeStore() {
         try {
-            // 等待数据加载完成
+            console.log('[TaskPro] 开始初始化store和useMethods...');
+            console.log('[TaskPro] 当前全局对象:', Object.keys(window).filter(key => 
+                ['store', 'createStore', 'useMethods'].includes(key)
+            ));
+            
+            // 等待store加载
             let retries = 0;
-            while (!window.TaskProMockData && retries < 10) {
+            while (!window.store && retries < 50) {
+                console.log(`[TaskPro] 等待store加载... 重试次数: ${retries + 1}`);
                 await new Promise(resolve => setTimeout(resolve, 100));
                 retries++;
             }
             
-            if (!window.TaskProMockData) {
-                throw new Error('Mock数据加载失败');
+            if (!window.store) {
+                console.error('[TaskPro] store加载超时，尝试手动创建');
+                if (window.createStore) {
+                    window.store = window.createStore();
+                    console.log('[TaskPro] 手动创建store成功');
+                } else {
+                    throw new Error('createStore函数未找到');
+                }
             }
             
-            // 模拟加载延迟（生产环境将替换为真实API调用）
-            await new Promise(resolve => setTimeout(resolve, 300));
+            console.log('[TaskPro] store加载成功:', window.store);
             
-            // 加载任务数据
-            const mockData = window.TaskProMockData || {};
+            // 等待useMethods加载
+            retries = 0;
+            while (!window.useMethods && retries < 50) {
+                console.log(`[TaskPro] 等待useMethods加载... 重试次数: ${retries + 1}`);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retries++;
+            }
             
-            this.state.tasks = mockData.mockTasks ? mockData.mockTasks.map(task => ({
-                ...task,
-                collaborators: task.collaborators ? task.collaborators.map(collab => ({
-                    ...collab
-                })) : []
-            })) : [
-                {
-                    id: 'demo-001',
-                    title: '示例任务',
-                    description: '这是一个示例任务，用于演示系统功能',
-                    type: 'feature',
-                    status: 'todo',
-                    priority: 'medium',
-                    assignee: {
-                        id: 'demo-user',
-                        name: '演示用户'
-                    },
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
+            if (!window.useMethods) {
+                throw new Error('useMethods未加载');
+            }
+            
+            console.log('[TaskPro] useMethods加载成功:', window.useMethods);
+            
+            // 初始化useMethods
+            if (!window.store.methods) {
+                window.store.methods = window.useMethods(window.store, {});
+                console.log('[TaskPro] useMethods初始化成功');
+            }
+            
+            console.log('[TaskPro] store和useMethods初始化完成');
+            
+        } catch (error) {
+            console.error('[TaskPro] store初始化失败:', error);
+            throw error;
+        }
+    }
+    
+    // 启动应用
+    async start() {
+        try {
+            // 检查Vue是否可用
+            if (typeof Vue === 'undefined') {
+                throw new Error('Vue.js 未加载，请检查网络连接');
+            }
+            
+            // 检查Vue版本兼容性
+            if (!Vue.createApp || !Vue.reactive) {
+                throw new Error('Vue.js 版本不兼容，需要 Vue 3.x');
+            }
+            
+            // 初始化应用
+            await this.init();
+            
+            // 应用启动成功
+            console.log('[TaskPro] 应用启动成功');
+            
+        } catch (error) {
+            console.error('[TaskPro] 应用启动失败:', error);
+            
+            // 显示启动错误
+            this.showStartupError(error);
+        }
+    }
+    
+    // 显示启动错误
+    showStartupError(error) {
+        const errorMessage = error.message || '应用启动失败';
+        
+        // 创建错误显示元素
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'startup-error';
+        errorDiv.innerHTML = `
+            <div class="error-content">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>启动失败</h3>
+                <p>${errorMessage}</p>
+                <div class="error-actions">
+                    <button onclick="location.reload()" class="retry-btn">重新加载</button>
+                    <button onclick="this.showErrorDetails()" class="details-btn">查看详情</button>
+                </div>
+                <div class="error-details" style="display: none;">
+                    <pre>${error.stack || error.toString()}</pre>
+                </div>
+            </div>
+        `;
+        
+        // 添加到页面
+        const appContainer = document.getElementById('app');
+        if (appContainer) {
+            appContainer.innerHTML = '';
+            appContainer.appendChild(errorDiv);
+        }
+        
+        // 添加错误详情切换功能
+        window.showErrorDetails = function() {
+            const details = document.querySelector('.error-details');
+            if (details) {
+                details.style.display = details.style.display === 'none' ? 'block' : 'none';
+            }
+        };
+    }
+    
+    // 等待关键组件加载
+    async waitForComponents() {
+        const requiredComponents = ['WeeklyReport', 'DailyReport'];
+        const maxWaitTime = 5000; // 最大等待5秒
+        const startTime = Date.now();
+        
+        while (Date.now() - startTime < maxWaitTime) {
+            const missingComponents = requiredComponents.filter(name => !window[name]);
+            if (missingComponents.length === 0) {
+                return; // 所有组件已加载
+            }
+            
+            // 等待100ms后重试
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // 超时警告
+        console.warn('[TaskPro] 部分组件加载超时，继续初始化');
+    }
+    
+    // 加载初始数据
+    async loadInitialData() {
+        try {
+            this.state.loading = true;
+            this.state.error = null;
+            
+            // 使用store中的mongodb接口加载数据
+            if (window.store && window.store.loadTasksData) {
+                console.log('[TaskPro] 使用store中的mongodb接口加载数据');
+                const tasks = await window.store.loadTasksData();
+                console.log('[TaskPro] store返回的任务数据:', tasks);
+                console.log('[TaskPro] 任务数据类型:', typeof tasks);
+                console.log('[TaskPro] 任务数据是否为数组:', Array.isArray(tasks));
+                
+                // 确保tasks是数组
+                if (Array.isArray(tasks)) {
+                    this.state.tasks = tasks;
+                } else {
+                    console.warn('[TaskPro] store返回的不是数组，使用空数组');
+                    this.state.tasks = [];
                 }
-            ];
-            
-            // 加载用户数据
-            this.state.users = mockData.mockUsers ? mockData.mockUsers.map(user => ({
-                ...user
-            })) : [
-                {
-                    id: 'demo-user',
-                    name: '演示用户',
-                    email: 'demo@example.com',
-                    role: '项目经理',
-                    workload: 50
+            } else {
+                console.warn('[TaskPro] store未加载，尝试使用Mock数据');
+                // 等待Mock数据加载
+                let retries = 0;
+                while (!window.TaskProMockData && retries < 20) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    retries++;
                 }
-            ];
-            this.state.teamMembers = this.state.users;
-            
-            // 加载项目数据
-            this.state.projects = mockData.mockProjects || [
-                {
-                    id: 'demo-project',
-                    name: '演示项目',
-                    code: 'DEMO',
-                    progress: 30
+                
+                if (!window.TaskProMockData) {
+                    console.warn('[TaskPro] Mock数据未加载，将使用默认数据');
+                    this.loadDefaultData();
+                    return;
                 }
-            ];
-            this.state.currentProject = this.state.projects[0] || {
-                id: 'default',
-                name: '默认项目',
-                code: 'DEF'
-            };
-            
-            // 设置当前用户
-            this.state.currentUser = this.state.users[0] || {
-                id: 'current-user',
-                name: '当前用户',
-                email: 'user@example.com',
-                role: '项目经理',
-                workload: 75
-            };
+                
+                const mockData = window.TaskProMockData;
+                
+                // 加载任务数据
+                this.state.tasks = mockData.mockTasks ? mockData.mockTasks.map(task => ({
+                    ...task
+                })) : this.getDefaultTasks();
+            }
             
             // 提取标签数据
             this.extractLabels();
@@ -280,847 +326,1473 @@ class TaskProApp {
             // 初始化通知
             this.initNotifications();
             
-            console.log('[TaskPro] 数据加载完成');
+            this.state.loading = false;
             
         } catch (error) {
-            console.error('[TaskPro] 数据加载失败:', error);
-            this.state.error = '数据加载失败';
-        } finally {
             this.state.loading = false;
+            this.state.error = error.message || '数据加载失败';
+            console.error('[TaskPro] 数据加载失败:', error);
         }
+    }
+    
+    // 加载默认数据
+    loadDefaultData() {
+        this.state.tasks = this.getDefaultTasks();
+        this.extractLabels();
+        this.initNotifications();
+    }
+    
+    // 获取默认任务数据
+    getDefaultTasks() {
+        return [
+            {
+                id: 'demo-001',
+                title: '示例任务',
+                description: '这是一个示例任务，用于演示系统功能',
+                type: 'feature',
+                status: 'todo',
+                priority: 'medium',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }
+        ];
     }
     
     // 提取标签数据
     extractLabels() {
-        const labelMap = new Map();
-        
-        this.state.tasks.forEach(task => {
-            if (task.labels) {
-                task.labels.forEach(label => {
-                    if (labelMap.has(label.id)) {
-                        labelMap.get(label.id).count++;
-                    } else {
-                        labelMap.set(label.id, {
-                            ...label,
-                            count: 1
+        try {
+            const allLabels = new Set();
+            
+            if (this.state.tasks && this.state.tasks.length > 0) {
+                this.state.tasks.forEach(task => {
+                    if (task.labels && Array.isArray(task.labels)) {
+                        task.labels.forEach(label => {
+                            if (label && label.id) {
+                                allLabels.add(JSON.stringify(label));
+                            }
                         });
                     }
                 });
             }
-        });
-        
-        this.state.labels = Array.from(labelMap.values());
+            
+            this.state.labels = Array.from(allLabels).map(labelStr => JSON.parse(labelStr));
+            
+        } catch (error) {
+            console.warn('[TaskPro] 标签提取失败:', error);
+            this.state.labels = [];
+        }
     }
     
     // 初始化通知
     initNotifications() {
-        this.state.notifications = [
-            {
-                id: '1',
-                title: '新任务分配给您',
-                time: new Date(),
-                icon: 'fas fa-tasks',
-                read: false
-            },
-            {
-                id: '2',
-                title: '项目进度更新',
-                time: new Date(Date.now() - 60 * 60 * 1000),
-                icon: 'fas fa-chart-line',
-                read: false
-            }
-        ];
+        try {
+            this.state.notifications = [
+                {
+                    id: 'welcome',
+                    title: '欢迎使用 TaskPro Enterprise',
+                    message: '系统已准备就绪，开始管理您的任务吧！',
+                    type: 'info',
+                    read: false,
+                    timestamp: new Date().toISOString()
+                }
+            ];
+            
+            this.state.unreadNotifications = 1;
+            
+        } catch (error) {
+            console.warn('[TaskPro] 通知初始化失败:', error);
+            this.state.notifications = [];
+            this.state.unreadNotifications = 0;
+        }
+    }
+    
+        // 显示初始化错误
+    showInitializationError(error) {
+        const errorMessage = error.message || '应用初始化失败';
         
-        this.state.unreadNotifications = this.state.notifications.filter(n => !n.read).length;
+        // 创建错误显示元素
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'initialization-error';
+        errorDiv.innerHTML = `
+            <div class="error-content">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>初始化失败</h3>
+                <p>${errorMessage}</p>
+                <button onclick="location.reload()" class="retry-btn">重新加载</button>
+            </div>
+        `;
+        
+        // 添加到页面
+        const appContainer = document.getElementById('app');
+        if (appContainer) {
+            appContainer.innerHTML = '';
+            appContainer.appendChild(errorDiv);
+        }
     }
     
     // 创建Vue应用
     createVueApp() {
-        const { createApp } = Vue;
-        
-        const appState = this.state;
-        this.app = createApp({
-            data() {
-                console.log('[TaskPro] Vue应用数据初始化:', appState);
-                return appState;
-            },
-            computed: {
-                filteredTasks() {
-                    let tasks = this.tasks || [];
-                    console.log('[TaskPro] filteredTasks计算:', { 
-                        tasksCount: tasks.length, 
-                        searchQuery: this.searchQuery,
-                        currentView: this.currentView 
-                    });
-                    
-                    // 应用搜索筛选
-                    if (this.searchQuery) {
-                        const query = this.searchQuery.toLowerCase();
-                        tasks = tasks.filter(task => 
-                            task.title.toLowerCase().includes(query) ||
-                            task.description.toLowerCase().includes(query)
-                        );
-                    }
-                    
-                    // 应用状态筛选
-                    if (this.selectedStatuses.length > 0) {
-                        tasks = tasks.filter(task => this.selectedStatuses.includes(task.status));
-                    }
-                    
-                    // 应用优先级筛选
-                    if (this.selectedPriorities.length > 0) {
-                        tasks = tasks.filter(task => this.selectedPriorities.includes(task.priority));
-                    }
-                    
-                    // 应用类型筛选
-                    if (this.selectedTypes.length > 0) {
-                        tasks = tasks.filter(task => this.selectedTypes.includes(task.type));
-                    }
-                    
-                    // 应用标签筛选
-                    if (this.selectedLabels.length > 0) {
-                        tasks = tasks.filter(task => 
-                            task.labels && task.labels.some(label => 
-                                this.selectedLabels.includes(label.id)
-                            )
-                        );
-                    }
-                    
-                    // 应用成员筛选
-                    if (this.selectedMembers.length > 0) {
-                        tasks = tasks.filter(task => 
-                            (task.collaborators && task.collaborators.some(collab => 
-                                this.selectedMembers.includes(collab.id)
-                            ))
-                        );
-                    }
-                    
-                    // 应用日期筛选
-                    if (this.selectedDateFilter) {
-                        const now = new Date();
-                        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        try {
+            const { createApp } = Vue;
+            
+            const appState = this.state;
+            this.app = createApp({
+                data() {
+                    return appState;
+                },
+                mounted() {
+                    // 组件挂载后，数据已经在TaskProApp中加载完成
+                    console.log('[TaskPro] Vue组件已挂载，数据加载状态:', this.loading);
+                },
+                computed: {
+                    filteredTasks() {
+                        // 确保tasks是数组类型
+                        let tasks = Array.isArray(this.tasks) ? [...this.tasks] : [];
                         
-                        switch (this.selectedDateFilter) {
-                            case 'overdue':
-                                tasks = tasks.filter(task => task.dueDate && new Date(task.dueDate) < today);
-                                break;
-                            case 'today':
-                                tasks = tasks.filter(task => {
-                                    if (!task.dueDate) return false;
-                                    const dueDate = new Date(task.dueDate);
-                                    return dueDate.toDateString() === today.toDateString();
-                                });
-                                break;
-                            case 'week':
-                                const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-                                tasks = tasks.filter(task => {
-                                    if (!task.dueDate) return false;
-                                    const dueDate = new Date(task.dueDate);
-                                    return dueDate >= today && dueDate <= weekFromNow;
-                                });
-                                break;
-                        }
-                    }
-                    
-                    // 应用自定义日期范围
-                    if (this.customDateStart && this.customDateEnd) {
-                        const startDate = new Date(this.customDateStart);
-                        const endDate = new Date(this.customDateEnd);
-                        tasks = tasks.filter(task => {
-                            if (!task.dueDate) return false;
-                            const dueDate = new Date(task.dueDate);
-                            return dueDate >= startDate && dueDate <= endDate;
-                        });
-                    }
-                    
-                    // 应用排序
-                    tasks = this.sortTasks(tasks);
-                    
-                    return tasks;
-                },
-                
-                activeFiltersCount() {
-                    return (this.selectedStatuses || []).length +
-                           (this.selectedPriorities || []).length +
-                           (this.selectedTypes || []).length +
-                           (this.selectedLabels || []).length +
-                           (this.selectedMembers || []).length +
-                           (this.selectedDateFilter ? 1 : 0) +
-                           (this.customDateStart && this.customDateEnd ? 1 : 0);
-                },
-                
-                statusOptions() {
-                    const statusData = window.TASK_STATUS || window.TaskProMockData?.TASK_STATUS;
-                    return statusData ? Object.values(statusData) : [];
-                },
-                
-                priorityOptions() {
-                    const priorityData = window.TASK_PRIORITY || window.TaskProMockData?.TASK_PRIORITY;
-                    return priorityData ? Object.values(priorityData) : [];
-                },
-                
-                typeOptions() {
-                    const typeData = window.TASK_TYPE || window.TaskProMockData?.TASK_TYPE;
-                    return typeData ? Object.values(typeData) : [];
-                },
-                
-                totalTasks() {
-                    return this.tasks ? this.tasks.length : 0;
-                },
-                
-                completedTasks() {
-                    return this.tasks ? this.tasks.filter(t => t.status === 'completed').length : 0;
-                },
-                
-                inProgressTasks() {
-                    return this.tasks ? this.tasks.filter(t => t.status === 'in_progress').length : 0;
-                },
-                
-                overdueTasks() {
-                    if (!this.tasks) return 0;
-                    const now = new Date();
-                    return this.tasks.filter(t => 
-                        t.dueDate && new Date(t.dueDate) < now && t.status !== 'completed'
-                    ).length;
-                }
-            },
-            methods: {
-                // 跳转到首页
-                goToHome() {
-                    window.location.href = '/index.html';
-                },
-                
-                // 排序任务
-                sortTasks(tasks) {
-                    if (!tasks || !Array.isArray(tasks)) return [];
-                    
-                    const { key, direction } = this.currentSort || { key: 'priority', direction: 'desc' };
-                    
-                    return [...tasks].sort((a, b) => {
-                        let aValue, bValue;
-                        
-                        switch (key) {
-                            case 'priority':
-                                const priorityWeights = {
-                                    'critical': 4,
-                                    'high': 3,
-                                    'medium': 2,
-                                    'low': 1,
-                                    'none': 0
-                                };
-                                aValue = priorityWeights[a.priority] || 0;
-                                bValue = priorityWeights[b.priority] || 0;
-                                break;
-                            case 'dueDate':
-                                aValue = a.dueDate ? new Date(a.dueDate).getTime() : 0;
-                                bValue = b.dueDate ? new Date(b.dueDate).getTime() : 0;
-                                break;
-                            case 'created':
-                                aValue = new Date(a.createdAt).getTime();
-                                bValue = new Date(b.createdAt).getTime();
-                                break;
-                            case 'updated':
-                                aValue = new Date(a.updatedAt).getTime();
-                                bValue = new Date(b.updatedAt).getTime();
-                                break;
-
-                            case 'status':
-                                aValue = a.status;
-                                bValue = b.status;
-                                break;
-                            default:
-                                aValue = a[key];
-                                bValue = b[key];
+                        // 调试信息
+                        if (!Array.isArray(this.tasks)) {
+                            console.warn('[filteredTasks] this.tasks不是数组:', this.tasks);
+                            console.warn('[filteredTasks] this.tasks类型:', typeof this.tasks);
+                            console.warn('[filteredTasks] this.tasks值:', this.tasks);
                         }
                         
-                        if (direction === 'asc') {
-                            return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
-                        } else {
-                            return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+                        // 应用搜索筛选
+                        if (this.searchQuery) {
+                            const query = this.searchQuery.toLowerCase();
+                            tasks = tasks.filter(task => 
+                                task.title.toLowerCase().includes(query) ||
+                                (task.description && task.description.toLowerCase().includes(query))
+                            );
                         }
-                    });
+                        
+                        // 应用状态筛选
+                        if (this.selectedStatuses.length > 0) {
+                            tasks = tasks.filter(task => this.selectedStatuses.includes(task.status));
+                        }
+                        
+                        // 应用优先级筛选
+                        if (this.selectedPriorities.length > 0) {
+                            tasks = tasks.filter(task => this.selectedPriorities.includes(task.priority));
+                        }
+                        
+                        // 应用类型筛选
+                        if (this.selectedTypes.length > 0) {
+                            tasks = tasks.filter(task => this.selectedTypes.includes(task.type));
+                        }
+                        
+                        // 应用标签筛选
+                        if (this.selectedLabels.length > 0) {
+                            tasks = tasks.filter(task => 
+                                task.labels && task.labels.some(label => 
+                                    this.selectedLabels.includes(label.id)
+                                )
+                            );
+                        }
+                        
+                        // 应用日期筛选
+                        if (this.selectedDateFilter) {
+                            const now = new Date();
+                            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                            
+                            switch (this.selectedDateFilter) {
+                                case 'overdue':
+                                    tasks = tasks.filter(task => task.dueDate && new Date(task.dueDate) < today);
+                                    break;
+                                case 'today':
+                                    tasks = tasks.filter(task => {
+                                        if (!task.dueDate) return false;
+                                        const dueDate = new Date(task.dueDate);
+                                        return dueDate.toDateString() === today.toDateString();
+                                    });
+                                    break;
+                                case 'week':
+                                    const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+                                    tasks = tasks.filter(task => {
+                                        if (!task.dueDate) return false;
+                                        const dueDate = new Date(task.dueDate);
+                                        return dueDate >= today && dueDate <= weekFromNow;
+                                    });
+                                    break;
+                            }
+                        }
+                        
+                        // 应用自定义日期范围
+                        if (this.customDateStart && this.customDateEnd) {
+                            const startDate = new Date(this.customDateStart);
+                            const endDate = new Date(this.customDateEnd);
+                            tasks = tasks.filter(task => {
+                                if (!task.dueDate) return false;
+                                const dueDate = new Date(task.dueDate);
+                                return dueDate >= startDate && dueDate <= endDate;
+                            });
+                        }
+                        
+                        // 应用排序 - 确保tasks是数组且有内容
+                        if (this.currentSort && Array.isArray(tasks) && tasks.length > 0) {
+                            try {
+                                tasks.sort((a, b) => {
+                                let aValue, bValue;
+                                
+                                switch (this.currentSort.key) {
+                                    case 'priority':
+                                        const priorityOrder = { 'critical': 4, 'high': 3, 'medium': 2, 'low': 1, 'none': 0 };
+                                        aValue = priorityOrder[a.priority] || 0;
+                                        bValue = priorityOrder[b.priority] || 0;
+                                        break;
+                                    case 'dueDate':
+                                        aValue = a.dueDate ? new Date(a.dueDate).getTime() : 0;
+                                        bValue = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+                                        break;
+                                    case 'created':
+                                        aValue = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                                        bValue = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                                        break;
+                                    case 'updated':
+                                        aValue = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+                                        bValue = b.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+                                        break;
+                                    case 'status':
+                                        const statusOrder = { 'backlog': 0, 'todo': 1, 'in_progress': 2, 'in_review': 3, 'testing': 4, 'completed': 5, 'cancelled': 6, 'on_hold': 7 };
+                                        aValue = statusOrder[a.status] || 0;
+                                        bValue = statusOrder[b.status] || 0;
+                                        break;
+                                    default:
+                                        aValue = a[this.currentSort.key] || '';
+                                        bValue = b[this.currentSort.key] || '';
+                                }
+                                
+                                if (this.currentSort.direction === 'desc') {
+                                    return bValue > aValue ? 1 : -1;
+                                } else {
+                                    return aValue > bValue ? 1 : -1;
+                                }
+                            });
+                        } catch (error) {
+                            console.error('[filteredTasks] 排序失败:', error);
+                            console.error('[filteredTasks] tasks:', tasks);
+                        }
+                        }
+                        
+                        return tasks;
+                    }
                 },
-                
-                // 视图切换
-                setCurrentView(view) {
-                    this.currentView = view;
-                    this.selectedTasks = [];
-                    console.log('[TaskPro] 切换到视图:', view);
-                    console.log('[TaskPro] 当前视图状态:', this.currentView);
-                    console.log('[TaskPro] 当前任务数据:', this.tasks);
-                    console.log('[TaskPro] 当前筛选后任务:', this.filteredTasks);
-                    
-                    // 确保数据已加载
-                    if (view === 'weekly' || view === 'daily') {
-                        console.log('[TaskPro] 切换到周报/日报视图，检查数据状态:', {
-                            tasksCount: this.tasks?.length || 0,
-                            filteredTasksCount: this.filteredTasks?.length || 0,
-                            loading: this.loading,
-                            error: this.error
-                        });
-                        
-                        // 如果数据为空，尝试重新加载
-                        if (!this.tasks || this.tasks.length === 0) {
-                            console.warn('[TaskPro] 周报/日报视图数据为空，尝试重新加载');
-                            this.loadData && this.loadData();
+                methods: {
+                    // 加载任务数据
+                    async loadTasksData() {
+                        try {
+                            // 优先从store加载数据（如果store存在且有loadTasksData方法）
+                            if (window.store && window.store.loadTasksData) {
+                                console.log('[TaskPro] 从store加载任务数据');
+                                const tasks = await window.store.loadTasksData();
+                                
+                                // 更新主应用的tasks数组
+                                this.tasks = [...(tasks || [])];
+                                
+                                // 提取标签数据
+                                this.extractLabels();
+                                
+                                // 初始化通知
+                                this.initNotifications();
+                                
+                                console.log('[TaskPro] 从store加载数据完成，任务数量:', this.tasks.length);
+                                return;
+                            }
+                            
+                            // 如果store不可用，回退到Mock数据
+                            console.log('[TaskPro] store不可用，使用Mock数据');
+                            
+                            // 等待Mock数据加载
+                            let retries = 0;
+                            while (!window.TaskProMockData && retries < 20) {
+                                await new Promise(resolve => setTimeout(resolve, 100));
+                                retries++;
+                            }
+                            
+                            if (!window.TaskProMockData) {
+                                console.warn('[TaskPro] Mock数据未加载，将使用默认数据');
+                                this.loadDefaultData();
+                                return;
+                            }
+                            
+                            const mockData = window.TaskProMockData;
+                            
+                            // 加载任务数据
+                            this.tasks = mockData.mockTasks ? mockData.mockTasks.map(task => ({
+                                ...task
+                            })) : this.getDefaultTasks();
+                            
+                            // 提取标签数据
+                            this.extractLabels();
+                            
+                            // 初始化通知
+                            this.initNotifications();
+                            
+                        } catch (error) {
+                            console.error('[TaskPro] 任务数据加载失败:', error);
+                            // 加载默认数据作为后备
+                            this.loadDefaultData();
                         }
-                        
-                        // 延迟检查组件状态
-                        this.$nextTick(() => {
-                            const componentName = view === 'weekly' ? 'weekly-report' : 'daily-report';
-                            const component = document.querySelector(componentName);
-                            if (component) {
-                                console.log(`[TaskPro] ${componentName} 组件已渲染:`, {
-                                    component: component,
-                                    props: component.__vueParentComponent?.props
-                                });
+                    },
+                    
+                    // 加载默认数据
+                    loadDefaultData() {
+                        this.tasks = this.getDefaultTasks();
+                        this.extractLabels();
+                        this.initNotifications();
+                    },
+                    
+                    // 同步任务数据
+                    syncTasksData() {
+                        try {
+                            // 如果store存在且有数据，同步到主应用
+                            if (window.store && window.store.tasksData && window.store.tasksData.value) {
+                                const storeTasks = window.store.tasksData.value;
+                                console.log('[TaskPro] 同步store数据到主应用，任务数量:', storeTasks.length);
+                                
+                                // 更新主应用的tasks数组
+                                this.tasks = [...storeTasks];
+                                
+                                // 重新提取标签和更新通知
+                                this.extractLabels();
+                                this.initNotifications();
+                                
+                                console.log('[TaskPro] 数据同步完成');
+                            }
+                        } catch (error) {
+                            console.error('[TaskPro] 数据同步失败:', error);
+                        }
+                    },
+                    
+                    // 恢复任务数据
+                    async recoverTasksData() {
+                        try {
+                            console.log('[TaskPro] 开始恢复任务数据');
+                            
+                            // 从store恢复数据
+                            if (window.store && window.store.tasksData && window.store.tasksData.value) {
+                                const storeTasks = window.store.tasksData.value;
+                                console.log('[TaskPro] 从store恢复数据，任务数量:', storeTasks.length);
+                                
+                                // 更新主应用的tasks数组
+                                this.tasks = [...storeTasks];
+                                
+                                // 重新提取标签和更新通知
+                                this.extractLabels();
+                                this.initNotifications();
+                                
+                                console.log('[TaskPro] 数据恢复完成');
                             } else {
-                                console.warn(`[TaskPro] ${componentName} 组件未找到`);
+                                // 如果store没有数据，尝试重新加载
+                                console.log('[TaskPro] store没有数据，尝试重新加载');
+                                await this.loadTasksData();
+                            }
+                        } catch (error) {
+                            console.error('[TaskPro] 数据恢复失败:', error);
+                            // 最后的备用方案：重新加载数据
+                            try {
+                                await this.loadTasksData();
+                            } catch (reloadError) {
+                                console.error('[TaskPro] 重新加载数据也失败:', reloadError);
+                            }
+                        }
+                    },
+                    
+                    // 获取默认任务数据
+                    getDefaultTasks() {
+                        return [
+                            {
+                                id: 'demo-001',
+                                title: '示例任务',
+                                description: '这是一个示例任务，用于演示系统功能',
+                                type: 'feature',
+                                status: 'todo',
+                                priority: 'medium',
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString()
+                            }
+                        ];
+                    },
+                    
+                    // 提取标签数据
+                    extractLabels() {
+                        try {
+                            const allLabels = new Set();
+                            
+                            if (this.tasks && this.tasks.length > 0) {
+                                this.tasks.forEach(task => {
+                                    if (task.labels && Array.isArray(task.labels)) {
+                                        task.labels.forEach(label => {
+                                            allLabels.add(JSON.stringify(label));
+                                        });
+                                    }
+                                });
+                            }
+                            
+                            this.labels = Array.from(allLabels).map(labelStr => JSON.parse(labelStr));
+                            
+                        } catch (error) {
+                            console.warn('[TaskPro] 标签提取失败:', error);
+                            this.labels = [];
+                        }
+                    },
+                    
+                    // 初始化通知
+                    initNotifications() {
+                        try {
+                            this.notifications = [
+                                {
+                                    id: 'welcome-001',
+                                    title: '欢迎使用 TaskPro Enterprise',
+                                    message: '系统已准备就绪，开始管理您的任务吧！',
+                                    type: 'info',
+                                    read: false,
+                                    timestamp: new Date().toISOString()
+                                }
+                            ];
+                            
+                            this.unreadNotifications = 1;
+                            
+                        } catch (error) {
+                            console.warn('[TaskPro] 通知初始化失败:', error);
+                            this.notifications = [];
+                            this.unreadNotifications = 0;
+                        }
+                    },
+                    
+                    // 视图切换
+                    setCurrentView(view) {
+                        if (this.currentView === view) return;
+                        
+                        console.log(`[TaskPro] 切换到视图: ${view}`);
+                        this.currentView = view;
+                        
+                        // 特殊处理周报和日报视图
+                        if (view === 'weekly' || view === 'daily') {
+                            if (!this.tasks || this.tasks.length === 0) {
+                                console.warn('[TaskPro] 周报/日报视图：任务数据为空');
+                            }
+                        }
+                        
+                        // 检查Vue组件是否正确注册
+                        this.$nextTick(() => {
+                            const componentName = this.getComponentNameByView(view);
+                            if (componentName) {
+                                // 检查Vue组件是否已注册
+                                const kebabName = componentName;
+                                if (this.$options.components && this.$options.components[kebabName]) {
+                                    console.log(`[TaskPro] Vue组件 ${kebabName} 已注册`);
+                                } else {
+                                    console.warn(`[TaskPro] Vue组件 ${kebabName} 未注册，检查全局组件状态`);
+                                    // 检查全局组件状态
+                                    const globalComponentName = this.getGlobalComponentName(view);
+                                    if (window[globalComponentName]) {
+                                        console.log(`[TaskPro] 全局组件 ${globalComponentName} 可用`);
+                                    } else {
+                                        console.error(`[TaskPro] 全局组件 ${globalComponentName} 不可用`);
+                                    }
+                                }
                             }
                         });
-                    }
-                },
-
-                // 获取当前视图名称
-                getCurrentViewName() {
-                    const viewMap = {
-                        'list': '列表视图',
-                        'kanban': '看板视图',
-                        'gantt': '甘特图',
-                        'weekly': '周报视图',
-                        'daily': '日报视图',
-            
-
-                        'matrix': '矩阵视图'
-                    };
-                    return viewMap[this.currentView] || '未知视图';
-                },
-
-                // 清除搜索
-                clearSearch() {
-                    this.searchQuery = '';
-                    this.globalSearchQuery = '';
-                },
-
-                // 批量更新状态
-                batchUpdateStatus() {
-                    console.log('[TaskPro] 批量更新状态:', this.selectedTasks.length, '个任务');
-                    // 这里可以添加批量更新状态的逻辑
-                },
-
-                // 批量删除
-                batchDelete() {
-                    console.log('[TaskPro] 批量删除:', this.selectedTasks.length, '个任务');
-                    // 这里可以添加批量删除的逻辑
-                },
-
-                // 切换全屏
-                toggleFullscreen() {
-                    if (!document.fullscreenElement) {
-                        document.documentElement.requestFullscreen();
-                    } else {
-                        document.exitFullscreen();
-                    }
-                },
-
-                // 清除选择
-                clearSelection() {
-                    this.selectedTasks = [];
-                    console.log('[TaskPro] 清除任务选择');
-                },
-
-                // 打开设置
-                openSettings() {
-                    console.log('[TaskPro] 打开设置');
-                    // 这里可以添加打开设置的逻辑
-                },
-
-                // 快速搜索处理
-                handleQuickSearch(event) {
-                    this.searchQuery = event.target.value;
-                    console.log('[TaskPro] 快速搜索:', this.searchQuery);
-                },
-
-                // 任务选择处理
-                handleTaskSelect(task) {
-                    console.log('[TaskPro] 选择任务:', task.title);
-                    // 这里可以添加任务选择的逻辑
-                },
-
-                // 任务点击处理
-                handleTaskClick(task) {
-                    console.log('[TaskPro] 点击任务:', task.title);
-                    // 这里可以添加任务点击的逻辑
-                },
-
-                // 任务更新处理
-                handleTaskUpdate(updateData) {
-                    console.log('[TaskPro] 更新任务:', updateData);
-                    // 这里可以添加任务更新的逻辑
-                },
-
-                // 任务删除处理
-                handleTaskDelete(task) {
-                    console.log('[TaskPro] 删除任务:', task.title);
-                    // 这里可以添加任务删除的逻辑
-                },
-
-                // 任务编辑处理
-                handleTaskEdit(task) {
-                    console.log('[TaskPro] 编辑任务:', task.title);
-                    // 这里可以添加任务编辑的逻辑
-                },
-
-                // 任务移动处理
-                handleTaskMove(task) {
-                    console.log('[TaskPro] 移动任务:', task.title);
-                    // 这里可以添加任务移动的逻辑
-                },
-
-                // 任务创建处理
-                handleTaskCreate(newTask) {
-                    console.log('[TaskPro] 创建任务:', newTask);
-                    // 这里可以添加任务创建的逻辑
-                },
-
-                // 选择变化处理
-                handleSelectionChange(selectedTasks) {
-                    this.selectedTasks = selectedTasks;
-                    console.log('[TaskPro] 选择变化:', selectedTasks.length, '个任务');
-                },
-
-
-
-                // 关闭详情面板
-                closeDetailPanel() {
-                    this.showDetailPanel = false;
-                    console.log('[TaskPro] 关闭详情面板');
-                },
-                
-                // 项目管理
-                toggleProjectDropdown() {
-                    this.showProjectDropdown = !this.showProjectDropdown;
-                    // 关闭其他下拉菜单
-                    this.showNotifications = false;
-                },
-                
-                selectProject(project) {
-                    this.currentProject = project;
-                    this.showProjectDropdown = false;
-                    console.log('[TaskPro] 切换项目:', project.name);
-                },
-                
-                createNewProject() {
-                    console.log('[TaskPro] 创建新项目');
-                    this.showProjectDropdown = false;
-                },
-                
-                // 搜索功能
-                handleGlobalSearch: (event) => {
-                    const query = event.target.value;
-                    this.state.globalSearchQuery = query;
+                    },
                     
-                    if (query.length > 2) {
-                        this.generateSearchSuggestions(query);
-                        this.state.showSearchSuggestions = true;
-                    } else {
-                        this.state.showSearchSuggestions = false;
-                    }
-                },
-                
-                handleQuickSearch: (event) => {
-                    this.state.searchQuery = event.target.value;
-                },
-                
-                clearSearch: () => {
-                    this.state.searchQuery = '';
-                    this.state.globalSearchQuery = '';
-                    this.state.showSearchSuggestions = false;
-                },
-                
-                hideSearchSuggestions: () => {
-                    setTimeout(() => {
-                        this.state.showSearchSuggestions = false;
-                    }, 200);
-                },
-                
-                selectSearchItem: (item) => {
-                    console.log('[TaskPro] 选择搜索项:', item);
-                    this.state.showSearchSuggestions = false;
-                },
-                
-                // 通知管理
-                toggleNotifications: () => {
-                    this.state.showNotifications = !this.state.showNotifications;
-                    // 关闭其他下拉菜单
-                    this.state.showProjectDropdown = false;
-                },
-                
-                markAllAsRead: () => {
-                    this.state.notifications.forEach(n => n.read = true);
-                    this.state.unreadNotifications = 0;
-                },
-                
-
-                
-                // 帮助系统
-                openHelp: () => {
-                    this.state.showShortcutHelp = true;
-                },
-                
-                hideShortcutHelp: () => {
-                    this.state.showShortcutHelp = false;
-                },
-                
-                // 侧边栏管理
-                toggleSidebar: () => {
-                    this.state.sidebarCollapsed = !this.state.sidebarCollapsed;
-                },
-                
-                // 筛选功能
-                applyFilter: (filter) => {
-                    const index = this.state.activeFilters.indexOf(filter.id);
-                    if (index > -1) {
-                        this.state.activeFilters.splice(index, 1);
-                    } else {
-                        this.state.activeFilters.push(filter.id);
-                    }
-                    this.applyQuickFilter(filter);
-                },
-                
-                toggleLabel: (label) => {
-                    const index = this.state.selectedLabels.indexOf(label.id);
-                    if (index > -1) {
-                        this.state.selectedLabels.splice(index, 1);
-                    } else {
-                        this.state.selectedLabels.push(label.id);
-                    }
-                },
-                
-                filterByMember: (member) => {
-                    const index = this.state.selectedMembers.indexOf(member.id);
-                    if (index > -1) {
-                        this.state.selectedMembers.splice(index, 1);
-                    } else {
-                        this.state.selectedMembers.push(member.id);
-                    }
-                },
-                
-                toggleStatusFilter: (status) => {
-                    const index = this.state.selectedStatuses.indexOf(status.value);
-                    if (index > -1) {
-                        this.state.selectedStatuses.splice(index, 1);
-                    } else {
-                        this.state.selectedStatuses.push(status.value);
-                    }
-                },
-                
-                togglePriorityFilter: (priority) => {
-                    const index = this.state.selectedPriorities.indexOf(priority.value);
-                    if (index > -1) {
-                        this.state.selectedPriorities.splice(index, 1);
-                    } else {
-                        this.state.selectedPriorities.push(priority.value);
-                    }
-                },
-                
-                toggleTypeFilter: (type) => {
-                    const index = this.state.selectedTypes.indexOf(type.value);
-                    if (index > -1) {
-                        this.state.selectedTypes.splice(index, 1);
-                    } else {
-                        this.state.selectedTypes.push(type.value);
-                    }
-                },
-                
-                setDateFilter: (filter) => {
-                    this.state.selectedDateFilter = filter;
-                },
-                
-                clearAllFilters: () => {
-                    this.state.activeFilters = [];
-                    this.state.selectedLabels = [];
-                    this.state.selectedMembers = [];
-                    this.state.selectedStatuses = [];
-                    this.state.selectedPriorities = [];
-                    this.state.selectedTypes = [];
-                    this.state.selectedDateFilter = null;
-                    this.state.customDateStart = '';
-                    this.state.customDateEnd = '';
-                },
-                
-                // 高级筛选
-                toggleAdvancedFilters: () => {
-                    this.state.showAdvancedFilters = !this.state.showAdvancedFilters;
-                },
-                
-                // 排序
-                toggleSortDropdown: () => {
-                    this.state.showSortDropdown = !this.state.showSortDropdown;
-                },
-                
-                setSortOption: (option) => {
-                    if (this.state.currentSort.key === option.key) {
-                        this.state.currentSort.direction = this.state.currentSort.direction === 'asc' ? 'desc' : 'asc';
-                    } else {
-                        this.state.currentSort = { ...option, direction: 'desc' };
-                    }
-                    this.state.showSortDropdown = false;
-                },
-                
-                // 任务管理
-                createTask: () => {
-                    console.log('[TaskPro] 创建新任务');
-                },
-                
-                handleTaskClick: (task) => {
-                    this.state.selectedTask = task;
-                    this.state.showDetailPanel = true;
-                    console.log('[TaskPro] 点击任务:', task.title);
-                },
-                
-                handleTaskSelect: (task) => {
-                    this.state.selectedTask = task;
-                    console.log('[TaskPro] 选择任务:', task.title);
-                },
-                
-                handleTaskUpdate: (task) => {
-                    const index = this.state.tasks.findIndex(t => t.id === task.id);
-                    if (index > -1) {
-                        this.state.tasks[index] = { ...this.state.tasks[index], ...task };
-                    }
-                    console.log('[TaskPro] 更新任务:', task.title);
-                },
-                
-                handleTaskDelete: (task) => {
-                    const index = this.state.tasks.findIndex(t => t.id === task.id);
-                    if (index > -1) {
-                        this.state.tasks.splice(index, 1);
-                        this.updateStats();
-                    }
-                    console.log('[TaskPro] 删除任务:', task.title);
-                },
-                
-                handleTaskCreate: (task) => {
-                    const newTask = {
-                        id: 'TASK-' + Date.now(),
-                        ...task,
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    };
-                    this.state.tasks.push(newTask);
-                    this.updateStats();
-                    console.log('[TaskPro] 创建任务:', newTask.title);
-                },
-                
-                handleTaskMove: (task, newStatus) => {
-                    this.handleTaskUpdate({ ...task, status: newStatus });
-                },
-                
-                handleSelectionChange: (selectedTasks) => {
-                    this.state.selectedTasks = selectedTasks;
-                },
-                
-                // 批量操作
-                batchUpdateStatus: () => {
-                    console.log('[TaskPro] 批量更新状态');
-                },
-                
-                batchAssign: () => {
-                    console.log('[TaskPro] 批量分配');
-                },
-                
-                batchAddLabels: () => {
-                    console.log('[TaskPro] 批量添加标签');
-                },
-                
-                batchDelete: () => {
-                    if (confirm(`确定要删除 ${this.state.selectedTasks.length} 个任务吗？`)) {
-                        this.state.selectedTasks.forEach(task => {
-                            this.handleTaskDelete(task);
-                        });
-                        this.state.selectedTasks = [];
-                    }
-                },
-                
-                clearSelection: () => {
-                    this.state.selectedTasks = [];
-                },
-                
-                // 视图选项
-                toggleGrouping: () => {
-                    this.state.groupingEnabled = !this.state.groupingEnabled;
-                },
-                
-                toggleAutoRefresh: () => {
-                    this.state.autoRefreshEnabled = !this.state.autoRefreshEnabled;
-                },
-                
-                toggleFullscreen: () => {
-                    if (document.fullscreenElement) {
-                        document.exitFullscreen();
-                    } else {
-                        document.documentElement.requestFullscreen();
-                    }
-                },
-                
-                // 详情面板
-                closeDetailPanel: () => {
-                    this.state.showDetailPanel = false;
-                    this.state.selectedTask = null;
-                },
-                
-                // 导出
-                exportData: () => {
-                    console.log('[TaskPro] 导出数据');
-                },
-                
-                // 更多选项
-                toggleMoreOptions: () => {
-                    console.log('[TaskPro] 更多选项');
-                },
-                
-                // 自定义视图
-                createCustomView: () => {
-                    console.log('[TaskPro] 创建自定义视图');
-                },
-                
-                selectCustomView: (view) => {
-                    this.state.activeCustomView = view.id;
-                    console.log('[TaskPro] 选择自定义视图:', view.name);
-                },
-                
-                // 标签管理
-                manageLabels: () => {
-                    console.log('[TaskPro] 管理标签');
-                },
-                
-                // 时间格式化
-                formatTime: (time) => {
-                    if (!time) return '';
-                    const now = new Date();
-                    const diff = now - new Date(time);
-                    const minutes = Math.floor(diff / 60000);
-                    const hours = Math.floor(minutes / 60);
-                    const days = Math.floor(hours / 24);
+                    // 根据视图获取组件名称
+                    getComponentNameByView(view) {
+                        const viewComponentMap = {
+                            'list': 'enhanced-task-list',
+                            'kanban': 'kanban-board',
+                            'gantt': 'enhanced-gantt-chart',
+                            'weekly': 'weekly-report',
+                            'daily': 'daily-report',
+                            'matrix': 'matrix-view'
+                        };
+                        return viewComponentMap[view];
+                    },
                     
-                    if (days > 0) return `${days} 天前`;
-                    if (hours > 0) return `${hours} 小时前`;
-                    if (minutes > 0) return `${minutes} 分钟前`;
-                    return '刚刚';
-                },
-                
-                // 防止模板错误的安全访问函数
-                safeAccess: (obj, path, defaultValue = '') => {
-                    try {
-                        return path.split('.').reduce((o, p) => o?.[p], obj) ?? defaultValue;
-                    } catch {
-                        return defaultValue;
-                    }
-                },
-                
-                // 成员过滤
-                filterByMember: (member) => {
-                    if (member && member.id) {
-                        const index = this.selectedMembers.indexOf(member.id);
-                        if (index === -1) {
-                            this.selectedMembers.push(member.id);
+                    // 根据视图获取全局组件名称
+                    getGlobalComponentName(view) {
+                        const viewComponentMap = {
+                            'list': 'EnhancedTaskList',
+                            'kanban': 'KanbanBoard',
+                            'gantt': 'EnhancedGanttChart',
+                            'weekly': 'WeeklyReport',
+                            'daily': 'DailyReport',
+                            'matrix': 'MatrixView'
+                        };
+                        return viewComponentMap[view];
+                    },
+                    
+                    // 批量更新状态
+                    batchUpdateStatus() {
+                        if (this.selectedTasks.length === 0) return;
+                        
+                        // 这里可以添加批量更新状态的逻辑
+                    },
+                    
+                    // 批量删除
+                    batchDelete() {
+                        if (this.selectedTasks.length === 0) return;
+                        
+                        if (confirm(`确定要删除选中的 ${this.selectedTasks.length} 个任务吗？`)) {
+                            this.selectedTasks.forEach(task => {
+                                this.deleteTask(task);
+                            });
+                            this.selectedTasks = [];
+                        }
+                    },
+                    
+                    // 清除任务选择
+                    clearTaskSelection() {
+                        this.selectedTasks = [];
+                    },
+                    
+                    // 打开设置
+                    openSettings() {
+                        // 这里可以添加打开设置的逻辑
+                    },
+                    
+                    // 快速搜索
+                    handleQuickSearch() {
+                        // 搜索逻辑已在computed中处理
+                    },
+                    
+                    // 清除搜索
+                    clearSearch() {
+                        this.searchQuery = '';
+                    },
+                    
+                    // 选择任务
+                    handleTaskSelect(task) {
+                        const index = this.selectedTasks.findIndex(t => t.id === task.id);
+                        if (index > -1) {
+                            this.selectedTasks.splice(index, 1);
                         } else {
-                            this.selectedMembers.splice(index, 1);
+                            this.selectedTasks.push(task);
                         }
-                        console.log('[TaskPro] 成员筛选:', member.name, '当前选择:', this.selectedMembers);
+                    },
+                    
+                    // 点击任务
+                    handleTaskClick(task) {
+                        // 这里可以添加任务点击的逻辑
+                    },
+                    
+                    // 更新任务
+                    handleTaskUpdate(updateData) {
+                        // 这里可以添加任务更新的逻辑
+                    },
+                    
+                    // 删除任务
+                    async handleTaskDelete(task) {
+                        try {
+                            console.log('[TaskPro] 开始删除任务:', task.title);
+                            
+                            // 使用store中的删除方法
+                            if (window.store && window.store.deleteTask) {
+                                console.log('[TaskPro] 使用store中的删除方法');
+                                const result = await window.store.deleteTask(task);
+                                
+                                if (result) {
+                                    // 记录删除前的任务数量
+                                    const beforeCount = this.tasks.length;
+                                    console.log('[TaskPro] 删除前主应用任务数量:', beforeCount);
+                                    
+                                    // 同步更新主应用的tasks数组
+                                    const index = this.tasks.findIndex(t => 
+                                        (t.id && t.id === task.id) || 
+                                        (t.title && t.title === task.title) ||
+                                        (t.key && t.key === task.key)
+                                    );
+                                    
+                                    if (index !== -1) {
+                                        const deletedTask = this.tasks[index];
+                                        this.tasks.splice(index, 1);
+                                        console.log('[TaskPro] 主应用tasks数组已更新，移除索引:', index, '标题:', deletedTask.title);
+                                        
+                                        // 验证删除后的任务数量
+                                        const afterCount = this.tasks.length;
+                                        const expectedCount = beforeCount - 1;
+                                        
+                                        console.log('[TaskPro] 主应用删除后验证:', {
+                                            beforeCount,
+                                            afterCount,
+                                            expectedCount,
+                                            isCorrect: afterCount === expectedCount
+                                        });
+                                        
+                                        if (afterCount !== expectedCount) {
+                                            console.warn('[TaskPro] 主应用任务数量不正确，尝试恢复数据');
+                                            // 尝试从store恢复数据
+                                            this.recoverTasksData();
+                                        }
+                                    } else {
+                                        console.warn('[TaskPro] 在主应用中未找到要删除的任务:', task.title);
+                                    }
+                                    
+                                    // 同时从selectedTasks中移除（如果存在）
+                                    const selectedIndex = this.selectedTasks.findIndex(t => 
+                                        (t.id && t.id === task.id) || 
+                                        (t.title && t.title === task.title) ||
+                                        (t.key && t.key === task.key)
+                                    );
+                                    
+                                    if (selectedIndex !== -1) {
+                                        this.selectedTasks.splice(selectedIndex, 1);
+                                        console.log('[TaskPro] selectedTasks已更新，移除索引:', selectedIndex);
+                                    }
+                                    
+                                    // 显示成功消息
+                                    if (window.showSuccess) {
+                                        window.showSuccess(`已删除任务"${task.title}"`);
+                                    } else {
+                                        alert(`已删除任务"${task.title}"`);
+                                    }
+                                    
+                                    console.log('[TaskPro] 任务删除成功:', task.title);
+                                } else {
+                                    throw new Error('删除任务失败');
+                                }
+                            } else {
+                                console.warn('[TaskPro] store未加载，使用本地删除方法');
+                                // 本地删除逻辑（作为备用）
+                                const index = this.tasks.findIndex(t => 
+                                    (t.id && t.id === task.id) || 
+                                        (t.title && t.title === task.title) ||
+                                        (t.key && t.key === task.key)
+                                );
+                                
+                                if (index !== -1) {
+                                    this.tasks.splice(index, 1);
+                                    
+                                    // 同时从selectedTasks中移除（如果存在）
+                                    const selectedIndex = this.selectedTasks.findIndex(t => 
+                                        (t.id && t.id === task.id) || 
+                                        (t.title && t.title === task.title) ||
+                                        (t.key && t.key === task.key)
+                                    );
+                                    
+                                    if (selectedIndex !== -1) {
+                                        this.selectedTasks.splice(selectedIndex, 1);
+                                    }
+                                    
+                                    // 显示成功消息
+                                    if (window.showSuccess) {
+                                        window.showSuccess(`已删除任务"${task.title}"`);
+                                    } else {
+                                        alert(`已删除任务"${task.title}"`);
+                                    }
+                                    
+                                    console.log('[TaskPro] 本地删除成功:', task.title);
+                                } else {
+                                    throw new Error('任务不存在');
+                                }
+                            }
+                        } catch (error) {
+                            console.error('[TaskPro] 删除任务失败:', error);
+                            
+                            // 显示错误消息
+                            if (window.showError) {
+                                window.showError('删除任务失败，请稍后重试');
+                            } else {
+                                alert('删除任务失败，请稍后重试');
+                            }
+                        }
+                    },
+                    
+                    // 编辑任务
+                    handleTaskEdit(task) {
+                        // 这里可以添加任务编辑的逻辑
+                    },
+                    
+                    // 移动任务
+                    handleTaskMove(task) {
+                        // 这里可以添加任务移动的逻辑
+                    },
+                    
+                    // 下载任务数据
+                    handleDownloadTasks() {
+                        try {
+                            // 使用store中的下载方法
+                            if (window.store && window.store.methods && window.store.methods.handleDownloadTasks) {
+                                console.log('[TaskPro] 使用store中的下载方法');
+                                window.store.methods.handleDownloadTasks();
+                            } else {
+                                console.warn('[TaskPro] store未加载，使用本地下载方法');
+                                const tasks = this.filteredTasks;
+                                if (!tasks || tasks.length === 0) {
+                                    alert('没有可下载的任务数据');
+                                    return;
+                                }
+                                
+                                const data = {
+                                    tasks: tasks,
+                                    exportTime: new Date().toISOString(),
+                                    version: '1.0.0'
+                                };
+                                
+                                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `tasks_${new Date().toISOString().split('T')[0]}.json`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                            }
+                        } catch (error) {
+                            console.error('[TaskPro] 下载失败:', error);
+                            alert('下载失败，请重试');
+                        }
+                    },
+                    
+                    // 下载上传样例数据
+                    handleDownloadSample() {
+                        try {
+                            // 使用store中的样例下载方法
+                            if (window.store && window.store.methods && window.store.methods.handleDownloadSample) {
+                                console.log('[TaskPro] 使用store中的样例下载方法');
+                                window.store.methods.handleDownloadSample();
+                            } else {
+                                console.warn('[TaskPro] store未加载，使用本地样例下载方法');
+                                // 本地样例数据
+                                const sampleData = {
+                                    exportTime: new Date().toISOString(),
+                                    description: '这是TaskPro系统的上传样例数据，包含完整的任务数据结构示例',
+                                    version: '1.0.0',
+                                    totalTasks: 3,
+                                    tasks: [
+                                        {
+                                            id: 'sample-task-001',
+                                            title: '示例任务：用户认证功能开发',
+                                            description: '这是一个示例任务，展示了完整的任务数据结构',
+                                            content: '开发用户登录、注册、密码重置等认证相关功能',
+                                            status: 'todo',
+                                            priority: 'high',
+                                            category: 'development',
+                                            tags: ['认证', '安全', '前端'],
+                                            createTime: new Date().toISOString(),
+                                            updateTime: new Date().toISOString()
+                                        }
+                                    ]
+                                };
+                                
+                                const blob = new Blob([JSON.stringify(sampleData, null, 2)], { type: 'application/json' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'TaskPro_上传样例数据.json';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                                
+                                alert('样例数据下载成功！');
+                            }
+                        } catch (error) {
+                            console.error('[TaskPro] 样例下载失败:', error);
+                            alert('样例下载失败，请重试');
+                        }
+                    },
+                    
+                    // 触发上传
+                    triggerUploadTasks() {
+                        const input = document.getElementById('tasksUploadInput');
+                        if (input) {
+                            input.click();
+                        }
+                    },
+                    
+                    // 处理上传
+                    async handleUploadTasks(event) {
+                        try {
+                            const file = event.target.files[0];
+                            if (!file) return;
+                            
+                            console.log('[TaskPro] 开始处理上传文件:', file.name, '类型:', file.type, '大小:', file.size);
+                            
+                            // 检查文件大小（限制为50MB）
+                            const maxSize = 50 * 1024 * 1024; // 50MB
+                            if (file.size > maxSize) {
+                                throw new Error('文件大小超过限制（最大50MB）');
+                            }
+                            
+                            // 使用store中的上传方法
+                            if (window.store && window.store.methods && window.store.methods.handleUploadTasks) {
+                                console.log('[TaskPro] 使用store中的上传方法');
+                                await window.store.methods.handleUploadTasks(event);
+                                
+                                // 上传完成后，同步数据到主应用
+                                console.log('[TaskPro] 上传完成，同步数据到主应用');
+                                if (window.store && window.store.loadTasksData) {
+                                    await window.store.loadTasksData();
+                                    this.syncTasksData();
+                                }
+                            } else {
+                                console.warn('[TaskPro] store未加载，使用本地上传方法');
+                                // 判断文件类型并处理
+                                if (file.name.toLowerCase().endsWith('.zip') || file.type === 'application/zip') {
+                                    await this.handleZipUpload(file);
+                                } else if (file.name.toLowerCase().endsWith('.json') || file.type === 'application/json') {
+                                    await this.handleJsonUpload(file);
+                                } else {
+                                    throw new Error('不支持的文件格式，请上传 ZIP 或 JSON 文件');
+                                }
+                            }
+                            
+                            // 清除文件输入
+                            event.target.value = '';
+                            
+                        } catch (error) {
+                            console.error('[TaskPro] 上传失败:', error);
+                            
+                            if (window.showError) {
+                                window.showError('上传失败: ' + (error?.message || '未知错误'));
+                            } else {
+                                alert('上传失败: ' + (error?.message || '未知错误'));
+                            }
+                            
+                            // 清除文件输入
+                            event.target.value = '';
+                        }
+                    },
+                    
+                    // 处理ZIP上传
+                    async handleZipUpload(file) {
+                        try {
+                            // 显示加载提示
+                            if (window.showGlobalLoading) {
+                                window.showGlobalLoading('正在解析ZIP文件...');
+                            }
+                            
+                            // 显示上传进度
+                            this.showUploadProgress('ZIP文件解析中...', 0);
+                            
+                            // 动态加载JSZip
+                            let JSZip = window.JSZip;
+                            if (!JSZip) {
+                                try {
+                                    const JSZipModule = await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js');
+                                    JSZip = JSZipModule.default;
+                                } catch (importError) {
+                                    throw new Error('ZIP处理库加载失败，请检查网络连接');
+                                }
+                            }
+                            
+                            const zip = new JSZip();
+                            const zipData = await zip.loadAsync(file);
+                            
+                            // 检查必要的文件
+                            const treeFile = zipData.file('tree.json');
+                            const filesFile = zipData.file('files.json');
+                            
+                            if (!treeFile && !filesFile) {
+                                throw new Error('ZIP文件中未找到 tree.json 或 files.json');
+                            }
+                            
+                            let treeData = null;
+                            let filesData = null;
+                            
+                            if (treeFile) {
+                                const treeContent = await treeFile.async('text');
+                                treeData = JSON.parse(treeContent);
+                                console.log('[上传] 解析tree.json成功:', treeData);
+                            }
+                            
+                            if (filesFile) {
+                                const filesContent = await filesFile.async('text');
+                                filesData = JSON.parse(filesContent);
+                                console.log('[上传] 解析files.json成功，文件数量:', Object.keys(filesData).length);
+                            }
+                            
+                            if (window.showGlobalLoading) {
+                                window.showGlobalLoading('正在导入任务数据到数据库...');
+                            }
+                            
+                            // 导入任务数据到数据库
+                            if (filesData) {
+                                let importedCount = 0;
+                                let skippedCount = 0;
+                            let errorCount = 0;
+                                const totalFiles = Object.keys(filesData).length;
+                                
+                                // 更新进度显示
+                                this.showUploadProgress('正在导入任务数据...', 0);
+                                
+                                for (const [filePath, taskData] of Object.entries(filesData)) {
+                                    try {
+                                        // 构建要保存的任务对象
+                                        const taskToSave = {
+                                            // 基础属性
+                                            title: taskData.title,
+                                            description: taskData.description,
+                                            content: taskData.content,
+                                            status: taskData.status || 'todo',
+                                            priority: taskData.priority || 'medium',
+                                            category: taskData.category || '',
+                                            tags: taskData.tags || [],
+                                            steps: taskData.steps || [],
+                                            featureName: taskData.featureName || '',
+                                            cardTitle: taskData.cardTitle || '',
+                                            createTime: taskData.createTime || new Date().toISOString(),
+                                            updateTime: new Date().toISOString(),
+                                            
+                                            // 周报属性
+                                            weeklyReport: taskData.weeklyReport || {
+                                                enabled: false,
+                                                frequency: 'weekly',
+                                                dayOfWeek: 1,
+                                                reportTemplate: '本周工作总结：\n\n1. 已完成工作：\n   - \n\n2. 遇到的问题：\n   - \n\n3. 下周计划：\n   - ',
+                                                lastSubmitted: null,
+                                                nextDue: null,
+                                                history: []
+                                            },
+                                            
+                                            // 日报属性
+                                            dailyReport: taskData.dailyReport || {
+                                                enabled: false,
+                                                frequency: 'daily',
+                                                timeOfDay: '18:00',
+                                                reportTemplate: '今日工作总结：\n\n1. 已完成：\n   - \n\n2. 进行中：\n   - \n\n3. 遇到问题：\n   - \n\n4. 明日计划：\n   - ',
+                                                lastSubmitted: null,
+                                                nextDue: null,
+                                                history: [],
+                                                weekends: false
+                                            },
+                                            
+                                            // 任务特征属性
+                                            features: taskData.features || {
+                                                estimatedHours: 0,
+                                                actualHours: 0,
+                                                difficulty: 'medium',
+                                                type: 'development',
+                                                dependencies: [],
+                                                milestone: '',
+                                                assignee: '',
+                                                reviewer: '',
+                                                labels: [],
+                                                businessValue: 'medium',
+                                                urgency: 'medium',
+                                                complexity: 'medium'
+                                            },
+                                            
+                                            // 进度跟踪
+                                            progress: taskData.progress || {
+                                                percentage: 0,
+                                                milestones: [],
+                                                blockers: [],
+                                                notes: []
+                                            },
+                                            
+                                            // 时间跟踪
+                                            timeTracking: taskData.timeTracking || {
+                                                startDate: null,
+                                                endDate: null,
+                                                deadline: null,
+                                                estimatedDuration: 0,
+                                                actualDuration: 0,
+                                                timeEntries: []
+                                            }
+                                        };
+                                        
+                                        // 保存到tasks集合
+                                        const saveResult = await window.postData(`${window.API_URL}/mongodb/?cname=tasks`, taskToSave);
+                                        
+                                        if (saveResult && saveResult.success !== false) {
+                                            importedCount++;
+                                            } else {
+                                            console.warn('[上传] 任务保存失败:', filePath, saveResult);
+                                            skippedCount++;
+                                        }
+                                        
+                                        // 更新进度
+                                        const currentProgress = ((importedCount + skippedCount + errorCount) / totalFiles) * 100;
+                                        this.showUploadProgress(`正在导入任务数据... ${importedCount + skippedCount + errorCount}/${totalFiles}`, currentProgress);
+                                        
+                                    } catch (taskError) {
+                                        console.warn('[上传] 任务导入失败:', filePath, taskError);
+                                        errorCount++;
+                                        
+                                        // 更新进度
+                                        const currentProgress = ((importedCount + skippedCount + errorCount) / totalFiles) * 100;
+                                        this.showUploadProgress(`正在导入任务数据... ${importedCount + skippedCount + errorCount}/${totalFiles}`, currentProgress);
+                                    }
+                                }
+                                
+                                if (window.hideGlobalLoading) {
+                                    window.hideGlobalLoading();
+                                }
+                                
+                                // 隐藏上传进度
+                                this.hideUploadProgress();
+                                
+                                if (importedCount > 0) {
+                                    if (window.showSuccess) {
+                                        window.showSuccess(`ZIP导入成功！导入 ${importedCount} 个任务${skippedCount > 0 ? `，跳过 ${skippedCount} 个` : ''}${errorCount > 0 ? `，失败 ${errorCount} 个` : ''}`);
+                                    } else {
+                                        alert(`ZIP导入成功！导入 ${importedCount} 个任务${skippedCount > 0 ? `，跳过 ${skippedCount} 个` : ''}${errorCount > 0 ? `，失败 ${errorCount} 个` : ''}`);
+                                    }
+                                    
+                                    // 刷新任务数据
+                                    if (window.store && window.store.loadTasksData) {
+                                        await window.store.loadTasksData();
+                                        // 同步到主应用
+                                        this.syncTasksData();
+                                    }
+                                } else {
+                                    if (window.showError) {
+                                        window.showError('没有成功导入任何任务');
+                                    } else {
+                                        alert('没有成功导入任何任务');
+                                    }
+                                }
+                                
+                                console.log('[上传] ZIP导入完成:', {
+                                    imported: importedCount,
+                                    skipped: skippedCount,
+                                    error: errorCount,
+                                    total: Object.keys(filesData).length
+                                });
+                                
+                            } else {
+                                if (window.hideGlobalLoading) {
+                                    window.hideGlobalLoading();
+                                }
+                                throw new Error('ZIP文件中没有找到有效的任务数据');
+                            }
+                            
+                        } catch (error) {
+                            if (window.hideGlobalLoading) {
+                                window.hideGlobalLoading();
+                            }
+                            
+                            // 隐藏上传进度
+                            this.hideUploadProgress();
+                            
+                            console.error('[TaskPro] ZIP上传失败:', error);
+                            
+                            if (window.showError) {
+                                window.showError('ZIP上传失败: ' + (error?.message || '未知错误'));
+                            } else {
+                                alert('ZIP上传失败: ' + (error?.message || '未知错误'));
+                            }
+                        }
+                    },
+                    
+                    // 处理JSON上传
+                    async handleJsonUpload(file) {
+                        try {
+                            // 显示加载提示
+                            if (window.showGlobalLoading) {
+                                window.showGlobalLoading('正在处理JSON文件...');
+                            }
+                            
+                            const text = await file.text();
+                            let uploadData;
+                            
+                            try {
+                                uploadData = JSON.parse(text);
+                            } catch (parseError) {
+                                throw new Error('JSON文件格式不正确，请检查文件内容');
+                            }
+                            
+                            // 验证数据格式
+                            if (uploadData.tasks && Array.isArray(uploadData.tasks)) {
+                                // 任务数组格式
+                                if (window.showGlobalLoading) {
+                                    window.showGlobalLoading('正在导入任务数据到数据库...');
+                                }
+                                
+                                // 显示上传进度
+                                this.showUploadProgress('正在导入任务数据...', 0);
+                                
+                                let importedCount = 0;
+                                let skippedCount = 0;
+                                let errorCount = 0;
+                                const totalTasks = uploadData.tasks.length;
+                                
+                                for (const taskData of uploadData.tasks) {
+                                    try {
+                                        if (taskData && taskData.title) {
+                                            // 构建要保存的任务对象
+                                            const taskToSave = {
+                                                // 基础属性
+                                                title: taskData.title,
+                                                description: taskData.description || '',
+                                                content: taskData.content || '',
+                                                status: taskData.status || 'todo',
+                                                priority: taskData.priority || 'medium',
+                                                category: taskData.category || '',
+                                                tags: taskData.tags || [],
+                                                steps: taskData.steps || [],
+                                                featureName: taskData.featureName || '',
+                                                cardTitle: taskData.cardTitle || '',
+                                                createTime: taskData.createTime || new Date().toISOString(),
+                                                updateTime: new Date().toISOString(),
+                                                
+                                                // 周报属性
+                                                weeklyReport: taskData.weeklyReport || {
+                                                    enabled: false,
+                                                    frequency: 'weekly',
+                                                    dayOfWeek: 1,
+                                                    reportTemplate: '本周工作总结：\n\n1. 已完成工作：\n   - \n\n2. 遇到的问题：\n   - \n\n3. 下周计划：\n   - ',
+                                                    lastSubmitted: null,
+                                                    nextDue: null,
+                                                    history: []
+                                                },
+                                                
+                                                // 日报属性
+                                                dailyReport: taskData.dailyReport || {
+                                                    enabled: false,
+                                                    frequency: 'daily',
+                                                    timeOfDay: '18:00',
+                                                    reportTemplate: '今日工作总结：\n\n1. 已完成：\n   - \n\n2. 进行中：\n   - \n\n3. 遇到问题：\n   - \n\n4. 明日计划：\n   - ',
+                                                    lastSubmitted: null,
+                                                    nextDue: null,
+                                                    history: [],
+                                                    weekends: false
+                                                },
+                                                
+                                                // 任务特征属性
+                                                features: taskData.features || {
+                                                    estimatedHours: 0,
+                                                    actualHours: 0,
+                                                    difficulty: 'medium',
+                                                    type: 'development',
+                                                    dependencies: [],
+                                                    milestone: '',
+                                                    assignee: '',
+                                                    reviewer: '',
+                                                    labels: [],
+                                                    businessValue: 'medium',
+                                                    urgency: 'medium',
+                                                    complexity: 'medium'
+                                                },
+                                                
+                                                // 进度跟踪
+                                                progress: taskData.progress || {
+                                                    percentage: 0,
+                                                    milestones: [],
+                                                    blockers: [],
+                                                    notes: []
+                                                },
+                                                
+                                                // 时间跟踪
+                                                timeTracking: taskData.timeTracking || {
+                                                    startDate: null,
+                                                    endDate: null,
+                                                    deadline: null,
+                                                    estimatedDuration: 0,
+                                                    actualDuration: 0,
+                                                    timeEntries: []
+                                                }
+                                            };
+                                            
+                                            // 保存到tasks集合
+                                            const saveResult = await window.postData(`${window.API_URL}/mongodb/?cname=tasks`, taskToSave);
+                                            
+                                            if (saveResult && saveResult.success !== false) {
+                                                importedCount++;
+                                            } else {
+                                                console.warn('[上传] 任务保存失败:', taskData.title, saveResult);
+                                                skippedCount++;
+                                            }
+                                            
+                                            // 更新进度
+                                            const currentProgress = ((importedCount + skippedCount + errorCount) / totalTasks) * 100;
+                                            this.showUploadProgress(`正在导入任务数据... ${importedCount + skippedCount + errorCount}/${totalTasks}`, currentProgress);
+                                        }
+                                    } catch (error) {
+                                        console.warn('[上传] 任务导入失败:', taskData?.title || '未知任务', error);
+                                        errorCount++;
+                                        
+                                        // 更新进度
+                                        const currentProgress = ((importedCount + skippedCount + errorCount) / totalTasks) * 100;
+                                        this.showUploadProgress(`正在导入任务数据... ${importedCount + skippedCount + errorCount}/${totalTasks}`, currentProgress);
+                                    }
+                                }
+                                
+                                if (window.hideGlobalLoading) {
+                                    window.hideGlobalLoading();
+                                }
+                                
+                                // 隐藏上传进度
+                                this.hideUploadProgress();
+                                
+                                if (importedCount > 0) {
+                                    if (window.showSuccess) {
+                                        window.showSuccess(`JSON导入成功！导入 ${importedCount} 个任务${skippedCount > 0 ? `，跳过 ${skippedCount} 个` : ''}${errorCount > 0 ? `，失败 ${errorCount} 个` : ''}`);
+                                    } else {
+                                        alert(`JSON导入成功！导入 ${importedCount} 个任务${skippedCount > 0 ? `，跳过 ${skippedCount} 个` : ''}${errorCount > 0 ? `，失败 ${errorCount} 个` : ''}`);
+                                    }
+                                    
+                                    // 刷新任务数据
+                                    if (window.store && window.store.loadTasksData) {
+                                        await window.store.loadTasksData();
+                                        // 同步到主应用
+                                        this.syncTasksData();
+                                    }
+                                } else {
+                                    if (window.showError) {
+                                        window.showError('没有成功导入任何任务');
+                                    } else {
+                                        alert('没有成功导入任何任务');
+                                    }
+                                }
+                                
+                                console.log('[上传] JSON导入完成:', {
+                                    imported: importedCount,
+                                    skipped: skippedCount,
+                                    error: errorCount,
+                                    total: uploadData.tasks.length
+                                });
+                                
+                            } else if (uploadData.name && uploadData.type === 'root' && uploadData.children) {
+                                // tree.json格式
+                                if (window.hideGlobalLoading) {
+                                    window.hideGlobalLoading();
+                                }
+                                if (window.showSuccess) {
+                                    window.showSuccess('tree.json格式文件上传成功，但建议使用完整的ZIP包');
+                            } else {
+                                    alert('tree.json格式文件上传成功，但建议使用完整的ZIP包');
+                                }
+                                console.log('[上传] tree.json数据上传完成:', uploadData);
+                                
+                            } else {
+                                throw new Error('JSON文件格式不正确，请上传包含tasks数组的数据或完整的ZIP包');
+                            }
+                            
+                        } catch (error) {
+                            if (window.hideGlobalLoading) {
+                                window.hideGlobalLoading();
+                            }
+                            
+                            // 隐藏上传进度
+                            this.hideUploadProgress();
+                            
+                            console.error('[TaskPro] JSON上传失败:', error);
+                            
+                            if (window.showError) {
+                                window.showError('JSON上传失败: ' + (error?.message || '未知错误'));
+                            } else {
+                                alert('JSON上传失败: ' + (error?.message || '未知错误'));
+                            }
+                        }
+                    },
+                    
+                    // 显示上传进度
+                    showUploadProgress(message, progress) {
+                        try {
+                            // 查找或创建进度条容器
+                            let progressContainer = document.querySelector('.upload-progress-container');
+                            if (!progressContainer) {
+                                progressContainer = document.createElement('div');
+                                progressContainer.className = 'upload-progress-container';
+                                progressContainer.innerHTML = `
+                                    <div class="upload-progress-content">
+                                        <div class="upload-progress-header">
+                                            <i class="fas fa-upload"></i>
+                                            <span class="upload-progress-title">文件上传中</span>
+                                        </div>
+                                        <div class="upload-progress-message">${message}</div>
+                                        <div class="upload-progress-bar">
+                                            <div class="upload-progress-fill" style="width: ${progress}%"></div>
+                                        </div>
+                                        <div class="upload-progress-text">${Math.round(progress)}%</div>
+                                    </div>
+                                `;
+                                document.body.appendChild(progressContainer);
+                            } else {
+                                // 更新现有进度条
+                                const messageEl = progressContainer.querySelector('.upload-progress-message');
+                                const fillEl = progressContainer.querySelector('.upload-progress-fill');
+                                const textEl = progressContainer.querySelector('.upload-progress-text');
+                                
+                                if (messageEl) messageEl.textContent = message;
+                                if (fillEl) fillEl.style.width = `${progress}%`;
+                                if (textEl) textEl.textContent = `${Math.round(progress)}%`;
+                            }
+                            
+                            // 显示进度条
+                            progressContainer.style.display = 'flex';
+                        } catch (error) {
+                            console.error('[上传进度] 显示进度条失败:', error);
+                        }
+                    },
+                    
+                    // 隐藏上传进度
+                    hideUploadProgress() {
+                        try {
+                            const progressContainer = document.querySelector('.upload-progress-container');
+                            if (progressContainer) {
+                                progressContainer.style.display = 'none';
+                            }
+                        } catch (error) {
+                            console.error('[上传进度] 隐藏进度条失败:', error);
+                        }
+                    },
+                    
+                    // 显示消息
+                    showMessage(message, type = 'info') {
+                        // 这里可以添加消息显示的逻辑
+                    },
+                    
+                    // 显示错误
+                    showError(message) {
+                        // 这里可以添加错误显示的逻辑
+                    },
+                    
+                    // 创建任务
+                    createTask() {
+                        const newTask = {
+                            id: Date.now().toString(),
+                            title: '新任务',
+                            description: '',
+                            status: 'todo',
+                            priority: 'medium',
+                            type: 'task',
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+                        
+                        this.tasks.unshift(newTask);
+                        this.selectedTasks = [newTask];
+                    },
+                    
+                    // 选择变化
+                    handleSelectionChange(selectedTasks) {
+                        this.selectedTasks = selectedTasks;
+                    },
+                    
+                    // 切换项目
+                    switchProject(project) {
+                        this.currentProject = project;
+                    },
+                    
+                    // 创建新项目
+                    createNewProject() {
+                        // 这里可以添加创建新项目的逻辑
+                    },
+                    
+                    // 选择搜索项
+                    selectSearchItem(item) {
+                        // 这里可以添加选择搜索项的逻辑
+                    },
+                    
+                    // 全屏切换
+                    toggleFullscreen() {
+                        if (!document.fullscreenElement) {
+                            document.documentElement.requestFullscreen().catch(err => {
+                                console.warn('全屏请求被拒绝:', err);
+                            });
+                        } else {
+                            document.exitFullscreen();
+                        }
+                    },
+                    
+                    // 返回首页
+                    goToHome() {
+                        window.location.href = '/';
                     }
-                }
-            },
-            
-            mounted() {
-                console.log('[TaskPro] Vue应用已挂载');
-                console.log('[TaskPro] 当前数据状态:', {
-                    tasks: this.tasks?.length || 0,
-                    currentView: this.currentView,
-                    filteredTasks: this.filteredTasks?.length || 0
-                });
-                
-                // 确保数据已正确加载
-                if (!this.tasks || this.tasks.length === 0) {
-                    console.warn('[TaskPro] 任务数据为空，尝试重新加载');
-                    this.loadData && this.loadData();
-                }
-                
-                // 关闭全局点击时的下拉菜单
-                document.addEventListener('click', (event) => {
-                    try {
-                        if (!event.target.closest('.project-selector')) {
-                            this.showProjectDropdown = false;
-                        }
-                        if (!event.target.closest('.notification-center')) {
-                            this.showNotifications = false;
-                        }
-                        if (!event.target.closest('.sort-selector')) {
-                            this.showSortDropdown = false;
-                        }
-                    } catch (error) {
-                        console.warn('[TaskPro] 事件监听器错误:', error);
-                    }
-                });
-            },
-            
-            errorCaptured(err, instance, info) {
-                console.error('[TaskPro] Vue组件错误:', err, info);
-                this.error = `应用错误: ${err.message}`;
-                return false;
-            }
-        });
-        
-        // 注册组件
-        this.registerComponents();
-        
-        // 挂载应用
-        this.app.mount('#app');
-    }
-    
-    // 注册组件
-    registerComponents() {
-        // 等待组件加载完成后注册
-        const components = [
-            'EnhancedTaskList',
-            'KanbanBoard',
-            'EnhancedGanttChart',
-            'WeeklyReport',
-            'DailyReport',
-            'MatrixView',
-            'EnhancedTaskDetail'
-        ];
-        
-        // 延迟注册组件，确保所有组件都已加载
-        const registerComponentsWithRetry = () => {
-            const missingComponents = [];
-            
-            components.forEach(componentName => {
-                if (window[componentName]) {
-                    const kebabName = componentName.replace(/([A-Z])/g, '-$1').toLowerCase().substring(1);
-                    this.app.component(kebabName, window[componentName]);
-                    console.log('[TaskPro] 注册组件:', componentName, '->', kebabName);
-                } else {
-                    missingComponents.push(componentName);
-                    console.warn('[TaskPro] 组件未找到:', componentName);
                 }
             });
             
-            // 如果有组件未找到，延迟重试
-            if (missingComponents.length > 0) {
-                console.log('[TaskPro] 等待组件加载:', missingComponents);
-                setTimeout(registerComponentsWithRetry, 200); // 增加重试间隔
-            } else {
-                console.log('[TaskPro] 所有组件注册完成');
-                // 触发组件注册完成事件
-                window.dispatchEvent(new CustomEvent('TaskProComponentsReady'));
-            }
-        };
-        
-        // 立即尝试注册，如果失败则重试
-        registerComponentsWithRetry();
+            // 等待组件加载完成后注册
+            const components = [
+                'EnhancedTaskList',
+                'KanbanBoard',
+                'EnhancedGanttChart',
+                'WeeklyReport',
+                'DailyReport',
+                'MatrixView'
+            ];
+            
+            // 立即尝试注册组件
+            const registerComponentsWithRetry = (retryCount = 0) => {
+                const missingComponents = [];
+                const registeredComponents = [];
+                const skippedComponents = [];
+                
+                console.log(`[TaskPro] 开始组件注册 (第${retryCount + 1}次尝试)`);
+                console.log('[TaskPro] 当前全局组件状态:', Object.keys(window).filter(key => 
+                    ['EnhancedTaskList', 'KanbanBoard', 'EnhancedGanttChart', 'WeeklyReport', 'DailyReport', 'MatrixView'].includes(key)
+                ));
+                
+                components.forEach(componentName => {
+                    if (window[componentName]) {
+                        try {
+                            const kebabName = componentName.replace(/([A-Z])/g, '-$1').toLowerCase().substring(1);
+                            
+                            // 检查组件是否已经注册
+                            if (this.app._context.components[kebabName]) {
+                                console.log(`[TaskPro] 组件 ${componentName} (${kebabName}) 已注册，跳过`);
+                                skippedComponents.push(componentName);
+                                return;
+                            }
+                            
+                            // 检查组件是否有效
+                            if (typeof window[componentName] !== 'object' || !window[componentName].name) {
+                                console.warn(`[TaskPro] 组件 ${componentName} 格式无效，跳过`);
+                                console.warn(`[TaskPro] 组件类型:`, typeof window[componentName]);
+                                console.warn(`[TaskPro] 组件内容:`, window[componentName]);
+                                missingComponents.push(componentName);
+                                return;
+                            }
+                            
+                            this.app.component(kebabName, window[componentName]);
+                            registeredComponents.push(componentName);
+                            console.log(`[TaskPro] 成功注册组件: ${componentName} -> ${kebabName}`);
+                        } catch (error) {
+                            console.warn(`[TaskPro] 组件注册失败: ${componentName}`, error);
+                            missingComponents.push(componentName);
+                        }
+                    } else {
+                        console.log(`[TaskPro] 组件 ${componentName} 未找到`);
+                        missingComponents.push(componentName);
+                    }
+                });
+                
+                // 如果有组件未找到，延迟重试
+                if (missingComponents.length > 0 && retryCount < 20) {
+                    console.log(`[TaskPro] 等待组件加载 (${retryCount + 1}/20):`, missingComponents);
+                    setTimeout(() => registerComponentsWithRetry(retryCount + 1), 200);
+                } else {
+                    // 标记组件已注册
+                    this.componentsRegistered = true;
+                    
+                    // 输出注册结果
+                    console.log(`[TaskPro] 组件注册完成: 成功 ${registeredComponents.length}, 跳过 ${skippedComponents.length}, 失败 ${missingComponents.length}`);
+                    
+                    if (registeredComponents.length > 0) {
+                        console.log('[TaskPro] 成功注册的组件:', registeredComponents);
+                    }
+                    
+                    if (skippedComponents.length > 0) {
+                        console.log('[TaskPro] 跳过的组件:', skippedComponents);
+                    }
+                    
+                    if (missingComponents.length > 0) {
+                        console.warn('[TaskPro] 加载失败的组件:', missingComponents);
+                    }
+                    
+                    // 触发组件注册完成事件
+                    window.dispatchEvent(new CustomEvent('TaskProComponentsReady'));
+                    
+                    // 组件注册完成后挂载应用
+                    console.log('[TaskPro] 开始挂载Vue应用...');
+                    this.app.mount('#app');
+                }
+            };
+            
+            // 开始组件注册
+            registerComponentsWithRetry();
+            
+        } catch (error) {
+            console.error('[TaskPro] Vue应用创建失败:', error);
+            throw error;
+        }
     }
+    
+
     
     // 初始化事件监听
     initEventListeners() {
@@ -1145,7 +1817,6 @@ class TaskProApp {
             // Esc 关闭模态
             if (event.key === 'Escape') {
                 this.state.showShortcutHelp = false;
-                this.state.showDetailPanel = false;
                 this.state.showAdvancedFilters = false;
                 this.state.selectedTasks = [];
             }
@@ -1206,10 +1877,10 @@ class TaskProApp {
         const suggestions = [];
         
         // 搜索任务
-        const taskMatches = this.state.tasks.filter(task => 
+        const taskMatches = this.state.tasks.filter(task =>
             task.title.toLowerCase().includes(query.toLowerCase()) ||
             task.description.toLowerCase().includes(query.toLowerCase())
-        ).slice(0, 5);
+        ).slice(0, 3);
         
         if (taskMatches.length > 0) {
             suggestions.push({
@@ -1223,41 +1894,6 @@ class TaskProApp {
             });
         }
         
-        // 搜索用户
-        const userMatches = this.state.users.filter(user =>
-            user.name.toLowerCase().includes(query.toLowerCase()) ||
-            user.email.toLowerCase().includes(query.toLowerCase())
-        ).slice(0, 3);
-        
-        if (userMatches.length > 0) {
-            suggestions.push({
-                type: 'users',
-                title: '用户',
-                items: userMatches.map(user => ({
-                    id: user.id,
-                    title: user.name,
-                    icon: 'fas fa-user'
-                }))
-            });
-        }
-        
-        // 搜索项目
-        const projectMatches = this.state.projects.filter(project =>
-            project.name.toLowerCase().includes(query.toLowerCase())
-        ).slice(0, 3);
-        
-        if (projectMatches.length > 0) {
-            suggestions.push({
-                type: 'projects',
-                title: '项目',
-                items: projectMatches.map(project => ({
-                    id: project.id,
-                    title: project.name,
-                    icon: 'fas fa-project-diagram'
-                }))
-            });
-        }
-        
         this.state.searchSuggestions = suggestions;
     }
     
@@ -1266,11 +1902,9 @@ class TaskProApp {
         // 重置其他筛选
         this.state.selectedStatuses = [];
         this.state.selectedPriorities = [];
-        this.state.selectedMembers = [];
         this.state.selectedDateFilter = null;
         
         switch (filter.id) {
-
             case 'due-today':
                 this.state.selectedDateFilter = 'today';
                 break;
@@ -1337,45 +1971,46 @@ class TaskProApp {
     
     // 更新统计数据
     updateStats() {
-        this.state.totalTasks = this.state.tasks.length;
-        this.state.completedTasks = this.state.tasks.filter(t => t.status === 'completed').length;
-        this.state.inProgressTasks = this.state.tasks.filter(t => t.status === 'in_progress').length;
-        
-        // 计算逾期任务
-        const now = new Date();
-        this.state.overdueTasks = this.state.tasks.filter(t => 
-            t.dueDate && new Date(t.dueDate) < now && t.status !== 'completed'
-        ).length;
-        
-        // 更新快速筛选计数
-        this.state.quickFilters.forEach(filter => {
-            switch (filter.id) {
-
-
-                case 'due-today':
-                    const today = new Date().toDateString();
-                    filter.count = this.state.tasks.filter(t => 
-                        t.dueDate && new Date(t.dueDate).toDateString() === today
-                    ).length;
-                    break;
-                case 'overdue':
-                    filter.count = this.state.overdueTasks;
-                    break;
-                case 'high-priority':
-                    filter.count = this.state.tasks.filter(t => 
-                        t.priority === 'critical' || t.priority === 'high'
-                    ).length;
-                    break;
-                case 'in-progress':
-                    filter.count = this.state.inProgressTasks;
-                    break;
-            }
-        });
+        try {
+            if (!this.state.tasks) return;
+            
+            const total = this.state.tasks.length;
+            const completed = this.state.tasks.filter(t => t.status === 'completed').length;
+            const inProgress = this.state.tasks.filter(t => t.status === 'in_progress').length;
+            const overdue = this.state.tasks.filter(t => {
+                if (!t.dueDate || t.status === 'completed') return false;
+                return new Date(t.dueDate) < new Date();
+            }).length;
+            
+            this.state.stats = {
+                total,
+                completed,
+                inProgress,
+                overdue,
+                completionRate: total > 0 ? Math.round((completed / total) * 100) : 0
+            };
+            
+        } catch (error) {
+            console.warn('[TaskPro] 统计数据更新失败:', error);
+            this.state.stats = {
+                total: 0,
+                completed: 0,
+                inProgress: 0,
+                overdue: 0,
+                completionRate: 0
+            };
+        }
     }
 }
 
 // 初始化应用
 document.addEventListener('DOMContentLoaded', async () => {
+    // 防止重复启动
+    if (window.TaskProApp) {
+        console.log('[TaskPro] 应用已启动，跳过重复初始化');
+        return;
+    }
+    
     try {
         console.log('[TaskPro] 开始初始化...');
         
@@ -1394,8 +2029,57 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.warn('[TaskPro] Mock数据未加载，将使用默认数据');
         }
         
+        // 等待组件加载完成
+        await new Promise((resolve) => {
+            if (document.readyState === 'complete') {
+                // 页面已完全加载，检查组件
+                const requiredComponents = [
+                    'EnhancedTaskList',
+                    'KanbanBoard', 
+                    'EnhancedGanttChart',
+                    'WeeklyReport',
+                    'DailyReport',
+                    'MatrixView'
+                ];
+                
+                const missingComponents = requiredComponents.filter(name => !window[name]);
+                if (missingComponents.length === 0) {
+                    console.log('[TaskPro] 所有组件已加载完成');
+                    resolve();
+                } else {
+                    console.log('[TaskPro] 等待组件加载完成，缺失组件:', missingComponents);
+                    // 等待组件加载完成事件
+                    window.addEventListener('TaskProComponentsReady', resolve, { once: true });
+                }
+            } else {
+                // 等待页面加载完成
+                window.addEventListener('load', () => {
+                    const requiredComponents = [
+                        'EnhancedTaskList',
+                        'KanbanBoard', 
+                        'EnhancedGanttChart',
+                        'WeeklyReport',
+                        'DailyReport',
+                        'MatrixView'
+                    ];
+                    
+                    const missingComponents = requiredComponents.filter(name => !window[name]);
+                    if (missingComponents.length === 0) {
+                        console.log('[TaskPro] 页面加载完成后，所有组件已就绪');
+                        resolve();
+                    } else {
+                        console.log('[TaskPro] 页面加载完成后，等待组件加载，缺失组件:', missingComponents);
+                        // 等待组件加载完成事件
+                        window.addEventListener('TaskProComponentsReady', resolve, { once: true });
+                    }
+                });
+            }
+        });
+        
+        console.log('[TaskPro] 组件加载完成，启动应用...');
+        
         const taskProApp = new TaskProApp();
-        await taskProApp.init();
+        await taskProApp.start();
         
         // 全局暴露应用实例（用于调试）
         window.TaskProApp = taskProApp;
@@ -1420,4 +2104,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
+
 

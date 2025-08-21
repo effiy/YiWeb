@@ -61,8 +61,8 @@ const createDailyReport = async () => {
         data() {
             return {
                 // 当前日期
-                currentDate: new Date(),
-                currentDateStr: new Date().toISOString().split('T')[0],
+                currentDate: this.createSafeDate(new Date()),
+                currentDateStr: this.createSafeDateString(new Date()),
                 
                 // 时间轴模式
                 timelineMode: 'hourly', // hourly or task
@@ -133,10 +133,10 @@ const createDailyReport = async () => {
                 });
                 
                 return this.tasks.filter(task => {
-                    // 使用任务的startDate、dueDate或createdAt
-                    const taskDate = task.startDate ? new Date(task.startDate).toISOString().split('T')[0] :
-                                   task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] :
-                                   new Date(task.createdAt).toISOString().split('T')[0];
+                    // 使用安全的日期处理函数
+                    const taskDate = this.createSafeDateString(
+                        task.startDate || task.dueDate || task.createdAt
+                    );
                     
                     const isTodayTask = taskDate === today;
                     
@@ -168,7 +168,7 @@ const createDailyReport = async () => {
                 immediate: true
             },
             currentDateStr() {
-                this.currentDate = new Date(this.currentDateStr);
+                this.currentDate = this.createSafeDate(this.currentDateStr);
                 this.updateDailyData();
             },
             
@@ -198,6 +198,65 @@ const createDailyReport = async () => {
         
         methods: {
             /**
+             * 安全的日期处理函数
+             */
+            createSafeDate(dateValue, fallback = null) {
+                try {
+                    if (!dateValue) return fallback;
+                    
+                    // 如果是字符串，尝试解析
+                    if (typeof dateValue === 'string') {
+                        const parsed = new Date(dateValue);
+                        if (isNaN(parsed.getTime())) {
+                            console.warn('[DailyReport] 无效的日期字符串:', dateValue);
+                            return fallback;
+                        }
+                        return parsed;
+                    }
+                    
+                    // 如果是Date对象，验证有效性
+                    if (dateValue instanceof Date) {
+                        if (isNaN(dateValue.getTime())) {
+                            console.warn('[DailyReport] 无效的Date对象:', dateValue);
+                            return fallback;
+                        }
+                        return dateValue;
+                    }
+                    
+                    // 如果是数字（时间戳），验证有效性
+                    if (typeof dateValue === 'number') {
+                        const parsed = new Date(dateValue);
+                        if (isNaN(parsed.getTime())) {
+                            console.warn('[DailyReport] 无效的时间戳:', dateValue);
+                            return fallback;
+                        }
+                        return parsed;
+                    }
+                    
+                    return fallback;
+                } catch (error) {
+                    console.warn('[DailyReport] 日期处理失败:', error, '原始值:', dateValue);
+                    return fallback;
+                }
+            },
+
+            /**
+             * 安全的日期字符串生成函数
+             */
+            createSafeDateString(dateValue, fallback = null) {
+                try {
+                    const safeDate = this.createSafeDate(dateValue, fallback);
+                    if (safeDate) {
+                        return safeDate.toISOString().split('T')[0];
+                    }
+                    return fallback;
+                } catch (error) {
+                    console.warn('[DailyReport] 日期字符串生成失败:', error);
+                    return fallback;
+                }
+            },
+
+            /**
              * 获取当前时间
              */
             getCurrentTime() {
@@ -209,7 +268,7 @@ const createDailyReport = async () => {
              * 判断是否为今天
              */
             isToday() {
-                const today = new Date().toISOString().split('T')[0];
+                const today = this.createSafeDateString(new Date());
                 return this.currentDateStr === today;
             },
             
@@ -229,32 +288,36 @@ const createDailyReport = async () => {
              * 前一天
              */
             previousDay() {
-                const prevDate = new Date(this.currentDate);
-                prevDate.setDate(prevDate.getDate() - 1);
-                this.currentDateStr = prevDate.toISOString().split('T')[0];
+                const prevDate = this.createSafeDate(this.currentDate);
+                if (prevDate) {
+                    prevDate.setDate(prevDate.getDate() - 1);
+                    this.currentDateStr = this.createSafeDateString(prevDate);
+                }
             },
             
             /**
              * 后一天
              */
             nextDay() {
-                const nextDate = new Date(this.currentDate);
-                nextDate.setDate(nextDate.getDate() + 1);
-                this.currentDateStr = nextDate.toISOString().split('T')[0];
+                const nextDate = this.createSafeDate(this.currentDate);
+                if (nextDate) {
+                    nextDate.setDate(nextDate.getDate() + 1);
+                    this.currentDateStr = this.createSafeDateString(nextDate);
+                }
             },
             
             /**
              * 回到今天
              */
             goToToday() {
-                this.currentDateStr = new Date().toISOString().split('T')[0];
+                this.currentDateStr = this.createSafeDateString(new Date());
             },
             
             /**
              * 日期变化处理
              */
             onDateChange() {
-                this.currentDate = new Date(this.currentDateStr);
+                this.currentDate = this.createSafeDate(this.currentDateStr);
                 this.updateDailyData();
             },
             
@@ -263,8 +326,12 @@ const createDailyReport = async () => {
              */
             getTaskStatus(task) {
                 // 检查是否逾期
-                if (task.dueDate && new Date(task.dueDate) < new Date()) {
-                    return 'overdue';
+                if (task.dueDate) {
+                    const dueDate = this.createSafeDate(task.dueDate);
+                    const now = this.createSafeDate(new Date());
+                    if (dueDate && now && dueDate < now) {
+                        return 'overdue';
+                    }
                 }
                 return task.status || 'todo';
             },
@@ -328,7 +395,8 @@ const createDailyReport = async () => {
              */
             generateTimelineHours() {
                 this.timelineHours = [];
-                const currentHour = new Date().getHours();
+                const now = this.createSafeDate(new Date());
+                const currentHour = now ? now.getHours() : 12; // 默认中午12点
                 
                 for (let hour = 6; hour <= 22; hour++) {
                     const hourTasks = this.getHourTasks(hour);
@@ -841,4 +909,5 @@ const createDailyReport = async () => {
         console.error('DailyReport 组件初始化失败:', error);
     }
 })();
+
 
