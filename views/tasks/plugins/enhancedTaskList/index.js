@@ -34,8 +34,16 @@ const createEnhancedTaskList = () => {
                          @mouseleave="endLongPress">
                         <div class="task-header">
                             <div class="task-title">{{ task.title }}</div>
-                            <div class="task-priority" :class="'priority-' + (task.priority || 'none')">
-                                {{ getPriorityLabel(task.priority || 'none') }}
+                            <div class="task-actions">
+                                <button 
+                                    class="edit-btn" 
+                                    @click.stop="handleEditTask(task)"
+                                    title="编辑任务">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <div class="task-priority" :class="'priority-' + (task.priority || 'none')">
+                                    {{ getPriorityLabel(task.priority || 'none') }}
+                                </div>
                             </div>
                         </div>
                         <div class="task-description" v-if="task.description">{{ task.description }}</div>
@@ -109,7 +117,7 @@ const createEnhancedTaskList = () => {
                 default: () => []
             }
         },
-        emits: ['task-click', 'task-select', 'task-update', 'task-delete', 'selection-change', 'retry'],
+        emits: ['task-click', 'task-select', 'task-update', 'task-delete', 'task-edit', 'selection-change', 'retry'],
         data() {
             return {
                 // 长按删除相关变量
@@ -852,6 +860,19 @@ const createEnhancedTaskList = () => {
             },
             
             /**
+             * 编辑任务
+             */
+            handleEditTask(task) {
+                try {
+                    console.log('[编辑任务] 开始编辑任务:', task.title);
+                    // 触发编辑事件，让父组件处理
+                    this.$emit('task-edit', task);
+                } catch (error) {
+                    console.error('[编辑任务] 编辑失败:', error);
+                }
+            },
+            
+            /**
              * 验证数据完整性
              */
             validateDataIntegrity() {
@@ -895,5 +916,6 @@ try {
 } catch (error) {
     console.error('EnhancedTaskList 组件初始化失败:', error);
 }
+
 
 

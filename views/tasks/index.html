@@ -22,193 +22,7 @@
     <meta name="keywords" content="任务管理,项目管理,敏捷开发,团队协作,看板,甘特图,专业版">
     <meta name="author" content="TaskPro Enterprise Team">
     
-    <!-- 专业性样式 -->
-    <style>
-        * { 
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        
-        body {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            overflow-x: hidden;
-        }
-        
-        input, textarea, [contenteditable], .selectable {
-            -webkit-user-select: text;
-            -moz-user-select: text;
-            -ms-user-select: text;
-            user-select: text;
-        }
-        
-        .global-loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            opacity: 1;
-            visibility: visible;
-            transition: all 0.5s ease;
-        }
-        
-        .global-loader.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-        
-        .loader-content {
-            text-align: center;
-            color: white;
-        }
-        
-        .loader-logo {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            animation: pulse 2s infinite;
-        }
-        
-        .loader-text {
-            font-size: 1.2rem;
-            font-weight: 500;
-            margin-bottom: 2rem;
-        }
-        
-        .loader-progress {
-            width: 200px;
-            height: 4px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 2px;
-            overflow: hidden;
-            margin: 0 auto;
-        }
-        
-        .loader-bar {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, #fff, rgba(255,255,255,0.8));
-            border-radius: 2px;
-            animation: loadingBar 3s ease-in-out;
-        }
-        
-        /* 错误显示样式 */
-        .initialization-error,
-        .startup-error {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9998;
-        }
-        
-        .error-content {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            text-align: center;
-            max-width: 500px;
-            width: 90%;
-        }
-        
-        .error-content i {
-            font-size: 3rem;
-            color: #ef4444;
-            margin-bottom: 1rem;
-        }
-        
-        .error-content h3 {
-            color: #1f2937;
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
-        
-        .error-content p {
-            color: #6b7280;
-            font-size: 1rem;
-            margin-bottom: 1.5rem;
-            line-height: 1.5;
-        }
-        
-        .error-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-bottom: 1rem;
-        }
-        
-        .retry-btn,
-        .details-btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .retry-btn {
-            background: #3b82f6;
-            color: white;
-        }
-        
-        .retry-btn:hover {
-            background: #2563eb;
-            transform: translateY(-1px);
-        }
-        
-        .details-btn {
-            background: #f3f4f6;
-            color: #374151;
-        }
-        
-        .details-btn:hover {
-            background: #e5e7eb;
-        }
-        
-        .error-details {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: #f9fafb;
-            border-radius: 8px;
-            text-align: left;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .error-details pre {
-            font-size: 0.75rem;
-            color: #6b7280;
-            margin: 0;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        
-        @keyframes loadingBar {
-            0% { width: 0%; }
-            100% { width: 100%; }
-        }
-    </style>
+
 </head>
 <body>
     <!-- 全局加载器 -->
@@ -269,6 +83,14 @@
                         </div>
                         
                         <div class="toolbar-right">
+                          <!-- 创建任务按钮 -->
+                          <div class="create-task-section">
+                              <button @click="createTask" class="option-btn primary">
+                                  <i class="fas fa-plus"></i>
+                                  <span>创建任务</span>
+                              </button>
+                          </div>
+                          
                           <!-- 视图选项 -->
                           <div class="view-options">
                               <button @click="toggleFullscreen" class="option-btn">
@@ -357,13 +179,14 @@
                     <enhanced-task-list
                         v-if="currentView === 'list'"
                         :tasks="filteredTasks"
-                    :loading="loading"
-                    :error="error"
+                        :loading="loading"
+                        :error="error"
                         :selected-tasks="selectedTasks"
                         @task-select="handleTaskSelect"
-                    @task-click="handleTaskClick"
+                        @task-click="handleTaskClick"
                         @task-update="handleTaskUpdate"
                         @task-delete="handleTaskDelete"
+                        @task-edit="handleTaskEdit"
                         @selection-change="handleSelectionChange"
                     ></enhanced-task-list>
                     
@@ -407,6 +230,16 @@
                         @task-select="handleTaskSelect"
                     ></matrix-view>
                 </div>
+                
+                <!-- 任务编辑器 -->
+                <task-editor
+                    v-if="showTaskEditor"
+                    :visible="showTaskEditor"
+                    :task="editingTask"
+                    @close="closeTaskEditor"
+                    @save="handleTaskSave"
+                    @refresh-data="loadTasksData"
+                ></task-editor>
         </main>
     </div>
 
@@ -415,6 +248,9 @@
 
     <!-- 引入Vue.js -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- 引入任务编辑器组件 -->
+    <link rel="stylesheet" href="plugins/taskEditor/index.css">
     
     <!-- 引入工具类（使用ES6模块） -->
     <script type="module" src="/config.js"></script>
@@ -442,7 +278,7 @@
     <script src="/views/tasks/plugins/enhancedTaskList/index.js"></script>
     <script src="/views/tasks/plugins/kanbanBoard/index.js"></script>
     <script src="/views/tasks/plugins/enhancedGanttChart/index.js"></script>
-
+    <script src="/views/tasks/plugins/taskEditor/index.js"></script>
     <script src="/views/tasks/plugins/matrixView/index.js"></script>
     
     <!-- 兼容现有组件 -->
@@ -458,99 +294,30 @@
     <script>
         // 确保必要的工具函数存在
         function ensureUtilityFunctions() {
-            // 检查并创建loading函数的fallback
             if (!window.showGlobalLoading) {
-                console.warn('[TaskPro] showGlobalLoading未定义，创建fallback实现');
-                window.showGlobalLoading = function(message) {
-                    console.log('[Loading]', message || '加载中...');
-                };
+                window.showGlobalLoading = function(message) {};
             }
             
             if (!window.hideGlobalLoading) {
-                console.warn('[TaskPro] hideGlobalLoading未定义，创建fallback实现');
-                window.hideGlobalLoading = function() {
-                    console.log('[Loading] 加载完成');
-                };
+                window.hideGlobalLoading = function() {};
             }
             
-            // 检查并创建message函数的fallback
             if (!window.showSuccess) {
-                console.warn('[TaskPro] showSuccess未定义，创建fallback实现');
-                window.showSuccess = function(message) {
-                    console.log('[Success]', message);
-                    // 简单的成功提示
-                    if (typeof alert !== 'undefined') {
-                        alert('成功: ' + message);
-                    }
-                };
+                window.showSuccess = function(message) {};
             }
             
             if (!window.showError) {
-                console.warn('[TaskPro] showError未定义，创建fallback实现');
-                window.showError = function(message) {
-                    console.error('[Error]', message);
-                    // 简单的错误提示
-                    if (typeof alert !== 'undefined') {
-                        alert('错误: ' + message);
-                    }
-                };
+                window.showError = function(message) {};
             }
         }
         
-        // 在DOM加载完成后立即检查工具函数
+        // 在DOM加载完成后检查工具函数
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('[TaskPro] 检查工具函数...');
             ensureUtilityFunctions();
         });
         
-        // 组件注册脚本
-        function ensureComponentsLoaded() {
-            const requiredComponents = [
-                'EnhancedTaskList',
-                'KanbanBoard', 
-                'EnhancedGanttChart',
-                'WeeklyReport',
-                'DailyReport',
-                'MatrixView'
-            ];
-            
-            console.log('[TaskPro] 检查组件加载状态...');
-            console.log('[TaskPro] 当前全局组件:', Object.keys(window).filter(key => 
-                requiredComponents.includes(key)
-            ));
-            
-            const missingComponents = requiredComponents.filter(name => !window[name]);
-            
-            if (missingComponents.length > 0) {
-                console.warn('[TaskPro] 等待组件加载:', missingComponents);
-                setTimeout(ensureComponentsLoaded, 100);
-                return;
-            }
-            
-            console.log('[TaskPro] 所有组件已加载，可以启动应用');
-            
-            // 触发组件加载完成事件
-            window.dispatchEvent(new CustomEvent('TaskProComponentsReady'));
-        }
-        
-        // DOM内容加载完成后立即检查组件状态
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('[TaskPro] DOM内容加载完成，开始检查组件状态');
-            // 延迟一点时间确保脚本执行完成
-            setTimeout(ensureComponentsLoaded, 50);
-        });
-        
-        // 监听KanbanBoard组件加载事件
-        window.addEventListener('KanbanBoardLoaded', function(event) {
-            console.log('[TaskPro] 收到KanbanBoard组件加载事件:', event.detail);
-        });
-        
-        // 页面加载完成后的统一处理
+        // 页面加载完成后的处理
         window.addEventListener('load', function() {
-            console.log('[TaskPro] 页面加载完成，再次检查组件状态');
-            // 检查组件加载状态
-            ensureComponentsLoaded();
-            
             // 隐藏加载器
             setTimeout(() => {
                 const loader = document.getElementById('globalLoader');
@@ -562,30 +329,24 @@
                 }
             }, 1000);
         });
-        
-        // 立即检查一次组件状态（作为备用）
-        console.log('[TaskPro] 立即检查组件状态...');
-        setTimeout(ensureComponentsLoaded, 100);
     </script>
     
     <!-- 快捷键支持 -->
     <script>
         // 快捷键支持
         document.addEventListener('keydown', function(e) {
+            // 如果当前焦点在输入框或文本区域中，不阻止任何按键
+            const activeElement = document.activeElement;
+            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+                return;
+            }
+            
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                 e.preventDefault();
                 const searchInput = document.querySelector('.global-search-input');
                 if (searchInput) {
                     searchInput.focus();
                 }
-            }
-            
-            if (e.key === 'F1') {
-                e.preventDefault();
-            }
-            
-            if (e.key >= '1' && e.key <= '7' && !e.ctrlKey && !e.altKey && !e.metaKey) {
-                e.preventDefault();
             }
         });
         
@@ -594,8 +355,50 @@
             e.preventDefault();
         });
     </script>
+    
+    <!-- 组件注册测试脚本 -->
+    <script>
+        // 在页面加载完成后测试TaskEditor组件
+        window.addEventListener('load', function() {
+            console.log('[TaskEditor Test] 页面加载完成，开始测试组件...');
+            
+            // 等待一段时间确保所有脚本加载完成
+            setTimeout(function() {
+                console.log('[TaskEditor Test] 检查TaskEditor组件状态...');
+                
+                if (window.TaskEditor) {
+                    console.log('[TaskEditor Test] ✅ TaskEditor组件已加载:', {
+                        name: window.TaskEditor.name,
+                        hasTemplate: !!window.TaskEditor.template,
+                        hasProps: !!window.TaskEditor.props,
+                        hasMethods: !!window.TaskEditor.methods,
+                        hasData: !!window.TaskEditor.data
+                    });
+                    
+                    // 测试组件结构
+                    console.log('[TaskEditor Test] 组件结构详情:', {
+                        template: window.TaskEditor.template ? '存在' : '不存在',
+                        props: window.TaskEditor.props,
+                        methods: Object.keys(window.TaskEditor.methods || {}),
+                        data: window.TaskEditor.data
+                    });
+                } else {
+                    console.error('[TaskEditor Test] ❌ TaskEditor组件未找到');
+                }
+                
+                // 检查Vue应用状态
+                if (window.TaskProApp && window.TaskProApp.app) {
+                    console.log('[TaskEditor Test] Vue应用状态:', {
+                        hasApp: !!window.TaskProApp.app,
+                        components: Object.keys(window.TaskProApp.app._context.components || {})
+                    });
+                }
+            }, 1000);
+        });
+    </script>
 </body>
 </html> 
+
 
 
 
