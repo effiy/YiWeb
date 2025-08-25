@@ -46,7 +46,6 @@
     background: var(--bg-primary, #1a1a1a);
     border: 1px solid var(--border-primary, #333);
     border-radius: 12px;
-    padding: 24px;
     max-width: min(90vw, 800px);
     max-height: min(90vh, 600px);
     width: 100%;
@@ -675,7 +674,6 @@
     .edit-card-content {
         max-width: 95vw;
         max-height: 95vh;
-        padding: 16px;
         margin: 10px;
     }
     
@@ -705,24 +703,6 @@
     .edit-card-content .cancel-btn {
         width: 100%;
         min-width: auto;
-    }
-}
-
-@media (max-width: 480px) {
-    .edit-card-content {
-        max-width: 98vw;
-        max-height: 98vh;
-        padding: 12px;
-        margin: 5px;
-    }
-    
-    .edit-card-content h3 {
-        font-size: 18px;
-    }
-    
-    .edit-card-content .features-container,
-    .edit-card-content .stats-container {
-        padding: 12px;
     }
 }
 
