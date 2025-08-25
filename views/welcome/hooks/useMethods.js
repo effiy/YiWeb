@@ -1,13 +1,3 @@
-/**
- * 方法函数组合式
- * 提供与featureCards相关的常用操作方法
- * @author liangliang
- * 
- * @param {Object} store - 状态存储对象（包含featureCards, loading, error等）
- * @returns {Object} 方法集合
- * @description 提供与featureCards相关的常用操作方法
- */
-
 import { getData, postData } from '/apis/index.js';
 import { showError, showSuccess } from '/utils/message.js';
 import { showGlobalLoading, hideGlobalLoading } from '/utils/loading.js';
@@ -37,7 +27,6 @@ export const useMethods = (store) => {
     
     // 声音效果相关
     let audioContext = null;
-    let longPressAudio = null;
     
     // 全局错误处理
     const handleError = (error, context) => {
@@ -150,12 +139,6 @@ export const useMethods = (store) => {
             console.log('[声音效果] 无法播放删除成功声音:', error);
         }
     };
-    
-
-    
-
-    
-
     
     /**
      * 打开链接的统一方法
@@ -1043,26 +1026,6 @@ export const useMethods = (store) => {
             URL.revokeObjectURL(url);
 
             hideGlobalLoading();
-            
-            // 显示详细的下载成功信息
-            const downloadStats = getTasksStatistics(Object.values(fileData));
-            const successMessage = `${year}年${quarter}季度${month}月数据包下载成功！
-📊 任务统计：
-• 总任务数：${downloadStats.total} 个
-• 完成率：${downloadStats.completionRate}%
-• 启用周报：${downloadStats.withWeeklyReport} 个
-• 启用日报：${downloadStats.withDailyReport} 个
-• 预估工时：${downloadStats.totalEstimatedHours} 小时
-• 实际工时：${downloadStats.totalActualHours} 小时`;
-            
-            showSuccess(successMessage);
-            console.log('[下载] 数据下载完成:', {
-                featureCards: featureCards.length,
-                tasks: Object.keys(fileData).length,
-                statistics: downloadStats,
-                structure: treeData
-            });
-
         } catch (error) {
             hideGlobalLoading();
             handleError(error, '下载数据');
@@ -1588,13 +1551,6 @@ export const useMethods = (store) => {
     const handleMessageInput = async (event) => {
         // 检查是否按下回车键
         if (event.key !== 'Enter') return;
-        
-        // 检查是否正在输入法输入过程中
-        // 多重检测确保兼容性：
-        // 1. isComposing: 现代浏览器标准
-        // 2. keyCode === 229: 兼容旧版浏览器
-        // 3. event.target.composing: 某些框架的检测
-        // 4. 自定义状态标记: 作为备用方案
         if (event.isComposing || event.keyCode === 229 || event.target.composing || isComposing) {
             console.log('[输入法检测] 检测到输入法输入，忽略回车事件');
             return;
@@ -1676,9 +1632,6 @@ export const useMethods = (store) => {
             // 处理响应结果
             if (response) {
                 console.log('[数据赋值] 准备赋值的新数据:', response.data);
-
-                // 显示保存进度提示
-                // showGlobalLoading('正在保存数据，请稍候...');
                 
                 // 等待所有数据保存完成
                 await Promise.all(
@@ -1722,9 +1675,6 @@ export const useMethods = (store) => {
             
             // 清除加载状态
             store.loading.value = false;
-            
-            // 隐藏全局加载提示
-            // hideGlobalLoading();
             
             // 恢复输入框状态
             messageInput.disabled = originalDisabled;
@@ -2061,10 +2011,6 @@ export const useMethods = (store) => {
             return;
         }
     };
-
-
-
-
 
     // 返回方法集合
     return {
