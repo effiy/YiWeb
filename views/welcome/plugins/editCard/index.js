@@ -237,129 +237,7 @@ export async function openEditCardModal(card, store) {
     `;
     monthSelect.disabled = !formData.quarter;
 
-    // 查询结果显示区域
-    const queryResultContainer = document.createElement('div');
-    queryResultContainer.style.cssText = `
-      margin-top: 8px;
-      padding: 8px;
-      border: 1px solid var(--border-primary, #333);
-      border-radius: 4px;
-      background: var(--bg-primary, #1a1a1a);
-      color: var(--text-secondary, #ccc);
-      font-size: 12px;
-      min-height: 40px;
-      display: none;
-    `;
 
-    // API查询函数
-    const queryTimeData = async (year, quarter, month) => {
-      try {
-        queryResultContainer.style.display = 'block';
-        queryResultContainer.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="width: 16px; height: 16px; border: 2px solid var(--primary, #007bff); border-top: 2px solid transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-            <span>正在查询 ${year}年${quarter}季度${month ? month + '月' : ''}相关数据...</span>
-          </div>
-        `;
-
-        // 添加旋转动画样式
-        if (!document.querySelector('#editcard-spin-style')) {
-          const style = document.createElement('style');
-          style.id = 'editcard-spin-style';
-          style.textContent = `
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `;
-          document.head.appendChild(style);
-        }
-
-        // 调用API查询 - 先获取所有任务，然后在客户端过滤
-        let queryUrl = `${window.API_URL}/mongodb/?cname=tasks`;
-        console.log('[时间属性查询] 查询URL:', queryUrl);
-
-        const { getData } = await import('/apis/modules/crud.js');
-        const response = await getData(queryUrl);
-        const allTasks = response?.data?.list || [];
-        
-        // 客户端过滤任务
-        let tasks = allTasks;
-        
-        // 按时间范围过滤
-        if (year || quarter || month) {
-          tasks = allTasks.filter(task => {
-            // 检查任务的timeRange属性
-            const timeRange = task.timeRange;
-            if (!timeRange) return false;
-            
-            // 年度过滤
-            if (year && timeRange.year !== year) return false;
-            
-            // 季度过滤
-            if (quarter && timeRange.quarter !== quarter) return false;
-            
-            // 月度过滤
-            if (month && timeRange.month !== month) return false;
-            
-            return true;
-          });
-        }
-        
-        console.log('[时间属性查询] 过滤结果:', {
-          allTasksCount: allTasks.length,
-          filteredTasksCount: tasks.length,
-          filters: { year, quarter, month }
-        });
-
-        // 显示查询结果
-        const taskCount = tasks.length;
-        const completedCount = tasks.filter(task => task.status === 'completed').length;
-        const inProgressCount = tasks.filter(task => task.status === 'in-progress').length;
-        
-        const waitingCount = taskCount - completedCount - inProgressCount;
-        
-        queryResultContainer.innerHTML = `
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <div style="font-weight: 600; color: var(--text-primary, #fff); display: flex; align-items: center; gap: 8px;">
-              📊 查询结果：${year}年${quarter}季度${month ? month + '月' : ''}
-              <span style="font-size: 11px; color: var(--text-secondary, #999); font-weight: normal;">
-                (从 ${allTasks.length} 个任务中筛选)
-              </span>
-            </div>
-            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-              <span>总任务：<strong style="color: var(--primary, #007bff);">${taskCount}</strong> 个</span>
-              <span>已完成：<strong style="color: var(--success, #28a745);">${completedCount}</strong> 个</span>
-              <span>进行中：<strong style="color: var(--warning, #ffc107);">${inProgressCount}</strong> 个</span>
-              <span>待处理：<strong style="color: var(--info, #17a2b8);">${waitingCount}</strong> 个</span>
-            </div>
-            ${taskCount === 0 ? `
-              <div style="margin-top: 4px; padding: 8px; background: rgba(255, 193, 7, 0.1); border-radius: 4px; color: var(--warning, #ffc107); font-size: 12px;">
-                💡 提示：未找到匹配的任务，可能该时间段暂无相关任务数据
-              </div>
-            ` : ''}
-          </div>
-        `;
-
-        console.log('[时间属性查询] 查询结果:', {
-          year,
-          quarter,
-          month,
-          taskCount,
-          completedCount,
-          inProgressCount,
-          tasks
-        });
-
-      } catch (error) {
-        console.error('[时间属性查询] 查询失败:', error);
-        queryResultContainer.innerHTML = `
-          <div style="color: var(--danger, #dc3545);">
-            ❌ 查询失败：${error?.message || '未知错误'}
-          </div>
-        `;
-      }
-    };
 
 
 
@@ -447,40 +325,26 @@ export async function openEditCardModal(card, store) {
     };
 
     // 年度选择事件
-    yearSelect.addEventListener('change', async (e) => {
+    yearSelect.addEventListener('change', (e) => {
       formData.year = e.target.value;
       formData.quarter = '';
       formData.month = '';
       
       updateQuarterSelect();
       updateMonthSelect();
-      
-      if (formData.year) {
-        await queryTimeData(formData.year, '', '');
-      } else {
-        queryResultContainer.style.display = 'none';
-      }
     });
 
     // 季度选择事件
-    quarterSelect.addEventListener('change', async (e) => {
+    quarterSelect.addEventListener('change', (e) => {
       formData.quarter = e.target.value;
       formData.month = '';
       
       updateMonthSelect();
-      
-      if (formData.year && formData.quarter) {
-        await queryTimeData(formData.year, formData.quarter, '');
-      }
     });
 
     // 月度选择事件
-    monthSelect.addEventListener('change', async (e) => {
+    monthSelect.addEventListener('change', (e) => {
       formData.month = e.target.value;
-      
-      if (formData.year && formData.quarter && formData.month) {
-        await queryTimeData(formData.year, formData.quarter, formData.month);
-      }
     });
 
     // 初始化选择器状态
@@ -501,14 +365,8 @@ export async function openEditCardModal(card, store) {
 
     timePropertiesContainer.appendChild(timeTitle);
     timePropertiesContainer.appendChild(timeSelectorsContainer);
-    timePropertiesContainer.appendChild(queryResultContainer);
 
-    // 如果有初始值，触发查询
-    if (formData.year && formData.quarter && formData.month) {
-      setTimeout(() => {
-        queryTimeData(formData.year, formData.quarter, formData.month);
-      }, 100);
-    }
+
 
     // 时间属性已添加到基础字段容器的第一位
 
