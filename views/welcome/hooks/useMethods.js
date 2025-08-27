@@ -2049,6 +2049,8 @@ export const useMethods = (store) => {
         }
     };
     
+=======
+>>>>>>> e10b66b961c78d244553a37ea8ddfce3a8dfb65e
     // 返回方法集合
     const methods = {
         openLink,
