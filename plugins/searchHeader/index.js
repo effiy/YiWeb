@@ -48,9 +48,14 @@ const createSearchHeader = async () => {
             originalData: {
                 type: Array,
                 default: () => []
+            },
+            // 新增：侧边栏折叠状态
+            sidebarCollapsed: {
+                type: Boolean,
+                default: false
             }
         },
-        emits: ['update:searchQuery', 'search-keydown', 'clear-search', 'set-current-view', 'filter-change'],
+        emits: ['update:searchQuery', 'search-keydown', 'clear-search', 'set-current-view', 'filter-change', 'toggle-sidebar'],
         data() {
             return {
                 // 搜索建议相关
@@ -282,6 +287,13 @@ const createSearchHeader = async () => {
                 }
             },
 
+            /**
+             * 处理侧边栏折叠
+             */
+            handleToggleSidebar() {
+                this.$emit('toggle-sidebar');
+            }
+
 
         },
         
@@ -305,6 +317,7 @@ const createSearchHeader = async () => {
         console.error('SearchHeader 组件初始化失败:', error);
     }
 })(); 
+
 
 
 

@@ -77,42 +77,79 @@
     align-items: center;
     min-width: 142px;
     padding: 4px 12px;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.08);
     border-radius: var(--radius-sm);
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
     transition: all var(--transition-fast);
     position: relative;
     cursor: pointer;
     font-size: 0.85rem;
-    color: var(--primary);
-    opacity: 0.9;
+    color: var(--text-primary);
+    opacity: 0.95;
     flex: 1;
     margin: 0 var(--spacing-xs);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
 .current-date-display:hover {
-    background: rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.15);
     border-color: var(--primary);
-    color: var(--primary-hover);
+    color: var(--text-primary);
     opacity: 1;
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4), 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+    transform: translateY(-1px);
 }
 
 .current-date-display:active {
     transform: scale(0.98);
 }
 
+.current-date-display::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--primary-gradient);
+    opacity: 0;
+    border-radius: var(--radius-sm);
+    transition: opacity var(--transition-fast);
+    z-index: -1;
+}
+
+.current-date-display:hover::before {
+    opacity: 0.05;
+}
+
 .date-main {
     font-size: 0.9rem;
-    font-weight: 600;
-    color: inherit;
+    font-weight: 700;
+    color: var(--text-primary);
     line-height: 1.2;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8), 0 0 8px rgba(79, 70, 229, 0.6);
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    letter-spacing: 0.5px;
+}
+
+@keyframes dateGlow {
+    0%, 100% {
+        filter: brightness(1) drop-shadow(0 0 2px rgba(79, 70, 229, 0.3));
+    }
+    50% {
+        filter: brightness(1.1) drop-shadow(0 0 4px rgba(79, 70, 229, 0.5));
+    }
 }
 
 .date-subtitle {
     font-size: 0.7rem;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     margin-top: 2px;
-    font-weight: 400;
+    font-weight: 500;
+    opacity: 0.9;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
 }
 
 .date-today-hint {
@@ -174,6 +211,52 @@
     }
 }
 
+/* 折叠状态样式 */
+.date-navigation.collapsed {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    align-items: center;
+    padding: 8px 4px;
+}
+
+.date-navigation.collapsed .date-nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    min-width: 40px;
+    padding: 8px;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.date-navigation.collapsed .date-nav-btn span {
+    display: none;
+}
+
+.date-navigation.collapsed .date-nav-btn i {
+    font-size: 14px;
+}
+
+.date-navigation.collapsed .current-date-display {
+    min-width: 50px;
+    padding: 8px 4px;
+    margin: 4px 0;
+    text-align: center;
+}
+
+.date-navigation.collapsed .date-main {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8), 0 0 8px rgba(79, 70, 229, 0.6);
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    letter-spacing: 0.3px;
+}
+
+.date-navigation.collapsed .date-subtitle {
+    display: none;
+}
+
 /* 无障碍优化 */
 .date-nav-btn:focus,
 .current-date-display:focus {
@@ -185,3 +268,37 @@
 .current-date-display:focus:not(:focus-visible) {
     outline: none;
 } 
+
+/* 高对比度模式 - 确保可读性 */
+@media (prefers-contrast: high) {
+    .current-date-display {
+        background: rgba(255,255,255,0.15);
+        border: 2px solid rgba(255,255,255,0.3);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    
+    .date-main {
+        color: #ffffff;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(79, 70, 229, 0.8);
+        font-weight: 800;
+    }
+    
+    .date-subtitle {
+        color: #e2e8f0;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        font-weight: 600;
+    }
+}
+
+/* 深色主题优化 */
+@media (prefers-color-scheme: dark) {
+    .current-date-display {
+        background: rgba(255,255,255,0.12);
+        border-color: rgba(255,255,255,0.2);
+    }
+    
+    .date-main {
+        text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(79, 70, 229, 0.7);
+    }
+} 
+

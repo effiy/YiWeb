@@ -1,51 +1,58 @@
 /**
- * EditCard 插件
- * 参考其他 plugins 的结构，将编辑卡片的 UI 与逻辑从 useMethods 解耦
- * 提供 openEditCardModal(card, store) 方法
+ * CreateCard 插件
+ * 提供新建卡片的功能
  */
 
+console.log('[CreateCardPlugin] 插件开始加载...');
+
 import { showError, showSuccess } from '/utils/message.js';
+
+console.log('[CreateCardPlugin] 依赖模块导入完成');
 
 function addPassiveEventListener(element, event, handler, options = {}) {
   const finalOptions = { passive: true, ...options };
   element.addEventListener(event, handler, finalOptions);
 }
 
-export async function openEditCardModal(card, store) {
-  if (!card) {
-    showError('无效的卡片数据');
-    return;
-  }
-
+export async function openCreateCardModal(store) {
   try {
-    // 记录滚动状态，用于关闭时恢复
+    console.log('[CreateCardPlugin] 开始打开新建卡片弹框');
+    console.log('[CreateCardPlugin] 传入的store:', store);
+    
+    // 记录滚动状态
     let prevHtmlOverflow = '';
     let prevBodyOverflow = '';
-    // 创建模态框容器
+    
+    // 创建模态框
     const modal = document.createElement('div');
-    modal.className = 'edit-card-modal';
-    modal.style.cssText = ``; // 样式使用全局CSS，避免内联覆盖导致偏移
+    modal.className = 'edit-card-modal'; // 使用与编辑卡片一致的类名
+    modal.style.cssText = ''; // 样式使用全局CSS，避免内联覆盖导致偏移
 
-    // 创建模态框内容
+    console.log('[CreateCardPlugin] 模态框元素已创建:', modal);
+
+    // 模态框内容
     const modalContent = document.createElement('div');
-    modalContent.className = 'edit-card-content';
-    modalContent.style.cssText = ``; // 交由全局样式控制
+    modalContent.className = 'edit-card-content'; // 使用与编辑卡片一致的类名
+    modalContent.style.cssText = ''; // 交由全局样式控制
     modalContent.setAttribute('role', 'dialog');
     modalContent.setAttribute('aria-modal', 'true');
     modalContent.setAttribute('tabindex', '-1');
 
+    console.log('[CreateCardPlugin] 模态框内容元素已创建:', modalContent);
+
     // 标题
     const modalTitle = document.createElement('h3');
     modalTitle.innerHTML = `
-      <span>编辑卡片</span>
-      <span class="card-name">${card.title || ''}</span>
+      <span>新建卡片</span>
     `;
-    modalTitle.style.cssText = ``;
+    modalTitle.style.cssText = ''; // 使用全局样式
 
-    // 关闭按钮（右上角）
+    console.log('[CreateCardPlugin] 标题元素已创建:', modalTitle);
+
+    // 关闭按钮
     const closeButton = document.createElement('button');
     closeButton.type = 'button';
-    closeButton.className = 'edit-card-close';
+    closeButton.className = 'edit-card-close'; // 使用与编辑卡片一致的类名
     closeButton.setAttribute('aria-label', '关闭');
     closeButton.title = '关闭';
     closeButton.innerHTML = '&times;';
@@ -71,7 +78,8 @@ export async function openEditCardModal(card, store) {
     closeButton.addEventListener('mouseleave', () => {
       closeButton.style.background = 'transparent';
     }, { passive: true });
-    // 统一关闭与清理
+
+    // 关闭逻辑
     const unlockScroll = () => {
       try {
         document.documentElement.style.overflow = prevHtmlOverflow || '';
@@ -94,18 +102,27 @@ export async function openEditCardModal(card, store) {
     form.style.cssText = `
       display: flex;
       flex-direction: column;
-      padding: 0 20px 20px;
       gap: 16px;
     `;
 
-    const formData = { ...card };
+    console.log('[CreateCardPlugin] 表单元素已创建:', form);
 
-    // 初始化时间属性 - 将年度、季度、月度提升到顶层
-    formData.year = card.year || card.timeProperties?.year || '';
-    formData.quarter = card.quarter || card.timeProperties?.quarter || '';
-    formData.month = card.month || card.timeProperties?.month || '';
+    const formData = {
+      title: '',
+      description: '',
+      icon: 'fas fa-plus',
+      badge: '新建',
+      hint: '点击进入功能',
+      footerIcon: 'fas fa-arrow-right',
+      features: [],
+      stats: [],
+      tags: [],
+      year: '',
+      quarter: '',
+      month: ''
+    };
 
-    // ==================== 时间属性选择器 ====================
+    // ==================== 时间属性选择器（移到最前面，与编辑卡片一致）====================
     const timePropertiesContainer = document.createElement('div');
     timePropertiesContainer.style.cssText = `
       display: flex;
@@ -360,23 +377,20 @@ export async function openEditCardModal(card, store) {
     timePropertiesContainer.appendChild(timeTitle);
     timePropertiesContainer.appendChild(timeSelectorsContainer);
 
-
-
-    // 时间属性已添加到基础字段容器的第一位
-
     // 基础字段容器
     const basicFieldsContainer = document.createElement('div');
     basicFieldsContainer.className = 'basic-fields-container';
     basicFieldsContainer.style.cssText = `
       display: flex;
       flex-direction: column;
+      padding: 0 20px 20px;
       gap: 16px;
     `;
 
     // 将时间属性添加到基础字段容器的第一位
     basicFieldsContainer.appendChild(timePropertiesContainer);
 
-    // 字段配置
+    // 基础字段
     const fields = [
       { key: 'title', label: '标题', type: 'text', required: true },
       { key: 'description', label: '描述', type: 'textarea', required: true },
@@ -386,7 +400,11 @@ export async function openEditCardModal(card, store) {
       { key: 'footerIcon', label: '底部图标', type: 'text', required: false }
     ];
 
-    fields.forEach(field => {
+    console.log('[CreateCardPlugin] 开始创建表单字段，字段数量:', fields.length);
+
+    fields.forEach((field, index) => {
+      console.log(`[CreateCardPlugin] 创建字段 ${index + 1}:`, field);
+      
       const fieldContainer = document.createElement('div');
       fieldContainer.style.cssText = `
         display: flex;
@@ -399,7 +417,7 @@ export async function openEditCardModal(card, store) {
       label.style.cssText = `
         font-weight: 600;
         color: var(--text-primary, #fff);
-        font-size: 13px;
+        font-size: 14px;
         margin-bottom: 4px;
         display: block;
       `;
@@ -409,15 +427,15 @@ export async function openEditCardModal(card, store) {
         input = document.createElement('textarea');
         input.rows = 3;
         input.style.cssText = `
-          padding: 10px;
+          padding: 12px;
           border: 1px solid var(--border-primary, #333);
-          border-radius: 4px;
+          border-radius: 6px;
           background: var(--bg-secondary, #2a2a2a);
           color: var(--text-primary, #fff);
-          font-size: 13px;
+          font-size: 14px;
           resize: vertical;
           font-family: inherit;
-          min-height: 60px;
+          min-height: 80px;
           box-sizing: border-box;
           width: 100%;
         `;
@@ -425,12 +443,12 @@ export async function openEditCardModal(card, store) {
         input = document.createElement('input');
         input.type = field.type;
         input.style.cssText = `
-          padding: 10px;
+          padding: 12px;
           border: 1px solid var(--border-primary, #333);
-          border-radius: 4px;
+          border-radius: 6px;
           background: var(--bg-secondary, #2a2a2a);
           color: var(--text-primary, #fff);
-          font-size: 13px;
+          font-size: 14px;
           box-sizing: border-box;
           width: 100%;
         `;
@@ -445,7 +463,11 @@ export async function openEditCardModal(card, store) {
       fieldContainer.appendChild(label);
       fieldContainer.appendChild(input);
       basicFieldsContainer.appendChild(fieldContainer);
+      
+      console.log(`[CreateCardPlugin] 字段 ${index + 1} 创建完成:`, fieldContainer);
     });
+
+    console.log('[CreateCardPlugin] 所有表单字段创建完成');
 
     // 功能特性编辑
     const featuresContainer = document.createElement('div');
@@ -544,29 +566,6 @@ export async function openEditCardModal(card, store) {
           min-width: 280px;
         `;
 
-        // 生成任务按钮
-        const genTaskBtn = document.createElement('button');
-        genTaskBtn.type = 'button';
-        genTaskBtn.innerHTML = '<i class="fas fa-list-check" aria-hidden="true"></i>';
-        genTaskBtn.setAttribute('aria-label', '生成任务');
-        genTaskBtn.title = '根据该功能特性生成任务';
-        genTaskBtn.style.cssText = `
-          background: var(--primary, #007bff);
-          color: #fff;
-          border: none;
-          border-radius: 50%;
-          width: 28px;
-          height: 28px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          font-size: 14px;
-          flex-shrink: 0;
-          transition: all 0.2s ease;
-          margin-left: 4px;
-        `;
-
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = '×';
         deleteBtn.className = 'delete-btn';
@@ -596,23 +595,6 @@ export async function openEditCardModal(card, store) {
           formData.features[index].desc = e.target.value;
         });
 
-        genTaskBtn.addEventListener('click', async (e) => {
-          e.preventDefault();
-          const currentFeature = formData.features[index] || {};
-          if (!currentFeature.name || !currentFeature.desc) {
-            showError('请先填写功能特性的名称和描述');
-            return;
-          }
-          try {
-            const { useMethods } = await import('/views/welcome/hooks/useMethods.js');
-            const methods = useMethods(store);
-            await methods.generateTask(formData, currentFeature, e);
-          } catch (err) {
-            console.error('[EditCardPlugin] 调用生成任务失败:', err);
-            showError('生成任务失败，请稍后重试');
-          }
-        });
-
         deleteBtn.addEventListener('click', (e) => {
           e.preventDefault();
           formData.features.splice(index, 1);
@@ -622,7 +604,6 @@ export async function openEditCardModal(card, store) {
         featureItem.appendChild(iconInput);
         featureItem.appendChild(nameInput);
         featureItem.appendChild(descInput);
-        featureItem.appendChild(genTaskBtn);
         featureItem.appendChild(deleteBtn);
         featuresList.appendChild(featureItem);
       });
@@ -652,6 +633,9 @@ export async function openEditCardModal(card, store) {
     featuresContainer.appendChild(featuresTitle);
     featuresContainer.appendChild(featuresList);
     featuresContainer.appendChild(addFeatureBtn);
+
+    // 初始化功能特性渲染
+    renderFeatures();
 
     // 统计数据编辑
     const statsContainer = document.createElement('div');
@@ -747,8 +731,6 @@ export async function openEditCardModal(card, store) {
           flex-shrink: 0;
         `;
 
-
-
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = '×';
         deleteBtn.className = 'delete-btn';
@@ -813,7 +795,8 @@ export async function openEditCardModal(card, store) {
     statsContainer.appendChild(statsList);
     statsContainer.appendChild(addStatBtn);
 
-
+    // 初始化统计数据渲染
+    renderStats();
 
     // 标签编辑
     const tagsContainer = document.createElement('div');
@@ -904,7 +887,7 @@ export async function openEditCardModal(card, store) {
         const tagInput = document.createElement('input');
         tagInput.type = 'text';
         tagInput.placeholder = '标签名称';
-        tagInput.value = tag.name || '';
+        tagInput.value = tag.name || tag || '';
         tagInput.style.cssText = `
           padding: 8px;
           border: 1px solid var(--border-primary, #333);
@@ -963,8 +946,13 @@ export async function openEditCardModal(card, store) {
         `;
 
         tagInput.addEventListener('input', (e) => {
-          formData.tags[index].name = e.target.value;
+          if (typeof tag === 'string') {
+            formData.tags[index] = { name: e.target.value };
+          } else {
+            formData.tags[index].name = e.target.value;
+          }
         });
+
         tagInput.addEventListener('blur', (e) => {
           const tagName = (e.target.value || '').trim();
           if (!tagName) {
@@ -972,21 +960,27 @@ export async function openEditCardModal(card, store) {
             renderTags();
             return;
           }
-          const duplicateIndex = formData.tags.findIndex((t, i) => i !== index && (t.name || '').trim().toLowerCase() === tagName.toLowerCase());
+          const duplicateIndex = formData.tags.findIndex((t, i) => i !== index && (t.name || t || '').trim().toLowerCase() === tagName.toLowerCase());
           if (duplicateIndex !== -1) {
             showError(`标签 "${tagName}" 已存在`);
             formData.tags.splice(index, 1);
             renderTags();
             return;
           }
-          formData.tags[index].name = tagName;
+          if (typeof tag === 'string') {
+            formData.tags[index] = { name: tagName };
+          } else {
+            formData.tags[index].name = tagName;
+          }
         });
+
         tagInput.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
             tagInput.blur();
           }
         });
+
         deleteBtn.addEventListener('click', (e) => {
           e.preventDefault();
           formData.tags.splice(index, 1);
@@ -1017,15 +1011,8 @@ export async function openEditCardModal(card, store) {
       margin-top: 8px;
     `;
     addTagBtn.addEventListener('click', () => {
-      const hasEmpty = formData.tags.some(t => !(t.name || '').trim());
-      if (hasEmpty) {
-        showError('请先填写现有标签名称');
-        return;
-      }
       formData.tags.push({ name: '' });
       renderTags();
-      const newTagInput = tagsList.lastElementChild?.querySelector('input');
-      if (newTagInput) newTagInput.focus();
     });
 
     tagsContainer.appendChild(tagsTitle);
@@ -1036,25 +1023,38 @@ export async function openEditCardModal(card, store) {
     const buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `
       display: flex;
-      gap: 12px;
+      gap: 16px;
       justify-content: flex-end;
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px solid var(--border-primary, #333);
+      align-items: center;
+      margin-top: 32px;
+      padding: 20px 24px;
+      border-top: 2px solid var(--border-primary, #333);
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(180deg, 
+        rgba(26, 26, 26, 0.95) 0%, 
+        rgba(26, 26, 26, 0.98) 50%, 
+        rgba(26, 26, 26, 1) 100%);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      z-index: 20;
+      border-radius: 0 0 12px 12px;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
     `;
 
-    const saveButton = document.createElement('button');
-    saveButton.textContent = '保存更改';
-    saveButton.type = 'button';
-    saveButton.style.cssText = `
+    const createButton = document.createElement('button');
+    createButton.textContent = '创建卡片';
+    createButton.type = 'button';
+    createButton.style.cssText = `
       background: var(--success, #28a745);
       color: white;
       border: none;
       border-radius: 6px;
-      padding: 12px 24px;
-      font-size: 14px;
-      cursor: pointer;
+      padding: 14px 28px;
+      font-size: 15px;
       font-weight: 600;
+      cursor: pointer;
       transition: all 0.2s ease;
       min-width: 100px;
     `;
@@ -1067,97 +1067,113 @@ export async function openEditCardModal(card, store) {
       color: var(--text-primary, #fff);
       border: 1px solid var(--border-primary, #333);
       border-radius: 6px;
-      padding: 12px 24px;
-      font-size: 14px;
+      padding: 14px 28px;
+      font-size: 15px;
       cursor: pointer;
       transition: all 0.2s ease;
       min-width: 100px;
     `;
 
-    addPassiveEventListener(saveButton, 'click', async () => {
+    console.log('[CreateCardPlugin] 按钮元素已创建:', { createButton, cancelButton });
+
+    createButton.addEventListener('click', async () => {
       try {
+        console.log('[CreateCardPlugin] 点击创建按钮');
+        
         if (!formData.title || !formData.description) {
           showError('标题和描述为必填字段');
           return;
         }
 
-        if (navigator.vibrate) navigator.vibrate(30);
-
-        saveButton.disabled = true;
+        createButton.disabled = true;
         cancelButton.disabled = true;
-        saveButton.classList.add('updating');
 
-        // 更新本地对象
-        Object.assign(card, formData);
+        // 创建新卡片对象
+        const newCard = {
+          ...formData,
+          key: `card_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
 
-        // DB 持久化
-        if (card.key) {
-          try {
-            const { updateData } = await import('/apis/modules/crud.js');
-            const url = `${window.API_URL}/mongodb/?cname=goals`;
-            const payload = {
-              key: card.key,
-              title: formData.title,
-              description: formData.description,
-              icon: card.icon || '',
-              badge: card.badge || '',
-              hint: card.hint || '',
-              footerIcon: card.footerIcon || '',
-              features: card.features || [],
-              stats: card.stats || [],
-              tags: formData.tags || card.tags || [],
-              year: formData.year || '',
-              quarter: formData.quarter || '',
-              month: formData.month || '',
-              updatedAt: new Date().toISOString()
-            };
-            await updateData(url, payload);
-          } catch (dbError) {
-            console.error('[EditCardPlugin] 数据库更新失败:', dbError);
-            showError('数据库更新失败，但本地更改已保存');
+        console.log('[CreateCardPlugin] 准备创建卡片:', newCard);
+
+        // 保存到数据库
+        try {
+          const { postData } = await import('/apis/index.js');
+          const url = `${window.API_URL}/mongodb/?cname=goals`;
+          const payload = {
+            key: newCard.key,
+            title: newCard.title,
+            description: newCard.description,
+            icon: newCard.icon || 'fas fa-plus',
+            badge: newCard.badge || '新建',
+            hint: newCard.hint || '点击进入功能',
+            footerIcon: newCard.footerIcon || 'fas fa-arrow-right',
+            features: newCard.features || [],
+            stats: newCard.stats || [],
+            tags: newCard.tags || [],
+            year: newCard.year || '',
+            quarter: newCard.quarter || '',
+            month: newCard.month || '',
+            createdAt: newCard.createdAt,
+            updatedAt: newCard.updatedAt
+          };
+          
+          console.log('[CreateCardPlugin] 发送到数据库:', payload);
+          await postData(url, payload);
+          
+          modal.remove();
+          showSuccess(`卡片"${newCard.title}"已创建`);
+
+          // 刷新数据
+          if (store && typeof store.loadFeatureCards === 'function') {
+            setTimeout(() => {
+              store.loadFeatureCards().catch(() => {});
+            }, 300);
           }
-        }
-
-        modal.remove();
-        showSuccess(`卡片"${card.title}"已更新`);
-
-        // 刷新数据
-        if (store && typeof store.loadFeatureCards === 'function') {
-          setTimeout(() => {
-            store.loadFeatureCards().catch(() => {});
-          }, 300);
+        } catch (dbError) {
+          console.error('[CreateCardPlugin] 数据库保存失败:', dbError);
+          showError('数据库保存失败，请稍后重试');
         }
       } catch (err) {
-        console.error('[EditCardPlugin] 保存失败:', err);
-        showError('保存失败，请稍后重试');
+        console.error('[CreateCardPlugin] 创建失败:', err);
+        showError('创建失败，请稍后重试');
       } finally {
-        saveButton.disabled = false;
+        createButton.disabled = false;
         cancelButton.disabled = false;
-        saveButton.classList.remove('updating');
       }
     });
 
-    addPassiveEventListener(cancelButton, 'click', () => {
-      closeModal();
-    });
+    cancelButton.addEventListener('click', closeModal);
 
     buttonContainer.appendChild(cancelButton);
-    buttonContainer.appendChild(saveButton);
+    buttonContainer.appendChild(createButton);
 
-    // 组装 - 时间属性在基础字段容器内的第一位
+    console.log('[CreateCardPlugin] 按钮已添加到按钮容器');
+
+    // 组装 - 时间属性在基础字段容器内的第一位，与编辑卡片一致
     form.appendChild(basicFieldsContainer);
     form.appendChild(featuresContainer);
     form.appendChild(statsContainer);
     form.appendChild(tagsContainer);
     form.appendChild(buttonContainer);
-
     modalTitle.appendChild(closeButton);
     modalContent.appendChild(modalTitle);
     modalContent.appendChild(form);
     modal.appendChild(modalContent);
     document.body.appendChild(modal);
 
-    // 显示时锁定背景滚动，避免交互错位
+    // 初始渲染
+    renderFeatures();
+    renderStats();
+    renderTags();
+
+    console.log('[CreateCardPlugin] 弹框已添加到DOM');
+    console.log('[CreateCardPlugin] 弹框元素:', modal);
+    console.log('[CreateCardPlugin] 弹框内容:', modalContent);
+
+    // 锁定滚动
     try {
       prevHtmlOverflow = document.documentElement.style.overflow;
       prevBodyOverflow = document.body.style.overflow;
@@ -1165,13 +1181,14 @@ export async function openEditCardModal(card, store) {
       document.body.style.overflow = 'hidden';
     } catch (_) {}
 
-    // 初始渲染
-    renderFeatures();
-    renderStats();
-    renderTags();
-
+    // 聚焦第一个输入框
     const firstInput = form.querySelector('input, textarea');
-    if (firstInput) firstInput.focus();
+    if (firstInput) {
+      firstInput.focus();
+      console.log('[CreateCardPlugin] 已聚焦到第一个输入框:', firstInput);
+    } else {
+      console.warn('[CreateCardPlugin] 未找到第一个输入框');
+    }
 
     // 点击遮罩关闭
     modal.addEventListener('click', (e) => {
@@ -1190,17 +1207,15 @@ export async function openEditCardModal(card, store) {
 
     // 聚焦弹框，提升可达性并避免滚动跳动
     setTimeout(() => { try { modalContent.focus(); } catch (_) {} }, 0);
+
+    console.log('[CreateCardPlugin] 弹框设置完成');
+    console.log('[CreateCardPlugin] 弹框应该现在可见');
+
   } catch (error) {
-    console.error('[EditCardPlugin] 打开编辑器失败:', error);
-    showError('创建编辑界面失败，请稍后重试');
+    console.error('[CreateCardPlugin] 打开创建界面失败:', error);
+    showError('创建创建界面失败，请稍后重试');
   }
 }
 
-console.log('[EditCardPlugin] 已加载');
-
-
-
-
-
-
+console.log('[CreateCardPlugin] 插件加载完成，openCreateCardModal函数已导出');
 

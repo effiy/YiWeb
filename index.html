@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="/views/welcome/index.css">
     <!-- 标签统计面板样式 -->
     <link rel="stylesheet" href="/views/welcome/plugins/tagStatistics/index.css">
+    <!-- 新建卡片插件样式已并入全局编辑弹窗样式，移除独立CSS引用 -->
 
     <!-- 消息提示样式 -->
     <link rel="stylesheet" href="/css/message.css">
@@ -185,6 +186,21 @@
             <!-- 功能卡片区域 -->
             <section class="container">
                 <section class="feature-cards-container">
+
+                    
+                    <!-- 新建卡片按钮 -->
+                    <div class="create-card-section">
+                        <button 
+                            @click="handleCreateCard"
+                            class="create-card-btn"
+                            type="button"
+                            title="创建新功能卡片"
+                            aria-label="创建新功能卡片">
+                            <i class="fas fa-plus" aria-hidden="true"></i>
+                            <span>新建卡片</span>
+                        </button>
+                    </div>
+                    
                     <!-- 加载状态 -->
                     <div v-if="loading" class="loading-container">
                         <div class="loading-spinner"></div>
@@ -302,8 +318,6 @@
         
         <!-- 标签统计面板 -->
         <div id="tag-statistics-panel"></div>
-        
-
     </div>
 
     <!-- 全局加载指示器 -->
@@ -313,9 +327,6 @@
             <p class="loading-text" id="loading-text">正在加载...</p>
         </div>
     </section>
-
-    
-
     <!-- 错误提示 -->
     <section id="error-message" class="error-message" role="alert" aria-live="assertive" hidden></section>
 
@@ -323,7 +334,6 @@
     <section id="notifications" class="notifications-container" role="region" aria-label="通知区域"></section>
 
     <script type="module" src="/config.js"></script>
-    <!-- API加载管理工具 -->
 
     <!-- 功能卡片主题管理器 -->
     <script src="/views/welcome/plugins/featureCard/index.js"></script>
@@ -335,6 +345,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 
 

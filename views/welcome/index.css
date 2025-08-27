@@ -18,6 +18,45 @@
     text-overflow: ellipsis;
 }
 
+/* ========== 新建卡片按钮样式 ========== */
+.create-card-section {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 24px;
+    padding: 16px 0;
+}
+
+.create-card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.create-card-btn:hover {
+    background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(40, 167, 69, 0.4);
+}
+
+.create-card-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.create-card-btn i {
+    font-size: 16px;
+}
+
 /* ========== 时间选择器按钮样式 ========== */
 .year-select,
 .quarter-select,
@@ -452,6 +491,7 @@
         padding: var(--spacing-xs);
     }
 }
+
 
 
 

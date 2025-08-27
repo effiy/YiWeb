@@ -36,19 +36,25 @@
 
 /* 侧边栏收缩状态 */
 .sidebar-navigation.collapsed {
-    width: 60px;
-    min-width: 60px;
+    width: 86px;
+    min-width: 86px;
 }
 
 .sidebar-navigation.collapsed .date-navigation {
     flex-direction: column;
     gap: var(--spacing-sm);
+    align-items: center;
+    padding: 8px 4px;
 }
 
 .sidebar-navigation.collapsed .date-nav-btn {
     width: 40px;
     height: 40px;
     border-radius: var(--radius-full);
+    min-width: 40px;
+    padding: 8px;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .sidebar-navigation.collapsed .date-nav-btn span {
@@ -57,6 +63,26 @@
 
 .sidebar-navigation.collapsed .date-nav-btn i {
     font-size: 14px;
+}
+
+.sidebar-navigation.collapsed .current-date-display {
+    min-width: 50px;
+    padding: 8px 4px;
+    margin: 4px 0;
+    text-align: center;
+}
+
+.sidebar-navigation.collapsed .date-main {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8), 0 0 8px rgba(79, 70, 229, 0.6);
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    letter-spacing: 0.3px;
+}
+
+.sidebar-navigation.collapsed .date-subtitle {
+    display: none;
 }
 
 .sidebar-navigation.collapsed .mini-calendar {
@@ -177,5 +203,6 @@
         font-size: 0.8rem;
     }
 } 
+
 
 

@@ -595,7 +595,6 @@
     align-items: center;
     gap: 0;
     margin-bottom: 20px;
-    padding: 16px 0;
     background: linear-gradient(135deg, rgba(30,41,59,0.9) 0%, rgba(51,65,85,0.8) 100%);
     border-radius: 12px;
     border: 1px solid rgba(79,70,229,0.1);
@@ -1848,7 +1847,6 @@
     .comment-stats {
         flex-direction: row;
         gap: 0;
-        padding: 8px 0;
     }
     .stats-item {
         padding: 0 8px;
@@ -3375,5 +3373,6 @@
     -moz-tab-size: 4;
     tab-size: 4;
 }
+
 
 

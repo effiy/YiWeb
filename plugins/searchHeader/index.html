@@ -66,22 +66,38 @@
                 </div>
             </div>
         </div>
-        <div class="view-switcher-container">
-            <div class="view-switcher">
-                <button 
-                    v-for="view in availableViews" 
-                    :key="view.key"
-                    @click="$emit('set-current-view', view.key)"
-                    :class="['view-btn', { active: currentView === view.key }]"
-                    :title="view.description"
-                    :aria-label="view.description"
-                >
-                    <i :class="view.icon"></i>
-                    <span>{{ view.name }}</span>
-                </button>
+        
+        <!-- 右侧控制按钮区域 -->
+        <div class="header-controls">
+            <!-- 折叠按钮 -->
+            <button 
+                @click="handleToggleSidebar"
+                class="sidebar-toggle-btn"
+                :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+                :aria-label="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+                :aria-expanded="!sidebarCollapsed"
+            >
+                <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'"></i>
+            </button>
+            
+            <div class="view-switcher-container">
+                <div class="view-switcher">
+                    <button 
+                        v-for="view in availableViews" 
+                        :key="view.key"
+                        @click="$emit('set-current-view', view.key)"
+                        :class="['view-btn', { active: currentView === view.key }]"
+                        :title="view.description"
+                        :aria-label="view.description"
+                    >
+                        <i :class="view.icon"></i>
+                        <span>{{ view.name }}</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </header> 
+
 
 

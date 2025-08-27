@@ -1,4 +1,4 @@
-<nav class="date-navigation" aria-label="日期导航">
+<nav class="date-navigation" :class="{ collapsed: sidebarCollapsed }" aria-label="日期导航">
     <button 
         @click="$emit('go-to-previous-day')"
         class="date-nav-btn prev-day"
@@ -87,3 +87,4 @@
         </div>
     </div>
 </div> 
+
