@@ -1,0 +1,19 @@
+curl 'https://api.effiy.cn/mongodb/?cname=goals&key=f4df5b77-1102-436e-b5bb-578934735330' \
+  -X 'DELETE' \
+  -H 'Accept-Language: en,zh-CN;q=0.9,zh;q=0.8' \
+  -H 'Cache-Control: no-cache' \
+  -H 'Connection: keep-alive' \
+  -b 'rl_anonymous_id=RudderEncrypt%3AU2FsdGVkX1%2BctpOrkC%2Fmwqul7CR9A9Mtpwtyp2hz2M20BGTQE0lpuH5q1GlsXMnWXjz6AdXgarb3T0UlyWNEVw%3D%3D; rl_page_init_referrer=RudderEncrypt%3AU2FsdGVkX1%2FMmiPGt%2BT8icMxsWR2ojGq45udJ7j5VOQ%3D; rl_page_init_referring_domain=RudderEncrypt%3AU2FsdGVkX1%2FFiNh1S9VG6GtFHibWzkVmmioQo%2FDFW8s%3D; rl_user_id=RudderEncrypt%3AU2FsdGVkX188AlLdb7QvdkGJNvfwivns1vTnFA3Rl2Yv8wRkzmsU4QZy5jUfl4O8uKFZ40MEI0g7yblry6KfLm57gxsPwxSQhmSyvWlWuaqTeH4qG%2B4dss5p%2FIquaADduFDJiz8cQ8XhNf25CbpwbJ70UrOrl0%2F0T7sgG41vzf8%3D; rl_trait=RudderEncrypt%3AU2FsdGVkX1%2BTYbGqU1BVXWtVL0BAxyjOP%2Bj8r1so3wUxLJpfkH9IItV%2B%2Bmw5sJRSLAjG8PU5Am1bXQQ%2B7lMeRBDGSd06GW5JcBP56KgjcorDmCPQNQt26h8GnY%2B1kv67qAGrM%2FrTphunyNkTNI7RFA%3D%3D; rl_session=RudderEncrypt%3AU2FsdGVkX19SEFge0bmMIvXRVAtj3nQuhfBW58Byw9wZlW9Tx0oUKk%2BToLqsYB1UN9j6KyjKm4KVZIeTABvBWN9lH4NyEuuRGwQ3JOCsNOCvXVocQvnPObTPePJ2LvNpxXNGapaVBfNEf8FJwb5giA%3D%3D; ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog=%7B%22distinct_id%22%3A%2240ced249636bae41a3f4c2f3afcf2f67f13bcc70d4c51b0dc59c1a568951eb7a%238e390d2f-ce66-4590-9ddd-53bec86c6626%22%2C%22%24sesid%22%3A%5B1755403009623%2C%220198b627-f260-79ea-b25b-10658a721780%22%2C1755402728032%5D%2C%22%24epp%22%3Atrue%2C%22%24initial_person_info%22%3A%7B%22r%22%3A%22%24direct%22%2C%22u%22%3A%22https%3A%2F%2Fn8n.effiy.cn%2Fsignin%3Fredirect%3D%25252F%22%7D%7D' \
+  -H 'Origin: https://api.effiy.cn' \
+  -H 'Pragma: no-cache' \
+  -H 'Referer: https://api.effiy.cn/docs' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: same-origin' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36' \
+  -H 'accept: application/json' \
+  -H 'sec-ch-ua: "Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'x-client: kbXT5C1MY3VvdT3KuQd2cQ9m5mv6XYi' \
+  -H 'x-token: LTAI5tPYWW9kcMj9JXT6BZUYi'

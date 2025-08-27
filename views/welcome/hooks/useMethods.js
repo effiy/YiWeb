@@ -2048,9 +2048,6 @@ export const useMethods = (store) => {
             showError('创建卡片失败，请稍后重试');
         }
     };
-    
-=======
->>>>>>> e10b66b961c78d244553a37ea8ddfce3a8dfb65e
     // 返回方法集合
     const methods = {
         openLink,
