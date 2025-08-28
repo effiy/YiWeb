@@ -1323,16 +1323,7 @@ class TaskProApp {
                         // 这里可以添加选择搜索项的逻辑
                     },
                     
-                    // 全屏切换
-                    toggleFullscreen() {
-                        if (!document.fullscreenElement) {
-                            document.documentElement.requestFullscreen().catch(err => {
-                                console.warn('全屏请求被拒绝:', err);
-                            });
-                        } else {
-                            document.exitFullscreen();
-                        }
-                    },
+
                     
                     // 返回首页
                     goToHome() {
