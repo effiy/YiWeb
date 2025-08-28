@@ -11,6 +11,166 @@ function addPassiveEventListener(element, event, handler, options = {}) {
   element.addEventListener(event, handler, finalOptions);
 }
 
+// 专门恢复卡片列表滚动的函数
+function restoreCardsListScroll() {
+  try {
+    console.log('[EditCard] 开始恢复卡片列表滚动');
+    
+    // 恢复页面级滚动
+    document.documentElement.style.overflow = 'auto';
+    document.body.style.overflow = 'auto';
+    document.body.style.overflowY = 'auto';
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    
+    // 恢复卡片列表容器滚动
+    const featureCardsContainer = document.querySelector('.feature-cards-container');
+    if (featureCardsContainer) {
+      console.log('[EditCard] 恢复卡片列表容器滚动状态');
+      
+      // 移除所有可能影响滚动的样式
+      featureCardsContainer.style.overflow = '';
+      featureCardsContainer.style.overflowY = '';
+      featureCardsContainer.style.position = '';
+      featureCardsContainer.style.top = '';
+      featureCardsContainer.style.width = '';
+      featureCardsContainer.style.height = '';
+      
+      // 设置正确的滚动样式
+      featureCardsContainer.style.overflow = 'visible';
+      featureCardsContainer.style.overflowY = 'visible';
+      
+      console.log('[EditCard] 卡片列表容器滚动状态已恢复');
+    }
+    
+    // 恢复其他相关容器的滚动
+    const containers = [
+      '.main-content',
+      '.container',
+      '.feature-cards-grid',
+      '#app'
+    ];
+    
+    containers.forEach(selector => {
+      try {
+        const element = document.querySelector(selector);
+        if (element) {
+          element.style.overflow = '';
+          element.style.overflowY = '';
+          element.style.position = '';
+          element.style.top = '';
+          element.style.width = '';
+          element.style.height = '';
+          
+          // 设置默认滚动行为
+          element.style.overflow = 'visible';
+          element.style.overflowY = 'visible';
+        }
+      } catch (error) {
+        console.warn(`[EditCard] 恢复容器 ${selector} 滚动状态时出错:`, error);
+      }
+    });
+    
+    // 确保页面可以正常滚动
+    window.scrollTo(0, window.pageYOffset || 0);
+    
+    console.log('[EditCard] 卡片列表滚动恢复完成');
+    return true;
+    
+  } catch (error) {
+    console.error('[EditCard] 恢复卡片列表滚动失败:', error);
+    return false;
+  }
+}
+
+// 全局滚动恢复函数
+function globalUnlockScroll() {
+  try {
+    console.log('[EditCard] 执行全局滚动解锁');
+    
+    // 方法1：直接设置样式
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    document.body.style.overflowY = '';
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    
+    // 方法2：移除样式属性
+    document.documentElement.removeAttribute('style');
+    document.body.removeAttribute('style');
+    
+    // 方法3：设置自动滚动
+    document.documentElement.style.overflow = 'auto';
+    document.body.style.overflow = 'auto';
+    
+    // 方法4：强制滚动到当前位置
+    const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
+    window.scrollTo(0, currentScrollY);
+    
+    // 方法5：特殊处理卡片列表容器
+    try {
+      const featureCardsContainer = document.querySelector('.feature-cards-container');
+      if (featureCardsContainer) {
+        console.log('[EditCard] 找到卡片列表容器，确保其可滚动');
+        
+        // 移除可能影响滚动的样式
+        featureCardsContainer.style.overflow = '';
+        featureCardsContainer.style.overflowY = '';
+        featureCardsContainer.style.position = '';
+        featureCardsContainer.style.top = '';
+        featureCardsContainer.style.width = '';
+        
+        // 设置自动滚动
+        featureCardsContainer.style.overflow = 'auto';
+        featureCardsContainer.style.overflowY = 'auto';
+        
+        console.log('[EditCard] 卡片列表容器滚动状态已恢复');
+      }
+      
+      // 检查其他可能影响滚动的容器
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent) {
+        mainContent.style.overflow = '';
+        mainContent.style.overflowY = '';
+        mainContent.style.overflow = 'auto';
+        mainContent.style.overflowY = 'auto';
+      }
+      
+      const container = document.querySelector('.container');
+      if (container) {
+        container.style.overflow = '';
+        container.style.overflowY = '';
+        container.style.overflow = 'auto';
+        container.style.overflowY = 'auto';
+      }
+      
+    } catch (containerError) {
+      console.warn('[EditCard] 处理容器滚动状态时出错:', containerError);
+    }
+    
+    console.log('[EditCard] 全局滚动解锁完成');
+    
+    // 验证结果
+    const canScroll = document.body.style.overflow !== 'hidden' && 
+                     document.body.style.overflowY !== 'hidden' && 
+                     document.documentElement.style.overflow !== 'hidden';
+    
+    console.log('[EditCard] 滚动状态验证:', {
+      canScroll: canScroll,
+      htmlOverflow: document.documentElement.style.overflow,
+      bodyOverflow: document.body.style.overflow,
+      bodyOverflowY: document.body.style.overflowY
+    });
+    
+    return canScroll;
+  } catch (error) {
+    console.error('[EditCard] 全局滚动解锁失败:', error);
+    return false;
+  }
+}
+
 export async function openEditCardModal(card, store) {
   if (!card) {
     showError('无效的卡片数据');
@@ -21,6 +181,11 @@ export async function openEditCardModal(card, store) {
     // 记录滚动状态，用于关闭时恢复
     let prevHtmlOverflow = '';
     let prevBodyOverflow = '';
+    let prevBodyOverflowY = '';
+    let prevBodyPosition = '';
+    let prevBodyTop = '';
+    let prevBodyWidth = '';
+    let scrollPosition = { x: 0, y: 0 };
     // 创建模态框容器
     const modal = document.createElement('div');
     modal.className = 'edit-card-modal';
@@ -71,18 +236,151 @@ export async function openEditCardModal(card, store) {
     closeButton.addEventListener('mouseleave', () => {
       closeButton.style.background = 'transparent';
     }, { passive: true });
+    // 强制解锁滚动状态
+    const forceUnlockScroll = () => {
+      try {
+        console.log('[EditCard] 执行强制解锁滚动');
+        
+        // 强制恢复所有可能的滚动锁定
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        document.body.style.overflowY = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        
+        // 移除可能影响滚动的内联样式
+        document.documentElement.removeAttribute('style');
+        document.body.removeAttribute('style');
+        
+        // 确保页面可以滚动
+        document.documentElement.style.overflow = 'auto';
+        document.body.style.overflow = 'auto';
+        
+        console.log('[EditCard] 强制解锁滚动完成');
+        
+        // 验证滚动状态
+        const canScroll = document.body.style.overflow !== 'hidden' && 
+                         document.body.style.overflowY !== 'hidden' && 
+                         document.documentElement.style.overflow !== 'hidden';
+        
+        console.log('[EditCard] 滚动状态验证:', {
+          canScroll: canScroll,
+          htmlOverflow: document.documentElement.style.overflow,
+          bodyOverflow: document.body.style.overflow,
+          bodyOverflowY: document.body.style.overflowY
+        });
+        
+        return canScroll;
+      } catch (error) {
+        console.error('[EditCard] 强制解锁滚动失败:', error);
+        return false;
+      }
+    };
+
     // 统一关闭与清理
     const unlockScroll = () => {
       try {
+        console.log('[EditCard] 开始恢复滚动状态');
+        
+        // 恢复HTML和body的滚动状态
         document.documentElement.style.overflow = prevHtmlOverflow || '';
         document.body.style.overflow = prevBodyOverflow || '';
-      } catch (_) {}
+        document.body.style.overflowY = prevBodyOverflowY || '';
+        document.body.style.position = prevBodyPosition || '';
+        document.body.style.top = prevBodyTop || '';
+        document.body.style.width = prevBodyWidth || '';
+        
+        // 恢复滚动位置
+        if (scrollPosition && (scrollPosition.x !== 0 || scrollPosition.y !== 0)) {
+          try {
+            window.scrollTo(scrollPosition.x, scrollPosition.y);
+            console.log('[EditCard] 滚动位置已恢复:', scrollPosition);
+          } catch (scrollError) {
+            console.warn('[EditCard] 恢复滚动位置失败:', scrollError);
+          }
+        }
+        
+        // 验证滚动状态是否已恢复
+        const currentHtmlOverflow = document.documentElement.style.overflow;
+        const currentBodyOverflow = document.body.style.overflow;
+        const currentBodyOverflowY = document.body.style.overflowY;
+        
+        console.log('[EditCard] 滚动状态恢复完成:', {
+          htmlOverflow: currentHtmlOverflow,
+          bodyOverflow: currentBodyOverflow,
+          bodyOverflowY: currentBodyOverflowY,
+          bodyPosition: document.body.style.position,
+          bodyTop: document.body.style.top,
+          bodyWidth: document.body.style.width
+        });
+        
+        // 如果滚动状态仍然被锁定，强制恢复
+        if (currentBodyOverflow === 'hidden' || currentBodyOverflowY === 'hidden' || currentHtmlOverflow === 'hidden') {
+          console.warn('[EditCard] 检测到滚动状态仍被锁定，执行强制恢复');
+          document.documentElement.style.overflow = '';
+          document.body.style.overflow = '';
+          document.body.style.overflowY = '';
+          document.body.style.position = '';
+          document.body.style.top = '';
+          document.body.style.width = '';
+          console.log('[EditCard] 强制恢复完成');
+        }
+        
+      } catch (error) {
+        console.warn('[EditCard] 恢复滚动状态时出错:', error);
+        // 强制恢复滚动
+        try {
+          console.log('[EditCard] 执行强制恢复逻辑');
+          document.documentElement.style.overflow = '';
+          document.body.style.overflow = '';
+          document.body.style.overflowY = '';
+          document.body.style.position = '';
+          document.body.style.top = '';
+          document.body.style.width = '';
+          console.log('[EditCard] 强制恢复滚动状态完成');
+        } catch (forceError) {
+          console.error('[EditCard] 强制恢复滚动状态失败:', forceError);
+        }
+      }
     };
 
     const closeModal = () => {
-      unlockScroll();
-      try { document.removeEventListener('keydown', handleEsc); } catch (_) {}
-      try { modal.remove(); } catch (_) {}
+      try {
+        console.log('[EditCard] 开始关闭弹框');
+        
+        // 恢复滚动状态
+        unlockScroll();
+        
+        // 移除事件监听器
+        try { 
+          document.removeEventListener('keydown', handleEsc); 
+          console.log('[EditCard] ESC事件监听器已移除');
+        } catch (e) { 
+          console.warn('[EditCard] 移除ESC事件监听器失败:', e);
+        }
+        
+        // 移除弹框元素
+        try { 
+          modal.remove(); 
+          console.log('[EditCard] 弹框元素已移除');
+        } catch (e) { 
+          console.warn('[EditCard] 移除弹框元素失败:', e);
+        }
+        
+        console.log('[EditCard] 弹框关闭完成');
+      } catch (error) {
+        console.error('[EditCard] 关闭弹框时出错:', error);
+        // 强制清理
+        try {
+          unlockScroll();
+          if (modal && modal.parentNode) {
+            modal.parentNode.removeChild(modal);
+          }
+        } catch (forceError) {
+          console.error('[EditCard] 强制清理失败:', forceError);
+        }
+      }
     };
 
     addPassiveEventListener(closeButton, 'click', () => {
@@ -1118,13 +1416,94 @@ export async function openEditCardModal(card, store) {
           }
         }
 
-        modal.remove();
+        // 先关闭弹框
+        closeModal();
         showSuccess(`卡片"${card.title}"已更新`);
+
+        // 强制恢复滚动状态
+        setTimeout(() => {
+          try {
+            console.log('[EditCard] 保存成功后强制恢复滚动状态');
+            
+            // 调用全局滚动恢复函数
+            const success = globalUnlockScroll();
+            
+            if (!success) {
+              console.warn('[EditCard] 全局滚动恢复失败，尝试备用方案');
+              // 备用方案：直接操作DOM
+              document.documentElement.removeAttribute('style');
+              document.body.removeAttribute('style');
+              document.documentElement.style.overflow = 'auto';
+              document.body.style.overflow = 'auto';
+            }
+            
+          } catch (error) {
+            console.error('[EditCard] 强制恢复滚动状态失败:', error);
+            // 最后的强制恢复
+            try {
+              document.documentElement.removeAttribute('style');
+              document.body.removeAttribute('style');
+              console.log('[EditCard] 已移除所有样式属性');
+            } catch (finalError) {
+              console.error('[EditCard] 最终清理失败:', finalError);
+            }
+          }
+        }, 100);
 
         // 刷新数据
         if (store && typeof store.loadFeatureCards === 'function') {
-          setTimeout(() => {
-            store.loadFeatureCards().catch(() => {});
+          setTimeout(async () => {
+            try {
+              console.log('[EditCard] 开始刷新卡片数据');
+              await store.loadFeatureCards();
+              console.log('[EditCard] 卡片数据刷新完成');
+              
+              // 数据刷新完成后，专门恢复卡片列表滚动
+              setTimeout(() => {
+                console.log('[EditCard] 数据刷新后恢复卡片列表滚动');
+                const success = restoreCardsListScroll();
+                if (!success) {
+                  console.warn('[EditCard] 卡片列表滚动恢复失败，执行全局恢复');
+                  globalUnlockScroll();
+                }
+              }, 100);
+              
+              // 额外延迟检查，确保滚动状态完全恢复
+              setTimeout(() => {
+                console.log('[EditCard] 延迟检查卡片列表滚动状态');
+                
+                // 检查页面是否可以滚动
+                const canPageScroll = document.body.style.overflow !== 'hidden' && 
+                                    document.body.style.overflowY !== 'hidden' && 
+                                    document.documentElement.style.overflow !== 'hidden';
+                
+                // 检查卡片列表容器是否可以滚动
+                const featureCardsContainer = document.querySelector('.feature-cards-container');
+                const canContainerScroll = featureCardsContainer && 
+                                         featureCardsContainer.style.overflow !== 'hidden' && 
+                                         featureCardsContainer.style.overflowY !== 'hidden';
+                
+                console.log('[EditCard] 滚动状态检查结果:', {
+                  canPageScroll: canPageScroll,
+                  canContainerScroll: canContainerScroll,
+                  bodyOverflow: document.body.style.overflow,
+                  bodyOverflowY: document.body.style.overflowY,
+                  htmlOverflow: document.documentElement.style.overflow
+                });
+                
+                if (!canPageScroll || !canContainerScroll) {
+                  console.warn('[EditCard] 检测到滚动状态异常，执行最终修复');
+                  restoreCardsListScroll();
+                }
+              }, 500);
+              
+            } catch (error) {
+              console.error('[EditCard] 刷新卡片数据失败:', error);
+              // 即使刷新失败，也要确保滚动恢复
+              setTimeout(() => {
+                globalUnlockScroll();
+              }, 100);
+            }
           }, 300);
         }
       } catch (err) {
@@ -1134,6 +1513,28 @@ export async function openEditCardModal(card, store) {
         saveButton.disabled = false;
         cancelButton.disabled = false;
         saveButton.classList.remove('updating');
+        
+        // 在finally块中也确保滚动状态恢复
+        setTimeout(() => {
+          try {
+            console.log('[EditCard] finally块中检查滚动状态');
+            
+            // 调用全局滚动恢复函数
+            const success = globalUnlockScroll();
+            
+            if (!success) {
+              console.warn('[EditCard] finally块中全局滚动恢复失败，尝试备用方案');
+              // 备用方案：直接操作DOM
+              document.documentElement.removeAttribute('style');
+              document.body.removeAttribute('style');
+              document.documentElement.style.overflow = 'auto';
+              document.body.style.overflow = 'auto';
+            }
+            
+          } catch (error) {
+            console.error('[EditCard] finally块中恢复滚动状态失败:', error);
+          }
+        }, 200);
       }
     });
 
@@ -1159,11 +1560,34 @@ export async function openEditCardModal(card, store) {
 
     // 显示时锁定背景滚动，避免交互错位
     try {
+      // 记录当前滚动状态
       prevHtmlOverflow = document.documentElement.style.overflow;
       prevBodyOverflow = document.body.style.overflow;
+      prevBodyOverflowY = document.body.style.overflowY;
+      prevBodyPosition = document.body.style.position;
+      prevBodyTop = document.body.style.top;
+      prevBodyWidth = document.body.style.width;
+      
+      // 记录当前滚动位置
+      scrollPosition = {
+        x: window.pageXOffset || document.documentElement.scrollLeft,
+        y: window.pageYOffset || document.documentElement.scrollTop
+      };
+      
+      console.log('[EditCard] 记录滚动状态:', {
+        htmlOverflow: prevHtmlOverflow,
+        bodyOverflow: prevBodyOverflow,
+        bodyOverflowY: prevBodyOverflowY,
+        scrollPosition: scrollPosition
+      });
+      
+      // 锁定滚动
       document.documentElement.style.overflow = 'hidden';
       document.body.style.overflow = 'hidden';
-    } catch (_) {}
+      document.body.style.overflowY = 'hidden';
+    } catch (error) {
+      console.warn('[EditCard] 锁定滚动状态时出错:', error);
+    }
 
     // 初始渲染
     renderFeatures();
@@ -1190,6 +1614,75 @@ export async function openEditCardModal(card, store) {
 
     // 聚焦弹框，提升可达性并避免滚动跳动
     setTimeout(() => { try { modalContent.focus(); } catch (_) {} }, 0);
+    
+    // 添加页面卸载时的清理逻辑
+    const handleBeforeUnload = () => {
+      console.log('[EditCard] 页面卸载，强制恢复滚动状态');
+      unlockScroll();
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // 添加滚动状态监控
+    const scrollMonitor = setInterval(() => {
+      try {
+        const isScrollLocked = document.body.style.overflow === 'hidden' || 
+                              document.body.style.overflowY === 'hidden' || 
+                              document.documentElement.style.overflow === 'hidden';
+        
+        if (isScrollLocked && !modal.parentNode) {
+          console.warn('[EditCard] 检测到弹框已关闭但滚动仍被锁定，自动修复');
+          forceUnlockScroll();
+          clearInterval(scrollMonitor);
+        }
+      } catch (error) {
+        console.warn('[EditCard] 滚动监控出错:', error);
+      }
+    }, 1000);
+    
+    // 在closeModal中移除这个事件监听器
+    const originalCloseModal = closeModal;
+    const enhancedCloseModal = () => {
+      try {
+        console.log('[EditCard] 执行增强的关闭逻辑');
+        
+        // 清除滚动监控
+        clearInterval(scrollMonitor);
+        
+        // 移除页面卸载事件监听器
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        
+        // 执行原始关闭逻辑
+        originalCloseModal();
+        
+        // 额外确保滚动恢复
+        setTimeout(() => {
+          forceUnlockScroll();
+        }, 50);
+        
+      } catch (error) {
+        console.error('[EditCard] 增强关闭逻辑出错:', error);
+        // 如果出错，强制清理
+        try {
+          clearInterval(scrollMonitor);
+          window.removeEventListener('beforeunload', handleBeforeUnload);
+          unlockScroll();
+          if (modal && modal.parentNode) {
+            modal.parentNode.removeChild(modal);
+          }
+          // 强制解锁滚动
+          setTimeout(() => {
+            forceUnlockScroll();
+          }, 100);
+        } catch (forceError) {
+          console.error('[EditCard] 强制清理失败:', forceError);
+        }
+      }
+    };
+    
+    // 替换原来的closeModal引用
+    closeModal = enhancedCloseModal;
+    
   } catch (error) {
     console.error('[EditCardPlugin] 打开编辑器失败:', error);
     showError('创建编辑界面失败，请稍后重试');
@@ -1197,6 +1690,78 @@ export async function openEditCardModal(card, store) {
 }
 
 console.log('[EditCardPlugin] 已加载');
+
+// 页面加载完成后检查滚动状态
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    try {
+      console.log('[EditCard] 页面加载完成后检查滚动状态');
+      const isScrollLocked = document.body.style.overflow === 'hidden' || 
+                            document.body.style.overflowY === 'hidden' || 
+                            document.documentElement.style.overflow === 'hidden';
+      
+      if (isScrollLocked) {
+        console.warn('[EditCard] 检测到页面加载后滚动仍被锁定，自动修复');
+        globalUnlockScroll();
+      }
+    } catch (error) {
+      console.warn('[EditCard] 页面加载后检查滚动状态失败:', error);
+    }
+  }, 1000);
+});
+
+// 添加全局滚动恢复快捷键（Ctrl+Shift+R）
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+    console.log('[EditCard] 检测到快捷键，执行全局滚动恢复');
+    globalUnlockScroll();
+  }
+});
+
+// 添加卡片列表滚动恢复快捷键（Ctrl+Shift+C）
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+    console.log('[EditCard] 检测到快捷键，执行卡片列表滚动恢复');
+    restoreCardsListScroll();
+  }
+});
+
+// 全局滚动状态监控
+let scrollMonitorInterval = null;
+
+function startScrollMonitoring() {
+  if (scrollMonitorInterval) {
+    clearInterval(scrollMonitorInterval);
+  }
+  
+  scrollMonitorInterval = setInterval(() => {
+    try {
+      const isScrollLocked = document.body.style.overflow === 'hidden' || 
+                            document.body.style.overflowY === 'hidden' || 
+                            document.documentElement.style.overflow === 'hidden';
+      
+      if (isScrollLocked) {
+        console.warn('[EditCard] 全局监控检测到滚动被锁定，自动修复');
+        restoreCardsListScroll();
+      }
+    } catch (error) {
+      console.warn('[EditCard] 全局滚动监控出错:', error);
+    }
+  }, 2000); // 每2秒检查一次
+  
+  console.log('[EditCard] 全局滚动监控已启动');
+}
+
+function stopScrollMonitoring() {
+  if (scrollMonitorInterval) {
+    clearInterval(scrollMonitorInterval);
+    scrollMonitorInterval = null;
+    console.log('[EditCard] 全局滚动监控已停止');
+  }
+}
+
+// 启动全局滚动监控
+startScrollMonitoring();
 
 
 
