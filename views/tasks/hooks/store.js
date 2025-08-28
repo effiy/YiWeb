@@ -59,6 +59,9 @@ window.createStore = () => {
         day: new Date().toISOString().split('T')[0]
     });
 
+    // 全部选择状态跟踪
+    const isAllSelected = vueRef(false);
+
     /**
      * 生成唯一ID
      * @returns {string} 唯一ID
@@ -429,6 +432,7 @@ window.createStore = () => {
         currentView,
         dateRange,
         timeFilter,
+        isAllSelected,
 
         // 方法
         loadTasksData,

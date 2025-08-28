@@ -509,7 +509,11 @@ class TaskProApp {
                     // 组件将通过动态注册方式添加，避免时序问题
                 },
                 data() {
-                    return appState;
+                    return {
+                        ...appState,
+                        // 添加全部选择状态
+                        isAllSelected: false
+                    };
                 },
                 mounted() {
                     // 组件挂载后，数据已经在TaskProApp中加载完成
@@ -517,6 +521,11 @@ class TaskProApp {
                     
                     // 将Vue应用的状态引用保存到主应用
                     this.state = appState;
+                    
+                    // 同步全部选择状态
+                    if (window.store && window.store.isAllSelected) {
+                        this.isAllSelected = window.store.isAllSelected.value;
+                    }
                     
                     // 验证数据是否正确加载
                     if (!this.tasks || this.tasks.length === 0) {
@@ -528,7 +537,8 @@ class TaskProApp {
                     console.log('[TaskPro] 编辑状态验证:', {
                         showTaskEditor: this.showTaskEditor,
                         editingTask: this.editingTask,
-                        isCreatingTask: this.isCreatingTask
+                        isCreatingTask: this.isCreatingTask,
+                        isAllSelected: this.isAllSelected
                     });
                 },
                 computed: {
@@ -1075,6 +1085,68 @@ class TaskProApp {
                     // 点击任务
                     handleTaskClick(task) {
                         // 这里可以添加任务点击的逻辑
+                    },
+
+                    // 处理全部选择/恢复
+                    async handleAllSelect() {
+                        try {
+                            if (this.isAllSelected) {
+                                // 反选：恢复默认筛选状态
+                                console.log('[TaskPro] 恢复默认筛选状态');
+                                
+                                // 恢复默认的搜索和筛选状态
+                                this.searchQuery = '';
+                                this.selectedStatuses = [];
+                                this.selectedPriorities = [];
+                                this.selectedTypes = [];
+                                this.selectedLabels = [];
+                                this.selectedDateFilter = null;
+                                
+                                // 更新Vue应用和store中的全部选择状态
+                                this.isAllSelected = false;
+                                if (window.store && window.store.isAllSelected) {
+                                    window.store.isAllSelected.value = false;
+                                }
+                                
+                                // 重新加载任务数据
+                                await this.loadTasksData();
+                                
+                                // 显示成功消息
+                                if (window.showSuccess) {
+                                    window.showSuccess('已恢复默认筛选状态');
+                                }
+                            } else {
+                                // 选择全部：显示全部任务
+                                console.log('[TaskPro] 显示全部任务');
+                                
+                                // 清空所有筛选条件
+                                this.searchQuery = '';
+                                this.selectedStatuses = [];
+                                this.selectedPriorities = [];
+                                this.selectedTypes = [];
+                                this.selectedLabels = [];
+                                this.selectedDateFilter = null;
+                                
+                                // 更新Vue应用和store中的全部选择状态
+                                this.isAllSelected = true;
+                                if (window.store && window.store.isAllSelected) {
+                                    window.store.isAllSelected.value = true;
+                                }
+                                
+                                // 重新加载任务数据
+                                await this.loadTasksData();
+                                
+                                // 显示成功消息
+                                if (window.showSuccess) {
+                                    window.showSuccess('已显示全部任务');
+                                }
+                            }
+                        } catch (error) {
+                            console.error('[TaskPro] 全部选择处理失败:', error);
+                            if (window.showError) {
+                                window.showError('操作失败，请稍后重试');
+                            }
+                        }
                     },
                     
                     // 更新任务（来自子组件的实时更新，如步骤 check）
