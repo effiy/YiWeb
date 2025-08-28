@@ -1591,6 +1591,12 @@ export const useMethods = (store) => {
         const originalValue = messageInput.value;
         const originalDisabled = messageInput.disabled;
         
+        console.log('[输入框] 原始状态:', {
+            placeholder: originalPlaceholder,
+            value: originalValue,
+            disabled: originalDisabled
+        });
+        
         try {
             // 设置处理状态
             isProcessing = true;
@@ -1630,42 +1636,172 @@ export const useMethods = (store) => {
             if (response) {
                 console.log('[数据赋值] 准备赋值的新数据:', response.data);
                 
-                // 等待所有数据保存完成
-                await Promise.all(
-                    response.data.map(async (item) => {
-                        try {
-                            await postData(`${window.API_URL}/mongodb/?cname=goals`, item);
-                        } catch (saveError) {
-                            console.warn('[数据保存] 单个项目保存失败:', saveError);
+                // 开始保存数据到数据库
+                console.log('[数据保存] 开始保存新数据到数据库');
+                
+                // 显示保存进度
+                const totalItems = response.data.length;
+                let savedCount = 0;
+                const savedItems = [];
+                
+                for (const item of response.data) {
+                    try {
+                        const saveResult = await postData(`${window.API_URL}/mongodb/?cname=goals`, item);
+                        if (saveResult && saveResult.success !== false) {
+                            savedItems.push(item);
+                            savedCount++;
+                            console.log('[数据保存] 成功保存项目:', item.title, `(${savedCount}/${totalItems})`);
+                            
+                            // 更新输入框提示，显示保存进度
+                            if (messageInput) {
+                                messageInput.placeholder = `正在保存数据... ${savedCount}/${totalItems}`;
+                            }
+                        } else {
+                            console.warn('[数据保存] 项目保存失败:', item.title, saveResult);
                         }
-                    })
-                );
+                    } catch (saveError) {
+                        console.warn('[数据保存] 项目保存异常:', item.title, saveError);
+                    }
+                }
                 
-                // 更新卡片数据
-                store.featureCards.value = response.data.concat(store.featureCards.value);
+                console.log('[数据保存] 保存完成，成功保存数量:', savedItems.length, '总数量:', totalItems);
                 
-                // 清空输入框
-                messageInput.value = '';
+                // 恢复输入框提示
+                if (messageInput) {
+                    messageInput.placeholder = '正在刷新列表...';
+                }
+                
+                // 直接更新本地数据，确保新卡片立即显示
+                if (savedItems.length > 0) {
+                    console.log('[数据更新] 开始更新本地数据');
+                    
+                    // 获取当前卡片数据
+                    const currentCards = store.featureCards.value || [];
+                    console.log('[数据更新] 当前卡片数量:', currentCards.length);
+                    
+                    // 过滤掉重复的卡片（基于title和key）
+                    const existingTitles = new Set(currentCards.map(card => card.title?.trim()));
+                    const existingKeys = new Set(currentCards.map(card => card.key).filter(Boolean));
+                    
+                    const uniqueNewCards = savedItems.filter(newCard => {
+                        const titleExists = newCard.title && existingTitles.has(newCard.title.trim());
+                        const keyExists = newCard.key && existingKeys.has(newCard.key);
+                        return !titleExists && !keyExists;
+                    });
+                    
+                    console.log('[数据更新] 过滤后的新卡片数量:', uniqueNewCards.length);
+                    
+                    if (uniqueNewCards.length > 0) {
+                        // 使用store的更新方法，确保Vue响应式更新
+                        const updatedCards = uniqueNewCards.concat(currentCards);
+                        if (store.updateFeatureCards) {
+                            store.updateFeatureCards(updatedCards);
+                            console.log('[数据更新] 使用store.updateFeatureCards更新数据，新总数:', updatedCards.length);
+                        } else {
+                            // 备用方法：直接赋值
+                            store.featureCards.value = updatedCards;
+                            console.log('[数据更新] 直接赋值更新数据，新总数:', updatedCards.length);
+                            
+                            // 强制触发Vue响应式更新
+                            if (typeof Vue !== 'undefined' && Vue.nextTick) {
+                                Vue.nextTick(() => {
+                                    console.log('[Vue更新] 使用nextTick触发响应式更新');
+                                });
+                            }
+                        }
+                    } else {
+                        console.log('[数据更新] 没有新的唯一卡片需要添加');
+                    }
+                }
+                
+                // 尝试刷新远程数据（可选，用于同步）
+                try {
+                    console.log('[远程同步] 开始同步远程数据');
+                    await store.loadFeatureCards(true);
+                    console.log('[远程同步] 远程数据同步完成，当前卡片数量:', store.featureCards.value.length);
+                } catch (syncError) {
+                    console.warn('[远程同步] 远程同步失败，但本地数据已更新:', syncError);
+                }
+                
+                // 调试信息：检查数据状态
+                console.log('[调试信息] 数据更新完成后的状态检查:', {
+                    savedItemsCount: savedItems.length,
+                    currentStoreCount: store.featureCards.value?.length || 0,
+                    storeHasUpdateMethod: !!store.updateFeatureCards,
+                    storeHasFeatureCards: !!store.featureCards,
+                    storeFeatureCardsValue: store.featureCards?.value
+                });
+                
+                // 验证数据是否正确显示
+                if (store.featureCards.value && store.featureCards.value.length > 0) {
+                    const firstCard = store.featureCards.value[0];
+                    console.log('[调试信息] 第一张卡片信息:', {
+                        title: firstCard.title,
+                        key: firstCard.key,
+                        hasKey: firstCard.hasOwnProperty('key'),
+                        type: firstCard.hasOwnProperty('key') ? 'MongoDB' : 'Local'
+                    });
+                }
+                
+                // 清空输入框 - 无论成功还是失败都要清空
+                clearInputField(messageInput, '成功处理');
+                
+                // 清除搜索状态，确保新卡片能够正常显示
+                clearSearchState(store, '成功处理');
                 
                 // 显示成功提示
-                showSuccess('消息处理成功，已生成新的功能卡片');
+                let successMessage = '';
+                if (savedItems.length > 0) {
+                    if (savedItems.length === totalItems) {
+                        successMessage = `✅ 消息处理成功！已生成并保存 ${savedItems.length} 个新的功能卡片，列表已刷新`;
+                    } else {
+                        successMessage = `⚠️ 消息处理部分成功！成功保存 ${savedItems.length}/${totalItems} 个功能卡片，列表已刷新`;
+                    }
+                } else {
+                    successMessage = '❌ 消息处理完成，但未能保存任何新卡片，请检查数据格式';
+                }
+                showSuccess(successMessage);
                 
                 // 添加成功触觉反馈
                 if (navigator.vibrate) {
                     navigator.vibrate([50, 50, 50]);
                 }
                 
-                console.log('[消息处理] 处理完成，新增卡片数量:', response.data.length);
+                // 为新卡片添加高亮效果
+                if (savedItems.length > 0) {
+                    // 等待DOM更新完成后再添加高亮效果
+                    setTimeout(() => {
+                        console.log('[高亮效果] 延迟500ms后开始添加高亮效果');
+                        highlightNewCards(savedItems);
+                    }, 500);
+                    
+                    // 额外延迟，确保Vue渲染完成
+                    setTimeout(() => {
+                        console.log('[高亮效果] 延迟1000ms后再次尝试添加高亮效果');
+                        highlightNewCards(savedItems);
+                    }, 1000);
+                }
+                
+                console.log('[消息处理] 处理完成，新增卡片数量:', savedItems.length);
             } else {
                 console.error('[API错误] 服务器返回错误:', response);
                 showError('服务器返回错误，请稍后重试');
+                
+                // 即使API错误也要清空输入框
+                clearInputField(messageInput, 'API错误');
+                
+                // 清除搜索状态
+                clearSearchState(store, 'API错误');
             }
         } catch (error) {
             console.error('[消息处理错误]', error);
             showError('消息发送失败，请稍后重试');
             
-            // 恢复输入框内容
-            messageInput.value = originalValue;
+            // 清空输入框内容（不恢复原始内容，让用户重新输入）
+            clearInputField(messageInput, '异常处理');
+            
+            // 清除搜索状态
+            clearSearchState(store, '异常处理');
         } finally {
             // 清除处理状态
             isProcessing = false;
@@ -1674,16 +1810,180 @@ export const useMethods = (store) => {
             store.loading.value = false;
             
             // 恢复输入框状态
-            messageInput.disabled = originalDisabled;
-            messageInput.placeholder = originalPlaceholder;
-            messageInput.style.opacity = '';
-            messageInput.style.cursor = '';
-            messageInput.classList.remove('loading-input');
+            if (messageInput) {
+                messageInput.disabled = originalDisabled;
+                messageInput.placeholder = originalPlaceholder;
+                messageInput.style.opacity = '';
+                messageInput.style.cursor = '';
+                messageInput.classList.remove('loading-input');
+                
+                // 确保输入框已清空
+                clearInputField(messageInput, 'finally块');
+                
+                // 确保搜索状态已清除
+                clearSearchState(store, 'finally块');
+                
+                // 重新聚焦输入框
+                setTimeout(() => {
+                    if (messageInput) {
+                        messageInput.focus();
+                        console.log('[输入框] 重新聚焦输入框');
+                    }
+                }, 100);
+            }
+        }
+    };
+
+    /**
+     * 清空输入框内容
+     * @param {HTMLElement} inputElement - 输入框元素
+     * @param {string} context - 清空操作的上下文
+     */
+    const clearInputField = (inputElement, context = '未知') => {
+        if (inputElement && inputElement.value !== '') {
+            inputElement.value = '';
+            console.log(`[输入框清空] ${context}: 输入框内容已清空`);
+            return true;
+        }
+        return false;
+    };
+
+    /**
+     * 清除搜索状态
+     * @param {Object} store - 状态存储对象
+     * @param {string} context - 清除操作的上下文
+     */
+    const clearSearchState = (store, context = '未知') => {
+        if (store && store.clearSearch && typeof store.clearSearch === 'function') {
+            store.clearSearch();
+            console.log(`[搜索清除] ${context}: 搜索状态已清除`);
+            return true;
+        } else {
+            console.warn(`[搜索清除] ${context}: store.clearSearch不可用`);
+            return false;
+        }
+    };
+
+    /**
+     * 为新卡片添加高亮效果
+     * @param {Array} newCards - 新添加的卡片数组
+     */
+    const highlightNewCards = (newCards) => {
+        try {
+            console.log('[高亮效果] 开始为新卡片添加高亮效果，数量:', newCards.length);
             
-            // 重新聚焦输入框
-            setTimeout(() => {
-                messageInput.focus();
-            }, 100);
+            // 多次尝试查找卡片，确保DOM已更新
+            const attemptHighlight = (attempt = 1, maxAttempts = 5) => {
+                // 获取所有功能卡片元素
+                const cardElements = document.querySelectorAll('.feature-card');
+                let highlightedCount = 0;
+                
+                console.log(`[高亮效果] 第${attempt}次尝试，找到卡片元素数量:`, cardElements.length);
+                
+                if (cardElements.length === 0 && attempt < maxAttempts) {
+                    console.log(`[高亮效果] 未找到卡片元素，${500 * attempt}ms后重试...`);
+                    setTimeout(() => attemptHighlight(attempt + 1, maxAttempts), 500 * attempt);
+                    return;
+                }
+                
+                cardElements.forEach((cardElement, index) => {
+                    try {
+                        // 检查这个卡片是否是新添加的
+                        const cardTitle = cardElement.querySelector('.card-title')?.textContent?.trim();
+                        const cardDescription = cardElement.querySelector('.card-description')?.textContent?.trim();
+                        
+                        if (!cardTitle) {
+                            console.warn('[高亮效果] 卡片标题为空，跳过:', index);
+                            return;
+                        }
+                        
+                        // 使用多种方式匹配新卡片
+                        const isNewCard = newCards.some(newCard => {
+                            if (!newCard.title) return false;
+                            
+                            // 精确匹配标题
+                            if (newCard.title.trim() === cardTitle) {
+                                return true;
+                            }
+                            
+                            // 如果标题匹配失败，尝试匹配描述
+                            if (newCard.description && cardDescription && 
+                                newCard.description.trim() === cardDescription) {
+                                return true;
+                            }
+                            
+                            // 如果都有key字段，使用key匹配
+                            if (newCard.key && cardElement.dataset.key === newCard.key) {
+                                return true;
+                            }
+                            
+                            return false;
+                        });
+                        
+                        if (isNewCard) {
+                            // 为新卡片添加高亮样式
+                            cardElement.classList.add('new-card-highlight');
+                            highlightedCount++;
+                            
+                            console.log('[高亮效果] 为新卡片添加高亮:', {
+                                title: cardTitle,
+                                index: index,
+                                element: cardElement
+                            });
+                            
+                            // 滚动到第一个新卡片
+                            if (highlightedCount === 1) {
+                                cardElement.scrollIntoView({ 
+                                    behavior: 'smooth', 
+                                    block: 'center',
+                                    inline: 'nearest'
+                                });
+                                
+                                // 添加额外的视觉反馈
+                                setTimeout(() => {
+                                    cardElement.style.animation = 'newCardPulse 1s ease-in-out';
+                                }, 100);
+                            }
+                            
+                            // 5秒后移除高亮效果
+                            setTimeout(() => {
+                                cardElement.classList.remove('new-card-highlight');
+                                cardElement.style.animation = '';
+                            }, 5000);
+                        }
+                    } catch (cardError) {
+                        console.warn('[高亮效果] 处理单个卡片时出错:', cardError, '卡片索引:', index);
+                    }
+                });
+                
+                console.log('[高亮效果] 高亮效果添加完成，高亮数量:', highlightedCount);
+                
+                // 如果没有找到新卡片，尝试使用其他方法
+                if (highlightedCount === 0 && attempt >= maxAttempts) {
+                    console.warn('[高亮效果] 多次尝试后仍未找到匹配的新卡片，尝试高亮前几个卡片');
+                    // 高亮前几个卡片作为备选方案
+                    const firstCards = Array.from(cardElements).slice(0, Math.min(newCards.length, 3));
+                    firstCards.forEach((cardElement, index) => {
+                        cardElement.classList.add('new-card-highlight');
+                        setTimeout(() => {
+                            cardElement.classList.remove('new-card-highlight');
+                        }, 3000);
+                    });
+                    console.log('[高亮效果] 备选高亮完成，高亮数量:', firstCards.length);
+                }
+                
+                // 如果还没找到，继续尝试
+                if (highlightedCount === 0 && attempt < maxAttempts) {
+                    console.log(`[高亮效果] 本次未找到匹配卡片，${500 * (attempt + 1)}ms后重试...`);
+                    setTimeout(() => attemptHighlight(attempt + 1, maxAttempts), 500 * (attempt + 1));
+                }
+            };
+            
+            // 开始第一次尝试
+            attemptHighlight();
+            
+        } catch (error) {
+            console.warn('[高亮效果] 添加高亮效果失败:', error);
         }
     };
 
@@ -2045,6 +2345,61 @@ export const useMethods = (store) => {
             showError('创建卡片失败，请稍后重试');
         }
     };
+    // 测试函数：手动添加测试卡片
+    const addTestCard = () => {
+        try {
+            console.log('[测试函数] 开始添加测试卡片');
+            
+            const testCard = {
+                title: `测试卡片 ${Date.now()}`,
+                description: '这是一个测试卡片，用于验证数据更新功能',
+                icon: 'fas fa-test',
+                badge: 'TEST',
+                hint: '测试提示',
+                footerIcon: 'fas fa-arrow-right',
+                features: [
+                    { name: '测试功能1', icon: '🚀', desc: '测试功能描述1' },
+                    { name: '测试功能2', icon: '⚡', desc: '测试功能描述2' }
+                ],
+                stats: [
+                    { number: '1', label: '测试统计', link: null }
+                ],
+                tags: [
+                    { name: '测试标签', id: Date.now() }
+                ],
+                key: `test_${Date.now()}` // 添加key字段
+            };
+            
+            // 获取当前卡片数据
+            const currentCards = store.featureCards.value || [];
+            console.log('[测试函数] 当前卡片数量:', currentCards.length);
+            
+            // 添加测试卡片到开头
+            const updatedCards = [testCard, ...currentCards];
+            
+            // 使用store的更新方法
+            if (store.updateFeatureCards) {
+                store.updateFeatureCards(updatedCards);
+                console.log('[测试函数] 使用store.updateFeatureCards添加测试卡片');
+            } else {
+                store.featureCards.value = updatedCards;
+                console.log('[测试函数] 直接赋值添加测试卡片');
+            }
+            
+            console.log('[测试函数] 测试卡片添加完成，新总数:', updatedCards.length);
+            
+            // 添加高亮效果
+            setTimeout(() => {
+                highlightNewCards([testCard]);
+            }, 500);
+            
+            return testCard;
+        } catch (error) {
+            console.error('[测试函数] 添加测试卡片失败:', error);
+            return null;
+        }
+    };
+
     // 返回方法集合
     const methods = {
         openLink,
@@ -2092,6 +2447,10 @@ export const useMethods = (store) => {
         editCard,
         createCard,
         handleCreateCard,
+        highlightNewCards,  // 新卡片高亮效果
+        addTestCard,        // 测试函数
+        clearInputField,    // 输入框清空函数
+        clearSearchState,   // 搜索状态清除函数
         loadFeatureCards: store.loadFeatureCards  // 暴露重新加载数据的方法
     };
     
