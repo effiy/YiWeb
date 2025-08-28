@@ -74,7 +74,7 @@ const createMatrixView = () => {
                                         </div>
                                         <div class="task-meta">
                                             <span class="task-status" :class="'status-' + task.status">
-                                                {{ getStatusLabel(task.status) }}
+                                                {{ task.status }}
                                             </span>
                                             <span class="task-due-date">
                                                 {{ formatDueDate(task.dueDate) }}
@@ -117,7 +117,7 @@ const createMatrixView = () => {
                                         </div>
                                         <div class="task-meta">
                                             <span class="task-status" :class="'status-' + task.status">
-                                                {{ getStatusLabel(task.status) }}
+                                                {{ task.status }}
                                             </span>
                                             <span class="task-due-date">
                                                 {{ formatDueDate(task.dueDate) }}
@@ -160,7 +160,7 @@ const createMatrixView = () => {
                                         </div>
                                         <div class="task-meta">
                                             <span class="task-status" :class="'status-' + task.status">
-                                                {{ getStatusLabel(task.status) }}
+                                                {{ task.status }}
                                             </span>
                                             <span class="task-due-date">
                                                 {{ formatDueDate(task.dueDate) }}
@@ -201,7 +201,7 @@ const createMatrixView = () => {
                                         </div>
                                         <div class="task-meta">
                                             <span class="task-status" :class="'status-' + task.status">
-                                                {{ getStatusLabel(task.status) }}
+                                                {{ task.status }}
                                             </span>
                                             <span class="task-due-date">
                                                 {{ formatDueDate(task.dueDate) }}
@@ -308,7 +308,7 @@ const createMatrixView = () => {
                         tasks.map(task => [
                             quadrant,
                             `"${task.title}"`,
-                            this.getStatusLabel(task.status),
+                            task.status,
                             this.getPriorityLabel(task.priority),
                             this.formatDueDate(task.dueDate),
                             this.getTypeLabel(task.type)
@@ -323,20 +323,7 @@ const createMatrixView = () => {
                 link.click();
             },
             
-            // 工具方法
-            getStatusLabel(status) {
-                const statusMap = {
-                    'backlog': '待办',
-                    'todo': '计划中',
-                    'in_progress': '进行中',
-                    'in_review': '待审核',
-                    'testing': '测试中',
-                    'completed': '已完成',
-                    'cancelled': '已取消',
-                    'on_hold': '暂停'
-                };
-                return statusMap[status] || status;
-            },
+
             
             getPriorityLabel(priority) {
                 const priorityMap = {
@@ -390,4 +377,5 @@ const createMatrixView = () => {
 
 window.MatrixView = createMatrixView();
 console.log('[MatrixView] 组件已加载');
+
 

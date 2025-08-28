@@ -23,7 +23,7 @@ const createEnhancedTaskList = () => {
                     <p>开始创建您的第一个任务吧</p>
                 </div>
                 <div v-else class="task-list-content">
-                    <div v-for="task in tasks" :key="task.id" 
+                    <div v-for="task in tasks" :key="task.key || task.id" 
                          class="task-item-enhanced"
                          @click="handleTaskClick(task)"
                          @touchstart="startLongPress(task, $event)"
@@ -41,9 +41,7 @@ const createEnhancedTaskList = () => {
                                     title="编辑任务">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <div class="task-priority" :class="'priority-' + (task.priority || 'none')">
-                                    {{ getPriorityLabel(task.priority || 'none') }}
-                                </div>
+
                             </div>
                         </div>
                         <div class="task-description" v-if="task.description">{{ task.description }}</div>
@@ -71,13 +69,15 @@ const createEnhancedTaskList = () => {
                             <div class="steps-label">
                                 <i class="fas fa-list-ol"></i>
                                 <span>执行步骤</span>
-                                <span class="steps-progress" v-if="getStepsProgress(task).total > 0">
-                                    ({{ getStepsProgress(task).completed }}/{{ getStepsProgress(task).total }})
-                                </span>
+                                <div class="steps-progress">
+                                    {{ getStepsProgress(task) }}
+                                </div>
                             </div>
                             <div class="steps-content">
-                                <div v-for="(step, stepKey) in task.steps" :key="stepKey" class="step-item">
-                                    <div class="step-checkbox" @click.stop="toggleStepComplete(task.id, stepKey)">
+                                <div v-for="(step, stepKey) in task.steps" :key="stepKey" 
+                                     class="step-item"
+                                     :class="{ 'completed': isStepCompleted(task, stepKey) }">
+                                    <div class="step-checkbox" @click.stop="toggleStepComplete(task.key || task.id, stepKey)">
                                         <i :class="getStepCheckIcon(task, stepKey)" class="step-check-icon"></i>
                                     </div>
                                     <span class="step-number" :class="{ 'completed': isStepCompleted(task, stepKey) }">
@@ -90,11 +90,7 @@ const createEnhancedTaskList = () => {
                             </div>
                         </div>
                         
-                        <div class="task-meta">
-                            <div class="task-status" :class="'status-' + (task.status || 'todo')">
-                                {{ getStatusLabel(task.status || 'todo') }}
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             </div>
@@ -134,46 +130,16 @@ const createEnhancedTaskList = () => {
                 PROGRESS_UPDATE_INTERVAL: 50 // 进度更新间隔（毫秒）
             };
         },
+        mounted() {
+            // 组件挂载后清理过期的本地存储数据
+            this.cleanupExpiredLocalStorage();
+            
+            // 初始化步骤状态
+            this.initializeStepStates();
+        },
         methods: {
-            getPriorityLabel(priority) {
-                try {
-                    const priorities = window.TASK_PRIORITY || window.TaskProMockData?.TASK_PRIORITY;
-                    if (priorities && priorities[priority]) {
-                        return priorities[priority].label;
-                    }
-                    const fallback = {
-                        'critical': '急',
-                        'high': '高',
-                        'medium': '中',
-                        'low': '低',
-                        'none': '无'
-                    };
-                    return fallback[priority] || '未';
-                } catch (error) {
-                    return '未';
-                }
-            },
-            getStatusLabel(status) {
-                try {
-                    const statuses = window.TASK_STATUS || window.TaskProMockData?.TASK_STATUS;
-                    if (statuses && statuses[status]) {
-                        return statuses[status].label;
-                    }
-                    const fallback = {
-                        'backlog': '待办',
-                        'todo': '计划中',
-                        'in_progress': '进行中',
-                        'in_review': '待审核',
-                        'testing': '测试中',
-                        'completed': '已完成',
-                        'cancelled': '已取消',
-                        'on_hold': '暂停'
-                    };
-                    return fallback[status] || '未知';
-                } catch (error) {
-                    return '未知';
-                }
-            },
+
+
             getStepNumber(stepKey) {
                 // 从stepKey中提取步骤编号
                 if (typeof stepKey !== 'string') {
@@ -182,37 +148,344 @@ const createEnhancedTaskList = () => {
                 const match = stepKey.match(/step(\d+)/);
                 return match ? match[1] : stepKey;
             },
+            
             getStepText(step) {
-                return step.text || step;
-            },
-            getStepsProgress(task) {
-                if (!task.steps) return { total: 0, completed: 0 };
-                const totalSteps = Object.keys(task.steps).length;
-                let completedSteps = 0;
-                for (const stepKey in task.steps) {
-                    if (task.steps[stepKey].completed) {
-                        completedSteps++;
-                    }
+                // 处理不同格式的步骤数据
+                if (typeof step === 'string') {
+                    return step;
+                } else if (step && typeof step === 'object') {
+                    return step.text || step.toString();
                 }
-                return { total: totalSteps, completed: completedSteps };
+                return '未知步骤';
             },
+            
+
+            
+
+            
+
+
             isStepCompleted(task, stepKey) {
-                return task.steps && task.steps[stepKey] && task.steps[stepKey].completed;
+                if (!task.steps || !task.steps[stepKey]) {
+                    return false;
+                }
+                const step = task.steps[stepKey];
+                if (typeof step === 'boolean') {
+                    return step;
+                } else if (step && typeof step === 'object') {
+                    return step.completed || false;
+                }
+                return false;
             },
-            toggleStepComplete(taskId, stepKey) {
-                const task = this.tasks.find(t => t.id === taskId);
-                if (task) {
-                    if (!task.steps) {
-                        task.steps = {};
+            async toggleStepComplete(taskId, stepKey) {
+                console.log('[步骤更新] 开始更新步骤:', { taskId, stepKey });
+                
+                try {
+                    // 找到任务并创建深拷贝，避免影响其他组件
+                    const taskIndex = this.tasks.findIndex(t => (t.key && t.key === taskId) || (t.id && t.id === taskId));
+                    if (taskIndex === -1) {
+                        console.error('[步骤更新] 未找到任务:', taskId);
+                        return;
                     }
-                    if (task.steps[stepKey]) {
-                        task.steps[stepKey].completed = !task.steps[stepKey].completed;
+                    
+                    // 创建任务的深拷贝
+                    const originalTask = this.tasks[taskIndex];
+                    const updatedTask = JSON.parse(JSON.stringify(originalTask));
+                    
+                    console.log('[步骤更新] 找到任务:', updatedTask.title, '当前步骤数据:', updatedTask.steps);
+                    
+                    if (!updatedTask.steps) {
+                        updatedTask.steps = {};
+                        console.log('[步骤更新] 初始化步骤对象');
+                    }
+                    
+                    // 确保步骤数据结构正确
+                    if (updatedTask.steps[stepKey]) {
+                        // 如果步骤已存在，切换完成状态
+                        const oldStatus = updatedTask.steps[stepKey].completed;
+                        updatedTask.steps[stepKey].completed = !oldStatus;
+                        console.log('[步骤更新] 切换步骤状态:', stepKey, oldStatus, '->', updatedTask.steps[stepKey].completed);
                     } else {
-                        task.steps[stepKey] = { completed: true }; // 默认完成
+                        // 如果步骤不存在，创建新的步骤对象
+                        updatedTask.steps[stepKey] = { 
+                            text: stepKey, 
+                            completed: true 
+                        };
+                        console.log('[步骤更新] 创建新步骤:', stepKey, updatedTask.steps[stepKey]);
                     }
-                    this.$emit('task-update', task);
+                    
+                    // 更新任务的完成进度
+                    this.updateTaskProgress(updatedTask);
+                    console.log('[进度更新] 任务进度已更新:', updatedTask.progress + '%');
+                    
+                    // 更新本地任务数组，替换原任务
+                    this.tasks.splice(taskIndex, 1, updatedTask);
+                    
+                    // 调用API更新步骤状态到后端
+                    await this.updateStepStatusToAPI(updatedTask, stepKey);
+                    
+                    // 触发任务更新事件
+                    this.$emit('task-update', {
+                        task: updatedTask,
+                        timeData: null
+                    });
+                    
+                    console.log('[步骤更新] 步骤状态已更新:', stepKey, updatedTask.steps[stepKey].completed);
+                    
+                    // 添加成功反馈
+                    this.showStepUpdateFeedback(stepKey, updatedTask.steps[stepKey].completed);
+                    
+                    // 保存步骤状态到本地存储
+                    this.saveStepStateToLocal(taskId, stepKey, updatedTask.steps[stepKey].completed);
+                    
+                } catch (error) {
+                    console.error('[步骤更新] 更新步骤失败:', error);
+                    // 如果API更新失败，回滚本地状态
+                    this.rollbackStepStatus(taskId, stepKey);
+                    // 显示错误提示
+                    if (window.showError) {
+                        window.showError('步骤状态更新失败，请稍后重试');
+                    }
                 }
             },
+            
+            // 调用API更新步骤状态
+            async updateStepStatusToAPI(task, stepKey) {
+                try {
+                    console.log('[API更新] 开始调用API更新步骤状态:', { taskTitle: task.title, stepKey });
+                    
+                    // 获取URL参数
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const featureName = urlParams.get('featureName') || '';
+                    const cardTitle = urlParams.get('cardTitle') || '';
+                    
+                    // 构建API URL - 包含任务的key参数
+                    let apiUrl = `${window.API_URL}/mongodb/?cname=tasks&featureName=${encodeURIComponent(featureName)}&cardTitle=${encodeURIComponent(cardTitle)}`;
+                    
+                    // 如果任务有key，添加到URL中
+                    if (task.key) {
+                        apiUrl += `&key=${encodeURIComponent(task.key)}`;
+                    }
+                    
+                    console.log('[API更新] API URL:', apiUrl);
+                    
+                    // 准备更新数据
+                    const updatePayload = {
+                        ...task,
+                        updated: new Date().toISOString()
+                    };
+                    
+                    // 调用API更新任务
+                    const response = await window.updateData(apiUrl, updatePayload);
+                    
+                    if (response && response.success !== false) {
+                        console.log('[API更新] 步骤状态更新成功');
+                        return true;
+                    } else {
+                        throw new Error('API更新失败');
+                    }
+                    
+                } catch (error) {
+                    console.error('[API更新] 步骤状态更新失败:', error);
+                    throw error;
+                }
+            },
+            
+            // 回滚步骤状态（当API更新失败时）
+            rollbackStepStatus(taskId, stepKey) {
+                try {
+                    console.log('[回滚] 开始回滚步骤状态:', { taskId, stepKey });
+                    
+                    const taskIndex = this.tasks.findIndex(t => (t.key && t.key === taskId) || (t.id && t.id === taskId));
+                    if (taskIndex === -1) {
+                        console.error('[回滚] 未找到任务:', taskId);
+                        return;
+                    }
+                    
+                    const task = this.tasks[taskIndex];
+                    if (task.steps && task.steps[stepKey]) {
+                        // 切换回原来的状态
+                        task.steps[stepKey].completed = !task.steps[stepKey].completed;
+                        
+                        // 重新计算任务进度
+                        this.updateTaskProgress(task);
+                        
+                        console.log('[回滚] 步骤状态已回滚:', stepKey, task.steps[stepKey].completed);
+                    }
+                    
+                } catch (error) {
+                    console.error('[回滚] 回滚步骤状态失败:', error);
+                }
+            },
+            
+            // 显示步骤更新反馈
+            showStepUpdateFeedback(stepKey, isCompleted) {
+                try {
+                    // 查找对应的步骤元素
+                    const stepElements = document.querySelectorAll('.step-item');
+                    const targetStep = Array.from(stepElements).find(step => {
+                        const stepText = step.querySelector('.step-text')?.textContent;
+                        return stepText && stepText.includes(stepKey);
+                    });
+                    
+                    if (targetStep) {
+                        // 添加临时的高亮效果
+                        targetStep.style.transform = 'scale(1.05)';
+                        targetStep.style.transition = 'transform 0.2s ease';
+                        
+                        // 恢复原始大小
+                        setTimeout(() => {
+                            if (targetStep) {
+                                targetStep.style.transform = 'scale(1)';
+                            }
+                        }, 200);
+                    }
+                } catch (error) {
+                    console.warn('[步骤反馈] 显示反馈失败:', error);
+                }
+            },
+            
+            // 保存步骤状态到本地存储
+            saveStepStateToLocal(taskId, stepKey, isCompleted) {
+                try {
+                    const storageKey = `task_step_${taskId}_${stepKey}`;
+                    localStorage.setItem(storageKey, JSON.stringify({
+                        completed: isCompleted,
+                        updatedAt: new Date().toISOString()
+                    }));
+                    console.log('[本地存储] 步骤状态已保存:', storageKey, isCompleted);
+                } catch (error) {
+                    console.warn('[本地存储] 保存步骤状态失败:', error);
+                }
+            },
+            
+            // 从本地存储恢复步骤状态
+            restoreStepStateFromLocal(taskId, stepKey) {
+                try {
+                    const storageKey = `task_step_${taskId}_${stepKey}`;
+                    const stored = localStorage.getItem(storageKey);
+                    if (stored) {
+                        const data = JSON.parse(stored);
+                        console.log('[本地存储] 恢复步骤状态:', storageKey, data);
+                        return data.completed;
+                    }
+                } catch (error) {
+                    console.warn('[本地存储] 恢复步骤状态失败:', error);
+                }
+                return false;
+            },
+            
+            // 清理过期的本地存储数据
+            cleanupExpiredLocalStorage() {
+                try {
+                    const now = new Date();
+                    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith('task_step_')) {
+                            try {
+                                const data = JSON.parse(localStorage.getItem(key));
+                                if (data.updatedAt && new Date(data.updatedAt) < oneWeekAgo) {
+                                    localStorage.removeItem(key);
+                                    console.log('[本地存储] 清理过期数据:', key);
+                                }
+                            } catch (error) {
+                                // 如果数据格式错误，直接删除
+                                localStorage.removeItem(key);
+                                console.log('[本地存储] 清理损坏数据:', key);
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.warn('[本地存储] 清理过期数据失败:', error);
+                }
+            },
+            
+            // 初始化步骤状态
+            initializeStepStates() {
+                try {
+                    this.tasks.forEach(task => {
+                        if (task.steps && Object.keys(task.steps).length > 0) {
+                            Object.keys(task.steps).forEach(stepKey => {
+                                // 尝试从本地存储恢复步骤状态
+                                const localState = this.restoreStepStateFromLocal(task.key || task.id, stepKey);
+                                if (localState !== false) {
+                                    // 如果本地存储有状态，更新任务数据
+                                    if (!task.steps[stepKey]) {
+                                        task.steps[stepKey] = { text: stepKey, completed: false };
+                                    }
+                                    task.steps[stepKey].completed = localState;
+                                }
+                            });
+                            
+                            // 更新任务进度
+                            this.updateTaskProgress(task);
+                        }
+                    });
+                    
+                    console.log('[步骤初始化] 步骤状态初始化完成');
+                } catch (error) {
+                    console.error('[步骤初始化] 初始化步骤状态失败:', error);
+                }
+            },
+            
+            // 更新任务完成进度
+            updateTaskProgress(task) {
+                try {
+                    if (task.steps && Object.keys(task.steps).length > 0) {
+                        const totalSteps = Object.keys(task.steps).length;
+                        let completedSteps = 0;
+                        
+                        // 计算完成的步骤数量
+                        Object.values(task.steps).forEach(step => {
+                            if (step && typeof step === 'object' && step.completed) {
+                                completedSteps++;
+                            } else if (step === true) {
+                                // 处理布尔值格式
+                                completedSteps++;
+                            }
+                        });
+                        
+                        // 更新任务进度
+                        task.progress = Math.round((completedSteps / totalSteps) * 100);
+                        task.completedSubtasks = completedSteps;
+                        task.totalSubtasks = totalSteps;
+                        
+                        console.log('[进度更新] 任务进度已更新:', {
+                            title: task.title,
+                            totalSteps,
+                            completedSteps,
+                            progress: task.progress + '%'
+                        });
+                    } else {
+                        // 如果没有步骤，设置默认值
+                        task.progress = 0;
+                        task.completedSubtasks = 0;
+                        task.totalSubtasks = 0;
+                    }
+                } catch (error) {
+                    console.error('[进度更新] 更新任务进度失败:', error);
+                    // 设置默认值
+                    task.progress = 0;
+                    task.completedSubtasks = 0;
+                    task.totalSubtasks = 0;
+                }
+            },
+            
+            // 任务选择方法
+            handleTaskSelect(task) {
+                console.log('[任务选择] 选择任务:', task.title);
+                // 触发任务选择事件
+                this.$emit('task-select', task);
+            },
+            
+            // 任务点击方法
+            handleTaskClick(task) {
+                console.log('[任务点击] 点击任务:', task.title);
+                // 触发任务点击事件
+                this.$emit('task-click', task);
+            },
+            
             getStepCheckIcon(task, stepKey) {
                 if (task.steps && task.steps[stepKey] && task.steps[stepKey].completed) {
                     return 'fas fa-check-circle';
@@ -388,7 +661,7 @@ const createEnhancedTaskList = () => {
                         }
                     }, this.LONG_PRESS_DURATION);
                     
-                    console.log('[长按删除] 开始计时，3秒后将删除任务:', task.title);
+                    console.log('[长按删除] 开始计时，2秒后将删除任务:', task.title);
                 } catch (error) {
                     console.error('[长按删除] 开始长按失败:', error);
                     this.isDeleting = false;
@@ -533,9 +806,9 @@ const createEnhancedTaskList = () => {
                         setTimeout(() => {
                             // 检查任务是否仍然存在于数据中
                             const taskStillExists = this.tasks.some(t => 
-                                (t.id && t.id === task.id) || 
-                                (t.title && t.title === task.title) ||
-                                (t.key && t.key === task.key)
+                                (t.key && t.key === task.key) || 
+                                (t.id && t.id === task.id) ||
+                                (t.title && t.title === task.title)
                             );
                             
                             if (!taskStillExists) {
@@ -659,54 +932,6 @@ const createEnhancedTaskList = () => {
                     
                 } catch (error) {
                     console.log('[声音效果] 无法播放声音:', error);
-                }
-            },
-            
-            /**
-             * 处理任务点击事件
-             * @param {Object} task - 任务对象
-             */
-            handleTaskClick(task) {
-                // 如果正在进行长按，忽略点击
-                if (this.longPressTimer) {
-                    console.log('[任务点击] 正在进行长按，忽略点击事件');
-                    return;
-                }
-                
-                // 如果正在删除中，忽略点击
-                if (this.isDeleting) {
-                    console.log('[任务点击] 正在删除中，忽略点击事件');
-                    return;
-                }
-                
-                // 检查任务元素状态（通过查找当前任务对应的DOM元素）
-                const taskElements = document.querySelectorAll('.task-item-enhanced');
-                const taskElement = Array.from(taskElements).find(el => {
-                    const title = el.querySelector('.task-title')?.textContent;
-                    return title === task.title;
-                });
-                
-                if (taskElement) {
-                    // 如果任务已被标记为删除，忽略点击
-                    if (taskElement.classList.contains('deleted')) {
-                        console.log('[任务点击] 任务已被标记为删除，忽略点击事件');
-                        return;
-                    }
-                    
-                    // 如果任务正在删除中，忽略点击
-                    if (taskElement.classList.contains('deleting')) {
-                        console.log('[任务点击] 任务正在删除中，忽略点击事件');
-                        return;
-                    }
-                }
-                
-                // 检查是否为短按（非长按）
-                const pressDuration = Date.now() - this.longPressStartTime;
-                const isShortPress = pressDuration < this.LONG_PRESS_DURATION;
-                
-                if (isShortPress) {
-                    // 触发任务点击事件
-                    this.$emit('task-click', task);
                 }
             },
             
@@ -904,6 +1129,34 @@ const createEnhancedTaskList = () => {
                     console.error('[数据完整性检查] 检查失败:', error);
                     return false;
                 }
+            },
+
+            getStepsProgress(task) {
+                try {
+                    if (!task.steps || Object.keys(task.steps).length === 0) {
+                        return '0%';
+                    }
+                    
+                    const totalSteps = Object.keys(task.steps).length;
+                    let completedSteps = 0;
+                    
+                    // 计算完成的步骤数量
+                    Object.values(task.steps).forEach(step => {
+                        if (step && typeof step === 'object' && step.completed) {
+                            completedSteps++;
+                        } else if (step === true) {
+                            // 处理布尔值格式
+                            completedSteps++;
+                        }
+                    });
+                    
+                    const progress = Math.round((completedSteps / totalSteps) * 100);
+                    return `${progress}%`;
+                    
+                } catch (error) {
+                    console.error('[步骤进度] 计算步骤进度失败:', error);
+                    return '0%';
+                }
             }
         }
     };
@@ -916,6 +1169,7 @@ try {
 } catch (error) {
     console.error('EnhancedTaskList 组件初始化失败:', error);
 }
+
 
 
 

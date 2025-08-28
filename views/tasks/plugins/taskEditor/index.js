@@ -229,21 +229,26 @@ const TaskEditor = {
     methods: {
         initFormData() {
             if (this.task && (this.task.key || this.task.id)) {
+                // 编辑现有任务
+                const taskData = this.task;
                 this.formData = {
-                    title: this.task.title || '',
-                    description: this.task.description || '',
-                    priority: this.task.priority || 'none',
-                    status: this.task.status || 'todo',
-                    type: this.task.type || 'task',
-                    dueDate: this.task.dueDate || '',
-                    input: this.task.input || '',
-                    output: this.task.output || '',
-                    steps: this.task.steps ? this.parseSteps(this.task.steps) : [
-                        { text: '', completed: false },
-                        { text: '', completed: false }
-                    ]
+                    title: taskData.title || '',
+                    description: taskData.description || '',
+                    priority: taskData.priority || 'none',
+                    status: taskData.status || 'todo',
+                    type: taskData.type || 'task',
+                    dueDate: taskData.dueDate || '',
+                    input: taskData.input || '',
+                    output: taskData.output || '',
+                    steps: this.parseSteps(taskData.steps)
                 };
+                
+                console.log('[TaskEditor] 编辑任务，步骤数据:', {
+                    original: taskData.steps,
+                    parsed: this.formData.steps
+                });
             } else {
+                // 创建新任务
                 this.formData = {
                     title: '',
                     description: '',
@@ -258,6 +263,8 @@ const TaskEditor = {
                         { text: '', completed: false }
                     ]
                 };
+                
+                console.log('[TaskEditor] 创建新任务，初始化默认步骤');
             }
         },
         
@@ -279,15 +286,16 @@ const TaskEditor = {
         parseSteps(steps) {
             // 将不同格式的步骤数据转换为统一格式
             if (Array.isArray(steps)) {
-                return steps.map(step => {
+                return steps.map((step, index) => {
                     if (typeof step === 'string') {
                         return { text: step, completed: false };
                     }
                     return { text: step.text || step, completed: step.completed || false };
                 });
-            } else if (typeof steps === 'object') {
-                return Object.keys(steps).map(key => {
-                    const step = steps[key];
+            } else if (typeof steps === 'object' && steps !== null) {
+                // 处理mock数据格式：{ step1: { text: '...', completed: false }, step2: {...} }
+                const stepEntries = Object.entries(steps);
+                return stepEntries.map(([key, step]) => {
                     if (typeof step === 'string') {
                         return { text: step, completed: false };
                     }
@@ -295,6 +303,20 @@ const TaskEditor = {
                 });
             }
             return [];
+        },
+        
+        // 将步骤数组转换为mock数据格式
+        convertStepsToMockFormat(steps) {
+            const mockSteps = {};
+            steps.forEach((step, index) => {
+                if (step.text.trim()) {
+                    mockSteps[`step${index + 1}`] = {
+                        text: step.text.trim(),
+                        completed: step.completed || false
+                    };
+                }
+            });
+            return mockSteps;
         },
         
         async handleSubmit() {
@@ -308,8 +330,9 @@ const TaskEditor = {
                 
                 const saveData = { ...this.formData };
                 
-                // 过滤掉空的步骤
-                saveData.steps = this.formData.steps.filter(step => step.text.trim() !== '');
+                // 过滤掉空的步骤并转换为mock数据格式
+                const validSteps = this.formData.steps.filter(step => step.text.trim() !== '');
+                saveData.steps = this.convertStepsToMockFormat(validSteps);
                 
                 if (this.isEditing) {
                     saveData.key = this.task.key || this.task.id;
@@ -352,6 +375,7 @@ console.log('[TaskEditor] 组件已注册到全局:', {
     hasProps: !!TaskEditor.props,
     hasMethods: !!TaskEditor.methods
 });
+
 
 
 

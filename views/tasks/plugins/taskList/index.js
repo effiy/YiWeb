@@ -75,7 +75,7 @@ const createTaskList = () => {
                         
                         <div class="task-meta">
                             <div class="task-status" :class="'status-' + (task.status || 'todo')">
-                                {{ getStatusLabel(task.status || 'todo') }}
+                                {{ task.status || 'todo' }}
                             </div>
                         </div>
                     </div>
@@ -120,27 +120,7 @@ const createTaskList = () => {
                     return '未';
                 }
             },
-            getStatusLabel(status) {
-                try {
-                    const statuses = window.TASK_STATUS || window.TaskProMockData?.TASK_STATUS;
-                    if (statuses && statuses[status]) {
-                        return statuses[status].label;
-                    }
-                    const fallback = {
-                        'backlog': '待办',
-                        'todo': '计划中',
-                        'in_progress': '进行中',
-                        'in_review': '待审核',
-                        'testing': '测试中',
-                        'completed': '已完成',
-                        'cancelled': '已取消',
-                        'on_hold': '暂停'
-                    };
-                    return fallback[status] || '未知';
-                } catch (error) {
-                    return '未知';
-                }
-            },
+
             
             getStepNumber(stepKey) {
                 // 从stepKey中提取步骤编号
@@ -195,6 +175,7 @@ try {
 } catch (error) {
     console.error('TaskList 组件初始化失败:', error);
 } 
+
 
 
 

@@ -48,7 +48,6 @@ class TaskProApp {
             globalSearchQuery: '',
             searchQuery: '',
             searchSuggestions: [],
-            selectedTasks: [],
             activeFilters: [],
             selectedLabels: [],
             selectedStatuses: [],
@@ -73,8 +72,7 @@ class TaskProApp {
             autoRefreshEnabled: false,
             groupingConfig: null,
             
-            // 批量操作
-            batchActionsVisible: false,
+            
             
             // 通知系统
             notifications: [],
@@ -1055,29 +1053,7 @@ class TaskProApp {
                         return viewComponentMap[view];
                     },
                     
-                    // 批量更新状态
-                    batchUpdateStatus() {
-                        if (this.selectedTasks.length === 0) return;
-                        
-                        // 这里可以添加批量更新状态的逻辑
-                    },
                     
-                    // 批量删除
-                    batchDelete() {
-                        if (this.selectedTasks.length === 0) return;
-                        
-                        if (confirm(`确定要删除选中的 ${this.selectedTasks.length} 个任务吗？`)) {
-                            this.selectedTasks.forEach(task => {
-                                this.deleteTask(task);
-                            });
-                            this.selectedTasks = [];
-                        }
-                    },
-                    
-                    // 清除任务选择
-                    clearTaskSelection() {
-                        this.selectedTasks = [];
-                    },
                     
                     // 打开设置
                     openSettings() {
@@ -1094,37 +1070,46 @@ class TaskProApp {
                         this.searchQuery = '';
                     },
                     
-                    // 选择任务
-                    handleTaskSelect(task) {
-                        try {
-                            console.log('[TaskPro] 选择任务:', task.title);
-                            
-                            const selectIndex = this.selectedTasks.findIndex(t => t.key === task.key);
-                            if (selectIndex === -1) {
-                                // 添加到选中列表
-                                this.selectedTasks.push(task);
-                                console.log('[TaskPro] 任务已添加到选中列表');
-                            } else {
-                                // 从选中列表中移除
-                                this.selectedTasks.splice(selectIndex, 1);
-                                console.log('[TaskPro] 任务已从选中列表移除');
-                            }
-                            
-                            console.log('[TaskPro] 当前选中任务数量:', this.selectedTasks.length);
-                            
-                        } catch (error) {
-                            console.error('[TaskPro] 选择任务失败:', error);
-                        }
-                    },
+                    
                     
                     // 点击任务
                     handleTaskClick(task) {
                         // 这里可以添加任务点击的逻辑
                     },
                     
-                    // 更新任务
+                    // 更新任务（来自子组件的实时更新，如步骤 check）
                     handleTaskUpdate(updateData) {
-                        // 这里可以添加任务更新的逻辑
+                        try {
+                            const { task } = updateData || {};
+                            if (!task) return;
+
+                            // 在父级任务列表中查找并替换对应任务，确保触发响应式更新
+                            const index = this.tasks.findIndex(t =>
+                                (t.key && task.key && t.key === task.key) ||
+                                (t.id && task.id && t.id === task.id) ||
+                                (t.title && task.title && t.title === task.title)
+                            );
+
+                            if (index !== -1) {
+                                this.tasks.splice(index, 1, { ...task });
+                            } else {
+                                // 若未找到，作为兜底加入列表顶部
+                                this.tasks.unshift({ ...task });
+                            }
+
+                            // 同步到全局 store，保证其他视图一致
+                            if (window.store && typeof window.store.updateTask === 'function') {
+                                window.store.updateTask(task);
+                            }
+
+                            // 衍生数据更新
+                            this.extractLabels();
+                            if (typeof this.updateStats === 'function') {
+                                this.updateStats();
+                            }
+                        } catch (error) {
+                            console.error('[TaskPro] 处理任务更新失败:', error);
+                        }
                     },
                     
                     // 删除任务
@@ -1174,17 +1159,7 @@ class TaskProApp {
                                         console.warn('[TaskPro] 在主应用中未找到要删除的任务:', task.title);
                                     }
                                     
-                                    // 同时从selectedTasks中移除（如果存在）
-                                    const selectedIndex = this.selectedTasks.findIndex(t => 
-                                        (t.id && t.id === task.id) || 
-                                        (t.title && t.title === task.title) ||
-                                        (t.key && t.key === task.key)
-                                    );
                                     
-                                    if (selectedIndex !== -1) {
-                                        this.selectedTasks.splice(selectedIndex, 1);
-                                        console.log('[TaskPro] selectedTasks已更新，移除索引:', selectedIndex);
-                                    }
                                     
                                     // 显示成功消息
                                     if (window.showSuccess) {
@@ -1209,16 +1184,7 @@ class TaskProApp {
                                 if (localIndex !== -1) {
                                     this.tasks.splice(localIndex, 1);
                                     
-                                    // 同时从selectedTasks中移除（如果存在）
-                                    const localSelectedIndex = this.selectedTasks.findIndex(t => 
-                                        (t.id && t.id === task.id) || 
-                                        (t.title && t.title === task.title) ||
-                                        (t.key && t.key === task.key)
-                                    );
                                     
-                                    if (localSelectedIndex !== -1) {
-                                        this.selectedTasks.splice(localSelectedIndex, 1);
-                                    }
                                     
                                     // 显示成功消息
                                     if (window.showSuccess) {
@@ -1316,629 +1282,17 @@ class TaskProApp {
                         // 这里可以添加任务移动的逻辑
                     },
                     
-                    // 下载任务数据
-                    handleDownloadTasks() {
-                        try {
-                            // 使用store中的下载方法
-                            if (window.store && window.store.methods && window.store.methods.handleDownloadTasks) {
-                                console.log('[TaskPro] 使用store中的下载方法');
-                                window.store.methods.handleDownloadTasks();
-                            } else {
-                                console.warn('[TaskPro] store未加载，使用本地下载方法');
-                                const tasks = this.filteredTasks;
-                                if (!tasks || tasks.length === 0) {
-                                    alert('没有可下载的任务数据');
-                                    return;
-                                }
-                                
-                                const data = {
-                                    tasks: tasks,
-                                    exportTime: new Date().toISOString(),
-                                    version: '1.0.0'
-                                };
-                                
-                                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `tasks_${new Date().toISOString().split('T')[0]}.json`;
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(url);
-                            }
-                        } catch (error) {
-                            console.error('[TaskPro] 下载失败:', error);
-                            alert('下载失败，请重试');
-                        }
-                    },
+
                     
-                    // 下载上传样例数据
-                    handleDownloadSample() {
-                        try {
-                            // 使用store中的样例下载方法
-                            if (window.store && window.store.methods && window.store.methods.handleDownloadSample) {
-                                console.log('[TaskPro] 使用store中的样例下载方法');
-                                window.store.methods.handleDownloadSample();
-                            } else {
-                                console.warn('[TaskPro] store未加载，使用本地样例下载方法');
-                                // 本地样例数据
-                                const sampleData = {
-                                    exportTime: new Date().toISOString(),
-                                    description: '这是TaskPro系统的上传样例数据，包含完整的任务数据结构示例',
-                                    version: '1.0.0',
-                                    totalTasks: 3,
-                                    tasks: [
-                                        {
-                                            id: 'sample-task-001',
-                                            title: '示例任务：用户认证功能开发',
-                                            description: '这是一个示例任务，展示了完整的任务数据结构',
-                                            content: '开发用户登录、注册、密码重置等认证相关功能',
-                                            status: 'todo',
-                                            priority: 'high',
-                                            category: 'development',
-                                            tags: ['认证', '安全', '前端'],
-                                            createTime: new Date().toISOString(),
-                                            updateTime: new Date().toISOString()
-                                        }
-                                    ]
-                                };
-                                
-                                const blob = new Blob([JSON.stringify(sampleData, null, 2)], { type: 'application/json' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = 'TaskPro_上传样例数据.json';
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(url);
-                                
-                                alert('样例数据下载成功！');
-                            }
-                        } catch (error) {
-                            console.error('[TaskPro] 样例下载失败:', error);
-                            alert('样例下载失败，请重试');
-                        }
-                    },
+
                     
-                    // 触发上传
-                    triggerUploadTasks() {
-                        const input = document.getElementById('tasksUploadInput');
-                        if (input) {
-                            input.click();
-                        }
-                    },
+
                     
-                    // 处理上传
-                    async handleUploadTasks(event) {
-                        try {
-                            const file = event.target.files[0];
-                            if (!file) return;
-                            
-                            console.log('[TaskPro] 开始处理上传文件:', file.name, '类型:', file.type, '大小:', file.size);
-                            
-                            // 检查文件大小（限制为50MB）
-                            const maxSize = 50 * 1024 * 1024; // 50MB
-                            if (file.size > maxSize) {
-                                throw new Error('文件大小超过限制（最大50MB）');
-                            }
-                            
-                            // 使用store中的上传方法
-                            if (window.store && window.store.methods && window.store.methods.handleUploadTasks) {
-                                console.log('[TaskPro] 使用store中的上传方法');
-                                await window.store.methods.handleUploadTasks(event);
-                                
-                                // 上传完成后，同步数据到主应用
-                                console.log('[TaskPro] 上传完成，同步数据到主应用');
-                                if (window.store && window.store.loadTasksData) {
-                                    await window.store.loadTasksData();
-                                    this.syncTasksData();
-                                }
-                            } else {
-                                console.warn('[TaskPro] store未加载，使用本地上传方法');
-                                // 判断文件类型并处理
-                                if (file.name.toLowerCase().endsWith('.zip') || file.type === 'application/zip') {
-                                    await this.handleZipUpload(file);
-                                } else if (file.name.toLowerCase().endsWith('.json') || file.type === 'application/json') {
-                                    await this.handleJsonUpload(file);
-                                } else {
-                                    throw new Error('不支持的文件格式，请上传 ZIP 或 JSON 文件');
-                                }
-                            }
-                            
-                            // 清除文件输入
-                            event.target.value = '';
-                            
-                        } catch (error) {
-                            console.error('[TaskPro] 上传失败:', error);
-                            
-                            if (window.showError) {
-                                window.showError('上传失败: ' + (error?.message || '未知错误'));
-                            } else {
-                                alert('上传失败: ' + (error?.message || '未知错误'));
-                            }
-                            
-                            // 清除文件输入
-                            event.target.value = '';
-                        }
-                    },
+
                     
-                    // 处理ZIP上传
-                    async handleZipUpload(file) {
-                        try {
-                            // 显示加载提示
-                            if (window.showGlobalLoading) {
-                                window.showGlobalLoading('正在解析ZIP文件...');
-                            }
-                            
-                            // 显示上传进度
-                            this.showUploadProgress('ZIP文件解析中...', 0);
-                            
-                            // 动态加载JSZip
-                            let JSZip = window.JSZip;
-                            if (!JSZip) {
-                                try {
-                                    const JSZipModule = await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js');
-                                    JSZip = JSZipModule.default;
-                                } catch (importError) {
-                                    throw new Error('ZIP处理库加载失败，请检查网络连接');
-                                }
-                            }
-                            
-                            const zip = new JSZip();
-                            const zipData = await zip.loadAsync(file);
-                            
-                            // 检查必要的文件
-                            const treeFile = zipData.file('tree.json');
-                            const filesFile = zipData.file('files.json');
-                            
-                            if (!treeFile && !filesFile) {
-                                throw new Error('ZIP文件中未找到 tree.json 或 files.json');
-                            }
-                            
-                            let treeData = null;
-                            let filesData = null;
-                            
-                            if (treeFile) {
-                                const treeContent = await treeFile.async('text');
-                                treeData = JSON.parse(treeContent);
-                                console.log('[上传] 解析tree.json成功:', treeData);
-                            }
-                            
-                            if (filesFile) {
-                                const filesContent = await filesFile.async('text');
-                                filesData = JSON.parse(filesContent);
-                                console.log('[上传] 解析files.json成功，文件数量:', Object.keys(filesData).length);
-                            }
-                            
-                            if (window.showGlobalLoading) {
-                                window.showGlobalLoading('正在导入任务数据到数据库...');
-                            }
-                            
-                            // 导入任务数据到数据库
-                            if (filesData) {
-                                let importedCount = 0;
-                                let skippedCount = 0;
-                            let errorCount = 0;
-                                const totalFiles = Object.keys(filesData).length;
-                                
-                                // 更新进度显示
-                                this.showUploadProgress('正在导入任务数据...', 0);
-                                
-                                for (const [filePath, taskData] of Object.entries(filesData)) {
-                                    try {
-                                        // 构建要保存的任务对象
-                                        const taskToSave = {
-                                            // 基础属性
-                                            title: taskData.title,
-                                            description: taskData.description,
-                                            content: taskData.content,
-                                            status: taskData.status || 'todo',
-                                            priority: taskData.priority || 'medium',
-                                            category: taskData.category || '',
-                                            tags: taskData.tags || [],
-                                            steps: taskData.steps || [],
-                                            featureName: taskData.featureName || '',
-                                            cardTitle: taskData.cardTitle || '',
-                                            createTime: taskData.createTime || new Date().toISOString(),
-                                            updateTime: new Date().toISOString(),
-                                            
-                                            // 周报属性
-                                            weeklyReport: taskData.weeklyReport || {
-                                                enabled: false,
-                                                frequency: 'weekly',
-                                                dayOfWeek: 1,
-                                                reportTemplate: '本周工作总结：\n\n1. 已完成工作：\n   - \n\n2. 遇到的问题：\n   - \n\n3. 下周计划：\n   - ',
-                                                lastSubmitted: null,
-                                                nextDue: null,
-                                                history: []
-                                            },
-                                            
-                                            // 日报属性
-                                            dailyReport: taskData.dailyReport || {
-                                                enabled: false,
-                                                frequency: 'daily',
-                                                timeOfDay: '18:00',
-                                                reportTemplate: '今日工作总结：\n\n1. 已完成：\n   - \n\n2. 进行中：\n   - \n\n3. 遇到问题：\n   - \n\n4. 明日计划：\n   - ',
-                                                lastSubmitted: null,
-                                                nextDue: null,
-                                                history: [],
-                                                weekends: false
-                                            },
-                                            
-                                            // 任务特征属性
-                                            features: taskData.features || {
-                                                estimatedHours: 0,
-                                                actualHours: 0,
-                                                difficulty: 'medium',
-                                                type: 'development',
-                                                dependencies: [],
-                                                milestone: '',
-                                                assignee: '',
-                                                reviewer: '',
-                                                labels: [],
-                                                businessValue: 'medium',
-                                                urgency: 'medium',
-                                                complexity: 'medium'
-                                            },
-                                            
-                                            // 进度跟踪
-                                            progress: taskData.progress || {
-                                                percentage: 0,
-                                                milestones: [],
-                                                blockers: [],
-                                                notes: []
-                                            },
-                                            
-                                            // 时间跟踪
-                                            timeTracking: taskData.timeTracking || {
-                                                startDate: null,
-                                                endDate: null,
-                                                deadline: null,
-                                                estimatedDuration: 0,
-                                                actualDuration: 0,
-                                                timeEntries: []
-                                            }
-                                        };
-                                        
-                                        // 保存到tasks集合
-                                        const saveResult = await window.postData(`${window.API_URL}/mongodb/?cname=tasks`, taskToSave);
-                                        
-                                        if (saveResult && saveResult.success !== false) {
-                                            importedCount++;
-                                            } else {
-                                            console.warn('[上传] 任务保存失败:', filePath, saveResult);
-                                            skippedCount++;
-                                        }
-                                        
-                                        // 更新进度
-                                        const currentProgress = ((importedCount + skippedCount + errorCount) / totalFiles) * 100;
-                                        this.showUploadProgress(`正在导入任务数据... ${importedCount + skippedCount + errorCount}/${totalFiles}`, currentProgress);
-                                        
-                                    } catch (taskError) {
-                                        console.warn('[上传] 任务导入失败:', filePath, taskError);
-                                        errorCount++;
-                                        
-                                        // 更新进度
-                                        const currentProgress = ((importedCount + skippedCount + errorCount) / totalFiles) * 100;
-                                        this.showUploadProgress(`正在导入任务数据... ${importedCount + skippedCount + errorCount}/${totalFiles}`, currentProgress);
-                                    }
-                                }
-                                
-                                if (window.hideGlobalLoading) {
-                                    window.hideGlobalLoading();
-                                }
-                                
-                                // 隐藏上传进度
-                                this.hideUploadProgress();
-                                
-                                if (importedCount > 0) {
-                                    if (window.showSuccess) {
-                                        window.showSuccess(`ZIP导入成功！导入 ${importedCount} 个任务${skippedCount > 0 ? `，跳过 ${skippedCount} 个` : ''}${errorCount > 0 ? `，失败 ${errorCount} 个` : ''}`);
-                                    } else {
-                                        alert(`ZIP导入成功！导入 ${importedCount} 个任务${skippedCount > 0 ? `，跳过 ${skippedCount} 个` : ''}${errorCount > 0 ? `，失败 ${errorCount} 个` : ''}`);
-                                    }
-                                    
-                                    // 刷新任务数据
-                                    if (window.store && window.store.loadTasksData) {
-                                        await window.store.loadTasksData();
-                                        // 同步到主应用
-                                        this.syncTasksData();
-                                    }
-                                } else {
-                                    if (window.showError) {
-                                        window.showError('没有成功导入任何任务');
-                                    } else {
-                                        alert('没有成功导入任何任务');
-                                    }
-                                }
-                                
-                                console.log('[上传] ZIP导入完成:', {
-                                    imported: importedCount,
-                                    skipped: skippedCount,
-                                    error: errorCount,
-                                    total: Object.keys(filesData).length
-                                });
-                                
-                            } else {
-                                if (window.hideGlobalLoading) {
-                                    window.hideGlobalLoading();
-                                }
-                                throw new Error('ZIP文件中没有找到有效的任务数据');
-                            }
-                            
-                        } catch (error) {
-                            if (window.hideGlobalLoading) {
-                                window.hideGlobalLoading();
-                            }
-                            
-                            // 隐藏上传进度
-                            this.hideUploadProgress();
-                            
-                            console.error('[TaskPro] ZIP上传失败:', error);
-                            
-                            if (window.showError) {
-                                window.showError('ZIP上传失败: ' + (error?.message || '未知错误'));
-                            } else {
-                                alert('ZIP上传失败: ' + (error?.message || '未知错误'));
-                            }
-                        }
-                    },
+
                     
-                    // 处理JSON上传
-                    async handleJsonUpload(file) {
-                        try {
-                            // 显示加载提示
-                            if (window.showGlobalLoading) {
-                                window.showGlobalLoading('正在处理JSON文件...');
-                            }
-                            
-                            const text = await file.text();
-                            let uploadData;
-                            
-                            try {
-                                uploadData = JSON.parse(text);
-                            } catch (parseError) {
-                                throw new Error('JSON文件格式不正确，请检查文件内容');
-                            }
-                            
-                            // 验证数据格式
-                            if (uploadData.tasks && Array.isArray(uploadData.tasks)) {
-                                // 任务数组格式
-                                if (window.showGlobalLoading) {
-                                    window.showGlobalLoading('正在导入任务数据到数据库...');
-                                }
-                                
-                                // 显示上传进度
-                                this.showUploadProgress('正在导入任务数据...', 0);
-                                
-                                let importedCount = 0;
-                                let skippedCount = 0;
-                                let errorCount = 0;
-                                const totalTasks = uploadData.tasks.length;
-                                
-                                for (const taskData of uploadData.tasks) {
-                                    try {
-                                        if (taskData && taskData.title) {
-                                            // 构建要保存的任务对象
-                                            const taskToSave = {
-                                                // 基础属性
-                                                title: taskData.title,
-                                                description: taskData.description || '',
-                                                content: taskData.content || '',
-                                                status: taskData.status || 'todo',
-                                                priority: taskData.priority || 'medium',
-                                                category: taskData.category || '',
-                                                tags: taskData.tags || [],
-                                                steps: taskData.steps || [],
-                                                featureName: taskData.featureName || '',
-                                                cardTitle: taskData.cardTitle || '',
-                                                createTime: taskData.createTime || new Date().toISOString(),
-                                                updateTime: new Date().toISOString(),
-                                                
-                                                // 周报属性
-                                                weeklyReport: taskData.weeklyReport || {
-                                                    enabled: false,
-                                                    frequency: 'weekly',
-                                                    dayOfWeek: 1,
-                                                    reportTemplate: '本周工作总结：\n\n1. 已完成工作：\n   - \n\n2. 遇到的问题：\n   - \n\n3. 下周计划：\n   - ',
-                                                    lastSubmitted: null,
-                                                    nextDue: null,
-                                                    history: []
-                                                },
-                                                
-                                                // 日报属性
-                                                dailyReport: taskData.dailyReport || {
-                                                    enabled: false,
-                                                    frequency: 'daily',
-                                                    timeOfDay: '18:00',
-                                                    reportTemplate: '今日工作总结：\n\n1. 已完成：\n   - \n\n2. 进行中：\n   - \n\n3. 遇到问题：\n   - \n\n4. 明日计划：\n   - ',
-                                                    lastSubmitted: null,
-                                                    nextDue: null,
-                                                    history: [],
-                                                    weekends: false
-                                                },
-                                                
-                                                // 任务特征属性
-                                                features: taskData.features || {
-                                                    estimatedHours: 0,
-                                                    actualHours: 0,
-                                                    difficulty: 'medium',
-                                                    type: 'development',
-                                                    dependencies: [],
-                                                    milestone: '',
-                                                    assignee: '',
-                                                    reviewer: '',
-                                                    labels: [],
-                                                    businessValue: 'medium',
-                                                    urgency: 'medium',
-                                                    complexity: 'medium'
-                                                },
-                                                
-                                                // 进度跟踪
-                                                progress: taskData.progress || {
-                                                    percentage: 0,
-                                                    milestones: [],
-                                                    blockers: [],
-                                                    notes: []
-                                                },
-                                                
-                                                // 时间跟踪
-                                                timeTracking: taskData.timeTracking || {
-                                                    startDate: null,
-                                                    endDate: null,
-                                                    deadline: null,
-                                                    estimatedDuration: 0,
-                                                    actualDuration: 0,
-                                                    timeEntries: []
-                                                }
-                                            };
-                                            
-                                            // 保存到tasks集合
-                                            const saveResult = await window.postData(`${window.API_URL}/mongodb/?cname=tasks`, taskToSave);
-                                            
-                                            if (saveResult && saveResult.success !== false) {
-                                                importedCount++;
-                                            } else {
-                                                console.warn('[上传] 任务保存失败:', taskData.title, saveResult);
-                                                skippedCount++;
-                                            }
-                                            
-                                            // 更新进度
-                                            const currentProgress = ((importedCount + skippedCount + errorCount) / totalTasks) * 100;
-                                            this.showUploadProgress(`正在导入任务数据... ${importedCount + skippedCount + errorCount}/${totalTasks}`, currentProgress);
-                                        }
-                                    } catch (error) {
-                                        console.warn('[上传] 任务导入失败:', taskData?.title || '未知任务', error);
-                                        errorCount++;
-                                        
-                                        // 更新进度
-                                        const currentProgress = ((importedCount + skippedCount + errorCount) / totalTasks) * 100;
-                                        this.showUploadProgress(`正在导入任务数据... ${importedCount + skippedCount + errorCount}/${totalTasks}`, currentProgress);
-                                    }
-                                }
-                                
-                                if (window.hideGlobalLoading) {
-                                    window.hideGlobalLoading();
-                                }
-                                
-                                // 隐藏上传进度
-                                this.hideUploadProgress();
-                                
-                                if (importedCount > 0) {
-                                    if (window.showSuccess) {
-                                        window.showSuccess(`JSON导入成功！导入 ${importedCount} 个任务${skippedCount > 0 ? `，跳过 ${skippedCount} 个` : ''}${errorCount > 0 ? `，失败 ${errorCount} 个` : ''}`);
-                                    } else {
-                                        alert(`JSON导入成功！导入 ${importedCount} 个任务${skippedCount > 0 ? `，跳过 ${skippedCount} 个` : ''}${errorCount > 0 ? `，失败 ${errorCount} 个` : ''}`);
-                                    }
-                                    
-                                    // 刷新任务数据
-                                    if (window.store && window.store.loadTasksData) {
-                                        await window.store.loadTasksData();
-                                        // 同步到主应用
-                                        this.syncTasksData();
-                                    }
-                                } else {
-                                    if (window.showError) {
-                                        window.showError('没有成功导入任何任务');
-                                    } else {
-                                        alert('没有成功导入任何任务');
-                                    }
-                                }
-                                
-                                console.log('[上传] JSON导入完成:', {
-                                    imported: importedCount,
-                                    skipped: skippedCount,
-                                    error: errorCount,
-                                    total: uploadData.tasks.length
-                                });
-                                
-                            } else if (uploadData.name && uploadData.type === 'root' && uploadData.children) {
-                                // tree.json格式
-                                if (window.hideGlobalLoading) {
-                                    window.hideGlobalLoading();
-                                }
-                                if (window.showSuccess) {
-                                    window.showSuccess('tree.json格式文件上传成功，但建议使用完整的ZIP包');
-                            } else {
-                                    alert('tree.json格式文件上传成功，但建议使用完整的ZIP包');
-                                }
-                                console.log('[上传] tree.json数据上传完成:', uploadData);
-                                
-                            } else {
-                                throw new Error('JSON文件格式不正确，请上传包含tasks数组的数据或完整的ZIP包');
-                            }
-                            
-                        } catch (error) {
-                            if (window.hideGlobalLoading) {
-                                window.hideGlobalLoading();
-                            }
-                            
-                            // 隐藏上传进度
-                            this.hideUploadProgress();
-                            
-                            console.error('[TaskPro] JSON上传失败:', error);
-                            
-                            if (window.showError) {
-                                window.showError('JSON上传失败: ' + (error?.message || '未知错误'));
-                            } else {
-                                alert('JSON上传失败: ' + (error?.message || '未知错误'));
-                            }
-                        }
-                    },
-                    
-                    // 显示上传进度
-                    showUploadProgress(message, progress) {
-                        try {
-                            // 查找或创建进度条容器
-                            let progressContainer = document.querySelector('.upload-progress-container');
-                            if (!progressContainer) {
-                                progressContainer = document.createElement('div');
-                                progressContainer.className = 'upload-progress-container';
-                                progressContainer.innerHTML = `
-                                    <div class="upload-progress-content">
-                                        <div class="upload-progress-header">
-                                            <i class="fas fa-upload"></i>
-                                            <span class="upload-progress-title">文件上传中</span>
-                                        </div>
-                                        <div class="upload-progress-message">${message}</div>
-                                        <div class="upload-progress-bar">
-                                            <div class="upload-progress-fill" style="width: ${progress}%"></div>
-                                        </div>
-                                        <div class="upload-progress-text">${Math.round(progress)}%</div>
-                                    </div>
-                                `;
-                                document.body.appendChild(progressContainer);
-                            } else {
-                                // 更新现有进度条
-                                const messageEl = progressContainer.querySelector('.upload-progress-message');
-                                const fillEl = progressContainer.querySelector('.upload-progress-fill');
-                                const textEl = progressContainer.querySelector('.upload-progress-text');
-                                
-                                if (messageEl) messageEl.textContent = message;
-                                if (fillEl) fillEl.style.width = `${progress}%`;
-                                if (textEl) textEl.textContent = `${Math.round(progress)}%`;
-                            }
-                            
-                            // 显示进度条
-                            progressContainer.style.display = 'flex';
-                        } catch (error) {
-                            console.error('[上传进度] 显示进度条失败:', error);
-                        }
-                    },
-                    
-                    // 隐藏上传进度
-                    hideUploadProgress() {
-                        try {
-                            const progressContainer = document.querySelector('.upload-progress-container');
-                            if (progressContainer) {
-                                progressContainer.style.display = 'none';
-                            }
-                        } catch (error) {
-                            console.error('[上传进度] 隐藏进度条失败:', error);
-                        }
-                    },
+
                     
                     // 显示消息
                     showMessage(message, type = 'info') {
@@ -1952,10 +1306,7 @@ class TaskProApp {
                     
 
                     
-                    // 选择变化
-                    handleSelectionChange(selectedTasks) {
-                        this.selectedTasks = selectedTasks;
-                    },
+                    
                     
                     // 切换项目
                     switchProject(project) {
@@ -2451,6 +1802,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
+
 
 
 

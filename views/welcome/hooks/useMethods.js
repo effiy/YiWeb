@@ -543,7 +543,7 @@ export const useMethods = (store) => {
             const target = feature.name + '-' + feature.desc;
             const description = card.title + '-' + card.description;
 
-            const fromSystem = await getData(`${window.DATA_URL}/prompts/tasks/tasks.txt`);
+            const fromSystem = await getData(`/prompts/tasks/tasks.txt`);
 
             console.log('[生成任务] 生成任务:', fromSystem);
 
@@ -1608,9 +1608,6 @@ export const useMethods = (store) => {
             // 添加输入框加载动画
             messageInput.classList.add('loading-input');
             
-            // 显示全局加载提示
-            // showGlobalLoading('正在处理您的请求，请稍候...');
-            
             // 添加触觉反馈
             if (navigator.vibrate) {
                 navigator.vibrate(100);
@@ -2048,9 +2045,6 @@ export const useMethods = (store) => {
             showError('创建卡片失败，请稍后重试');
         }
     };
-    
-=======
->>>>>>> e10b66b961c78d244553a37ea8ddfce3a8dfb65e
     // 返回方法集合
     const methods = {
         openLink,
@@ -2106,6 +2100,7 @@ export const useMethods = (store) => {
     
     return methods;
 };
+
 
 
 

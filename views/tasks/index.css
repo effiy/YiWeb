@@ -1235,50 +1235,7 @@ body {
     color: var(--primary);
 }
 
-/* 批量操作 */
-.batch-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-xl);
-}
-
-.selected-count {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--text-primary);
-}
-
-.batch-btn {
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-md);
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: var(--transition-fast);
-    color: var(--text-secondary);
-}
-
-.batch-btn:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-}
-
-.batch-btn.danger {
-    color: var(--error);
-}
-
-.batch-btn.danger:hover {
-    background: rgba(220, 38, 38, 0.1);
-    color: var(--error-hover);
-}
+/* 批量操作已移除 */
 
 /* 视图选项 */
 .view-options {
@@ -1341,115 +1298,7 @@ body {
     border-color: var(--border-secondary);
 }
 
-/* 下载和上传功能样式 */
-.download-section,
-.upload-section,
-.download-sample-section {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-}
 
-.download-section .option-btn,
-.upload-section .option-btn {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-    border: 1px solid var(--primary);
-    color: white;
-    font-weight: 500;
-    position: relative;
-    overflow: hidden;
-}
-
-.download-section .option-btn::before,
-.upload-section .option-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s;
-}
-
-.download-section .option-btn:hover::before,
-.upload-section .option-btn:hover::before {
-    left: 100%;
-}
-
-.download-section .option-btn:hover {
-    background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-dark) 100%);
-    border-color: var(--primary-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-primary);
-}
-
-.upload-section .option-btn:hover {
-    background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-dark) 100%);
-    border-color: var(--primary-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-primary);
-}
-
-.download-section .option-btn:disabled,
-.upload-section .option-btn:disabled {
-    background: var(--bg-tertiary);
-    border-color: var(--border-primary);
-    color: var(--text-muted);
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-.download-section .option-btn:disabled::before,
-.upload-section .option-btn:disabled::before {
-    display: none;
-}
-
-/* 样例下载按钮特殊样式 */
-.download-sample-section .option-btn {
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-    border: 1px solid var(--accent);
-    color: white;
-    font-weight: 500;
-    position: relative;
-    overflow: hidden;
-}
-
-.download-sample-section .option-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s;
-}
-
-.download-sample-section .option-btn:hover::before {
-    left: 100%;
-}
-
-.download-sample-section .option-btn:hover {
-    background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent) 100%);
-    border-color: var(--accent-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-primary);
-}
-
-.download-sample-section .option-btn:disabled {
-    background: var(--bg-tertiary);
-    border-color: var(--border-primary);
-    color: var(--text-muted);
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-.download-sample-section .option-btn:disabled::before {
-    display: none;
-}
 
 /* 隐藏文件输入框 */
 .hidden {
@@ -2521,10 +2370,18 @@ matrix-view {
     font-size: var(--font-size-sm);
     line-height: var(--line-height-relaxed);
     margin-bottom: var(--spacing-md);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    /* 修复显示不全问题 - 移除行数限制 */
+    display: block;
+    overflow: visible;
+    word-wrap: break-word;
+    white-space: normal;
+    max-height: none;
+    /* 确保描述完整显示 */
+    min-height: fit-content;
+    height: auto;
+    /* 防止内容被截断 */
+    text-overflow: unset;
+    -webkit-line-clamp: unset;
 }
 
 .task-item-enhanced .task-meta {
@@ -2826,101 +2683,7 @@ matrix-view {
     transform: translateY(-1px);
 }
 
-/* 上传进度条样式 */
-.upload-progress-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 10001;
-    -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
-}
 
-.upload-progress-content {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-xl);
-    max-width: 500px;
-    width: 90%;
-    box-shadow: var(--shadow-2xl);
-}
-
-.upload-progress-header {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
-    color: var(--primary);
-}
-
-.upload-progress-header i {
-    font-size: 1.5rem;
-}
-
-.upload-progress-title {
-    font-size: 1.25rem;
-    font-weight: var(--font-weight-semibold);
-}
-
-.upload-progress-message {
-    margin-bottom: var(--spacing-lg);
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-.upload-progress-bar {
-    height: 8px;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-full);
-    overflow: hidden;
-    margin-bottom: var(--spacing-md);
-    position: relative;
-}
-
-.upload-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--primary), var(--primary-light));
-    border-radius: var(--radius-full);
-    transition: width 0.3s ease-out;
-    position: relative;
-}
-
-.upload-progress-fill::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 255, 255, 0.3) 50%, 
-        transparent 100%);
-    animation: uploadProgressShine 2s ease-in-out infinite;
-}
-
-.upload-progress-text {
-    text-align: center;
-    font-weight: var(--font-weight-medium);
-    color: var(--text-primary);
-    font-size: 0.9rem;
-}
-
-@keyframes uploadProgressShine {
-    0% {
-        transform: translateX(-100%);
-    }
-    100% {
-        transform: translateX(100%);
-    }
-}
 
 /* 长按删除动画 */
 @keyframes longPressPulse {
@@ -4347,6 +4110,18 @@ matrix-view {
     border-radius: var(--radius-sm);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
+    /* 修复显示不全问题 */
+    word-wrap: break-word;
+    white-space: normal;
+    overflow: visible;
+    max-height: none;
+    display: block;
+    /* 确保内容完整显示 */
+    min-height: fit-content;
+    height: auto;
+    /* 防止内容被截断 */
+    text-overflow: unset;
+    -webkit-line-clamp: unset;
 }
 
 /* 步骤信息样式 */
@@ -4366,251 +4141,6 @@ matrix-view {
     color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-}
-
-/* ==========================================================================
-   任务页面专用样式 - 从task-specific.css合并
-   ========================================================================== */
-
-/* 全局字体平滑 */
-* { 
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-/* 全局用户选择控制 */
-body {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    overflow-x: hidden;
-}
-
-/* 输入框和可编辑内容的用户选择 */
-input, textarea, [contenteditable], .selectable {
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-    user-select: text;
-}
-
-/* 任务编辑器输入框样式 */
-.task-editor-overlay input,
-.task-editor-overlay textarea,
-.task-editor-overlay select {
-    -webkit-user-select: text !important;
-    -moz-user-select: text !important;
-    -ms-user-select: text !important;
-    user-select: text !important;
-    pointer-events: auto !important;
-    opacity: 1 !important;
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    color: #f8fafc !important;
-    
-    /* 确保可以输入数字 */
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
-    
-    /* 移除可能的输入限制 */
-    -webkit-text-security: none !important;
-    text-security: none !important;
-    
-    /* 确保输入框可以正常接收输入 */
-    caret-color: #f8fafc !important;
-    -webkit-caret-color: #f8fafc !important;
-}
-
-.task-editor-overlay input:focus,
-.task-editor-overlay textarea:focus,
-.task-editor-overlay select:focus {
-    outline: none !important;
-    border-color: #4f46e5 !important;
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2) !important;
-    background: rgba(255, 255, 255, 0.08) !important;
-}
-
-.task-editor-overlay input:disabled,
-.task-editor-overlay textarea:disabled,
-.task-editor-overlay select:disabled {
-    opacity: 0.6 !important;
-    cursor: not-allowed !important;
-}
-
-/* 全局加载器样式 */
-.global-loader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    opacity: 1;
-    visibility: visible;
-    transition: all 0.5s ease;
-}
-
-.global-loader.hidden {
-    opacity: 0;
-    visibility: hidden;
-}
-
-.loader-content {
-    text-align: center;
-    color: white;
-}
-
-.loader-logo {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    animation: pulse 2s infinite;
-}
-
-.loader-text {
-    font-size: 1.2rem;
-    font-weight: 500;
-    margin-bottom: 2rem;
-}
-
-.loader-progress {
-    width: 200px;
-    height: 4px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 2px;
-    overflow: hidden;
-    margin: 0 auto;
-}
-
-.loader-bar {
-    width: 0%;
-    height: 100%;
-    background: linear-gradient(90deg, #fff, rgba(255,255,255,0.8));
-    border-radius: 2px;
-    animation: loadingBar 3s ease-in-out;
-}
-
-/* 错误显示样式 */
-.initialization-error,
-.startup-error {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9998;
-}
-
-.error-content {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    text-align: center;
-    max-width: 500px;
-    width: 90%;
-}
-
-.error-content i {
-    font-size: 3rem;
-    color: #ef4444;
-    margin-bottom: 1rem;
-}
-
-.error-content h3 {
-    color: #1f2937;
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-}
-
-.error-content p {
-    color: #6b7280;
-    font-size: 1rem;
-    margin-bottom: 1.5rem;
-    line-height: 1.5;
-}
-
-.error-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin-bottom: 1rem;
-}
-
-.retry-btn,
-.details-btn {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.retry-btn {
-    background: #3b82f6;
-    color: white;
-}
-
-.retry-btn:hover {
-    background: #2563eb;
-    transform: translateY(-1px);
-}
-
-.details-btn {
-    background: #f3f4f6;
-    color: #374151;
-}
-
-.details-btn:hover {
-    background: #e5e7eb;
-}
-
-.error-details {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: #f9fafb;
-    border-radius: 8px;
-    text-align: left;
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.error-details pre {
-    font-size: 0.75rem;
-    color: #6b7280;
-    margin: 0;
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-
-/* 动画 */
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-}
-
-@keyframes loadingBar {
-    0% { width: 0%; }
-    100% { width: 100%; }
-}se;
-    letter-spacing: 0.5px;
-}
-
-.steps-label i {
-    font-size: 10px;
-    width: 12px;
-    text-align: center;
 }
 
 .steps-progress {
@@ -4708,6 +4238,18 @@ input, textarea, [contenteditable], .selectable {
     line-height: var(--line-height-relaxed);
     flex: 1;
     transition: all 0.2s ease;
+    /* 修复显示不全问题 */
+    word-wrap: break-word;
+    white-space: normal;
+    overflow: visible;
+    max-height: none;
+    display: block;
+    /* 确保步骤文本完整显示 */
+    min-height: fit-content;
+    height: auto;
+    /* 防止内容被截断 */
+    text-overflow: unset;
+    -webkit-line-clamp: unset;
 }
 
 .step-text.completed {
@@ -4716,55 +4258,7 @@ input, textarea, [contenteditable], .selectable {
     opacity: 0.7;
 }
 
-/* 下载和上传功能样式 */
-.download-section,
-.upload-section,
-.download-sample-section {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-}
 
-.download-section .option-btn,
-.upload-section .option-btn {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-    border: 1px solid var(--primary);
-    color: white;
-    font-weight: 500;
-    position: relative;
-    overflow: hidden;
-}
-
-.download-section .option-btn::before,
-.upload-section .option-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s;
-}
-
-.download-section .option-btn:hover::before,
-.upload-section .option-btn:hover::before {
-    left: 100%;
-}
-
-.download-section .option-btn:hover {
-    background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-dark) 100%);
-    border-color: var(--primary-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-primary);
-}
-
-.upload-section .option-btn:hover {
-    background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-dark) 100%);
-    border-color: var(--primary-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-primary);
-}
 
 /* 创建任务按钮样式 */
 .create-task-section {
@@ -4804,4 +4298,107 @@ input, textarea, [contenteditable], .selectable {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
 }
+
+/* ==========================================================================
+   任务卡片显示优化 - 修复显示不全问题
+   ========================================================================== */
+
+/* 确保任务卡片容器不会限制内容高度 */
+.task-list-content {
+    align-items: start;
+}
+
+/* 任务卡片网格布局优化 */
+.task-list-content {
+    grid-auto-rows: min-content;
+}
+
+/* 防止任务卡片内容被压缩 */
+.task-item-enhanced {
+    align-self: start;
+}
+
+/* 确保所有文本内容都能完整显示 */
+.task-item-enhanced .task-title,
+.task-item-enhanced .task-description,
+.task-item-enhanced .io-content,
+.task-item-enhanced .step-text {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+}
+
+/* 任务卡片最小宽度确保内容不被挤压 */
+@media (min-width: 768px) {
+    .task-list-content {
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 480px) {
+    .task-list-content {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+    
+    .task-item-enhanced {
+        padding: var(--spacing-md);
+    }
+}
+
+/* 任务卡片内容区域自适应高度 */
+.task-item-enhanced > * {
+    min-height: fit-content;
+    height: auto;
+}
+
+/* 防止任务卡片内容被截断 */
+.task-item-enhanced .task-description,
+.task-item-enhanced .io-content,
+.task-item-enhanced .step-text {
+    display: block;
+    overflow: visible;
+    max-height: none;
+    text-overflow: unset;
+    -webkit-line-clamp: unset;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+/* 任务卡片布局优化 */
+.task-item-enhanced {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+
+/* 确保任务卡片各部分不被压缩 */
+.task-item-enhanced .task-header,
+.task-item-enhanced .task-io-section,
+.task-item-enhanced .task-steps-section,
+.task-item-enhanced .task-meta {
+    flex-shrink: 0;
+}
+
+/* 任务描述区域自适应 */
+.task-item-enhanced .task-description {
+    flex: 1;
+    min-height: fit-content;
+}
+
+/* 输入输出内容区域自适应 */
+.task-item-enhanced .io-content {
+    min-height: fit-content;
+    height: auto;
+}
+
+/* 步骤文本区域自适应 */
+.task-item-enhanced .step-text {
+    min-height: fit-content;
+    height: auto;
+}
+
 

@@ -143,51 +143,15 @@
                             </div>
                         </li>
                         
-                        <!-- 下载功能按钮 -->
-                        <li>
-                            <button 
-                                type="button"
-                                class="filter-btn"
-                                @click="handleDownloadData"
-                                :disabled="loading || !selectedMonth"
-                                :title="selectedMonth ? `下载 ${selectedYear}年${selectedQuarter}季度${selectedMonth}月数据` : '请完成时间选择后下载'">
-                                <i class="fas fa-download" aria-hidden="true"></i>
-                                <span>下载</span>
-                            </button>
-                        </li>
-                        
-                        <!-- 上传功能按钮 -->
-                        <li>
-                            <button 
-                                type="button"
-                                class="filter-btn"
-                                @click="triggerUploadData"
-                                :disabled="loading"
-                                title="上传数据文件">
-                                <i class="fas fa-upload" aria-hidden="true"></i>
-                                <span>上传</span>
-                            </button>
-                            <input 
-                                id="dataUploadInput"
-                                ref="uploadInput"
-                                type="file" 
-                                accept=".zip,.json"
-                                @change="handleUploadData"
-                                class="hidden" 
-                                aria-label="上传数据文件">
-                        </li>
+
                     </ul>
                 </nav>
             </section>
         </header>
         <main class="main-content" role="main">
-
-            
             <!-- 功能卡片区域 -->
             <section class="container">
                 <section class="feature-cards-container">
-
-                    
                     <!-- 新建卡片按钮 -->
                     <div class="create-card-section">
                         <button 
@@ -345,6 +309,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 
 

@@ -7,7 +7,6 @@
 @import url('/views/welcome/plugins/featureCard/index.css');
 
 
-
 /* ========== 按钮通用样式 ========== */
 .filter-btn {
     min-width: 80px;
@@ -22,8 +21,6 @@
 .create-card-section {
     display: flex;
     justify-content: center;
-    margin-bottom: 24px;
-    padding: 16px 0;
 }
 
 .create-card-btn {
@@ -491,6 +488,7 @@
         padding: var(--spacing-xs);
     }
 }
+
 
 
 

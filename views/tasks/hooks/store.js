@@ -358,11 +358,18 @@ window.createStore = () => {
             // 找到对应的任务并更新
             const taskIndex = tasksData.value.findIndex(t => t.key === task.key);
             if (taskIndex !== -1) {
-                tasksData.value[taskIndex].timeData = {
-                    ...getTaskTimeData(task),
-                    ...timeData,
-                    updatedAt: new Date().toISOString()
+                // 创建新对象，避免状态共享
+                const updatedTask = {
+                    ...tasksData.value[taskIndex],
+                    timeData: {
+                        ...getTaskTimeData(task),
+                        ...timeData,
+                        updatedAt: new Date().toISOString()
+                    }
                 };
+                
+                // 替换原任务对象
+                tasksData.value.splice(taskIndex, 1, updatedTask);
                 
                 // 这里可以调用API更新后端数据
                 console.log(`[时间数据更新] 任务 ${task.title} 的时间数据已更新`);
@@ -371,6 +378,39 @@ window.createStore = () => {
             return false;
         } catch (error) {
             console.error('[时间数据更新] 更新失败:', error);
+            return false;
+        }
+    };
+
+    /**
+     * 选择任务
+     * @param {Object} task - 任务对象
+     */
+    const selectTask = (task) => {
+        // 这里可以添加任务选择逻辑
+        console.log('[任务选择] 选中任务:', task.title);
+    };
+
+    /**
+     * 更新任务数据
+     * @param {Object} updatedTask - 更新后的任务对象
+     */
+    const updateTask = (updatedTask) => {
+        try {
+            const taskIndex = tasksData.value.findIndex(t => t.key === updatedTask.key || t.id === updatedTask.id);
+            if (taskIndex !== -1) {
+                // 创建新对象，避免状态共享
+                const newTask = { ...updatedTask };
+                
+                // 替换原任务对象
+                tasksData.value.splice(taskIndex, 1, newTask);
+                
+                console.log('[任务更新] 任务已更新:', updatedTask.title);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('[任务更新] 更新失败:', error);
             return false;
         }
     };
@@ -405,7 +445,9 @@ window.createStore = () => {
         setDateRange,
         setTimeFilter,
         getTaskTimeData,
-        updateTaskTimeData
+        updateTaskTimeData,
+        selectTask,
+        updateTask
     };
 };
 
@@ -448,3 +490,4 @@ window.categorizeTask = function(task) {
 
 // 创建全局store实例
 window.store = window.createStore();
+

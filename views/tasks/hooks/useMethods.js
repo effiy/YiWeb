@@ -379,8 +379,7 @@ window.useMethods = (store, computed) => {
                 return;
             }
             
-            // 显示删除中提示
-            window.showGlobalLoading('正在删除任务...');
+            // 删除过程不再显示全局加载器
             
             // 添加删除成功反馈
             if (navigator.vibrate) {
@@ -457,8 +456,7 @@ window.useMethods = (store, computed) => {
             console.error('[删除任务] 删除失败:', error);
             window.showError('删除任务失败，请稍后重试');
         } finally {
-            // 隐藏加载提示
-            window.hideGlobalLoading();
+            // 无全局加载器可隐藏
             // 确保删除状态被重置
             isDeleting = false;
         }
@@ -470,12 +468,9 @@ window.useMethods = (store, computed) => {
      */
     const handleLoadTasksData = async () => {
         try {
-            window.showGlobalLoading('正在加载任务数据...');
             await loadTasksData();
         } catch (error) {
             console.error('[handleLoadTasksData] 加载失败:', error);
-        } finally {
-            window.hideGlobalLoading();
         }
     };
 
@@ -491,9 +486,7 @@ window.useMethods = (store, computed) => {
                 
                 // 调用prompt接口生成新任务
                 try {
-                    window.showGlobalLoading('正在生成任务，请稍候...');
-                    
-                    const fromSystem = await window.getData(`${window.DATA_URL}/prompts/tasks/tasks.txt`);
+                    const fromSystem = await window.getData(`/prompts/tasks/tasks.txt`);
                     
                     const response = await window.postData(`${window.API_URL}/prompt`, {
                         fromSystem,
@@ -514,8 +507,6 @@ window.useMethods = (store, computed) => {
                 } catch (error) {
                     window.showError('生成任务失败，请稍后重试');
                     console.error('生成任务失败:', error);
-                } finally {
-                    window.hideGlobalLoading();
                 }
             }
         }
@@ -697,391 +688,9 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         window.showSuccess('设置功能开发中...');
     };
 
-    /**
-     * 处理下载任务数据
-     */
-    const handleDownloadTasks = async () => {
-        try {
-            const tasks = store.tasksData.value || [];
-            if (!tasks.length) {
-                window.showError('没有可下载的任务数据');
-                return;
-            }
+    
 
-            // 安全检查：确保loading函数存在
-            if (window.showGlobalLoading) {
-                window.showGlobalLoading('正在准备下载数据...');
-            }
-            console.log('[下载] 开始下载任务数据，任务数量:', tasks.length);
 
-            // 构建下载数据结构 - 与mockData.js保持一致
-            const downloadData = {
-                exportTime: new Date().toISOString(),
-                totalTasks: tasks.length,
-                // 导出枚举定义，确保数据结构完整性
-                enums: {
-                    TASK_PRIORITY: {
-                        CRITICAL: { value: 'critical', label: '紧急', color: '#ff4757', weight: 4 },
-                        HIGH: { value: 'high', label: '高优先级', color: '#ff6b35', weight: 3 },
-                        MEDIUM: { value: 'medium', label: '中等优先级', color: '#ffa726', weight: 2 },
-                        LOW: { value: 'low', label: '低优先级', color: '#66bb6a', weight: 1 },
-                        NONE: { value: 'none', label: '无优先级', color: '#9e9e9e', weight: 0 }
-                    },
-                    TASK_STATUS: {
-                        BACKLOG: { value: 'backlog', label: '待办', color: '#9e9e9e', category: 'todo' },
-                        TODO: { value: 'todo', label: '计划中', color: '#2196f3', category: 'todo' },
-                        IN_PROGRESS: { value: 'in_progress', label: '进行中', color: '#ff9800', category: 'active' },
-                        IN_REVIEW: { value: 'in_review', label: '待审核', color: '#9c27b0', category: 'active' },
-                        TESTING: { value: 'testing', label: '测试中', color: '#673ab7', category: 'active' },
-                        COMPLETED: { value: 'completed', label: '已完成', color: '#4caf50', category: 'done' },
-                        CANCELLED: { value: 'cancelled', label: '已取消', color: '#f44336', category: 'done' },
-                        ON_HOLD: { value: 'on_hold', label: '暂停', color: '#795548', category: 'blocked' }
-                    },
-                    TASK_TYPE: {
-                        FEATURE: { value: 'feature', label: '功能开发', icon: 'fas fa-plus-circle', color: '#2196f3' },
-                        BUG: { value: 'bug', label: '缺陷修复', icon: 'fas fa-bug', color: '#f44336' },
-                        IMPROVEMENT: { value: 'improvement', label: '优化改进', icon: 'fas fa-arrow-up', color: '#ff9800' },
-                        DOCUMENTATION: { value: 'documentation', label: '文档编写', icon: 'fas fa-file-alt', color: '#9c27b0' },
-                        RESEARCH: { value: 'research', label: '研究调研', icon: 'fas fa-search', color: '#00bcd4' },
-                        MAINTENANCE: { value: 'maintenance', label: '维护', icon: 'fas fa-tools', color: '#795548' },
-                        MEETING: { value: 'meeting', label: '会议', icon: 'fas fa-users', color: '#607d8b' },
-                        REVIEW: { value: 'review', label: '评审', icon: 'fas fa-eye', color: '#9c27b0' }
-                    },
-                    TASK_COMPLEXITY: {
-                        XS: { value: 'xs', label: 'XS (0.5天)', points: 1, hours: 4 },
-                        S: { value: 's', label: 'S (1天)', points: 2, hours: 8 },
-                        M: { value: 'm', label: 'M (2-3天)', points: 3, hours: 20 },
-                        L: { value: 'l', label: 'L (1周)', points: 5, hours: 40 },
-                        XL: { value: 'xl', label: 'XL (2周)', points: 8, hours: 80 },
-                        XXL: { value: 'xxl', label: 'XXL (1月)', points: 13, hours: 160 }
-                    }
-                },
-                // 导出标签数据
-                labels: [
-                    { id: 'label-001', name: '认证', color: '#2196f3' },
-                    { id: 'label-002', name: '安全', color: '#f44336' },
-                    { id: 'label-003', name: '重构', color: '#ff9800' },
-                    { id: 'label-004', name: '监控', color: '#9c27b0' },
-                    { id: 'label-005', name: '仪表板', color: '#00bcd4' },
-                    { id: 'label-006', name: '性能', color: '#4caf50' },
-                    { id: 'label-007', name: '移动端', color: '#e91e63' },
-                    { id: 'label-008', name: '响应式', color: '#673ab7' },
-                    { id: 'label-009', name: '用户体验', color: '#ff5722' },
-                    { id: 'label-010', name: '数据库', color: '#607d8b' },
-                    { id: 'label-011', name: '优化', color: '#ff9800' },
-                    { id: 'label-012', name: '漏洞', color: '#e91e63' },
-                    { id: 'label-013', name: 'API', color: '#3f51b5' },
-                    { id: 'label-014', name: '架构', color: '#795548' },
-                    { id: 'label-015', name: '微服务', color: '#607d8b' },
-                    { id: 'label-016', name: '设计', color: '#9c27b0' },
-                    { id: 'label-017', name: '组件库', color: '#2196f3' },
-                    { id: 'label-018', name: '前端', color: '#00bcd4' },
-                    { id: 'label-019', name: '设计系统', color: '#9c27b0' },
-                    { id: 'label-020', name: '测试', color: '#4caf50' },
-                    { id: 'label-021', name: '自动化', color: '#ff9800' },
-                    { id: 'label-022', name: '质量保证', color: '#2196f3' },
-                    { id: 'label-023', name: '用户反馈', color: '#e91e63' },
-                    { id: 'label-024', name: '产品功能', color: '#ff5722' },
-                    { id: 'label-025', name: '容器化', color: '#00bcd4' },
-                    { id: 'label-026', name: 'DevOps', color: '#607d8b' },
-                    { id: 'label-027', name: '部署', color: '#795548' },
-                    { id: 'label-028', name: '会议', color: '#607d8b' },
-                    { id: 'label-029', name: '评审', color: '#9c27b0' },
-                    { id: 'label-030', name: '技术决策', color: '#2196f3' },
-                    { id: 'label-031', name: '文档', color: '#9c27b0' },
-                    { id: 'label-032', name: '维护', color: '#795548' },
-                    { id: 'label-033', name: '告警', color: '#f44336' },
-                    { id: 'label-034', name: '运维', color: '#607d8b' },
-                    { id: 'label-035', name: '代码质量', color: '#4caf50' },
-                    { id: 'label-036', name: 'CI/CD', color: '#ff9800' },
-                    { id: 'label-037', name: '工具集成', color: '#2196f3' },
-                    { id: 'label-038', name: '数据分析', color: '#00bcd4' },
-                    { id: 'label-039', name: '用户行为', color: '#e91e63' },
-                    { id: 'label-040', name: '产品决策', color: '#ff5722' },
-                    { id: 'label-041', name: '云原生', color: '#00bcd4' },
-                    { id: 'label-042', name: '机器学习', color: '#9c27b0' },
-                    { id: 'label-043', name: '区块链', color: '#ff9800' },
-                    { id: 'label-044', name: '物联网', color: '#4caf50' },
-                    { id: 'label-045', name: '人工智能', color: '#e91e63' },
-                    { id: 'label-046', name: '大数据', color: '#3f51b5' },
-                    { id: 'label-047', name: '云计算', color: '#00bcd4' },
-                    { id: 'label-048', name: '移动开发', color: '#ff5722' },
-                    { id: 'label-049', name: 'Web开发', color: '#2196f3' },
-                    { id: 'label-050', name: '后端开发', color: '#795548' }
-                ],
-                // 工作流状态配置
-                workflowConfig: {
-                    'feature': [
-                        'backlog',
-                        'todo',
-                        'in_progress',
-                        'in_review',
-                        'testing',
-                        'completed'
-                    ],
-                    'bug': [
-                        'todo',
-                        'in_progress',
-                        'in_review',
-                        'testing',
-                        'completed',
-                        'cancelled'
-                    ],
-                    'improvement': [
-                        'backlog',
-                        'todo',
-                        'in_progress',
-                        'completed'
-                    ]
-                },
-                // 转换任务数据为mockData.js格式
-                tasks: tasks.map(task => ({
-                    // 基本信息 - 与mockData.js保持一致
-                    id: task.key || task.id || `TASK-${Date.now()}`,
-                    title: task.title || 'Untitled Task',
-                    description: task.description || task.content || '',
-                    type: task.type || 'feature',
-                    status: task.status || 'todo',
-                    priority: task.priority || 'medium',
-                    complexity: task.complexity || 'm',
-                    
-                    // 时间信息 - 使用ISO格式
-                    createdAt: task.createTime || task.createdAt || new Date().toISOString(),
-                    updatedAt: task.updateTime || task.updatedAt || new Date().toISOString(),
-                    dueDate: task.dueDate || task.deadline || null,
-                    startDate: task.startDate || task.startTime || null,
-                    
-                    // 工作量信息
-                    estimatedHours: task.estimatedHours || task.estimatedDuration || 0,
-                    actualHours: task.actualHours || task.actualDuration || 0,
-                    progress: task.progress || 0,
-                    
-                    // 子任务统计
-                    completedSubtasks: task.completedSubtasks || 0,
-                    totalSubtasks: task.totalSubtasks || 0,
-                    
-                    // 特征信息 - 从URL或任务数据获取
-                    featureName: task.featureName || '',
-                    cardTitle: task.cardTitle || '',
-                    
-                    // 输入输出
-                    input: task.input || '',
-                    output: task.output || '',
-                    
-                    // 步骤信息
-                    steps: task.steps || {},
-                    
-                    // 标签 - 转换为mockData.js格式
-                    labels: (task.tags || task.labels || []).map((tag, index) => ({
-                        id: tag.id || `label-${String(index + 1).padStart(3, '0')}`,
-                        name: tag.name || tag,
-                        color: tag.color || '#2196f3'
-                    })),
-                    
-                    // Epic信息
-                    epic: task.epic || {
-                        id: 'epic-default',
-                        name: '默认Epic',
-                        code: 'DEFAULT'
-                    },
-                    
-                    // 依赖关系
-                    dependencies: {
-                        blockedBy: task.blockedBy || [],
-                        blocking: task.blocking || [],
-                        relatedTo: task.relatedTo || []
-                    },
-                    
-                    // 子任务 - 转换为mockData.js格式
-                    subtasks: (task.subtasks || []).map((subtask, index) => ({
-                        id: subtask.id || `SUB-${String(index + 1).padStart(3, '0')}`,
-                        title: subtask.title || subtask.name || `子任务 ${index + 1}`,
-                        status: subtask.status || 'todo',
-                        estimatedHours: subtask.estimatedHours || subtask.estimatedDuration || 0,
-                        actualHours: subtask.actualHours || subtask.actualDuration || 0
-                    })),
-                    
-                    // 自定义字段
-                    customFields: {
-                        testingRequired: task.testingRequired || false,
-                        securityReviewRequired: task.securityReviewRequired || false,
-                        documentationRequired: task.documentationRequired || false,
-                        customerImpact: task.customerImpact || 'medium',
-                        technicalRisk: task.technicalRisk || 'low'
-                    },
-                    
-                    // 时间记录
-                    timeEntries: (task.timeEntries || []).map((entry, index) => ({
-                        id: entry.id || `time-${String(index + 1).padStart(3, '0')}`,
-                        description: entry.description || entry.note || '时间记录',
-                        startTime: entry.startTime || entry.start || new Date().toISOString(),
-                        endTime: entry.endTime || entry.end || new Date().toISOString(),
-                        duration: entry.duration || 0
-                    })),
-                    
-                    // 保留原有扩展字段
-                    weeklyReport: task.weeklyReport || {
-                        enabled: false,
-                        frequency: 'weekly',
-                        dayOfWeek: 1,
-                        reportTemplate: '',
-                        lastSubmitted: null,
-                        nextDue: null,
-                        history: []
-                    },
-                    dailyReport: task.dailyReport || {
-                        enabled: false,
-                        frequency: 'daily',
-                        timeOfDay: '18:00',
-                        reportTemplate: '',
-                        lastSubmitted: null,
-                        nextDue: null,
-                        history: [],
-                        weekends: false
-                    },
-                    features: task.features || {
-                        difficulty: 'medium',
-                        businessValue: 'medium',
-                        urgency: 'medium'
-                    },
-                    progress: task.progress || {
-                        percentage: 0,
-                        milestones: [],
-                        blockers: [],
-                        notes: []
-                    },
-                    timeTracking: task.timeTracking || {
-                        startDate: null,
-                        endDate: null,
-                        deadline: null,
-                        estimatedDuration: 0,
-                        actualDuration: 0,
-                        timeEntries: []
-                    }
-                }))
-            };
-
-            // 从任务数据中获取featureName和cardTitle，如果任务数据中没有则从URL获取
-            let featureName = '';
-            let cardTitle = '';
-            
-            // 优先从任务数据中获取
-            if (tasks && tasks.length > 0) {
-                const firstTask = tasks[0];
-                featureName = firstTask.featureName || '';
-                cardTitle = firstTask.cardTitle || '';
-                console.log('[下载] 从任务数据获取:', { featureName, cardTitle, firstTask: firstTask.title });
-            }
-            
-            // 如果任务数据中没有，则从URL获取
-            if (!featureName || !cardTitle) {
-                const urlParams = new URLSearchParams(window.location.search);
-                featureName = featureName || urlParams.get('featureName') || '';
-                cardTitle = cardTitle || urlParams.get('cardTitle') || '';
-                console.log('[下载] 从URL获取:', { featureName, cardTitle });
-            }
-            
-            // 调试信息：输出最终获取的参数
-            console.log('[下载] 最终参数:', {
-                fullUrl: window.location.href,
-                search: window.location.search,
-                featureName: featureName,
-                cardTitle: cardTitle,
-                hasFeatureName: !!featureName,
-                hasCardTitle: !!cardTitle
-            });
-            
-            // 构建文件名：使用featureName和cardTitle进行拼接
-            let fileName = '';
-            if (featureName) {
-                fileName += featureName;
-            }
-            if (cardTitle) {
-                if (fileName) fileName += '_';
-                fileName += cardTitle;
-            }
-            if (!fileName) {
-                fileName = 'tasks_export';
-            }
-            fileName += '.json';
-            
-            // 调试信息：输出文件名构建过程
-            console.log('[下载] 文件名构建过程:', {
-                initialFileName: fileName.replace('.json', ''),
-                finalFileName: fileName
-            });
-            
-            // 生成JSON文件并下载
-            const jsonContent = JSON.stringify(downloadData, null, 2);
-            const blob = new Blob([jsonContent], { type: 'application/json' });
-
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            // 安全检查：确保loading函数存在
-            if (window.hideGlobalLoading) {
-                window.hideGlobalLoading();
-            }
-            
-            // 显示下载成功信息
-            const successMessage = `任务数据下载成功！
-📊 导出统计：
-• 总任务数：${downloadData.totalTasks} 个
-• 导出时间：${new Date(downloadData.exportTime).toLocaleString()}
-• 文件大小：${(jsonContent.length / 1024).toFixed(2)} KB
-• 文件名：${fileName}
-• 数据结构：与mockData.js保持一致
-• 包含枚举：${Object.keys(downloadData.enums).length} 个
-• 包含标签：${downloadData.labels.length} 个`;
-            
-            // 安全检查：确保message函数存在
-            if (window.showSuccess) {
-                window.showSuccess(successMessage);
-            } else {
-                console.log('[下载] 任务数据下载完成:', successMessage);
-            }
-            console.log('[下载] 任务数据下载完成:', {
-                totalTasks: downloadData.totalTasks,
-                fileName: fileName,
-                fileSize: (jsonContent.length / 1024).toFixed(2) + ' KB',
-                dataStructure: '与mockData.js保持一致'
-            });
-
-        } catch (error) {
-            // 安全检查：确保loading函数存在
-            if (window.hideGlobalLoading) {
-                window.hideGlobalLoading();
-            }
-            console.error('[下载] 下载失败:', error);
-            // 安全检查：确保message函数存在
-            if (window.showError) {
-                window.showError('下载失败: ' + (error?.message || '未知错误'));
-            } else {
-                console.error('[下载] 下载失败:', error?.message || '未知错误');
-            }
-        }
-    };
-
-    /**
-     * 触发上传文件选择
-     */
-    const triggerUploadTasks = () => {
-        try {
-            const uploadInput = document.getElementById('tasksUploadInput');
-            if (uploadInput) {
-                uploadInput.click();
-            }
-        } catch (error) {
-            console.error('[上传] 触发上传失败:', error);
-            window.showError('触发上传失败');
-        }
-    };
 
     /**
      * 安全的日期处理函数
@@ -1154,958 +763,9 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         }
     };
 
-    /**
-     * 下载上传样例数据（mock数据）
-     */
-    const handleDownloadSample = async () => {
-        try {
-            // 安全检查：确保loading函数存在
-            if (window.showGlobalLoading) {
-                window.showGlobalLoading('正在准备样例数据...');
-            }
-            console.log('[样例下载] 开始下载上传样例数据');
 
-            // 构建样例数据结构
-            const sampleData = {
-                exportTime: createSafeDate(new Date()),
-                description: '这是TaskPro系统的上传样例数据，包含完整的任务数据结构示例，可以直接上传使用',
-                version: '1.0.0',
-                totalTasks: 3,
-                uploadInstructions: '下载此样例数据后，可以直接通过"上传"按钮重新上传，系统会自动识别并导入所有任务数据。',
-                tasks: [
-                    {
-                        // 基础任务信息 - 系统必需字段
-                        id: 'sample-task-001',
-                        title: '示例任务：用户认证功能开发',
-                        description: '这是一个示例任务，展示了完整的任务数据结构，可以直接上传使用',
-                        content: '开发用户登录、注册、密码重置等认证相关功能，包括前端界面、后端逻辑和安全验证',
-                        status: 'todo',
-                        priority: 'high',
-                        category: 'development',
-                        tags: ['认证', '安全', '前端', '后端'],
-                        featureName: '缺陷检测',
-                        cardTitle: 'AI代码审查系统',
-                        
-                        // 时间信息
-                        createTime: createSafeDate(new Date()),
-                        updateTime: createSafeDate(new Date()),
-                        createdAt: createSafeDate(new Date()),
-                        updatedAt: createSafeDate(new Date()),
-                        dueDate: createSafeFutureDate(7),
-                        startDate: createSafeDate(new Date()),
-                        
-                        // 任务类型和复杂度
-                        type: 'feature',
-                        complexity: 'medium',
-                        estimatedHours: 16,
-                        actualHours: 8,
-                        progress: 50,
-                        
-                        // 步骤信息
-                        steps: {
-                            step1: { text: '设计用户界面', completed: true },
-                            step2: { text: '实现登录逻辑', completed: true },
-                            step3: { text: '添加密码验证', completed: false },
-                            step4: { text: '测试功能完整性', completed: false }
-                        },
-                        
-                        // 标签信息
-                        labels: [
-                            { id: 'label-001', name: '认证', color: '#2196f3' },
-                            { id: 'label-002', name: '安全', color: '#f44336' },
-                            { id: 'label-003', name: '前端', color: '#ff9800' }
-                        ],
-                        
-                        // 周报属性
-                        weeklyReport: {
-                            enabled: true,
-                            frequency: 'weekly',
-                            dayOfWeek: 1,
-                            reportTemplate: '本周完成了用户认证功能的基础开发',
-                            lastSubmitted: null,
-                            nextDue: createSafeFutureDate(7),
-                            history: []
-                        },
-                        
-                        // 日报属性
-                        dailyReport: {
-                            enabled: true,
-                            frequency: 'daily',
-                            timeOfDay: '18:00',
-                            reportTemplate: '今日完成了登录界面的设计和基础实现',
-                            lastSubmitted: null,
-                            nextDue: createSafeFutureDate(1),
-                            weekends: false
-                        },
-                        
-                        // 任务特征属性
-                        features: {
-                            estimatedHours: 16,
-                            actualHours: 8,
-                            difficulty: 'medium',
-                            type: 'feature',
-                            dependencies: [],
-                            milestone: '用户系统v1.0',
-                            assignee: '开发工程师',
-                            reviewer: '技术主管',
-                            labels: ['认证', '安全'],
-                            businessValue: 'high',
-                            urgency: 'high',
-                            complexity: 'medium'
-                        },
-                        
-                        // 进度跟踪
-                        progress: {
-                            percentage: 50,
-                            milestones: [
-                                { name: '界面设计完成', completed: true, date: createSafeDate(new Date()) },
-                                { name: '基础逻辑实现', completed: true, date: createSafeDate(new Date()) },
-                                { name: '功能测试', completed: false, date: null }
-                            ],
-                            blockers: [],
-                            notes: ['需要添加单元测试', '考虑添加双因素认证']
-                        },
-                        
-                        // 时间跟踪
-                        timeTracking: {
-                            startDate: createSafeDate(new Date()),
-                            endDate: null,
-                            deadline: createSafeFutureDate(7),
-                            estimatedDuration: 16,
-                            actualDuration: 8,
-                            timeEntries: [
-                                { date: createSafeDate(new Date()), hours: 4, description: '界面设计' },
-                                { date: createSafeDate(new Date()), hours: 4, description: '基础逻辑实现' }
-                            ]
-                        },
-                        
-                        // 子任务信息
-                        subtasks: [
-                            {
-                                id: 'SUB-001',
-                                title: '设计用户界面',
-                                status: 'completed',
-                                estimatedHours: 4,
-                                actualHours: 4
-                            },
-                            {
-                                id: 'SUB-002',
-                                title: '实现登录逻辑',
-                                status: 'completed',
-                                estimatedHours: 6,
-                                actualHours: 4
-                            },
-                            {
-                                id: 'SUB-003',
-                                title: '添加密码验证',
-                                status: 'todo',
-                                estimatedHours: 4,
-                                actualHours: 0
-                            },
-                            {
-                                id: 'SUB-004',
-                                title: '功能测试',
-                                status: 'todo',
-                                estimatedHours: 2,
-                                actualHours: 0
-                            }
-                        ],
-                        
-                        // 输入输出信息
-                        input: '用户认证需求文档、UI设计稿、安全要求规范',
-                        output: '完整的用户认证系统，包括登录、注册、密码重置功能',
-                        
-                        // 依赖关系
-                        dependencies: {
-                            blockedBy: [],
-                            blocking: [],
-                            relatedTo: []
-                        }
-                    },
-                    {
-                        // 基础任务信息
-                        id: 'sample-task-002',
-                        title: '示例任务：数据库性能优化',
-                        description: '优化数据库查询性能，提升系统响应速度，包括索引优化和查询语句调优',
-                        content: '分析慢查询，优化索引，调整数据库配置参数，实现读写分离',
-                        status: 'in_progress',
-                        priority: 'medium',
-                        category: 'optimization',
-                        tags: ['数据库', '性能', '优化', '运维'],
-                        featureName: '缺陷检测',
-                        cardTitle: 'AI代码审查系统',
-                        
-                        // 时间信息
-                        createTime: createSafeDate(new Date()),
-                        updateTime: createSafeDate(new Date()),
-                        createdAt: createSafeDate(new Date()),
-                        updatedAt: createSafeDate(new Date()),
-                        dueDate: createSafeFutureDate(14),
-                        startDate: createSafeDate(new Date()),
-                        
-                        // 任务类型和复杂度
-                        type: 'improvement',
-                        complexity: 'high',
-                        estimatedHours: 24,
-                        actualHours: 12,
-                        progress: 25,
-                        
-                        // 步骤信息
-                        steps: {
-                            step1: { text: '分析当前性能瓶颈', completed: true },
-                            step2: { text: '优化数据库索引', completed: false },
-                            step3: { text: '调整查询语句', completed: false },
-                            step4: { text: '性能测试验证', completed: false }
-                        },
-                        
-                        // 标签信息
-                        labels: [
-                            { id: 'label-004', name: '数据库', color: '#9c27b0' },
-                            { id: 'label-005', name: '性能', color: '#00bcd4' },
-                            { id: 'label-006', name: '优化', color: '#ff9800' }
-                        ],
-                        
-                        weeklyReport: {
-                            enabled: false,
-                            frequency: 'weekly',
-                            dayOfWeek: 1,
-                            reportTemplate: '',
-                            lastSubmitted: null,
-                            nextDue: null,
-                            history: []
-                        },
-                        
-                        dailyReport: {
-                            enabled: false,
-                            frequency: 'daily',
-                            timeOfDay: '18:00',
-                            reportTemplate: '',
-                            lastSubmitted: null,
-                            nextDue: null,
-                            weekends: false
-                        },
-                        
-                        features: {
-                            estimatedHours: 24,
-                            actualHours: 12,
-                            difficulty: 'high',
-                            type: 'improvement',
-                            dependencies: [],
-                            milestone: '系统性能提升v2.0',
-                            assignee: 'DBA工程师',
-                            reviewer: '架构师',
-                            labels: ['数据库', '性能'],
-                            businessValue: 'medium',
-                            urgency: 'medium',
-                            complexity: 'high'
-                        },
-                        
-                        progress: {
-                            percentage: 25,
-                            milestones: [
-                                { name: '性能分析完成', completed: true, date: new Date().toISOString() },
-                                { name: '索引优化', completed: false, date: null },
-                                { name: '性能测试', completed: false, date: null }
-                            ],
-                            blockers: ['需要生产环境数据进行分析'],
-                            notes: ['考虑使用读写分离', '评估分库分表方案']
-                        },
-                        
-                        timeTracking: {
-                            startDate: new Date().toISOString(),
-                            endDate: null,
-                            deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-                            estimatedDuration: 24,
-                            actualDuration: 12,
-                            timeEntries: [
-                                { date: new Date().toISOString(), hours: 8, description: '性能分析' },
-                                { date: new Date().toISOString(), hours: 4, description: '方案设计' }
-                            ]
-                        },
-                        
-                        // 子任务信息
-                        subtasks: [
-                            {
-                                id: 'SUB-005',
-                                title: '性能瓶颈分析',
-                                status: 'completed',
-                                estimatedHours: 8,
-                                actualHours: 8
-                            },
-                            {
-                                id: 'SUB-006',
-                                title: '索引优化方案',
-                                status: 'in_progress',
-                                estimatedHours: 8,
-                                actualHours: 4
-                            },
-                            {
-                                id: 'SUB-007',
-                                title: '查询语句优化',
-                                status: 'todo',
-                                estimatedHours: 6,
-                                actualHours: 0
-                            },
-                            {
-                                id: 'SUB-008',
-                                title: '性能测试验证',
-                                status: 'todo',
-                                estimatedHours: 2,
-                                actualHours: 0
-                            }
-                        ],
-                        
-                        // 输入输出信息
-                        input: '当前数据库性能报告、慢查询日志、系统架构文档',
-                        output: '优化后的数据库配置、性能测试报告、运维手册',
-                        
-                        // 依赖关系
-                        dependencies: {
-                            blockedBy: [],
-                            blocking: [],
-                            relatedTo: []
-                        }
-                    },
-                    {
-                        // 基础任务信息
-                        id: 'sample-task-003',
-                        title: '示例任务：API文档编写',
-                        description: '为系统API编写完整的开发文档，包括接口说明、参数说明和示例代码',
-                        content: '编写API接口说明、参数说明、示例代码、错误码说明和调用示例',
-                        status: 'completed',
-                        priority: 'low',
-                        category: 'documentation',
-                        tags: ['文档', 'API', '开发', '维护'],
-                        featureName: '缺陷检测',
-                        cardTitle: 'AI代码审查系统',
-                        
-                        // 时间信息
-                        createTime: createSafeDate(new Date()),
-                        updateTime: createSafeDate(new Date()),
-                        createdAt: createSafeDate(new Date()),
-                        updatedAt: createSafeDate(new Date()),
-                        dueDate: createSafeDate(new Date()),
-                        startDate: createSafePastDate(7),
-                        
-                        // 任务类型和复杂度
-                        type: 'documentation',
-                        complexity: 'low',
-                        estimatedHours: 8,
-                        actualHours: 6,
-                        progress: 100,
-                        
-                        // 步骤信息
-                        steps: {
-                            step1: { text: '收集API接口信息', completed: true },
-                            step2: { text: '编写接口说明', completed: true },
-                            step3: { text: '添加示例代码', completed: true },
-                            step4: { text: '文档审查和发布', completed: true }
-                        },
-                        
-                        // 标签信息
-                        labels: [
-                            { id: 'label-007', name: '文档', color: '#9c27b0' },
-                            { id: 'label-008', name: 'API', color: '#3f51b5' },
-                            { id: 'label-009', name: '开发', color: '#2196f3' }
-                        ],
-                        
-                        weeklyReport: {
-                            enabled: false,
-                            frequency: 'weekly',
-                            dayOfWeek: 1,
-                            reportTemplate: '',
-                            lastSubmitted: null,
-                            nextDue: null,
-                            history: []
-                        },
-                        
-                        dailyReport: {
-                            enabled: false,
-                            frequency: 'daily',
-                            timeOfDay: '18:00',
-                            reportTemplate: '',
-                            lastSubmitted: null,
-                            nextDue: null,
-                            weekends: false
-                        },
-                        
-                        features: {
-                            estimatedHours: 8,
-                            actualHours: 6,
-                            difficulty: 'low',
-                            type: 'documentation',
-                            dependencies: [],
-                            milestone: '开发文档v1.0',
-                            assignee: '技术文档工程师',
-                            reviewer: '产品经理',
-                            labels: ['文档', 'API'],
-                            businessValue: 'low',
-                            urgency: 'low',
-                            complexity: 'low'
-                        },
-                        
-                        progress: {
-                            percentage: 100,
-                            milestones: [
-                                { name: '接口信息收集', completed: true, date: new Date().toISOString() },
-                                { name: '文档编写', completed: true, date: new Date().toISOString() },
-                                { name: '文档审查', completed: true, date: new Date().toISOString() }
-                            ],
-                            blockers: [],
-                            notes: ['文档已发布到内部知识库', '后续需要定期更新维护']
-                        },
-                        
-                        timeTracking: {
-                            startDate: new Date().toISOString(),
-                            endDate: new Date().toISOString(),
-                            deadline: new Date().toISOString(),
-                            estimatedDuration: 8,
-                            actualDuration: 6,
-                            timeEntries: [
-                                { date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(), hours: 3, description: '接口信息收集' },
-                                { date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), hours: 3, description: '文档编写和审查' }
-                            ]
-                        },
-                        
-                        // 子任务信息
-                        subtasks: [
-                            {
-                                id: 'SUB-009',
-                                title: '接口信息收集',
-                                status: 'completed',
-                                estimatedHours: 2,
-                                actualHours: 2
-                            },
-                            {
-                                id: 'SUB-010',
-                                title: '文档编写',
-                                status: 'completed',
-                                estimatedHours: 4,
-                                actualHours: 3
-                            },
-                            {
-                                id: 'SUB-011',
-                                title: '文档审查',
-                                status: 'completed',
-                                estimatedHours: 2,
-                                actualHours: 1
-                            }
-                        ],
-                        
-                        // 输入输出信息
-                        input: 'API接口代码、业务需求文档、现有文档模板',
-                        output: '完整的API开发文档、接口调用示例、错误码说明',
-                        
-                        // 依赖关系
-                        dependencies: {
-                            blockedBy: [],
-                            blocking: [],
-                            relatedTo: []
-                        }
-                    }
-                ]
-            };
 
-            // 构建文件名
-            const fileName = 'TaskPro_上传样例数据.json';
-            
-            // 生成JSON文件并下载
-            const jsonContent = JSON.stringify(sampleData, null, 2);
-            const blob = new Blob([jsonContent], { type: 'application/json' });
 
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            // 安全检查：确保loading函数存在
-            if (window.hideGlobalLoading) {
-                window.hideGlobalLoading();
-            }
-            
-            // 显示下载成功信息
-            const successMessage = `样例数据下载成功！
-📋 样例内容：
-• 包含 ${sampleData.totalTasks} 个示例任务
-• 涵盖不同状态、优先级和类型的任务
-• 包含完整的任务属性结构
-• 文件大小：${(jsonContent.length / 1024).toFixed(2)} KB
-• 文件名：${fileName}
-
-💡 使用说明：
-• 下载后可以查看数据结构
-• 可以直接通过"上传"按钮重新上传
-• 系统会自动识别并导入所有任务数据
-• 适合作为数据导入的参考模板`;
-            
-            // 安全检查：确保message函数存在
-            if (window.showSuccess) {
-                window.showSuccess(successMessage);
-            } else {
-                console.log('[样例下载] 样例数据下载完成:', successMessage);
-            }
-            console.log('[样例下载] 样例数据下载完成:', {
-                totalTasks: sampleData.totalTasks,
-                fileName: fileName,
-                fileSize: (jsonContent.length / 1024).toFixed(2) + ' KB'
-            });
-
-        } catch (error) {
-            // 安全检查：确保loading函数存在
-            if (window.hideGlobalLoading) {
-                window.hideGlobalLoading();
-            }
-            console.error('[样例下载] 下载失败:', error);
-            // 安全检查：确保message函数存在
-            if (window.showError) {
-                window.showError('样例下载失败: ' + (error?.message || '未知错误'));
-            } else {
-                console.error('[样例下载] 样例下载失败:', error?.message || '未知错误');
-            }
-        }
-    };
-
-    /**
-     * 处理上传任务数据
-     */
-    const handleUploadTasks = async (event) => {
-        try {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            window.showGlobalLoading('正在处理上传文件...');
-            console.log('[上传] 开始处理文件:', file.name, '类型:', file.type);
-
-            // 判断文件类型并处理
-            if (file.name.toLowerCase().endsWith('.zip')) {
-                await handleZipUpload(file);
-            } else if (file.name.toLowerCase().endsWith('.json')) {
-                await handleJsonUpload(file);
-            } else {
-                throw new Error('不支持的文件格式，请上传 ZIP 或 JSON 文件');
-            }
-
-            // 清除文件输入
-            event.target.value = '';
-
-        } catch (error) {
-            window.hideGlobalLoading();
-            console.error('[上传] 上传失败:', error);
-            window.showError('上传失败: ' + (error?.message || '未知错误'));
-            // 清除文件输入
-            event.target.value = '';
-        }
-    };
-
-    /**
-     * 处理ZIP文件上传
-     */
-    const handleZipUpload = async (zipFile) => {
-        try {
-            window.showGlobalLoading('正在解析ZIP文件...');
-            
-            // 动态加载JSZip
-            const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip;
-            const zip = new JSZip();
-            
-            // 读取ZIP文件
-            const zipContent = await zip.loadAsync(zipFile);
-            
-            let treeData = null;
-            let filesData = null;
-            
-            // 查找并读取tree.json和files.json
-            const treeFile = zipContent.file('tree.json');
-            const filesFile = zipContent.file('files.json');
-            
-            if (!treeFile && !filesFile) {
-                throw new Error('ZIP文件中未找到 tree.json 或 files.json');
-            }
-            
-            if (treeFile) {
-                const treeContent = await treeFile.async('text');
-                treeData = JSON.parse(treeContent);
-                console.log('[上传] 解析tree.json成功:', treeData);
-            }
-            
-            if (filesFile) {
-                const filesContent = await filesFile.async('text');
-                filesData = JSON.parse(filesContent);
-                console.log('[上传] 解析files.json成功，文件数量:', Object.keys(filesData).length);
-            }
-            
-            window.showGlobalLoading('正在导入任务数据...');
-            
-            // 导入任务数据到数据库
-            if (filesData) {
-                // 从URL中获取featureName和cardTitle，按约定透传给接口
-                const urlParams = new URLSearchParams(window.location.search);
-                const featureName = urlParams.get('featureName') || '';
-                const cardTitle = urlParams.get('cardTitle') || '';
-                let importedCount = 0;
-                let skippedCount = 0;
-                
-                for (const [filePath, taskData] of Object.entries(filesData)) {
-                    try {
-                        // 构建要保存的任务对象
-                        const taskToSave = {
-                            title: taskData.title,
-                            description: taskData.description,
-                            content: taskData.content,
-                            status: taskData.status,
-                            priority: taskData.priority,
-                            category: taskData.category,
-                            featureName: taskData.featureName || featureName || '',
-                            cardTitle: taskData.cardTitle || cardTitle || '',
-                            tags: taskData.tags,
-                            steps: taskData.steps,
-                            createTime: createSafeDate(taskData.createTime),
-                            updateTime: createSafeDate(new Date()),
-                            weeklyReport: taskData.weeklyReport,
-                            dailyReport: taskData.dailyReport,
-                            features: taskData.features,
-                            progress: taskData.progress,
-                            timeTracking: taskData.timeTracking
-                        };
-                        
-                        // 先尝试通过 id/key 或标题匹配现有任务，决定是更新还是新建
-                        const existing = (store.tasksData.value || []).find(t => {
-                            if (!t) return false;
-                            const sameId = taskData.id && (t.id === taskData.id || t.key === taskData.id);
-                            const sameTitle = t.title === taskData.title;
-                            return !!(sameId || sameTitle);
-                        });
-
-                        // 组装基础URL，附加featureName/cardTitle
-                        let baseUrl = `${window.API_URL}/mongodb/?cname=tasks`;
-                        if (featureName) baseUrl += `&featureName=${encodeURIComponent(featureName)}`;
-                        if (cardTitle) baseUrl += `&cardTitle=${encodeURIComponent(cardTitle)}`;
-
-                        let response;
-                        if (existing && (existing.key || existing.id)) {
-                            // 更新：必须带上key（或id）
-                            const payload = { ...taskToSave, key: existing.key || existing.id };
-                            response = await window.updateData(baseUrl, payload);
-                        } else {
-                            // 新建
-                            response = await window.postData(baseUrl, taskToSave);
-                        }
-                        
-                        if (response && response.success !== false) {
-                            importedCount++;
-                            console.log(`[上传] 导入任务成功: ${taskData.title}`);
-                        } else {
-                            skippedCount++;
-                            console.warn(`[上传] 跳过任务: ${taskData.title}`);
-                        }
-                    } catch (error) {
-                        skippedCount++;
-                        console.warn(`[上传] 导入任务失败: ${filePath}:`, error);
-                    }
-                }
-                
-                window.hideGlobalLoading();
-                
-                // 显示导入结果
-                const resultMessage = `ZIP文件导入完成！
-📊 导入统计：
-• 成功导入：${importedCount} 个任务
-• 跳过任务：${skippedCount} 个
-• 总处理：${Object.keys(filesData).length} 个文件
-• 导入成功率：${((importedCount / Object.keys(filesData).length) * 100).toFixed(1)}%
-
-🔍 数据质量：
-• 数据结构：与mockData.js保持一致
-• 字段映射：自动转换完成
-• 枚举验证：已通过有效性检查
-• 时间格式：已标准化为ISO格式
-
-📝 导入详情：
-• 支持的任务类型：feature, bug, improvement, documentation, research, maintenance, meeting, review
-• 支持的状态：backlog, todo, in_progress, in_review, testing, completed, cancelled, on_hold
-• 支持的优先级：critical, high, medium, low, none
-• 支持的复杂度：xs, s, m, l, xl, xxl`;
-                
-                window.showSuccess(resultMessage);
-                
-                // 重新加载任务数据
-                await store.loadTasksData();
-                
-            } else {
-                throw new Error('ZIP文件中没有有效的任务数据');
-            }
-
-        } catch (error) {
-            window.hideGlobalLoading();
-            throw error;
-        }
-    };
-
-    /**
-     * 处理JSON文件上传
-     */
-    const handleJsonUpload = async (jsonFile) => {
-        try {
-            window.showGlobalLoading('正在解析JSON文件...');
-            
-            const fileContent = await jsonFile.text();
-            const uploadData = JSON.parse(fileContent);
-            
-            if (!uploadData.tasks || !Array.isArray(uploadData.tasks)) {
-                throw new Error('JSON文件格式无效，缺少tasks数组');
-            }
-            
-            window.showGlobalLoading('正在导入任务数据...');
-            
-            let importedCount = 0;
-            let skippedCount = 0;
-            
-            // 从URL中获取featureName和cardTitle，按约定透传给接口
-            const urlParams = new URLSearchParams(window.location.search);
-            const featureName = urlParams.get('featureName') || '';
-            const cardTitle = urlParams.get('cardTitle') || '';
-
-            for (const taskData of uploadData.tasks) {
-                try {
-                    // 构建要保存的任务对象 - 优化后的数据结构
-                    const taskToSave = {
-                        // 基本信息 - 与mockData.js保持一致
-                        title: taskData.title || 'Untitled Task',
-                        description: taskData.description || taskData.content || '',
-                        content: taskData.description || taskData.content || '',
-                        
-                        // 任务属性 - 使用标准化的枚举值
-                        type: taskData.type || 'feature',
-                        status: taskData.status || 'todo',
-                        priority: taskData.priority || 'medium',
-                        complexity: taskData.complexity || 'm',
-                        category: taskData.category || 'development',
-                        
-                        // 特征信息 - 从数据或URL获取
-                        featureName: taskData.featureName || featureName || '',
-                        cardTitle: taskData.cardTitle || cardTitle || '',
-                        
-                        // 时间信息 - 统一时间格式处理
-                        createTime: createSafeDate(taskData.createdAt || taskData.createTime),
-                        updateTime: createSafeDate(new Date()),
-                        startDate: createSafeDate(taskData.startDate || taskData.startTime),
-                        dueDate: createSafeDate(taskData.dueDate || taskData.deadline),
-                        
-                        // 工作量信息 - 标准化字段名
-                        estimatedHours: taskData.estimatedHours || taskData.estimatedDuration || 0,
-                        actualHours: taskData.actualHours || taskData.actualDuration || 0,
-                        progress: taskData.progress || 0,
-                        
-                        // 子任务统计
-                        completedSubtasks: taskData.completedSubtasks || 0,
-                        totalSubtasks: taskData.totalSubtasks || 0,
-                        
-                        // 输入输出信息
-                        input: taskData.input || '',
-                        output: taskData.output || '',
-                        
-                        // 步骤信息
-                        steps: taskData.steps || {},
-                        
-                        // 标签系统 - 转换为标准格式
-                        tags: (taskData.labels || taskData.tags || []).map(tag => {
-                            if (typeof tag === 'string') {
-                                return tag;
-                            }
-                            return {
-                                id: tag.id || `label-${Date.now()}`,
-                                name: tag.name || tag,
-                                color: tag.color || '#2196f3'
-                            };
-                        }),
-                        
-                        // Epic信息
-                        epic: taskData.epic || {
-                            id: 'epic-default',
-                            name: '默认Epic',
-                            code: 'DEFAULT'
-                        },
-                        
-                        // 依赖关系
-                        dependencies: taskData.dependencies || {
-                            blockedBy: taskData.blockedBy || [],
-                            blocking: taskData.blocking || [],
-                            relatedTo: taskData.relatedTo || []
-                        },
-                        
-                        // 子任务 - 转换为标准格式
-                        subtasks: (taskData.subtasks || []).map((subtask, index) => ({
-                            id: subtask.id || `SUB-${String(index + 1).padStart(3, '0')}`,
-                            title: subtask.title || subtask.name || `子任务 ${index + 1}`,
-                            status: subtask.status || 'todo',
-                            estimatedHours: subtask.estimatedHours || subtask.estimatedDuration || 0,
-                            actualHours: subtask.actualHours || subtask.actualDuration || 0
-                        })),
-                        
-                        // 自定义字段
-                        customFields: taskData.customFields || {
-                            testingRequired: taskData.testingRequired || false,
-                            securityReviewRequired: taskData.securityReviewRequired || false,
-                            documentationRequired: taskData.documentationRequired || false,
-                            customerImpact: taskData.customerImpact || 'medium',
-                            technicalRisk: taskData.technicalRisk || 'low'
-                        },
-                        
-                        // 时间记录 - 转换为标准格式
-                        timeEntries: (taskData.timeEntries || []).map((entry, index) => ({
-                            id: entry.id || `time-${String(index + 1).padStart(3, '0')}`,
-                            description: entry.description || entry.note || '时间记录',
-                            startTime: createSafeDate(entry.startTime || entry.start),
-                            endTime: createSafeDate(entry.endTime || entry.end),
-                            duration: entry.duration || 0
-                        })),
-                        
-                        // 保留原有扩展字段
-                        weeklyReport: taskData.weeklyReport || {
-                            enabled: false,
-                            frequency: 'weekly',
-                            dayOfWeek: 1,
-                            reportTemplate: '',
-                            lastSubmitted: null,
-                            nextDue: null,
-                            history: []
-                        },
-                        dailyReport: taskData.dailyReport || {
-                            enabled: false,
-                            frequency: 'daily',
-                            timeOfDay: '18:00',
-                            reportTemplate: '',
-                            lastSubmitted: null,
-                            nextDue: null,
-                            history: [],
-                            weekends: false
-                        },
-                        features: taskData.features || {
-                            difficulty: taskData.difficulty || 'medium',
-                            businessValue: taskData.businessValue || 'medium',
-                            urgency: taskData.urgency || 'medium'
-                        },
-                        progress: taskData.progress || {
-                            percentage: taskData.progress || 0,
-                            milestones: taskData.milestones || [],
-                            blockers: taskData.blockers || [],
-                            notes: taskData.notes || []
-                        },
-                        timeTracking: taskData.timeTracking || {
-                            startDate: createSafeDate(taskData.startDate || taskData.startTime),
-                            endDate: createSafeDate(taskData.endDate),
-                            deadline: createSafeDate(taskData.dueDate || taskData.deadline),
-                            estimatedDuration: taskData.estimatedHours || taskData.estimatedDuration || 0,
-                            actualDuration: taskData.actualHours || taskData.actualDuration || 0,
-                            timeEntries: []
-                        }
-                    };
-                    
-                    // 数据验证和清理
-                    if (!taskToSave.title || taskToSave.title.trim() === '') {
-                        console.warn(`[上传] 跳过无效任务（标题为空）:`, taskData);
-                        skippedCount++;
-                        continue;
-                    }
-                    
-                    // 验证枚举值的有效性
-                    const validStatuses = ['backlog', 'todo', 'in_progress', 'in_review', 'testing', 'completed', 'cancelled', 'on_hold'];
-                    const validPriorities = ['critical', 'high', 'medium', 'low', 'none'];
-                    const validTypes = ['feature', 'bug', 'improvement', 'documentation', 'research', 'maintenance', 'meeting', 'review'];
-                    const validComplexities = ['xs', 's', 'm', 'l', 'xl', 'xxl'];
-                    
-                    if (!validStatuses.includes(taskToSave.status)) {
-                        console.warn(`[上传] 任务状态无效，使用默认值: ${taskData.title} (${taskData.status})`);
-                        taskToSave.status = 'todo';
-                    }
-                    
-                    if (!validPriorities.includes(taskToSave.priority)) {
-                        console.warn(`[上传] 任务优先级无效，使用默认值: ${taskData.title} (${taskData.priority})`);
-                        taskToSave.priority = 'medium';
-                    }
-                    
-                    if (!validTypes.includes(taskToSave.type)) {
-                        console.warn(`[上传] 任务类型无效，使用默认值: ${taskData.title} (${taskData.type})`);
-                        taskToSave.type = 'feature';
-                    }
-                    
-                    if (!validComplexities.includes(taskToSave.complexity)) {
-                        console.warn(`[上传] 任务复杂度无效，使用默认值: ${taskData.title} (${taskData.complexity})`);
-                        taskToSave.complexity = 'm';
-                    }
-                    
-                    // 先尝试通过标题匹配现有任务，决定是更新还是新建
-                    const existing = (store.tasksData.value || []).find(t => t && t.title === taskData.title);
-
-                    // 组装基础URL，附加featureName/cardTitle
-                    let baseUrl = `${window.API_URL}/mongodb/?cname=tasks`;
-                    if (featureName) baseUrl += `&featureName=${encodeURIComponent(featureName)}`;
-                    if (cardTitle) baseUrl += `&cardTitle=${encodeURIComponent(cardTitle)}`;
-
-                    // 调用API保存任务（更新优先）
-                    let response;
-                    if (existing && (existing.key || existing.id)) {
-                        const payload = { ...taskToSave, key: existing.key || existing.id };
-                        response = await window.updateData(baseUrl, payload);
-                    } else {
-                        response = await window.postData(baseUrl, taskToSave);
-                    }
-                    
-                    if (response && response.success !== false) {
-                        importedCount++;
-                        console.log(`[上传] 导入任务成功: ${taskData.title}`, {
-                            type: taskToSave.type,
-                            status: taskToSave.status,
-                            priority: taskToSave.priority,
-                            complexity: taskToSave.complexity,
-                            tags: taskToSave.tags.length
-                        });
-                    } else {
-                        skippedCount++;
-                        console.warn(`[上传] 跳过任务: ${taskData.title}`);
-                    }
-                } catch (error) {
-                    skippedCount++;
-                    console.warn(`[上传] 导入任务失败: ${taskData.title}:`, error);
-                }
-            }
-            
-            window.hideGlobalLoading();
-            
-            // 显示导入结果
-            const resultMessage = `JSON文件导入完成！
-📊 导入统计：
-• 成功导入：${importedCount} 个任务
-• 跳过任务：${skippedCount} 个
-• 总处理：${uploadData.tasks.length} 个任务
-• 导入成功率：${((importedCount / uploadData.tasks.length) * 100).toFixed(1)}%
-
-🔍 数据质量：
-• 数据结构：与mockData.js保持一致
-• 字段映射：自动转换完成
-• 枚举验证：已通过有效性检查
-• 时间格式：已标准化为ISO格式
-
-📝 导入详情：
-• 支持的任务类型：feature, bug, improvement, documentation, research, maintenance, meeting, review
-• 支持的状态：backlog, todo, in_progress, in_review, testing, completed, cancelled, on_hold
-• 支持的优先级：critical, high, medium, low, none
-• 支持的复杂度：xs, s, m, l, xl, xxl`;
-            
-            window.showSuccess(resultMessage);
-            
-            // 重新加载任务数据
-            await store.loadTasksData();
-            
-        } catch (error) {
-            window.hideGlobalLoading();
-            throw error;
-        }
-    };
 
     return {
         // 主要处理方法
@@ -2134,21 +794,96 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         // 任务选择和更新方法
         handleTaskSelect: (task) => {
             console.log('[任务选择] 选中任务:', task.title);
-            store.selectTask(task);
+            if (store.selectTask) {
+                store.selectTask(task);
+            }
         },
 
         // 任务更新方法
         handleTaskUpdate: async (updateData) => {
-            const { task, timeData } = updateData;
-            console.log('[任务更新] 更新任务时间数据:', task.title, timeData);
-            
-            const success = await updateTaskTimeData(task, timeData);
-            if (success) {
-                console.log('[任务更新] 更新成功');
-                // 重新加载任务数据
-                await loadTasksData();
-            } else {
-                console.error('[任务更新] 更新失败');
+            try {
+                const { task, timeData } = updateData;
+                console.log('[任务更新] 开始更新任务:', task.title, task);
+                
+                // 如果有时间数据，更新时间数据
+                if (timeData) {
+                    const success = await updateTaskTimeData(task, timeData);
+                    if (!success) {
+                        console.error('[任务更新] 时间数据更新失败');
+                        return;
+                    }
+                }
+                
+                // 先更新本地store中的任务数据，避免状态共享
+                if (store.updateTask) {
+                    const localUpdateSuccess = store.updateTask(task);
+                    if (localUpdateSuccess) {
+                        console.log('[任务更新] 本地任务数据已更新');
+                    }
+                }
+                
+                // 更新任务数据到后端
+                if (task && (task.id || task.key)) {
+                    try {
+                        // 准备更新数据
+                        const updatePayload = {
+                            ...task,
+                            updated: new Date().toISOString()
+                        };
+                        
+                        // 调用API更新任务
+                        const response = await window.postData(
+                            `${window.API_URL}/mongodb/?cname=tasks&featureName=${encodeURIComponent(task.featureName || '')}&cardTitle=${encodeURIComponent(task.cardTitle || '')}`, 
+                            updatePayload
+                        );
+                        
+                        if (response && response.success !== false) {
+                            console.log('[任务更新] 任务数据更新成功');
+                            
+                            // 重新加载任务数据
+                            await loadTasksData();
+                            
+                            // 显示成功消息
+                            if (window.showSuccess) {
+                                window.showSuccess('任务更新成功');
+                            }
+                        } else {
+                            throw new Error('API更新失败');
+                        }
+                    } catch (apiError) {
+                        console.error('[任务更新] API更新失败:', apiError);
+                        
+                        // 如果API更新失败，尝试使用updateData方法
+                        try {
+                            const success = await window.updateData(
+                                `${window.API_URL}/mongodb/?cname=tasks&featureName=${encodeURIComponent(task.featureName || '')}&cardTitle=${encodeURIComponent(task.cardTitle || '')}`, 
+                                task
+                            );
+                            
+                            if (success) {
+                                console.log('[任务更新] 使用updateData更新成功');
+                                await loadTasksData();
+                                
+                                if (window.showSuccess) {
+                                    window.showSuccess('任务更新成功');
+                                }
+                            } else {
+                                throw new Error('updateData更新失败');
+                            }
+                        } catch (updateError) {
+                            console.error('[任务更新] updateData更新失败:', updateError);
+                            throw updateError;
+                        }
+                    }
+                } else {
+                    console.warn('[任务更新] 任务ID或key不存在，跳过更新');
+                }
+                
+            } catch (error) {
+                console.error('[任务更新] 更新失败:', error);
+                if (window.showError) {
+                    window.showError('任务更新失败，请稍后重试');
+                }
             }
         },
 
@@ -2185,13 +920,10 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         // 设置相关方法
         openSettings,
 
-        // 下载和上传功能
-        handleDownloadTasks,
-        handleDownloadSample,
-        triggerUploadTasks,
-        handleUploadTasks
+
     };
 }; 
+
 
 
 

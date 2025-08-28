@@ -158,7 +158,7 @@ const createCalendarView = () => {
                             <div class="task-info-row">
                                 <span class="label">状态:</span>
                                 <span class="value status-{{ selectedTask.status }}">
-                                    {{ getStatusText(selectedTask.status) }}
+                                    {{ selectedTask.status }}
                                 </span>
                             </div>
                             <div class="task-info-row">
@@ -547,15 +547,7 @@ const createCalendarView = () => {
                 return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
             },
             
-            getStatusText(status) {
-                const statusMap = {
-                    'todo': '待办',
-                    'in_progress': '进行中',
-                    'completed': '已完成',
-                    'cancelled': '已取消'
-                };
-                return statusMap[status] || status;
-            },
+
             
             getPriorityText(priority) {
                 const priorityMap = {
@@ -584,4 +576,5 @@ const createCalendarView = () => {
 
 window.CalendarView = createCalendarView();
 console.log('[CalendarView] 优化版组件已加载');
+
 

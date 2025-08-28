@@ -220,7 +220,7 @@ export const createStore = () => {
                 currentDate: currentDate.toISOString().split('T')[0]
             });
             
-            const systemPromptData = await getData(`${window.DATA_URL}/prompts/welcome/featureCards.txt`);
+            const systemPromptData = await getData(`/prompts/welcome/featureCards.txt`);
 
             // 构建查询URL，加入时间参数
             let mongoUrl = `${window.API_URL}/mongodb/?cname=goals`;
@@ -358,6 +358,7 @@ export const createStore = () => {
             clearError       // 清除错误
         };
 }
+
 
 
 

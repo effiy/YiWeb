@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="/views/tasks/plugins/enhancedGanttChart/index.css">
     <link rel="stylesheet" href="/views/tasks/plugins/calendarView/index.css">
     <link rel="stylesheet" href="/views/tasks/plugins/matrixView/index.css">
+    <link rel="stylesheet" href="/views/tasks/createButton.css">
+    <link rel="stylesheet" href="/views/tasks/plugins/enhancedTaskList/index.css">
 
     <!-- 引入字体图标 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -25,18 +27,7 @@
 
 </head>
 <body>
-    <!-- 全局加载器 -->
-    <div id="globalLoader" class="global-loader">
-        <div class="loader-content">
-            <div class="loader-logo">
-                <i class="fas fa-layer-group"></i>
-            </div>
-            <div class="loader-text">TaskPro Enterprise</div>
-            <div class="loader-progress">
-                <div class="loader-bar"></div>
-            </div>
-        </div>
-    </div>
+    
 
     <div id="app">
         <!-- 主要内容区域 -->
@@ -83,14 +74,6 @@
                         </div>
                         
                         <div class="toolbar-right">
-                          <!-- 创建任务按钮 -->
-                          <div class="create-task-section">
-                              <button @click="createTask" class="option-btn primary">
-                                  <i class="fas fa-plus"></i>
-                                  <span>创建任务</span>
-                              </button>
-                          </div>
-                          
                           <!-- 视图选项 -->
                           <div class="view-options">
                               <button @click="toggleFullscreen" class="option-btn">
@@ -112,82 +95,38 @@
                                 </div>
                             </div>
                             
-                            <!-- 批量操作 -->
-                            <div v-if="selectedTasks.length > 0" class="batch-actions">
-                                <span class="selected-count">已选择 {{ selectedTasks.length }} 项</span>
-                                <button @click="batchUpdateStatus" class="batch-btn" title="批量更新状态">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button @click="batchDelete" class="batch-btn danger" title="批量删除">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
                             
-                            <!-- 下载功能按钮 -->
-                            <div class="download-section">
-                                <button 
-                                    type="button"
-                                    class="option-btn"
-                                    @click="handleDownloadTasks"
-                                    :disabled="loading || !filteredTasks.length"
-                                    :title="filteredTasks.length ? `下载 ${filteredTasks.length} 个任务数据` : '没有可下载的任务'">
-                                    <i class="fas fa-download" aria-hidden="true"></i>
-                                    <span>下载</span>
-                                </button>
-                            </div>
                             
-                            <!-- 下载上传样例按钮 -->
-                            <div class="download-sample-section">
-                                <button 
-                                    type="button"
-                                    class="option-btn"
-                                    @click="handleDownloadSample"
-                                    :disabled="loading"
-                                    title="下载上传样例数据，可直接上传使用">
-                                    <i class="fas fa-file-code" aria-hidden="true"></i>
-                                    <span>样例</span>
-                                </button>
-                            </div>
-                            
-                            <!-- 上传功能按钮 -->
-                            <div class="upload-section">
-                                <button 
-                                    type="button"
-                                    class="option-btn"
-                                    @click="triggerUploadTasks"
-                                    :disabled="loading"
-                                    title="上传任务数据文件">
-                                    <i class="fas fa-upload" aria-hidden="true"></i>
-                                    <span>上传</span>
-                                </button>
-                                <input 
-                                    id="tasksUploadInput"
-                                    ref="uploadInput"
-                                    type="file" 
-                                    accept=".zip,.json"
-                                    @change="handleUploadTasks"
-                                    class="hidden" 
-                                    aria-label="上传任务数据文件">
-                            </div>
+
                         </div>
                     </div>
                 </div>
                 
                 <!-- 任务视图内容区 -->
                 <div class="content-area">
+                    <!-- 与首页一致的置中创建按钮 -->
+                    <div class="create-card-section">
+                        <button 
+                            @click="createTask"
+                            class="create-card-btn"
+                            type="button"
+                            title="创建新任务"
+                            aria-label="创建新任务">
+                            <i class="fas fa-plus" aria-hidden="true"></i>
+                            <span>创建任务</span>
+                        </button>
+                    </div>
+
                     <!-- 任务列表视图 -->
                     <enhanced-task-list
                         v-if="currentView === 'list'"
                         :tasks="filteredTasks"
                         :loading="loading"
                         :error="error"
-                        :selected-tasks="selectedTasks"
-                        @task-select="handleTaskSelect"
                         @task-click="handleTaskClick"
                         @task-update="handleTaskUpdate"
                         @task-delete="handleTaskDelete"
                         @task-edit="handleTaskEdit"
-                        @selection-change="handleSelectionChange"
                     ></enhanced-task-list>
                     
                     <!-- 看板视图 -->
@@ -195,7 +134,6 @@
                         v-if="currentView === 'kanban'"
                         :tasks="filteredTasks"
                         @task-move="handleTaskMove"
-                        @task-select="handleTaskSelect"
                         @task-create="handleTaskCreate"
                     ></kanban-board>
                     
@@ -212,7 +150,6 @@
                         :tasks="filteredTasks"
                         :current-view="currentView"
                         :get-task-time-data="getTaskTimeData"
-                        @task-select="handleTaskSelect"
                     ></weekly-report>
                     
                     <!-- 日报视图 -->
@@ -221,13 +158,11 @@
                         :tasks="filteredTasks"
                         :current-view="currentView"
                         :get-task-time-data="getTaskTimeData"
-                        @task-select="handleTaskSelect"
                     ></daily-report>
                     <!-- 矩阵视图 -->
                     <matrix-view
                         v-if="currentView === 'matrix'"
                         :tasks="filteredTasks"
-                        @task-select="handleTaskSelect"
                     ></matrix-view>
                 </div>
                 
@@ -257,7 +192,7 @@
     <script src="/utils/index.js"></script>
     <script type="module" src="/utils/log.js"></script>
     <script type="module" src="/utils/baseView.js"></script>
-    <script type="module" src="/utils/loading.js"></script>
+    
     <script type="module" src="/utils/message.js"></script>
     
     <!-- 引入API模块（使用ES6模块） -->
@@ -290,46 +225,7 @@
     <!-- 引入页面逻辑 -->
     <script src="/views/tasks/index.js"></script>
     
-    <!-- 工具函数安全检查脚本 -->
-    <script>
-        // 确保必要的工具函数存在
-        function ensureUtilityFunctions() {
-            if (!window.showGlobalLoading) {
-                window.showGlobalLoading = function(message) {};
-            }
-            
-            if (!window.hideGlobalLoading) {
-                window.hideGlobalLoading = function() {};
-            }
-            
-            if (!window.showSuccess) {
-                window.showSuccess = function(message) {};
-            }
-            
-            if (!window.showError) {
-                window.showError = function(message) {};
-            }
-        }
-        
-        // 在DOM加载完成后检查工具函数
-        document.addEventListener('DOMContentLoaded', function() {
-            ensureUtilityFunctions();
-        });
-        
-        // 页面加载完成后的处理
-        window.addEventListener('load', function() {
-            // 隐藏加载器
-            setTimeout(() => {
-                const loader = document.getElementById('globalLoader');
-                if (loader) {
-                    loader.classList.add('hidden');
-                    setTimeout(() => {
-                        loader.style.display = 'none';
-                    }, 500);
-                }
-            }, 1000);
-        });
-    </script>
+    
     
     <!-- 快捷键支持 -->
     <script>
@@ -398,6 +294,7 @@
     </script>
 </body>
 </html> 
+
 
 
 
