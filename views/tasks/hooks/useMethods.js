@@ -669,15 +669,15 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
     const getCurrentViewName = () => {
         const viewMap = {
             'list': '列表视图',
-            'kanban': '看板视图',
             'gantt': '甘特图',
             'calendar': '日历视图',
 
-            'table': '表格视图',
-            'matrix': '矩阵视图'
+            'table': '表格视图'
         };
         return viewMap[store.currentView] || '未知视图';
     };
+
+
 
     /**
      * 打开设置面板
@@ -840,8 +840,8 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
                         if (response && response.success !== false) {
                             console.log('[任务更新] 任务数据更新成功');
                             
-                            // 重新加载任务数据
-                            await loadTasksData();
+                            // 不再重新加载所有数据，而是直接更新本地数据
+                            // await loadTasksData();
                             
                             // 显示成功消息
                             if (window.showSuccess) {
@@ -862,7 +862,8 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
                             
                             if (success) {
                                 console.log('[任务更新] 使用updateData更新成功');
-                                await loadTasksData();
+                                // 不再重新加载所有数据
+                                // await loadTasksData();
                                 
                                 if (window.showSuccess) {
                                     window.showSuccess('任务更新成功');
@@ -897,8 +898,19 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
                 
                 if (response && response.success !== false) {
                     console.log('[任务创建] 创建成功');
-                    // 重新加载任务数据
-                    await loadTasksData();
+                    
+                    // 直接将新任务添加到本地数据，而不是重新加载所有数据
+                    if (store.tasksData && store.tasksData.value) {
+                        // 确保新任务有唯一的key
+                        if (!newTask.key) {
+                            newTask.key = store.generateUniqueId ? store.generateUniqueId() : Date.now().toString(36);
+                        }
+                        store.tasksData.value.unshift(newTask);
+                        console.log('[任务创建] 新任务已添加到本地数据');
+                    }
+                    
+                    // 不再重新加载任务数据
+                    // await loadTasksData();
                 } else {
                     throw new Error('API创建失败');
                 }
@@ -917,12 +929,16 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         // 获取当前视图名称
         getCurrentViewName,
 
+        // 全部选择/恢复方法
+
+
         // 设置相关方法
         openSettings,
 
 
     };
 }; 
+
 
 
 

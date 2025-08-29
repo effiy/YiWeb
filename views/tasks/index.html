@@ -9,11 +9,10 @@
     <link rel="stylesheet" href="/css/index.css">
     <link rel="stylesheet" href="/views/tasks/index.css">
     <link rel="stylesheet" href="/plugins/searchHeader/index.css">
-    <link rel="stylesheet" href="/views/tasks/plugins/kanbanBoard/index.css">
+
     <link rel="stylesheet" href="/views/tasks/plugins/enhancedGanttChart/index.css">
     <link rel="stylesheet" href="/views/tasks/plugins/calendarView/index.css">
-    <link rel="stylesheet" href="/views/tasks/plugins/matrixView/index.css">
-    <link rel="stylesheet" href="/views/tasks/createButton.css">
+
     <link rel="stylesheet" href="/views/tasks/plugins/enhancedTaskList/index.css">
 
     <!-- 引入字体图标 -->
@@ -21,7 +20,7 @@
     
     <!-- 元信息 -->
     <meta name="description" content="世界级专业任务管理系统，支持敏捷开发、项目管理、团队协作">
-    <meta name="keywords" content="任务管理,项目管理,敏捷开发,团队协作,看板,甘特图,专业版">
+    <meta name="keywords" content="任务管理,项目管理,敏捷开发,团队协作,甘特图,专业版">
     <meta name="author" content="TaskPro Enterprise Team">
     
 
@@ -74,13 +73,6 @@
                         </div>
                         
                         <div class="toolbar-right">
-                          <!-- 视图选项 -->
-                          <div class="view-options">
-                              <button @click="toggleFullscreen" class="option-btn">
-                                  <i class="fas fa-expand"></i>
-                                  <span>全屏</span>
-                              </button>
-                          </div>
                             <!-- 视图切换 - 重构为与首页cascader一致的交互 -->
                             <div class="view-switcher">
                                 <div class="view-cascader">
@@ -95,8 +87,20 @@
                                 </div>
                             </div>
                             
-                            
-                            
+                            <!-- 创建任务按钮 - 与首页保持一致 -->
+                            <div class="create-card-item">
+                                <button 
+                                    @click="createTask"
+                                    class="create-card-btn"
+                                    type="button"
+                                    title="创建新任务"
+                                    aria-label="创建新任务">
+                                    <i class="fas fa-plus" aria-hidden="true"></i>
+                                    <span>创建任务</span>
+                                </button>
+                            </div>
+
+
 
                         </div>
                     </div>
@@ -104,19 +108,6 @@
                 
                 <!-- 任务视图内容区 -->
                 <div class="content-area">
-                    <!-- 与首页一致的置中创建按钮 -->
-                    <div class="create-card-section">
-                        <button 
-                            @click="createTask"
-                            class="create-card-btn"
-                            type="button"
-                            title="创建新任务"
-                            aria-label="创建新任务">
-                            <i class="fas fa-plus" aria-hidden="true"></i>
-                            <span>创建任务</span>
-                        </button>
-                    </div>
-
                     <!-- 任务列表视图 -->
                     <enhanced-task-list
                         v-if="currentView === 'list'"
@@ -128,42 +119,12 @@
                         @task-delete="handleTaskDelete"
                         @task-edit="handleTaskEdit"
                     ></enhanced-task-list>
-                    
-                    <!-- 看板视图 -->
-                    <kanban-board
-                        v-if="currentView === 'kanban'"
-                        :tasks="filteredTasks"
-                        @task-move="handleTaskMove"
-                        @task-create="handleTaskCreate"
-                    ></kanban-board>
-                    
                     <!-- 甘特图视图 -->
                     <enhanced-gantt-chart
                         v-if="currentView === 'gantt'"
                         :tasks="filteredTasks"
                         @task-update="handleTaskUpdate"
                     ></enhanced-gantt-chart>
-                    
-                    <!-- 周报视图 -->
-                    <weekly-report
-                        v-if="currentView === 'weekly'"
-                        :tasks="filteredTasks"
-                        :current-view="currentView"
-                        :get-task-time-data="getTaskTimeData"
-                    ></weekly-report>
-                    
-                    <!-- 日报视图 -->
-                    <daily-report
-                        v-if="currentView === 'daily'"
-                        :tasks="filteredTasks"
-                        :current-view="currentView"
-                        :get-task-time-data="getTaskTimeData"
-                    ></daily-report>
-                    <!-- 矩阵视图 -->
-                    <matrix-view
-                        v-if="currentView === 'matrix'"
-                        :tasks="filteredTasks"
-                    ></matrix-view>
                 </div>
                 
                 <!-- 任务编辑器 -->
@@ -211,16 +172,15 @@
     
     <!-- 引入新组件（优先兼容现有组件） -->
     <script src="/views/tasks/plugins/enhancedTaskList/index.js"></script>
-    <script src="/views/tasks/plugins/kanbanBoard/index.js"></script>
+
     <script src="/views/tasks/plugins/enhancedGanttChart/index.js"></script>
     <script src="/views/tasks/plugins/taskEditor/index.js"></script>
-    <script src="/views/tasks/plugins/matrixView/index.js"></script>
+
     
     <!-- 兼容现有组件 -->
     <script src="/views/tasks/plugins/taskList/index.js"></script>
     <script src="/views/tasks/plugins/ganttChart/index.js"></script>
-    <script src="/views/tasks/plugins/weeklyReport/index.js"></script>
-    <script src="/views/tasks/plugins/dailyReport/index.js"></script>
+
     
     <!-- 引入页面逻辑 -->
     <script src="/views/tasks/index.js"></script>
@@ -294,6 +254,7 @@
     </script>
 </body>
 </html> 
+
 
 
 

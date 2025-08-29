@@ -1537,7 +1537,7 @@ body {
 
 .content-area {
     flex: 1;
-    padding: var(--spacing-lg);
+    padding: 0 var(--spacing-lg);
     overflow: auto;
     background: var(--bg-secondary);
 }
@@ -4400,5 +4400,101 @@ matrix-view {
     min-height: fit-content;
     height: auto;
 }
+
+/* 任务卡片步骤文本区域自适应 */
+.task-item-enhanced .step-text {
+    min-height: fit-content;
+    height: auto;
+}
+
+/* ========== 创建任务按钮样式 - 与首页保持一致 ========== */
+.create-card-item {
+    margin-left: auto; /* 将按钮推到右侧 */
+    display: flex;
+    align-items: center;
+}
+
+.create-card-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+    margin: 20px 0;
+}
+
+.create-card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    white-space: nowrap;
+    height: 40px; /* 与工具栏高度保持一致 */
+    min-width: 100px;
+}
+
+.create-card-btn:hover {
+    background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(40, 167, 69, 0.4);
+}
+
+.create-card-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.create-card-btn i {
+    font-size: 16px;
+}
+
+.create-card-btn span {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .create-card-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+        height: 36px;
+        min-width: 90px;
+    }
+    
+    .create-card-btn span {
+        font-size: 13px;
+    }
+    
+
+}
+
+@media (max-width: 480px) {
+    .create-card-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        height: 32px;
+        min-width: 80px;
+    }
+    
+    .create-card-btn span {
+        font-size: 12px;
+    }
+    
+
+}
+
+
+
 
 

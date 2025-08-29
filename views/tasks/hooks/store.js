@@ -44,7 +44,7 @@ window.createStore = () => {
     // 搜索历史
     const searchHistory = vueRef([]);
 
-    // 当前视图模式：list、gantt、weekly、daily
+    // 当前视图模式：list、gantt
     const currentView = vueRef('list');
     // 日期范围
     const dateRange = vueRef({
@@ -59,6 +59,8 @@ window.createStore = () => {
         day: new Date().toISOString().split('T')[0]
     });
 
+
+
     /**
      * 生成唯一ID
      * @returns {string} 唯一ID
@@ -72,6 +74,12 @@ window.createStore = () => {
      * 支持多次调用，自动处理加载状态和错误
      */
     const loadTasksData = async () => {
+        // 防止重复调用
+        if (loading.value) {
+            console.log('[loadTasksData] 数据正在加载中，跳过重复调用');
+            return tasksData.value;
+        }
+        
         return window.safeExecuteAsync(async () => {
             loading.value = true;
             error.value = null;
@@ -287,10 +295,10 @@ window.createStore = () => {
 
     /**
      * 切换视图模式
-     * @param {string} view - 视图模式 ('list', 'gantt', 'weekly', 'daily')
+     * @param {string} view - 视图模式 ('list', 'gantt')
      */
     const setCurrentView = (view) => {
-        if (['list', 'gantt', 'weekly', 'daily'].includes(view)) {
+        if (['list', 'gantt'].includes(view)) {
             currentView.value = view;
             console.log(`[视图切换] 切换到${view}视图`);
         }
@@ -490,4 +498,5 @@ window.categorizeTask = function(task) {
 
 // 创建全局store实例
 window.store = window.createStore();
+
 

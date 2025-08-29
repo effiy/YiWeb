@@ -702,7 +702,7 @@
 .card-features {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: var(--spacing-sm);
+    gap: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
     justify-items: center;
     position: relative;
@@ -1078,7 +1078,7 @@
     
     .card-features {
         grid-template-columns: repeat(3, 1fr);
-        gap: var(--spacing-xs);
+        gap: var(--spacing-md);
     }
     
     .feature-tag {
@@ -1563,5 +1563,6 @@
         font-size: 11px;
     }
 }
+
 
 

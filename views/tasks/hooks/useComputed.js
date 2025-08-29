@@ -285,18 +285,6 @@ window.useComputed = (store) => {
                 name: '甘特图',
                 icon: 'fas fa-chart-bar',
                 description: '以时间线方式查看任务进度和依赖关系'
-            },
-            {
-                key: 'weekly',
-                name: '周报',
-                icon: 'fas fa-calendar-week',
-                description: '查看本周任务统计和完成情况'
-            },
-            {
-                key: 'daily',
-                name: '日报',
-                icon: 'fas fa-calendar-day',
-                description: '管理今日任务和时间安排'
             }
         ]),
 
@@ -313,6 +301,7 @@ window.useComputed = (store) => {
         timeFilter: computed(() => timeFilter.value)
     };
 }; 
+
 
 
 

@@ -3,7 +3,7 @@
  * 主应用入口文件
  * 
  * 功能特性：
- * - 多视图支持（列表、看板、甘特图、日历、表格、矩阵）
+ * - 多视图支持（列表、甘特图）
  * - 高级筛选和搜索
  * - 实时协作
  * - 专业项目管理工具
@@ -28,11 +28,7 @@ class TaskProApp {
             currentView: 'list',
             availableViews: [
                 { key: 'list', name: '列表', icon: 'fas fa-list', description: '以列表形式查看任务' },
-                { key: 'kanban', name: '看板', icon: 'fas fa-columns', description: '看板式项目管理' },
-                { key: 'gantt', name: '甘特图', icon: 'fas fa-chart-gantt', description: '时间线和依赖关系' },
-                { key: 'weekly', name: '周报', icon: 'fas fa-calendar-week', description: '周报视图管理' },
-                { key: 'daily', name: '日报', icon: 'fas fa-calendar-day', description: '日报视图管理' },
-                { key: 'matrix', name: '矩阵', icon: 'fas fa-th', description: '矩阵分析视图' }
+                { key: 'gantt', name: '甘特图', icon: 'fas fa-chart-gantt', description: '时间线和依赖关系' }
             ],
             
             // UI状态
@@ -261,27 +257,19 @@ class TaskProApp {
     
     // 等待关键组件加载
     async waitForComponents() {
-        const requiredComponents = ['WeeklyReport', 'DailyReport'];
-        const maxWaitTime = 5000; // 最大等待5秒
-        const startTime = Date.now();
-        
-        while (Date.now() - startTime < maxWaitTime) {
-            const missingComponents = requiredComponents.filter(name => !window[name]);
-            if (missingComponents.length === 0) {
-                return; // 所有组件已加载
-            }
-            
-            // 等待100ms后重试
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        // 超时警告
-        console.warn('[TaskPro] 部分组件加载超时，继续初始化');
+        // 不再需要等待周报和日报组件
+        return;
     }
     
     // 加载初始数据
     async loadInitialData() {
         try {
+            // 检查是否已经加载过数据，避免重复加载
+            if (this.dataLoaded && this.state.tasks.length > 0) {
+                console.log('[TaskPro] 数据已加载，跳过重复加载');
+                return;
+            }
+            
             this.state.loading = true;
             this.state.error = null;
             
@@ -333,6 +321,9 @@ class TaskProApp {
             
             // 初始化通知
             this.initNotifications();
+            
+            // 标记数据已加载
+            this.dataLoaded = true;
             
             console.log('[TaskPro] 初始数据加载完成，任务数量:', this.state.tasks.length);
             this.state.loading = false;
@@ -509,7 +500,11 @@ class TaskProApp {
                     // 组件将通过动态注册方式添加，避免时序问题
                 },
                 data() {
-                    return appState;
+                    return {
+                        ...appState,
+                        // 添加全部选择状态
+        
+                    };
                 },
                 mounted() {
                     // 组件挂载后，数据已经在TaskProApp中加载完成
@@ -518,17 +513,22 @@ class TaskProApp {
                     // 将Vue应用的状态引用保存到主应用
                     this.state = appState;
                     
-                    // 验证数据是否正确加载
+
+                    
+                    // 验证数据是否正确加载，只有在数据为空时才重新加载
                     if (!this.tasks || this.tasks.length === 0) {
                         console.warn('[TaskPro] 任务数据为空，尝试重新加载');
                         this.loadTasksData();
+                    } else {
+                        console.log('[TaskPro] 任务数据已存在，无需重新加载，数量:', this.tasks.length);
                     }
                     
                     // 验证编辑相关状态
                     console.log('[TaskPro] 编辑状态验证:', {
                         showTaskEditor: this.showTaskEditor,
                         editingTask: this.editingTask,
-                        isCreatingTask: this.isCreatingTask
+                        isCreatingTask: this.isCreatingTask,
+
                     });
                 },
                 computed: {
@@ -998,12 +998,7 @@ class TaskProApp {
                         console.log(`[TaskPro] 切换到视图: ${view}`);
                         this.currentView = view;
                         
-                        // 特殊处理周报和日报视图
-                        if (view === 'weekly' || view === 'daily') {
-                            if (!this.tasks || this.tasks.length === 0) {
-                                console.warn('[TaskPro] 周报/日报视图：任务数据为空');
-                            }
-                        }
+
                         
                         // 检查Vue组件是否正确注册
                         this.$nextTick(() => {
@@ -1031,11 +1026,7 @@ class TaskProApp {
                     getComponentNameByView(view) {
                         const viewComponentMap = {
                             'list': 'enhanced-task-list',
-                            'kanban': 'kanban-board',
-                            'gantt': 'enhanced-gantt-chart',
-                            'weekly': 'weekly-report',
-                            'daily': 'daily-report',
-                            'matrix': 'matrix-view'
+                            'gantt': 'enhanced-gantt-chart'
                         };
                         return viewComponentMap[view];
                     },
@@ -1044,11 +1035,7 @@ class TaskProApp {
                     getGlobalComponentName(view) {
                         const viewComponentMap = {
                             'list': 'EnhancedTaskList',
-                            'kanban': 'KanbanBoard',
-                            'gantt': 'EnhancedGanttChart',
-                            'weekly': 'WeeklyReport',
-                            'daily': 'DailyReport',
-                            'matrix': 'MatrixView'
+                            'gantt': 'EnhancedGanttChart'
                         };
                         return viewComponentMap[view];
                     },
@@ -1076,6 +1063,8 @@ class TaskProApp {
                     handleTaskClick(task) {
                         // 这里可以添加任务点击的逻辑
                     },
+
+
                     
                     // 更新任务（来自子组件的实时更新，如步骤 check）
                     handleTaskUpdate(updateData) {
@@ -1323,32 +1312,21 @@ class TaskProApp {
                         // 这里可以添加选择搜索项的逻辑
                     },
                     
-                    // 全屏切换
-                    toggleFullscreen() {
-                        if (!document.fullscreenElement) {
-                            document.documentElement.requestFullscreen().catch(err => {
-                                console.warn('全屏请求被拒绝:', err);
-                            });
-                        } else {
-                            document.exitFullscreen();
-                        }
-                    },
+
                     
                     // 返回首页
                     goToHome() {
                         window.location.href = '/';
-                    }
+                    },
+
+                    
                 }
             });
             
             // 等待组件加载完成后注册
             const components = [
                 'EnhancedTaskList',
-                'KanbanBoard',
                 'EnhancedGanttChart',
-                'WeeklyReport',
-                'DailyReport',
-                'MatrixView',
                 'TaskEditor'
             ];
             
@@ -1366,7 +1344,7 @@ class TaskProApp {
                 
                 console.log(`[TaskPro] 开始组件注册 (第${retryCount + 1}次尝试)`);
                 console.log('[TaskPro] 当前全局组件状态:', Object.keys(window).filter(key => 
-                    ['EnhancedTaskList', 'KanbanBoard', 'EnhancedGanttChart', 'WeeklyReport', 'DailyReport', 'MatrixView', 'TaskEditor'].includes(key)
+                    ['EnhancedTaskList', 'EnhancedGanttChart', 'TaskEditor'].includes(key)
                 ));
                 
                 components.forEach(componentName => {
@@ -1731,11 +1709,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 页面已完全加载，检查组件
                 const requiredComponents = [
                     'EnhancedTaskList',
-                    'KanbanBoard', 
                     'EnhancedGanttChart',
-                    'WeeklyReport',
-                    'DailyReport',
-                    'MatrixView',
                     'TaskEditor'
                 ];
                 
@@ -1753,11 +1727,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.addEventListener('load', () => {
                     const requiredComponents = [
                         'EnhancedTaskList',
-                        'KanbanBoard', 
                         'EnhancedGanttChart',
-                        'WeeklyReport',
-                        'DailyReport',
-                        'MatrixView',
                         'TaskEditor'
                     ];
                     
@@ -1802,6 +1772,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
+
 
 
 
