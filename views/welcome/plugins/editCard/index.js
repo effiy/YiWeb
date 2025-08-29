@@ -296,7 +296,11 @@ export async function openEditCardModal(card, store) {
       }
     };
 
+<<<<<<< HEAD
     let closeModal = () => {
+=======
+    const closeModal = () => {
+>>>>>>> f6edd1b0fe06f8905bf8836ed98527c1edb901cd
       try {
         // 恢复滚动状态
         unlockScroll();
@@ -1666,7 +1670,10 @@ function stopScrollMonitoring() {
 
 // 启动全局滚动监控
 startScrollMonitoring();
+<<<<<<< HEAD
 
+=======
+>>>>>>> f6edd1b0fe06f8905bf8836ed98527c1edb901cd
 
 
 
