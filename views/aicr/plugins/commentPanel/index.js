@@ -1476,7 +1476,10 @@ const createCommentPanel = async () => {
                               fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
                               projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null)),
                               versionId: (window.aicrStore && window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : (document.getElementById('versionSelect') ? document.getElementById('versionSelect').value : null)),
-                              author: commenter.name || commenter.author || 'AI评论者'
+                              author: commenter.name || commenter.author || 'AI评论者',
+                              status: "pending",
+                              createdTime: new Date().toISOString(),
+                              updatedTime: new Date().toISOString()
                           };
                           // 合并为字符串对象
                           const fromUser = JSON.stringify(fromUserObj);
@@ -1488,7 +1491,7 @@ const createCommentPanel = async () => {
                           if (Array.isArray(response.data) && response.data.length > 0) {
                             await Promise.all(
                               response.data.map(async item => {
-                                await postData(`${window.API_URL}/mongodb/?cname=commenters`, { ...item });
+                                await postData(`${window.API_URL}/mongodb/?cname=comments`, { ...item });
                               })
                             );
                           }
