@@ -12,11 +12,7 @@
 
     <link rel="stylesheet" href="/views/tasks/plugins/enhancedGanttChart/index.css">
     <link rel="stylesheet" href="/views/tasks/plugins/calendarView/index.css">
-<<<<<<< HEAD
 
-=======
-    <link rel="stylesheet" href="/views/tasks/plugins/matrixView/index.css">
->>>>>>> f6edd1b0fe06f8905bf8836ed98527c1edb901cd
     <link rel="stylesheet" href="/views/tasks/plugins/enhancedTaskList/index.css">
 
     <!-- 引入字体图标 -->
@@ -77,24 +73,6 @@
                         </div>
                         
                         <div class="toolbar-right">
-<<<<<<< HEAD
-=======
-                            <!-- 全部/恢复按钮 - 与首页保持一致 -->
-                            <div class="all-restore-section">
-                                <button 
-                                    type="button"
-                                    class="filter-btn all-select"
-                                    @click="handleAllSelect"
-                                    :class="{ 'active': !isAllSelected, 'reverse': isAllSelected }"
-                                    :disabled="loading"
-                                    :title="isAllSelected ? '恢复当前筛选状态' : '显示全部任务'"
-                                    :aria-label="isAllSelected ? '恢复当前筛选状态' : '显示全部任务'">
-                                    <i :class="isAllSelected ? 'fas fa-undo' : 'fas fa-globe'" aria-hidden="true"></i>
-                                    <span>{{ isAllSelected ? '恢复' : '全部' }}</span>
-                                </button>
-                            </div>
-                            
->>>>>>> f6edd1b0fe06f8905bf8836ed98527c1edb901cd
                             <!-- 视图切换 - 重构为与首页cascader一致的交互 -->
                             <div class="view-switcher">
                                 <div class="view-cascader">
@@ -121,11 +99,8 @@
                                     <span>创建任务</span>
                                 </button>
                             </div>
-<<<<<<< HEAD
 
 
-=======
->>>>>>> f6edd1b0fe06f8905bf8836ed98527c1edb901cd
 
                         </div>
                     </div>
@@ -133,10 +108,6 @@
                 
                 <!-- 任务视图内容区 -->
                 <div class="content-area">
-<<<<<<< HEAD
-=======
-
->>>>>>> f6edd1b0fe06f8905bf8836ed98527c1edb901cd
                     <!-- 任务列表视图 -->
                     <enhanced-task-list
                         v-if="currentView === 'list'"

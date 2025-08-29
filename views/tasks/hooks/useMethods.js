@@ -677,57 +677,7 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         return viewMap[store.currentView] || '未知视图';
     };
 
-<<<<<<< HEAD
 
-=======
-    // 处理全部选择/恢复
-    const handleAllSelect = async () => {
-        try {
-            if (store.isAllSelected.value) {
-                // 反选：恢复默认筛选状态
-                console.log('[任务筛选] 恢复默认筛选状态');
-                
-                // 恢复默认的搜索和筛选状态
-                store.searchQuery.value = '';
-                store.selectedCategories.value.clear();
-                
-                // 更新全部选择状态
-                store.isAllSelected.value = false;
-                
-                // 重新加载任务数据
-                await loadTasksData();
-                
-                // 显示成功消息
-                if (window.showSuccess) {
-                    window.showSuccess('已恢复默认筛选状态');
-                }
-            } else {
-                // 选择全部：显示全部任务
-                console.log('[任务筛选] 显示全部任务');
-                
-                // 清空所有筛选条件
-                store.searchQuery.value = '';
-                store.selectedCategories.value.clear();
-                
-                // 更新全部选择状态
-                store.isAllSelected.value = true;
-                
-                // 重新加载任务数据
-                await loadTasksData();
-                
-                // 显示成功消息
-                if (window.showSuccess) {
-                    window.showSuccess('已显示全部任务');
-                }
-            }
-        } catch (error) {
-            console.error('[任务筛选] 全部选择处理失败:', error);
-            if (window.showError) {
-                window.showError('操作失败，请稍后重试');
-            }
-        }
-    };
->>>>>>> f6edd1b0fe06f8905bf8836ed98527c1edb901cd
 
     /**
      * 打开设置面板
@@ -980,11 +930,7 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         getCurrentViewName,
 
         // 全部选择/恢复方法
-<<<<<<< HEAD
 
-=======
-        handleAllSelect,
->>>>>>> f6edd1b0fe06f8905bf8836ed98527c1edb901cd
 
         // 设置相关方法
         openSettings,
