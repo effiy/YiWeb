@@ -23,8 +23,8 @@
 /* 编辑态下的代码区域尺寸与滚动优化 */
 .code-content.editing {
     /* 占满视口减去头部和外边距高度，数值可根据实际布局微调 */
-    max-height: calc(100vh - 180px);
-    min-height: calc(100vh - 260px);
+    max-height: 100vh;
+    min-height: calc(100vh - 80px);
     overflow: hidden; /* 由内部容器控制滚动 */
     display: flex;
     flex-direction: column;
@@ -41,7 +41,7 @@
 .code-content.editing .edit-textarea {
     flex: 1 1 auto;
     min-height: 0;
-    height: 100%;
+    min-height: calc(100vh - 160px);
     overflow: auto;
 }
 
@@ -581,19 +581,23 @@
     left: 50%;
     transform: translate(-50%, -50%);
     background: linear-gradient(145deg, 
-        rgba(255, 255, 255, 0.95) 0%, 
-        rgba(255, 255, 255, 0.98) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.8);
+        rgba(15, 23, 42, 0.95) 0%, 
+        rgba(30, 41, 59, 0.92) 25%,
+        rgba(51, 65, 85, 0.89) 50%,
+        rgba(71, 85, 105, 0.86) 75%,
+        rgba(100, 116, 139, 0.83) 100%);
+    border: 1px solid rgba(79, 70, 229, 0.2);
     border-radius: 20px;
     box-shadow: 
-        0 32px 64px rgba(0, 0, 0, 0.12),
-        0 16px 32px rgba(0, 0, 0, 0.08),
-        0 8px 16px rgba(0, 0, 0, 0.04),
-        0 0 0 1px rgba(59, 130, 246, 0.1);
+        0 32px 64px rgba(0, 0, 0, 0.4),
+        0 16px 32px rgba(0, 0, 0, 0.3),
+        0 8px 16px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(79, 70, 229, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
     max-width: min(920px, 92vw);
-    min-width: 420px;
+    min-width: 80vw;
     max-height: min(720px, 85vh);
-    min-height: 400px;
+    min-height: 80vh;
     z-index: 999999;
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -612,9 +616,18 @@
 @media (prefers-color-scheme: dark) {
     .comment-detail-popup.modern-dialog {
         background: linear-gradient(145deg, 
-            rgba(17, 24, 39, 0.95) 0%, 
-            rgba(17, 24, 39, 0.98) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+            rgba(15, 23, 42, 0.98) 0%, 
+            rgba(30, 41, 59, 0.95) 25%,
+            rgba(51, 65, 85, 0.92) 50%,
+            rgba(71, 85, 105, 0.89) 75%,
+            rgba(100, 116, 139, 0.86) 100%);
+        border: 1px solid rgba(79, 70, 229, 0.25);
+        box-shadow: 
+            0 32px 64px rgba(0, 0, 0, 0.5),
+            0 16px 32px rgba(0, 0, 0, 0.4),
+            0 8px 16px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(79, 70, 229, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 }
 
@@ -638,12 +651,19 @@
     justify-content: space-between;
     padding: 24px 28px;
     background: linear-gradient(135deg, 
-        rgba(59, 130, 246, 0.05) 0%, 
-        rgba(147, 197, 253, 0.08) 100%);
-    border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+        rgba(79, 70, 229, 0.08) 0%, 
+        rgba(6, 182, 212, 0.06) 25%,
+        rgba(147, 197, 253, 0.04) 50%,
+        rgba(255, 255, 255, 0.02) 100%);
+    border-bottom: 1px solid rgba(79, 70, 229, 0.15);
     border-radius: 20px 20px 0 0;
     position: relative;
     flex-shrink: 0;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 
+        0 4px 20px rgba(79, 70, 229, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .comment-detail-header.modern-header::before {
@@ -655,7 +675,9 @@
     height: 1px;
     background: linear-gradient(90deg, 
         transparent 0%, 
-        rgba(59, 130, 246, 0.3) 50%, 
+        rgba(79, 70, 229, 0.4) 25%,
+        rgba(6, 182, 212, 0.5) 50%, 
+        rgba(79, 70, 229, 0.4) 75%,
         transparent 100%);
 }
 
@@ -771,13 +793,6 @@
     font-weight: 500;
 }
 
-/* 头部状态区域 */
-.header-status {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
 .status-badge.modern {
     display: flex;
     align-items: center;
@@ -789,6 +804,103 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 现代化状态徽章的特殊状态样式 */
+.status-badge.modern.status-pending {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    box-shadow: 
+        0 2px 8px rgba(245, 158, 11, 0.3),
+        0 0 0 1px rgba(245, 158, 11, 0.2);
+    animation: statusPulse 2s ease-in-out infinite;
+    position: relative;
+}
+
+.status-badge.modern.status-pending::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #f59e0b, #d97706, #fbbf24);
+    border-radius: 22px;
+    z-index: -1;
+    opacity: 0.3;
+    animation: statusGlow 3s ease-in-out infinite;
+}
+
+.status-badge.modern.status-resolved {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    box-shadow: 
+        0 2px 8px rgba(16, 185, 129, 0.3),
+        0 0 0 1px rgba(16, 185, 129, 0.2);
+}
+
+.status-badge.modern.status-reopened {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    box-shadow: 
+        0 2px 8px rgba(239, 68, 68, 0.3),
+        0 0 0 1px rgba(239, 68, 68, 0.2);
+}
+
+/* 状态徽章悬停效果 */
+.status-badge.modern:hover {
+    transform: translateY(-1px);
+    box-shadow: 
+        0 4px 16px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.status-badge.modern.status-pending:hover {
+    box-shadow: 
+        0 4px 16px rgba(245, 158, 11, 0.4),
+        0 0 0 1px rgba(245, 158, 11, 0.3);
+}
+
+.status-badge.modern.status-resolved:hover {
+    box-shadow: 
+        0 4px 16px rgba(16, 185, 129, 0.4),
+        0 0 0 1px rgba(16, 185, 129, 0.3);
+}
+
+.status-badge.modern.status-reopened:hover {
+    box-shadow: 
+        0 4px 16px rgba(239, 68, 68, 0.4),
+        0 0 0 1px rgba(239, 68, 68, 0.3);
+}
+
+/* 状态徽章脉冲动画 */
+@keyframes statusPulse {
+    0%, 100% { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
+    50% { 
+        transform: scale(1.02); 
+        opacity: 0.9; 
+    }
+}
+
+/* 状态徽章光晕动画 */
+@keyframes statusGlow {
+    0%, 100% { 
+        opacity: 0.3; 
+        transform: scale(1); 
+    }
+    50% { 
+        opacity: 0.6; 
+        transform: scale(1.05); 
+    }
 }
 
 /* 现代化关闭按钮 */
@@ -1043,12 +1155,27 @@
         max-height: 90vh;
         border-radius: 16px;
         margin: 20px;
+        background: linear-gradient(145deg, 
+            rgba(15, 23, 42, 0.92) 0%, 
+            rgba(30, 41, 59, 0.89) 25%,
+            rgba(51, 65, 85, 0.86) 50%,
+            rgba(71, 85, 105, 0.83) 75%,
+            rgba(100, 116, 139, 0.8) 100%);
+        backdrop-filter: blur(16px) saturate(160%);
+        -webkit-backdrop-filter: blur(16px) saturate(160%);
     }
     
     .comment-detail-header.modern-header {
         flex-direction: column;
         gap: 16px;
         padding: 20px;
+        background: linear-gradient(135deg, 
+            rgba(79, 70, 229, 0.1) 0%, 
+            rgba(6, 182, 212, 0.08) 25%,
+            rgba(147, 197, 253, 0.06) 50%,
+            rgba(255, 255, 255, 0.03) 100%);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
     }
     
     .header-main {
@@ -1074,11 +1201,6 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
-    }
-    
-    .header-status {
-        width: 100%;
-        justify-content: center;
     }
     
     .close-button.modern {
@@ -1119,10 +1241,25 @@
         max-height: 95vh;
         border-radius: 12px;
         margin: 10px;
+        background: linear-gradient(145deg, 
+            rgba(15, 23, 42, 0.89) 0%, 
+            rgba(30, 41, 59, 0.86) 25%,
+            rgba(51, 65, 85, 0.83) 50%,
+            rgba(71, 85, 105, 0.8) 75%,
+            rgba(100, 116, 139, 0.77) 100%);
+        backdrop-filter: blur(12px) saturate(140%);
+        -webkit-backdrop-filter: blur(12px) saturate(140%);
     }
     
     .comment-detail-header.modern-header {
         padding: 16px;
+        background: linear-gradient(135deg, 
+            rgba(79, 70, 229, 0.12) 0%, 
+            rgba(6, 182, 212, 0.1) 25%,
+            rgba(147, 197, 253, 0.08) 50%,
+            rgba(255, 255, 255, 0.04) 100%);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
     }
     
     .comment-author-avatar.premium {
@@ -1151,6 +1288,8 @@
     .status-badge.modern {
         padding: 6px 12px;
         font-size: 11px;
+        margin-left: auto;
+        order: 2;
     }
     
     .close-button.modern {
@@ -1205,10 +1344,25 @@
     .comment-detail-popup.modern-dialog {
         margin: 5px;
         border-radius: 10px;
+        background: linear-gradient(145deg, 
+            rgba(15, 23, 42, 0.86) 0%, 
+            rgba(30, 41, 59, 0.83) 25%,
+            rgba(51, 65, 85, 0.8) 50%,
+            rgba(71, 85, 105, 0.77) 75%,
+            rgba(100, 116, 139, 0.74) 100%);
+        backdrop-filter: blur(8px) saturate(120%);
+        -webkit-backdrop-filter: blur(8px) saturate(120%);
     }
     
     .comment-detail-header.modern-header {
         padding: 12px;
+        background: linear-gradient(135deg, 
+            rgba(79, 70, 229, 0.15) 0%, 
+            rgba(6, 182, 212, 0.12) 25%,
+            rgba(147, 197, 253, 0.1) 50%,
+            rgba(255, 255, 255, 0.05) 100%);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
     }
     
     .comment-view-content.modern-content {
@@ -1217,6 +1371,13 @@
     
     .comment-content.enhanced-content {
         padding: 12px;
+    }
+    
+    .status-badge.modern {
+        padding: 4px 10px;
+        font-size: 10px;
+        margin-left: auto;
+        order: 2;
     }
 }
 
@@ -1241,9 +1402,11 @@
     z-index: 999999;
     /* 添加额外的阴影效果 */
     box-shadow: 
-        0 25px 60px rgba(0, 0, 0, 0.2),
-        0 12px 24px rgba(0, 0, 0, 0.1),
-        0 0 0 2px rgba(79, 70, 229, 0.3);
+        0 25px 60px rgba(0, 0, 0, 0.5),
+        0 12px 24px rgba(0, 0, 0, 0.4),
+        0 8px 16px rgba(0, 0, 0, 0.3),
+        0 0 0 2px rgba(79, 70, 229, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 @keyframes commentPopupFadeIn {
@@ -4158,4 +4321,5 @@
         font-size: 13px;
     }
 }
+
 

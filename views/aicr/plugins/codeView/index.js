@@ -1,6 +1,7 @@
 // 代码查看组件 - 轻量实现，满足组件注册与基本展示需求
 import { safeExecute } from '/utils/error.js';
 import { loadCSSFiles } from '/utils/baseView.js';
+import { showSuccess, showError } from '/utils/message.js';
 
 // 自动加载相关的CSS文件（如果存在）
 loadCSSFiles([
@@ -67,7 +68,13 @@ const createCodeView = async () => {
                 editingSaving: false,
                 
                 // 界面控制
-                showAdvancedOptions: false
+                showAdvancedOptions: false,
+
+                // 文件内容编辑
+                isEditingFile: false,
+                editingFileContent: '',
+                editSaving: false,
+                saveError: ''
             };
         },
         watch: {
@@ -241,6 +248,42 @@ const createCodeView = async () => {
             }
         },
         methods: {
+            async copyEntireFile() {
+                try {
+                    if (!this.file) return;
+                    const content = (typeof this.file.content === 'string') ? this.file.content : '';
+                    if (!content) {
+                        showError('暂无可复制的内容');
+                        return;
+                    }
+                    // 优先使用 Clipboard API
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(content);
+                        showSuccess('已复制整个文件内容');
+                        return;
+                    }
+                    // 回退方案：使用隐藏 textarea
+                    const ta = document.createElement('textarea');
+                    ta.value = content;
+                    ta.setAttribute('readonly', '');
+                    ta.style.position = 'absolute';
+                    ta.style.left = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try {
+                        const ok = document.execCommand && document.execCommand('copy');
+                        if (ok) {
+                            showSuccess('已复制整个文件内容');
+                        } else {
+                            showError('复制失败，请手动选择复制');
+                        }
+                    } finally {
+                        document.body.removeChild(ta);
+                    }
+                } catch (e) {
+                    showError(e?.message || '复制失败');
+                }
+            },
             escapeHtml(text) {
                 try {
                     return String(text)
@@ -248,6 +291,149 @@ const createCodeView = async () => {
                         .replace(/</g, '&lt;')
                         .replace(/>/g, '&gt;');
                 } catch (_) { return text; }
+            },
+            // ========== 文件编辑相关 ==========
+            startEditFile() {
+                try {
+                    if (!this.file) return;
+                    const content = (typeof this.file.content === 'string') ? this.file.content : '';
+                    this.editingFileContent = content;
+                    this.isEditingFile = true;
+                    this.$nextTick(() => {
+                        const ta = this.$el && this.$el.querySelector('.edit-textarea');
+                        if (ta) ta.focus();
+                    });
+                } catch (_) {}
+            },
+            cancelEditFile() {
+                this.isEditingFile = false;
+                this.editingFileContent = '';
+                this.saveError = '';
+            },
+            async saveEditedFile() {
+                if (!this.file) return;
+                const content = String(this.editingFileContent ?? '');
+                if (content === (this.file.content || '')) {
+                    this.isEditingFile = false;
+                    return;
+                }
+                this.editSaving = true;
+                this.saveError = '';
+                try {
+                    // 获取项目/版本
+                    const projectId = (window.aicrStore && window.aicrStore.selectedProject && window.aicrStore.selectedProject.value) || (document.getElementById('projectSelect')?.value) || '';
+                    const versionId = (window.aicrStore && window.aicrStore.selectedVersion && window.aicrStore.selectedVersion.value) || (document.getElementById('versionSelect')?.value) || '';
+                    const path = this.file.path || this.file.id || this.file.fileId || this.file.name;
+                    if (!projectId || !versionId || !path) {
+                        this.saveError = '缺少项目/版本/文件标识，无法保存';
+                        return;
+                    }
+                    const { updateData, postData, getData } = await import('/apis/modules/crud.js');
+                    const url = `${window.API_URL}/mongodb/?cname=projectVersionFiles`;
+                    // 优先使用 key 更新
+                    const key = this.file.key || this.file._id || this.file.idKey;
+                    if (key) {
+                        await updateData(url, {
+                            key,
+                            projectId,
+                            versionId,
+                            fileId: path,
+                            id: path,
+                            path,
+                            name: (this.file.name || (typeof path === 'string' ? path.split('/').pop() : '')),
+                            content
+                        });
+                    } else {
+                        // 无 key：尝试查一次获取 key；失败则回退 POST 覆盖
+                        try {
+                            const queryUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}&fileId=${encodeURIComponent(path)}`;
+                            const resp = await getData(queryUrl, {}, false);
+                            const list = resp?.data?.list || [];
+                            const found = list[0];
+                            const foundKey = found?.key || found?._id || null;
+                            if (foundKey) {
+                                await updateData(url, {
+                                    key: foundKey,
+                                    projectId,
+                                    versionId,
+                                    fileId: path,
+                                    id: path,
+                                    path,
+                                    name: (this.file.name || (typeof path === 'string' ? path.split('/').pop() : '')),
+                                    content
+                                });
+                                this.file.key = foundKey;
+                            } else {
+                                await postData(url, {
+                                    projectId,
+                                    versionId,
+                                    fileId: path,
+                                    id: path,
+                                    path,
+                                    name: (this.file.name || (typeof path === 'string' ? path.split('/').pop() : '')),
+                                    content
+                                });
+                            }
+                        } catch (_) {
+                            await postData(url, {
+                                projectId,
+                                versionId,
+                                fileId: path,
+                                id: path,
+                                path,
+                                name: (this.file.name || (typeof path === 'string' ? path.split('/').pop() : '')),
+                                content
+                            });
+                        }
+                    }
+
+                    // 更新本地 file 对象与 store.files
+                    this.file.content = content;
+                    try {
+                        const store = window.aicrStore;
+                        if (store && Array.isArray(store.files?.value)) {
+                            const norm = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.+\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                            const target = norm(path);
+                            const idx = store.files.value.findIndex(f => {
+                                const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
+                                const candidates = [f.fileId, f.id, f.path, f.name, d.fileId, d.id, d.path, d.name].filter(Boolean).map(norm);
+                                return candidates.some(c => c === target || c.endsWith('/' + target) || target.endsWith('/' + c));
+                            });
+                            if (idx >= 0) {
+                                const prev = store.files.value[idx];
+                                store.files.value[idx] = { ...prev, content };
+                            }
+                        }
+                    } catch (_) {}
+
+                    this.isEditingFile = false;
+                    this.editingFileContent = '';
+                    this.saveError = '';
+                } catch (e) {
+                    this.saveError = e?.message || '保存失败';
+                } finally {
+                    this.editSaving = false;
+                }
+            },
+            onEditKeydown(e) {
+                try {
+                    const textarea = e.target && e.target.classList && e.target.classList.contains('edit-textarea') ? e.target : null;
+                    if (textarea && e.key === 'Tab') {
+                        e.preventDefault();
+                        this.handleCodeIndentation(textarea, e.shiftKey === true);
+                        return;
+                    }
+                    // 保存快捷键
+                    if ((e.metaKey || e.ctrlKey) && (e.key === 's' || e.key === 'S')) {
+                        e.preventDefault();
+                        if (!this.editSaving) this.saveEditedFile();
+                        return;
+                    }
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        this.cancelEditFile();
+                    }
+                } catch (_) {}
             },
             // 轻量Markdown渲染（与评论面板一致的简化版）
             renderMarkdown(text) {
@@ -363,12 +549,12 @@ const createCodeView = async () => {
                             
                             console.log('[CodeView] 成功滚动到位置:', { startLine, comment: comment?.key });
                             
-                            // 如果有评论信息，延迟后自动打开评论详情
-                            if (comment && comment.key) {
-                                setTimeout(() => {
-                                    this.autoOpenCommentDetail(comment);
-                                }, 1000); // 等待滚动动画完成
-                            }
+                            // 注释掉自动打开评论详情的逻辑，满足用户需求：点击引用代码时不需要打开评论详情弹框
+                            // if (comment && comment.key) {
+                            //     setTimeout(() => {
+                            //         this.autoOpenCommentDetail(comment);
+                            //     }, 1000); // 等待滚动动画完成
+                            // }
                             
                             return true; // 成功
                         } else {
@@ -784,7 +970,13 @@ const createCodeView = async () => {
                     this.openManualImprovementModal();
                 } else {
                     console.log('[CodeView] 已选择评论者，聚焦评论面板');
-                    window.dispatchEvent(new CustomEvent('focusCommentPanel'));
+                    // 传递划词数据到评论面板
+                    window.dispatchEvent(new CustomEvent('focusCommentPanel', {
+                        detail: {
+                            text: this.lastSelectionText || '',
+                            rangeInfo: this.lastSelectionRange || null
+                        }
+                    }));
                 }
             },
             openManualImprovementModal() {
@@ -1930,14 +2122,36 @@ const createCodeView = async () => {
                     </div>
                     <div class="error-message">{{ error }}</div>
                 </div>
-                <div v-else-if="file" class="code-content">
+                <div v-else-if="file" class="code-content" :class="{ editing: isEditingFile }">
                     <div class="code-header">
                         <div class="file-name" :title="file.path || file.name">
                             <i class="fas fa-file-code"></i>
                             {{ file.path || file.name }}
                         </div>
+                        <div class="code-actions">
+                            <button v-if="!isEditingFile" class="action-button" @click="copyEntireFile" :disabled="!file">
+                                <i class="fas fa-copy"></i><span>复制</span>
+                            </button>
+                            <button v-if="!isEditingFile" class="action-button edit-button" @click="startEditFile" :disabled="!file">
+                                <i class="fas fa-pen"></i><span>编辑</span>
+                            </button>
+                            <template v-else>
+                                <button class="action-button save-button" :disabled="editSaving" @click="saveEditedFile">
+                                    <i class="fas" :class="editSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i><span>{{ editSaving ? '保存中' : '保存' }}</span>
+                                </button>
+                                <button class="action-button cancel-button" :disabled="editSaving" @click="cancelEditFile">
+                                    <i class="fas fa-times"></i><span>取消</span>
+                                </button>
+                            </template>
+                        </div>
                     </div>
-                    <pre class="code-block" :class="'language-' + languageType">
+                    <div v-if="isEditingFile" class="edit-container">
+                        <textarea class="edit-textarea" v-model="editingFileContent" @keydown="onEditKeydown" spellcheck="false"></textarea>
+                        <div class="save-error" v-if="saveError">
+                            <i class="fas fa-exclamation-circle"></i> {{ saveError }}
+                        </div>
+                    </div>
+                    <pre v-else class="code-block" :class="'language-' + languageType">
                         <code 
                             v-for="(line, index) in codeLines" 
                             :key="index + 1"
@@ -2083,24 +2297,6 @@ const createCodeView = async () => {
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                
-                                <!-- 状态指示器移到头部 -->
-                                <div class="header-status">
-                                    <span class="status-badge modern" :class="'status-' + currentCommentDetail.status">
-                                        <i class="fas" :class="{
-                                            'fa-clock': currentCommentDetail.status === 'pending',
-                                            'fa-check-circle': currentCommentDetail.status === 'resolved',
-                                            'fa-lock': currentCommentDetail.status === 'closed',
-                                            'fa-times-circle': currentCommentDetail.status === 'wontfix'
-                                        }"></i>
-                                        {{ {
-                                            'pending': '待处理',
-                                            'resolved': '已解决',
-                                            'closed': '已关闭',
-                                            'wontfix': '不修复'
-                                        }[currentCommentDetail.status] || '未知状态' }}
-                                    </span>
                                 </div>
                             </div>
                             
@@ -2369,15 +2565,6 @@ const createCodeView = async () => {
                                     <!-- 主要操作组 -->
                                     <div class="action-group primary">
                                         <button 
-                                            @click="startEditCommentDetail(currentCommentDetail)"
-                                            class="action-button edit-button primary"
-                                            title="编辑评论内容"
-                                        >
-                                            <i class="fas fa-edit"></i>
-                                            <span>编辑评论</span>
-                                        </button>
-                                        
-                                        <button 
                                             v-if="currentCommentDetail.status === 'pending'"
                                             @click="resolveCommentDetail(currentCommentDetail.key)"
                                             class="action-button resolve-button success"
@@ -2385,6 +2572,15 @@ const createCodeView = async () => {
                                         >
                                             <i class="fas fa-check-circle"></i>
                                             <span>标记解决</span>
+                                        </button>
+
+                                        <button 
+                                            @click="startEditCommentDetail(currentCommentDetail)"
+                                            class="action-button edit-button primary"
+                                            title="编辑评论内容"
+                                        >
+                                            <i class="fas fa-edit"></i>
+                                            <span>编辑评论</span>
                                         </button>
                                         
                                         <button 
@@ -2511,5 +2707,6 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 

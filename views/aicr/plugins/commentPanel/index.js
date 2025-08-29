@@ -4,6 +4,7 @@
 import { safeExecute, createError, ErrorTypes } from '/utils/error.js';
 import { loadCSSFiles } from '/utils/baseView.js';
 import { getData } from '/apis/index.js';
+const { postData } = await import('/apis/modules/crud.js');
 
 // 自动加载相关的CSS文件
 loadCSSFiles([
@@ -1157,8 +1158,8 @@ const createCommentPanel = async () => {
                     key: newId,
                     name: '',
                     avatar: null,
-                    forSystem: '',
-                    model: 'gpt-4',
+                    forSystem: 'qwq',
+                    model: '',
                     customModel: '',
                     temperature: 0.7,
                     maxTokens: 2000,
@@ -1438,6 +1439,10 @@ const createCommentPanel = async () => {
             window.addEventListener('focusCommentPanel', (event) => {
                 console.log('[CommentPanel] 收到focusCommentPanel事件');
                 
+                // 获取划词数据
+                const { text, rangeInfo } = event.detail || {};
+                console.log('[CommentPanel] 收到划词数据:', { text, rangeInfo });
+                
                 // 确保评论面板展开
                 if (this.collapsed) {
                     this.$emit('toggle-collapse');
@@ -1457,12 +1462,37 @@ const createCommentPanel = async () => {
                             avatarsContainer.style.border = '';
                         }, 3000);
                     }
-                    
                     // 如果没有评论者，自动打开评论者编辑器
                     if (this.commenters.length === 0) {
                         setTimeout(() => {
                             this.openCommenterEditor();
                         }, 500);
+                    } else {
+                        // 可以在此处触发AI生成评论内容的流程
+                        this.commenters.forEach(async commenter => {
+                          const fromUserObj = {
+                              text,
+                              rangeInfo,
+                              fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
+                              projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null)),
+                              versionId: (window.aicrStore && window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : (document.getElementById('versionSelect') ? document.getElementById('versionSelect').value : null)),
+                              author: commenter.name || commenter.author || 'AI评论者'
+                          };
+                          // 合并为字符串对象
+                          const fromUser = JSON.stringify(fromUserObj);
+                          const response = await postData(`${window.API_URL}/prompt`, {
+                              fromSystem: commenter.forSystem,
+                              fromUser
+                          });
+                          // 等待所有 postData 完成后再跳转页面
+                          if (Array.isArray(response.data) && response.data.length > 0) {
+                            await Promise.all(
+                              response.data.map(async item => {
+                                await postData(`${window.API_URL}/mongodb/?cname=commenters`, { ...item });
+                              })
+                            );
+                          }
+                        });
                     }
                 }, 100);
             });
@@ -1540,6 +1570,7 @@ const createCommentPanel = async () => {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
+
 
 
 
