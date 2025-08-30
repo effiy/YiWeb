@@ -412,6 +412,12 @@ const { computed } = Vue;
                             store.setSelectedFileId(null);
                             logInfo('[代码审查页面] 已取消文件选中，之前文件ID:', previousFileId);
                             
+                            // 发送清除高亮事件，通知代码视图组件清除高亮
+                            setTimeout(() => {
+                                logInfo('[代码审查页面] 发送清除高亮事件');
+                                window.dispatchEvent(new CustomEvent('clearCodeHighlight'));
+                            }, 50);
+                            
                             // 触发评论面板刷新事件，恢复到显示所有评论的状态
                             setTimeout(() => {
                                 logInfo('[代码审查页面] 触发评论面板刷新事件，恢复到显示所有评论');

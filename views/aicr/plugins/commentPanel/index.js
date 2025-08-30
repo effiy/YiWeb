@@ -166,6 +166,7 @@ const createCommentPanel = async () => {
                 commentersError: '',
                 commentsLoading: false,
                 commentsError: '',
+                loading: false,
                 mongoComments: [],
                 _lastProjectVersionKey: null,
                 _lastFileId: null,
@@ -346,6 +347,7 @@ const createCommentPanel = async () => {
                     
                     this._isLoadingComments = true;
                     this.commentsLoading = true;
+                    this.loading = true;
                     this.commentsError = '';
 
                     try {
@@ -375,6 +377,7 @@ const createCommentPanel = async () => {
                         console.error('[CommentPanel] 评论加载失败:', err);
                     } finally {
                         this.commentsLoading = false;
+                        this.loading = false;
                         this._isLoadingComments = false;
                     }
                 }, 'mongo评论数据加载');
@@ -391,6 +394,7 @@ const createCommentPanel = async () => {
                     
                     this._isLoadingCommenters = true;
                     this.commentersLoading = true;
+                    this.loading = true;
                     this.commentersError = '';
 
                     try {
@@ -472,6 +476,7 @@ const createCommentPanel = async () => {
                         this.selectedCommenterIds = [];
                     } finally {
                         this.commentersLoading = false;
+                        this.loading = false;
                         this._isLoadingCommenters = false;
                     }
                 }, '评论者数据加载');
@@ -1468,33 +1473,45 @@ const createCommentPanel = async () => {
                             this.openCommenterEditor();
                         }, 500);
                     } else {
+                        // 显示加载动画
+                        this.commentsLoading = true;
+                        this.loading = true;
                         // 可以在此处触发AI生成评论内容的流程
-                        this.commenters.forEach(async commenter => {
-                          const fromUserObj = {
-                              text,
-                              rangeInfo,
-                              fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
-                              projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null)),
-                              versionId: (window.aicrStore && window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : (document.getElementById('versionSelect') ? document.getElementById('versionSelect').value : null)),
-                              author: commenter.name || commenter.author || 'AI评论者',
-                              status: "pending",
-                              createdTime: new Date().toISOString(),
-                              updatedTime: new Date().toISOString()
-                          };
-                          // 合并为字符串对象
-                          const fromUser = JSON.stringify(fromUserObj);
-                          const response = await postData(`${window.API_URL}/prompt`, {
-                              fromSystem: commenter.forSystem,
-                              fromUser
-                          });
-                          // 等待所有 postData 完成后再跳转页面
-                          if (Array.isArray(response.data) && response.data.length > 0) {
-                            await Promise.all(
-                              response.data.map(async item => {
-                                await postData(`${window.API_URL}/mongodb/?cname=comments`, { ...item });
-                              })
-                            );
-                          }
+                        Promise.all(
+                          this.commenters.map(async commenter => {
+                            const fromUserObj = {
+                                text,
+                                rangeInfo,
+                                fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
+                                projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null)),
+                                versionId: (window.aicrStore && window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : (document.getElementById('versionSelect') ? document.getElementById('versionSelect').value : null)),
+                                author: commenter.name || commenter.author || 'AI评论者',
+                                status: "pending",
+                                createdTime: new Date().toISOString(),
+                                updatedTime: new Date().toISOString()
+                            };
+                            // 合并为字符串对象
+                            const fromUser = JSON.stringify(fromUserObj);
+                            const response = await postData(`${window.API_URL}/prompt`, {
+                                fromSystem: commenter.forSystem,
+                                fromUser
+                            });
+                            // 等待所有 postData 完成后再跳转页面
+                            if (Array.isArray(response.data) && response.data.length > 0) {
+                              await Promise.all(
+                                response.data.map(async item => {
+                                  await postData(`${window.API_URL}/mongodb/?cname=comments`, { ...item });
+                                })
+                              );
+                            }
+                          })
+                        ).then(() => {
+                          // 刷新该 fileId 的评论列表
+                          this.debouncedLoadComments();
+                        }).finally(() => {
+                          // 隐藏加载动画
+                          this.commentsLoading = false;
+                          this.loading = false;
                         });
                     }
                 }, 100);

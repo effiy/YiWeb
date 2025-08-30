@@ -78,6 +78,17 @@ const createCodeView = async () => {
             };
         },
         watch: {
+            // 监听文件变化，清除高亮
+            file: {
+                handler(newFile, oldFile) {
+                    // 当文件变化时，清除之前的高亮
+                    if (newFile !== oldFile) {
+                        console.log('[CodeView] 文件变化，清除高亮');
+                        this.clearHighlight();
+                    }
+                },
+                immediate: true
+            },
             // 监听评论数据变化，处理挂起的评论Key
             comments: {
                 handler(newComments, oldComments) {
@@ -248,6 +259,11 @@ const createCodeView = async () => {
             }
         },
         methods: {
+            // 清除代码高亮
+            clearHighlight() {
+                console.log('[CodeView] 清除代码高亮');
+                this.highlightedLines = [];
+            },
             async copyEntireFile() {
                 try {
                     if (!this.file) return;
@@ -1986,6 +2002,22 @@ const createCodeView = async () => {
             this._hlListener = (e) => this.handleHighlightEvent(e.detail);
             window.addEventListener('highlightCodeLines', this._hlListener);
             
+            // 监听ESC键事件，清除高亮
+            this._escListener = (e) => {
+                if (e.key === 'Escape') {
+                    console.log('[CodeView] 收到ESC键事件，清除高亮');
+                    this.clearHighlight();
+                }
+            };
+            window.addEventListener('keydown', this._escListener);
+            
+            // 监听清除高亮事件
+            this._clearHighlightListener = () => {
+                console.log('[CodeView] 收到清除高亮事件');
+                this.clearHighlight();
+            };
+            window.addEventListener('clearCodeHighlight', this._clearHighlightListener);
+            
             // 监听评论重新加载事件
             this._reloadCommentsListener = (e) => {
                 console.log('[CodeView] 收到评论重新加载事件:', e.detail);
@@ -2079,6 +2111,14 @@ const createCodeView = async () => {
             if (this._hlListener) {
                 window.removeEventListener('highlightCodeLines', this._hlListener);
                 this._hlListener = null;
+            }
+            if (this._escListener) {
+                window.removeEventListener('keydown', this._escListener);
+                this._escListener = null;
+            }
+            if (this._clearHighlightListener) {
+                window.removeEventListener('clearCodeHighlight', this._clearHighlightListener);
+                this._clearHighlightListener = null;
             }
             if (this._reloadCommentsListener) {
                 window.removeEventListener('reloadComments', this._reloadCommentsListener);

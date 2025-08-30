@@ -5,8 +5,8 @@
         <i class="fas fa-chevron-right" :class="{ 'rotated': collapsed }"></i>
     </div>
     
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading-container" role="status" aria-live="polite">
+    <!-- 全局加载状态 -->
+    <div v-if="loading || commentsLoading" class="loading-container" role="status" aria-live="polite">
         <div class="loading-spinner" aria-hidden="true"></div>
         <div class="loading-text">正在加载评论...</div>
     </div>
@@ -244,8 +244,14 @@
             </article>
         </div>
         
+        <!-- 加载状态 - 优先显示 -->
+        <div v-if="commentsLoading" class="loading-container" role="status" aria-live="polite">
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <div class="loading-text">正在加载评论...</div>
+        </div>
+        
         <!-- 未选中文件状态 -->
-        <div v-if="!file && (!renderComments || renderComments.length === 0)" class="no-file-state" role="status">
+        <div v-else-if="!file && (!renderComments || renderComments.length === 0)" class="no-file-state" role="status">
             <div class="no-file-icon" aria-hidden="true">
                 <i class="fas fa-file-alt"></i>
             </div>
@@ -260,12 +266,6 @@
             </div>
             <div class="no-comments-title">暂无评论</div>
             <div class="no-comments-subtitle">开始代码评审，添加第一个评论</div>
-        </div>
-        
-        <!-- 加载状态 -->
-        <div v-else-if="commentsLoading" class="loading-container" role="status" aria-live="polite">
-            <div class="loading-spinner" aria-hidden="true"></div>
-            <div class="loading-text">正在加载评论...</div>
         </div>
     </div>
 
