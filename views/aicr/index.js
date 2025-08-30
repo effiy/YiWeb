@@ -303,10 +303,8 @@ const { computed } = Vue;
                     }).then(() => {
                         // 项目/版本信息设置完成，加载评论数据和评论者数据
                         logInfo('[代码审查页面] 项目/版本信息设置完成，开始加载评论和评论者');
-                        return Promise.all([
-                            store.loadComments(),
-                            store.loadCommenters()
-                        ]);
+                        // 避免重复加载，只在store中调用一次
+                        return store.loadComments();
                     }).then(() => {
                         // 项目/版本信息设置完成，触发评论面板重新加载
                         logInfo('[代码审查页面] 项目/版本信息设置完成，触发评论加载');

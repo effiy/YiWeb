@@ -905,6 +905,12 @@ export const createStore = () => {
      */
     const loadComments = async (projectId = null, versionId = null) => {
         return safeExecuteAsync(async () => {
+            // 防止重复请求
+            if (loading.value) {
+                console.log('[loadComments] 正在加载中，跳过重复请求');
+                return comments.value;
+            }
+            
             console.log('[loadComments] 正在加载评论数据...', { projectId, versionId });
             
             // 检查是否有项目/版本信息
@@ -917,7 +923,8 @@ export const createStore = () => {
                 return [];
             }
             
-            console.log('[loadComments] 项目/版本信息完整，开始加载评论');
+            // 设置loading状态
+            loading.value = true;
             
             try {
                 // 调用MongoDB接口获取评论数据
@@ -948,11 +955,15 @@ export const createStore = () => {
                 console.error('[loadComments] 加载评论失败:', error);
                 comments.value = [];
                 return [];
+            } finally {
+                // 清除loading状态
+                loading.value = false;
             }
         }, '评论数据加载', (errorInfo) => {
             error.value = errorInfo.message;
             errorMessage.value = errorInfo.message;
             comments.value = [];
+            loading.value = false;
         });
     };
 

@@ -291,7 +291,7 @@ export const useMethods = (store) => {
             }
 
             // 从文件名解析 项目/版本（优先使用文件名；无版本则默认为 1.0.0）
-            // 同时兼容全角斜杠 “／” 和反斜杠 “\\”
+            // 同时兼容全角斜杠 "／" 和反斜杠 "\\"
             const uiProject = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
             const uiVersion = selectedVersion?.value || (document.getElementById('versionSelect')?.value) || '';
             let baseName = '';
@@ -304,7 +304,7 @@ export const useMethods = (store) => {
             let versionId = (parts[1] || '') || uiVersion || '';
             if (!versionId) versionId = '1.0.0';
             if (!projectId) {
-                throw createError('无法从文件名解析项目。请将压缩包命名为 “项目/版本.zip”（或“项目／版本.zip”）或先选择项目', ErrorTypes.VALIDATION, '项目版本上传');
+                throw createError('无法从文件名解析项目。请将压缩包命名为 "项目/版本.zip"（或"项目／版本.zip"）或先选择项目', ErrorTypes.VALIDATION, '项目版本上传');
             }
 
             // 动态加载依赖与工具
@@ -1366,6 +1366,12 @@ export const useMethods = (store) => {
         return safeExecute(async () => {
             if (!projectId || !versionId) {
                 console.log('[加载评论] 项目/版本信息不完整，跳过加载');
+                return;
+            }
+
+            // 防止重复请求
+            if (loading.value) {
+                console.log('[加载评论] 正在加载中，跳过重复请求');
                 return;
             }
 

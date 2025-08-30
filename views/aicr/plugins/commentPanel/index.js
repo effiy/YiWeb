@@ -157,39 +157,46 @@ const createCommentPanel = async () => {
         ],
         data() {
             return {
-                replyingTo: null,
-                replyContent: '',
-                newCommentText: '',
+                // 评论数据
+                mongoComments: [],
+                fileComments: [],
+                
+                // 评论者数据
                 commenters: [],
                 selectedCommenterIds: [],
-                commentersLoading: false,
-                commentersError: '',
-                commentsLoading: false,
-                commentsError: '',
+                
+                // 加载状态
                 loading: false,
-                mongoComments: [],
-                _lastProjectVersionKey: null,
-                _lastFileId: null,
-                _commentLoadTimeout: null,
-                _isLoadingComments: false,
-                _isLoadingCommenters: false,
+                commentsLoading: false,
+                commentersLoading: false,
+                
+                // 错误信息
+                commentsError: '',
+                commentersError: '',
+                
+                // 编辑器状态
                 showCommenterEditor: false,
                 editingCommenter: null,
                 originalCommenter: null,
-                // 移除缓存机制，只保留防抖定时器
+                
+                // 防重复请求状态
+                _isLoadingComments: false,
+                _isLoadingCommenters: false,
+                _lastRequestKey: null,
+                _lastRequestTime: null,
+                _lastReloadEvent: null,
+                _lastProjectVersionEvent: null,
+                
+                // 防抖定时器
                 _debounceTimer: null,
-                // 评论编辑状态（作者：liangliang）
-                showCommentEditor: false,
-                editingComment: null,
-                editingCommentContent: '',
-                editingCommentAuthor: '',
-                editingCommentTimestamp: '',
-                editingCommentText: '',
-                editingRangeInfo: { startLine: 1, endLine: 1 },
-                editingImprovementText: '',
-                editingCommentType: '',
-                editingCommentStatus: 'pending',
-                editingSaving: false
+                
+                // 其他状态
+                shouldAutoCloseEditor: false,
+                newComment: {
+                    text: '',
+                    commenterIds: [],
+                    status: 'open'
+                }
             };
         },
         computed: {
@@ -326,24 +333,14 @@ const createCommentPanel = async () => {
                 return 'test';
             },
 
-            // 加载mongo评论数据
+            // 加载MongoDB评论数据
             async loadMongoComments() {
                 return safeExecute(async () => {
-                    // 防止重复加载
+                    // 防止重复请求
                     if (this._isLoadingComments) {
-                        console.log('[CommentPanel] 评论正在加载中，跳过重复请求');
+                        console.log('[CommentPanel] 评论数据正在加载中，跳过重复请求');
                         return;
                     }
-                    
-                    // 生成请求键，用于日志记录
-                    const projectId = window.aicrStore ? (window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null) : null;
-                    const versionId = window.aicrStore ? (window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : null) : null;
-                    const fileId = this.file ? (this.file.fileId || this.file.id || this.file.path || this.file.key) : null;
-                    
-                    const requestKey = `${projectId}_${versionId}_${fileId || 'all'}`;
-                    
-                    console.log('[CommentPanel] loadMongoComments - 项目ID:', projectId, '版本ID:', versionId, '文件ID:', fileId);
-                    console.log('[CommentPanel] loadMongoComments - 请求键:', requestKey);
                     
                     this._isLoadingComments = true;
                     this.commentsLoading = true;
@@ -352,6 +349,25 @@ const createCommentPanel = async () => {
 
                     try {
                         console.log('[CommentPanel] 开始加载评论数据，当前文件:', this.file);
+                        
+                        // 生成请求键，用于防止重复请求
+                        const projectId = window.aicrStore?.selectedProject?.value || 
+                                        document.getElementById('projectSelect')?.value;
+                        const versionId = window.aicrStore?.selectedVersion?.value || 
+                                        document.getElementById('versionSelect')?.value;
+                        const fileId = this.file?.fileId || this.file?.id || this.file?.path || this.file?.key;
+                        const requestKey = `${projectId}_${versionId}_${fileId || 'all'}`;
+                        
+                        // 检查是否与上次请求相同
+                        if (this._lastRequestKey === requestKey && this._lastRequestTime && 
+                            Date.now() - this._lastRequestTime < 1000) {
+                            console.log('[CommentPanel] 请求键相同且时间间隔小于1秒，跳过重复请求');
+                            return;
+                        }
+                        
+                        this._lastRequestKey = requestKey;
+                        this._lastRequestTime = Date.now();
+                        
                         console.log('[CommentPanel] 请求键:', requestKey);
                         
                         // 即使没有选中文件，也尝试加载评论数据
@@ -895,6 +911,11 @@ const createCommentPanel = async () => {
                 return () => {
                     clearTimeout(timeoutId);
                     timeoutId = setTimeout(async () => {
+                        // 检查是否正在加载
+                        if (this._isLoadingComments) {
+                            console.log('[CommentPanel] 防抖触发时检测到正在加载，跳过重复请求');
+                            return;
+                        }
                         await this.loadMongoComments();
                     }, debounceTime);
                 };
@@ -902,6 +923,12 @@ const createCommentPanel = async () => {
 
             // 防抖的评论加载方法
             debouncedLoadComments() {
+                // 检查是否正在加载
+                if (this._isLoadingComments) {
+                    console.log('[CommentPanel] 正在加载中，跳过防抖请求');
+                    return;
+                }
+                
                 if (this._debounceTimer) {
                     clearTimeout(this._debounceTimer);
                 }
@@ -915,6 +942,12 @@ const createCommentPanel = async () => {
             // 立即刷新评论列表（用于ESC键等需要立即响应的场景）
             immediateLoadComments() {
                 console.log('[CommentPanel] 立即刷新评论列表');
+                
+                // 检查是否正在加载
+                if (this._isLoadingComments) {
+                    console.log('[CommentPanel] 正在加载中，跳过立即刷新请求');
+                    return;
+                }
                 
                 // 清除防抖定时器
                 if (this._debounceTimer) {
@@ -1520,6 +1553,25 @@ const createCommentPanel = async () => {
             // 监听reloadComments事件，重新加载评论数据
             window.addEventListener('reloadComments', (event) => {
                 console.log('[CommentPanel] 收到reloadComments事件:', event.detail);
+                
+                // 防止重复触发
+                if (this._lastReloadEvent && 
+                    this._lastReloadEvent.projectId === event.detail?.projectId &&
+                    this._lastReloadEvent.versionId === event.detail?.versionId &&
+                    this._lastReloadEvent.fileId === event.detail?.fileId &&
+                    Date.now() - this._lastReloadEvent.timestamp < 500) {
+                    console.log('[CommentPanel] 检测到重复的reloadComments事件，跳过处理');
+                    return;
+                }
+                
+                // 记录事件信息
+                this._lastReloadEvent = {
+                    projectId: event.detail?.projectId,
+                    versionId: event.detail?.versionId,
+                    fileId: event.detail?.fileId,
+                    timestamp: Date.now()
+                };
+                
                 const { projectId, versionId, fileId, forceReload, showAllComments, immediateReload } = event.detail;
                 
                 if (forceReload) {
@@ -1556,6 +1608,33 @@ const createCommentPanel = async () => {
                         }
                     }
                 }
+            });
+            
+            // 监听projectVersionReady事件，当项目/版本切换完成时重新加载评论
+            window.addEventListener('projectVersionReady', (event) => {
+                console.log('[CommentPanel] 收到projectVersionReady事件:', event.detail);
+                
+                // 防止重复触发
+                if (this._lastProjectVersionEvent && 
+                    this._lastProjectVersionEvent.projectId === event.detail?.projectId &&
+                    this._lastProjectVersionEvent.versionId === event.detail?.versionId &&
+                    Date.now() - this._lastProjectVersionEvent.timestamp < 1000) {
+                    console.log('[CommentPanel] 检测到重复的projectVersionReady事件，跳过处理');
+                    return;
+                }
+                
+                // 记录事件信息
+                this._lastProjectVersionEvent = {
+                    projectId: event.detail?.projectId,
+                    versionId: event.detail?.versionId,
+                    timestamp: Date.now()
+                };
+                
+                // 延迟加载评论，确保store数据已更新
+                setTimeout(() => {
+                    console.log('[CommentPanel] 项目/版本切换完成，开始加载评论数据');
+                    this.debouncedLoadComments();
+                }, 200);
             });
             
             // 监听shouldAutoCloseEditor的变化
