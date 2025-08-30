@@ -150,7 +150,20 @@ const createFileTreeNode = () => {
                     console.log('[FileTreeNode] 选择文件:', idStr);
                     console.log('[FileTreeNode] 文件对象:', this.item);
                     console.log('[FileTreeNode] 文件路径深度:', idStr.split('/').length);
-                    const payload = { fileId: idStr, id: idStr, path: (this.item && this.item.path) || idStr, name: (this.item && this.item.name) || (idStr.split('/').pop()) };
+                    
+                    // 构建包含唯一标识符的payload
+                    const payload = { 
+                        fileId: idStr, 
+                        id: idStr, 
+                        path: (this.item && this.item.path) || idStr, 
+                        name: (this.item && this.item.name) || (idStr.split('/').pop()),
+                        // 添加文件的唯一标识符，优先使用key，然后是_id，最后是其他唯一字段
+                        key: this.item?.key || this.item?._id || this.item?.id || idStr,
+                        // 保留原始item对象，包含所有可能的标识字段
+                        originalItem: this.item
+                    };
+                    
+                    console.log('[FileTreeNode] 文件选择payload:', payload);
                     this.$emit('file-select', payload);
                 }, '文件选择处理');
             },

@@ -131,6 +131,9 @@ const { computed } = Vue;
                 currentFile: computed(() => {
                     const fileId = store.selectedFileId ? store.selectedFileId.value : null;
                     console.log('[主页面] currentFile计算 - 文件ID:', fileId);
+                    
+                    if (!fileId) return null;
+                    
                     const normalize = (v) => {
                         if (!v) return '';
                         let s = String(v).replace(/\\\\/g, '/');
@@ -139,34 +142,137 @@ const { computed } = Vue;
                         s = s.replace(/\/\/+/g, '/');
                         return s;
                     };
+                    
                     const target = normalize(fileId);
-                    const currentFile = fileId && store.files ? store.files.value.find(f => {
-                        const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
-                        const candidates = [f.fileId, f.id, f.path, f.name, d.fileId, d.id, d.path, d.name].filter(Boolean);
-                        const matched = candidates.some(c => {
-                            const n = normalize(c);
-                            // 完全匹配
-                            if (n === target) return true;
-                            // 路径结尾匹配
-                            if (n.endsWith('/' + target) || target.endsWith('/' + n)) return true;
-                            // 文件名匹配（去除路径后比较）
-                            const nName = n.split('/').pop();
-                            const targetName = target.split('/').pop();
-                            if (nName && targetName && nName === targetName) {
-                                // 如果只有文件名相同，可能是文件树传递的简单ID
+                    console.log('[主页面] currentFile计算 - 规范化后的目标ID:', target);
+                    
+                    if (!store.files || !Array.isArray(store.files.value)) {
+                        console.log('[主页面] currentFile计算 - 文件列表为空或未定义');
+                        return null;
+                    }
+                    
+                    // 首先尝试通过文件树传递的key进行精确匹配
+                    // 这里我们需要从全局状态中获取当前选中的文件信息
+                    let currentFile = null;
+                    
+                    // 检查是否有待处理的文件Key（从文件选择事件中获取）
+                    const pendingFileKey = window.__aicrPendingFileKey;
+                    if (pendingFileKey) {
+                        console.log('[主页面] currentFile计算 - 尝试使用待处理的文件Key进行精确匹配:', pendingFileKey);
+                        currentFile = store.files.value.find(f => {
+                            if (f.key === pendingFileKey || f._id === pendingFileKey) {
+                                console.log('[主页面] currentFile计算 - 通过Key精确匹配成功:', f.name);
                                 return true;
                             }
                             return false;
                         });
-                        console.log('[主页面] currentFile计算 - 检查文件:', f.name, '候选:', candidates, '匹配:', matched);
-                        return matched;
-                    }) : null;
-                    console.log('[主页面] currentFile计算 - 找到的文件:', currentFile);
+                        
+                        if (currentFile) {
+                            // 清除待处理的Key，避免重复使用
+                            window.__aicrPendingFileKey = null;
+                        }
+                    }
+                    
+                    // 如果没有通过Key匹配到，尝试路径匹配
+                    if (!currentFile) {
+                        // 首先尝试精确匹配
+                        currentFile = store.files.value.find(f => {
+                            const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
+                            const candidates = [f.fileId, f.id, f.path, f.name, d.fileId, d.id, d.path, d.name].filter(Boolean);
+                            
+                            // 精确匹配：完全相同的路径
+                            const exactMatch = candidates.some(c => {
+                                const n = normalize(c);
+                                return n === target;
+                            });
+                            
+                            if (exactMatch) {
+                                console.log('[主页面] currentFile计算 - 精确匹配成功:', f.name);
+                                return true;
+                            }
+                            
+                            return false;
+                        });
+                    }
+                    
+                    // 如果没有精确匹配，尝试路径匹配（更严格的逻辑）
+                    if (!currentFile) {
+                        currentFile = store.files.value.find(f => {
+                            const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
+                            const candidates = [f.fileId, f.id, f.path, d.fileId, d.id, d.path].filter(Boolean);
+                            
+                            return candidates.some(c => {
+                                const n = normalize(c);
+                                
+                                // 路径匹配：确保是完整的路径匹配，不是部分匹配
+                                if (n === target) return true;
+                                
+                                // 检查是否是父子路径关系（更严格的逻辑）
+                                if (n.endsWith('/' + target)) {
+                                    // 确保target不是空字符串，且n以target结尾
+                                    return target && target.length > 0;
+                                }
+                                if (target.endsWith('/' + n)) {
+                                    // 确保n不是空字符串，且target以n结尾
+                                    return n && n.length > 0;
+                                }
+                                
+                                return false;
+                            });
+                        });
+                        
+                        if (currentFile) {
+                            console.log('[主页面] currentFile计算 - 路径匹配成功:', currentFile.name);
+                        }
+                    }
+                    
+                    // 最后才尝试文件名匹配（最不精确，但可能需要的）
+                    if (!currentFile) {
+                        const targetName = target.split('/').pop();
+                        if (targetName && targetName.length > 0) {
+                            currentFile = store.files.value.find(f => {
+                                const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
+                                const candidates = [f.fileId, f.id, f.path, f.name, d.fileId, d.id, d.path, d.name].filter(Boolean);
+                                
+                                return candidates.some(c => {
+                                    const n = normalize(c);
+                                    const nName = n.split('/').pop();
+                                    
+                                    // 文件名匹配：只有当文件名完全相同时才匹配
+                                    if (nName && targetName && nName === targetName) {
+                                        // 额外检查：如果路径不同，需要更谨慎的匹配
+                                        const nPath = n.substring(0, n.lastIndexOf('/'));
+                                        const targetPath = target.substring(0, target.lastIndexOf('/'));
+                                        
+                                        // 如果路径部分也相同或为空，则认为是匹配的
+                                        if (nPath === targetPath || (!nPath && !targetPath)) {
+                                            console.log('[主页面] currentFile计算 - 文件名匹配成功（路径一致）:', f.name);
+                                            return true;
+                                        }
+                                        
+                                        // 如果路径不同，记录警告但不匹配
+                                        console.warn('[主页面] currentFile计算 - 文件名相同但路径不同，跳过匹配:', {
+                                            fileName: nName,
+                                            nPath: nPath,
+                                            targetPath: targetPath
+                                        });
+                                        return false;
+                                    }
+                                    return false;
+                                });
+                            });
+                        }
+                    }
+                    
+                    console.log('[主页面] currentFile计算 - 最终找到的文件:', currentFile);
+                    
                     // 若未找到文件，但已选中文件ID，返回占位对象以触发code-view懒加载
                     if (!currentFile && target) {
                         const name = target.split('/').pop();
+                        console.log('[主页面] currentFile计算 - 返回占位对象:', { fileId: target, name });
                         return { fileId: target, id: target, path: target, name, content: '' };
                     }
+                    
                     return currentFile;
                 }),
                 currentComments: computed(() => {
@@ -319,6 +425,7 @@ const { computed } = Vue;
                             // 版本就绪后，如存在待加载文件或当前选中文件无内容，执行补载
                             try {
                                 const pending = window.__aicrPendingFileId;
+                                const pendingKey = window.__aicrPendingFileKey;
                                 const currentId = pending || (store.selectedFileId ? store.selectedFileId.value : null);
                                 if (currentId && typeof store.loadFileById === 'function') {
                                     const normalize4 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
@@ -327,61 +434,122 @@ const { computed } = Vue;
                                     const ver = store.selectedVersion ? store.selectedVersion.value : null;
                                     // 版本就绪后，无论是否已有内容，确保按需加载一次
                                     if (pj && ver) {
-                                        store.loadFileById(pj, ver, idNorm).finally(() => {
-                                            try {
-                                                const rangeInfo = window.__aicrPendingHighlightRangeInfo;
-                                                if (rangeInfo) {
-                                                    setTimeout(() => {
-                                                        try {
-                                                            window.dispatchEvent(new CustomEvent('highlightCodeLines', {
-                                                                detail: {
-                                                                    fileId: idNorm,
-                                                                    rangeInfo
-                                                                }
-                                                            }));
-                                                            logInfo('[代码審查] 版本就绪后触发高亮事件', rangeInfo);
-                                                        } catch (e) { logWarn('[代码審查] 触发高亮事件失败', e); }
-                                                    }, 300);
-                                                }
-                                            } catch (e) { logWarn('[代码審查] 版本就绪高亮处理失败', e); }
-                                            // 新增：按 commentKey 触发高亮
-                                            try {
-                                                const pendingKey = window.__aicrPendingCommentKey;
-                                                if (pendingKey && Array.isArray(store.comments?.value)) {
-                                                    const all = store.comments.value;
-                                                    const target = all.find(c => (c.key || c.id) === pendingKey);
-                                                    if (target && target.rangeInfo) {
-                                                        const wantedRaw = target.fileId || (target.fileInfo && target.fileInfo.path) || idNorm;
-                                                        const normalize4b = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/, '/');
-                                                        const wantedId = normalize4b(wantedRaw);
-                                                        if (wantedId && store.selectedFileId && store.selectedFileId.value !== wantedId) {
-                                                            store.setSelectedFileId(wantedId);
-                                                        }
-                                                        const r = target.rangeInfo;
-                                                        const normalizedRange = {
-                                                            startLine: Number(r.startLine) >= 1 ? Number(r.startLine) : 1,
-                                                            endLine: Number(r.endLine) >= 1 ? Number(r.endLine) : (Number(r.startLine) || 1),
-                                                            startChar: r.startChar,
-                                                            endChar: r.endChar
-                                                        };
+                                        // 如果有待处理的文件Key，优先使用它进行精确匹配
+                                        if (pendingKey) {
+                                            logInfo('[主页面] 版本就绪后使用文件Key进行精确加载:', idNorm, 'Key:', pendingKey);
+                                            store.loadFileById(pj, ver, idNorm, pendingKey).finally(() => {
+                                                try {
+                                                    const rangeInfo = window.__aicrPendingHighlightRangeInfo;
+                                                    if (rangeInfo) {
                                                         setTimeout(() => {
                                                             try {
                                                                 window.dispatchEvent(new CustomEvent('highlightCodeLines', {
                                                                     detail: {
-                                                                        fileId: wantedId,
-                                                                        rangeInfo: normalizedRange,
-                                                                        comment: target
+                                                                        fileId: idNorm,
+                                                                        rangeInfo
                                                                     }
                                                                 }));
-                                                                logInfo('[代码審查] 版本就绪后按commentKey触发高亮', { key: pendingKey, range: normalizedRange });
-                                                            } catch (e) { logWarn('[代码審查] 按commentKey触发高亮失败', e); }
-                                                        }, 500);
-                                                        window.__aicrPendingCommentKey = null;
+                                                                logInfo('[代码審查] 版本就绪后触发高亮事件', rangeInfo);
+                                                            } catch (e) { logWarn('[代码審查] 触发高亮事件失败', e); }
+                                                        }, 300);
                                                     }
-                                                }
-                                            } catch (e) { logWarn('[代码審查] commentKey高亮处理失败', e); }
-                                            window.__aicrPendingFileId = null;
-                                        });
+                                                } catch (e) { logWarn('[代码審查] 版本就绪高亮处理失败', e); }
+                                                // 新增：按 commentKey 触发高亮
+                                                try {
+                                                    const pendingCommentKey = window.__aicrPendingCommentKey;
+                                                    if (pendingCommentKey && Array.isArray(store.comments?.value)) {
+                                                        const all = store.comments.value;
+                                                        const target = all.find(c => (c.key || c.id) === pendingCommentKey);
+                                                        if (target && target.rangeInfo) {
+                                                            const wantedRaw = target.fileId || (target.fileInfo && target.fileInfo.path) || idNorm;
+                                                            const normalize4b = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/, '/');
+                                                            const wantedId = normalize4b(wantedRaw);
+                                                            if (wantedId && store.selectedFileId && store.selectedFileId.value !== wantedId) {
+                                                                store.setSelectedFileId(wantedId);
+                                                            }
+                                                            const r = target.rangeInfo;
+                                                            const normalizedRange = {
+                                                                startLine: Number(r.startLine) >= 1 ? Number(r.startLine) : 1,
+                                                                endLine: Number(r.endLine) >= 1 ? Number(r.endLine) : (Number(r.startLine) || 1),
+                                                                startChar: r.startChar,
+                                                                endChar: r.endChar
+                                                            };
+                                                            setTimeout(() => {
+                                                                try {
+                                                                    window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                                                        detail: {
+                                                                            fileId: wantedId,
+                                                                            rangeInfo: normalizedRange,
+                                                                            comment: target
+                                                                        }
+                                                                    }));
+                                                                    logInfo('[代码審查] 版本就绪后按commentKey触发高亮', { key: pendingCommentKey, range: normalizedRange });
+                                                                } catch (e) { logWarn('[代码審查] 按commentKey触发高亮失败', e); }
+                                                            }, 500);
+                                                            window.__aicrPendingCommentKey = null;
+                                                        }
+                                                    }
+                                                } catch (e) { logWarn('[代码審查] commentKey高亮处理失败', e); }
+                                                window.__aicrPendingFileId = null;
+                                                window.__aicrPendingFileKey = null;
+                                            });
+                                        } else {
+                                            store.loadFileById(pj, ver, idNorm).finally(() => {
+                                                try {
+                                                    const rangeInfo = window.__aicrPendingHighlightRangeInfo;
+                                                    if (rangeInfo) {
+                                                        setTimeout(() => {
+                                                            try {
+                                                                window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                                                    detail: {
+                                                                        fileId: idNorm,
+                                                                        rangeInfo
+                                                                    }
+                                                                }));
+                                                                logInfo('[代码審查] 版本就绪后触发高亮事件', rangeInfo);
+                                                            } catch (e) { logWarn('[代码審查] 触发高亮事件失败', e); }
+                                                        }, 300);
+                                                    }
+                                                } catch (e) { logWarn('[代码審查] 版本就绪高亮处理失败', e); }
+                                                // 新增：按 commentKey 触发高亮
+                                                try {
+                                                    const pendingCommentKey = window.__aicrPendingCommentKey;
+                                                    if (pendingCommentKey && Array.isArray(store.comments?.value)) {
+                                                        const all = store.comments.value;
+                                                        const target = all.find(c => (c.key || c.id) === pendingCommentKey);
+                                                        if (target && target.rangeInfo) {
+                                                            const wantedRaw = target.fileId || (target.fileInfo && target.fileInfo.path) || idNorm;
+                                                            const normalize4b = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/, '/');
+                                                            const wantedId = normalize4b(wantedRaw);
+                                                            if (wantedId && store.selectedFileId && store.selectedFileId.value !== wantedId) {
+                                                                store.setSelectedFileId(wantedId);
+                                                            }
+                                                            const r = target.rangeInfo;
+                                                            const normalizedRange = {
+                                                                startLine: Number(r.startLine) >= 1 ? Number(r.startLine) : 1,
+                                                                endLine: Number(r.endLine) >= 1 ? Number(r.endLine) : (Number(r.startLine) || 1),
+                                                                startChar: r.startChar,
+                                                                endChar: r.endChar
+                                                            };
+                                                            setTimeout(() => {
+                                                                try {
+                                                                    window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                                                        detail: {
+                                                                            fileId: wantedId,
+                                                                            rangeInfo: normalizedRange,
+                                                                            comment: target
+                                                                        }
+                                                                    }));
+                                                                    logInfo('[代码審查] 版本就绪后按commentKey触发高亮', { key: pendingCommentKey, range: normalizedRange });
+                                                                } catch (e) { logWarn('[代码審查] 按commentKey触发高亮失败', e); }
+                                                            }, 500);
+                                                            window.__aicrPendingCommentKey = null;
+                                                        }
+                                                    }
+                                                } catch (e) { logWarn('[代码審查] commentKey高亮处理失败', e); }
+                                                window.__aicrPendingFileId = null;
+                                            });
+                                        }
                                     }
                                 }
                             } catch (e) {
@@ -568,23 +736,36 @@ const { computed } = Vue;
                     }
                 },
                 
-                // 重构文件选择事件处理 - 避免重复的评论接口请求
-                handleFileSelect: function(fileId) {
-                    logInfo('[主页面] 收到文件选择事件:', fileId);
+                // 重构文件选择事件处理 - 使用文件的key进行精确匹配
+                handleFileSelect: function(fileData) {
+                    logInfo('[主页面] 收到文件选择事件:', fileData);
                     try {
-                        // 如果传入的是树节点，把 path 提升为 fileId
-                        if (typeof fileId === 'object' && fileId !== null) {
-                            const node = fileId;
-                            const prefer = node.path || node.id || node.name;
-                            fileId = prefer;
+                        // 如果传入的是树节点，提取关键信息
+                        let fileId, fileKey, originalItem;
+                        
+                        if (typeof fileData === 'object' && fileData !== null) {
+                            // 新的payload格式，包含key和originalItem
+                            fileId = fileData.fileId || fileData.id || fileData.path;
+                            fileKey = fileData.key;
+                            originalItem = fileData.originalItem;
+                            
+                            logInfo('[主页面] 解析文件选择数据:', { fileId, fileKey, hasOriginalItem: !!originalItem });
+                        } else {
+                            // 兼容旧的简单字符串格式
+                            fileId = fileData;
+                            logInfo('[主页面] 使用兼容模式，文件ID:', fileId);
                         }
-                        // 规范化文件ID，兼容多类型与路径格式
+                        
+                        // 验证文件ID
                         if (!fileId && fileId !== 0) {
                             logWarn('[主页面] 无效的文件ID:', fileId);
                             return;
                         }
+                        
+                        // 规范化文件ID
                         const normalize = (v) => {
                             try {
+                                if (v == null) return '';
                                 let s = String(v);
                                 s = s.replace(/\\/g, '/');
                                 s = s.replace(/^\.\//, '');
@@ -597,43 +778,51 @@ const { computed } = Vue;
                         };
                         const idNorm = normalize(fileId);
                         
-                        // 检查是否与当前选中的文件相同（使用规范化比较）
+                        // 检查是否与当前选中的文件相同
                         if (normalize(store.selectedFileId.value) === idNorm) {
                             logInfo('[主页面] 文件已选中，跳过重复选择:', idNorm);
                             return;
                         }
                         
-                        logInfo('[主页面] 设置新的选中文件:', idNorm);
+                        logInfo('[主页面] 设置新的选中文件:', idNorm, '文件Key:', fileKey);
                         
                         // 设置选中的文件ID
                         store.setSelectedFileId(idNorm);
-
-                        // 若内容缺失，按需加载该文件
-                        try {
-                            const normalize2 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                        
+                        // 如果文件树提供了文件的唯一标识符，优先使用它进行精确匹配
+                        if (fileKey && originalItem) {
+                            logInfo('[主页面] 使用文件Key进行精确匹配:', fileKey);
+                            
+                            // 检查是否已有该文件的内容
                             const hasContent = Array.isArray(store.files?.value) && store.files.value.some(f => {
+                                // 首先尝试使用key进行精确匹配
+                                if (f.key === fileKey || f._id === fileKey) {
+                                    logInfo('[主页面] 通过Key精确匹配找到文件:', f.name);
+                                    return typeof f.content === 'string' && f.content.length > 0;
+                                }
+                                
+                                // 如果key不匹配，尝试使用其他唯一标识符
+                                if (f.key || f._id) {
+                                    return false; // 有key但不同，跳过
+                                }
+                                
+                                // 对于没有key的文件，使用路径匹配作为后备
                                 const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
                                 const candidates = [f.fileId, f.id, f.path, f.name, d.fileId, d.id, d.path, d.name].filter(Boolean);
-                                const matched = candidates.some(c => {
-                                    const n = normalize2(c);
-                                    // 完全匹配
-                                    if (n === idNorm) return true;
-                                    // 路径结尾匹配
-                                    if (n.endsWith('/' + idNorm) || idNorm.endsWith('/' + n)) return true;
-                                    // 文件名匹配
-                                    const nName = n.split('/').pop();
-                                    const idName = idNorm.split('/').pop();
-                                    if (nName && idName && nName === idName) return true;
-                                    return false;
-                                });
-                                return matched && typeof f.content === 'string' && f.content.length > 0;
+                                
+                                return candidates.some(c => {
+                                    const n = normalize(c);
+                                    return n === idNorm;
+                                }) && typeof f.content === 'string' && f.content.length > 0;
                             });
+                            
                             if (!hasContent && typeof store.loadFileById === 'function') {
                                 logInfo('[主页面] 当前文件无内容，尝试按需加载:', idNorm);
                                 const pj = store.selectedProject ? store.selectedProject.value : null;
                                 const ver = store.selectedVersion ? store.selectedVersion.value : null;
                                 if (pj && ver) {
-                                    store.loadFileById(pj, ver, idNorm).then(() => {
+                                    // 传递文件Key给loadFileById，用于精确匹配
+                                    store.loadFileById(pj, ver, idNorm, fileKey).then(() => {
                                         logInfo('[主页面] 按需加载完成:', idNorm);
                                         // 强制触发视图更新
                                         this.$forceUpdate();
@@ -642,19 +831,115 @@ const { computed } = Vue;
                                         // 重试一次
                                         setTimeout(() => {
                                             logInfo('[主页面] 重试按需加载:', idNorm);
-                                            store.loadFileById(pj, ver, idNorm).catch(e2 => {
+                                            store.loadFileById(pj, ver, idNorm, fileKey).catch(e2 => {
                                                 logError('[主页面] 重试加载失败:', e2?.message || e2);
                                             });
                                         }, 1000);
                                     });
                                 } else {
-                                    // 项目/版本未就绪，记录待加载文件ID
+                                    // 项目/版本未就绪，记录待加载文件信息
                                     window.__aicrPendingFileId = idNorm;
-                                    logInfo('[主页面] 项目/版本未就绪，记录待加载文件:', idNorm);
+                                    window.__aicrPendingFileKey = fileKey;
+                                    logInfo('[主页面] 项目/版本未就绪，记录待加载文件:', idNorm, 'Key:', fileKey);
                                 }
                             }
-                        } catch (e) {
-                            logWarn('[主页面] 按需加载检查异常:', e?.message || e);
+                        } else {
+                            // 没有文件Key，使用原有的匹配逻辑作为后备
+                            logInfo('[主页面] 没有文件Key，使用路径匹配逻辑');
+                            
+                            // 若内容缺失，按需加载该文件
+                            try {
+                                const normalize2 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                                
+                                // 使用与currentFile计算属性相同的匹配逻辑
+                                const hasContent = Array.isArray(store.files?.value) && store.files.value.some(f => {
+                                    const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
+                                    const candidates = [f.fileId, f.id, f.path, f.name, d.fileId, d.id, d.path, d.name].filter(Boolean);
+                                    
+                                    // 首先尝试精确匹配
+                                    const exactMatch = candidates.some(c => {
+                                        const n = normalize2(c);
+                                        return n === idNorm;
+                                    });
+                                    
+                                    if (exactMatch) {
+                                        return typeof f.content === 'string' && f.content.length > 0;
+                                    }
+                                    
+                                    // 如果没有精确匹配，尝试路径匹配
+                                    const pathMatch = candidates.some(c => {
+                                        const n = normalize2(c);
+                                        
+                                        if (n === idNorm) return true;
+                                        
+                                        // 检查是否是父子路径关系
+                                        if (n.endsWith('/' + idNorm)) {
+                                            return idNorm && idNorm.length > 0;
+                                        }
+                                        if (idNorm.endsWith('/' + n)) {
+                                            return n && n.length > 0;
+                                        }
+                                        
+                                        return false;
+                                    });
+                                    
+                                    if (pathMatch) {
+                                        return typeof f.content === 'string' && f.content.length > 0;
+                                    }
+                                    
+                                    // 最后尝试文件名匹配（需要路径一致）
+                                    const targetName = idNorm.split('/').pop();
+                                    if (targetName && targetName.length > 0) {
+                                        const nameMatch = candidates.some(c => {
+                                            const n = normalize2(c);
+                                            const nName = n.split('/').pop();
+                                            
+                                            if (nName && targetName && nName === targetName) {
+                                                // 检查路径部分是否一致
+                                                const nPath = n.substring(0, n.lastIndexOf('/'));
+                                                const targetPath = idNorm.substring(0, idNorm.lastIndexOf('/'));
+                                                
+                                                return nPath === targetPath || (!nPath && !targetPath);
+                                            }
+                                            return false;
+                                        });
+                                        
+                                        if (nameMatch) {
+                                            return typeof f.content === 'string' && f.content.length > 0;
+                                        }
+                                    }
+                                    
+                                    return false;
+                                });
+                                
+                                if (!hasContent && typeof store.loadFileById === 'function') {
+                                    logInfo('[主页面] 当前文件无内容，尝试按需加载:', idNorm);
+                                    const pj = store.selectedProject ? store.selectedProject.value : null;
+                                    const ver = store.selectedVersion ? store.selectedVersion.value : null;
+                                    if (pj && ver) {
+                                        store.loadFileById(pj, ver, idNorm).then(() => {
+                                            logInfo('[主页面] 按需加载完成:', idNorm);
+                                            // 强制触发视图更新
+                                            this.$forceUpdate();
+                                        }).catch(e => {
+                                            logWarn('[主页面] 按需加载失败:', e?.message || e);
+                                            // 重试一次
+                                            setTimeout(() => {
+                                                logInfo('[主页面] 重试按需加载:', idNorm);
+                                                store.loadFileById(pj, ver, idNorm).catch(e2 => {
+                                                    logError('[主页面] 重试加载失败:', e2?.message || e2);
+                                                });
+                                            }, 1000);
+                                        });
+                                    } else {
+                                        // 项目/版本未就绪，记录待加载文件ID
+                                        window.__aicrPendingFileId = idNorm;
+                                        logInfo('[主页面] 项目/版本未就绪，记录待加载文件:', idNorm);
+                                    }
+                                }
+                            } catch (e) {
+                                logWarn('[主页面] 按需加载检查异常:', e?.message || e);
+                            }
                         }
                         
                         // 获取项目/版本信息

@@ -78,13 +78,30 @@ const createCodeView = async () => {
             };
         },
         watch: {
-            // 监听文件变化，清除高亮
+            // 监听文件变化，清除高亮并处理文件加载
             file: {
                 handler(newFile, oldFile) {
                     // 当文件变化时，清除之前的高亮
                     if (newFile !== oldFile) {
                         console.log('[CodeView] 文件变化，清除高亮');
                         this.clearHighlight();
+                        
+                        // 处理新文件的key信息
+                        if (newFile) {
+                            console.log('[CodeView] 新文件信息:', {
+                                name: newFile.name,
+                                path: newFile.path,
+                                key: newFile.key,
+                                _id: newFile._id,
+                                hasContent: !!newFile.content
+                            });
+                            
+                            // 如果文件没有内容但有key，尝试触发文件加载
+                            if ((!newFile.content || newFile.content.length === 0) && (newFile.key || newFile._id)) {
+                                console.log('[CodeView] 文件无内容，尝试触发文件加载:', newFile.key || newFile._id);
+                                this.triggerFileLoad(newFile);
+                            }
+                        }
                     }
                 },
                 immediate: true
@@ -2092,6 +2109,48 @@ const createCodeView = async () => {
                 });
                 
                 console.log(`[CodeView] 清除高亮后剩余行:`, this.highlightedLines);
+            },
+            // 触发文件加载
+            triggerFileLoad(file) {
+                console.log('[CodeView] 触发文件加载:', file);
+                
+                // 检查是否有全局的store可用
+                if (window.aicrStore && typeof window.aicrStore.loadFileById === 'function') {
+                    console.log('[CodeView] 使用全局store加载文件');
+                    
+                    // 获取当前的项目和版本信息
+                    const projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
+                    const versionId = window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : null;
+                    
+                    if (projectId && versionId) {
+                        // 使用文件的key进行精确加载
+                        const fileKey = file.key || file._id;
+                        const fileId = file.fileId || file.id || file.path;
+                        
+                        if (fileKey && fileId) {
+                            console.log('[CodeView] 通过store加载文件:', { projectId, versionId, fileId, fileKey });
+                            
+                            window.aicrStore.loadFileById(projectId, versionId, fileId, fileKey)
+                                .then((loadedFile) => {
+                                    if (loadedFile && loadedFile.content) {
+                                        console.log('[CodeView] 文件加载成功:', loadedFile.name);
+                                        // 文件内容会自动更新，因为store会更新files列表
+                                    } else {
+                                        console.warn('[CodeView] 文件加载失败或无内容');
+                                    }
+                                })
+                                .catch((error) => {
+                                    console.error('[CodeView] 文件加载失败:', error);
+                                });
+                        } else {
+                            console.warn('[CodeView] 缺少文件标识信息:', { fileKey, fileId });
+                        }
+                    } else {
+                        console.warn('[CodeView] 缺少项目/版本信息:', { projectId, versionId });
+                    }
+                } else {
+                    console.warn('[CodeView] 全局store不可用，无法加载文件');
+                }
             }
         },
         mounted() {
