@@ -1099,6 +1099,12 @@ export const useMethods = (store) => {
                 const { showSuccess } = await import('/utils/message.js');
                 showSuccess('评论删除成功');
 
+                // 发送清除高亮事件，通知代码视图组件清除对应的高亮
+                console.log('[评论删除] 发送清除高亮事件');
+                window.dispatchEvent(new CustomEvent('clearCommentHighlight', {
+                    detail: { commentId }
+                }));
+
                 // 重新加载评论数据
                 if (selectedProject.value && selectedVersion.value) {
                     console.log('[评论删除] 重新加载评论数据');

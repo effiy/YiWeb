@@ -24,10 +24,9 @@
 
 【输出格式】
 请以JSON数组形式返回，数组内每个元素结构如下，且必须生成至少1个评论对象：
-
 [
   {
-    "content": "test",
+    "content": "这里是代码评论内容",
     "text": "export function createCachedRequest(options = {}) {\n\n  return new CachedRequest(options);\n\n}",
     "rangeInfo": {
       "startLine": 371,

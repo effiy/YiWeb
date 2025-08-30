@@ -101,6 +101,9 @@ const createCodeView = async () => {
                             }, 200);
                         });
                     }
+                    
+                    // 检查并清除无效的高亮行
+                    this.validateAndClearInvalidHighlights(newComments);
                 },
                 immediate: true
             }
@@ -1442,6 +1445,9 @@ const createCodeView = async () => {
                     // 隐藏详情弹窗
                     this.hideCommentDetail();
                     
+                    // 清除被删除评论对应的高亮行
+                    this.clearCommentHighlight(commentKey);
+                    
                     // 触发重新加载评论
                     this.$emit('reload-comments', { 
                         forceReload: true, 
@@ -1993,6 +1999,99 @@ const createCodeView = async () => {
                 console.log('[CodeView] 隐藏评论预览');
                 this.showCommentPreviewPopup = false;
                 this.currentCommentPreview = null;
+            },
+            // 检查并清除无效的高亮行
+            validateAndClearInvalidHighlights(comments) {
+                if (!this.highlightedLines || this.highlightedLines.length === 0) {
+                    return;
+                }
+                
+                console.log('[CodeView] 检查并清除无效高亮行，当前高亮行:', this.highlightedLines);
+                
+                // 获取所有评论涉及的行号
+                const commentLines = new Set();
+                if (comments && Array.isArray(comments)) {
+                    comments.forEach(comment => {
+                        if (comment.rangeInfo) {
+                            const start = parseInt(comment.rangeInfo.startLine) || 1;
+                            const end = parseInt(comment.rangeInfo.endLine) || start;
+                            for (let i = start; i <= end; i++) {
+                                commentLines.add(i);
+                            }
+                        } else if (comment.line) {
+                            // 兼容旧的line字段
+                            commentLines.add(parseInt(comment.line) || 1);
+                        }
+                    });
+                }
+                
+                console.log('[CodeView] 评论涉及的行号:', Array.from(commentLines));
+                
+                // 检查当前高亮的行是否还有对应的评论
+                const validHighlightedLines = this.highlightedLines.filter(lineNum => {
+                    const isValid = commentLines.has(lineNum);
+                    if (!isValid) {
+                        console.log(`[CodeView] 行 ${lineNum} 不再有评论，将被清除高亮`);
+                    }
+                    return isValid;
+                });
+                
+                // 如果高亮行有变化，更新高亮状态
+                if (validHighlightedLines.length !== this.highlightedLines.length) {
+                    console.log('[CodeView] 清除无效高亮行，从', this.highlightedLines, '更新为', validHighlightedLines);
+                    this.highlightedLines = validHighlightedLines;
+                }
+            },
+            clearCommentHighlight(commentKey) {
+                if (!commentKey || !this.comments || !Array.isArray(this.comments)) {
+                    return;
+                }
+                
+                console.log(`[CodeView] 清除评论 ${commentKey} 对应的高亮行`);
+                
+                // 找到要删除的评论
+                const commentToDelete = this.comments.find(comment => 
+                    comment.key === commentKey || comment.id === commentKey || comment._id === commentKey
+                );
+                
+                if (!commentToDelete) {
+                    console.log(`[CodeView] 未找到评论 ${commentKey}`);
+                    return;
+                }
+                
+                // 获取评论涉及的行号
+                let startLine = null;
+                let endLine = null;
+                
+                if (commentToDelete.rangeInfo) {
+                    startLine = parseInt(commentToDelete.rangeInfo.startLine) || 1;
+                    endLine = parseInt(commentToDelete.rangeInfo.endLine) || startLine;
+                } else if (commentToDelete.line) {
+                    startLine = endLine = parseInt(commentToDelete.line) || 1;
+                }
+                
+                if (!startLine || !endLine) {
+                    console.log(`[CodeView] 评论 ${commentKey} 没有有效的行号信息`);
+                    return;
+                }
+                
+                console.log(`[CodeView] 评论 ${commentKey} 涉及行号: ${startLine}-${endLine}`);
+                
+                // 从高亮行数组中移除这些行号
+                const linesToRemove = [];
+                for (let i = startLine; i <= endLine; i++) {
+                    linesToRemove.push(i);
+                }
+                
+                this.highlightedLines = this.highlightedLines.filter(lineNum => {
+                    const shouldRemove = linesToRemove.includes(lineNum);
+                    if (shouldRemove) {
+                        console.log(`[CodeView] 移除高亮行 ${lineNum}`);
+                    }
+                    return !shouldRemove;
+                });
+                
+                console.log(`[CodeView] 清除高亮后剩余行:`, this.highlightedLines);
             }
         },
         mounted() {
@@ -2025,6 +2124,15 @@ const createCodeView = async () => {
                 this.$emit('reload-comments', e.detail);
             };
             window.addEventListener('reloadComments', this._reloadCommentsListener);
+            
+            // 监听清除评论高亮事件
+            this._clearCommentHighlightListener = (e) => {
+                console.log('[CodeView] 收到清除评论高亮事件:', e.detail);
+                if (e.detail && e.detail.commentId) {
+                    this.clearCommentHighlight(e.detail.commentId);
+                }
+            };
+            window.addEventListener('clearCommentHighlight', this._clearCommentHighlightListener);
             
             // 延迟处理挂起的评论Key，确保评论数据已加载
             this.$nextTick(() => {
@@ -2112,10 +2220,6 @@ const createCodeView = async () => {
                 window.removeEventListener('highlightCodeLines', this._hlListener);
                 this._hlListener = null;
             }
-            if (this._escListener) {
-                window.removeEventListener('keydown', this._escListener);
-                this._escListener = null;
-            }
             if (this._clearHighlightListener) {
                 window.removeEventListener('clearCodeHighlight', this._clearHighlightListener);
                 this._clearHighlightListener = null;
@@ -2124,30 +2228,9 @@ const createCodeView = async () => {
                 window.removeEventListener('reloadComments', this._reloadCommentsListener);
                 this._reloadCommentsListener = null;
             }
-            if (this._resizeListener) {
-                window.removeEventListener('resize', this._resizeListener);
-                this._resizeListener = null;
-            }
-            if (this._resizeTimer) {
-                clearTimeout(this._resizeTimer);
-                this._resizeTimer = null;
-            }
-            if (this._selListener) {
-                document.removeEventListener('selectionchange', this._selListener);
-                this._selListener = null;
-            }
-            if (this._mouseupListener) {
-                document.removeEventListener('mouseup', this._mouseupListener, true);
-                this._mouseupListener = null;
-            }
-            if (this._keyupListener) {
-                document.removeEventListener('keyup', this._keyupListener, true);
-                this._keyupListener = null;
-            }
-            if (this._scrollListener) {
-                window.removeEventListener('scroll', this._scrollListener, true);
-                window.removeEventListener('resize', this._scrollListener);
-                this._scrollListener = null;
+            if (this._clearCommentHighlightListener) {
+                window.removeEventListener('clearCommentHighlight', this._clearCommentHighlightListener);
+                this._clearCommentHighlightListener = null;
             }
         },
         template: `
@@ -2366,7 +2449,7 @@ const createCodeView = async () => {
                                             v-model="editingCommentContent"
                                             class="form-textarea comment-content-textarea primary-textarea"
                                             placeholder="编辑评论内容（支持Markdown格式）"
-                                            rows="8"
+                                            rows="12"
                                             @keydown="onCommentDetailEditKeydown"
                                         ></textarea>
                                         <div class="textarea-hint">
@@ -2384,7 +2467,7 @@ const createCodeView = async () => {
                                             v-model="editingCommentText"
                                             class="form-textarea quoted-code-textarea"
                                             placeholder="输入引用的代码（可选）"
-                                            rows="6"
+                                            rows="12"
                                             wrap="off"
                                             spellcheck="false"
                                             autocapitalize="off"
@@ -2402,7 +2485,7 @@ const createCodeView = async () => {
                                             v-model="editingImprovementText"
                                             class="form-textarea improvement-textarea"
                                             placeholder="输入改进后的代码（可选）"
-                                            rows="5"
+                                            rows="12"
                                         ></textarea>
                                     </div>
                                 </div>
