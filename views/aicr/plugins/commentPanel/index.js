@@ -176,8 +176,21 @@ const createCommentPanel = async () => {
                 
                 // 编辑器状态
                 showCommenterEditor: false,
+                showCommentEditor: false,
                 editingCommenter: null,
                 originalCommenter: null,
+                
+                // 评论编辑状态
+                editingComment: null,
+                editingCommentContent: '',
+                editingCommentAuthor: '',
+                editingCommentTimestamp: '',
+                editingCommentText: '',
+                editingRangeInfo: { startLine: 1, endLine: 1 },
+                editingImprovementText: '',
+                editingCommentType: '',
+                editingCommentStatus: 'pending',
+                editingSaving: false,
                 
                 // 防重复请求状态
                 _isLoadingComments: false,
@@ -603,8 +616,8 @@ const createCommentPanel = async () => {
                     
                     // 设置编辑状态
                     this.editingComment = { ...comment };
-                    this.editingCommentContent = comment.content || '';
-                    this.editingCommentAuthor = comment.author || '';
+                    this.editingCommentContent = comment.content ? comment.content.trim() : '';
+                    this.editingCommentAuthor = comment.author ? comment.author.trim() : '';
                     
                     // 处理时间戳
                     if (comment.timestamp) {
@@ -615,9 +628,9 @@ const createCommentPanel = async () => {
                         this.editingCommentTimestamp = new Date().toISOString().slice(0, 16);
                     }
                     
-                    this.editingCommentText = comment.text || '';
+                    this.editingCommentText = comment.text ? comment.text.trim() : '';
                     this.editingRangeInfo = comment.rangeInfo ? { ...comment.rangeInfo } : { startLine: 1, endLine: 1 };
-                    this.editingImprovementText = comment.improvementText || '';
+                    this.editingImprovementText = comment.improvementText ? comment.improvementText.trim() : '';
                     this.editingCommentType = comment.type || '';
                     this.editingCommentStatus = comment.status || 'pending';
                     this.editingSaving = false;
@@ -704,9 +717,9 @@ const createCommentPanel = async () => {
                             projectId: projectId,
                             versionId: versionId,
                             content: newContent,
-                            text: this.editingCommentText || null,
+                            text: this.editingCommentText ? this.editingCommentText.trim() : null,
                             rangeInfo: this.editingRangeInfo,
-                            improvementText: this.editingImprovementText || null,
+                            improvementText: this.editingImprovementText ? this.editingImprovementText.trim() : null,
                             type: this.editingCommentType || null,
                             status: this.editingCommentStatus,
                             updatedAt: new Date().toISOString()
@@ -722,9 +735,9 @@ const createCommentPanel = async () => {
                                 ...this.mongoComments[idx], 
                                 author: newAuthor,
                                 content: newContent,
-                                text: this.editingCommentText || null,
+                                text: this.editingCommentText ? this.editingCommentText.trim() : null,
                                 rangeInfo: this.editingRangeInfo,
-                                improvementText: this.editingImprovementText || null,
+                                improvementText: this.editingImprovementText ? this.editingImprovementText.trim() : null,
                                 type: this.editingCommentType || null,
                                 status: this.editingCommentStatus
                             };
@@ -1447,11 +1460,11 @@ const createCommentPanel = async () => {
 
                     // 复用本组件的保存流程，落库并轻量刷新
                     this.editingComment = { key: payload.key };
-                    this.editingCommentContent = payload.content || '';
-                    this.editingCommentAuthor = payload.author || '';
-                    this.editingCommentText = payload.text || '';
+                    this.editingCommentContent = payload.content ? payload.content.trim() : '';
+                    this.editingCommentAuthor = payload.author ? payload.author.trim() : '';
+                    this.editingCommentText = payload.text ? payload.text.trim() : '';
                     this.editingRangeInfo = payload.rangeInfo || { startLine: 1, endLine: 1 };
-                    this.editingImprovementText = payload.improvementText || '';
+                    this.editingImprovementText = payload.improvementText ? payload.improvementText.trim() : '';
                     this.editingCommentType = payload.type || '';
                     this.editingCommentStatus = payload.status || 'pending';
                     this.editingSaving = false;
