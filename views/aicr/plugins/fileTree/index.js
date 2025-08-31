@@ -151,16 +151,23 @@ const createFileTreeNode = () => {
                     console.log('[FileTreeNode] 文件对象:', this.item);
                     console.log('[FileTreeNode] 文件路径深度:', idStr.split('/').length);
                     
-                    // 构建包含唯一标识符的payload
+                    // 构建统一的文件标识符payload
                     const payload = { 
-                        fileId: idStr, 
-                        id: idStr, 
-                        path: (this.item && this.item.path) || idStr, 
+                        // 主要标识符：优先使用path，然后是id，最后是name
+                        fileId: (this.item && this.item.path) || (this.item && this.item.id) || idStr,
+                        // 兼容性标识符
+                        id: (this.item && this.item.id) || idStr,
+                        path: (this.item && this.item.path) || idStr,
                         name: (this.item && this.item.name) || (idStr.split('/').pop()),
-                        // 添加文件的唯一标识符，优先使用key，然后是_id，最后是其他唯一字段
+                        // 唯一标识符：优先使用key，然后是_id，最后是id
                         key: this.item?.key || this.item?._id || this.item?.id || idStr,
                         // 保留原始item对象，包含所有可能的标识字段
-                        originalItem: this.item
+                        originalItem: this.item,
+                        // 文件类型
+                        type: this.item?.type || 'file',
+                        // 文件大小和修改时间
+                        size: this.item?.size,
+                        modified: this.item?.modified
                     };
                     
                     console.log('[FileTreeNode] 文件选择payload:', payload);
@@ -171,8 +178,24 @@ const createFileTreeNode = () => {
             // 检查文件是否被选中
             isFileSelected(fileId) {
                 return safeExecute(() => {
-                    console.log('[FileTreeNode] isFileSelected - fileId:', fileId, 'selectedFileId:', this.selectedFileId, 'result:', this.selectedFileId && this.selectedFileId === fileId);
-                    return this.selectedFileId && this.selectedFileId === fileId;
+                    if (!fileId || !this.selectedFileId) return false;
+                    
+                    // 规范化文件ID进行比较
+                    const normalize = (v) => {
+                        if (!v) return '';
+                        let s = String(v).replace(/\\/g, '/');
+                        s = s.replace(/^\.\//, '');
+                        s = s.replace(/^\/+/, '');
+                        s = s.replace(/\/\/+/g, '/');
+                        return s;
+                    };
+                    
+                    const normalizedFileId = normalize(fileId);
+                    const normalizedSelectedId = normalize(this.selectedFileId);
+                    const result = normalizedFileId === normalizedSelectedId;
+                    
+                    console.log('[FileTree] isFileSelected - fileId:', fileId, 'selectedFileId:', this.selectedFileId, 'normalized:', { fileId: normalizedFileId, selectedId: normalizedSelectedId }, 'result:', result);
+                    return result;
                 }, '文件选中状态检查');
             },
             
@@ -239,15 +262,62 @@ const createFileTreeNode = () => {
                 return safeExecute(() => {
                     if (!this.comments || !fileId) return 0;
                     
+                    // 使用统一的文件标识符匹配逻辑
+                    const normalize = (v) => {
+                        if (!v) return '';
+                        let s = String(v).replace(/\\/g, '/');
+                        s = s.replace(/^\.\//, '');
+                        s = s.replace(/^\/+/, '');
+                        s = s.replace(/\/\/+/g, '/');
+                        return s;
+                    };
+                    
+                    const target = normalize(fileId);
+                    
                     const count = this.comments.filter(comment => {
                         // 兼容不同的文件标识方式
                         const commentFileId = comment.fileId || (comment.fileInfo && comment.fileInfo.path);
-                        return commentFileId === fileId;
+                        const normalizedCommentFileId = normalize(commentFileId);
+                        return normalizedCommentFileId === target;
                     }).length;
                     
                     return count;
                 }, '文件评论数量计算');
-            }
+            },
+            
+            // 获取文件夹的评论数量（递归计算所有子文件的评论）
+            getFolderCommentCount(folder) {
+                return safeExecute(() => {
+                    if (!folder || folder.type !== 'folder' || !folder.children) return 0;
+                    
+                    let totalCount = 0;
+                    
+                    const calculateCount = (items) => {
+                        if (!Array.isArray(items)) {
+                            // 如果是单个节点，直接处理
+                            if (items.type === 'file') {
+                                totalCount += this.getCommentCount(items.id);
+                            } else if (items.type === 'folder' && items.children) {
+                                calculateCount(items.children);
+                            }
+                            return;
+                        }
+                        
+                        items.forEach(item => {
+                            if (item.type === 'file') {
+                                totalCount += this.getCommentCount(item.id);
+                            } else if (item.type === 'folder' && item.children) {
+                                calculateCount(item.children);
+                            }
+                        });
+                    };
+                    
+                    calculateCount(folder.children);
+                    return totalCount;
+                }, '文件夹评论数量计算');
+            },
+            
+
         },
         template: `
             <li 
@@ -404,15 +474,47 @@ const createFileTree = async () => {
                     }
                     const idStr = String(fileId);
                     console.log('[FileTree] 选择文件:', idStr);
-                    this.$emit('file-select', idStr);
+                    
+                    // 构建统一的文件标识符payload，与FileTreeNode组件保持一致
+                    const payload = { 
+                        // 主要标识符：优先使用path，然后是id，最后是name
+                        fileId: idStr,
+                        // 兼容性标识符
+                        id: idStr,
+                        path: idStr,
+                        name: idStr.split('/').pop(),
+                        // 唯一标识符
+                        key: idStr,
+                        // 文件类型
+                        type: 'file'
+                    };
+                    
+                    console.log('[FileTree] 文件选择payload:', payload);
+                    this.$emit('file-select', payload);
                 }, '文件选择处理');
             },
             
             // 检查文件是否被选中
             isFileSelected(fileId) {
                 return safeExecute(() => {
-                    console.log('[FileTree] isFileSelected - fileId:', fileId, 'selectedFileId:', this.selectedFileId, 'result:', this.selectedFileId && this.selectedFileId === fileId);
-                    return this.selectedFileId && this.selectedFileId === fileId;
+                    if (!fileId || !this.selectedFileId) return false;
+                    
+                    // 规范化文件ID进行比较
+                    const normalize = (v) => {
+                        if (!v) return '';
+                        let s = String(v).replace(/\\/g, '/');
+                        s = s.replace(/^\.\//, '');
+                        s = s.replace(/^\/+/, '');
+                        s = s.replace(/\/\/+/g, '/');
+                        return s;
+                    };
+                    
+                    const normalizedFileId = normalize(fileId);
+                    const normalizedSelectedId = normalize(this.selectedFileId);
+                    const result = normalizedFileId === normalizedSelectedId;
+                    
+                    console.log('[FileTree] isFileSelected - fileId:', fileId, 'selectedFileId:', this.selectedFileId, 'normalized:', { fileId: normalizedFileId, selectedId: normalizedSelectedId }, 'result:', result);
+                    return result;
                 }, '文件选中状态检查');
             },
             
@@ -478,10 +580,23 @@ const createFileTree = async () => {
                 return safeExecute(() => {
                     if (!this.comments || !fileId) return 0;
                     
+                    // 使用统一的文件标识符匹配逻辑
+                    const normalize = (v) => {
+                        if (!v) return '';
+                        let s = String(v).replace(/\\/g, '/');
+                        s = s.replace(/^\.\//, '');
+                        s = s.replace(/^\/+/, '');
+                        s = s.replace(/\/\/+/g, '/');
+                        return s;
+                    };
+                    
+                    const target = normalize(fileId);
+                    
                     const count = this.comments.filter(comment => {
                         // 兼容不同的文件标识方式
                         const commentFileId = comment.fileId || (comment.fileInfo && comment.fileInfo.path);
-                        return commentFileId === fileId;
+                        const normalizedCommentFileId = normalize(commentFileId);
+                        return normalizedCommentFileId === target;
                     }).length;
                     
                     return count;

@@ -93,7 +93,8 @@ const createCodeView = async () => {
                                 path: newFile.path,
                                 key: newFile.key,
                                 _id: newFile._id,
-                                hasContent: !!newFile.content
+                                hasContent: !!newFile.content,
+                                contentLength: newFile.content ? newFile.content.length : 0
                             });
                             
                             // 如果文件没有内容但有key，尝试触发文件加载
@@ -101,6 +102,37 @@ const createCodeView = async () => {
                                 console.log('[CodeView] 文件无内容，尝试触发文件加载:', newFile.key || newFile._id);
                                 this.triggerFileLoad(newFile);
                             }
+                            
+                            // 如果文件有内容，确保codeLines正确更新
+                            if (newFile.content && newFile.content.length > 0) {
+                                console.log('[CodeView] 文件有内容，行数:', this.codeLines.length);
+                                // 强制更新视图
+                                this.$nextTick(() => {
+                                    this.$forceUpdate();
+                                });
+                            }
+                        }
+                    }
+                },
+                immediate: true,
+                deep: true
+            },
+            // 监听文件内容变化
+            'file.content': {
+                handler(newContent, oldContent) {
+                    if (newContent !== oldContent) {
+                        console.log('[CodeView] 文件内容变化:', {
+                            oldLength: oldContent?.length || 0,
+                            newLength: newContent?.length || 0,
+                            hasContent: !!newContent
+                        });
+                        
+                        if (newContent && newContent.length > 0) {
+                            console.log('[CodeView] 文件内容已更新，行数:', this.codeLines.length);
+                            // 强制更新视图
+                            this.$nextTick(() => {
+                                this.$forceUpdate();
+                            });
                         }
                     }
                 },
@@ -128,7 +160,16 @@ const createCodeView = async () => {
         computed: {
             codeLines() {
                 const content = (this.file && typeof this.file.content === 'string') ? this.file.content : '';
-                return content.split(/\r?\n/);
+                console.log('[CodeView] codeLines计算 - 文件:', this.file?.name, '内容长度:', content.length);
+                
+                if (!content || content.length === 0) {
+                    console.log('[CodeView] codeLines计算 - 文件内容为空，返回空数组');
+                    return [];
+                }
+                
+                const lines = content.split(/\r?\n/);
+                console.log('[CodeView] codeLines计算 - 解析行数:', lines.length);
+                return lines;
             },
             languageType() {
                 if (!this.file) return 'text';
@@ -2133,8 +2174,24 @@ const createCodeView = async () => {
                             window.aicrStore.loadFileById(projectId, versionId, fileId, fileKey)
                                 .then((loadedFile) => {
                                     if (loadedFile && loadedFile.content) {
-                                        console.log('[CodeView] 文件加载成功:', loadedFile.name);
-                                        // 文件内容会自动更新，因为store会更新files列表
+                                        console.log('[CodeView] 文件加载成功:', loadedFile.name, '内容长度:', loadedFile.content.length);
+                                        
+                                        // 更新当前文件对象的内容
+                                        if (this.file && (this.file.key === fileKey || this.file._id === fileKey)) {
+                                            // 使用Vue的响应式API强制更新
+                                            const originalFile = this.file;
+                                            const updatedFile = { ...originalFile, content: loadedFile.content };
+                                            
+                                            // 强制触发Vue的响应式更新
+                                            Object.assign(originalFile, updatedFile);
+                                            
+                                            console.log('[CodeView] 已更新文件内容，当前行数:', this.codeLines.length);
+                                            
+                                            // 强制更新视图
+                                            this.$nextTick(() => {
+                                                this.$forceUpdate();
+                                            });
+                                        }
                                     } else {
                                         console.warn('[CodeView] 文件加载失败或无内容');
                                     }
@@ -2155,6 +2212,35 @@ const createCodeView = async () => {
         },
         mounted() {
             console.log('[CodeView] 组件挂载');
+            
+            // 添加调试方法到全局
+            window.debugCodeView = {
+                getFileInfo: () => {
+                    return {
+                        file: this.file,
+                        hasFile: !!this.file,
+                        fileName: this.file?.name,
+                        filePath: this.file?.path,
+                        fileKey: this.file?.key,
+                        hasContent: !!this.file?.content,
+                        contentLength: this.file?.content?.length || 0,
+                        codeLinesCount: this.codeLines.length,
+                        codeLines: this.codeLines.slice(0, 5) // 只显示前5行
+                    };
+                },
+                forceUpdate: () => {
+                    console.log('[CodeView] 强制更新视图');
+                    this.$forceUpdate();
+                },
+                reloadFile: () => {
+                    if (this.file && (this.file.key || this.file._id)) {
+                        console.log('[CodeView] 重新加载文件:', this.file.name);
+                        this.triggerFileLoad(this.file);
+                    } else {
+                        console.warn('[CodeView] 无法重新加载文件，缺少key或_id');
+                    }
+                }
+            };
             
             // 监听全局高亮事件
             this._hlListener = (e) => this.handleHighlightEvent(e.detail);

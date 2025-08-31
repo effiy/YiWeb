@@ -811,57 +811,35 @@ export const createStore = () => {
                             const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
                             const candidates = [f?.fileId, f?.id, f?.path, f?.name, d?.fileId, d?.id, d?.path, d?.name].filter(Boolean).map(normalizeId);
                             
-                            // 使用与主页面一致的匹配逻辑
-                            const isMatch = candidates.some(c => {
+                            // 简化的匹配逻辑：优先完全匹配，然后路径匹配
+                            return candidates.some(c => {
                                 // 完全匹配
                                 if (c === targetNorm) {
                                     console.log('[loadFileById] 完全匹配成功:', c, '===', targetNorm);
                                     return true;
                                 }
                                 
-                                // 路径匹配：确保是完整的路径匹配，不是部分匹配
-                                if (c.endsWith('/' + targetNorm)) {
-                                    // 确保targetNorm不是空字符串，且c以targetNorm结尾
-                                    if (targetNorm && targetNorm.length > 0) {
-                                        console.log('[loadFileById] 路径结尾匹配成功:', c, '<->', targetNorm);
-                                        return true;
-                                    }
-                                }
-                                if (targetNorm.endsWith('/' + c)) {
-                                    // 确保c不是空字符串，且targetNorm以c结尾
-                                    if (c && c.length > 0) {
-                                        console.log('[loadFileById] 路径开头匹配成功:', c, '<->', targetNorm);
-                                        return true;
-                                    }
+                                // 路径匹配：检查是否是父子路径关系
+                                if (c.endsWith('/' + targetNorm) && targetNorm && targetNorm.length > 0) {
+                                    console.log('[loadFileById] 路径结尾匹配成功:', c, '<->', targetNorm);
+                                    return true;
                                 }
                                 
-                                // 文件名匹配：只有当路径部分也一致时才匹配
+                                if (targetNorm.endsWith('/' + c) && c && c.length > 0) {
+                                    console.log('[loadFileById] 路径开头匹配成功:', c, '<->', targetNorm);
+                                    return true;
+                                }
+                                
+                                // 文件名匹配：检查文件名是否相同
                                 const cName = c.split('/').pop();
                                 const targetName = targetNorm.split('/').pop();
                                 if (cName && targetName && cName === targetName) {
-                                    // 检查路径部分是否一致
-                                    const cPath = c.substring(0, c.lastIndexOf('/'));
-                                    const targetPath = targetNorm.substring(0, targetNorm.lastIndexOf('/'));
-                                    
-                                    if (cPath === targetPath || (!cPath && !targetPath)) {
-                                        console.log('[loadFileById] 文件名匹配成功（路径一致）:', cName, '===', targetName);
-                                        return true;
-                                    } else {
-                                        console.log('[loadFileById] 文件名相同但路径不同，跳过匹配:', {
-                                            fileName: cName,
-                                            cPath: cPath,
-                                            targetPath: targetPath
-                                        });
-                                        return false;
-                                    }
+                                    console.log('[loadFileById] 文件名匹配成功:', cName, '===', targetName);
+                                    return true;
                                 }
+                                
                                 return false;
                             });
-                            
-                            if (!isMatch && candidates.length > 0) {
-                                console.log('[loadFileById] 未匹配，候选项:', candidates.join(', '), '目标:', targetNorm);
-                            }
-                            return isMatch;
                         });
                         if (matched) {
                             list = [matched];
