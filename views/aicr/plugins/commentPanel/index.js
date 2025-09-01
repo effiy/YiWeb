@@ -319,6 +319,8 @@ const createCommentPanel = async () => {
 
                     // 段落/换行
                     const blockTags = ['h1','h2','h3','h4','h5','h6','pre','ul','ol','li','blockquote'];
+                    // 优化：先清理多余的换行符，避免多个连续的\n
+                    html = html.replace(/\n{3,}/g, '\n\n'); // 将3个或更多换行符替换为2个
                     html = html.split(/\n{2,}/).map(block => {
                         const trimmed = block.trim();
                         if (!trimmed) return '';

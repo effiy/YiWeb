@@ -557,6 +557,8 @@ const createCodeView = async () => {
                 html = html.replace(/^[-*+]\s+(.+)$/gm, '<li>$1<\/li>')
                            .replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ul>${m.replace(/\n/g, '')}<\/ul>`);
                 const blockTags = ['h1','h2','h3','h4','h5','h6','pre','ul','ol','li','blockquote'];
+                // 优化：先清理多余的换行符，避免多个连续的\n
+                html = html.replace(/\n{3,}/g, '\n\n'); // 将3个或更多换行符替换为2个
                 html = html.split(/\n{2,}/).map(block => {
                     const trimmed = block.trim();
                     if (!trimmed) return '';
@@ -760,11 +762,30 @@ const createCodeView = async () => {
                         return line.replace(/^\s*\d+\s*/, '');
                     });
                     
-                    const result = cleanLines.join('\n').trim();
+                    // 优化：处理多个连续的换行符问题
+                    // 1. 先过滤掉空行
+                    const nonEmptyLines = cleanLines.filter(line => line.trim() !== '');
+                    
+                    // 2. 重新组合，避免多个连续的\n
+                    let result = nonEmptyLines.join('\n').trim();
+                    
+                    // 3. 进一步清理：移除多余的换行符
+                    // 将多个连续的换行符替换为单个换行符
+                    result = result.replace(/\n{2,}/g, '\n');
+                    
+                    // 4. 移除首尾的换行符
+                    result = result.replace(/^\n+|\n+$/g, '');
+                    
+                    // 5. 使用辅助方法进行最终清理
+                    result = this.cleanTextNewlines(result);
                     
                     console.log('[CodeView] 文本清理:', {
                         原始行数: lines.length,
-                        清理后: result.substring(0, 100) + (result.length > 100 ? '...' : '')
+                        清理后行数: nonEmptyLines.length,
+                        清理后: result.substring(0, 100) + (result.length > 100 ? '...' : ''),
+                        包含换行符: result.includes('\n'),
+                        换行符数量: (result.match(/\n/g) || []).length,
+                        最终长度: result.length
                     });
                     
                     return result;
@@ -773,6 +794,25 @@ const createCodeView = async () => {
                     console.warn('[CodeView] 提取代码内容失败，使用原始选择:', error);
                     return selection.toString().trim();
                 }
+            },
+            
+            // 辅助方法：清理文本中的多余换行符
+            cleanTextNewlines(text) {
+                if (!text || typeof text !== 'string') return text;
+                
+                // 1. 移除首尾的空白字符和换行符
+                let cleaned = text.trim();
+                
+                // 2. 将多个连续的换行符替换为单个换行符
+                cleaned = cleaned.replace(/\n{2,}/g, '\n');
+                
+                // 3. 移除行首行尾的空白字符
+                cleaned = cleaned.split('\n').map(line => line.trim()).join('\n');
+                
+                // 4. 再次移除首尾的换行符
+                cleaned = cleaned.replace(/^\n+|\n+$/g, '');
+                
+                return cleaned;
             },
             // 获取选中文本对应的行号范围
             getSelectionLineRange(range) {
