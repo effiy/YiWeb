@@ -207,7 +207,10 @@ const createCommentPanel = async () => {
                     text: '',
                     commenterIds: [],
                     status: 'open'
-                }
+                },
+                
+                // 评论输入状态
+                newCommentText: ''
             };
         },
         computed: {
@@ -565,7 +568,7 @@ const createCommentPanel = async () => {
             },
 
             // 提交评论
-            submitComment() {
+            async submitComment() {
                 if (!this.newCommentText.trim()) {
                     alert('评论内容不能为空');
                     return;
@@ -582,8 +585,23 @@ const createCommentPanel = async () => {
                     }
                 }
 
-                this.$emit('comment-submit', commentData);
+                // 清空输入框
                 this.newCommentText = '';
+                
+                // 发出评论提交事件
+                this.$emit('comment-submit', commentData);
+                
+                // 立即刷新评论列表，确保新评论能够显示
+                console.log('[CommentPanel] 评论提交后立即刷新评论列表');
+                setTimeout(() => {
+                    this.debouncedLoadComments();
+                }, 100);
+                
+                // 额外确保刷新，延迟更长时间再次刷新
+                setTimeout(() => {
+                    console.log('[CommentPanel] 评论提交后延迟刷新评论列表');
+                    this.debouncedLoadComments();
+                }, 1000);
             },
 
             // 处理评论输入
