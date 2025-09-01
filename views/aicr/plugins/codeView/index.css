@@ -93,6 +93,10 @@
     resize: vertical;
     min-height: 120px;
     transition: all 0.2s ease;
+    /* 优化缩进显示 */
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: normal;
 }
 
 .quoted-code-textarea:focus {
@@ -116,6 +120,7 @@
 .code-actions {
     display: inline-flex;
     gap: 8px;
+    align-items: center;
 }
 
 .code-actions .action-button {
@@ -1070,9 +1075,15 @@
     border: none;
     border-radius: 0;
     overflow-x: auto;
-    white-space: pre;
+    white-space: pre; /* 保持预格式化，确保缩进正确显示 */
     cursor: pointer;
     transition: all 0.2s ease;
+    /* 优化缩进显示 */
+    -moz-tab-size: 4;
+    tab-size: 4;
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: normal;
 }
 
 .quote-code.modern:hover {
@@ -2488,8 +2499,8 @@
     font-size: 11px;
     line-height: 1.4; /* 增加行高，提高可读性 */
     color: var(--text-primary);
-    white-space: pre-wrap;
-    word-break: break-word;
+    white-space: pre; /* 保持预格式化，确保缩进正确显示 */
+    word-break: normal;
     /* 增加高度限制以显示更多代码 */
     max-height: 150px; /* 增加代码显示高度 */
     overflow-y: auto;
@@ -2499,6 +2510,11 @@
     /* 添加代码区域的滚动条样式 */
     scrollbar-width: thin;
     scrollbar-color: var(--border-primary) transparent;
+    /* 优化缩进显示 */
+    -moz-tab-size: 4;
+    tab-size: 4;
+    word-wrap: normal;
+    overflow-wrap: normal;
 }
 
 .preview-quote-code::-webkit-scrollbar {
@@ -2549,8 +2565,8 @@
     font-size: 11px;
     line-height: 1.5; /* 增加行高，提高可读性 */
     color: var(--text-primary);
-    white-space: pre-wrap;
-    word-break: break-word;
+    white-space: pre; /* 保持预格式化，确保缩进正确显示 */
+    word-break: normal;
     /* 增加高度限制以显示更多代码 */
     max-height: 150px; /* 增加代码显示高度 */
     overflow-y: auto;
@@ -2560,6 +2576,11 @@
     /* 添加代码区域的滚动条样式 */
     scrollbar-width: thin;
     scrollbar-color: var(--border-primary) transparent;
+    /* 优化缩进显示 */
+    -moz-tab-size: 4;
+    tab-size: 4;
+    word-wrap: normal;
+    overflow-wrap: normal;
 }
 
 .preview-improvement-code::-webkit-scrollbar {
@@ -3819,6 +3840,10 @@
     border: 1px solid var(--border-tertiary);
     -moz-tab-size: 4;
     tab-size: 4;
+    white-space: pre; /* 保持预格式化，确保缩进正确显示 */
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: normal;
 }
 
 /* 响应式设计 - 表单 */
@@ -4320,6 +4345,60 @@
         min-height: 120px;
         font-size: 13px;
     }
+}
+
+/* 数字行过滤配置样式 */
+.filter-config {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    font-size: 11px;
+}
+
+.filter-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.filter-label i {
+    font-size: 10px;
+    color: var(--primary);
+}
+
+.filter-select {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.filter-select:hover {
+    background: var(--bg-hover);
+}
+
+.filter-select:focus {
+    background: var(--bg-hover);
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.filter-select option {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 4px 8px;
 }
 
 

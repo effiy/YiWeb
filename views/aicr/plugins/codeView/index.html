@@ -16,6 +16,17 @@
                 {{ file.path || file.name }}
             </div>
             <div class="code-actions">
+                <!-- 数字行过滤配置 -->
+                <div class="filter-config" v-if="file">
+                    <label class="filter-label" title="数字行过滤设置">
+                        <i class="fas fa-filter"></i>
+                        <select v-model="numberFilterMode" class="filter-select" @change="onFilterModeChange">
+                            <option value="smart">智能过滤</option>
+                            <option value="strict">严格过滤</option>
+                            <option value="off">关闭过滤</option>
+                        </select>
+                    </label>
+                </div>
                 <button v-if="!isEditingFile" class="action-button" @click="copyEntireFile" :disabled="!file">
                     <i class="fas fa-copy"></i><span>复制</span>
                 </button>
@@ -80,6 +91,17 @@
         </pre>
         <!-- 划词评论按钮容器（全局唯一，通过脚本定位） -->
         <div id="comment-action-container"></div>
+
+        <!-- 缩进处理测试区域（开发调试用，生产环境可移除） -->
+        <div v-if="false" class="indentation-test-area" style="display: none;">
+            <div class="test-header">
+                <h4>缩进处理测试</h4>
+                <button @click="runIndentationTests" class="test-btn">运行测试</button>
+            </div>
+            <div class="test-results" v-if="testResults">
+                <pre>{{ testResults }}</pre>
+            </div>
+        </div>
 
         <!-- 未选评论者时的手动评论弹框 -->
         <div 
