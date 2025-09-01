@@ -81,7 +81,7 @@
 .quoted-code-textarea {
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 12px;
-    line-height: 1.4;
+    line-height: 2;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-tertiary);
     -moz-tab-size: 4;
@@ -1008,7 +1008,7 @@
         rgba(156, 163, 175, 0.05) 100%);
     border: 1px solid rgba(107, 114, 128, 0.1);
     border-radius: 12px;
-    overflow: hidden;
+    overflow: scroll;
 }
 
 .quote-header.modern,
@@ -1070,7 +1070,7 @@
     margin: 0;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 13px;
-    line-height: 1.5;
+    line-height: 2;
     color: var(--text-primary);
     border: none;
     border-radius: 0;
@@ -1341,7 +1341,7 @@
     .improvement-code.modern {
         padding: 10px;
         font-size: 11px;
-        line-height: 1.4;
+        line-height: 2;
     }
     
     .improvement-badge {
@@ -1649,7 +1649,7 @@
     background: var(--bg-tertiary); /* 与编辑态textarea保持一致 */
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 12px;
-    line-height: 1.4; /* 增加行高，提高可读性 */
+    line-height: 2; /* 增加行高，提高可读性 */
     color: var(--text-primary);
     white-space: pre; /* 与编辑态保持一致的换行与缩进呈现 */
     word-break: break-word;
