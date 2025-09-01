@@ -1563,8 +1563,28 @@ const createCommentPanel = async () => {
                             }
                           })
                         ).then(() => {
-                          // 刷新该 fileId 的评论列表
-                          this.debouncedLoadComments();
+                        // 通知评论面板刷新
+                        window.dispatchEvent(new CustomEvent('reloadComments', { 
+                            detail: { 
+                                forceReload: true, 
+                                showAllComments: false, 
+                                immediateReload: true,
+                                fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name))
+                            } 
+                        }));
+
+                        // 延迟后高亮刚添加的评论位置
+                        setTimeout(() => {
+                            if (rangeInfo && (this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)))) {
+                                console.log('[CommentPanel] 高亮新添加的评论位置:', rangeInfo);
+                                window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                    detail: {
+                                        fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
+                                        rangeInfo: rangeInfo
+                                    }
+                                }));
+                            }
+                        }, 500); // 等待评论面板刷新完成
                         }).finally(() => {
                           // 隐藏加载动画
                           this.commentsLoading = false;
