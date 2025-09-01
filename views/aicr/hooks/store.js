@@ -1324,6 +1324,25 @@ export const createStore = () => {
     };
 
     /**
+     * 统一的文件ID规范化函数
+     * @param {string} fileId - 文件ID
+     * @returns {string} 规范化后的文件ID
+     */
+    const normalizeFileId = (fileId) => {
+        try {
+            if (fileId == null) return '';
+            let s = String(fileId);
+            s = s.replace(/\\\\/g, '/'); // Windows路径转正斜杠
+            s = s.replace(/^\.\//, '');   // 去掉开头的./
+            s = s.replace(/^\/+/, '');     // 去掉多余的起始/
+            s = s.replace(/\/\/+/g, '/');  // 合并重复的/
+            return s;
+        } catch (e) {
+            return String(fileId);
+        }
+    };
+
+    /**
      * 设置选中的文件ID
      * @param {string} fileId - 文件ID
      */
@@ -1332,21 +1351,8 @@ export const createStore = () => {
             selectedFileId.value = null;
             return;
         }
-        // 统一为字符串并规范路径，提升匹配成功率
-        const toNormalizedId = (v) => {
-            try {
-                if (v == null) return '';
-                let s = String(v);
-                s = s.replace(/\\/g, '/'); // Windows路径转正斜杠
-                s = s.replace(/^\.\//, '');   // 去掉开头的./
-                s = s.replace(/^\/+/, '');     // 去掉多余的起始/
-                s = s.replace(/\/\/+/g, '/');  // 合并重复的/
-                return s;
-            } catch (e) {
-                return String(v);
-            }
-        };
-        selectedFileId.value = toNormalizedId(fileId);
+        // 使用统一的规范化函数
+        selectedFileId.value = normalizeFileId(fileId);
     };
 
     /**
@@ -1571,6 +1577,7 @@ export const createStore = () => {
         deleteCommenter,
         setSelectedCommenterIds,
         setSelectedFileId,
+        normalizeFileId, // 新增：统一的文件ID规范化函数
         toggleFolder,
         addComment,
         toggleSidebar,
@@ -1585,6 +1592,7 @@ export const createStore = () => {
         clearError
     };
 };
+
 
 
 

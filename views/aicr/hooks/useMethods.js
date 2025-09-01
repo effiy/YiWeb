@@ -20,13 +20,11 @@ export const useMethods = (store) => {
         expandedFolders,
         newComment,
         setSelectedFileId,
+        normalizeFileId, // 新增：统一的文件ID规范化函数
         toggleFolder,
-        addComment,
         setNewComment,
         toggleSidebar,
         toggleComments,
-        // 重构后的项目/版本管理
-        projects,
         selectedProject,
         selectedVersion,
         availableVersions,
@@ -43,7 +41,6 @@ export const useMethods = (store) => {
         renameItem,
         deleteItem,
          // 本地持久化
-         persistProjects,
          setProjects,
 
         // 搜索相关状态
@@ -643,40 +640,38 @@ export const useMethods = (store) => {
      */
     const handleFileSelect = (fileId) => {
         return safeExecute(async () => {
-            // 支持对象入参：优先使用 path 作为标识
+            console.log('[文件选择] 收到文件选择请求:', fileId);
+            
+            // 支持对象入参：优先使用 fileId，然后是 id，最后是 name
+            let targetFileId = fileId;
             if (fileId && typeof fileId === 'object') {
                 const node = fileId;
-                const prefer = node.path || node.id || node.fileId || node.name || '';
-                fileId = prefer;
+                // 优先使用 fileId，然后是 id，最后是 name
+                targetFileId = node.fileId || node.id || node.name || '';
+                console.log('[文件选择] 从对象中提取文件ID:', targetFileId, '原始对象:', node);
+                
+                // 如果有 key 信息，保存到全局变量供后续使用
+                if (node.key || node._id) {
+                    window.__aicrPendingFileKey = node.key || node._id;
+                    console.log('[文件选择] 保存文件Key:', window.__aicrPendingFileKey);
+                }
             }
 
-            // 归一化
-            const normalize = (v) => {
-                try {
-                    if (v == null) return '';
-                    let s = String(v);
-                    s = s.replace(/\\\\/g, '/');
-                    s = s.replace(/^\.\//, '');
-                    s = s.replace(/^\/+/, '');
-                    s = s.replace(/\/\/+/g, '/');
-                    return s;
-                } catch (e) {
-                    return String(v);
-                }
-            };
-            const idNorm = normalize(fileId);
+            // 使用统一的文件ID规范化函数
+            const idNorm = normalizeFileId(targetFileId);
             if (!idNorm) {
                 throw createError('文件ID无效', ErrorTypes.VALIDATION, '文件选择');
             }
 
+            console.log('[文件选择] 设置选中的文件ID:', idNorm);
             setSelectedFileId(idNorm);
-            console.log('[文件选择] 选择文件(规范化):', idNorm);
 
             // 若项目/版本就绪，尝试按需加载内容
             try {
                 const pj = selectedProject?.value;
                 const ver = selectedVersion?.value;
                 if (pj && ver && typeof loadFileById === 'function') {
+                    console.log('[文件选择] 开始按需加载文件内容:', { project: pj, version: ver, fileId: idNorm });
                     await loadFileById(pj, ver, idNorm);
                 }
             } catch (e) {
@@ -1946,6 +1941,7 @@ export const useMethods = (store) => {
         }
     };
 };
+
 
 
 

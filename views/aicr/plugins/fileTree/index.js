@@ -151,10 +151,10 @@ const createFileTreeNode = () => {
                     console.log('[FileTreeNode] 文件对象:', this.item);
                     console.log('[FileTreeNode] 文件路径深度:', idStr.split('/').length);
                     
-                    // 构建统一的文件标识符payload
+                    // 构建统一的文件标识符payload，确保与后端数据结构一致
                     const payload = { 
-                        // 主要标识符：优先使用path，然后是id，最后是name
-                        fileId: (this.item && this.item.path) || (this.item && this.item.id) || idStr,
+                        // 主要标识符：优先使用fileId，然后是id，最后是name
+                        fileId: (this.item && this.item.fileId) || (this.item && this.item.id) || idStr,
                         // 兼容性标识符
                         id: (this.item && this.item.id) || idStr,
                         path: (this.item && this.item.path) || idStr,
@@ -276,7 +276,7 @@ const createFileTreeNode = () => {
                     
                     const count = this.comments.filter(comment => {
                         // 兼容不同的文件标识方式
-                        const commentFileId = comment.fileId || (comment.fileInfo && comment.fileInfo.path);
+                        const commentFileId = comment.fileId || (comment.fileInfo && comment.fileInfo.fileId);
                         const normalizedCommentFileId = normalize(commentFileId);
                         return normalizedCommentFileId === target;
                     }).length;
@@ -316,8 +316,6 @@ const createFileTreeNode = () => {
                     return totalCount;
                 }, '文件夹评论数量计算');
             },
-            
-
         },
         template: `
             <li 
@@ -477,7 +475,7 @@ const createFileTree = async () => {
                     
                     // 构建统一的文件标识符payload，与FileTreeNode组件保持一致
                     const payload = { 
-                        // 主要标识符：优先使用path，然后是id，最后是name
+                        // 主要标识符：优先使用fileId，然后是id，最后是name
                         fileId: idStr,
                         // 兼容性标识符
                         id: idStr,
@@ -497,8 +495,7 @@ const createFileTree = async () => {
             // 检查文件是否被选中
             isFileSelected(fileId) {
                 return safeExecute(() => {
-                    if (!fileId || !this.selectedFileId) return false;
-                    
+                    if (!fileId || !this.selectedFileId) return false;                    
                     // 规范化文件ID进行比较
                     const normalize = (v) => {
                         if (!v) return '';
@@ -594,7 +591,7 @@ const createFileTree = async () => {
                     
                     const count = this.comments.filter(comment => {
                         // 兼容不同的文件标识方式
-                        const commentFileId = comment.fileId || (comment.fileInfo && comment.fileInfo.path);
+                        const commentFileId = comment.fileId || (comment.fileInfo && comment.fileInfo.fileId);
                         const normalizedCommentFileId = normalize(commentFileId);
                         return normalizedCommentFileId === target;
                     }).length;
@@ -655,6 +652,7 @@ const createFileTree = async () => {
         console.error('FileTree 组件初始化失败:', error);
     }
 })();
+
 
 
 

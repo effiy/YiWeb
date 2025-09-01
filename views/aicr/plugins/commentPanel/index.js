@@ -166,7 +166,6 @@ const createCommentPanel = async () => {
                 selectedCommenterIds: [],
                 
                 // 加载状态
-                loading: false,
                 commentsLoading: false,
                 commentersLoading: false,
                 
@@ -204,8 +203,7 @@ const createCommentPanel = async () => {
                 _debounceTimer: null,
                 
                 // 其他状态
-                shouldAutoCloseEditor: false,
-                newComment: {
+                newCommentData: {
                     text: '',
                     commenterIds: [],
                     status: 'open'
@@ -357,7 +355,6 @@ const createCommentPanel = async () => {
                     
                     this._isLoadingComments = true;
                     this.commentsLoading = true;
-                    this.loading = true;
                     this.commentsError = '';
 
                     try {
@@ -406,7 +403,6 @@ const createCommentPanel = async () => {
                         console.error('[CommentPanel] 评论加载失败:', err);
                     } finally {
                         this.commentsLoading = false;
-                        this.loading = false;
                         this._isLoadingComments = false;
                     }
                 }, 'mongo评论数据加载');
@@ -423,7 +419,6 @@ const createCommentPanel = async () => {
                     
                     this._isLoadingCommenters = true;
                     this.commentersLoading = true;
-                    this.loading = true;
                     this.commentersError = '';
 
                     try {
@@ -505,7 +500,6 @@ const createCommentPanel = async () => {
                         this.selectedCommenterIds = [];
                     } finally {
                         this.commentersLoading = false;
-                        this.loading = false;
                         this._isLoadingCommenters = false;
                     }
                 }, '评论者数据加载');
@@ -1521,7 +1515,6 @@ const createCommentPanel = async () => {
                     } else {
                         // 显示加载动画
                         this.commentsLoading = true;
-                        this.loading = true;
                         // 可以在此处触发AI生成评论内容的流程
                         Promise.all(
                           this.commenters.map(async commenter => {
@@ -1557,7 +1550,6 @@ const createCommentPanel = async () => {
                         }).finally(() => {
                           // 隐藏加载动画
                           this.commentsLoading = false;
-                          this.loading = false;
                         });
                     }
                 }, 100);
@@ -1682,6 +1674,7 @@ const createCommentPanel = async () => {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
+
 
 
 

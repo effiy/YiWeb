@@ -37,10 +37,7 @@ export const useComputed = (store) => {
          */
         currentFile: computed(() => {
             const fileId = store.selectedFileId?.value;
-            console.log('[currentFile] 当前文件ID:', fileId);
-            console.log('[currentFile] store.files:', store.files);
             if (!fileId) return null;
-            const filesArr = Array.isArray(store.files?.value) ? store.files.value : [];
             const normalize = (v) => {
                 try {
                     if (v == null) return '';
@@ -55,30 +52,7 @@ export const useComputed = (store) => {
                 }
             };
             const target = normalize(fileId);
-            if (!filesArr.length) {
-                // 返回占位对象以触发 CodeView 懒加载逻辑
-                const name = target.split('/').pop();
-                return { fileId: target, id: target, path: target, name, content: '' };
-            }
-            const currentFile = filesArr.find(f => {
-                const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
-                const candidates = [f.fileId, f.id, f.path, f.name, d.fileId, d.id, d.path, d.name].filter(Boolean).map(normalize);
-                const matched = candidates.some(c => {
-                    if (c === target) return true; // 完全匹配
-                    if (c.endsWith('/' + target) || target.endsWith('/' + c)) return true; // 路径结尾匹配
-                    const cName = c.split('/').pop();
-                    const tName = target.split('/').pop();
-                    if (cName && tName && cName === tName) return true; // 文件名匹配
-                    return false;
-                });
-                console.log('[currentFile] 检查文件:', f.name, '候选:', candidates, '匹配:', matched);
-                return matched;
-            });
-            console.log('[currentFile] 找到的当前文件:', currentFile);
-            if (!currentFile) {
-                const name = target.split('/').pop();
-                return { fileId: target, id: target, path: target, name, content: '' };
-            }
+            const currentFile = store.files.value.find(f => f.fileId === target);
             return currentFile;
         }),
 
@@ -303,6 +277,7 @@ export const useComputed = (store) => {
         })
     };
 };
+
 
 
 
