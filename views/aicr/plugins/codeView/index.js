@@ -89,7 +89,12 @@ const createCodeView = async () => {
                 isEditingFile: false,
                 editingFileContent: '',
                 editSaving: false,
-                saveError: ''
+                saveError: '',
+                
+                // 测试相关（开发调试用）
+                testResults: null,
+                
+
             };
         },
         watch: {
@@ -557,6 +562,8 @@ const createCodeView = async () => {
                 html = html.replace(/^[-*+]\s+(.+)$/gm, '<li>$1<\/li>')
                            .replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ul>${m.replace(/\n/g, '')}<\/ul>`);
                 const blockTags = ['h1','h2','h3','h4','h5','h6','pre','ul','ol','li','blockquote'];
+                // 优化：先清理多余的换行符，避免多个连续的\n
+                html = html.replace(/\n{3,}/g, '\n\n'); // 将3个或更多换行符替换为2个
                 html = html.split(/\n{2,}/).map(block => {
                     const trimmed = block.trim();
                     if (!trimmed) return '';
@@ -744,7 +751,7 @@ const createCodeView = async () => {
                     console.warn('[CodeView] 处理挂起参数失败:', error);
                 }
             },
-            // 从选择对象中提取纯代码内容（去除行号）
+            // 从选择对象中提取纯代码内容（优化缩进处理）
             extractCodeContent(selection) {
                 try {
                     if (!selection || selection.isCollapsed) return '';
@@ -752,19 +759,46 @@ const createCodeView = async () => {
                     // 获取原始选择文本
                     const rawText = selection.toString();
                     
-                    // 使用正则表达式去除行号
-                    // 行号通常是每行开头的数字，后面跟着空格或制表符
+                    // 智能识别和去除行号
                     const lines = rawText.split('\n');
                     const cleanLines = lines.map(line => {
-                        // 移除行首的数字行号（可能包含空格或制表符）
-                        return line.replace(/^\s*\d+\s*/, '');
+                        // 更智能的行号识别：只移除明显的行号格式
+                        // 匹配模式：行首的数字 + 空格/制表符，但不影响代码中的数字
+                        return this.removeLineNumber(line);
                     });
                     
-                    const result = cleanLines.join('\n').trim();
+                    // 优化：保留代码的原始缩进结构
+                    // 1. 过滤掉完全空白的行和纯数字行，但保留有内容的行
+                    let nonEmptyLines = cleanLines.filter(line => {
+                        const trimmed = line.trim();
+                        // 过滤掉空行
+                        if (trimmed === '') return false;
+                        // 过滤掉只有数字的行（纯数字行，可能包含前后空格）
+                        // 匹配模式：只包含数字，可能前后有空白字符
+                        if (/^\s*\d+\s*$/.test(line)) return false;
+                        return true;
+                    });
                     
-                    console.log('[CodeView] 文本清理:', {
+
+                    
+                    // 3. 重新组合，保持原有的换行结构
+                    let result = nonEmptyLines.join('\n');
+                    
+                    // 4. 智能清理：只处理明显的多余换行符，保留代码结构
+                    result = this.smartCleanNewlines(result);
+                    
+                    // 5. 最终清理：移除首尾的空白字符，但保留行内缩进
+                    result = result.trim();
+                    
+                    console.log('[CodeView] 优化文本清理:', {
                         原始行数: lines.length,
-                        清理后: result.substring(0, 100) + (result.length > 100 ? '...' : '')
+                        清理后行数: nonEmptyLines.length,
+                        过滤空行和纯数字行: lines.length - nonEmptyLines.length,
+                        清理后: result.substring(0, 100) + (result.length > 100 ? '...' : ''),
+                        包含换行符: result.includes('\n'),
+                        换行符数量: (result.match(/\n/g) || []).length,
+                        最终长度: result.length,
+                        保留缩进: result.split('\n').some(line => line.startsWith(' ') || line.startsWith('\t'))
                     });
                     
                     return result;
@@ -773,6 +807,66 @@ const createCodeView = async () => {
                     console.warn('[CodeView] 提取代码内容失败，使用原始选择:', error);
                     return selection.toString().trim();
                 }
+            },
+            
+
+            
+            // 智能去除行号（保留代码中的数字）
+            removeLineNumber(line) {
+                // 更精确的行号识别模式
+                // 匹配：行首的数字 + 空格/制表符，但不影响代码中的数字
+                const lineNumberPattern = /^(\s*)(\d+)(\s+)(.*)$/;
+                const match = line.match(lineNumberPattern);
+                
+                if (match) {
+                    // 如果匹配到行号模式，返回原始缩进 + 代码内容
+                    const [, leadingSpaces, lineNumber, separator, codeContent] = match;
+                    
+                    // 检查是否是真正的行号（通过缩进和分隔符判断）
+                    if (separator.length >= 1 && (separator.includes(' ') || separator.includes('\t'))) {
+                        // 保留原始缩进，只移除行号和分隔符
+                        return leadingSpaces + codeContent;
+                    }
+                }
+                
+                // 如果没有匹配到行号模式，返回原行
+                return line;
+            },
+            
+            // 智能清理换行符（保留代码结构）
+            smartCleanNewlines(text) {
+                if (!text || typeof text !== 'string') return text;
+                
+                // 1. 移除首尾的空白字符
+                let cleaned = text.trim();
+                
+                // 2. 智能处理连续的换行符：保留代码块之间的分隔，但移除过多的空行
+                // 将3个或更多换行符替换为2个，保持代码块的可读性
+                cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+                
+                // 3. 保留行内的缩进和空白字符
+                // 不进行额外的行首行尾清理，保持代码的原始格式
+                
+                return cleaned;
+            },
+            
+            // 辅助方法：清理文本中的多余换行符（保留用于向后兼容）
+            cleanTextNewlines(text) {
+                if (!text || typeof text !== 'string') return text;
+                
+                // 1. 移除首尾的空白字符和换行符
+                let cleaned = text.trim();
+                
+                // 2. 将多个连续的换行符替换为单个换行符
+                cleaned = cleaned.replace(/\n{2,}/g, '\n');
+                
+                // 3. 移除行首行尾的空白字符
+                cleaned = cleaned.split('\n').map(line => line.trim()).join('\n');
+                
+                // 4. 再次移除首尾的换行符
+                cleaned = cleaned.replace(/^\n+|\n+$/g, '');
+                
+                return cleaned;
             },
             // 获取选中文本对应的行号范围
             getSelectionLineRange(range) {
@@ -1651,12 +1745,14 @@ const createCodeView = async () => {
                 }
             },
             
-            // 处理代码缩进/反缩进
+            // 处理代码缩进/反缩进（增强版）
             handleCodeIndentation(textarea, isReverse = false) {
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
                 const value = textarea.value;
-                const indentChar = '    '; // 使用4个空格缩进
+                
+                // 智能检测缩进字符：优先使用Tab，其次使用4个空格
+                const indentChar = this.detectIndentChar(value);
                 
                 // 获取选中文本和行范围
                 const lines = value.split('\n');
@@ -1679,11 +1775,11 @@ const createCodeView = async () => {
                         // Shift+Tab: 删除光标前的缩进
                         const lineStart = value.lastIndexOf('\n', start - 1) + 1;
                         const lineText = lines[startLine];
-                        const leadingSpaces = lineText.match(/^(\s*)/)[1];
+                        const leadingSpaces = this.getLeadingWhitespace(lineText);
                         
                         if (leadingSpaces.length > 0) {
-                            // 计算要删除的字符数（最多删除一个缩进单位）
-                            const deleteCount = Math.min(leadingSpaces.length, indentChar.length);
+                            // 计算要删除的字符数（智能处理Tab和空格混合）
+                            const deleteCount = this.calculateDeleteCount(leadingSpaces, indentChar);
                             const newValue = value.substring(0, lineStart) + 
                                            lineText.substring(deleteCount) + 
                                            value.substring(lineStart + lineText.length);
@@ -1702,6 +1798,61 @@ const createCodeView = async () => {
                 textarea.dispatchEvent(new Event('input'));
             },
             
+            // 智能检测缩进字符
+            detectIndentChar(text) {
+                const lines = text.split('\n');
+                let tabCount = 0;
+                let spaceCount = 0;
+                let spaceIndentSize = 0;
+                
+                // 分析前100行（或所有行）的缩进模式
+                const sampleLines = lines.slice(0, Math.min(100, lines.length));
+                
+                sampleLines.forEach(line => {
+                    if (line.startsWith('\t')) {
+                        tabCount++;
+                    } else if (line.match(/^[ ]+/)) {
+                        spaceCount++;
+                        const leadingSpaces = line.match(/^([ ]+)/)[1];
+                        if (spaceIndentSize === 0) {
+                            spaceIndentSize = leadingSpaces.length;
+                        } else {
+                            // 检测最常见的缩进大小
+                            spaceIndentSize = Math.min(spaceIndentSize, leadingSpaces.length);
+                        }
+                    }
+                });
+                
+                // 如果Tab使用频率更高，使用Tab
+                if (tabCount > spaceCount) {
+                    return '\t';
+                }
+                
+                // 否则使用检测到的空格数量（默认为4）
+                return ' '.repeat(Math.max(2, Math.min(8, spaceIndentSize || 4)));
+            },
+            
+            // 获取行首空白字符
+            getLeadingWhitespace(line) {
+                const match = line.match(/^(\s*)/);
+                return match ? match[1] : '';
+            },
+            
+            // 计算要删除的缩进字符数
+            calculateDeleteCount(leadingSpaces, indentChar) {
+                if (indentChar === '\t') {
+                    // 如果使用Tab缩进，删除一个Tab或4个空格
+                    if (leadingSpaces.startsWith('\t')) {
+                        return 1;
+                    } else {
+                        return Math.min(leadingSpaces.length, 4);
+                    }
+                } else {
+                    // 如果使用空格缩进，删除一个缩进单位
+                    return Math.min(leadingSpaces.length, indentChar.length);
+                }
+            },
+            
             // 判断光标是否在行首或行首空白处
             isAtLineStart(text, position) {
                 const lineStart = text.lastIndexOf('\n', position - 1) + 1;
@@ -1709,7 +1860,7 @@ const createCodeView = async () => {
                 return /^\s*$/.test(beforeCursor);
             },
             
-            // 处理多行缩进
+            // 处理多行缩进（增强版）
             processMultiLineIndentation(lines, startLine, endLine, indentChar, isReverse) {
                 let newStart, newEnd;
                 let startOffset = 0;
@@ -1720,15 +1871,12 @@ const createCodeView = async () => {
                     
                     if (isReverse) {
                         // 反向缩进：删除行首的缩进
-                        if (line.startsWith(indentChar)) {
-                            lines[i] = line.substring(indentChar.length);
-                            if (i === startLine) startOffset = -indentChar.length;
-                            if (i === endLine) endOffset = -indentChar.length;
-                        } else if (line.match(/^\s+/)) {
-                            // 如果不是标准缩进，删除最多4个空格或制表符
-                            const leadingSpaces = line.match(/^(\s*)/)[1];
-                            const deleteCount = Math.min(leadingSpaces.length, indentChar.length);
+                        const leadingSpaces = this.getLeadingWhitespace(line);
+                        
+                        if (leadingSpaces.length > 0) {
+                            const deleteCount = this.calculateDeleteCount(leadingSpaces, indentChar);
                             lines[i] = line.substring(deleteCount);
+                            
                             if (i === startLine) startOffset = -deleteCount;
                             if (i === endLine) endOffset = -deleteCount;
                         }
@@ -2223,10 +2371,107 @@ const createCodeView = async () => {
                 } else {
                     console.warn('[CodeView] 全局store不可用，无法加载文件');
                 }
-            }
+            },
+            
+            // 运行缩进处理测试（开发调试用）
+            runIndentationTests() {
+                console.log('[CodeView] 运行缩进处理测试');
+                
+                const results = [];
+                
+                // 测试1：基本行号去除
+                const test1 = {
+                    name: '基本行号去除测试',
+                    input: `1    function test() {
+2        if (condition) {
+3            console.log("Hello");
+4            return true;
+5        }
+6        return false;
+7    }`,
+                    expected: 'function test() {\n    if (condition) {\n        console.log("Hello");\n        return true;\n    }\n    return false;\n}'
+                };
+                
+                // 测试1.5：纯数字行过滤测试
+                const test1_5 = {
+                    name: '纯数字行过滤测试',
+                    input: `1    function test() {
+2        if (condition) {
+3            console.log("Hello");
+4            return true;
+5        }
+6        return false;
+7    }
+8
+9`,
+                    expected: 'function test() {\n    if (condition) {\n        console.log("Hello");\n        return true;\n    }\n    return false;\n}'
+                };
+                
+                const mockSelection1 = {
+                    toString: () => test1.input,
+                    isCollapsed: false
+                };
+                
+                const result1 = this.extractCodeContent(mockSelection1);
+                test1.actual = result1;
+                test1.passed = result1 === test1.expected;
+                results.push(test1);
+                
+                // 执行纯数字行过滤测试
+                const mockSelection1_5 = {
+                    toString: () => test1_5.input,
+                    isCollapsed: false
+                };
+                
+                const result1_5 = this.extractCodeContent(mockSelection1_5);
+                test1_5.actual = result1_5;
+                test1_5.passed = result1_5 === test1_5.expected;
+                results.push(test1_5);
+                
+                // 测试2：Tab缩进检测
+                const test2 = {
+                    name: 'Tab缩进检测测试',
+                    input: 'function test() {\n\tif (condition) {\n\t\tconsole.log("test");\n\t}\n}',
+                    expected: '\t'
+                };
+                
+                const result2 = this.detectIndentChar(test2.input);
+                test2.actual = result2;
+                test2.passed = result2 === test2.expected;
+                results.push(test2);
+                
+                // 测试3：空格缩进检测
+                const test3 = {
+                    name: '空格缩进检测测试',
+                    input: 'function test() {\n    if (condition) {\n        console.log("test");\n    }\n}',
+                    expected: '    '
+                };
+                
+                const result3 = this.detectIndentChar(test3.input);
+                test3.actual = result3;
+                test3.passed = result3 === test3.expected;
+                results.push(test3);
+                
+                // 生成测试报告
+                const report = results.map(test => 
+                    `${test.name}: ${test.passed ? '✅ 通过' : '❌ 失败'}\n` +
+                    `  输入: ${test.input.substring(0, 50)}...\n` +
+                    `  期望: ${test.expected}\n` +
+                    `  实际: ${test.actual}\n`
+                ).join('\n');
+                
+                this.testResults = report;
+                console.log('[CodeView] 缩进处理测试完成:', results);
+                
+                return results;
+            },
+            
+
         },
         mounted() {
             console.log('[CodeView] 组件挂载');
+            
+
             
             // 添加调试方法到全局
             window.debugCodeView = {
@@ -2254,7 +2499,38 @@ const createCodeView = async () => {
                     } else {
                         console.warn('[CodeView] 无法重新加载文件，缺少key或_id');
                     }
-                }
+                },
+                // 测试缩进处理功能
+                testIndentation: () => {
+                    console.log('[CodeView] 测试缩进处理功能');
+                    
+                    // 模拟选择文本（包含行号和缩进）
+                    const testText = `1    function test() {
+2        if (condition) {
+3            console.log("Hello");
+4            return true;
+5        }
+6        return false;
+7    }`;
+                    
+                    // 创建模拟的selection对象
+                    const mockSelection = {
+                        toString: () => testText,
+                        isCollapsed: false
+                    };
+                    
+                    // 测试提取代码内容
+                    const result = this.extractCodeContent(mockSelection);
+                    console.log('[CodeView] 缩进处理测试结果:', {
+                        原始文本: testText,
+                        处理后: result,
+                        保留缩进: result.split('\n').some(line => line.startsWith(' ') || line.startsWith('\t')),
+                        行数: result.split('\n').length
+                    });
+                    
+                    return result;
+                },
+
             };
             
             // 监听全局高亮事件
@@ -2409,6 +2685,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

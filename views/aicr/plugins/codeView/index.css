@@ -81,7 +81,7 @@
 .quoted-code-textarea {
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 12px;
-    line-height: 1.4;
+    line-height: 2;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-tertiary);
     -moz-tab-size: 4;
@@ -93,6 +93,10 @@
     resize: vertical;
     min-height: 120px;
     transition: all 0.2s ease;
+    /* 优化缩进显示 */
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: normal;
 }
 
 .quoted-code-textarea:focus {
@@ -116,6 +120,7 @@
 .code-actions {
     display: inline-flex;
     gap: 8px;
+    align-items: center;
 }
 
 .code-actions .action-button {
@@ -1003,7 +1008,7 @@
         rgba(156, 163, 175, 0.05) 100%);
     border: 1px solid rgba(107, 114, 128, 0.1);
     border-radius: 12px;
-    overflow: hidden;
+    overflow: scroll;
 }
 
 .quote-header.modern,
@@ -1065,14 +1070,20 @@
     margin: 0;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 13px;
-    line-height: 1.5;
+    line-height: 2;
     color: var(--text-primary);
     border: none;
     border-radius: 0;
     overflow-x: auto;
-    white-space: pre;
+    white-space: pre; /* 保持预格式化，确保缩进正确显示 */
     cursor: pointer;
     transition: all 0.2s ease;
+    /* 优化缩进显示 */
+    -moz-tab-size: 4;
+    tab-size: 4;
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: normal;
 }
 
 .quote-code.modern:hover {
@@ -1330,7 +1341,7 @@
     .improvement-code.modern {
         padding: 10px;
         font-size: 11px;
-        line-height: 1.4;
+        line-height: 2;
     }
     
     .improvement-badge {
@@ -1638,7 +1649,7 @@
     background: var(--bg-tertiary); /* 与编辑态textarea保持一致 */
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 12px;
-    line-height: 1.4; /* 增加行高，提高可读性 */
+    line-height: 2; /* 增加行高，提高可读性 */
     color: var(--text-primary);
     white-space: pre; /* 与编辑态保持一致的换行与缩进呈现 */
     word-break: break-word;
@@ -2488,8 +2499,8 @@
     font-size: 11px;
     line-height: 1.4; /* 增加行高，提高可读性 */
     color: var(--text-primary);
-    white-space: pre-wrap;
-    word-break: break-word;
+    white-space: pre; /* 保持预格式化，确保缩进正确显示 */
+    word-break: normal;
     /* 增加高度限制以显示更多代码 */
     max-height: 150px; /* 增加代码显示高度 */
     overflow-y: auto;
@@ -2499,6 +2510,11 @@
     /* 添加代码区域的滚动条样式 */
     scrollbar-width: thin;
     scrollbar-color: var(--border-primary) transparent;
+    /* 优化缩进显示 */
+    -moz-tab-size: 4;
+    tab-size: 4;
+    word-wrap: normal;
+    overflow-wrap: normal;
 }
 
 .preview-quote-code::-webkit-scrollbar {
@@ -2549,8 +2565,8 @@
     font-size: 11px;
     line-height: 1.5; /* 增加行高，提高可读性 */
     color: var(--text-primary);
-    white-space: pre-wrap;
-    word-break: break-word;
+    white-space: pre; /* 保持预格式化，确保缩进正确显示 */
+    word-break: normal;
     /* 增加高度限制以显示更多代码 */
     max-height: 150px; /* 增加代码显示高度 */
     overflow-y: auto;
@@ -2560,6 +2576,11 @@
     /* 添加代码区域的滚动条样式 */
     scrollbar-width: thin;
     scrollbar-color: var(--border-primary) transparent;
+    /* 优化缩进显示 */
+    -moz-tab-size: 4;
+    tab-size: 4;
+    word-wrap: normal;
+    overflow-wrap: normal;
 }
 
 .preview-improvement-code::-webkit-scrollbar {
@@ -3819,6 +3840,10 @@
     border: 1px solid var(--border-tertiary);
     -moz-tab-size: 4;
     tab-size: 4;
+    white-space: pre; /* 保持预格式化，确保缩进正确显示 */
+    word-wrap: normal;
+    word-break: normal;
+    overflow-wrap: normal;
 }
 
 /* 响应式设计 - 表单 */
@@ -4321,5 +4346,8 @@
         font-size: 13px;
     }
 }
+
+
+
 
 
