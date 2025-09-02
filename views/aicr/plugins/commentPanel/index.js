@@ -207,7 +207,10 @@ const createCommentPanel = async () => {
                     text: '',
                     commenterIds: [],
                     status: 'open'
-                }
+                },
+                
+                // 评论输入状态
+                newCommentText: ''
             };
         },
         computed: {
@@ -316,6 +319,8 @@ const createCommentPanel = async () => {
 
                     // 段落/换行
                     const blockTags = ['h1','h2','h3','h4','h5','h6','pre','ul','ol','li','blockquote'];
+                    // 优化：先清理多余的换行符，避免多个连续的\n
+                    html = html.replace(/\n{3,}/g, '\n\n'); // 将3个或更多换行符替换为2个
                     html = html.split(/\n{2,}/).map(block => {
                         const trimmed = block.trim();
                         if (!trimmed) return '';
@@ -565,7 +570,7 @@ const createCommentPanel = async () => {
             },
 
             // 提交评论
-            submitComment() {
+            async submitComment() {
                 if (!this.newCommentText.trim()) {
                     alert('评论内容不能为空');
                     return;
@@ -582,8 +587,23 @@ const createCommentPanel = async () => {
                     }
                 }
 
-                this.$emit('comment-submit', commentData);
+                // 清空输入框
                 this.newCommentText = '';
+                
+                // 发出评论提交事件
+                this.$emit('comment-submit', commentData);
+                
+                // 立即刷新评论列表，确保新评论能够显示
+                console.log('[CommentPanel] 评论提交后立即刷新评论列表');
+                setTimeout(() => {
+                    this.debouncedLoadComments();
+                }, 100);
+                
+                // 额外确保刷新，延迟更长时间再次刷新
+                setTimeout(() => {
+                    console.log('[CommentPanel] 评论提交后延迟刷新评论列表');
+                    this.debouncedLoadComments();
+                }, 1000);
             },
 
             // 处理评论输入
@@ -1545,8 +1565,28 @@ const createCommentPanel = async () => {
                             }
                           })
                         ).then(() => {
-                          // 刷新该 fileId 的评论列表
-                          this.debouncedLoadComments();
+                        // 通知评论面板刷新
+                        window.dispatchEvent(new CustomEvent('reloadComments', { 
+                            detail: { 
+                                forceReload: true, 
+                                showAllComments: false, 
+                                immediateReload: true,
+                                fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name))
+                            } 
+                        }));
+
+                        // 延迟后高亮刚添加的评论位置
+                        setTimeout(() => {
+                            if (rangeInfo && (this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)))) {
+                                console.log('[CommentPanel] 高亮新添加的评论位置:', rangeInfo);
+                                window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                    detail: {
+                                        fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
+                                        rangeInfo: rangeInfo
+                                    }
+                                }));
+                            }
+                        }, 500); // 等待评论面板刷新完成
                         }).finally(() => {
                           // 隐藏加载动画
                           this.commentsLoading = false;

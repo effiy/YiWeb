@@ -768,14 +768,13 @@ const createCodeView = async () => {
                     });
                     
                     // 优化：保留代码的原始缩进结构
-                    // 1. 过滤掉完全空白的行和纯数字行，但保留有内容的行
+                    // 1. 过滤掉完全空白的行和只有数字的行，但保留有内容的行
                     let nonEmptyLines = cleanLines.filter(line => {
                         const trimmed = line.trim();
                         // 过滤掉空行
                         if (trimmed === '') return false;
-                        // 过滤掉只有数字的行（纯数字行，可能包含前后空格）
-                        // 匹配模式：只包含数字，可能前后有空白字符
-                        if (/^\s*\d+\s*$/.test(line)) return false;
+                        // 过滤掉只有数字的行（可能是残留的行号）
+                        if (/^\d+$/.test(trimmed)) return false;
                         return true;
                     });
                     
@@ -793,7 +792,7 @@ const createCodeView = async () => {
                     console.log('[CodeView] 优化文本清理:', {
                         原始行数: lines.length,
                         清理后行数: nonEmptyLines.length,
-                        过滤空行和纯数字行: lines.length - nonEmptyLines.length,
+                        过滤空行和数字行: lines.length - nonEmptyLines.length,
                         清理后: result.substring(0, 100) + (result.length > 100 ? '...' : ''),
                         包含换行符: result.includes('\n'),
                         换行符数量: (result.match(/\n/g) || []).length,
@@ -824,9 +823,19 @@ const createCodeView = async () => {
                     
                     // 检查是否是真正的行号（通过缩进和分隔符判断）
                     if (separator.length >= 1 && (separator.includes(' ') || separator.includes('\t'))) {
+                        // 如果代码内容为空或只有空白，说明这是纯行号行，返回空字符串
+                        if (!codeContent || codeContent.trim() === '') {
+                            return '';
+                        }
                         // 保留原始缩进，只移除行号和分隔符
                         return leadingSpaces + codeContent;
                     }
+                }
+                
+                // 特殊处理：如果整行只有数字（可能是残留的行号），返回空字符串
+                const trimmed = line.trim();
+                if (/^\d+$/.test(trimmed)) {
+                    return '';
                 }
                 
                 // 如果没有匹配到行号模式，返回原行
@@ -2392,21 +2401,6 @@ const createCodeView = async () => {
                     expected: 'function test() {\n    if (condition) {\n        console.log("Hello");\n        return true;\n    }\n    return false;\n}'
                 };
                 
-                // 测试1.5：纯数字行过滤测试
-                const test1_5 = {
-                    name: '纯数字行过滤测试',
-                    input: `1    function test() {
-2        if (condition) {
-3            console.log("Hello");
-4            return true;
-5        }
-6        return false;
-7    }
-8
-9`,
-                    expected: 'function test() {\n    if (condition) {\n        console.log("Hello");\n        return true;\n    }\n    return false;\n}'
-                };
-                
                 const mockSelection1 = {
                     toString: () => test1.input,
                     isCollapsed: false
@@ -2416,17 +2410,6 @@ const createCodeView = async () => {
                 test1.actual = result1;
                 test1.passed = result1 === test1.expected;
                 results.push(test1);
-                
-                // 执行纯数字行过滤测试
-                const mockSelection1_5 = {
-                    toString: () => test1_5.input,
-                    isCollapsed: false
-                };
-                
-                const result1_5 = this.extractCodeContent(mockSelection1_5);
-                test1_5.actual = result1_5;
-                test1_5.passed = result1_5 === test1_5.expected;
-                results.push(test1_5);
                 
                 // 测试2：Tab缩进检测
                 const test2 = {
@@ -2451,6 +2434,28 @@ const createCodeView = async () => {
                 test3.actual = result3;
                 test3.passed = result3 === test3.expected;
                 results.push(test3);
+                
+                // 测试4：过滤纯数字行测试
+                const test4 = {
+                    name: '过滤纯数字行测试',
+                    input: `1    function test() {
+2        if (condition) {
+3            console.log("Hello");
+4        }
+5    }
+6`,
+                    expected: 'function test() {\n    if (condition) {\n        console.log("Hello");\n    }\n}'
+                };
+                
+                const mockSelection4 = {
+                    toString: () => test4.input,
+                    isCollapsed: false
+                };
+                
+                const result4 = this.extractCodeContent(mockSelection4);
+                test4.actual = result4;
+                test4.passed = result4 === test4.expected;
+                results.push(test4);
                 
                 // 生成测试报告
                 const report = results.map(test => 

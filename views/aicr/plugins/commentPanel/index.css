@@ -1344,7 +1344,7 @@
     border-radius: 4px;
     padding: 6px;
     font-size: 12px;
-    line-height: 1.4;
+    line-height: 2;
     color: var(--text-secondary);
     overflow-x: auto;
     margin: 0;
@@ -3365,7 +3365,7 @@
 .quoted-code-textarea {
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 12px;
-    line-height: 1.4;
+    line-height: 2;
     resize: vertical;
     min-height: 120px;
     background: var(--bg-tertiary);

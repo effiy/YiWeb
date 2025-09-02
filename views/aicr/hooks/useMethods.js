@@ -191,6 +191,13 @@ export const useMethods = (store) => {
                 // 执行搜索 - 添加安全检查
                 const query = searchQuery && typeof searchQuery.value !== 'undefined' ? searchQuery.value : '';
                 performSearch(query);
+            } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                event.preventDefault();
+                // 提交评论
+                if (newComment && newComment.value && newComment.value.trim()) {
+                    console.log('[消息输入] 检测到Ctrl+Enter，提交评论');
+                    handleCommentSubmit({ content: newComment.value.trim() });
+                }
             } else if (event.key === 'Escape') {
                 event.preventDefault();
                 clearSearch();
@@ -797,6 +804,17 @@ export const useMethods = (store) => {
 
                 console.log('[评论提交] API调用成功:', result);
                 showSuccessMessage('评论添加成功');
+
+                // 立即触发评论面板刷新，确保新评论能够显示
+                console.log('[评论提交] 立即触发评论面板刷新');
+                window.dispatchEvent(new CustomEvent('reloadComments', {
+                    detail: { 
+                        projectId: projectId, 
+                        versionId: versionId, 
+                        forceReload: true,
+                        immediateReload: true // 标记立即刷新，不使用防抖
+                    }
+                }));
 
                 // 立即在UI中显示新评论
                 let commentAdded = false;

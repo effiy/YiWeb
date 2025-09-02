@@ -16,7 +16,6 @@
                 {{ file.path || file.name }}
             </div>
             <div class="code-actions">
-
                 <button v-if="!isEditingFile" class="action-button" @click="copyEntireFile" :disabled="!file">
                     <i class="fas fa-copy"></i><span>复制</span>
                 </button>
