@@ -389,6 +389,14 @@ const createCodeView = async () => {
                 // 简单的单行Markdown渲染，保持与整体渲染的一致性
                 let html = this.escapeHtml(lineContent);
                 
+                // 处理标题 - 修复：添加标题解析
+                html = html.replace(/^#{1}\s+(.+)$/gm, '<h1>$1</h1>')
+                           .replace(/^#{2}\s+(.+)$/gm, '<h2>$1</h2>')
+                           .replace(/^#{3}\s+(.+)$/gm, '<h3>$1</h3>')
+                           .replace(/^#{4}\s+(.+)$/gm, '<h4>$1</h4>')
+                           .replace(/^#{5}\s+(.+)$/gm, '<h5>$1</h5>')
+                           .replace(/^#{6}\s+(.+)$/gm, '<h6>$1</h6>');
+                
                 // 处理行内代码
                 html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
                 
@@ -608,12 +616,13 @@ const createCodeView = async () => {
                     const altText = alt || '';
                     return safeUrl ? `<img src="${safeUrl}" alt="${altText}" class="md-image"/>` : m;
                 });
-                html = html.replace(/^(#{6})\s*(.+)$/gm, '<h6>$2<\/h6>')
-                           .replace(/^(#{5})\s*(.+)$/gm, '<h5>$2<\/h5>')
-                           .replace(/^(#{4})\s*(.+)$/gm, '<h4>$2<\/h4>')
-                           .replace(/^(#{3})\s*(.+)$/gm, '<h3>$2<\/h3>')
-                           .replace(/^(#{2})\s*(.+)$/gm, '<h2>$2<\/h2>')
-                           .replace(/^#{1}\s*(.+)$/gm, '<h1>$1<\/h1>');
+                // 修复标题解析：从 h1 到 h6 的顺序，确保正确匹配
+                html = html.replace(/^#{1}\s+(.+)$/gm, '<h1>$1<\/h1>')
+                           .replace(/^#{2}\s+(.+)$/gm, '<h2>$1<\/h2>')
+                           .replace(/^#{3}\s+(.+)$/gm, '<h3>$1<\/h3>')
+                           .replace(/^#{4}\s+(.+)$/gm, '<h4>$1<\/h4>')
+                           .replace(/^#{5}\s+(.+)$/gm, '<h5>$1<\/h5>')
+                           .replace(/^#{6}\s+(.+)$/gm, '<h6>$1<\/h6>');
                 html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1<\/strong>');
                 html = html.replace(/\*([^*]+)\*/g, '<em>$1<\/em>');
                 html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer noopener">$1<\/a>');
