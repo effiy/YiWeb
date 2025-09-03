@@ -20,6 +20,196 @@
     box-shadow: var(--shadow-sm);
 }
 
+/* ========== Markdown预览容器 ========== */
+.markdown-preview-container {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 0;
+    position: relative;
+    min-height: 120px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    max-height: calc(100vh - 200px);
+}
+
+.markdown-preview-wrapper {
+    display: flex;
+    height: 100%;
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+}
+
+/* ========== Markdown行号样式 ========== */
+.markdown-line-numbers {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-primary);
+    padding: 20px 8px 20px 12px;
+    min-width: 50px;
+    flex-shrink: 0;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+.markdown-line-number {
+    display: block;
+    text-align: right;
+    padding: 0 4px;
+    margin: 0;
+    height: 1.6em;
+    line-height: 1.6em;
+    font-size: 12px;
+    color: var(--text-muted);
+    opacity: 0.7;
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.markdown-line-number:hover {
+    color: var(--primary);
+    opacity: 1;
+    background: var(--bg-hover);
+    border-radius: 3px;
+}
+
+.markdown-preview-content {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    max-width: none;
+    flex: 1;
+    padding: 20px;
+    overflow-x: auto;
+}
+
+/* Markdown预览内容样式 */
+.markdown-preview-content h1,
+.markdown-preview-content h2,
+.markdown-preview-content h3,
+.markdown-preview-content h4,
+.markdown-preview-content h5,
+.markdown-preview-content h6 {
+    margin: 24px 0 16px 0;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text-primary);
+}
+
+.markdown-preview-content h1 {
+    font-size: 2em;
+    border-bottom: 1px solid var(--border-primary);
+    padding-bottom: 8px;
+}
+
+.markdown-preview-content h2 {
+    font-size: 1.5em;
+    border-bottom: 1px solid var(--border-secondary);
+    padding-bottom: 6px;
+}
+
+.markdown-preview-content h3 {
+    font-size: 1.25em;
+}
+
+.markdown-preview-content p {
+    margin: 16px 0;
+    line-height: 1.6;
+}
+
+.markdown-preview-content ul,
+.markdown-preview-content ol {
+    margin: 16px 0;
+    padding-left: 24px;
+}
+
+.markdown-preview-content li {
+    margin: 4px 0;
+}
+
+.markdown-preview-content blockquote {
+    margin: 16px 0;
+    padding: 0 16px;
+    border-left: 4px solid var(--primary);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.markdown-preview-content code {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 0.9em;
+    color: var(--primary);
+}
+
+.markdown-preview-content pre {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 16px 0;
+}
+
+.markdown-preview-content pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.9em;
+    color: var(--text-primary);
+}
+
+.markdown-preview-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+}
+
+.markdown-preview-content th,
+.markdown-preview-content td {
+    border: 1px solid var(--border-primary);
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.markdown-preview-content th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+
+.markdown-preview-content a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.markdown-preview-content a:hover {
+    text-decoration: underline;
+}
+
+.markdown-preview-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+.markdown-preview-content hr {
+    border: none;
+    border-top: 1px solid var(--border-primary);
+    margin: 24px 0;
+}
+
 /* 编辑态下的代码区域尺寸与滚动优化 */
 .code-content.editing {
     /* 占满视口减去头部和外边距高度，数值可根据实际布局微调 */
@@ -145,6 +335,17 @@
 .code-actions .save-button { background: var(--success-gradient); color: var(--text-on-accent); border-color: rgba(16,185,129,.35); }
 .code-actions .cancel-button { background: var(--bg-secondary); }
 .code-actions .edit-button { background: var(--primary); color: var(--text-on-accent); border-color: rgba(79,70,229,.35); }
+.code-actions .preview-toggle-button { 
+    background: var(--accent); 
+    color: var(--text-on-accent); 
+    border-color: rgba(6,182,212,.35); 
+    transition: all 0.2s ease;
+}
+.code-actions .preview-toggle-button:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
 
 /* 编辑模式 */
 .edit-container {
@@ -4401,7 +4602,65 @@
     padding: 4px 8px;
 }
 
+/* ========== MD预览模式下的行样式和评论标记 ========== */
+.markdown-preview-line {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    position: relative;
+    min-height: 20px;
+    padding: 2px 0;
+}
 
+.markdown-line-content {
+    flex: 1;
+    line-height: 1.6;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    font-size: 14px;
+}
 
+/* MD预览模式下的评论标记样式调整 */
+.markdown-preview-line .comment-markers {
+    margin-left: 12px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.markdown-preview-line .comment-marker {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+}
+
+/* 确保MD预览模式下的评论标记可见性 */
+.markdown-preview-line .comment-marker {
+    position: relative;
+    z-index: 10;
+}
+
+/* MD预览模式下的评论标记悬停效果 */
+.markdown-preview-line .comment-marker:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 12px rgba(79, 70, 229, 0.6);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .markdown-preview-line .comment-markers {
+        margin-left: 8px;
+    }
+    
+    .markdown-preview-line .comment-marker {
+        width: 16px;
+        height: 16px;
+        font-size: 8px;
+    }
+}
+
+/* 隐藏元素 */
+.hidden {
+    display: none !important;
+}
 
 

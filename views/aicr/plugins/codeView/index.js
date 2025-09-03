@@ -91,6 +91,9 @@ const createCodeView = async () => {
                 editSaving: false,
                 saveError: '',
                 
+                // Markdown预览模式
+                isMarkdownPreviewMode: true, // 默认开启预览模式
+                
                 // 测试相关（开发调试用）
                 testResults: null,
                 
@@ -116,6 +119,12 @@ const createCodeView = async () => {
                                 hasContent: !!newFile.content,
                                 contentLength: newFile.content ? newFile.content.length : 0
                             });
+                            
+                            // 如果是markdown文件，默认开启预览模式
+                            if (this.languageType === 'markdown') {
+                                this.isMarkdownPreviewMode = true;
+                                console.log('[CodeView] 检测到Markdown文件，开启预览模式');
+                            }
                             
                             // 如果文件没有内容但有key，尝试触发文件加载
                             if ((!newFile.content || newFile.content.length === 0) && (newFile.key || newFile._id)) {
@@ -337,6 +346,29 @@ const createCodeView = async () => {
                     return '';
                 }
                 return this.renderMarkdown(this.currentCommentPreview.content);
+            },
+            // 判断是否应该显示Markdown预览
+            shouldShowMarkdownPreview() {
+                return this.file && this.languageType === 'markdown' && this.isMarkdownPreviewMode && !this.isEditingFile;
+            },
+            // 获取Markdown预览的HTML内容
+            markdownPreviewHtml() {
+                if (!this.shouldShowMarkdownPreview || !this.file || !this.file.content) {
+                    return '';
+                }
+                return this.renderMarkdown(this.file.content);
+            },
+            // 获取Markdown预览的行数（用于行号显示）
+            markdownPreviewLines() {
+                if (!this.shouldShowMarkdownPreview || !this.file || !this.file.content) {
+                    return [];
+                }
+                // 将内容按行分割，为每行创建占位符
+                const lines = this.file.content.split('\n');
+                return lines.map((line, index) => ({
+                    number: index + 1,
+                    content: line
+                }));
             }
         },
         methods: {
@@ -344,6 +376,34 @@ const createCodeView = async () => {
             clearHighlight() {
                 console.log('[CodeView] 清除代码高亮');
                 this.highlightedLines = [];
+            },
+            // 切换Markdown预览模式
+            toggleMarkdownPreview() {
+                this.isMarkdownPreviewMode = !this.isMarkdownPreviewMode;
+                console.log('[CodeView] 切换Markdown预览模式:', this.isMarkdownPreviewMode);
+            },
+            // 渲染单行Markdown内容
+            renderMarkdownLine(lineContent) {
+                if (!lineContent) return '';
+                
+                // 简单的单行Markdown渲染，保持与整体渲染的一致性
+                let html = this.escapeHtml(lineContent);
+                
+                // 处理行内代码
+                html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+                
+                // 处理粗体
+                html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+                html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+                
+                // 处理斜体
+                html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+                html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+                
+                // 处理链接
+                html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+                
+                return html;
             },
             async copyEntireFile() {
                 try {
@@ -2690,6 +2750,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

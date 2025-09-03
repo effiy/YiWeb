@@ -16,6 +16,11 @@
                 {{ file.path || file.name }}
             </div>
             <div class="code-actions">
+                <!-- Markdown预览切换按钮 -->
+                <button v-if="!isEditingFile && languageType === 'markdown'" class="action-button preview-toggle-button" @click="toggleMarkdownPreview" :disabled="!file">
+                    <i class="fas" :class="isMarkdownPreviewMode ? 'fa-code' : 'fa-eye'"></i>
+                    <span>{{ isMarkdownPreviewMode ? '源码' : '预览' }}</span>
+                </button>
                 <button v-if="!isEditingFile" class="action-button" @click="copyEntireFile" :disabled="!file">
                     <i class="fas fa-copy"></i><span>复制</span>
                 </button>
@@ -33,11 +38,74 @@
             </div>
         </div>
         <div v-if="isEditingFile" class="edit-container">
-            <textarea class="edit-textarea" v-model="editingFileContent" @keydown="onEditKeydown" spellcheck="false"></textarea>
+            <textarea 
+                class="edit-textarea" 
+                v-model="editingFileContent" 
+                @keydown="onEditKeydown" 
+                spellcheck="false"
+                placeholder="编辑文件内容..."
+                aria-label="编辑文件内容"
+            ></textarea>
             <div class="save-error" v-if="saveError">
                 <i class="fas fa-exclamation-circle"></i> {{ saveError }}
             </div>
         </div>
+        <!-- Markdown预览模式 -->
+        <div v-else-if="shouldShowMarkdownPreview" class="markdown-preview-container">
+            <div class="markdown-preview-wrapper">
+                <div class="markdown-line-numbers">
+                    <div 
+                        v-for="(line, index) in markdownPreviewLines" 
+                        :key="'md-line-' + (index + 1)"
+                        class="markdown-line-number"
+                        :data-line="index + 1"
+                    >
+                        {{ index + 1 }}
+                    </div>
+                </div>
+                <div class="markdown-preview-content md-preview-body">
+                    <!-- MD预览内容，每行都包含评论标记 -->
+                    <div 
+                        v-for="(line, index) in markdownPreviewLines" 
+                        :key="'md-content-line-' + (index + 1)"
+                        class="markdown-preview-line"
+                        :data-line="index + 1"
+                    >
+                        <div class="markdown-line-content" v-html="renderMarkdownLine(line.content)"></div>
+                        
+                        <!-- 评论标记 - 与代码模式保持一致 -->
+                        <div v-if="lineCommentMarkers[index + 1]" class="comment-markers">
+                            <div 
+                                class="comment-marker"
+                                :class="[
+                                    getCommentStatusClass(lineCommentMarkers[index + 1].status), 
+                                    { 
+                                        'has-multiple': lineCommentMarkers[index + 1].hasMultiple,
+                                        'multi-line': lineCommentMarkers[index + 1].isMultiLine,
+                                        'start-line': lineCommentMarkers[index + 1].markerType === 'start',
+                                        'middle-line': lineCommentMarkers[index + 1].markerType === 'middle',
+                                        'end-line': lineCommentMarkers[index + 1].markerType === 'end'
+                                    }
+                                ]"
+                                :data-comment-key="lineCommentMarkers[index + 1].key"
+                                @click="handleCommentMarkerClick(lineCommentMarkers[index + 1], $event)"
+                                @mouseenter="handleCommentMarkerMouseEvents(lineCommentMarkers[index + 1], $event)"
+                                @mouseleave="handleCommentMarkerMouseEvents(lineCommentMarkers[index + 1], $event)"
+                                :title="getCommentMarkerTitle(lineCommentMarkers[index + 1])"
+                                role="button"
+                                tabindex="0"
+                            >
+                                <i :class="getCommentMarkerIcon(lineCommentMarkers[index + 1])"></i>
+                                <span class="comment-count" v-if="lineCommentMarkers[index + 1].count > 1 && lineCommentMarkers[index + 1].markerType !== 'middle'">
+                                    {{ lineCommentMarkers[index + 1].count }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 代码显示模式 -->
         <pre v-else class="code-block" :class="'language-' + languageType">
             <code 
                 v-for="(line, index) in codeLines" 
@@ -82,7 +150,7 @@
         <div id="comment-action-container"></div>
 
         <!-- 缩进处理测试区域（开发调试用，生产环境可移除） -->
-        <div v-if="false" class="indentation-test-area" style="display: none;">
+        <div v-if="false" class="indentation-test-area hidden">
             <div class="test-header">
                 <h4>缩进处理测试</h4>
                 <button @click="runIndentationTests" class="test-btn">运行测试</button>
@@ -117,7 +185,7 @@
                                 <button class="md-btn" title="无序列表" @click="insertMarkdown('ul')"><i class="fas fa-list-ul"></i></button>
                                 <button class="md-btn" title="有序列表" @click="insertMarkdown('ol')"><i class="fas fa-list-ol"></i></button>
                                 <button class="md-btn" title="链接" @click="insertMarkdown('link')"><i class="fas fa-link"></i></button>
-                                <button class="md-btn" :title="manualPreviewCollapsed ? '展开预览' : '折叠预览'" @click="toggleManualPreviewCollapse"><i class="fas" :class="manualPreviewCollapsed ? 'fa-eye' : 'fa-eye-slash'"></i></button>
+                                <button class="md-btn" :title="manualPreviewCollapsed ? '展开预览' : '折叠预览'" @click="toggleManualPreviewCollapse" aria-label="切换预览显示"><i class="fas" :class="manualPreviewCollapsed ? 'fa-eye' : 'fa-eye-slash'"></i></button>
                                 <span class="md-toolbar-spacer"></span>
                                 <span class="md-counter" :title="'最多 ' + manualMaxLength + ' 字'">{{ (manualCommentText || '').length }} / {{ manualMaxLength }}</span>
                             </div>
@@ -245,8 +313,6 @@
                                 rows="12"
                                 wrap="off"
                                 spellcheck="false"
-                                autocapitalize="off"
-                                autocorrect="off"
                                 @keydown="handleQuotedCodeKeydown"
                             ></textarea>
                         </div>
@@ -552,17 +618,6 @@
                 <!-- 评论内容预览（Markdown渲染，含图片） -->
                 <div class="preview-content md-preview-body" v-html="currentCommentPreviewHtml"></div>
                 
-                <!-- 引用的代码预览（如果有） -->
-                <div v-if="currentCommentPreview.text" class="preview-quote">
-                    <div class="preview-quote-header">
-                        <i class="fas fa-quote-left"></i>
-                        <span>引用代码</span>
-                    </div>
-                    <pre class="preview-quote-code">
-                        <code>{{ currentCommentPreview.text }}</code>
-                    </pre>
-                </div>
-                
                 <!-- 改进代码预览（如果有） -->
                 <div v-if="currentCommentPreview.improvementText" class="preview-improvement">
                     <div class="preview-improvement-header">
@@ -589,4 +644,5 @@
         <div class="empty-subtitle">从左侧文件树中选择要查看的文件</div>
     </div>
 </section>
+
 
