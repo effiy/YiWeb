@@ -53,16 +53,6 @@
         <!-- Markdown预览模式 -->
         <div v-else-if="shouldShowMarkdownPreview" class="markdown-preview-container">
             <div class="markdown-preview-wrapper">
-                <div class="markdown-line-numbers">
-                    <div 
-                        v-for="(line, index) in markdownPreviewLines" 
-                        :key="'md-line-' + (index + 1)"
-                        class="markdown-line-number"
-                        :data-line="index + 1"
-                    >
-                        {{ index + 1 }}
-                    </div>
-                </div>
                 <div class="markdown-preview-content md-preview-body">
                     <!-- MD预览内容，每行都包含评论标记 -->
                     <div 
