@@ -31,14 +31,14 @@
     min-height: 120px;
     box-shadow: var(--shadow-sm);
     overflow: hidden;
-    max-height: calc(100vh - 200px);
+    max-height: calc(100vh - 160px);
 }
 
 .markdown-preview-wrapper {
     display: flex;
     height: 100%;
     overflow-y: auto;
-    max-height: calc(100vh - 200px);
+    max-height: calc(100vh - 160px);
 }
 
 /* ========== Markdown行号样式 ========== */
