@@ -255,10 +255,10 @@ export const useMethods = (store) => {
                 const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip || (await import('jszip')).default;
                 const zip = new JSZip();
 
-                const normalizePath = (p) => String(p || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                const normalizePathForDownload = (p) => String(p || '').replace(/\\/g, '/').replace(/^\/+/, '');
 
                 for (const f of allFiles) {
-                    const path = normalizePath(f.path || f.id || f.fileId || f.name);
+                    const path = normalizePathForDownload(f.path || f.id || f.fileId || f.name);
                     const content = (typeof f.content === 'string') ? f.content : (f.data && typeof f.data.content === 'string' ? f.data.content : '');
                     zip.file(path || 'unknown.txt', content || '');
                 }
@@ -404,17 +404,38 @@ export const useMethods = (store) => {
                 // 展平文件列表（忽略目录项）
                 const entries = [];
                 zip.forEach((relativePath, fileObj) => {
-                    if (!fileObj.dir) entries.push({ path: relativePath, file: fileObj });
+                    if (!fileObj.dir) {
+                        entries.push({ path: relativePath, file: fileObj });
+                        // 特别关注深层次文件
+                        if (relativePath.includes('/') && relativePath.split('/').length > 3) {
+                            console.log(`[ZIP解析] 发现深层次文件: "${relativePath}" (${relativePath.split('/').length} 层)`);
+                        }
+                        // 特别关注 MoreButton.vue
+                        if (relativePath.includes('MoreButton.vue')) {
+                            console.log(`[ZIP解析] 发现 MoreButton.vue: "${relativePath}"`);
+                        }
+                    }
                 });
                 if (entries.length === 0) {
                     throw createError('ZIP 中未发现文件', ErrorTypes.VALIDATION, '项目版本上传');
                 }
+                
+                console.log(`[ZIP解析] 总共解析到 ${entries.length} 个文件`);
+                console.log(`[ZIP解析] 深层次文件数量: ${entries.filter(e => e.path.includes('/') && e.path.split('/').length > 3).length}`);
+                
+                // 详细列出所有深层次文件
+                const deepFiles = entries.filter(e => e.path.includes('/') && e.path.split('/').length > 3);
+                console.log(`[ZIP解析] 深层次文件列表:`, deepFiles.map(e => e.path));
+                
+                // 特别检查 MoreButton.vue
+                const moreButtonFiles = entries.filter(e => e.path.includes('MoreButton.vue'));
+                console.log(`[ZIP解析] MoreButton.vue 文件列表:`, moreButtonFiles.map(e => e.path));
 
                 // 过滤规则
                 const MAX_SIZE = 500 * 1024 * 1024; // 500MB
                 const EXCLUDED_DIRS = ['.git', 'node_modules', '.svn', '.hg', '__MACOSX'];
                 const EXCLUDED_FILES = ['.DS_Store', 'Thumbs.db'];
-                const normalizePath = (p) => String(p || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                const normalizePathForFilter = (p) => String(p || '').replace(/\\/g, '/').replace(/^\/+/, '');
                 const hasExcludedSegment = (p) => {
                     const segs = p.split('/');
                     return segs.some(seg => EXCLUDED_DIRS.includes(seg));
@@ -427,11 +448,16 @@ export const useMethods = (store) => {
                 // - 忽略排除项后再判断统一前缀
                 // - 优先剥离 projectId/versionId 或 projectId
                 // - 否则剥离所有条目共有的单一（或多级）根目录（最多两级，避免过度剥离）
-                const normalizedAll = entries.map(e => normalizePath(e.path)).filter(Boolean);
+                const normalizedAll = entries.map(e => normalizePathForFilter(e.path)).filter(Boolean);
                 const candidates = normalizedAll.filter(p => !hasExcludedSegment(p) && !isExcludedFile(p));
                 const basis = candidates.length > 0 ? candidates : normalizedAll;
                 const splitToSegs = (p) => p.split('/').filter(Boolean);
                 const listSegs = basis.map(splitToSegs);
+                
+                console.log('[路径剥离] 原始路径样本:', normalizedAll.slice(0, 5));
+                console.log('[路径剥离] 过滤后路径样本:', candidates.slice(0, 5));
+                console.log('[路径剥离] 路径段样本:', listSegs.slice(0, 5));
+                
                 const allStartsWith = (prefixSegs) => {
                     if (!prefixSegs || prefixSegs.length === 0) return false;
                     return listSegs.length > 0 && listSegs.every(segs => prefixSegs.every((s, i) => segs[i] === s));
@@ -440,10 +466,12 @@ export const useMethods = (store) => {
                 // 优先匹配 projectId/versionId 前缀
                 if (projectId && versionId && allStartsWith([projectId, versionId])) {
                     stripSegs = [projectId, versionId];
+                    console.log('[路径剥离] 匹配项目/版本前缀:', stripSegs);
                 } else if (projectId && allStartsWith([projectId])) {
                     stripSegs = [projectId];
+                    console.log('[路径剥离] 匹配项目前缀:', stripSegs);
                 } else {
-                    // 退化策略：取所有条目的最长公共前缀（按段），最多两级
+                    // 退化策略：取所有条目的最长公共前缀（按段），但更保守
                     if (listSegs.length > 0) {
                         const first = listSegs[0].slice();
                         let common = [];
@@ -452,27 +480,85 @@ export const useMethods = (store) => {
                             const ok = listSegs.every(segs => segs[i] === candidate);
                             if (ok) common.push(candidate); else break;
                         }
-                        // 限制最多两级，避免剥离过深（例如 "src" 等非项目级根）
+                        
+                        // 更保守的剥离策略：
+                        // 1. 如果公共前缀只有1个段，且是常见的项目根目录名，则不剥离
+                        // 2. 如果公共前缀是2个段，且第一个是项目名，则只剥离第一个
+                        // 3. 避免剥离 "src", "lib", "app" 等常见的源码目录
+                        const commonSrcDirs = ['src', 'lib', 'app', 'components', 'utils', 'views', 'pages'];
+                        
                         if (common.length > 0) {
-                            stripSegs = common.slice(0, Math.min(2, common.length));
+                            // 如果公共前缀是常见的源码目录，不剥离
+                            if (common.length === 1 && commonSrcDirs.includes(common[0])) {
+                                stripSegs = [];
+                                console.log('[路径剥离] 跳过常见源码目录剥离:', common[0]);
+                            } else if (common.length === 2 && commonSrcDirs.includes(common[1])) {
+                                // 如果第二段是源码目录，只剥离第一段
+                                stripSegs = [common[0]];
+                                console.log('[路径剥离] 只剥离项目名，保留源码目录:', stripSegs);
+                            } else {
+                                // 其他情况，最多剥离两级
+                                stripSegs = common.slice(0, Math.min(2, common.length));
+                                console.log('[路径剥离] 使用公共前缀:', stripSegs);
+                            }
                         }
                     }
                 }
                 const STRIP_PREFIX = stripSegs.length > 0 ? (stripSegs.join('/') + '/') : '';
+                console.log('[路径剥离] 最终剥离前缀:', STRIP_PREFIX);
                 let skippedExcluded = 0;
                 let skippedLarge = 0;
                 let processed = 0;
+                let deepFilesProcessed = 0;
+                let moreButtonProcessed = false;
                 const filesPayload = [];
                 for (const { path, file } of entries) {
-                    let normPath = normalizePath(path);
+                    let normPath = normalizePathForFilter(path);
+                    const originalPath = normPath;
+                    
+                    // 特别关注 MoreButton.vue 的处理过程
+                    if (path.includes('MoreButton.vue')) {
+                        console.log(`[文件处理] 开始处理 MoreButton.vue: 原始路径="${path}", 规范化后="${normPath}"`);
+                    }
+                    
                     if (STRIP_PREFIX && normPath.startsWith(STRIP_PREFIX)) {
                         normPath = normPath.slice(STRIP_PREFIX.length);
+                        console.log(`[文件处理] 路径剥离: "${originalPath}" -> "${normPath}"`);
+                        
+                        // 特别关注 MoreButton.vue 的路径剥离
+                        if (path.includes('MoreButton.vue')) {
+                            console.log(`[文件处理] MoreButton.vue 路径剥离: "${originalPath}" -> "${normPath}"`);
+                        }
                     }
-                    if (!normPath) continue;
+                    
+                    if (!normPath) {
+                        console.log(`[文件处理] 跳过空路径文件: "${originalPath}"`);
+                        if (path.includes('MoreButton.vue')) {
+                            console.log(`[文件处理] ❌ MoreButton.vue 被跳过：空路径`);
+                        }
+                        continue;
+                    }
+                    
                     // 目录/文件名过滤
                     if (hasExcludedSegment(normPath) || isExcludedFile(normPath)) {
+                        console.log(`[文件处理] 跳过排除文件: "${normPath}"`);
+                        if (path.includes('MoreButton.vue')) {
+                            console.log(`[文件处理] ❌ MoreButton.vue 被跳过：排除文件`);
+                        }
                         skippedExcluded++;
                         continue;
+                    }
+                    
+                    // 特别关注深层次文件
+                    if (normPath.includes('/') && normPath.split('/').length > 3) {
+                        console.log(`[文件处理] 处理深层次文件: "${normPath}" (${normPath.split('/').length} 层)`);
+                        deepFilesProcessed++;
+                    }
+                    
+                    // 特别关注 MoreButton.vue 文件
+                    if (normPath.includes('MoreButton.vue')) {
+                        console.log(`[文件处理] 发现 MoreButton.vue 文件: "${originalPath}" -> "${normPath}"`);
+                        moreButtonProcessed = true;
                     }
                     // 大小过滤：优先用内部尺寸；否则读取为blob判断大小
                     let size = (file && file._data && Number.isFinite(file._data.uncompressedSize)) ? file._data.uncompressedSize : null;
@@ -523,28 +609,148 @@ export const useMethods = (store) => {
                         size: payloadSize
                     });
                     processed++;
+                    
+                    // 特别确认 MoreButton.vue 的处理结果
+                    if (path.includes('MoreButton.vue')) {
+                        console.log(`[文件处理] ✅ MoreButton.vue 成功添加到文件载荷: "${normPath}"`);
+                        console.log(`[文件处理] MoreButton.vue 内容长度: ${(content || '').length} 字符`);
+                    }
+                }
+                
+                // 输出处理统计信息
+                console.log(`[文件处理统计] 总文件数: ${entries.length}`);
+                console.log(`[文件处理统计] 成功处理: ${processed}`);
+                console.log(`[文件处理统计] 深层次文件处理: ${deepFilesProcessed}`);
+                console.log(`[文件处理统计] 跳过排除项: ${skippedExcluded}`);
+                console.log(`[文件处理统计] 跳过大文件: ${skippedLarge}`);
+                console.log(`[文件处理统计] MoreButton.vue 处理: ${moreButtonProcessed ? '是' : '否'}`);
+                console.log(`[文件处理统计] 最终文件载荷数量: ${filesPayload.length}`);
+                
+                // 专门检查 MoreButton.vue 是否在文件载荷中
+                const moreButtonInPayload = filesPayload.find(f => f.name === 'MoreButton.vue' || f.path.includes('MoreButton.vue'));
+                if (moreButtonInPayload) {
+                    console.log(`[文件处理统计] ✅ MoreButton.vue 在文件载荷中:`, moreButtonInPayload);
+                } else {
+                    console.log(`[文件处理统计] ❌ MoreButton.vue 不在文件载荷中！`);
+                    console.log(`[文件处理统计] 文件载荷中的文件列表:`, filesPayload.map(f => f.path));
                 }
 
-                // 构建树（基于路径）
+                // 构建树（基于路径）- 修复深层次文件丢失问题
                 const root = { id: projectId, name: projectId, type: 'folder', children: [] };
                 const folderMap = new Map();
                 folderMap.set('', root);
+                
+                // 改进的路径规范化函数
+                const normalizePath = (path) => {
+                    if (!path || typeof path !== 'string') return '';
+                    return String(path)
+                        .replace(/\\/g, '/')           // 统一使用正斜杠
+                        .replace(/^\/+/, '')           // 移除开头的斜杠
+                        .replace(/\/+/g, '/')          // 合并多个连续斜杠
+                        .replace(/\/$/, '');           // 移除结尾的斜杠（除非是根路径）
+                };
+                
+                // 改进的文件夹确保函数 - 修复递归创建逻辑
                 const ensureFolder = (folderPath) => {
                     const norm = normalizePath(folderPath);
+                    
+                    // 如果路径为空，返回根节点
+                    if (!norm) return root;
+                    
+                    // 如果已经存在，直接返回
                     if (folderMap.has(norm)) return folderMap.get(norm);
-                    const parentPath = norm.split('/').slice(0, -1).join('/');
-                    const parent = ensureFolder(parentPath);
-                    const name = norm.split('/').pop();
-                    const node = { id: norm, name, type: 'folder', children: [] };
-                    parent.children.push(node);
-                    folderMap.set(norm, node);
-                    return node;
+                    
+                    // 递归创建父目录
+                    const pathSegments = norm.split('/').filter(Boolean);
+                    let currentPath = '';
+                    let parent = root;
+                    
+                    // 特别关注深层次路径
+                    if (pathSegments.length > 3) {
+                        console.log(`[ensureFolder] 创建深层次路径: ${norm} (${pathSegments.length} 层)`);
+                    }
+                    
+                    // 逐级创建路径中的每个文件夹
+                    for (let i = 0; i < pathSegments.length; i++) {
+                        const segment = pathSegments[i];
+                        currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+                        
+                        if (!folderMap.has(currentPath)) {
+                            const node = { 
+                                id: currentPath, 
+                                name: segment, 
+                                type: 'folder', 
+                                children: [],
+                                path: currentPath  // 确保path字段存在
+                            };
+                            parent.children.push(node);
+                            folderMap.set(currentPath, node);
+                            
+                            // 特别关注深层次文件夹的创建
+                            if (pathSegments.length > 3) {
+                                console.log(`[ensureFolder] 创建深层次文件夹: ${currentPath} (第 ${i + 1} 层)`);
+                            }
+                        }
+                        parent = folderMap.get(currentPath);
+                    }
+                    
+                    return parent;
                 };
+                
+                // 处理所有文件，确保其父目录存在
+                console.log(`[文件树构建] 开始处理 ${filesPayload.length} 个文件`);
+                let deepFilesInTree = 0;
+                let moreButtonInTree = false;
                 for (const f of filesPayload) {
-                    const dir = f.path.includes('/') ? f.path.split('/').slice(0, -1).join('/') : '';
+                    const filePath = normalizePath(f.path);
+                    if (!filePath) {
+                        console.warn('[文件树构建] 跳过无效路径的文件:', f);
+                        continue;
+                    }
+                    
+                    // 获取文件的父目录路径
+                    const pathSegments = filePath.split('/').filter(Boolean);
+                    const dir = pathSegments.length > 1 
+                        ? pathSegments.slice(0, -1).join('/') 
+                        : '';
+                    
+                    // 特别关注深层次文件
+                    if (pathSegments.length > 3) {
+                        console.log(`[文件树构建] 处理深层次文件: ${filePath} (${pathSegments.length} 层), 父目录: ${dir || '根目录'}`);
+                        deepFilesInTree++;
+                    }
+                    
+                    // 特别关注 MoreButton.vue 文件
+                    if (f.name === 'MoreButton.vue' || filePath.includes('MoreButton.vue')) {
+                        console.log(`[文件树构建] 发现 MoreButton.vue 文件: ${filePath}, 父目录: ${dir || '根目录'}`);
+                        moreButtonInTree = true;
+                    }
+                    
+                    // 确保父目录存在
                     const parent = ensureFolder(dir);
-                    parent.children.push({ id: f.path, name: f.name, type: 'file', size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)), modified: Date.now() });
+                    
+                    // 创建文件节点
+                    const fileNode = { 
+                        id: filePath, 
+                        name: f.name, 
+                        type: 'file', 
+                        size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)), 
+                        modified: Date.now(),
+                        path: filePath  // 确保path字段存在
+                    };
+                    
+                    parent.children.push(fileNode);
+                    
+                    // 特别关注深层次文件的添加过程
+                    if (pathSegments.length > 3) {
+                        console.log(`[文件树构建] 成功添加深层次文件: ${f.name} 到父目录: ${dir || '根目录'}`);
+                        console.log(`[文件树构建] 父目录当前子节点数量: ${parent.children.length}`);
+                    }
                 }
+                
+                console.log(`[文件树构建] 文件树构建完成，共创建 ${folderMap.size} 个文件夹节点`);
+                console.log(`[文件树构建统计] 深层次文件添加到树中: ${deepFilesInTree}`);
+                console.log(`[文件树构建统计] MoreButton.vue 添加到树中: ${moreButtonInTree ? '是' : '否'}`);
 
                 // 覆盖远端：先删除当前 project/version 的树与文件，再写入新内容
                 // 提示：前面已导入 CRUD
@@ -578,9 +784,25 @@ export const useMethods = (store) => {
                 });
 
                 // 批量写入文件
+                console.log(`[数据库保存] 开始保存 ${filesPayload.length} 个文件到数据库`);
+                let deepFilesSaved = 0;
+                let moreButtonSaved = false;
                 for (const payload of filesPayload) {
                     await postData(`${window.API_URL}/mongodb/?cname=projectVersionFiles`, payload);
+                    
+                    // 统计深层次文件保存
+                    if (payload.path && payload.path.includes('/') && payload.path.split('/').length > 3) {
+                        deepFilesSaved++;
+                    }
+                    
+                    // 统计 MoreButton.vue 保存
+                    if (payload.name === 'MoreButton.vue' || payload.path.includes('MoreButton.vue')) {
+                        moreButtonSaved = true;
+                        console.log(`[数据库保存] 保存 MoreButton.vue: ${payload.path}`);
+                    }
                 }
+                console.log(`[数据库保存统计] 深层次文件保存: ${deepFilesSaved}`);
+                console.log(`[数据库保存统计] MoreButton.vue 保存: ${moreButtonSaved ? '是' : '否'}`);
 
                 // 刷新本地数据，并自动切换到最新上传的项目/版本
                 try {
