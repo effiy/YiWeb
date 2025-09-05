@@ -432,9 +432,16 @@ export const useMethods = (store) => {
                 console.log(`[ZIP解析] MoreButton.vue 文件列表:`, moreButtonFiles.map(e => e.path));
 
                 // 过滤规则
-                const MAX_SIZE = 500 * 1024 * 1024; // 500MB
+                const MAX_SIZE = 1 * 1024 * 1024; // 1MB (所有文件)
                 const EXCLUDED_DIRS = ['.git', 'node_modules', '.svn', '.hg', '__MACOSX'];
                 const EXCLUDED_FILES = ['.DS_Store', 'Thumbs.db'];
+                
+                // 图片文件类型检测
+                const isImageFile = (filename) => {
+                    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg', '.ico', '.tiff', '.tif', '.jfif', '.pjpeg', '.pjp'];
+                    const ext = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+                    return imageExtensions.includes(ext);
+                };
                 const normalizePathForFilter = (p) => String(p || '').replace(/\\/g, '/').replace(/^\/+/, '');
                 const hasExcludedSegment = (p) => {
                     const segs = p.split('/');
@@ -507,6 +514,7 @@ export const useMethods = (store) => {
                 const STRIP_PREFIX = stripSegs.length > 0 ? (stripSegs.join('/') + '/') : '';
                 console.log('[路径剥离] 最终剥离前缀:', STRIP_PREFIX);
                 let skippedExcluded = 0;
+                let skippedImages = 0;
                 let skippedLarge = 0;
                 let processed = 0;
                 let deepFilesProcessed = 0;
@@ -549,6 +557,17 @@ export const useMethods = (store) => {
                         continue;
                     }
                     
+                    // 图片文件过滤
+                    const filename = normPath.split('/').pop();
+                    if (isImageFile(filename)) {
+                        console.log(`[文件处理] 跳过图片文件: "${normPath}"`);
+                        if (path.includes('MoreButton.vue')) {
+                            console.log(`[文件处理] ❌ MoreButton.vue 被跳过：图片文件`);
+                        }
+                        skippedImages++;
+                        continue;
+                    }
+                    
                     // 特别关注深层次文件
                     if (normPath.includes('/') && normPath.split('/').length > 3) {
                         console.log(`[文件处理] 处理深层次文件: "${normPath}" (${normPath.split('/').length} 层)`);
@@ -571,7 +590,12 @@ export const useMethods = (store) => {
                             size = 0;
                         }
                     }
+                    
+                    // 文件大小过滤
                     if (size > MAX_SIZE) {
+                        const sizeMB = (size / (1024 * 1024)).toFixed(2);
+                        const maxSizeMB = (MAX_SIZE / (1024 * 1024)).toFixed(0);
+                        console.log(`[文件过滤] 跳过过大的文件: "${normPath}" (${sizeMB}MB > ${maxSizeMB}MB)`);
                         skippedLarge++;
                         continue;
                     }
@@ -622,7 +646,8 @@ export const useMethods = (store) => {
                 console.log(`[文件处理统计] 成功处理: ${processed}`);
                 console.log(`[文件处理统计] 深层次文件处理: ${deepFilesProcessed}`);
                 console.log(`[文件处理统计] 跳过排除项: ${skippedExcluded}`);
-                console.log(`[文件处理统计] 跳过大文件: ${skippedLarge}`);
+                console.log(`[文件处理统计] 跳过图片文件: ${skippedImages}`);
+                console.log(`[文件处理统计] 跳过大文件(>1MB): ${skippedLarge}`);
                 console.log(`[文件处理统计] MoreButton.vue 处理: ${moreButtonProcessed ? '是' : '否'}`);
                 console.log(`[文件处理统计] 最终文件载荷数量: ${filesPayload.length}`);
                 
@@ -787,22 +812,43 @@ export const useMethods = (store) => {
                 console.log(`[数据库保存] 开始保存 ${filesPayload.length} 个文件到数据库`);
                 let deepFilesSaved = 0;
                 let moreButtonSaved = false;
+                let filesUploaded = 0;
+                let filesFailed = 0;
+                const failedFiles = [];
+                
                 for (const payload of filesPayload) {
-                    await postData(`${window.API_URL}/mongodb/?cname=projectVersionFiles`, payload);
-                    
-                    // 统计深层次文件保存
-                    if (payload.path && payload.path.includes('/') && payload.path.split('/').length > 3) {
-                        deepFilesSaved++;
-                    }
-                    
-                    // 统计 MoreButton.vue 保存
-                    if (payload.name === 'MoreButton.vue' || payload.path.includes('MoreButton.vue')) {
-                        moreButtonSaved = true;
-                        console.log(`[数据库保存] 保存 MoreButton.vue: ${payload.path}`);
+                    try {
+                        await postData(`${window.API_URL}/mongodb/?cname=projectVersionFiles`, payload);
+                        filesUploaded++;
+                        
+                        // 统计深层次文件保存
+                        if (payload.path && payload.path.includes('/') && payload.path.split('/').length > 3) {
+                            deepFilesSaved++;
+                        }
+                        
+                        // 统计 MoreButton.vue 保存
+                        if (payload.name === 'MoreButton.vue' || payload.path.includes('MoreButton.vue')) {
+                            moreButtonSaved = true;
+                            console.log(`[数据库保存] 保存 MoreButton.vue: ${payload.path}`);
+                        }
+                    } catch (error) {
+                        filesFailed++;
+                        failedFiles.push({
+                            path: payload.path,
+                            name: payload.name,
+                            error: error?.message || '未知错误'
+                        });
+                        console.error(`[数据库保存] 文件上传失败: ${payload.path}`, error);
                     }
                 }
+                console.log(`[数据库保存统计] 成功上传: ${filesUploaded} 个文件`);
+                console.log(`[数据库保存统计] 上传失败: ${filesFailed} 个文件`);
                 console.log(`[数据库保存统计] 深层次文件保存: ${deepFilesSaved}`);
                 console.log(`[数据库保存统计] MoreButton.vue 保存: ${moreButtonSaved ? '是' : '否'}`);
+                
+                if (failedFiles.length > 0) {
+                    console.log(`[数据库保存统计] 失败文件列表:`, failedFiles);
+                }
 
                 // 刷新本地数据，并自动切换到最新上传的项目/版本
                 try {
@@ -830,9 +876,25 @@ export const useMethods = (store) => {
                     window.dispatchEvent(new CustomEvent('projectVersionReady', { detail: { projectId, versionId } }));
                 } catch (_) {}
 
-                const { showSuccess } = await import('/utils/message.js');
-                const msg = `上传完成：导入 ${processed} 个文件，跳过大文件 ${skippedLarge} 个，跳过排除项 ${skippedExcluded} 个。已切换到 ${projectId}/${versionId}`;
-                showSuccess(msg);
+                const { showSuccess, showWarning } = await import('/utils/message.js');
+                let msg = `上传完成：成功上传 ${filesUploaded} 个文件`;
+                if (filesFailed > 0) {
+                    msg += `，失败 ${filesFailed} 个文件`;
+                }
+                msg += `，跳过排除项 ${skippedExcluded} 个`;
+                if (skippedImages > 0) {
+                    msg += `，跳过图片文件 ${skippedImages} 个`;
+                }
+                if (skippedLarge > 0) {
+                    msg += `，跳过大文件(>1MB) ${skippedLarge} 个`;
+                }
+                msg += `。已切换到 ${projectId}/${versionId}`;
+                
+                if (filesFailed > 0) {
+                    showWarning(msg);
+                } else {
+                    showSuccess(msg);
+                }
             } finally {
                 try { if (__uploadLoadingShown) hideGlobalLoading(); } catch (_) {}
             }
