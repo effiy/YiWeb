@@ -54,30 +54,31 @@
         <div v-else-if="shouldShowMarkdownPreview" class="markdown-preview-container">
             <div class="markdown-preview-wrapper">
                 <div class="markdown-preview-content md-preview-body">
-                    <!-- MD预览内容，每行都包含评论标记 -->
-                    <div 
-                        v-for="(line, index) in markdownPreviewLines" 
-                        :key="'md-content-line-' + (index + 1)"
-                        class="markdown-preview-line"
-                        :data-line="index + 1"
-                    >
-                        <div class="markdown-line-content" v-html="renderMarkdownLine(line.content)"></div>
-                        
-                        <!-- 评论标记 - 与代码模式保持一致 -->
-                        <div v-if="lineCommentMarkers[index + 1]" class="comment-markers">
+                    <!-- 整体Markdown预览内容 -->
+                    <div class="markdown-full-content" v-html="markdownPreviewHtml"></div>
+                    
+                    <!-- 评论标记覆盖层 - 与代码模式保持一致 -->
+                    <div class="comment-markers-overlay">
+                        <div 
+                            v-for="(line, index) in markdownPreviewLines" 
+                            :key="'md-comment-line-' + (index + 1)"
+                            class="markdown-comment-line"
+                            :data-line="index + 1"
+                            v-show="lineCommentMarkers[index + 1]"
+                        >
                             <div 
                                 class="comment-marker"
                                 :class="[
-                                    getCommentStatusClass(lineCommentMarkers[index + 1].status), 
+                                    getCommentStatusClass(lineCommentMarkers[index + 1]?.status), 
                                     { 
-                                        'has-multiple': lineCommentMarkers[index + 1].hasMultiple,
-                                        'multi-line': lineCommentMarkers[index + 1].isMultiLine,
-                                        'start-line': lineCommentMarkers[index + 1].markerType === 'start',
-                                        'middle-line': lineCommentMarkers[index + 1].markerType === 'middle',
-                                        'end-line': lineCommentMarkers[index + 1].markerType === 'end'
+                                        'has-multiple': lineCommentMarkers[index + 1]?.hasMultiple,
+                                        'multi-line': lineCommentMarkers[index + 1]?.isMultiLine,
+                                        'start-line': lineCommentMarkers[index + 1]?.markerType === 'start',
+                                        'middle-line': lineCommentMarkers[index + 1]?.markerType === 'middle',
+                                        'end-line': lineCommentMarkers[index + 1]?.markerType === 'end'
                                     }
                                 ]"
-                                :data-comment-key="lineCommentMarkers[index + 1].key"
+                                :data-comment-key="lineCommentMarkers[index + 1]?.key"
                                 @click="handleCommentMarkerClick(lineCommentMarkers[index + 1], $event)"
                                 @mouseenter="handleCommentMarkerMouseEvents(lineCommentMarkers[index + 1], $event)"
                                 @mouseleave="handleCommentMarkerMouseEvents(lineCommentMarkers[index + 1], $event)"
@@ -86,8 +87,8 @@
                                 tabindex="0"
                             >
                                 <i :class="getCommentMarkerIcon(lineCommentMarkers[index + 1])"></i>
-                                <span class="comment-count" v-if="lineCommentMarkers[index + 1].count > 1 && lineCommentMarkers[index + 1].markerType !== 'middle'">
-                                    {{ lineCommentMarkers[index + 1].count }}
+                                <span class="comment-count" v-if="lineCommentMarkers[index + 1]?.count > 1 && lineCommentMarkers[index + 1]?.markerType !== 'middle'">
+                                    {{ lineCommentMarkers[index + 1]?.count }}
                                 </span>
                             </div>
                         </div>
@@ -111,16 +112,16 @@
                     <div 
                         class="comment-marker"
                         :class="[
-                            getCommentStatusClass(lineCommentMarkers[index + 1].status), 
+                            getCommentStatusClass(lineCommentMarkers[index + 1]?.status), 
                             { 
-                                'has-multiple': lineCommentMarkers[index + 1].hasMultiple,
-                                'multi-line': lineCommentMarkers[index + 1].isMultiLine,
-                                'start-line': lineCommentMarkers[index + 1].markerType === 'start',
-                                'middle-line': lineCommentMarkers[index + 1].markerType === 'middle',
-                                'end-line': lineCommentMarkers[index + 1].markerType === 'end'
+                                'has-multiple': lineCommentMarkers[index + 1]?.hasMultiple,
+                                'multi-line': lineCommentMarkers[index + 1]?.isMultiLine,
+                                'start-line': lineCommentMarkers[index + 1]?.markerType === 'start',
+                                'middle-line': lineCommentMarkers[index + 1]?.markerType === 'middle',
+                                'end-line': lineCommentMarkers[index + 1]?.markerType === 'end'
                             }
                         ]"
-                        :data-comment-key="lineCommentMarkers[index + 1].key"
+                        :data-comment-key="lineCommentMarkers[index + 1]?.key"
                         @click="handleCommentMarkerClick(lineCommentMarkers[index + 1], $event)"
                         @mouseenter="handleCommentMarkerMouseEvents(lineCommentMarkers[index + 1], $event)"
                         @mouseleave="handleCommentMarkerMouseEvents(lineCommentMarkers[index + 1], $event)"
@@ -129,8 +130,8 @@
                         tabindex="0"
                     >
                         <i :class="getCommentMarkerIcon(lineCommentMarkers[index + 1])"></i>
-                        <span class="comment-count" v-if="lineCommentMarkers[index + 1].count > 1 && lineCommentMarkers[index + 1].markerType !== 'middle'">
-                            {{ lineCommentMarkers[index + 1].count }}
+                        <span class="comment-count" v-if="lineCommentMarkers[index + 1]?.count > 1 && lineCommentMarkers[index + 1]?.markerType !== 'middle'">
+                            {{ lineCommentMarkers[index + 1]?.count }}
                         </span>
                     </div>
                 </div>

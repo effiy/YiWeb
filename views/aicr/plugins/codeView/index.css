@@ -115,6 +115,51 @@
     position: relative;
 }
 
+/* 整体Markdown内容容器 */
+.markdown-full-content {
+    position: relative;
+    z-index: 1;
+}
+
+/* 评论标记覆盖层 */
+.comment-markers-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Markdown评论行容器 */
+.markdown-comment-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1.7em; /* 与line-height保持一致 */
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    padding-left: 40px; /* 与内容padding保持一致 */
+    z-index: 10; /* 确保评论标记在内容之上 */
+}
+
+/* 确保评论标记在Markdown预览中可见 */
+.markdown-comment-line .comment-marker {
+    position: relative;
+    z-index: 11;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* 评论标记位置由JavaScript动态计算 */
+.markdown-comment-line {
+    /* 默认位置，会被JavaScript覆盖 */
+    top: 32px;
+}
+
 /* 添加阅读体验优化 */
 .markdown-preview-content::before {
     content: '';

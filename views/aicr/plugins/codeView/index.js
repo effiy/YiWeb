@@ -94,6 +94,12 @@ const createCodeView = async () => {
                 // Markdown预览模式
                 isMarkdownPreviewMode: true, // 默认开启预览模式
                 
+                // Markdown渲染缓存
+                markdownCache: {},
+                
+                // 交互功能超时器
+                interactionTimeout: null,
+                
                 // 测试相关（开发调试用）
                 testResults: null,
                 
@@ -124,6 +130,10 @@ const createCodeView = async () => {
                             if (this.languageType === 'markdown') {
                                 this.isMarkdownPreviewMode = true;
                                 console.log('[CodeView] 检测到Markdown文件，开启预览模式');
+                                // 延迟计算评论标记位置
+                                this.$nextTick(() => {
+                                    this.calculateCommentMarkerPositions();
+                                });
                             }
                             
                             // 如果文件没有内容但有key，尝试触发文件加载
@@ -166,6 +176,17 @@ const createCodeView = async () => {
                     }
                 },
                 immediate: true
+            },
+            // 监听Markdown预览模式切换
+            isMarkdownPreviewMode: {
+                handler(newMode, oldMode) {
+                    if (newMode !== oldMode && newMode && this.shouldShowMarkdownPreview) {
+                        console.log('[CodeView] Markdown预览模式已开启，计算评论标记位置');
+                        this.$nextTick(() => {
+                            this.calculateCommentMarkerPositions();
+                        });
+                    }
+                }
             },
             // 监听评论数据变化，处理挂起的评论Key
             comments: {
@@ -357,27 +378,13 @@ const createCodeView = async () => {
                     return '';
                 }
                 const html = this.renderMarkdown(this.file.content);
-                // 添加交互功能
+                
+                // 在下一个tick中添加交互功能
                 this.$nextTick(() => {
                     this.addMarkdownInteractions();
                 });
-                return html;
-            },
-            
-            // 添加Markdown交互功能
-            addMarkdownInteractions() {
-                // 使用防抖来避免频繁调用
-                if (this.interactionTimeout) {
-                    clearTimeout(this.interactionTimeout);
-                }
                 
-                this.interactionTimeout = setTimeout(() => {
-                    this.addTableOfContents();
-                    this.addCodeHighlighting();
-                    this.addImageLightbox();
-                    this.addSmoothScrolling();
-                    this.addCodeBlockInteractions();
-                }, 100);
+                return html;
             },
             
             // 添加代码块交互功能
@@ -787,7 +794,7 @@ const createCodeView = async () => {
                     this.markdownCache = {};
                 }
             },
-            // 获取Markdown预览的行数（用于行号显示）
+            // 获取Markdown预览的行数（用于行号显示和评论标记）
             markdownPreviewLines() {
                 if (!this.shouldShowMarkdownPreview || !this.file || !this.file.content) {
                     return [];
@@ -810,6 +817,146 @@ const createCodeView = async () => {
             toggleMarkdownPreview() {
                 this.isMarkdownPreviewMode = !this.isMarkdownPreviewMode;
                 console.log('[CodeView] 切换Markdown预览模式:', this.isMarkdownPreviewMode);
+                
+                // 如果切换到预览模式，延迟计算评论标记位置
+                if (this.isMarkdownPreviewMode) {
+                    this.$nextTick(() => {
+                        this.calculateCommentMarkerPositions();
+                    });
+                }
+            },
+            
+            // 计算评论标记在Markdown预览中的位置
+            calculateCommentMarkerPositions() {
+                if (!this.shouldShowMarkdownPreview || !this.file || !this.file.content) {
+                    return;
+                }
+                
+                this.$nextTick(() => {
+                    const overlay = this.$el?.querySelector('.comment-markers-overlay');
+                    if (!overlay) return;
+                    
+                    const lines = this.file.content.split('\n');
+                    const lineHeight = 1.7; // 与CSS中的line-height保持一致
+                    const fontSize = 15; // 与CSS中的font-size保持一致
+                    const paddingTop = 32; // 与CSS中的padding-top保持一致
+                    
+                    lines.forEach((line, index) => {
+                        const lineNumber = index + 1;
+                        const commentLine = overlay.querySelector(`[data-line="${lineNumber}"]`);
+                        if (commentLine) {
+                            // 计算该行在预览中的实际位置
+                            const topPosition = paddingTop + (index * lineHeight * fontSize);
+                            commentLine.style.top = `${topPosition}px`;
+                        }
+                    });
+                });
+            },
+            
+            // 监听文件变化，重新计算评论标记位置
+            onFileChange() {
+                if (this.shouldShowMarkdownPreview) {
+                    this.$nextTick(() => {
+                        this.calculateCommentMarkerPositions();
+                    });
+                }
+            },
+            
+            // 添加Markdown预览中的交互功能
+            addMarkdownInteractions() {
+                if (!this.shouldShowMarkdownPreview) return;
+                
+                this.$nextTick(() => {
+                    try {
+                    // 添加代码块复制功能
+                    const codeBlocks = this.$el?.querySelectorAll('.md-code-block-copy');
+                    codeBlocks?.forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const codeId = button.getAttribute('onclick')?.match(/copyCodeBlock\('([^']+)'\)/)?.[1];
+                            if (codeId) {
+                                this.copyCodeBlock(codeId);
+                            }
+                        });
+                    });
+                    
+                    // 添加代码块展开/折叠功能
+                    const expandButtons = this.$el?.querySelectorAll('.md-code-block-expand');
+                    expandButtons?.forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const codeId = button.getAttribute('onclick')?.match(/toggleCodeBlock\('([^']+)'\)/)?.[1];
+                            if (codeId) {
+                                this.toggleCodeBlock(codeId);
+                            }
+                        });
+                    });
+                    } catch (error) {
+                        console.error('[CodeView] addMarkdownInteractions 执行出错:', error);
+                    }
+                });
+            },
+            
+            // 复制代码块内容
+            copyCodeBlock(codeId) {
+                const codeElement = document.getElementById(codeId);
+                if (codeElement) {
+                    const code = codeElement.textContent || codeElement.innerText;
+                    
+                    // 检查是否支持Clipboard API
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(code).then(() => {
+                            console.log('[CodeView] 代码块已复制到剪贴板');
+                            // 可以添加成功提示
+                        }).catch(err => {
+                            console.error('[CodeView] 复制失败:', err);
+                            // 降级到传统复制方法
+                            this.fallbackCopyToClipboard(code);
+                        });
+                    } else {
+                        // 降级到传统复制方法
+                        this.fallbackCopyToClipboard(code);
+                    }
+                }
+            },
+            
+            // 降级复制方法
+            fallbackCopyToClipboard(text) {
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    textArea.style.top = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    if (successful) {
+                        console.log('[CodeView] 代码块已复制到剪贴板（降级方法）');
+                    } else {
+                        console.error('[CodeView] 复制失败（降级方法）');
+                    }
+                } catch (err) {
+                    console.error('[CodeView] 复制失败（降级方法）:', err);
+                }
+            },
+            
+            // 切换代码块展开/折叠状态
+            toggleCodeBlock(codeId) {
+                const codeElement = document.getElementById(codeId);
+                if (codeElement) {
+                    const isCollapsed = codeElement.style.display === 'none';
+                    codeElement.style.display = isCollapsed ? 'block' : 'none';
+                    
+                    // 更新按钮图标
+                    const button = codeElement.parentElement?.querySelector('.md-code-block-expand i');
+                    if (button) {
+                        button.className = isCollapsed ? 'fas fa-compress-alt' : 'fas fa-expand-alt';
+                    }
+                }
             },
             // 渲染单行Markdown内容
             renderMarkdownLine(lineContent) {
@@ -1029,7 +1176,7 @@ const createCodeView = async () => {
                     }
                 } catch (_) {}
             },
-            // 增强的Markdown渲染引擎（带缓存）
+            // 使用marked.js的Markdown渲染引擎（带缓存）
             renderMarkdown(text) {
                 if (!text) return '';
                 
@@ -1039,25 +1186,66 @@ const createCodeView = async () => {
                     return this.markdownCache[cacheKey];
                 }
                 
-                let html = String(text);
+                // 检查marked.js是否可用
+                if (typeof marked === 'undefined') {
+                    console.warn('[CodeView] marked.js未加载，使用备用渲染方法');
+                    return this.renderMarkdownFallback(text);
+                }
                 
-                // HTML转义
-                const escape = (s) => s
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;');
+                try {
+                    // 配置marked.js选项
+                    const markedOptions = {
+                        breaks: true,           // 支持换行
+                        gfm: true,             // 支持GitHub风格的Markdown
+                        sanitize: false,       // 不清理HTML（我们信任内容）
+                        smartLists: true,      // 智能列表
+                        smartypants: true,     // 智能标点
+                        xhtml: false,          // 不使用XHTML
+                        // 自定义渲染器
+                        renderer: this.createMarkedRenderer()
+                    };
+                    
+                    // 使用marked.js渲染
+                    let html = marked.parse(text, markedOptions);
+                    
+                    // 后处理：添加自定义样式类
+                    html = this.postProcessMarkdownHtml(html);
+                    
+                    // 缓存结果
+                    if (!this.markdownCache) {
+                        this.markdownCache = {};
+                    }
+                    this.markdownCache[cacheKey] = html;
+                    
+                    // 限制缓存大小
+                    if (Object.keys(this.markdownCache).length > 50) {
+                        const keys = Object.keys(this.markdownCache);
+                        delete this.markdownCache[keys[0]];
+                    }
+                    
+                    return html;
+                } catch (error) {
+                    console.error('[CodeView] marked.js渲染失败:', error);
+                    return this.renderMarkdownFallback(text);
+                }
+            },
+            
+            // 创建marked.js自定义渲染器
+            createMarkedRenderer() {
+                const renderer = new marked.Renderer();
                 
-                // 先处理代码块，避免内部内容被其他规则处理
-                html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
-                    const language = lang || 'text';
-                    const languageClass = `language-${language}`;
+                // 自定义代码块渲染
+                renderer.code = (code, language) => {
+                    const lang = language || 'text';
                     const codeId = `code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    const lineCount = code.trim().split('\n').length;
+                    
                     return `
                         <div class="md-code-block-wrapper">
                             <div class="md-code-block-header">
                                 <div class="md-code-block-info">
-                                    <span class="md-code-block-language">${language.toUpperCase()}</span>
-                                    <span class="md-code-block-lines">${code.trim().split('\n').length} 行</span>
+                                    <span class="md-code-block-language">${lang.toUpperCase()}</span>
+                                    <span class="md-code-block-lines">${lineCount} 行</span>
                                 </div>
                                 <div class="md-code-block-actions">
                                     <button class="md-code-block-copy" onclick="copyCodeBlock('${codeId}')" title="复制代码">
@@ -1069,7 +1257,114 @@ const createCodeView = async () => {
                                 </div>
                             </div>
                             <pre class="md-code-block" id="${codeId}">
-                                <code class="${languageClass}">${escape(code.trim())}</code>
+                                <code class="language-${lang}">${this.escapeHtml(code)}</code>
+                            </pre>
+                        </div>
+                    `;
+                };
+                
+                // 自定义行内代码渲染
+                renderer.codespan = (code) => {
+                    return `<code class="md-inline-code">${this.escapeHtml(code)}</code>`;
+                };
+                
+                // 自定义图片渲染（添加懒加载）
+                renderer.image = (href, title, text) => {
+                    const safeUrl = /^https?:\/\//i.test(href) ? href : '';
+                    const altText = text || '';
+                    const titleAttr = title ? ` title="${this.escapeHtml(title)}"` : '';
+                    
+                    return safeUrl ? 
+                        `<img src="${safeUrl}" alt="${this.escapeHtml(altText)}" class="md-image" loading="lazy" decoding="async"${titleAttr}/>` : 
+                        `![${this.escapeHtml(altText)}](${href})`;
+                };
+                
+                // 自定义链接渲染
+                renderer.link = (href, title, text) => {
+                    const titleAttr = title ? ` title="${this.escapeHtml(title)}"` : '';
+                    return `<a href="${href}" target="_blank" rel="noreferrer noopener" class="md-link"${titleAttr}>${text}</a>`;
+                };
+                
+                // 自定义表格渲染
+                renderer.table = (header, body) => {
+                    return `<table class="md-table">
+                        <thead class="md-table-head">${header}</thead>
+                        <tbody class="md-table-body">${body}</tbody>
+                    </table>`;
+                };
+                
+                renderer.tablerow = (content) => {
+                    return `<tr class="md-table-row">${content}</tr>`;
+                };
+                
+                renderer.tablecell = (content, flags) => {
+                    const tag = flags.header ? 'th' : 'td';
+                    const className = flags.header ? 'md-table-header' : 'md-table-cell';
+                    return `<${tag} class="${className}">${content}</${tag}>`;
+                };
+                
+                // 自定义列表渲染
+                renderer.list = (body, ordered) => {
+                    const tag = ordered ? 'ol' : 'ul';
+                    const className = ordered ? 'md-ordered-list' : 'md-unordered-list';
+                    return `<${tag} class="${className}">${body}</${tag}>`;
+                };
+                
+                renderer.listitem = (text) => {
+                    return `<li class="md-list-item">${text}</li>`;
+                };
+                
+                // 自定义引用块渲染
+                renderer.blockquote = (quote) => {
+                    return `<blockquote class="md-blockquote">${quote}</blockquote>`;
+                };
+                
+                // 自定义水平线渲染
+                renderer.hr = () => {
+                    return '<hr class="md-hr">';
+                };
+                
+                // 自定义段落渲染
+                renderer.paragraph = (text) => {
+                    return `<p class="md-paragraph">${text}</p>`;
+                };
+                
+                return renderer;
+            },
+            
+            // 后处理Markdown HTML，添加额外的样式和功能
+            postProcessMarkdownHtml(html) {
+                // 为标题添加锚点链接
+                html = html.replace(/<h([1-6])>(.+?)<\/h[1-6]>/g, (match, level, content) => {
+                    const id = content.toLowerCase()
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .trim();
+                    return `<h${level} id="${id}" class="md-heading">${content}</h${level}>`;
+                });
+                
+                return html;
+            },
+            
+            // 备用Markdown渲染方法（当marked.js不可用时）
+            renderMarkdownFallback(text) {
+                let html = String(text);
+                
+                // 简单的Markdown渲染逻辑
+                html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
+                    const language = lang || 'text';
+                    const languageClass = `language-${language}`;
+                    const codeId = `code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    return `
+                        <div class="md-code-block-wrapper">
+                            <div class="md-code-block-header">
+                                <div class="md-code-block-info">
+                                    <span class="md-code-block-language">${language.toUpperCase()}</span>
+                                    <span class="md-code-block-lines">${code.trim().split('\n').length} 行</span>
+                                </div>
+                            </div>
+                            <pre class="md-code-block" id="${codeId}">
+                                <code class="${languageClass}">${this.escapeHtml(code.trim())}</code>
                             </pre>
                         </div>
                     `;
@@ -1078,20 +1373,13 @@ const createCodeView = async () => {
                 // 行内代码
                 html = html.replace(/`([^`\n]+)`/g, '<code class="md-inline-code">$1</code>');
                 
-                // 图片处理（添加懒加载）
-                html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
-                    const safeUrl = /^https?:\/\//i.test(url) ? url : '';
-                    const altText = alt || '';
-                    return safeUrl ? `<img src="${safeUrl}" alt="${altText}" class="md-image" loading="lazy" decoding="async"/>` : match;
-                });
-                
-                // 标题处理（按顺序从h6到h1，避免重复匹配）
-                html = html.replace(/^#{6}\s+(.+)$/gm, '<h6>$1</h6>')
-                           .replace(/^#{5}\s+(.+)$/gm, '<h5>$1</h5>')
-                           .replace(/^#{4}\s+(.+)$/gm, '<h4>$1</h4>')
-                           .replace(/^#{3}\s+(.+)$/gm, '<h3>$1</h3>')
-                           .replace(/^#{2}\s+(.+)$/gm, '<h2>$1</h2>')
-                           .replace(/^#{1}\s+(.+)$/gm, '<h1>$1</h1>');
+                // 标题处理
+                html = html.replace(/^#{6}\s+(.+)$/gm, '<h6 class="md-heading">$1</h6>')
+                           .replace(/^#{5}\s+(.+)$/gm, '<h5 class="md-heading">$1</h5>')
+                           .replace(/^#{4}\s+(.+)$/gm, '<h4 class="md-heading">$1</h4>')
+                           .replace(/^#{3}\s+(.+)$/gm, '<h3 class="md-heading">$1</h3>')
+                           .replace(/^#{2}\s+(.+)$/gm, '<h2 class="md-heading">$1</h2>')
+                           .replace(/^#{1}\s+(.+)$/gm, '<h1 class="md-heading">$1</h1>');
                 
                 // 文本格式
                 html = html.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
@@ -1100,12 +1388,6 @@ const createCodeView = async () => {
                 
                 // 链接处理
                 html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer noopener" class="md-link">$1</a>');
-                
-                // 表格处理
-                html = this.renderTables(html);
-                
-                // 列表处理
-                html = this.renderLists(html);
                 
                 // 引用块
                 html = html.replace(/^>\s*(.+)$/gm, '<blockquote class="md-blockquote">$1</blockquote>');
@@ -1121,18 +1403,6 @@ const createCodeView = async () => {
                 html = html.replace(/<p class="md-paragraph"><\/p>/g, '');
                 html = html.replace(/<p class="md-paragraph">(<h[1-6]|<blockquote|<ul|<ol|<pre|<hr)/g, '$1');
                 html = html.replace(/(<\/h[1-6]>|<\/blockquote>|<\/ul>|<\/ol>|<\/pre>|<\/hr>)<\/p>/g, '$1');
-                
-                // 缓存结果
-                if (!this.markdownCache) {
-                    this.markdownCache = {};
-                }
-                this.markdownCache[cacheKey] = html;
-                
-                // 限制缓存大小
-                if (Object.keys(this.markdownCache).length > 50) {
-                    const keys = Object.keys(this.markdownCache);
-                    delete this.markdownCache[keys[0]];
-                }
                 
                 return html;
             },
@@ -1495,19 +1765,63 @@ const createCodeView = async () => {
                 
                 return cleaned;
             },
+            
+            // 计算Markdown预览模式下的行号
+            calculateMarkdownLineNumber(container, offset) {
+                try {
+                    const markdownContent = this.$el?.querySelector('.markdown-full-content');
+                    if (!markdownContent) return null;
+                    
+                    // 创建范围来计算选中文本之前的内容
+                    const range = document.createRange();
+                    range.setStart(markdownContent, 0);
+                    range.setEnd(container, offset);
+                    
+                    const beforeText = range.toString();
+                    const lineNumber = (beforeText.match(/\n/g) || []).length + 1;
+                    
+                    console.log('[CodeView] Markdown行号计算:', {
+                        beforeTextLength: beforeText.length,
+                        lineNumber: lineNumber,
+                        container: container,
+                        offset: offset
+                    });
+                    
+                    return lineNumber;
+                } catch (error) {
+                    console.error('[CodeView] Markdown行号计算失败:', error);
+                    return null;
+                }
+            },
+            
             // 获取选中文本对应的行号范围
             getSelectionLineRange(range) {
                 try {
                     if (!range) return null;
                     
-                    const codeRoot = this.$el && this.$el.querySelector('.code-content');
-                    if (!codeRoot) return null;
+                    // 根据当前模式选择正确的根元素
+                    let codeRoot = null;
+                    if (this.shouldShowMarkdownPreview) {
+                        // Markdown预览模式：查找markdown-preview-content
+                        codeRoot = this.$el && this.$el.querySelector('.markdown-preview-content');
+                    } else {
+                        // 代码模式：查找code-content
+                        codeRoot = this.$el && this.$el.querySelector('.code-content');
+                    }
                     
-                    // 查找选区开始和结束位置所在的代码行元素（具有data-line属性的code元素）
+                    if (!codeRoot) {
+                        console.warn('[CodeView] 无法找到代码根元素', { 
+                            isMarkdownPreview: this.shouldShowMarkdownPreview,
+                            hasElement: !!this.$el
+                        });
+                        return null;
+                    }
+                    
+                    // 查找选区开始和结束位置所在的代码行元素
                     const findLineElement = (node) => {
                         let current = node;
                         while (current && current !== codeRoot) {
-                            // 查找最近的具有data-line属性的元素（通常是code元素）
+                            // 查找最近的具有data-line属性的元素
                             if (current.nodeType === 1 && current.hasAttribute && current.hasAttribute('data-line')) {
                                 return current;
                             }
@@ -1521,22 +1835,61 @@ const createCodeView = async () => {
                         return null;
                     };
                     
+                    // 在Markdown预览模式下，需要特殊处理，因为行元素在覆盖层中
+                    const findMarkdownLineElement = (node) => {
+                        // 首先尝试在markdown-full-content中查找
+                        const markdownContent = codeRoot.querySelector('.markdown-full-content');
+                        if (markdownContent && markdownContent.contains(node)) {
+                            // 在Markdown内容中，我们需要通过位置计算行号
+                            // 这里使用一个简化的方法：通过文本位置估算行号
+                            const textContent = markdownContent.textContent || '';
+                            const selectedText = range.toString();
+                            const startIndex = textContent.indexOf(selectedText);
+                            
+                            if (startIndex !== -1) {
+                                // 计算选中文本之前的换行符数量
+                                const beforeText = textContent.substring(0, startIndex);
+                                const lineNumber = (beforeText.match(/\n/g) || []).length + 1;
+                                return { lineNumber: lineNumber };
+                            }
+                        }
+                        
+                        // 尝试在评论标记覆盖层中查找
+                        const overlay = codeRoot.querySelector('.comment-markers-overlay');
+                        if (overlay) {
+                            const lineElements = overlay.querySelectorAll('.markdown-comment-line');
+                            for (let i = 0; i < lineElements.length; i++) {
+                                const lineElement = lineElements[i];
+                                if (lineElement.contains(node)) {
+                                    return lineElement;
+                                }
+                            }
+                        }
+                        
+                        return null;
+                    };
+                    
                     // 特殊处理：如果选择的是文本节点，需要找到它所在的代码行
                     const getLineFromTextNode = (container, offset) => {
                         if (!container) return null;
                         
-                        // 如果是文本节点，找到包含它的代码行
-                        let lineElement = findLineElement(container);
-                        if (lineElement) {
-                            return parseInt(lineElement.getAttribute('data-line'), 10);
-                        }
-                        
-                        // 备用方案：通过遍历所有代码行来定位
-                        const allCodeLines = codeRoot.querySelectorAll('[data-line]');
-                        for (let i = 0; i < allCodeLines.length; i++) {
-                            const line = allCodeLines[i];
-                            if (line.contains(container)) {
-                                return parseInt(line.getAttribute('data-line'), 10);
+                        if (this.shouldShowMarkdownPreview) {
+                            // Markdown预览模式：使用专门的方法计算行号
+                            return this.calculateMarkdownLineNumber(container, offset);
+                        } else {
+                            // 代码模式：使用原有的逻辑
+                            let lineElement = findLineElement(container);
+                            if (lineElement) {
+                                return parseInt(lineElement.getAttribute('data-line'), 10);
+                            }
+                            
+                            // 备用方案：通过遍历所有代码行来定位
+                            const allCodeLines = codeRoot.querySelectorAll('[data-line]');
+                            for (let i = 0; i < allCodeLines.length; i++) {
+                                const line = allCodeLines[i];
+                                if (line.contains(container)) {
+                                    return parseInt(line.getAttribute('data-line'), 10);
+                                }
                             }
                         }
                         
@@ -1546,11 +1899,22 @@ const createCodeView = async () => {
                     const startLine = getLineFromTextNode(range.startContainer, range.startOffset);
                     const endLine = getLineFromTextNode(range.endContainer, range.endOffset);
                     
+                    console.log('[CodeView] 行号计算结果:', {
+                        isMarkdownPreview: this.shouldShowMarkdownPreview,
+                        startLine: startLine,
+                        endLine: endLine,
+                        startContainer: range.startContainer,
+                        endContainer: range.endContainer,
+                        selectedText: range.toString().substring(0, 50)
+                    });
+                    
                     // 如果无法获取行号，返回null
                     if (!startLine && !endLine) {
                         console.warn('[CodeView] 无法获取选择范围的行号', { 
                             startContainer: range.startContainer, 
-                            endContainer: range.endContainer 
+                            endContainer: range.endContainer,
+                            isMarkdownPreview: this.shouldShowMarkdownPreview,
+                            codeRoot: codeRoot
                         });
                         return null;
                     }
@@ -1961,6 +2325,8 @@ const createCodeView = async () => {
             },
             // 获取评论状态对应的CSS类名
             getCommentStatusClass(status) {
+                if (!status) return 'status-pending';
+                
                 switch (status) {
                     case 'pending':
                         return 'status-pending';
@@ -2545,6 +2911,8 @@ const createCodeView = async () => {
             },
             // 处理评论标记的鼠标事件（悬停预览等）
             handleCommentMarkerMouseEvents(comment, event) {
+                if (!comment || !event) return;
+                
                 const eventType = event.type;
                 console.log('[CodeView] 评论标记鼠标事件:', eventType, comment);
                 
@@ -2559,6 +2927,8 @@ const createCodeView = async () => {
             
             // 处理评论标记点击事件
             handleCommentMarkerClick(marker, event) {
+                if (!marker || !event) return;
+                
                 console.log('[CodeView] 评论标记点击:', marker);
                 
                 if (!marker.hasMultiple) {
@@ -2572,6 +2942,8 @@ const createCodeView = async () => {
             
             // 显示评论选择菜单
             showCommentSelectMenu(marker, event) {
+                if (!marker || !event) return;
+                
                 console.log('[CodeView] 显示评论选择菜单:', marker);
                 
                 // 创建临时菜单容器
@@ -3094,7 +3466,13 @@ const createCodeView = async () => {
         mounted() {
             console.log('[CodeView] 组件挂载');
             
-
+            // 添加全局Promise拒绝处理器
+            this._unhandledRejectionHandler = (event) => {
+                console.error('[CodeView] 未处理的Promise拒绝:', event.reason);
+                // 阻止默认行为，避免在控制台显示错误
+                event.preventDefault();
+            };
+            window.addEventListener('unhandledrejection', this._unhandledRejectionHandler);
             
             // 添加调试方法到全局
             window.debugCodeView = {
@@ -3275,6 +3653,12 @@ const createCodeView = async () => {
             });
         },
         beforeUnmount() {
+            // 清理Promise拒绝处理器
+            if (this._unhandledRejectionHandler) {
+                window.removeEventListener('unhandledrejection', this._unhandledRejectionHandler);
+                this._unhandledRejectionHandler = null;
+            }
+            
             if (this._hlListener) {
                 window.removeEventListener('highlightCodeLines', this._hlListener);
                 this._hlListener = null;
