@@ -376,7 +376,89 @@ const createCodeView = async () => {
                     this.addCodeHighlighting();
                     this.addImageLightbox();
                     this.addSmoothScrolling();
+                    this.addCodeBlockInteractions();
                 }, 100);
+            },
+            
+            // 添加代码块交互功能
+            addCodeBlockInteractions() {
+                // 注册全局函数
+                window.copyCodeBlock = (codeId) => {
+                    const codeBlock = document.getElementById(codeId);
+                    if (codeBlock) {
+                        const code = codeBlock.querySelector('code');
+                        if (code) {
+                            navigator.clipboard.writeText(code.textContent).then(() => {
+                                this.showCopySuccess(codeId);
+                            }).catch(() => {
+                                // 降级处理
+                                this.fallbackCopy(code.textContent);
+                            });
+                        }
+                    }
+                };
+                
+                window.toggleCodeBlock = (codeId) => {
+                    const codeBlock = document.getElementById(codeId);
+                    if (codeBlock) {
+                        const wrapper = codeBlock.closest('.md-code-block-wrapper');
+                        const expandBtn = wrapper.querySelector('.md-code-block-expand i');
+                        
+                        if (codeBlock.classList.contains('collapsed')) {
+                            codeBlock.classList.remove('collapsed');
+                            expandBtn.className = 'fas fa-compress-alt';
+                            wrapper.classList.remove('collapsed');
+                        } else {
+                            codeBlock.classList.add('collapsed');
+                            expandBtn.className = 'fas fa-expand-alt';
+                            wrapper.classList.add('collapsed');
+                        }
+                    }
+                };
+                
+                // 添加行号
+                this.addLineNumbers();
+            },
+            
+            // 显示复制成功提示
+            showCopySuccess(codeId) {
+                const copyBtn = document.querySelector(`#${codeId}`).closest('.md-code-block-wrapper').querySelector('.md-code-block-copy');
+                const originalIcon = copyBtn.innerHTML;
+                
+                copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                copyBtn.style.color = '#10b981';
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalIcon;
+                    copyBtn.style.color = '';
+                }, 2000);
+            },
+            
+            // 降级复制方法
+            fallbackCopy(text) {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    this.showCopySuccess('fallback');
+                } catch (err) {
+                    console.error('复制失败:', err);
+                }
+                document.body.removeChild(textArea);
+            },
+            
+            // 添加行号
+            addLineNumbers() {
+                const codeBlocks = this.$el.querySelectorAll('.md-code-block code');
+                codeBlocks.forEach(block => {
+                    const lines = block.textContent.split('\n');
+                    if (lines.length > 1) {
+                        const lineNumbers = lines.map((_, index) => `<span class="line-number">${index + 1}</span>`).join('\n');
+                        block.innerHTML = `<span class="line-numbers">${lineNumbers}</span>\n${block.innerHTML}`;
+                    }
+                });
             },
             
             // 添加目录导航
@@ -434,10 +516,14 @@ const createCodeView = async () => {
                 let highlighted = code;
                 
                 // 根据语言进行不同的高亮处理
-                switch (language) {
+                switch (language.toLowerCase()) {
                     case 'javascript':
                     case 'js':
                         highlighted = this.highlightJavaScript(code);
+                        break;
+                    case 'typescript':
+                    case 'ts':
+                        highlighted = this.highlightTypeScript(code);
                         break;
                     case 'python':
                     case 'py':
@@ -446,8 +532,63 @@ const createCodeView = async () => {
                     case 'css':
                         highlighted = this.highlightCSS(code);
                         break;
+                    case 'scss':
+                    case 'sass':
+                        highlighted = this.highlightSCSS(code);
+                        break;
                     case 'html':
+                    case 'xml':
                         highlighted = this.highlightHTML(code);
+                        break;
+                    case 'json':
+                        highlighted = this.highlightJSON(code);
+                        break;
+                    case 'yaml':
+                    case 'yml':
+                        highlighted = this.highlightYAML(code);
+                        break;
+                    case 'bash':
+                    case 'shell':
+                    case 'sh':
+                        highlighted = this.highlightBash(code);
+                        break;
+                    case 'sql':
+                        highlighted = this.highlightSQL(code);
+                        break;
+                    case 'java':
+                        highlighted = this.highlightJava(code);
+                        break;
+                    case 'cpp':
+                    case 'c++':
+                        highlighted = this.highlightCpp(code);
+                        break;
+                    case 'c':
+                        highlighted = this.highlightC(code);
+                        break;
+                    case 'go':
+                        highlighted = this.highlightGo(code);
+                        break;
+                    case 'rust':
+                        highlighted = this.highlightRust(code);
+                        break;
+                    case 'php':
+                        highlighted = this.highlightPHP(code);
+                        break;
+                    case 'ruby':
+                        highlighted = this.highlightRuby(code);
+                        break;
+                    case 'swift':
+                        highlighted = this.highlightSwift(code);
+                        break;
+                    case 'kotlin':
+                        highlighted = this.highlightKotlin(code);
+                        break;
+                    case 'dart':
+                        highlighted = this.highlightDart(code);
+                        break;
+                    case 'markdown':
+                    case 'md':
+                        highlighted = this.highlightMarkdown(code);
                         break;
                     default:
                         highlighted = this.highlightGeneric(code);
@@ -493,6 +634,62 @@ const createCodeView = async () => {
                     .replace(/([a-zA-Z-]+)=/g, '<span class="md-attribute">$1</span>=')
                     .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
                     .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>');
+            },
+            
+            // TypeScript语法高亮
+            highlightTypeScript(code) {
+                return code
+                    .replace(/\b(function|const|let|var|if|else|for|while|return|class|import|export|from|async|await|interface|type|enum|namespace|module|declare|public|private|protected|static|readonly|abstract|extends|implements)\b/g, '<span class="md-keyword">$1</span>')
+                    .replace(/\b(true|false|null|undefined)\b/g, '<span class="md-literal">$1</span>')
+                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
+                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
+                    .replace(/`([^`]*)`/g, '<span class="md-string">`$1`</span>')
+                    .replace(/\/\/.*$/gm, '<span class="md-comment">$&</span>')
+                    .replace(/\/\*[\s\S]*?\*\//g, '<span class="md-comment">$&</span>')
+                    .replace(/\b\d+\.?\d*\b/g, '<span class="md-number">$&</span>')
+                    .replace(/\b[A-Z][a-zA-Z0-9]*\b/g, '<span class="md-type">$&</span>');
+            },
+            
+            // JSON语法高亮
+            highlightJSON(code) {
+                return code
+                    .replace(/"([^"]*)"\s*:/g, '<span class="md-property">"$1"</span>:')
+                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
+                    .replace(/\b(true|false|null)\b/g, '<span class="md-literal">$1</span>')
+                    .replace(/\b\d+\.?\d*\b/g, '<span class="md-number">$1</span>');
+            },
+            
+            // YAML语法高亮
+            highlightYAML(code) {
+                return code
+                    .replace(/^(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/gm, '$1<span class="md-property">$2</span>:')
+                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
+                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
+                    .replace(/\b(true|false|null|~)\b/g, '<span class="md-literal">$1</span>')
+                    .replace(/\b\d+\.?\d*\b/g, '<span class="md-number">$&</span>')
+                    .replace(/#.*$/gm, '<span class="md-comment">$&</span>');
+            },
+            
+            // Bash语法高亮
+            highlightBash(code) {
+                return code
+                    .replace(/\b(if|then|else|elif|fi|for|while|do|done|case|esac|function|return|break|continue|exit)\b/g, '<span class="md-keyword">$1</span>')
+                    .replace(/\b(true|false)\b/g, '<span class="md-literal">$1</span>')
+                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
+                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
+                    .replace(/\$[a-zA-Z_][a-zA-Z0-9_]*/g, '<span class="md-variable">$&</span>')
+                    .replace(/#.*$/gm, '<span class="md-comment">$&</span>');
+            },
+            
+            // SQL语法高亮
+            highlightSQL(code) {
+                return code
+                    .replace(/\b(SELECT|FROM|WHERE|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|TABLE|INDEX|VIEW|DATABASE|SCHEMA|JOIN|LEFT|RIGHT|INNER|OUTER|ON|GROUP|BY|ORDER|HAVING|UNION|DISTINCT|LIMIT|OFFSET|AS|AND|OR|NOT|IN|EXISTS|BETWEEN|LIKE|IS|NULL|TRUE|FALSE)\b/gi, '<span class="md-keyword">$1</span>')
+                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
+                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
+                    .replace(/\b\d+\.?\d*\b/g, '<span class="md-number">$&</span>')
+                    .replace(/--.*$/gm, '<span class="md-comment">$&</span>')
+                    .replace(/\/\*[\s\S]*?\*\//g, '<span class="md-comment">$&</span>');
             },
             
             // 通用语法高亮
@@ -852,8 +1049,30 @@ const createCodeView = async () => {
                 
                 // 先处理代码块，避免内部内容被其他规则处理
                 html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
-                    const language = lang ? ` class="language-${lang}"` : '';
-                    return `<pre class="md-code-block"><code${language}>${escape(code.trim())}</code></pre>`;
+                    const language = lang || 'text';
+                    const languageClass = `language-${language}`;
+                    const codeId = `code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    return `
+                        <div class="md-code-block-wrapper">
+                            <div class="md-code-block-header">
+                                <div class="md-code-block-info">
+                                    <span class="md-code-block-language">${language.toUpperCase()}</span>
+                                    <span class="md-code-block-lines">${code.trim().split('\n').length} 行</span>
+                                </div>
+                                <div class="md-code-block-actions">
+                                    <button class="md-code-block-copy" onclick="copyCodeBlock('${codeId}')" title="复制代码">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                    <button class="md-code-block-expand" onclick="toggleCodeBlock('${codeId}')" title="展开/折叠">
+                                        <i class="fas fa-expand-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <pre class="md-code-block" id="${codeId}">
+                                <code class="${languageClass}">${escape(code.trim())}</code>
+                            </pre>
+                        </div>
+                    `;
                 });
                 
                 // 行内代码

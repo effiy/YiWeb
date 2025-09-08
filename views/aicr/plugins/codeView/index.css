@@ -497,39 +497,164 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.markdown-preview-content .md-code-block {
+/* 代码块包装器 */
+.md-code-block-wrapper {
+    margin: 24px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
     background: var(--bg-tertiary);
     border: 1px solid var(--border-primary);
-    border-radius: 12px;
-    padding: 24px;
-    overflow-x: auto;
-    margin: 24px 0;
-    position: relative;
-    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
 }
 
-.markdown-preview-content .md-code-block::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 40px;
+.md-code-block-wrapper:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.md-code-block-wrapper.collapsed .md-code-block {
+    max-height: 200px;
+    overflow: hidden;
+}
+
+/* 代码块头部 */
+.md-code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
     background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-    border-radius: 12px 12px 0 0;
     border-bottom: 1px solid var(--border-primary);
+    position: relative;
+}
+
+.md-code-block-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.md-code-block-language {
+    background: var(--primary);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.md-code-block-lines {
+    color: var(--text-muted);
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.md-code-block-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.md-code-block-copy,
+.md-code-block-expand {
+    background: none;
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.md-code-block-copy:hover,
+.md-code-block-expand:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.md-code-block-copy:active,
+.md-code-block-expand:active {
+    transform: translateY(0);
+}
+
+/* 代码块主体 */
+.markdown-preview-content .md-code-block {
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    overflow-x: auto;
+    margin: 0;
+    position: relative;
+    box-shadow: none;
+    max-height: 500px;
+    transition: max-height 0.3s ease;
 }
 
 .markdown-preview-content .md-code-block code {
     background: none;
     border: none;
-    padding: 0;
+    padding: 20px;
     font-size: 0.9em;
     color: var(--text-primary);
     font-weight: normal;
     box-shadow: none;
     display: block;
-    margin-top: 20px;
+    margin: 0;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    line-height: 1.6;
+    white-space: pre;
+    overflow-x: auto;
+    position: relative;
+}
+
+/* 行号样式 */
+.line-numbers {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 50px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-primary);
+    padding: 20px 8px;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    user-select: none;
+    line-height: 1.6;
+    text-align: right;
+}
+
+.line-number {
+    display: block;
+    height: 1.6em;
+    line-height: 1.6em;
+}
+
+/* 代码块折叠状态 */
+.md-code-block.collapsed {
+    max-height: 200px;
+    overflow: hidden;
+    position: relative;
+}
+
+.md-code-block.collapsed::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(transparent, var(--bg-tertiary));
+    pointer-events: none;
 }
 
 .markdown-preview-content .md-image {
@@ -721,16 +846,82 @@
 }
 
 /* 代码高亮样式 */
-.md-keyword { color: #d73a49; font-weight: 600; }
-.md-literal { color: #005cc5; font-weight: 600; }
-.md-string { color: #032f62; }
-.md-comment { color: #6a737d; font-style: italic; }
-.md-number { color: #005cc5; font-weight: 600; }
-.md-selector { color: #6f42c1; font-weight: 600; }
-.md-property { color: #005cc5; font-weight: 600; }
-.md-value { color: #032f62; }
-.md-tag { color: #22863a; font-weight: 600; }
-.md-attribute { color: #6f42c1; }
+.md-keyword { 
+    color: #d73a49; 
+    font-weight: 600; 
+}
+.md-literal { 
+    color: #005cc5; 
+    font-weight: 600; 
+}
+.md-string { 
+    color: #032f62; 
+}
+.md-comment { 
+    color: #6a737d; 
+    font-style: italic; 
+    opacity: 0.8;
+}
+.md-number { 
+    color: #005cc5; 
+    font-weight: 600; 
+}
+.md-selector { 
+    color: #6f42c1; 
+    font-weight: 600; 
+}
+.md-property { 
+    color: #005cc5; 
+    font-weight: 600; 
+}
+.md-value { 
+    color: #032f62; 
+}
+.md-tag { 
+    color: #22863a; 
+    font-weight: 600; 
+}
+.md-attribute { 
+    color: #6f42c1; 
+}
+.md-type {
+    color: #6f42c1;
+    font-weight: 600;
+}
+.md-variable {
+    color: #e36209;
+    font-weight: 500;
+}
+.md-function {
+    color: #6f42c1;
+    font-weight: 600;
+}
+.md-class {
+    color: #6f42c1;
+    font-weight: 600;
+}
+.md-operator {
+    color: #d73a49;
+    font-weight: 600;
+}
+.md-regex {
+    color: #032f62;
+    background: rgba(3, 47, 98, 0.1);
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+.md-builtin {
+    color: #005cc5;
+    font-weight: 600;
+}
+.md-constant {
+    color: #e36209;
+    font-weight: 600;
+}
+.md-escape {
+    color: #d73a49;
+    font-weight: 600;
+}
 
 /* 图片灯箱样式 */
 .md-lightbox {
@@ -5317,21 +5508,55 @@
     }
     
     /* 移动端代码块优化 */
-    .markdown-preview-content pre,
-    .markdown-preview-content .md-code-block {
-        padding: 16px;
+    .md-code-block-wrapper {
         margin: 16px 0;
         border-radius: 8px;
-        font-size: 0.85em;
     }
     
-    .markdown-preview-content .md-code-block::before {
-        height: 32px;
-        border-radius: 8px 8px 0 0;
+    .md-code-block-header {
+        padding: 10px 16px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .md-code-block-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .md-code-block-language {
+        font-size: 0.75em;
+        padding: 3px 8px;
+    }
+    
+    .md-code-block-lines {
+        font-size: 0.8em;
+    }
+    
+    .md-code-block-actions {
+        gap: 6px;
+    }
+    
+    .md-code-block-copy,
+    .md-code-block-expand {
+        padding: 4px 8px;
+        font-size: 0.8em;
+    }
+    
+    .markdown-preview-content .md-code-block {
+        max-height: 300px;
     }
     
     .markdown-preview-content .md-code-block code {
-        margin-top: 16px;
+        padding: 16px;
+        font-size: 0.85em;
+    }
+    
+    .line-numbers {
+        width: 40px;
+        padding: 16px 6px;
+        font-size: 0.8em;
     }
     
     /* 移动端表格优化 */
@@ -5395,10 +5620,42 @@
         font-size: 1.2em;
     }
     
-    .markdown-preview-content pre,
+    .md-code-block-wrapper {
+        margin: 12px 0;
+    }
+    
+    .md-code-block-header {
+        padding: 8px 12px;
+    }
+    
+    .md-code-block-language {
+        font-size: 0.7em;
+        padding: 2px 6px;
+    }
+    
+    .md-code-block-lines {
+        font-size: 0.75em;
+    }
+    
+    .md-code-block-copy,
+    .md-code-block-expand {
+        padding: 3px 6px;
+        font-size: 0.75em;
+    }
+    
     .markdown-preview-content .md-code-block {
+        max-height: 250px;
+    }
+    
+    .markdown-preview-content .md-code-block code {
         padding: 12px;
         font-size: 0.8em;
+    }
+    
+    .line-numbers {
+        width: 35px;
+        padding: 12px 4px;
+        font-size: 0.75em;
     }
     
     .markdown-preview-content th,
