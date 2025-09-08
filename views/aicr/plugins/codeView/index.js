@@ -103,6 +103,9 @@ const createCodeView = async () => {
                 // 测试相关（开发调试用）
                 testResults: null,
                 
+                // 滚动状态管理
+                isScrolling: false,
+                scrollRetryCount: 0,
 
             };
         },
@@ -1765,11 +1768,17 @@ const createCodeView = async () => {
             
             // 滚动到评论位置并可选择性打开评论详情
             scrollToCommentPosition(startLine, comment = null) {
+                // 设置滚动状态
+                this.isScrolling = true;
+                this.scrollRetryCount = 0;
+                
                 // 使用递归重试机制，确保DOM元素已渲染
                 const attemptScroll = (retryCount = 0) => {
+                    this.scrollRetryCount = retryCount;
                     try {
                         // 优先尝试滚动到评论标记位置
                         let targetElement = null;
+                        let targetType = '';
                         
                         if (comment && comment.key) {
                             // 先尝试找到具体的评论标记
@@ -1777,6 +1786,7 @@ const createCodeView = async () => {
                             for (const marker of markers) {
                                 if (marker.dataset.commentKey === comment.key) {
                                     targetElement = marker;
+                                    targetType = '评论标记';
                                     console.log('[CodeView] 找到评论标记:', comment.key);
                                     break;
                                 }
@@ -1786,7 +1796,8 @@ const createCodeView = async () => {
                         // 如果没找到评论标记，则滚动到代码行
                         if (!targetElement && startLine) {
                             targetElement = this.$el ? this.$el.querySelector(`[data-line="${startLine}"]`) : null;
-                            console.log('[CodeView] 滚动到代码行:', startLine);
+                            targetType = '代码行';
+                            console.log('[CodeView] 尝试滚动到代码行:', startLine);
                         }
                         
                         // 执行滚动
@@ -1810,7 +1821,11 @@ const createCodeView = async () => {
                                 inline: 'nearest'
                             });
                             
-                            console.log('[CodeView] 成功滚动到位置:', { startLine, comment: comment?.key });
+                            console.log('[CodeView] 成功滚动到位置:', { startLine, comment: comment?.key, targetType });
+                            
+                            // 清除滚动状态
+                            this.isScrolling = false;
+                            this.scrollRetryCount = 0;
                             
                             // 注释掉自动打开评论详情的逻辑，满足用户需求：点击引用代码时不需要打开评论详情弹框
                             // if (comment && comment.key) {
@@ -1822,18 +1837,34 @@ const createCodeView = async () => {
                             return true; // 成功
                         } else {
                             // 如果找不到目标元素且重试次数未达上限，继续重试
-                            if (retryCount < 5) {
-                                console.log(`[CodeView] 未找到目标元素，第${retryCount + 1}次重试...`);
+                            if (retryCount < 3) { // 减少重试次数从5次到3次
+                                console.log(`[CodeView] 未找到${targetType || '目标'}元素，第${retryCount + 1}次重试...`);
                                 setTimeout(() => {
                                     attemptScroll(retryCount + 1);
-                                }, 300);
+                                }, 200); // 减少重试间隔从300ms到200ms
                             } else {
-                                console.warn('[CodeView] 达到最大重试次数，停止尝试滚动');
+                                // 提供更友好的错误信息和替代方案
+                                const errorMsg = this.generateScrollErrorMessage(startLine, comment, targetType);
+                                console.warn('[CodeView] 达到最大重试次数，停止尝试滚动:', errorMsg);
+                                
+                                // 清除滚动状态
+                                this.isScrolling = false;
+                                this.scrollRetryCount = 0;
+                                
+                                // 尝试替代方案：滚动到文件顶部或显示提示
+                                this.handleScrollFailure(startLine, comment, errorMsg);
                             }
                         }
                         
                     } catch (error) {
                         console.warn('[CodeView] 滚动到评论位置失败:', error);
+                        
+                        // 清除滚动状态
+                        this.isScrolling = false;
+                        this.scrollRetryCount = 0;
+                        
+                        // 提供错误恢复机制
+                        this.handleScrollError(error, startLine, comment);
                     }
                     
                     return false;
@@ -1841,6 +1872,62 @@ const createCodeView = async () => {
                 
                 // 开始尝试滚动
                 attemptScroll();
+            },
+            
+            // 生成滚动错误消息
+            generateScrollErrorMessage(startLine, comment, targetType) {
+                if (comment && comment.key) {
+                    return `无法找到评论标记 "${comment.key}"，可能评论已被删除或文件内容已更改`;
+                } else if (startLine) {
+                    return `无法找到第 ${startLine} 行，可能文件内容已更改或行号超出范围`;
+                } else {
+                    return '无法找到目标位置';
+                }
+            },
+            
+            // 处理滚动失败的情况
+            handleScrollFailure(startLine, comment, errorMsg) {
+                try {
+                    // 尝试滚动到文件顶部作为替代方案
+                    const codeBlock = this.$el ? this.$el.querySelector('.code-block') : null;
+                    if (codeBlock) {
+                        codeBlock.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'start',
+                            inline: 'nearest'
+                        });
+                        console.log('[CodeView] 已滚动到文件顶部作为替代方案');
+                    }
+                    
+                    // 显示用户友好的提示（如果有消息系统）
+                    if (this.$message && typeof this.$message.warning === 'function') {
+                        this.$message.warning(`滚动失败: ${errorMsg}`);
+                    } else {
+                        // 备用提示方式
+                        console.info('[CodeView] 提示: 请手动滚动到目标位置');
+                    }
+                } catch (error) {
+                    console.warn('[CodeView] 处理滚动失败时出错:', error);
+                }
+            },
+            
+            // 处理滚动错误
+            handleScrollError(error, startLine, comment) {
+                try {
+                    console.error('[CodeView] 滚动过程中发生错误:', error);
+                    
+                    // 尝试基本的滚动恢复
+                    if (this.$el) {
+                        this.$el.scrollTop = 0;
+                    }
+                    
+                    // 如果有消息系统，显示错误提示
+                    if (this.$message && typeof this.$message.error === 'function') {
+                        this.$message.error('滚动功能暂时不可用，请手动导航到目标位置');
+                    }
+                } catch (recoveryError) {
+                    console.error('[CodeView] 错误恢复失败:', recoveryError);
+                }
             },
             
             // 自动打开指定评论的详情
