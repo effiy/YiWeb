@@ -25,13 +25,15 @@
     background: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-top: none;
-    border-radius: 0 0 8px 8px;
+    border-radius: 0 0 12px 12px;
     padding: 0;
     position: relative;
     min-height: 120px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md);
     overflow: hidden;
     max-height: calc(100vh - 160px);
+    backdrop-filter: blur(10px);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(255, 255, 255, 0.02) 100%);
 }
 
 .markdown-preview-wrapper {
@@ -39,6 +41,27 @@
     height: 100%;
     overflow-y: auto;
     max-height: calc(100vh - 160px);
+    scroll-behavior: smooth;
+}
+
+/* 自定义滚动条 */
+.markdown-preview-wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+
+.markdown-preview-wrapper::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.markdown-preview-wrapper::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.markdown-preview-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
 }
 
 /* ========== Markdown行号样式 ========== */
@@ -81,13 +104,27 @@
 
 .markdown-preview-content {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 15px;
+    line-height: 1.7;
     color: var(--text-primary);
     max-width: none;
     flex: 1;
-    padding: 20px;
+    padding: 32px 40px;
     overflow-x: auto;
+    background: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.01) 100%);
+    position: relative;
+}
+
+/* 添加阅读体验优化 */
+.markdown-preview-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--border-primary) 50%, transparent 100%);
+    opacity: 0.3;
 }
 
 /* Markdown预览内容样式 */
@@ -97,69 +134,201 @@
 .markdown-preview-content h4,
 .markdown-preview-content h5,
 .markdown-preview-content h6 {
-    margin: 24px 0 16px 0;
-    font-weight: 600;
-    line-height: 1.25;
+    margin: 32px 0 20px 0;
+    font-weight: 700;
+    line-height: 1.3;
     color: var(--text-primary);
+    position: relative;
+    scroll-margin-top: 20px;
 }
 
 .markdown-preview-content h1 {
-    font-size: 2em;
-    border-bottom: 1px solid var(--border-primary);
-    padding-bottom: 8px;
+    font-size: 2.2em;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 12px;
+    margin-top: 0;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .markdown-preview-content h2 {
-    font-size: 1.5em;
-    border-bottom: 1px solid var(--border-secondary);
-    padding-bottom: 6px;
+    font-size: 1.8em;
+    border-bottom: 1px solid var(--border-primary);
+    padding-bottom: 8px;
+    color: var(--text-primary);
+    position: relative;
+}
+
+.markdown-preview-content h2::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 20px;
+    background: var(--primary);
+    border-radius: 2px;
 }
 
 .markdown-preview-content h3 {
-    font-size: 1.25em;
+    font-size: 1.4em;
+    color: var(--text-primary);
+    position: relative;
 }
 
+.markdown-preview-content h3::before {
+    content: '▶';
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8em;
+    color: var(--primary);
+    opacity: 0.7;
+}
+
+.markdown-preview-content h4 {
+    font-size: 1.2em;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.markdown-preview-content h5 {
+    font-size: 1.1em;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.markdown-preview-content h6 {
+    font-size: 1em;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 段落样式 */
 .markdown-preview-content p {
-    margin: 16px 0;
+    margin: 20px 0;
+    line-height: 1.8;
+    color: var(--text-primary);
+    text-align: justify;
+    hyphens: auto;
+}
+
+/* 列表样式 */
+.markdown-preview-content ul,
+.markdown-preview-content ol {
+    margin: 20px 0;
+    padding-left: 0;
+    position: relative;
+}
+
+.markdown-preview-content ul {
+    list-style: none;
+}
+
+.markdown-preview-content ul li {
+    position: relative;
+    padding-left: 28px;
+    margin: 12px 0;
     line-height: 1.6;
 }
 
-.markdown-preview-content ul,
+.markdown-preview-content ul li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--primary);
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
 .markdown-preview-content ol {
-    margin: 16px 0;
-    padding-left: 24px;
+    counter-reset: item;
+    list-style: none;
 }
 
-.markdown-preview-content li {
-    margin: 4px 0;
+.markdown-preview-content ol li {
+    position: relative;
+    padding-left: 32px;
+    margin: 12px 0;
+    line-height: 1.6;
+    counter-increment: item;
 }
 
+.markdown-preview-content ol li::before {
+    content: counter(item) '.';
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--primary);
+    font-weight: bold;
+    min-width: 24px;
+}
+
+/* 引用块样式 */
 .markdown-preview-content blockquote {
-    margin: 16px 0;
-    padding: 0 16px;
+    margin: 24px 0;
+    padding: 20px 24px;
     border-left: 4px solid var(--primary);
-    background: var(--bg-secondary);
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(79, 70, 229, 0.05) 100%);
     color: var(--text-secondary);
     font-style: italic;
+    border-radius: 0 8px 8px 0;
+    position: relative;
+    box-shadow: var(--shadow-sm);
 }
 
+.markdown-preview-content blockquote::before {
+    content: '"';
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    font-size: 3em;
+    color: var(--primary);
+    opacity: 0.3;
+    font-family: serif;
+}
+
+/* 代码样式 */
 .markdown-preview-content code {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-primary);
-    border-radius: 4px;
-    padding: 2px 6px;
+    border-radius: 6px;
+    padding: 3px 8px;
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 0.9em;
     color: var(--primary);
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .markdown-preview-content pre {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-primary);
-    border-radius: 6px;
-    padding: 16px;
+    border-radius: 12px;
+    padding: 24px;
     overflow-x: auto;
-    margin: 16px 0;
+    margin: 24px 0;
+    position: relative;
+    box-shadow: var(--shadow-md);
+}
+
+.markdown-preview-content pre::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    border-radius: 12px 12px 0 0;
+    border-bottom: 1px solid var(--border-primary);
 }
 
 .markdown-preview-content pre code {
@@ -168,46 +337,472 @@
     padding: 0;
     font-size: 0.9em;
     color: var(--text-primary);
+    font-weight: normal;
+    box-shadow: none;
+    display: block;
+    margin-top: 20px;
 }
 
+/* 表格样式 */
 .markdown-preview-content table {
     border-collapse: collapse;
     width: 100%;
-    margin: 16px 0;
+    margin: 24px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    background: var(--bg-primary);
 }
 
 .markdown-preview-content th,
 .markdown-preview-content td {
     border: 1px solid var(--border-primary);
-    padding: 8px 12px;
+    padding: 16px 20px;
     text-align: left;
+    vertical-align: top;
 }
 
 .markdown-preview-content th {
-    background: var(--bg-secondary);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    color: white;
     font-weight: 600;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
+.markdown-preview-content tr:nth-child(even) {
+    background: var(--bg-secondary);
+}
+
+.markdown-preview-content tr:hover {
+    background: var(--bg-hover);
+    transition: background 0.2s ease;
+}
+
+/* 链接样式 */
 .markdown-preview-content a {
     color: var(--primary);
     text-decoration: none;
+    position: relative;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid transparent;
 }
 
 .markdown-preview-content a:hover {
-    text-decoration: underline;
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    transform: translateY(-1px);
 }
 
+.markdown-preview-content a::after {
+    content: '↗';
+    margin-left: 4px;
+    font-size: 0.8em;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.markdown-preview-content a:hover::after {
+    opacity: 1;
+}
+
+/* 图片样式 */
 .markdown-preview-content img {
     max-width: 100%;
     height: auto;
-    border-radius: 4px;
-    margin: 8px 0;
+    border-radius: 12px;
+    margin: 24px 0;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
 }
 
+.markdown-preview-content img:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-lg);
+}
+
+/* 水平线样式 */
 .markdown-preview-content hr {
     border: none;
-    border-top: 1px solid var(--border-primary);
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, var(--primary) 50%, transparent 100%);
+    margin: 32px 0;
+    border-radius: 1px;
+}
+
+/* 新增的Markdown元素样式 */
+.markdown-preview-content .md-paragraph {
+    margin: 20px 0;
+    line-height: 1.8;
+    color: var(--text-primary);
+}
+
+.markdown-preview-content .md-blockquote {
     margin: 24px 0;
+    padding: 20px 24px;
+    border-left: 4px solid var(--primary);
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(79, 70, 229, 0.05) 100%);
+    color: var(--text-secondary);
+    font-style: italic;
+    border-radius: 0 8px 8px 0;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+}
+
+.markdown-preview-content .md-hr {
+    border: none;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, var(--primary) 50%, transparent 100%);
+    margin: 32px 0;
+    border-radius: 1px;
+}
+
+.markdown-preview-content .md-link {
+    color: var(--primary);
+    text-decoration: none;
+    position: relative;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid transparent;
+}
+
+.markdown-preview-content .md-link:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.markdown-preview-content .md-link::after {
+    content: '↗';
+    margin-left: 4px;
+    font-size: 0.8em;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.markdown-preview-content .md-link:hover::after {
+    opacity: 1;
+}
+
+.markdown-preview-content .md-inline-code {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 0.9em;
+    color: var(--primary);
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.markdown-preview-content .md-code-block {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+    padding: 24px;
+    overflow-x: auto;
+    margin: 24px 0;
+    position: relative;
+    box-shadow: var(--shadow-md);
+}
+
+.markdown-preview-content .md-code-block::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    border-radius: 12px 12px 0 0;
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.markdown-preview-content .md-code-block code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.9em;
+    color: var(--text-primary);
+    font-weight: normal;
+    box-shadow: none;
+    display: block;
+    margin-top: 20px;
+}
+
+.markdown-preview-content .md-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin: 24px 0;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+}
+
+.markdown-preview-content .md-image:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-lg);
+}
+
+/* 表格相关样式 */
+.markdown-preview-content .md-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    background: var(--bg-primary);
+}
+
+.markdown-preview-content .md-table-header,
+.markdown-preview-content .md-table-cell {
+    border: 1px solid var(--border-primary);
+    padding: 16px 20px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.markdown-preview-content .md-table-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    color: white;
+    font-weight: 600;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.markdown-preview-content .md-table-row:nth-child(even) {
+    background: var(--bg-secondary);
+}
+
+.markdown-preview-content .md-table-row:hover {
+    background: var(--bg-hover);
+    transition: background 0.2s ease;
+}
+
+/* 列表相关样式 */
+.markdown-preview-content .md-ordered-list,
+.markdown-preview-content .md-unordered-list {
+    margin: 20px 0;
+    padding-left: 0;
+    position: relative;
+}
+
+.markdown-preview-content .md-unordered-list {
+    list-style: none;
+}
+
+.markdown-preview-content .md-list-item {
+    position: relative;
+    padding-left: 28px;
+    margin: 12px 0;
+    line-height: 1.6;
+}
+
+.markdown-preview-content .md-unordered-list .md-list-item::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--primary);
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.markdown-preview-content .md-ordered-list {
+    counter-reset: item;
+    list-style: none;
+}
+
+.markdown-preview-content .md-ordered-list .md-list-item {
+    position: relative;
+    padding-left: 32px;
+    margin: 12px 0;
+    line-height: 1.6;
+    counter-increment: item;
+}
+
+.markdown-preview-content .md-ordered-list .md-list-item::before {
+    content: counter(item) '.';
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--primary);
+    font-weight: bold;
+    min-width: 24px;
+}
+
+/* ========== 交互功能样式 ========== */
+
+/* 目录导航样式 */
+.md-toc {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+    margin: 0 0 32px 0;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.md-toc.collapsed .md-toc-content {
+    display: none;
+}
+
+.md-toc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    color: white;
+    cursor: pointer;
+    user-select: none;
+}
+
+.md-toc-header h4 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.md-toc-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.md-toc-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.md-toc-content {
+    padding: 16px 20px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.md-toc-item {
+    margin: 8px 0;
+    padding: 4px 0;
+}
+
+.md-toc-item.level-1 { padding-left: 0; }
+.md-toc-item.level-2 { padding-left: 16px; }
+.md-toc-item.level-3 { padding-left: 32px; }
+.md-toc-item.level-4 { padding-left: 48px; }
+.md-toc-item.level-5 { padding-left: 64px; }
+.md-toc-item.level-6 { padding-left: 80px; }
+
+.md-toc-link {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9em;
+    line-height: 1.4;
+    display: block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.md-toc-link:hover {
+    background: var(--bg-hover);
+    color: var(--primary);
+    transform: translateX(4px);
+}
+
+/* 代码高亮样式 */
+.md-keyword { color: #d73a49; font-weight: 600; }
+.md-literal { color: #005cc5; font-weight: 600; }
+.md-string { color: #032f62; }
+.md-comment { color: #6a737d; font-style: italic; }
+.md-number { color: #005cc5; font-weight: 600; }
+.md-selector { color: #6f42c1; font-weight: 600; }
+.md-property { color: #005cc5; font-weight: 600; }
+.md-value { color: #032f62; }
+.md-tag { color: #22863a; font-weight: 600; }
+.md-attribute { color: #6f42c1; }
+
+/* 图片灯箱样式 */
+.md-lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    cursor: pointer;
+}
+
+.md-lightbox-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.md-lightbox-image {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+}
+
+.md-lightbox-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 1.5em;
+    padding: 8px 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.md-lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* 代码块工具栏 */
+.md-code-block {
+    position: relative;
+}
+
+.md-code-block:hover::after {
+    content: '复制';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--primary);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.md-code-block:hover::after:hover {
+    opacity: 1;
 }
 
 /* 编辑态下的代码区域尺寸与滚动优化 */
@@ -4655,6 +5250,191 @@
         width: 16px;
         height: 16px;
         font-size: 8px;
+    }
+    
+    /* 移动端MD预览容器优化 */
+    .markdown-preview-container {
+        border-radius: 0 0 8px 8px;
+        max-height: calc(100vh - 120px);
+    }
+    
+    .markdown-preview-wrapper {
+        max-height: calc(100vh - 120px);
+    }
+    
+    .markdown-preview-content {
+        padding: 20px 16px;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    
+    /* 移动端标题优化 */
+    .markdown-preview-content h1 {
+        font-size: 1.8em;
+        margin-top: 0;
+        padding-bottom: 8px;
+    }
+    
+    .markdown-preview-content h2 {
+        font-size: 1.5em;
+        padding-bottom: 6px;
+    }
+    
+    .markdown-preview-content h2::before {
+        left: -12px;
+        width: 3px;
+        height: 16px;
+    }
+    
+    .markdown-preview-content h3 {
+        font-size: 1.3em;
+    }
+    
+    .markdown-preview-content h3::before {
+        left: -12px;
+        font-size: 0.7em;
+    }
+    
+    /* 移动端段落和列表优化 */
+    .markdown-preview-content p {
+        margin: 16px 0;
+        line-height: 1.7;
+        text-align: left;
+    }
+    
+    .markdown-preview-content ul li,
+    .markdown-preview-content ol li {
+        padding-left: 24px;
+        margin: 8px 0;
+    }
+    
+    .markdown-preview-content .md-unordered-list .md-list-item {
+        padding-left: 24px;
+    }
+    
+    .markdown-preview-content .md-ordered-list .md-list-item {
+        padding-left: 28px;
+    }
+    
+    /* 移动端代码块优化 */
+    .markdown-preview-content pre,
+    .markdown-preview-content .md-code-block {
+        padding: 16px;
+        margin: 16px 0;
+        border-radius: 8px;
+        font-size: 0.85em;
+    }
+    
+    .markdown-preview-content .md-code-block::before {
+        height: 32px;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .markdown-preview-content .md-code-block code {
+        margin-top: 16px;
+    }
+    
+    /* 移动端表格优化 */
+    .markdown-preview-content table,
+    .markdown-preview-content .md-table {
+        font-size: 0.85em;
+        margin: 16px 0;
+    }
+    
+    .markdown-preview-content th,
+    .markdown-preview-content td,
+    .markdown-preview-content .md-table-header,
+    .markdown-preview-content .md-table-cell {
+        padding: 12px 8px;
+    }
+    
+    /* 移动端图片优化 */
+    .markdown-preview-content img,
+    .markdown-preview-content .md-image {
+        margin: 16px 0;
+        border-radius: 8px;
+    }
+    
+    /* 移动端引用块优化 */
+    .markdown-preview-content blockquote,
+    .markdown-preview-content .md-blockquote {
+        margin: 16px 0;
+        padding: 16px 20px;
+        border-radius: 0 6px 6px 0;
+    }
+    
+    .markdown-preview-content blockquote::before,
+    .markdown-preview-content .md-blockquote::before {
+        left: 16px;
+        font-size: 2.5em;
+    }
+    
+    /* 移动端链接优化 */
+    .markdown-preview-content a::after,
+    .markdown-preview-content .md-link::after {
+        font-size: 0.7em;
+    }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 480px) {
+    .markdown-preview-content {
+        padding: 16px 12px;
+        font-size: 13px;
+    }
+    
+    .markdown-preview-content h1 {
+        font-size: 1.6em;
+    }
+    
+    .markdown-preview-content h2 {
+        font-size: 1.4em;
+    }
+    
+    .markdown-preview-content h3 {
+        font-size: 1.2em;
+    }
+    
+    .markdown-preview-content pre,
+    .markdown-preview-content .md-code-block {
+        padding: 12px;
+        font-size: 0.8em;
+    }
+    
+    .markdown-preview-content th,
+    .markdown-preview-content td,
+    .markdown-preview-content .md-table-header,
+    .markdown-preview-content .md-table-cell {
+        padding: 8px 6px;
+        font-size: 0.8em;
+    }
+}
+
+/* 横屏模式优化 */
+@media (max-height: 600px) and (orientation: landscape) {
+    .markdown-preview-container {
+        max-height: calc(100vh - 100px);
+    }
+    
+    .markdown-preview-wrapper {
+        max-height: calc(100vh - 100px);
+    }
+    
+    .markdown-preview-content {
+        padding: 16px 20px;
+    }
+    
+    .markdown-preview-content h1,
+    .markdown-preview-content h2,
+    .markdown-preview-content h3,
+    .markdown-preview-content h4,
+    .markdown-preview-content h5,
+    .markdown-preview-content h6 {
+        margin: 16px 0 12px 0;
+    }
+    
+    .markdown-preview-content p {
+        margin: 12px 0;
     }
 }
 

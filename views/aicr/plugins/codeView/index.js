@@ -356,7 +356,239 @@ const createCodeView = async () => {
                 if (!this.shouldShowMarkdownPreview || !this.file || !this.file.content) {
                     return '';
                 }
-                return this.renderMarkdown(this.file.content);
+                const html = this.renderMarkdown(this.file.content);
+                // 添加交互功能
+                this.$nextTick(() => {
+                    this.addMarkdownInteractions();
+                });
+                return html;
+            },
+            
+            // 添加Markdown交互功能
+            addMarkdownInteractions() {
+                // 使用防抖来避免频繁调用
+                if (this.interactionTimeout) {
+                    clearTimeout(this.interactionTimeout);
+                }
+                
+                this.interactionTimeout = setTimeout(() => {
+                    this.addTableOfContents();
+                    this.addCodeHighlighting();
+                    this.addImageLightbox();
+                    this.addSmoothScrolling();
+                }, 100);
+            },
+            
+            // 添加目录导航
+            addTableOfContents() {
+                const content = this.$el.querySelector('.markdown-preview-content');
+                if (!content) return;
+                
+                const headings = content.querySelectorAll('h1, h2, h3, h4, h5, h6');
+                if (headings.length === 0) return;
+                
+                // 创建目录
+                const toc = document.createElement('div');
+                toc.className = 'md-toc';
+                toc.innerHTML = `
+                    <div class="md-toc-header">
+                        <h4>目录</h4>
+                        <button class="md-toc-toggle" onclick="this.parentElement.parentElement.classList.toggle('collapsed')">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                    <div class="md-toc-content"></div>
+                `;
+                
+                const tocContent = toc.querySelector('.md-toc-content');
+                headings.forEach((heading, index) => {
+                    const id = `heading-${index}`;
+                    heading.id = id;
+                    
+                    const level = parseInt(heading.tagName.charAt(1));
+                    const item = document.createElement('div');
+                    item.className = `md-toc-item level-${level}`;
+                    item.innerHTML = `<a href="#${id}" class="md-toc-link">${heading.textContent}</a>`;
+                    tocContent.appendChild(item);
+                });
+                
+                // 插入到内容前面
+                content.insertBefore(toc, content.firstChild);
+            },
+            
+            // 添加代码高亮
+            addCodeHighlighting() {
+                const codeBlocks = this.$el.querySelectorAll('.md-code-block code');
+                codeBlocks.forEach(block => {
+                    const language = block.className.match(/language-(\w+)/);
+                    if (language) {
+                        this.highlightCodeBlock(block, language[1]);
+                    }
+                });
+            },
+            
+            // 代码块高亮处理
+            highlightCodeBlock(block, language) {
+                // 简单的语法高亮实现
+                const code = block.textContent;
+                let highlighted = code;
+                
+                // 根据语言进行不同的高亮处理
+                switch (language) {
+                    case 'javascript':
+                    case 'js':
+                        highlighted = this.highlightJavaScript(code);
+                        break;
+                    case 'python':
+                    case 'py':
+                        highlighted = this.highlightPython(code);
+                        break;
+                    case 'css':
+                        highlighted = this.highlightCSS(code);
+                        break;
+                    case 'html':
+                        highlighted = this.highlightHTML(code);
+                        break;
+                    default:
+                        highlighted = this.highlightGeneric(code);
+                }
+                
+                block.innerHTML = highlighted;
+            },
+            
+            // JavaScript语法高亮
+            highlightJavaScript(code) {
+                return code
+                    .replace(/\b(function|const|let|var|if|else|for|while|return|class|import|export|from|async|await)\b/g, '<span class="md-keyword">$1</span>')
+                    .replace(/\b(true|false|null|undefined)\b/g, '<span class="md-literal">$1</span>')
+                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
+                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
+                    .replace(/\/\/.*$/gm, '<span class="md-comment">$&</span>')
+                    .replace(/\/\*[\s\S]*?\*\//g, '<span class="md-comment">$&</span>');
+            },
+            
+            // Python语法高亮
+            highlightPython(code) {
+                return code
+                    .replace(/\b(def|class|if|elif|else|for|while|import|from|return|yield|lambda|with|as|try|except|finally|raise|assert|pass|break|continue)\b/g, '<span class="md-keyword">$1</span>')
+                    .replace(/\b(True|False|None)\b/g, '<span class="md-literal">$1</span>')
+                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
+                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
+                    .replace(/#.*$/gm, '<span class="md-comment">$&</span>');
+            },
+            
+            // CSS语法高亮
+            highlightCSS(code) {
+                return code
+                    .replace(/([.#]?[a-zA-Z-]+)\s*\{/g, '<span class="md-selector">$1</span> {')
+                    .replace(/([a-zA-Z-]+)\s*:/g, '<span class="md-property">$1</span>:')
+                    .replace(/([a-zA-Z-]+)\s*;/g, '<span class="md-value">$1</span>;')
+                    .replace(/\/\*[\s\S]*?\*\//g, '<span class="md-comment">$&</span>');
+            },
+            
+            // HTML语法高亮
+            highlightHTML(code) {
+                return code
+                    .replace(/&lt;(\/?[a-zA-Z][^&]*?)&gt;/g, '<span class="md-tag">&lt;$1&gt;</span>')
+                    .replace(/([a-zA-Z-]+)=/g, '<span class="md-attribute">$1</span>=')
+                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
+                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>');
+            },
+            
+            // 通用语法高亮
+            highlightGeneric(code) {
+                return code
+                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
+                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
+                    .replace(/\b\d+\.?\d*\b/g, '<span class="md-number">$&</span>');
+            },
+            
+            // 添加图片灯箱效果（带懒加载）
+            addImageLightbox() {
+                const images = this.$el.querySelectorAll('.md-image');
+                
+                // 使用Intersection Observer进行懒加载
+                if ('IntersectionObserver' in window) {
+                    const imageObserver = new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                const img = entry.target;
+                                img.style.cursor = 'pointer';
+                                img.addEventListener('click', () => {
+                                    this.showImageLightbox(img.src, img.alt);
+                                });
+                                imageObserver.unobserve(img);
+                            }
+                        });
+                    }, { rootMargin: '50px' });
+                    
+                    images.forEach(img => imageObserver.observe(img));
+                } else {
+                    // 降级处理
+                    images.forEach(img => {
+                        img.style.cursor = 'pointer';
+                        img.addEventListener('click', () => {
+                            this.showImageLightbox(img.src, img.alt);
+                        });
+                    });
+                }
+            },
+            
+            // 显示图片灯箱
+            showImageLightbox(src, alt) {
+                const lightbox = document.createElement('div');
+                lightbox.className = 'md-lightbox';
+                lightbox.innerHTML = `
+                    <div class="md-lightbox-content">
+                        <img src="${src}" alt="${alt}" class="md-lightbox-image">
+                        <button class="md-lightbox-close" onclick="this.parentElement.parentElement.remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(lightbox);
+            },
+            
+            // 添加平滑滚动
+            addSmoothScrolling() {
+                const links = this.$el.querySelectorAll('.md-toc-link');
+                links.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const targetId = link.getAttribute('href').substring(1);
+                        const target = document.getElementById(targetId);
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    });
+                });
+            },
+            
+            // 性能监控
+            measurePerformance(name, fn) {
+                const start = performance.now();
+                const result = fn();
+                const end = performance.now();
+                console.log(`[MD Preview] ${name}: ${(end - start).toFixed(2)}ms`);
+                return result;
+            },
+            
+            // 清理资源
+            cleanup() {
+                if (this.interactionTimeout) {
+                    clearTimeout(this.interactionTimeout);
+                }
+                
+                // 清理事件监听器
+                const images = this.$el.querySelectorAll('.md-image');
+                images.forEach(img => {
+                    img.removeEventListener('click', this.showImageLightbox);
+                });
+                
+                // 清理缓存
+                if (this.markdownCache) {
+                    this.markdownCache = {};
+                }
             },
             // 获取Markdown预览的行数（用于行号显示）
             markdownPreviewLines() {
@@ -600,47 +832,145 @@ const createCodeView = async () => {
                     }
                 } catch (_) {}
             },
-            // 轻量Markdown渲染（与评论面板一致的简化版）
+            // 增强的Markdown渲染引擎（带缓存）
             renderMarkdown(text) {
                 if (!text) return '';
+                
+                // 检查缓存
+                const cacheKey = `md_${this.hashString(text)}`;
+                if (this.markdownCache && this.markdownCache[cacheKey]) {
+                    return this.markdownCache[cacheKey];
+                }
+                
                 let html = String(text);
+                
+                // HTML转义
                 const escape = (s) => s
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;');
-                html = escape(html);
-                html = html.replace(/```([\s\S]*?)```/g, (m, code) => `<pre class="md-code"><code>${code}</code></pre>`);
-                html = html.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
-                html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, url) => {
+                
+                // 先处理代码块，避免内部内容被其他规则处理
+                html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
+                    const language = lang ? ` class="language-${lang}"` : '';
+                    return `<pre class="md-code-block"><code${language}>${escape(code.trim())}</code></pre>`;
+                });
+                
+                // 行内代码
+                html = html.replace(/`([^`\n]+)`/g, '<code class="md-inline-code">$1</code>');
+                
+                // 图片处理（添加懒加载）
+                html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
                     const safeUrl = /^https?:\/\//i.test(url) ? url : '';
                     const altText = alt || '';
-                    return safeUrl ? `<img src="${safeUrl}" alt="${altText}" class="md-image"/>` : m;
+                    return safeUrl ? `<img src="${safeUrl}" alt="${altText}" class="md-image" loading="lazy" decoding="async"/>` : match;
                 });
-                // 修复标题解析：从 h1 到 h6 的顺序，确保正确匹配
-                html = html.replace(/^#{1}\s+(.+)$/gm, '<h1>$1<\/h1>')
-                           .replace(/^#{2}\s+(.+)$/gm, '<h2>$1<\/h2>')
-                           .replace(/^#{3}\s+(.+)$/gm, '<h3>$1<\/h3>')
-                           .replace(/^#{4}\s+(.+)$/gm, '<h4>$1<\/h4>')
-                           .replace(/^#{5}\s+(.+)$/gm, '<h5>$1<\/h5>')
-                           .replace(/^#{6}\s+(.+)$/gm, '<h6>$1<\/h6>');
-                html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1<\/strong>');
-                html = html.replace(/\*([^*]+)\*/g, '<em>$1<\/em>');
-                html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer noopener">$1<\/a>');
-                html = html.replace(/^(\d+)\.\s+(.+)$/gm, '<li>$2<\/li>')
-                           .replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ol>${m.replace(/\n/g, '')}<\/ol>`);
-                html = html.replace(/^[-*+]\s+(.+)$/gm, '<li>$1<\/li>')
-                           .replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ul>${m.replace(/\n/g, '')}<\/ul>`);
-                const blockTags = ['h1','h2','h3','h4','h5','h6','pre','ul','ol','li','blockquote'];
-                // 优化：先清理多余的换行符，避免多个连续的\n
-                html = html.replace(/\n{3,}/g, '\n\n'); // 将3个或更多换行符替换为2个
-                html = html.split(/\n{2,}/).map(block => {
-                    const trimmed = block.trim();
-                    if (!trimmed) return '';
-                    const isBlock = blockTags.some(tag => new RegExp(`^<${tag}[\\s>]`, 'i').test(trimmed));
-                    return isBlock ? trimmed : `<p>${trimmed.replace(/\n/g, '<br/>')}<\/p>`;
-                }).join('');
-                html = html.replace(/<(ul|ol)>\s*<\/(\1)>/g, '');
-                html = html.replace(/(?:^|\n)(https?:[^\s]+\.(?:png|jpe?g|gif|webp|svg))(?:\n|$)/gi, (m, url) => `\n<p><img src="${url}" alt="image" class="md-image"\/><\/p>\n`);
+                
+                // 标题处理（按顺序从h6到h1，避免重复匹配）
+                html = html.replace(/^#{6}\s+(.+)$/gm, '<h6>$1</h6>')
+                           .replace(/^#{5}\s+(.+)$/gm, '<h5>$1</h5>')
+                           .replace(/^#{4}\s+(.+)$/gm, '<h4>$1</h4>')
+                           .replace(/^#{3}\s+(.+)$/gm, '<h3>$1</h3>')
+                           .replace(/^#{2}\s+(.+)$/gm, '<h2>$1</h2>')
+                           .replace(/^#{1}\s+(.+)$/gm, '<h1>$1</h1>');
+                
+                // 文本格式
+                html = html.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+                html = html.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+                html = html.replace(/~~([^~\n]+)~~/g, '<del>$1</del>');
+                
+                // 链接处理
+                html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer noopener" class="md-link">$1</a>');
+                
+                // 表格处理
+                html = this.renderTables(html);
+                
+                // 列表处理
+                html = this.renderLists(html);
+                
+                // 引用块
+                html = html.replace(/^>\s*(.+)$/gm, '<blockquote class="md-blockquote">$1</blockquote>');
+                
+                // 水平线
+                html = html.replace(/^[-*_]{3,}$/gm, '<hr class="md-hr">');
+                
+                // 换行处理
+                html = html.replace(/\n\n/g, '</p><p class="md-paragraph">');
+                html = '<p class="md-paragraph">' + html + '</p>';
+                
+                // 清理空段落
+                html = html.replace(/<p class="md-paragraph"><\/p>/g, '');
+                html = html.replace(/<p class="md-paragraph">(<h[1-6]|<blockquote|<ul|<ol|<pre|<hr)/g, '$1');
+                html = html.replace(/(<\/h[1-6]>|<\/blockquote>|<\/ul>|<\/ol>|<\/pre>|<\/hr>)<\/p>/g, '$1');
+                
+                // 缓存结果
+                if (!this.markdownCache) {
+                    this.markdownCache = {};
+                }
+                this.markdownCache[cacheKey] = html;
+                
+                // 限制缓存大小
+                if (Object.keys(this.markdownCache).length > 50) {
+                    const keys = Object.keys(this.markdownCache);
+                    delete this.markdownCache[keys[0]];
+                }
+                
+                return html;
+            },
+            
+            // 生成字符串哈希
+            hashString(str) {
+                let hash = 0;
+                if (str.length === 0) return hash;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash; // Convert to 32bit integer
+                }
+                return hash.toString();
+            },
+            
+            // 表格渲染
+            renderTables(html) {
+                const tableRegex = /^(\|.+\|)\n(\|[-\s|:]+\|)\n((?:\|.+\|\n?)*)/gm;
+                return html.replace(tableRegex, (match, header, separator, rows) => {
+                    const headerCells = header.split('|').slice(1, -1).map(cell => 
+                        `<th class="md-table-header">${cell.trim()}</th>`
+                    ).join('');
+                    
+                    const rowLines = rows.trim().split('\n').filter(line => line.trim());
+                    const bodyRows = rowLines.map(row => {
+                        const cells = row.split('|').slice(1, -1).map(cell => 
+                            `<td class="md-table-cell">${cell.trim()}</td>`
+                        ).join('');
+                        return `<tr class="md-table-row">${cells}</tr>`;
+                    }).join('');
+                    
+                    return `<table class="md-table">
+                        <thead class="md-table-head">
+                            <tr class="md-table-header-row">${headerCells}</tr>
+                        </thead>
+                        <tbody class="md-table-body">${bodyRows}</tbody>
+                    </table>`;
+                });
+            },
+            
+            // 列表渲染
+            renderLists(html) {
+                // 有序列表
+                html = html.replace(/^(\d+)\.\s+(.+)$/gm, '<li class="md-list-item">$2</li>');
+                html = html.replace(/(<li class="md-list-item">[^<]*<\/li>\s*)+/g, (match) => {
+                    const items = match.trim().split(/(?=<\/li>)/).filter(item => item.trim());
+                    return `<ol class="md-ordered-list">${items.join('')}</ol>`;
+                });
+                
+                // 无序列表
+                html = html.replace(/^[-*+]\s+(.+)$/gm, '<li class="md-list-item">$1</li>');
+                html = html.replace(/(<li class="md-list-item">[^<]*<\/li>\s*)+/g, (match) => {
+                    const items = match.trim().split(/(?=<\/li>)/).filter(item => item.trim());
+                    return `<ul class="md-unordered-list">${items.join('')}</ul>`;
+                });
+                
                 return html;
             },
             // 响应外部的代码高亮事件（增强版：支持评论定位和自动打开）
