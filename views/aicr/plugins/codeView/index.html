@@ -139,16 +139,6 @@
         <!-- 划词评论按钮容器（全局唯一，通过脚本定位） -->
         <div id="comment-action-container"></div>
 
-        <!-- 缩进处理测试区域（开发调试用，生产环境可移除） -->
-        <div v-if="false" class="indentation-test-area hidden">
-            <div class="test-header">
-                <h4>缩进处理测试</h4>
-                <button @click="runIndentationTests" class="test-btn">运行测试</button>
-            </div>
-            <div class="test-results" v-if="testResults">
-                <pre>{{ testResults }}</pre>
-            </div>
-        </div>
 
         <!-- 未选评论者时的手动评论弹框 -->
         <div 
