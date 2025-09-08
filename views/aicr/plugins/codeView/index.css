@@ -106,22 +106,47 @@
     display: flex;
     align-items: center;
     justify-content: flex-end; /* 右对齐评论标记 */
-    padding-right: 20px; /* 右边距 */
+    padding-right: 24px; /* 增加右边距，为评论标记留出更多空间 */
     z-index: 10; /* 确保评论标记在内容之上 */
 }
 
 /* 确保评论标记在Markdown预览中可见 */
 .markdown-comment-line .comment-marker {
     position: absolute;
-    right: 12px;
+    right: 16px; /* 增加右边距 */
     top: 50%;
     transform: translateY(-50%);
     z-index: 15;
-    background: var(--bg-primary);
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover, #5b21b6) 100%); /* 渐变背景 */
     border: 2px solid var(--accent);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    transition: all 0.2s ease;
+    color: white;
+    box-shadow: 
+        0 2px 12px rgba(79, 70, 229, 0.25),
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2); /* 多层阴影和内阴影 */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* 更流畅的动画 */
     pointer-events: auto; /* 确保可以交互 */
+    backdrop-filter: blur(4px); /* 添加背景模糊效果 */
+    will-change: transform, box-shadow, background; /* 性能优化 */
+    contain: layout style paint; /* 性能优化 */
+    position: relative; /* 为伪元素定位 */
+    overflow: hidden; /* 隐藏溢出效果 */
+}
+
+/* 添加光泽效果 */
+.markdown-comment-line .comment-marker::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.6s ease;
+}
+
+.markdown-comment-line .comment-marker:hover::before {
+    left: 100%;
 }
 
 /* 评论标记位置由JavaScript动态计算 */
@@ -5442,108 +5467,360 @@
 
 /* MD预览模式下的评论标记悬停效果 */
 .markdown-comment-line .comment-marker:hover {
-    transform: translateY(-50%) scale(1.15);
-    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+    transform: translateY(-50%) scale(1.2) rotate(2deg); /* 添加轻微旋转 */
+    box-shadow: 
+        0 8px 25px rgba(79, 70, 229, 0.6),
+        0 4px 12px rgba(79, 70, 229, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3); /* 增强阴影层次 */
     border-color: var(--accent-hover, #5b21b6);
-    background: var(--accent-hover, #5b21b6);
+    background: linear-gradient(135deg, var(--accent-hover, #5b21b6) 0%, #7c3aed 100%); /* 悬停渐变 */
     color: white;
+    backdrop-filter: blur(8px); /* 增强背景模糊 */
+    animation: comment-marker-bounce 0.6s ease-out; /* 添加弹跳动画 */
+}
+
+/* 弹跳动画 */
+@keyframes comment-marker-bounce {
+    0% { transform: translateY(-50%) scale(1) rotate(0deg); }
+    30% { transform: translateY(-50%) scale(1.3) rotate(3deg); }
+    60% { transform: translateY(-50%) scale(1.15) rotate(-1deg); }
+    100% { transform: translateY(-50%) scale(1.2) rotate(2deg); }
 }
 
 /* 评论标记点击效果 */
 .markdown-comment-line .comment-marker:active {
     transform: translateY(-50%) scale(1.05);
     transition: all 0.1s ease;
+    box-shadow: 0 1px 4px rgba(79, 70, 229, 0.4);
+}
+
+/* 评论标记加载状态 */
+.markdown-comment-line .comment-marker.loading {
+    animation: comment-marker-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes comment-marker-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: translateY(-50%) scale(1.1);
+    }
+}
+
+/* 评论标记出现动画 */
+.markdown-comment-line .comment-marker {
+    animation: comment-marker-appear 0.4s ease-out;
+}
+
+@keyframes comment-marker-appear {
+    0% {
+        opacity: 0;
+        transform: translateY(-50%) scale(0.3) rotate(-10deg);
+    }
+    50% {
+        opacity: 0.8;
+        transform: translateY(-50%) scale(1.1) rotate(5deg);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(-50%) scale(1) rotate(0deg);
+    }
+}
+
+/* 评论标记消失动画 */
+.markdown-comment-line .comment-marker.removing {
+    animation: comment-marker-remove 0.3s ease-in forwards;
+}
+
+@keyframes comment-marker-remove {
+    0% {
+        opacity: 1;
+        transform: translateY(-50%) scale(1) rotate(0deg);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-50%) scale(0.3) rotate(10deg);
+    }
+}
+
+/* 评论标记成功状态动画 */
+.markdown-comment-line .comment-marker.success {
+    animation: comment-marker-success 0.6s ease-out;
+}
+
+@keyframes comment-marker-success {
+    0% {
+        transform: translateY(-50%) scale(1);
+    }
+    25% {
+        transform: translateY(-50%) scale(1.3) rotate(5deg);
+    }
+    50% {
+        transform: translateY(-50%) scale(1.1) rotate(-2deg);
+    }
+    75% {
+        transform: translateY(-50%) scale(1.2) rotate(1deg);
+    }
+    100% {
+        transform: translateY(-50%) scale(1) rotate(0deg);
+    }
 }
 
 /* 评论标记聚焦效果 */
 .markdown-comment-line .comment-marker:focus {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2); /* 增强聚焦效果 */
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+    .markdown-comment-line .comment-marker {
+        border-width: 3px;
+        box-shadow: 0 0 0 2px currentColor;
+    }
+    
+    .markdown-comment-line .comment-marker:hover {
+        box-shadow: 0 0 0 4px currentColor;
+    }
+}
+
+/* 减少动画模式支持 */
+@media (prefers-reduced-motion: reduce) {
+    .markdown-comment-line .comment-marker {
+        transition: none;
+    }
+    
+    .markdown-comment-line .comment-marker:hover {
+        transform: translateY(-50%) scale(1.05); /* 减少缩放 */
+    }
+    
+    .markdown-comment-line .comment-marker.loading {
+        animation: none;
+    }
+}
+
+/* 交互状态样式 */
+.markdown-comment-line .comment-marker.hovering {
+    box-shadow: 
+        0 4px 16px rgba(79, 70, 229, 0.4),
+        0 2px 8px rgba(79, 70, 229, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.markdown-comment-line .comment-marker.pressing {
+    transform: translateY(-50%) scale(0.9);
+    box-shadow: 
+        0 1px 4px rgba(79, 70, 229, 0.3),
+        inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.markdown-comment-line .comment-marker.touching {
+    transform: translateY(-50%) scale(0.95);
+    box-shadow: 
+        0 2px 8px rgba(79, 70, 229, 0.4),
+        inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 触摸设备特殊样式 */
+@media (hover: none) and (pointer: coarse) {
+    .markdown-comment-line .comment-marker:hover {
+        transform: translateY(-50%) scale(1); /* 触摸设备不显示悬停效果 */
+    }
+    
+    .markdown-comment-line .comment-marker:active {
+        transform: translateY(-50%) scale(0.95);
+        transition: all 0.1s ease;
+    }
 }
 
 /* 预览模式下不同状态的评论标记样式 */
 .markdown-comment-line .comment-marker.status-pending {
-    background: var(--warning);
+    background: linear-gradient(135deg, var(--warning) 0%, #f59e0b 100%);
     border-color: var(--warning);
     color: white;
+    box-shadow: 
+        0 2px 12px rgba(245, 158, 11, 0.3),
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    animation: comment-marker-pulse-warning 2s ease-in-out infinite;
 }
 
 .markdown-comment-line .comment-marker.status-pending:hover {
-    background: #f59e0b;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     border-color: #f59e0b;
-    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
+    box-shadow: 
+        0 8px 25px rgba(245, 158, 11, 0.6),
+        0 4px 12px rgba(245, 158, 11, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(8px);
+    animation: none; /* 悬停时停止脉冲动画 */
 }
 
 .markdown-comment-line .comment-marker.status-resolved {
-    background: var(--success);
+    background: linear-gradient(135deg, var(--success) 0%, #10b981 100%);
     border-color: var(--success);
     color: white;
+    box-shadow: 
+        0 2px 12px rgba(16, 185, 129, 0.3),
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .markdown-comment-line .comment-marker.status-resolved:hover {
-    background: #10b981;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     border-color: #10b981;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+    box-shadow: 
+        0 8px 25px rgba(16, 185, 129, 0.6),
+        0 4px 12px rgba(16, 185, 129, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(8px);
 }
 
 .markdown-comment-line .comment-marker.status-closed {
-    background: var(--error);
+    background: linear-gradient(135deg, var(--error) 0%, #ef4444 100%);
     border-color: var(--error);
     color: white;
+    box-shadow: 
+        0 2px 12px rgba(239, 68, 68, 0.3),
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    opacity: 0.8; /* 已关闭的评论稍微透明 */
 }
 
 .markdown-comment-line .comment-marker.status-closed:hover {
-    background: #ef4444;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     border-color: #ef4444;
-    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+    box-shadow: 
+        0 8px 25px rgba(239, 68, 68, 0.6),
+        0 4px 12px rgba(239, 68, 68, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(8px);
+    opacity: 1; /* 悬停时恢复不透明 */
+}
+
+/* 警告状态脉冲动画 */
+@keyframes comment-marker-pulse-warning {
+    0%, 100% {
+        box-shadow: 
+            0 2px 12px rgba(245, 158, 11, 0.3),
+            0 1px 3px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    50% {
+        box-shadow: 
+            0 4px 16px rgba(245, 158, 11, 0.5),
+            0 2px 6px rgba(0, 0, 0, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
 }
 
 /* 响应式调整 */
 @media (max-width: 768px) {
     .markdown-comment-line {
-        padding-right: 15px; /* 减少右边距 */
+        padding-right: 20px; /* 保持足够的右边距 */
+    }
+    
+    .markdown-comment-line .comment-marker {
+        width: 18px;
+        height: 18px;
+        font-size: 9px;
+        right: 12px; /* 调整位置 */
+        min-width: 44px; /* 增加触摸区域，符合移动端标准 */
+        min-height: 44px;
+        padding: 8px;
+        border-width: 3px; /* 增加边框宽度，提高可见性 */
+    }
+    
+    .markdown-comment-line .comment-marker:hover {
+        transform: translateY(-50%) scale(1.15); /* 适中的悬停缩放 */
+    }
+    
+    /* 移动端触摸反馈 */
+    .markdown-comment-line .comment-marker:active {
+        transform: translateY(-50%) scale(0.95);
+        transition: all 0.1s ease;
+    }
+    
+    /* 移动端减少动画复杂度 */
+    .markdown-comment-line .comment-marker {
+        animation: comment-marker-appear-mobile 0.3s ease-out;
+    }
+    
+    @keyframes comment-marker-appear-mobile {
+        0% {
+            opacity: 0;
+            transform: translateY(-50%) scale(0.5);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(-50%) scale(1);
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .markdown-comment-line {
+        padding-right: 16px; /* 保持足够的右边距 */
     }
     
     .markdown-comment-line .comment-marker {
         width: 16px;
         height: 16px;
         font-size: 8px;
-        right: 8px; /* 调整位置 */
-    }
-    
-    .markdown-comment-line .comment-marker:hover {
-        transform: translateY(-50%) scale(1.1); /* 减少悬停缩放 */
-    }
-}
-
-@media (max-width: 480px) {
-    .markdown-comment-line {
-        padding-right: 10px;
-    }
-    
-    .markdown-comment-line .comment-marker {
-        width: 14px;
-        height: 14px;
-        font-size: 7px;
-        right: 6px;
+        right: 8px;
+        min-width: 28px; /* 增加触摸区域 */
+        min-height: 28px;
+        padding: 3px;
     }
     
     .markdown-comment-line .comment-marker .comment-count {
-        font-size: 6px;
+        font-size: 7px;
+    }
+    
+    .markdown-comment-line .comment-marker:hover {
+        transform: translateY(-50%) scale(1.1); /* 小屏幕减少缩放 */
     }
 }
 
 /* 大屏幕优化 */
 @media (min-width: 1200px) {
+    .markdown-comment-line {
+        padding-right: 28px; /* 增加右边距 */
+    }
+    
     .markdown-comment-line .comment-marker {
-        width: 22px;
-        height: 22px;
-        font-size: 11px;
-        right: 16px;
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+        right: 20px;
+        box-shadow: 0 3px 16px rgba(79, 70, 229, 0.3); /* 增强阴影 */
     }
     
     .markdown-comment-line .comment-marker:hover {
-        transform: translateY(-50%) scale(1.2);
+        transform: translateY(-50%) scale(1.25);
+        box-shadow: 0 8px 24px rgba(79, 70, 229, 0.6);
+    }
+}
+
+/* 中等屏幕优化 */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .markdown-comment-line {
+        padding-right: 22px;
+    }
+    
+    .markdown-comment-line .comment-marker {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+        right: 14px;
+    }
+    
+    .markdown-comment-line .comment-marker:hover {
+        transform: translateY(-50%) scale(1.18);
     }
 }
 

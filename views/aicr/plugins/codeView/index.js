@@ -837,69 +837,133 @@ const createCodeView = async () => {
                     const previewContent = this.$el?.querySelector('.markdown-full-content');
                     if (!overlay || !previewContent) return;
                     
+                    // 使用缓存避免重复计算
+                    if (this._positionCache && this._positionCache.content === this.file.content) {
+                        this.applyCachedPositions(overlay);
+                        return;
+                    }
+                    
                     // 获取预览容器的实际样式
                     const previewStyles = window.getComputedStyle(previewContent);
                     const containerPaddingTop = parseInt(previewStyles.paddingTop) || 0;
                     const containerPaddingLeft = parseInt(previewStyles.paddingLeft) || 0;
+                    const containerPaddingRight = parseInt(previewStyles.paddingRight) || 0;
+                    const fontSize = parseInt(previewStyles.fontSize) || 14;
+                    const lineHeight = parseFloat(previewStyles.lineHeight) || fontSize * 1.5;
                     
-                    // 创建临时元素来测量实际行高
+                    // 创建临时元素来测量实际行高（优化版本）
                     const tempElement = document.createElement('div');
                     tempElement.style.cssText = `
                         position: absolute;
                         visibility: hidden;
                         white-space: pre-wrap;
                         font-family: ${previewStyles.fontFamily};
-                        font-size: ${previewStyles.fontSize};
-                        line-height: ${previewStyles.lineHeight};
-                        width: ${previewContent.offsetWidth - containerPaddingLeft}px;
+                        font-size: ${fontSize}px;
+                        line-height: ${lineHeight}px;
+                        width: ${previewContent.offsetWidth - containerPaddingLeft - containerPaddingRight}px;
                         top: -9999px;
+                        word-wrap: break-word;
+                        overflow-wrap: break-word;
+                        padding: 0;
+                        margin: 0;
                     `;
                     document.body.appendChild(tempElement);
                     
                     const lines = this.file.content.split('\n');
+                    const positions = [];
                     let currentTop = containerPaddingTop;
                     
+                    // 批量计算所有行位置
                     lines.forEach((line, index) => {
                         const lineNumber = index + 1;
                         const commentLine = overlay.querySelector(`[data-line="${lineNumber}"]`);
                         if (commentLine) {
                             // 设置临时元素内容来测量行高
                             tempElement.textContent = line || ' '; // 空行用空格占位
-                            const lineHeight = tempElement.offsetHeight;
+                            const measuredHeight = tempElement.offsetHeight;
+                            const actualLineHeight = Math.max(measuredHeight, lineHeight); // 确保最小行高
                             
-                            // 设置评论标记位置
-                            commentLine.style.top = `${currentTop}px`;
-                            commentLine.style.left = `${containerPaddingLeft}px`;
-                            commentLine.style.position = 'absolute';
-                            commentLine.style.width = '100%';
-                            commentLine.style.height = `${lineHeight}px`;
-                            
-                            // 确保评论标记可以接收事件
-                            const commentMarker = commentLine.querySelector('.comment-marker');
-                            if (commentMarker) {
-                                commentMarker.style.pointerEvents = 'auto';
-                                commentMarker.style.cursor = 'pointer';
-                            }
+                            positions.push({
+                                lineNumber,
+                                top: currentTop,
+                                height: actualLineHeight,
+                                element: commentLine
+                            });
                             
                             // 更新下一行的起始位置
-                            currentTop += lineHeight;
+                            currentTop += actualLineHeight;
                         }
                     });
                     
                     // 清理临时元素
                     document.body.removeChild(tempElement);
                     
-                    // 设置覆盖层位置
-                    overlay.style.position = 'absolute';
-                    overlay.style.top = '0';
-                    overlay.style.left = '0';
-                    overlay.style.width = '100%';
-                    overlay.style.height = `${currentTop + 20}px`; // 额外20px缓冲
-                    overlay.style.pointerEvents = 'none'; // 允许点击穿透到内容
-                    
-                    // 确保评论标记可以交互
-                    this.ensureCommentMarkerInteractions();
+                    // 批量应用位置（减少重排）
+                    requestAnimationFrame(() => {
+                        positions.forEach(({ lineNumber, top, height, element }) => {
+                            element.style.top = `${top}px`;
+                            element.style.left = `${containerPaddingLeft}px`;
+                            element.style.position = 'absolute';
+                            element.style.width = '100%';
+                            element.style.height = `${height}px`;
+                            
+                            // 确保评论标记可以接收事件
+                            const commentMarker = element.querySelector('.comment-marker');
+                            if (commentMarker) {
+                                commentMarker.style.pointerEvents = 'auto';
+                                commentMarker.style.cursor = 'pointer';
+                                
+                                // 添加加载状态类（如果需要）
+                                if (commentMarker.dataset.loading === 'true') {
+                                    commentMarker.classList.add('loading');
+                                }
+                            }
+                        });
+                        
+                        // 设置覆盖层位置
+                        overlay.style.position = 'absolute';
+                        overlay.style.top = '0';
+                        overlay.style.left = '0';
+                        overlay.style.width = '100%';
+                        overlay.style.height = `${currentTop + 40}px`; // 增加缓冲区域
+                        overlay.style.pointerEvents = 'none'; // 允许点击穿透到内容
+                        
+                        // 缓存计算结果
+                        this._positionCache = {
+                            content: this.file.content,
+                            positions: positions.map(p => ({ lineNumber: p.lineNumber, top: p.top, height: p.height }))
+                        };
+                        
+                        // 确保评论标记可以交互
+                        this.ensureCommentMarkerInteractions();
+                    });
                 });
+            },
+            
+            // 应用缓存的位置数据
+            applyCachedPositions(overlay) {
+                if (!this._positionCache) return;
+                
+                const containerPaddingLeft = parseInt(window.getComputedStyle(this.$el?.querySelector('.markdown-full-content')).paddingLeft) || 0;
+                
+                this._positionCache.positions.forEach(({ lineNumber, top, height }) => {
+                    const commentLine = overlay.querySelector(`[data-line="${lineNumber}"]`);
+                    if (commentLine) {
+                        commentLine.style.top = `${top}px`;
+                        commentLine.style.left = `${containerPaddingLeft}px`;
+                        commentLine.style.position = 'absolute';
+                        commentLine.style.width = '100%';
+                        commentLine.style.height = `${height}px`;
+                        
+                        const commentMarker = commentLine.querySelector('.comment-marker');
+                        if (commentMarker) {
+                            commentMarker.style.pointerEvents = 'auto';
+                            commentMarker.style.cursor = 'pointer';
+                        }
+                    }
+                });
+                
+                this.ensureCommentMarkerInteractions();
             },
             
             // 监听文件变化，重新计算评论标记位置
@@ -937,36 +1001,114 @@ const createCodeView = async () => {
                     
                     // 移动设备优化
                     if (isMobile) {
-                        marker.style.minWidth = '32px';
-                        marker.style.minHeight = '32px';
-                        marker.style.padding = '4px';
+                        marker.style.minWidth = '44px';
+                        marker.style.minHeight = '44px';
+                        marker.style.padding = '8px';
                     }
                     
                     // 添加键盘支持
                     marker.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            marker.click();
+                            this.triggerCommentMarkerClick(marker);
                         }
                     });
                     
                     // 添加触摸支持（移动设备）
                     if (isTouchDevice) {
+                        let touchStartTime = 0;
+                        
                         marker.addEventListener('touchstart', (e) => {
-                            e.preventDefault();
-                            marker.click();
+                            touchStartTime = Date.now();
+                            marker.classList.add('touching');
+                            marker.style.transform = 'translateY(-50%) scale(0.95)';
+                            marker.style.transition = 'all 0.1s ease';
                         }, { passive: false });
                         
-                        // 添加触摸反馈
-                        marker.addEventListener('touchstart', () => {
-                            marker.style.transform = 'translateY(-50%) scale(0.95)';
+                        marker.addEventListener('touchend', (e) => {
+                            const touchDuration = Date.now() - touchStartTime;
+                            marker.classList.remove('touching');
+                            
+                            if (touchDuration < 500) { // 短按触发点击
+                                e.preventDefault();
+                                this.triggerCommentMarkerClick(marker);
+                            }
+                            
+                            marker.style.transform = 'translateY(-50%) scale(1)';
                         });
                         
-                        marker.addEventListener('touchend', () => {
+                        marker.addEventListener('touchcancel', () => {
+                            marker.classList.remove('touching');
                             marker.style.transform = 'translateY(-50%) scale(1)';
                         });
                     }
+                    
+                    // 添加鼠标悬停效果增强
+                    marker.addEventListener('mouseenter', () => {
+                        marker.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                        marker.classList.add('hovering');
+                    });
+                    
+                    // 添加点击反馈
+                    marker.addEventListener('mousedown', () => {
+                        marker.classList.add('pressing');
+                        marker.style.transform = 'translateY(-50%) scale(0.95)';
+                        marker.style.transition = 'all 0.1s ease';
+                    });
+                    
+                    marker.addEventListener('mouseup', () => {
+                        marker.classList.remove('pressing');
+                        marker.style.transform = 'translateY(-50%) scale(1)';
+                    });
+                    
+                    // 确保鼠标离开时恢复状态
+                    marker.addEventListener('mouseleave', () => {
+                        marker.classList.remove('hovering', 'pressing');
+                        marker.style.transform = 'translateY(-50%) scale(1)';
+                    });
+                    
+                    // 添加双击支持
+                    let clickCount = 0;
+                    let clickTimer = null;
+                    
+                    marker.addEventListener('click', (e) => {
+                        clickCount++;
+                        if (clickCount === 1) {
+                            clickTimer = setTimeout(() => {
+                                this.triggerCommentMarkerClick(marker);
+                                clickCount = 0;
+                            }, 300);
+                        } else if (clickCount === 2) {
+                            clearTimeout(clickTimer);
+                            this.triggerCommentMarkerDoubleClick(marker);
+                            clickCount = 0;
+                        }
+                    });
                 });
+            },
+            
+            // 触发评论标记点击
+            triggerCommentMarkerClick(marker) {
+                // 添加成功动画
+                marker.classList.add('success');
+                setTimeout(() => {
+                    marker.classList.remove('success');
+                }, 600);
+                
+                // 触发原有的点击处理
+                marker.click();
+            },
+            
+            // 触发评论标记双击
+            triggerCommentMarkerDoubleClick(marker) {
+                // 添加特殊效果
+                marker.style.animation = 'comment-marker-bounce 0.6s ease-out';
+                setTimeout(() => {
+                    marker.style.animation = '';
+                }, 600);
+                
+                // 可以在这里添加双击的特殊处理逻辑
+                console.log('Double click on comment marker');
             },
             
             
