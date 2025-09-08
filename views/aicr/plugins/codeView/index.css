@@ -64,43 +64,6 @@
     background: var(--primary);
 }
 
-/* ========== Markdown行号样式 ========== */
-.markdown-line-numbers {
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border-primary);
-    padding: 20px 8px 20px 12px;
-    min-width: 50px;
-    flex-shrink: 0;
-    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
-    font-size: 12px;
-    line-height: 1.6;
-    color: var(--text-muted);
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-}
-
-.markdown-line-number {
-    display: block;
-    text-align: right;
-    padding: 0 4px;
-    margin: 0;
-    height: 1.6em;
-    line-height: 1.6em;
-    font-size: 12px;
-    color: var(--text-muted);
-    opacity: 0.7;
-    transition: all 0.2s ease;
-    cursor: default;
-}
-
-.markdown-line-number:hover {
-    color: var(--primary);
-    opacity: 1;
-    background: var(--bg-hover);
-    border-radius: 3px;
-}
 
 .markdown-preview-content {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
@@ -130,6 +93,7 @@
     bottom: 0;
     pointer-events: none;
     z-index: 2;
+    overflow: visible; /* 确保评论标记不会被裁剪 */
 }
 
 /* Markdown评论行容器 */
@@ -138,20 +102,26 @@
     left: 0;
     right: 0;
     height: 1.7em; /* 与line-height保持一致 */
-    pointer-events: auto;
+    pointer-events: none; /* 容器本身不接收事件 */
     display: flex;
     align-items: center;
-    padding-left: 40px; /* 与内容padding保持一致 */
+    justify-content: flex-end; /* 右对齐评论标记 */
+    padding-right: 20px; /* 右边距 */
     z-index: 10; /* 确保评论标记在内容之上 */
 }
 
 /* 确保评论标记在Markdown预览中可见 */
 .markdown-comment-line .comment-marker {
-    position: relative;
-    z-index: 11;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 15;
     background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    box-shadow: var(--shadow-sm);
+    border: 2px solid var(--accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    pointer-events: auto; /* 确保可以交互 */
 }
 
 /* 评论标记位置由JavaScript动态计算 */
@@ -5471,24 +5441,114 @@
 }
 
 /* MD预览模式下的评论标记悬停效果 */
-.markdown-preview-line .comment-marker:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 12px rgba(79, 70, 229, 0.6);
+.markdown-comment-line .comment-marker:hover {
+    transform: translateY(-50%) scale(1.15);
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+    border-color: var(--accent-hover, #5b21b6);
+    background: var(--accent-hover, #5b21b6);
+    color: white;
+}
+
+/* 评论标记点击效果 */
+.markdown-comment-line .comment-marker:active {
+    transform: translateY(-50%) scale(1.05);
+    transition: all 0.1s ease;
+}
+
+/* 评论标记聚焦效果 */
+.markdown-comment-line .comment-marker:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* 预览模式下不同状态的评论标记样式 */
+.markdown-comment-line .comment-marker.status-pending {
+    background: var(--warning);
+    border-color: var(--warning);
+    color: white;
+}
+
+.markdown-comment-line .comment-marker.status-pending:hover {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
+}
+
+.markdown-comment-line .comment-marker.status-resolved {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+}
+
+.markdown-comment-line .comment-marker.status-resolved:hover {
+    background: #10b981;
+    border-color: #10b981;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+}
+
+.markdown-comment-line .comment-marker.status-closed {
+    background: var(--error);
+    border-color: var(--error);
+    color: white;
+}
+
+.markdown-comment-line .comment-marker.status-closed:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
 }
 
 /* 响应式调整 */
 @media (max-width: 768px) {
-    .markdown-preview-line .comment-markers {
-        margin-left: 8px;
+    .markdown-comment-line {
+        padding-right: 15px; /* 减少右边距 */
     }
     
-    .markdown-preview-line .comment-marker {
+    .markdown-comment-line .comment-marker {
         width: 16px;
         height: 16px;
         font-size: 8px;
+        right: 8px; /* 调整位置 */
     }
     
-    /* 移动端MD预览容器优化 */
+    .markdown-comment-line .comment-marker:hover {
+        transform: translateY(-50%) scale(1.1); /* 减少悬停缩放 */
+    }
+}
+
+@media (max-width: 480px) {
+    .markdown-comment-line {
+        padding-right: 10px;
+    }
+    
+    .markdown-comment-line .comment-marker {
+        width: 14px;
+        height: 14px;
+        font-size: 7px;
+        right: 6px;
+    }
+    
+    .markdown-comment-line .comment-marker .comment-count {
+        font-size: 6px;
+    }
+}
+
+/* 大屏幕优化 */
+@media (min-width: 1200px) {
+    .markdown-comment-line .comment-marker {
+        width: 22px;
+        height: 22px;
+        font-size: 11px;
+        right: 16px;
+    }
+    
+    .markdown-comment-line .comment-marker:hover {
+        transform: translateY(-50%) scale(1.2);
+    }
+}
+
+/* 移动端MD预览容器优化 */
+@media (max-width: 768px) {
     .markdown-preview-container {
         border-radius: 0 0 8px 8px;
         max-height: calc(100vh - 120px);

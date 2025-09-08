@@ -834,22 +834,71 @@ const createCodeView = async () => {
                 
                 this.$nextTick(() => {
                     const overlay = this.$el?.querySelector('.comment-markers-overlay');
-                    if (!overlay) return;
+                    const previewContent = this.$el?.querySelector('.markdown-full-content');
+                    if (!overlay || !previewContent) return;
+                    
+                    // 获取预览容器的实际样式
+                    const previewStyles = window.getComputedStyle(previewContent);
+                    const containerPaddingTop = parseInt(previewStyles.paddingTop) || 0;
+                    const containerPaddingLeft = parseInt(previewStyles.paddingLeft) || 0;
+                    
+                    // 创建临时元素来测量实际行高
+                    const tempElement = document.createElement('div');
+                    tempElement.style.cssText = `
+                        position: absolute;
+                        visibility: hidden;
+                        white-space: pre-wrap;
+                        font-family: ${previewStyles.fontFamily};
+                        font-size: ${previewStyles.fontSize};
+                        line-height: ${previewStyles.lineHeight};
+                        width: ${previewContent.offsetWidth - containerPaddingLeft}px;
+                        top: -9999px;
+                    `;
+                    document.body.appendChild(tempElement);
                     
                     const lines = this.file.content.split('\n');
-                    const lineHeight = 1.7; // 与CSS中的line-height保持一致
-                    const fontSize = 15; // 与CSS中的font-size保持一致
-                    const paddingTop = 32; // 与CSS中的padding-top保持一致
+                    let currentTop = containerPaddingTop;
                     
                     lines.forEach((line, index) => {
                         const lineNumber = index + 1;
                         const commentLine = overlay.querySelector(`[data-line="${lineNumber}"]`);
                         if (commentLine) {
-                            // 计算该行在预览中的实际位置
-                            const topPosition = paddingTop + (index * lineHeight * fontSize);
-                            commentLine.style.top = `${topPosition}px`;
+                            // 设置临时元素内容来测量行高
+                            tempElement.textContent = line || ' '; // 空行用空格占位
+                            const lineHeight = tempElement.offsetHeight;
+                            
+                            // 设置评论标记位置
+                            commentLine.style.top = `${currentTop}px`;
+                            commentLine.style.left = `${containerPaddingLeft}px`;
+                            commentLine.style.position = 'absolute';
+                            commentLine.style.width = '100%';
+                            commentLine.style.height = `${lineHeight}px`;
+                            
+                            // 确保评论标记可以接收事件
+                            const commentMarker = commentLine.querySelector('.comment-marker');
+                            if (commentMarker) {
+                                commentMarker.style.pointerEvents = 'auto';
+                                commentMarker.style.cursor = 'pointer';
+                            }
+                            
+                            // 更新下一行的起始位置
+                            currentTop += lineHeight;
                         }
                     });
+                    
+                    // 清理临时元素
+                    document.body.removeChild(tempElement);
+                    
+                    // 设置覆盖层位置
+                    overlay.style.position = 'absolute';
+                    overlay.style.top = '0';
+                    overlay.style.left = '0';
+                    overlay.style.width = '100%';
+                    overlay.style.height = `${currentTop + 20}px`; // 额外20px缓冲
+                    overlay.style.pointerEvents = 'none'; // 允许点击穿透到内容
+                    
+                    // 确保评论标记可以交互
+                    this.ensureCommentMarkerInteractions();
                 });
             },
             
@@ -861,6 +910,65 @@ const createCodeView = async () => {
                     });
                 }
             },
+            
+            // 监听窗口大小变化，重新计算评论标记位置
+            onWindowResize() {
+                if (this.shouldShowMarkdownPreview) {
+                    // 使用防抖来避免频繁计算
+                    clearTimeout(this._resizeTimer);
+                    this._resizeTimer = setTimeout(() => {
+                        this.calculateCommentMarkerPositions();
+                        // 重新设置交互事件
+                        this.ensureCommentMarkerInteractions();
+                    }, 150);
+                }
+            },
+            
+            // 确保评论标记在预览模式下可以交互
+            ensureCommentMarkerInteractions() {
+                const commentMarkers = this.$el?.querySelectorAll('.markdown-comment-line .comment-marker');
+                const isMobile = window.innerWidth <= 768;
+                const isTouchDevice = 'ontouchstart' in window;
+                
+                commentMarkers?.forEach(marker => {
+                    // 确保可以接收事件
+                    marker.style.pointerEvents = 'auto';
+                    marker.style.cursor = 'pointer';
+                    
+                    // 移动设备优化
+                    if (isMobile) {
+                        marker.style.minWidth = '32px';
+                        marker.style.minHeight = '32px';
+                        marker.style.padding = '4px';
+                    }
+                    
+                    // 添加键盘支持
+                    marker.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            marker.click();
+                        }
+                    });
+                    
+                    // 添加触摸支持（移动设备）
+                    if (isTouchDevice) {
+                        marker.addEventListener('touchstart', (e) => {
+                            e.preventDefault();
+                            marker.click();
+                        }, { passive: false });
+                        
+                        // 添加触摸反馈
+                        marker.addEventListener('touchstart', () => {
+                            marker.style.transform = 'translateY(-50%) scale(0.95)';
+                        });
+                        
+                        marker.addEventListener('touchend', () => {
+                            marker.style.transform = 'translateY(-50%) scale(1)';
+                        });
+                    }
+                });
+            },
+            
             
             // 添加Markdown预览中的交互功能
             addMarkdownInteractions() {
@@ -879,6 +987,9 @@ const createCodeView = async () => {
                             }
                         });
                     });
+                    
+                    // 确保评论标记在预览模式下可以交互
+                    this.ensureCommentMarkerInteractions();
                     
                     // 添加代码块展开/折叠功能
                     const expandButtons = this.$el?.querySelectorAll('.md-code-block-expand');
@@ -3474,6 +3585,10 @@ const createCodeView = async () => {
             };
             window.addEventListener('unhandledrejection', this._unhandledRejectionHandler);
             
+            // 添加窗口大小变化监听器
+            this._resizeHandler = () => this.onWindowResize();
+            window.addEventListener('resize', this._resizeHandler);
+            
             // 添加调试方法到全局
             window.debugCodeView = {
                 getFileInfo: () => {
@@ -3657,6 +3772,18 @@ const createCodeView = async () => {
             if (this._unhandledRejectionHandler) {
                 window.removeEventListener('unhandledrejection', this._unhandledRejectionHandler);
                 this._unhandledRejectionHandler = null;
+            }
+            
+            // 清理窗口大小变化监听器
+            if (this._resizeHandler) {
+                window.removeEventListener('resize', this._resizeHandler);
+                this._resizeHandler = null;
+            }
+            
+            // 清理定时器
+            if (this._resizeTimer) {
+                clearTimeout(this._resizeTimer);
+                this._resizeTimer = null;
             }
             
             if (this._hlListener) {
