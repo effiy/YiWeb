@@ -130,10 +130,7 @@ const createCodeView = async () => {
                             if (this.languageType === 'markdown') {
                                 this.isMarkdownPreviewMode = true;
                                 console.log('[CodeView] 检测到Markdown文件，开启预览模式');
-                                // 延迟计算评论标记位置
-                                this.$nextTick(() => {
-                                    this.calculateCommentMarkerPositions();
-                                });
+                                // 预览模式下不需要计算评论标记位置
                             }
                             
                             // 如果文件没有内容但有key，尝试触发文件加载
@@ -181,10 +178,8 @@ const createCodeView = async () => {
             isMarkdownPreviewMode: {
                 handler(newMode, oldMode) {
                     if (newMode !== oldMode && newMode && this.shouldShowMarkdownPreview) {
-                        console.log('[CodeView] Markdown预览模式已开启，计算评论标记位置');
-                        this.$nextTick(() => {
-                            this.calculateCommentMarkerPositions();
-                        });
+                        console.log('[CodeView] Markdown预览模式已开启');
+                        // 预览模式下不需要计算评论标记位置
                     }
                 }
             },
@@ -818,15 +813,10 @@ const createCodeView = async () => {
                 this.isMarkdownPreviewMode = !this.isMarkdownPreviewMode;
                 console.log('[CodeView] 切换Markdown预览模式:', this.isMarkdownPreviewMode);
                 
-                // 如果切换到预览模式，延迟计算评论标记位置
-                if (this.isMarkdownPreviewMode) {
-                    this.$nextTick(() => {
-                        this.calculateCommentMarkerPositions();
-                    });
-                }
+                // 预览模式下不需要计算评论标记位置
             },
             
-            // 计算评论标记在Markdown预览中的位置
+            // 计算评论标记在Markdown预览中的位置 - 优化版本
             calculateCommentMarkerPositions() {
                 if (!this.shouldShowMarkdownPreview || !this.file || !this.file.content) {
                     return;
@@ -873,7 +863,7 @@ const createCodeView = async () => {
                     const positions = [];
                     let currentTop = containerPaddingTop;
                     
-                    // 批量计算所有行位置
+                    // 批量计算所有行位置 - 优化版本
                     lines.forEach((line, index) => {
                         const lineNumber = index + 1;
                         const commentLine = overlay.querySelector(`[data-line="${lineNumber}"]`);
@@ -887,7 +877,8 @@ const createCodeView = async () => {
                                 lineNumber,
                                 top: currentTop,
                                 height: actualLineHeight,
-                                element: commentLine
+                                element: commentLine,
+                                index: index
                             });
                             
                             // 更新下一行的起始位置
@@ -898,9 +889,11 @@ const createCodeView = async () => {
                     // 清理临时元素
                     document.body.removeChild(tempElement);
                     
-                    // 批量应用位置（减少重排）
+                    // 批量应用位置（减少重排）- 优化版本
                     requestAnimationFrame(() => {
-                        positions.forEach(({ lineNumber, top, height, element }) => {
+                        positions.forEach(({ lineNumber, top, height, element, index }) => {
+                            // 添加平滑过渡效果
+                            element.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
                             element.style.top = `${top}px`;
                             element.style.left = `${containerPaddingLeft}px`;
                             element.style.position = 'absolute';
@@ -917,6 +910,17 @@ const createCodeView = async () => {
                                 if (commentMarker.dataset.loading === 'true') {
                                     commentMarker.classList.add('loading');
                                 }
+                                
+                                // 添加错落有致的进入动画
+                                commentMarker.style.opacity = '0';
+                                commentMarker.style.transform = 'translateY(-50%) scale(0.8)';
+                                
+                                // 延迟显示，创建错落有致的动画效果
+                                setTimeout(() => {
+                                    commentMarker.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                                    commentMarker.style.opacity = '1';
+                                    commentMarker.style.transform = 'translateY(-50%) scale(1)';
+                                }, index * 30); // 错落显示，减少延迟时间
                             }
                         });
                         
@@ -966,35 +970,23 @@ const createCodeView = async () => {
                 this.ensureCommentMarkerInteractions();
             },
             
-            // 监听文件变化，重新计算评论标记位置
+            // 监听文件变化
             onFileChange() {
-                if (this.shouldShowMarkdownPreview) {
-                    this.$nextTick(() => {
-                        this.calculateCommentMarkerPositions();
-                    });
-                }
+                // 预览模式下不需要计算评论标记位置
             },
             
-            // 监听窗口大小变化，重新计算评论标记位置
+            // 监听窗口大小变化
             onWindowResize() {
-                if (this.shouldShowMarkdownPreview) {
-                    // 使用防抖来避免频繁计算
-                    clearTimeout(this._resizeTimer);
-                    this._resizeTimer = setTimeout(() => {
-                        this.calculateCommentMarkerPositions();
-                        // 重新设置交互事件
-                        this.ensureCommentMarkerInteractions();
-                    }, 150);
-                }
+                // 预览模式下不需要重新计算评论标记位置
             },
             
-            // 确保评论标记在预览模式下可以交互
+            // 确保评论标记在预览模式下可以交互 - 优化版本
             ensureCommentMarkerInteractions() {
                 const commentMarkers = this.$el?.querySelectorAll('.markdown-comment-line .comment-marker');
                 const isMobile = window.innerWidth <= 768;
                 const isTouchDevice = 'ontouchstart' in window;
                 
-                commentMarkers?.forEach(marker => {
+                commentMarkers?.forEach((marker, index) => {
                     // 确保可以接收事件
                     marker.style.pointerEvents = 'auto';
                     marker.style.cursor = 'pointer';
@@ -1012,6 +1004,37 @@ const createCodeView = async () => {
                             e.preventDefault();
                             this.triggerCommentMarkerClick(marker);
                         }
+                    });
+                    
+                    // 添加悬停效果增强
+                    marker.addEventListener('mouseenter', (e) => {
+                        marker.classList.add('hovering');
+                        // 添加微妙的震动效果
+                        marker.style.animation = 'comment-marker-hover 0.3s ease-out';
+                    });
+                    
+                    marker.addEventListener('mouseleave', (e) => {
+                        marker.classList.remove('hovering');
+                        marker.style.animation = '';
+                    });
+                    
+                    // 添加点击反馈
+                    marker.addEventListener('mousedown', (e) => {
+                        marker.classList.add('clicking');
+                        marker.style.transform = 'translateY(-50%) scale(0.9)';
+                    });
+                    
+                    marker.addEventListener('mouseup', (e) => {
+                        marker.classList.remove('clicking');
+                        marker.style.transform = 'translateY(-50%) scale(1)';
+                    });
+                    
+                    // 添加成功状态动画
+                    marker.addEventListener('click', (e) => {
+                        marker.classList.add('success');
+                        setTimeout(() => {
+                            marker.classList.remove('success');
+                        }, 600);
                     });
                     
                     // 添加触摸支持（移动设备）

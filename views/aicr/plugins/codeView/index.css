@@ -84,76 +84,7 @@
     z-index: 1;
 }
 
-/* 评论标记覆盖层 */
-.comment-markers-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 2;
-    overflow: visible; /* 确保评论标记不会被裁剪 */
-}
-
-/* Markdown评论行容器 */
-.markdown-comment-line {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 1.7em; /* 与line-height保持一致 */
-    pointer-events: none; /* 容器本身不接收事件 */
-    display: flex;
-    align-items: center;
-    justify-content: flex-end; /* 右对齐评论标记 */
-    padding-right: 24px; /* 增加右边距，为评论标记留出更多空间 */
-    z-index: 10; /* 确保评论标记在内容之上 */
-}
-
-/* 确保评论标记在Markdown预览中可见 */
-.markdown-comment-line .comment-marker {
-    position: absolute;
-    right: 16px; /* 增加右边距 */
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 15;
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover, #5b21b6) 100%); /* 渐变背景 */
-    border: 2px solid var(--accent);
-    color: white;
-    box-shadow: 
-        0 2px 12px rgba(79, 70, 229, 0.25),
-        0 1px 3px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2); /* 多层阴影和内阴影 */
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* 更流畅的动画 */
-    pointer-events: auto; /* 确保可以交互 */
-    backdrop-filter: blur(4px); /* 添加背景模糊效果 */
-    will-change: transform, box-shadow, background; /* 性能优化 */
-    contain: layout style paint; /* 性能优化 */
-    position: relative; /* 为伪元素定位 */
-    overflow: hidden; /* 隐藏溢出效果 */
-}
-
-/* 添加光泽效果 */
-.markdown-comment-line .comment-marker::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transition: left 0.6s ease;
-}
-
-.markdown-comment-line .comment-marker:hover::before {
-    left: 100%;
-}
-
-/* 评论标记位置由JavaScript动态计算 */
-.markdown-comment-line {
-    /* 默认位置，会被JavaScript覆盖 */
-    top: 32px;
-}
+/* 预览模式下不显示评论标记相关样式 */
 
 /* 添加阅读体验优化 */
 .markdown-preview-content::before {
