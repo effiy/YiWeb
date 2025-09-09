@@ -204,6 +204,124 @@ function monitorErrors() {
 }
 
 /**
+ * 全局代码块复制函数
+ * 提供代码块复制功能，避免 ReferenceError
+ */
+function initGlobalCopyCodeBlock() {
+    // 检查是否已经定义了 copyCodeBlock 函数
+    if (typeof window.copyCodeBlock === 'function') {
+        return;
+    }
+
+    // 定义全局 copyCodeBlock 函数
+    window.copyCodeBlock = function(codeId) {
+        try {
+            const codeElement = document.getElementById(codeId);
+            if (codeElement) {
+                const code = codeElement.textContent || codeElement.innerText;
+                
+                // 检查是否支持Clipboard API
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(code).then(() => {
+                        console.log('[代码复制] 代码块已复制到剪贴板');
+                        // 显示成功提示
+                        showSuccess('代码已复制到剪贴板');
+                    }).catch(err => {
+                        console.error('[代码复制] 复制失败:', err);
+                        // 降级到传统复制方法
+                        fallbackCopyToClipboard(code);
+                    });
+                } else {
+                    // 降级到传统复制方法
+                    fallbackCopyToClipboard(code);
+                }
+            } else {
+                console.warn('[代码复制] 未找到代码元素:', codeId);
+            }
+        } catch (error) {
+            console.error('[代码复制] 复制过程中发生错误:', error);
+            showError('复制失败，请稍后重试');
+        }
+    };
+
+    // 定义全局 toggleCodeBlock 函数（用于代码块展开/折叠）
+    window.toggleCodeBlock = function(codeId) {
+        try {
+            const codeElement = document.getElementById(codeId);
+            if (codeElement) {
+                codeElement.classList.toggle('collapsed');
+                const isCollapsed = codeElement.classList.contains('collapsed');
+                console.log('[代码块] 代码块已', isCollapsed ? '折叠' : '展开');
+            }
+        } catch (error) {
+            console.error('[代码块] 切换过程中发生错误:', error);
+        }
+    };
+
+    console.log('[代码复制] 全局代码块复制函数已初始化');
+}
+
+/**
+ * 降级复制方法
+ * 当 Clipboard API 不可用时使用
+ */
+function fallbackCopyToClipboard(text) {
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-999999px';
+        textarea.style.top = '-999999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        
+        const result = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        if (result) {
+            console.log('[代码复制] 使用降级方法复制成功');
+            showSuccess('代码已复制到剪贴板');
+        } else {
+            throw new Error('execCommand copy failed');
+        }
+    } catch (error) {
+        console.error('[代码复制] 降级复制方法也失败了:', error);
+        showError('复制失败，请手动复制');
+    }
+}
+
+/**
+ * 显示成功消息
+ */
+function showSuccess(message) {
+    try {
+        // 简单的成功提示实现
+        const successDiv = document.createElement('div');
+        successDiv.style.position = 'fixed';
+        successDiv.style.top = '20px';
+        successDiv.style.right = '20px';
+        successDiv.style.background = 'rgba(34, 197, 94, 0.95)';
+        successDiv.style.color = '#fff';
+        successDiv.style.padding = '12px 24px';
+        successDiv.style.borderRadius = '8px';
+        successDiv.style.fontSize = '0.9rem';
+        successDiv.style.zIndex = '99999';
+        successDiv.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+        successDiv.textContent = message;
+        document.body.appendChild(successDiv);
+        
+        setTimeout(() => {
+            if (successDiv.parentNode) {
+                successDiv.parentNode.removeChild(successDiv);
+            }
+        }, 3000);
+    } catch (error) {
+        console.warn('[消息提示] 显示成功消息失败:', error);
+    }
+}
+
+/**
  * 初始化性能监控
  * 启动所有监控功能
  */
@@ -214,6 +332,9 @@ function initPerformanceMonitoring() {
             return;
         }
 
+        // 初始化全局代码块复制函数
+        initGlobalCopyCodeBlock();
+        
         monitorPageLoadPerformance();
         monitorErrors();
         console.log('[性能监控] 已启动');
