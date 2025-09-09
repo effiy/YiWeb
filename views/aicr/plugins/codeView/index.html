@@ -51,12 +51,11 @@
             </div>
         </div>
         <!-- Markdown预览模式 -->
-        <div v-else-if="shouldShowMarkdownPreview" class="markdown-preview-container">
+        <div v-else-if="shouldShowMarkdownPreview" class="markdown-preview-container" @dblclick="handlePreviewDoubleClick" title="双击切换到源码模式">
             <div class="markdown-preview-wrapper">
                 <div class="markdown-preview-content md-preview-body">
                     <!-- 整体Markdown预览内容 -->
                     <div class="markdown-full-content" v-html="markdownPreviewHtml"></div>
-                    
                     <!-- 预览模式下不显示评论标记 -->
                 </div>
             </div>
@@ -590,5 +589,6 @@
         <div class="empty-subtitle">从左侧文件树中选择要查看的文件</div>
     </div>
 </section>
+
 
 

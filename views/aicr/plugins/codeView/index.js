@@ -107,6 +107,15 @@ const createCodeView = async () => {
                 isScrolling: false,
                 scrollRetryCount: 0,
 
+                // 双击防抖管理
+                _lastDoubleClickTime: 0,
+                _doubleClickDebounceDelay: 300,
+                
+                // 智能缓存管理
+                _positionCache: new Map(),
+                _cacheMaxSize: 100,
+                _cacheExpiryTime: 5 * 60 * 1000, // 5分钟
+
             };
         },
         watch: {
@@ -133,7 +142,8 @@ const createCodeView = async () => {
                             if (this.languageType === 'markdown') {
                                 this.isMarkdownPreviewMode = true;
                                 console.log('[CodeView] 检测到Markdown文件，开启预览模式');
-                                // 预览模式下不需要计算评论标记位置
+                                // 预览模式下不需要计算评论标记位置，并隐藏评论按钮
+                                this.hideSelectionButton();
                             }
                             
                             // 如果文件没有内容但有key，尝试触发文件加载
@@ -285,6 +295,11 @@ const createCodeView = async () => {
             },
             // 获取每行的主要评论标记（用于显示）
             lineCommentMarkers() {
+                // 预览模式下不显示评论标记
+                if (this.shouldShowMarkdownPreview) {
+                    return {};
+                }
+                
                 const result = {};
                 const lineComments = this.lineComments;
                 
@@ -817,11 +832,469 @@ const createCodeView = async () => {
                 console.log('[CodeView] 切换Markdown预览模式:', this.isMarkdownPreviewMode);
                 
                 // 预览模式下不需要计算评论标记位置
+                if (this.isMarkdownPreviewMode) {
+                    // 切换到预览模式时，立即隐藏评论按钮
+                    this.hideSelectionButton();
+                }
+            },
+            
+            // 处理预览模式双击事件 - 防抖优化版本
+            handlePreviewDoubleClick(event) {
+                const now = Date.now();
+                
+                // 防抖处理：如果距离上次双击时间太短，则忽略
+                if (now - this._lastDoubleClickTime < this._doubleClickDebounceDelay) {
+                    console.log('[CodeView] 双击事件被防抖过滤');
+                    return;
+                }
+                
+                this._lastDoubleClickTime = now;
+                console.log('[CodeView] 预览模式双击事件触发');
+                
+                // 如果正在滚动中，忽略新的双击事件
+                if (this.isScrolling) {
+                    console.log('[CodeView] 正在滚动中，忽略双击事件');
+                    this.showScrollFeedback('正在定位中，请稍候...');
+                    return;
+                }
+                
+                // 添加视觉反馈
+                this.showScrollFeedback('正在定位...');
+                
+                // 获取双击位置对应的源码行号
+                const targetLine = this.getSourceLineFromPreviewPosition(event);
+                console.log('[CodeView] 双击位置对应的源码行号:', targetLine);
+                
+                // 切换到源码模式
+                this.isMarkdownPreviewMode = false;
+                console.log('[CodeView] 双击切换到源码模式');
+                
+                // 滚动到对应位置
+                this.$nextTick(() => {
+                    if (targetLine && targetLine > 0) {
+                        // 滚动到指定行
+                        this.scrollToLineInSource(targetLine);
+                    } else {
+                        // 如果没有找到对应行，滚动到顶部
+                        this.scrollToTop();
+                    }
+                });
+            },
+            
+            // 根据预览模式双击位置获取对应的源码行号 - 缓存优化版本
+            getSourceLineFromPreviewPosition(event) {
+                if (!this.file || !this.file.content) {
+                    return null;
+                }
+                
+                try {
+                    // 获取双击的元素
+                    const targetElement = event.target;
+                    if (!targetElement) return null;
+                    
+                    // 生成缓存键
+                    const cacheKey = this.generateCacheKey(targetElement, event);
+                    
+                    // 尝试从缓存获取
+                    const cachedResult = this.getCachedPosition(cacheKey);
+                    if (cachedResult) {
+                        console.log('[CodeView] 使用缓存结果:', cachedResult);
+                        return cachedResult;
+                    }
+                    
+                    // 获取预览容器
+                    const previewContainer = this.$el.querySelector('.markdown-preview-container');
+                    if (!previewContainer) return null;
+                    
+                    // 优先尝试通过元素属性定位（最精确）
+                    let targetLine = this.getElementSourceLine(targetElement);
+                    
+                    // 如果无法通过元素定位，尝试通过文本内容匹配
+                    if (!targetLine) {
+                        targetLine = this.getSourceLineByTextContent(targetElement, previewContainer);
+                    }
+                    
+                    // 最后使用位置计算作为备选方案
+                    if (!targetLine) {
+                        targetLine = this.getSourceLineByPosition(event, previewContainer);
+                    }
+                    
+                    // 缓存结果
+                    if (targetLine) {
+                        this.setCachedPosition(cacheKey, targetLine);
+                    }
+                    
+                    console.log('[CodeView] 双击位置计算:', {
+                        targetElement: targetElement.tagName,
+                        targetLine,
+                        method: this.getLocationMethod(targetElement, targetLine),
+                        cached: false
+                    });
+                    
+                    return targetLine;
+                } catch (error) {
+                    console.error('[CodeView] 计算预览位置对应的源码行号时出错:', error);
+                    return null;
+                }
+            },
+            
+            // 生成缓存键
+            generateCacheKey(targetElement, event) {
+                const elementInfo = {
+                    tagName: targetElement.tagName,
+                    textContent: (targetElement.textContent || '').substring(0, 50),
+                    className: targetElement.className,
+                    id: targetElement.id
+                };
+                
+                const positionInfo = {
+                    clientX: Math.floor(event.clientX / 10) * 10, // 降低精度以减少缓存键数量
+                    clientY: Math.floor(event.clientY / 10) * 10
+                };
+                
+                return JSON.stringify({ elementInfo, positionInfo });
+            },
+            
+            // 获取缓存的位置信息
+            getCachedPosition(cacheKey) {
+                const cached = this._positionCache.get(cacheKey);
+                if (cached && Date.now() - cached.timestamp < this._cacheExpiryTime) {
+                    return cached.lineNumber;
+                }
+                return null;
+            },
+            
+            // 设置缓存的位置信息
+            setCachedPosition(cacheKey, lineNumber) {
+                // 清理过期缓存
+                this.cleanExpiredCache();
+                
+                // 如果缓存已满，删除最旧的条目
+                if (this._positionCache.size >= this._cacheMaxSize) {
+                    const firstKey = this._positionCache.keys().next().value;
+                    this._positionCache.delete(firstKey);
+                }
+                
+                this._positionCache.set(cacheKey, {
+                    lineNumber,
+                    timestamp: Date.now()
+                });
+            },
+            
+            // 清理过期缓存
+            cleanExpiredCache() {
+                const now = Date.now();
+                for (const [key, value] of this._positionCache.entries()) {
+                    if (now - value.timestamp > this._cacheExpiryTime) {
+                        this._positionCache.delete(key);
+                    }
+                }
+            },
+            
+            // 通过元素属性获取源码行号
+            getElementSourceLine(element) {
+                // 检查元素是否有 data-source-line 属性
+                if (element.dataset && element.dataset.sourceLine) {
+                    return parseInt(element.dataset.sourceLine);
+                }
+                
+                // 向上查找父元素
+                let current = element.parentElement;
+                while (current && current !== document.body) {
+                    if (current.dataset && current.dataset.sourceLine) {
+                        return parseInt(current.dataset.sourceLine);
+                    }
+                    current = current.parentElement;
+                }
+                
+                return null;
+            },
+            
+            // 通过文本内容匹配源码行号 - 增强版本
+            getSourceLineByTextContent(targetElement, previewContainer) {
+                try {
+                    // 获取目标元素的文本内容
+                    const targetText = targetElement.textContent || targetElement.innerText || '';
+                    if (!targetText.trim()) return null;
+                    
+                    // 获取源码行
+                    const sourceLines = this.file.content.split('\n');
+                    
+                    // 清理目标文本（移除Markdown语法）
+                    const cleanedTargetText = this.cleanMarkdownText(targetText);
+                    
+                    // 尝试多种匹配策略
+                    const matchStrategies = [
+                        () => this.exactMatch(cleanedTargetText, sourceLines),
+                        () => this.partialMatch(cleanedTargetText, sourceLines),
+                        () => this.fuzzyMatch(cleanedTargetText, sourceLines),
+                        () => this.keywordMatch(cleanedTargetText, sourceLines),
+                        () => this.structuralMatch(targetElement, sourceLines)
+                    ];
+                    
+                    for (const strategy of matchStrategies) {
+                        const result = strategy();
+                        if (result) {
+                            console.log('[CodeView] 文本匹配成功:', { strategy: strategy.name, line: result });
+                            return result;
+                        }
+                    }
+                    
+                    return null;
+                } catch (error) {
+                    console.warn('[CodeView] 文本内容匹配失败:', error);
+                    return null;
+                }
+            },
+            
+            // 清理Markdown文本
+            cleanMarkdownText(text) {
+                return text
+                    .replace(/#{1,6}\s+/g, '') // 移除标题标记
+                    .replace(/\*\*(.*?)\*\*/g, '$1') // 移除粗体标记
+                    .replace(/\*(.*?)\*/g, '$1') // 移除斜体标记
+                    .replace(/`(.*?)`/g, '$1') // 移除行内代码标记
+                    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 移除链接，保留文本
+                    .replace(/^\s*[-*+]\s+/gm, '') // 移除列表标记
+                    .replace(/^\s*\d+\.\s+/gm, '') // 移除有序列表标记
+                    .replace(/>\s*/g, '') // 移除引用标记
+                    .replace(/\s+/g, ' ') // 标准化空白字符
+                    .trim();
+            },
+            
+            // 精确匹配
+            exactMatch(targetText, sourceLines) {
+                for (let i = 0; i < sourceLines.length; i++) {
+                    if (sourceLines[i].trim() === targetText) {
+                        return i + 1;
+                    }
+                }
+                return null;
+            },
+            
+            // 部分匹配
+            partialMatch(targetText, sourceLines) {
+                if (targetText.length < 3) return null;
+                
+                for (let i = 0; i < sourceLines.length; i++) {
+                    const sourceLine = sourceLines[i].trim();
+                    if (sourceLine.includes(targetText)) {
+                        return i + 1;
+                    }
+                }
+                return null;
+            },
+            
+            // 模糊匹配
+            fuzzyMatch(targetText, sourceLines) {
+                const normalizedTarget = targetText.replace(/\s+/g, ' ').trim();
+                
+                for (let i = 0; i < sourceLines.length; i++) {
+                    const normalizedSource = sourceLines[i].replace(/\s+/g, ' ').trim();
+                    if (normalizedSource === normalizedTarget) {
+                        return i + 1;
+                    }
+                }
+                return null;
+            },
+            
+            // 关键词匹配
+            keywordMatch(targetText, sourceLines) {
+                const keywords = targetText.split(/\s+/).filter(word => word.length > 2);
+                if (keywords.length === 0) return null;
+                
+                let bestMatch = null;
+                let bestScore = 0;
+                
+                for (let i = 0; i < sourceLines.length; i++) {
+                    const sourceLine = sourceLines[i].trim();
+                    let score = 0;
+                    
+                    for (const keyword of keywords) {
+                        if (sourceLine.toLowerCase().includes(keyword.toLowerCase())) {
+                            score++;
+                        }
+                    }
+                    
+                    if (score > bestScore && score >= Math.ceil(keywords.length / 2)) {
+                        bestScore = score;
+                        bestMatch = i + 1;
+                    }
+                }
+                
+                return bestMatch;
+            },
+            
+            // 结构匹配（基于HTML结构）
+            structuralMatch(targetElement, sourceLines) {
+                // 尝试通过HTML标签类型进行匹配
+                const tagName = targetElement.tagName.toLowerCase();
+                const textContent = targetElement.textContent || '';
+                
+                if (tagName === 'h1' || tagName === 'h2' || tagName === 'h3' || 
+                    tagName === 'h4' || tagName === 'h5' || tagName === 'h6') {
+                    // 标题匹配
+                    const headerText = textContent.replace(/^#+\s*/, '').trim();
+                    for (let i = 0; i < sourceLines.length; i++) {
+                        if (sourceLines[i].trim().includes(headerText)) {
+                            return i + 1;
+                        }
+                    }
+                } else if (tagName === 'code') {
+                    // 代码块匹配
+                    for (let i = 0; i < sourceLines.length; i++) {
+                        if (sourceLines[i].trim() === textContent.trim()) {
+                            return i + 1;
+                        }
+                    }
+                }
+                
+                return null;
+            },
+            
+            // 通过位置计算源码行号 - 优化版本
+            getSourceLineByPosition(event, previewContainer) {
+                // 计算双击位置在预览内容中的相对位置
+                const containerRect = previewContainer.getBoundingClientRect();
+                const clickY = event.clientY - containerRect.top;
+                const containerHeight = containerRect.height;
+                
+                // 计算相对位置（0-1之间）
+                const relativePosition = Math.max(0, Math.min(1, clickY / containerHeight));
+                
+                // 根据相对位置计算对应的源码行号
+                const sourceLines = this.file.content.split('\n');
+                const targetLineIndex = Math.floor(relativePosition * sourceLines.length);
+                const targetLine = Math.max(1, Math.min(sourceLines.length, targetLineIndex + 1));
+                
+                return targetLine;
+            },
+            
+            // 获取定位方法描述
+            getLocationMethod(element, targetLine) {
+                if (!targetLine) return 'none';
+                if (element.dataset && element.dataset.sourceLine) return 'element';
+                if (element.textContent || element.innerText) return 'text';
+                return 'position';
+            },
+            
+            // 滚动到源码中的指定行 - 动画优化版本
+            scrollToLineInSource(lineNumber) {
+                if (!lineNumber || lineNumber < 1) return;
+                
+                console.log('[CodeView] 滚动到源码行:', lineNumber);
+                
+                // 添加高亮效果
+                this.highlightTargetLine(lineNumber);
+                
+                // 使用优化的滚动方法
+                this.scrollToCommentPosition(lineNumber, null);
+                
+                // 更新视觉反馈
+                this.showScrollFeedback(`已定位到第 ${lineNumber} 行`);
+            },
+            
+            // 高亮目标行
+            highlightTargetLine(lineNumber) {
+                // 清除之前的高亮
+                this.highlightedLines = [];
+                
+                // 添加目标行高亮
+                this.highlightedLines.push(Number(lineNumber));
+                
+                // 添加临时高亮效果
+                this.$nextTick(() => {
+                    const targetElement = this.$el?.querySelector(`[data-line="${lineNumber}"]`);
+                    if (targetElement) {
+                        targetElement.classList.add('highlight-animation');
+                        setTimeout(() => {
+                            targetElement.classList.remove('highlight-animation');
+                        }, 2000);
+                    }
+                });
+            },
+            
+            // 滚动到顶部
+            scrollToTop() {
+                const codeBlock = this.$el.querySelector('.code-block');
+                if (codeBlock) {
+                    codeBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    this.showScrollFeedback('已定位到文件顶部');
+                }
+            },
+            
+            // 显示滚动反馈信息
+            showScrollFeedback(message) {
+                // 创建或更新反馈元素
+                let feedbackEl = document.getElementById('scroll-feedback');
+                if (!feedbackEl) {
+                    feedbackEl = document.createElement('div');
+                    feedbackEl.id = 'scroll-feedback';
+                    feedbackEl.className = 'scroll-feedback';
+                    document.body.appendChild(feedbackEl);
+                }
+                
+                feedbackEl.textContent = message;
+                feedbackEl.style.display = 'block';
+                feedbackEl.style.opacity = '1';
+                
+                // 2秒后自动隐藏
+                clearTimeout(this._feedbackTimeout);
+                this._feedbackTimeout = setTimeout(() => {
+                    if (feedbackEl) {
+                        feedbackEl.style.opacity = '0';
+                        setTimeout(() => {
+                            if (feedbackEl) {
+                                feedbackEl.style.display = 'none';
+                            }
+                        }, 300);
+                    }
+                }, 2000);
+            },
+            
+            // 初始化键盘快捷键
+            initKeyboardShortcuts() {
+                document.addEventListener('keydown', (event) => {
+                    // Ctrl/Cmd + G: 快速定位到指定行
+                    if ((event.ctrlKey || event.metaKey) && event.key === 'g') {
+                        event.preventDefault();
+                        this.showGoToLineDialog();
+                    }
+                    
+                    // Ctrl/Cmd + F: 在预览模式下快速切换
+                    if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+                        if (this.shouldShowMarkdownPreview) {
+                            event.preventDefault();
+                            this.toggleMarkdownPreview();
+                        }
+                    }
+                });
+            },
+            
+            // 显示跳转到指定行的对话框
+            showGoToLineDialog() {
+                const lineNumber = prompt('请输入要跳转的行号:', '');
+                if (lineNumber && !isNaN(lineNumber) && Number(lineNumber) > 0) {
+                    const targetLine = Number(lineNumber);
+                    const maxLines = this.file?.content?.split('\n').length || 0;
+                    
+                    if (targetLine <= maxLines) {
+                        this.scrollToLineInSource(targetLine);
+                    } else {
+                        this.showScrollFeedback(`行号超出范围 (最大: ${maxLines})`);
+                    }
+                }
             },
             
             // 计算评论标记在Markdown预览中的位置 - 优化版本
             calculateCommentMarkerPositions() {
-                if (!this.shouldShowMarkdownPreview || !this.file || !this.file.content) {
+                // 预览模式下不计算评论标记位置
+                if (this.shouldShowMarkdownPreview) {
+                    console.log('[CodeView] 预览模式下不计算评论标记位置');
+                    return;
+                }
+                
+                if (!this.file || !this.file.content) {
                     return;
                 }
                 
@@ -1156,8 +1629,8 @@ const createCodeView = async () => {
                         });
                     });
                     
-                    // 确保评论标记在预览模式下可以交互
-                    this.ensureCommentMarkerInteractions();
+                    // 预览模式下不添加评论相关交互功能
+                    // this.ensureCommentMarkerInteractions();
                     
                     // 添加代码块展开/折叠功能
                     const expandButtons = this.$el?.querySelectorAll('.md-code-block-expand');
@@ -1472,6 +1945,9 @@ const createCodeView = async () => {
                 }
                 
                 try {
+                    // 重置当前渲染行号
+                    this.currentRenderLine = 1;
+                    
                     // 配置marked.js选项
                     const markedOptions = {
                         breaks: true,           // 支持换行
@@ -1487,7 +1963,7 @@ const createCodeView = async () => {
                     // 使用marked.js渲染
                     let html = marked.parse(text, markedOptions);
                     
-                    // 后处理：添加自定义样式类
+                    // 后处理：添加自定义样式类和行号信息
                     html = this.postProcessMarkdownHtml(html);
                     
                     // 缓存结果
@@ -1509,9 +1985,31 @@ const createCodeView = async () => {
                 }
             },
             
+            // 获取当前渲染的源码行号
+            getCurrentSourceLine() {
+                // 使用更精确的行号跟踪
+                if (!this.file || !this.file.content) return 1;
+                
+                // 如果已经有当前行号，使用它
+                if (this.currentRenderLine) {
+                    return this.currentRenderLine;
+                }
+                
+                // 否则返回基于内容长度的估算值
+                const content = this.file.content;
+                const lines = content.split('\n');
+                return Math.max(1, Math.floor(lines.length / 2));
+            },
+            
+            // 设置当前渲染行号
+            setCurrentRenderLine(lineNumber) {
+                this.currentRenderLine = lineNumber;
+            },
+            
             // 创建marked.js自定义渲染器
             createMarkedRenderer() {
                 const renderer = new marked.Renderer();
+                const self = this;
                 
                 // 自定义代码块渲染
                 renderer.code = (code, language) => {
@@ -1520,7 +2018,7 @@ const createCodeView = async () => {
                     const lineCount = code.trim().split('\n').length;
                     
                     return `
-                        <div class="md-code-block-wrapper">
+                        <div class="md-code-block-wrapper" data-source-line="${self.getCurrentSourceLine()}">
                             <div class="md-code-block-header">
                                 <div class="md-code-block-info">
                                     <span class="md-code-block-language">${lang.toUpperCase()}</span>
@@ -1544,7 +2042,22 @@ const createCodeView = async () => {
                 
                 // 自定义行内代码渲染
                 renderer.codespan = (code) => {
-                    return `<code class="md-inline-code">${this.escapeHtml(code)}</code>`;
+                    return `<code class="md-inline-code" data-source-line="${self.getCurrentSourceLine()}">${this.escapeHtml(code)}</code>`;
+                };
+                
+                // 自定义段落渲染
+                renderer.paragraph = (text) => {
+                    return `<p data-source-line="${self.getCurrentSourceLine()}">${text}</p>`;
+                };
+                
+                // 自定义标题渲染
+                renderer.heading = (text, level) => {
+                    return `<h${level} data-source-line="${self.getCurrentSourceLine()}">${text}</h${level}>`;
+                };
+                
+                // 自定义列表项渲染
+                renderer.listitem = (text) => {
+                    return `<li data-source-line="${self.getCurrentSourceLine()}">${text}</li>`;
                 };
                 
                 // 自定义图片渲染（添加懒加载）
@@ -1837,11 +2350,11 @@ const createCodeView = async () => {
                             return true; // 成功
                         } else {
                             // 如果找不到目标元素且重试次数未达上限，继续重试
-                            if (retryCount < 3) { // 减少重试次数从5次到3次
+                            if (retryCount < 2) { // 进一步减少重试次数到2次
                                 console.log(`[CodeView] 未找到${targetType || '目标'}元素，第${retryCount + 1}次重试...`);
                                 setTimeout(() => {
                                     attemptScroll(retryCount + 1);
-                                }, 200); // 减少重试间隔从300ms到200ms
+                                }, 100); // 进一步减少重试间隔到100ms
                             } else {
                                 // 提供更友好的错误信息和替代方案
                                 const errorMsg = this.generateScrollErrorMessage(startLine, comment, targetType);
@@ -2303,6 +2816,12 @@ const createCodeView = async () => {
             // 监听选择变化并定位"评论"按钮
             onSelectionChange() {
                 try {
+                    // 预览模式下禁用评论功能
+                    if (this.shouldShowMarkdownPreview) {
+                        this.hideSelectionButton();
+                        return;
+                    }
+                    
                     const sel = window.getSelection();
                     if (!sel || sel.rangeCount === 0) {
                         const withinGrace = Date.now() - this._lastShowTs < 250;
@@ -3841,6 +4360,9 @@ const createCodeView = async () => {
             this._resizeHandler = () => this.onWindowResize();
             window.addEventListener('resize', this._resizeHandler);
             
+            // 初始化键盘快捷键
+            this.initKeyboardShortcuts();
+            
             // 添加调试方法到全局
             window.debugCodeView = {
                 getFileInfo: () => {
@@ -4071,6 +4593,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 

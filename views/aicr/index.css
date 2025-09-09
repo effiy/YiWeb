@@ -44,7 +44,7 @@
     flex: 1;
     background: var(--bg-primary);
     color: var(--text-primary);
-    overflow: auto;
+    overflow: visible;
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 14px;
     line-height: 1.6;
@@ -1088,6 +1088,7 @@
     .sidebar-expand-handle { animation: none; transition: none; }
     .sidebar-expand-handle i, .sidebar-expand-handle .label { transition: none; }
 } 
+
 
 
 

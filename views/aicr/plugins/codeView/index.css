@@ -10,7 +10,7 @@
     border: 1px solid var(--border-primary);
     border-top: none;
     border-radius: 0 0 8px 8px;
-    padding: 4px 10px;
+    padding: 0 10px;
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 12px;
     line-height: 1.4;
@@ -18,6 +18,9 @@
     position: relative;
     min-height: 120px;
     box-shadow: var(--shadow-sm);
+    /* 确保滚动容器正确设置 */
+    overflow-y: auto;
+    max-height: calc(100vh - 86px);
 }
 
 /* ========== Markdown预览容器 ========== */
@@ -38,10 +41,61 @@
 
 .markdown-preview-wrapper {
     display: flex;
+    flex-direction: column;
     height: 100%;
     overflow-y: auto;
     max-height: calc(100vh - 160px);
     scroll-behavior: smooth;
+}
+
+/* 预览模式提示 */
+.preview-mode-hint {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 11px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0.9;
+}
+
+.preview-mode-hint:hover {
+    opacity: 1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.preview-mode-hint i {
+    font-size: 10px;
+    opacity: 0.8;
+}
+
+/* 预览容器悬停效果 */
+.markdown-preview-container:hover .preview-mode-hint {
+    opacity: 1;
+    transform: translateY(-1px);
+}
+
+.markdown-preview-container {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.markdown-preview-container:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-primary);
 }
 
 /* 自定义滚动条 */
@@ -76,6 +130,7 @@
     overflow-x: auto;
     background: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.01) 100%);
     position: relative;
+    overflow-y: auto;
 }
 
 /* 整体Markdown内容容器 */
@@ -1003,7 +1058,14 @@
     background: var(--bg-tertiary);
     position: sticky;
     top: 0;
-    z-index: 2;
+    z-index: 10;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    /* 确保固定在顶部 */
+    position: -webkit-sticky;
+    position: sticky;
+    /* 防止在滚动时移动 */
+    will-change: transform;
 }
 
 /* 引用代码输入框下方操作区域 */
@@ -3862,6 +3924,60 @@
     }
 }
 
+/* ========== 滚动反馈样式 ========== */
+.scroll-feedback {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--primary);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    max-width: 300px;
+    word-wrap: break-word;
+}
+
+.scroll-feedback::before {
+    content: '📍';
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+/* ========== 高亮动画样式 ========== */
+.highlight-animation {
+    animation: highlightPulse 2s ease-in-out;
+    position: relative;
+}
+
+@keyframes highlightPulse {
+    0% {
+        background-color: rgba(79, 70, 229, 0.1);
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.3);
+    }
+    50% {
+        background-color: rgba(79, 70, 229, 0.2);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+    100% {
+        background-color: rgba(79, 70, 229, 0.1);
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+    }
+}
+
+/* 增强高亮效果 */
+.code-line.highlight-animation {
+    border-left: 3px solid var(--primary);
+    padding-left: 8px;
+    margin-left: -8px;
+}
+
 /* ========== 滚动条样式 ========== */
 .code-content::-webkit-scrollbar {
     width: 8px;
@@ -6012,5 +6128,6 @@
 .hidden {
     display: none !important;
 }
+
 
 
