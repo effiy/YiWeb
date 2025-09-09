@@ -992,25 +992,6 @@
     position: relative;
 }
 
-.md-code-block:hover::after {
-    content: '复制';
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: var(--primary);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.8em;
-    cursor: pointer;
-    opacity: 0.8;
-    transition: opacity 0.2s ease;
-}
-
-.md-code-block:hover::after:hover {
-    opacity: 1;
-}
-
 /* 编辑态下的代码区域尺寸与滚动优化 */
 .code-content.editing {
     /* 占满视口减去头部和外边距高度，数值可根据实际布局微调 */
