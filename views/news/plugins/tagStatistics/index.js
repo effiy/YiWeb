@@ -49,10 +49,31 @@ const createTagStatistics = async () => {
         }
     },
     emits: ['toggle-tag'],
+    data() {
+        return {
+            clickTimeout: null
+        };
+    },
     methods: {
         // 切换标签选择状态
-        toggleTag(tagName) {
-            this.$emit('toggle-tag', tagName);
+        toggleTag(tagName, event) {
+            // 防抖处理，避免重复点击
+            if (this.clickTimeout) {
+                clearTimeout(this.clickTimeout);
+            }
+            
+            // 添加视觉反馈
+            const tagElement = event?.target?.closest('.tag-item');
+            if (tagElement) {
+                tagElement.classList.add('clicked');
+                setTimeout(() => {
+                    tagElement.classList.remove('clicked');
+                }, 300);
+            }
+            
+            this.clickTimeout = setTimeout(() => {
+                this.$emit('toggle-tag', tagName);
+            }, 100);
         }
     },
     template: template

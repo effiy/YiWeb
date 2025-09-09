@@ -248,12 +248,16 @@
                                                 v-for="(tag, tagIndex) in card.tags || []" 
                                                 :key="tagIndex"
                                                 class="tag-item"
+                                                role="button"
+                                                tabindex="0"
+                                                :aria-label="'打开AICR项目: ' + tag.name"
+                                                :title="'打开AICR: ' + tag.name"
+                                                @click="openAicrFromTag(tag.name, $event)"
+                                                @keydown.enter="openAicrFromTag(tag.name, $event)"
+                                                @keydown.space.prevent="openAicrFromTag(tag.name, $event)"
+                                                @keydown.escape="blur()"
                                             >
-                                                <span 
-                                                    class="tag-text"
-                                                    :title="'打开AICR: ' + tag.name"
-                                                    @click="openAicrFromTag(tag.name, $event)"
-                                                >{{ tag.name }}</span>
+                                                <span class="tag-text">{{ tag.name }}</span>
                                             </div>
                                             <div v-if="!card.tags || card.tags.length === 0" class="no-tags">
                                                 暂无标签

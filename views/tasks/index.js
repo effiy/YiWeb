@@ -1373,8 +1373,15 @@ class TaskProApp {
                                 console.log(`[TaskPro] 特殊处理TaskEditor组件:`, window[componentName]);
                                 console.log(`[TaskPro] TaskEditor组件名称:`, window[componentName].name);
                                 console.log(`[TaskPro] TaskEditor组件模板:`, window[componentName].template ? '存在' : '不存在');
-                                console.log(`[TaskPro] TaskEditor组件方法:`, Object.keys(window[componentName].methods || {}));
-                                console.log(`[TaskPro] TaskEditor组件属性:`, Object.keys(window[componentName]));
+                                
+                                // 避免使用Object.keys枚举组件属性，直接检查特定属性
+                                const component = window[componentName];
+                                const hasMethods = !!(component.methods && typeof component.methods === 'object');
+                                const hasProps = !!(component.props && typeof component.props === 'object');
+                                const hasData = !!(component.data && typeof component.data === 'function');
+                                
+                                console.log(`[TaskPro] TaskEditor组件方法:`, hasMethods ? '存在' : '不存在');
+                                console.log(`[TaskPro] TaskEditor组件属性:`, { hasMethods, hasProps, hasData });
                             }
                             
                             try {

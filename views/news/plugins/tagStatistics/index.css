@@ -223,15 +223,46 @@
 .tag-item:focus {
     outline: none;
     box-shadow: 0 0 0 2px var(--primary-alpha);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary);
 }
 
 .tag-item:focus:not(:focus-visible) {
     box-shadow: none;
 }
 
+.tag-item:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--primary-alpha);
+}
+
 /* 标签项目激活状态 */
 .tag-item:active {
-    transform: translateY(0);
+    transform: translateY(0) scale(0.98);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+    transition: all 0.1s ease-out;
+}
+
+/* 标签项目点击反馈 */
+.tag-item.clicked {
+    animation: tagClickPulse 0.3s ease-out;
+}
+
+@keyframes tagClickPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+    }
+    50% {
+        transform: scale(1.02);
+        box-shadow: 0 0 0 8px rgba(79, 70, 229, 0.1);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+    }
 }
 
 /* 标签信息 */

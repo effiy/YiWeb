@@ -1106,14 +1106,14 @@ export const useMethods = (store) => {
                 // 方法1：通过ref直接调用组件方法
                 if (window.aicrApp && window.aicrApp.$refs) {
                     const commentPanelRef = window.aicrApp.$refs['comment-panel'];
-                    if (commentPanelRef && commentPanelRef.addCommentToLocalData) {
+                    if (commentPanelRef && typeof commentPanelRef.addCommentToLocalData === 'function') {
                         console.log('[评论提交] 方法1：通过ref直接调用组件方法');
                         commentPanelRef.addCommentToLocalData(comment);
                         commentAdded = true;
                     } else {
                         console.log('[评论提交] 方法1失败：无法获取评论面板组件引用或方法不存在');
-                        console.log('[评论提交] commentPanelRef:', commentPanelRef);
-                        console.log('[评论提交] aicrApp.$refs:', window.aicrApp.$refs);
+                        console.log('[评论提交] commentPanelRef存在:', !!commentPanelRef);
+                        console.log('[评论提交] addCommentToLocalData方法存在:', !!(commentPanelRef && commentPanelRef.addCommentToLocalData));
                     }
                 } else {
                     console.log('[评论提交] 方法1失败：无法获取aicrApp或$refs');
@@ -1124,12 +1124,15 @@ export const useMethods = (store) => {
                     try {
                         // 查找评论面板组件实例
                         const commentPanelElement = document.querySelector('.comment-panel-container');
-                        if (commentPanelElement && commentPanelElement.__vueParentComponent) {
-                            const componentInstance = commentPanelElement.__vueParentComponent.component;
-                            if (componentInstance && componentInstance.addCommentGlobally) {
+                        if (commentPanelElement) {
+                            // 避免直接访问Vue内部属性，使用更安全的方式
+                            const componentInstance = commentPanelElement.__vueParentComponent?.component;
+                            if (componentInstance && typeof componentInstance.addCommentGlobally === 'function') {
                                 console.log('[评论提交] 方法2：通过全局方法调用');
                                 componentInstance.addCommentGlobally(comment);
                                 commentAdded = true;
+                            } else {
+                                console.log('[评论提交] 方法2失败：无法获取组件实例或方法不存在');
                             }
                         }
                     } catch (error) {

@@ -27,14 +27,18 @@ import { logInfo, logWarn, logError } from '/utils/log.js';
                 if (app) {
                     logInfo('[欢迎页面] 调试函数已暴露到全局作用域');
                     
-                    // 在 Vue 3 中，方法直接暴露在实例上
-                    const availableMethods = Object.keys(app).filter(key => 
-                        typeof app[key] === 'function' && 
-                        !key.startsWith('_') && 
-                        key !== 'constructor'
-                    );
-                    
-                    logInfo('[欢迎页面] 可用的方法:', availableMethods);
+                // 在 Vue 3 中，方法直接暴露在实例上
+                // 避免使用Object.keys枚举组件实例属性，直接检查特定方法
+                const availableMethods = [];
+                const methodNames = ['editCard', 'createCard', 'deleteCard', 'toggleFavorite', 'openLink'];
+                
+                methodNames.forEach(methodName => {
+                    if (typeof app[methodName] === 'function') {
+                        availableMethods.push(methodName);
+                    }
+                });
+                
+                logInfo('[欢迎页面] 可用的方法:', availableMethods);
                     
                     // 验证 editCard 方法是否存在
                     if (app.editCard) {

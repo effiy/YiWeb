@@ -232,11 +232,16 @@
                     });
                     
                     // 测试组件结构
+                    const component = window.TaskEditor;
+                    const hasMethods = !!(component.methods && typeof component.methods === 'object');
+                    const hasProps = !!(component.props && typeof component.props === 'object');
+                    const hasData = !!(component.data && typeof component.data === 'function');
+                    
                     console.log('[TaskEditor Test] 组件结构详情:', {
-                        template: window.TaskEditor.template ? '存在' : '不存在',
-                        props: window.TaskEditor.props,
-                        methods: Object.keys(window.TaskEditor.methods || {}),
-                        data: window.TaskEditor.data
+                        template: component.template ? '存在' : '不存在',
+                        props: hasProps ? '存在' : '不存在',
+                        methods: hasMethods ? '存在' : '不存在',
+                        data: hasData ? '存在' : '不存在'
                     });
                 } else {
                     console.error('[TaskEditor Test] ❌ TaskEditor组件未找到');
@@ -244,9 +249,14 @@
                 
                 // 检查Vue应用状态
                 if (window.TaskProApp && window.TaskProApp.app) {
+                    const app = window.TaskProApp.app;
+                    const hasComponents = !!(app._context && app._context.components);
+                    const componentCount = hasComponents ? Object.keys(app._context.components).length : 0;
+                    
                     console.log('[TaskEditor Test] Vue应用状态:', {
-                        hasApp: !!window.TaskProApp.app,
-                        components: Object.keys(window.TaskProApp.app._context.components || {})
+                        hasApp: !!app,
+                        hasComponents: hasComponents,
+                        componentCount: componentCount
                     });
                 }
             }, 1000);

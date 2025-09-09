@@ -9,13 +9,15 @@
             <div 
                 v-for="tag in tagStatistics.tags" 
                 :key="tag.name"
-                @click="toggleTag(tag.name)"
+                @click="toggleTag(tag.name, $event)"
                 :class="['tag-item', { active: selectedTags.has(tag.name) }]"
                 :title="`${tag.name}: ${tag.currentCount}条新闻 (${tag.percentage}%) - 点击筛选`"
-                role="listitem"
+                :aria-label="`标签 ${tag.name}，包含 ${tag.currentCount} 条新闻，占比 ${tag.percentage}%，点击${selectedTags.has(tag.name) ? '取消' : '选择'}筛选`"
+                role="button"
                 tabindex="0"
-                @keydown.enter="toggleTag(tag.name)"
-                @keydown.space="toggleTag(tag.name)"
+                @keydown.enter="toggleTag(tag.name, $event)"
+                @keydown.space.prevent="toggleTag(tag.name, $event)"
+                @keydown.escape="blur()"
             >
                 <div class="tag-info">
                     <span class="tag-name">{{ tag.name }}</span>
