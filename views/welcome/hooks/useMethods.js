@@ -1629,28 +1629,26 @@ export const useMethods = (store) => {
                 fromSystem: store.fromSystem.value,
                 fromUser: message
             });
+
+            const fromSystem = await window.getData(`/prompts/welcome/featureCards.txt`);
             
             // 发送消息请求到API
             const response = await postData(`${window.API_URL}/prompt`, {
-                fromSystem: store.fromSystem.value,
+                fromSystem: fromSystem,
                 fromUser: message
             });
             
-            console.log('[API响应] 收到服务器响应:', response);
-            
             // 处理响应结果
             if (response) {
-                console.log('[数据赋值] 准备赋值的新数据:', response.data);
-                
-                // 开始保存数据到数据库
-                console.log('[数据保存] 开始保存新数据到数据库');
-                
                 // 显示保存进度
                 const totalItems = response.data.length;
                 let savedCount = 0;
                 const savedItems = [];
                 
-                for (const item of response.data) {
+                for (let item of response.data) {
+                    item.year = new Date().getFullYear().toString();
+                    item.quarter = `Q${Math.ceil((new Date().getMonth() + 1) / 3)}`;
+                    item.month = new Date().getMonth() + 1;
                     try {
                         const saveResult = await postData(`${window.API_URL}/mongodb/?cname=goals`, item);
                         if (saveResult && saveResult.success !== false) {
