@@ -1472,15 +1472,18 @@
 
 /* JSON内容特殊样式 */
 .md-preview-body pre.md-code.json-content {
-    background: #f8f9fa;
-    border: 1px solid #e1e5e9;
-    border-left: 4px solid #4f46e5;
+    background: linear-gradient(135deg, rgba(79,70,229,0.08) 0%, rgba(99,102,241,0.05) 50%, rgba(139,92,246,0.03) 100%);
+    border: 1px solid rgba(79,70,229,0.15);
+    border-left: 4px solid var(--primary, #4f46e5);
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 13px;
     line-height: 1.5;
-    color: #2d3748;
+    color: var(--text-primary, #e2e8f0);
     white-space: pre-wrap;
     word-wrap: break-word;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.1);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
 }
 
 .md-preview-body pre.md-code.json-content code {
@@ -1489,6 +1492,36 @@
     padding: 0;
     font-size: inherit;
     color: inherit;
+}
+
+/* JSON内容悬停效果 */
+.md-preview-body pre.md-code.json-content:hover {
+    background: linear-gradient(135deg, rgba(79,70,229,0.12) 0%, rgba(99,102,241,0.08) 50%, rgba(139,92,246,0.05) 100%);
+    border-color: rgba(79,70,229,0.25);
+    box-shadow: 0 4px 16px rgba(79,70,229,0.15);
+    transform: translateY(-1px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* JSON内容语法高亮 */
+.md-preview-body pre.md-code.json-content {
+    position: relative;
+}
+
+.md-preview-body pre.md-code.json-content::before {
+    content: 'JSON';
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: rgba(79,70,229,0.2);
+    color: var(--primary, #4f46e5);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
 }
 .md-preview-body a { color: var(--primary); text-decoration: underline; }
 

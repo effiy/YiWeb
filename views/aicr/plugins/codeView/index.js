@@ -1957,8 +1957,35 @@ const createCodeView = async () => {
             renderMarkdown(text) {
                 if (!text) return '';
                 
+                // 检查是否为JSON对象并格式化
+                let processedText = text;
+                let isJsonContent = false;
+                
+                if (typeof text === 'object') {
+                    try {
+                        // 如果是对象，格式化为JSON字符串
+                        processedText = JSON.stringify(text, null, 2);
+                        isJsonContent = true;
+                    } catch (e) {
+                        // 如果JSON.stringify失败，使用toString()
+                        processedText = text.toString();
+                    }
+                } else if (typeof text === 'string') {
+                    // 尝试解析为JSON，如果是有效的JSON则格式化
+                    try {
+                        const parsed = JSON.parse(text);
+                        if (typeof parsed === 'object' && parsed !== null) {
+                            processedText = JSON.stringify(parsed, null, 2);
+                            isJsonContent = true;
+                        }
+                    } catch (e) {
+                        // 不是有效的JSON，保持原样
+                        processedText = text;
+                    }
+                }
+                
                 // 检查缓存
-                const cacheKey = `md_${this.hashString(text)}`;
+                const cacheKey = `md_${this.hashString(processedText)}`;
                 if (this.markdownCache && this.markdownCache[cacheKey]) {
                     return this.markdownCache[cacheKey];
                 }
@@ -1966,12 +1993,26 @@ const createCodeView = async () => {
                 // 检查marked.js是否可用
                 if (typeof marked === 'undefined') {
                     console.warn('[CodeView] marked.js未加载，使用备用渲染方法');
-                    return this.renderMarkdownFallback(text);
+                    return this.renderMarkdownFallback(processedText, isJsonContent);
                 }
                 
                 try {
                     // 重置当前渲染行号
                     this.currentRenderLine = 1;
+                    
+                    // 如果是JSON内容，直接包装在代码块中
+                    if (isJsonContent) {
+                        const escapedJson = this.escapeHtml(processedText);
+                        const html = `<pre class="md-code json-content"><code>${escapedJson}</code></pre>`;
+                        
+                        // 缓存结果
+                        if (!this.markdownCache) {
+                            this.markdownCache = {};
+                        }
+                        this.markdownCache[cacheKey] = html;
+                        
+                        return html;
+                    }
                     
                     // 配置marked.js选项
                     const markedOptions = {
@@ -1986,7 +2027,7 @@ const createCodeView = async () => {
                     };
                     
                     // 使用marked.js渲染
-                    let html = marked.parse(text, markedOptions);
+                    let html = marked.parse(processedText, markedOptions);
                     
                     // 后处理：添加自定义样式类和行号信息
                     html = this.postProcessMarkdownHtml(html);
@@ -2164,8 +2205,14 @@ const createCodeView = async () => {
             },
             
             // 备用Markdown渲染方法（当marked.js不可用时）
-            renderMarkdownFallback(text) {
+            renderMarkdownFallback(text, isJsonContent = false) {
                 let html = String(text);
+                
+                // 如果是JSON内容，直接包装在代码块中
+                if (isJsonContent) {
+                    const escapedJson = this.escapeHtml(text);
+                    return `<pre class="md-code json-content"><code>${escapedJson}</code></pre>`;
+                }
                 
                 // 简单的Markdown渲染逻辑
                 html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
