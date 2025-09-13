@@ -251,8 +251,11 @@ const createCodeView = async () => {
             lineComments() {
                 const result = {};
                 if (!this.comments || !Array.isArray(this.comments)) {
+                    console.log('[CodeView] lineComments - 无评论数据');
                     return result;
                 }
+                
+                console.log('[CodeView] lineComments - 处理评论数据，数量:', this.comments.length);
                 
                 this.comments.forEach(comment => {
                     // 从评论的rangeInfo中获取行号信息
@@ -291,14 +294,18 @@ const createCodeView = async () => {
                     }
                 });
                 
+                console.log('[CodeView] lineComments - 处理完成，结果行数:', Object.keys(result).length, '行号:', Object.keys(result));
                 return result;
             },
             // 获取每行的主要评论标记（用于显示）
             lineCommentMarkers() {
                 // 预览模式下不显示评论标记
                 if (this.shouldShowMarkdownPreview) {
+                    console.log('[CodeView] lineCommentMarkers - 预览模式，返回空对象');
                     return {};
                 }
+                
+                console.log('[CodeView] lineCommentMarkers - 源码模式，计算评论标记');
                 
                 const result = {};
                 const lineComments = this.lineComments;
@@ -356,6 +363,7 @@ const createCodeView = async () => {
                     }
                 });
                 
+                console.log('[CodeView] lineCommentMarkers - 计算完成，标记行数:', Object.keys(result).length, '行号:', Object.keys(result));
                 return result;
             },
             // 当前评论详情的HTML内容
@@ -383,7 +391,14 @@ const createCodeView = async () => {
             },
             // 判断是否应该显示Markdown预览
             shouldShowMarkdownPreview() {
-                return this.file && this.languageType === 'markdown' && this.isMarkdownPreviewMode && !this.isEditingFile;
+                const result = this.file && this.languageType === 'markdown' && this.isMarkdownPreviewMode && !this.isEditingFile;
+                console.log('[CodeView] shouldShowMarkdownPreview - 结果:', result, {
+                    hasFile: !!this.file,
+                    languageType: this.languageType,
+                    isMarkdownPreviewMode: this.isMarkdownPreviewMode,
+                    isEditingFile: this.isEditingFile
+                });
+                return result;
             },
             // 获取Markdown预览的HTML内容
             markdownPreviewHtml() {
@@ -840,6 +855,12 @@ const createCodeView = async () => {
                         this.onSelectionChange();
                     }, 100);
                 }
+                
+                // 强制更新视图以确保评论标记正确显示/隐藏
+                this.$nextTick(() => {
+                    this.$forceUpdate();
+                    console.log('[CodeView] 强制更新视图，当前模式:', this.isMarkdownPreviewMode ? '预览' : '源码');
+                });
             },
             
             // 处理预览模式双击事件 - 防抖优化版本
