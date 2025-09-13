@@ -272,13 +272,46 @@ const createCommentPanel = async () => {
             renderMarkdown(text) {
                 return safeExecute(() => {
                     if (!text) return '';
-                    let html = text;
+                    
+                    // 检查是否为JSON对象
+                    let processedText = text;
+                    let isJsonContent = false;
+                    
+                    if (typeof text === 'object') {
+                        try {
+                            // 如果是对象，格式化为JSON字符串
+                            processedText = JSON.stringify(text, null, 2);
+                            isJsonContent = true;
+                        } catch (e) {
+                            // 如果JSON.stringify失败，使用toString()
+                            processedText = text.toString();
+                        }
+                    } else if (typeof text === 'string') {
+                        // 尝试解析为JSON，如果是有效的JSON则格式化
+                        try {
+                            const parsed = JSON.parse(text);
+                            if (typeof parsed === 'object' && parsed !== null) {
+                                processedText = JSON.stringify(parsed, null, 2);
+                                isJsonContent = true;
+                            }
+                        } catch (e) {
+                            // 不是有效的JSON，保持原样
+                            processedText = text;
+                        }
+                    }
+                    
+                    let html = processedText;
 
                     const escapeHtml = (s) => s
                         .replace(/&/g, '&amp;')
                         .replace(/</g, '&lt;')
                         .replace(/>/g, '&gt;');
                     html = escapeHtml(html);
+
+                    // 如果是JSON内容，包装在代码块中
+                    if (isJsonContent) {
+                        html = `<pre class="md-code json-content"><code>${html}</code></pre>`;
+                    }
 
                     // 代码块 ```
                     html = html.replace(/```([\s\S]*?)```/g, (m, code) => {
@@ -346,6 +379,29 @@ const createCommentPanel = async () => {
             // 测试方法
             testMethod() {
                 console.log('[CommentPanel] testMethod被调用');
+                
+                // 测试JSON格式化功能
+                const testCases = [
+                    // 测试对象
+                    { name: '张三', age: 25, city: '北京' },
+                    // 测试JSON字符串
+                    '{"message": "Hello World", "status": "success"}',
+                    // 测试普通字符串
+                    '这是一个普通的评论内容',
+                    // 测试嵌套对象
+                    {
+                        user: { name: '李四', profile: { avatar: 'avatar.jpg' } },
+                        data: [1, 2, 3, { nested: true }]
+                    }
+                ];
+                
+                console.log('[CommentPanel] 测试JSON格式化功能:');
+                testCases.forEach((testCase, index) => {
+                    console.log(`测试用例 ${index + 1}:`, testCase);
+                    const result = this.renderMarkdown(testCase);
+                    console.log(`格式化结果 ${index + 1}:`, result);
+                });
+                
                 return 'test';
             },
 
