@@ -231,17 +231,33 @@
                             <label class="form-label primary">
                                 <i class="fas fa-comment-dots"></i>
                                 评论内容
+                                <button 
+                                    type="button" 
+                                    class="json-toggle-btn"
+                                    @click="toggleCommentContentJsonMode"
+                                    :class="{ 'active': editingCommentContentIsJson }"
+                                    title="切换 JSON 模式"
+                                >
+                                    <i class="fas fa-code"></i>
+                                    {{ editingCommentContentIsJson ? 'JSON' : '文本' }}
+                                </button>
                             </label>
                             <textarea 
                                 v-model="editingCommentContent"
                                 class="form-textarea comment-content-textarea primary-textarea"
-                                placeholder="编辑评论内容（支持Markdown格式）"
+                                :class="{ 'json-mode': editingCommentContentIsJson }"
+                                :placeholder="editingCommentContentIsJson ? '编辑 JSON 格式的评论内容' : '编辑评论内容（支持Markdown格式）'"
                                 rows="12"
                                 @keydown="onCommentDetailEditKeydown"
                             ></textarea>
                             <div class="textarea-hint">
                                 <i class="fas fa-info-circle"></i>
-                                支持Markdown格式，Ctrl/Cmd + Enter 保存，Esc 取消
+                                <span v-if="editingCommentContentIsJson">
+                                    JSON 格式，支持结构化数据，Ctrl/Cmd + Enter 保存，Esc 取消
+                                </span>
+                                <span v-else>
+                                    支持Markdown格式，Ctrl/Cmd + Enter 保存，Esc 取消
+                                </span>
                             </div>
                         </div>
 

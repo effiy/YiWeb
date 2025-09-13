@@ -75,6 +75,7 @@ const createCodeView = async () => {
                 editingCommentAuthor: '',
                 editingCommentTimestamp: '',
                 editingCommentContent: '',
+                editingCommentContentIsJson: false,
                 editingCommentText: '',
                 editingImprovementText: '',
                 editingCommentType: '',
@@ -3384,7 +3385,16 @@ const createCodeView = async () => {
                 
                 // 填充编辑数据
                 this.editingCommentAuthor = comment.author || '';
-                this.editingCommentContent = comment.content || '';
+                
+                // 处理评论内容，支持 JSON 对象
+                if (typeof comment.content === 'object' && comment.content !== null) {
+                    this.editingCommentContent = JSON.stringify(comment.content, null, 2);
+                    this.editingCommentContentIsJson = true;
+                } else {
+                    this.editingCommentContent = comment.content || '';
+                    this.editingCommentContentIsJson = false;
+                }
+                
                 this.editingCommentText = comment.text || '';
                 this.editingImprovementText = comment.improvementText || '';
                 this.editingCommentType = comment.type || '';
@@ -3433,12 +3443,37 @@ const createCodeView = async () => {
                 this.editingCommentAuthor = '';
                 this.editingCommentTimestamp = '';
                 this.editingCommentContent = '';
+                this.editingCommentContentIsJson = false;
                 this.editingCommentText = '';
                 this.editingImprovementText = '';
                 this.editingCommentType = '';
                 this.editingCommentStatus = 'pending';
                 this.editingRangeInfo = { startLine: 1, endLine: 1 };
                 this.editingSaving = false;
+            },
+            
+            // 切换评论内容的 JSON 模式
+            toggleCommentContentJsonMode() {
+                if (this.editingCommentContentIsJson) {
+                    // 从 JSON 模式切换到文本模式
+                    try {
+                        const parsed = JSON.parse(this.editingCommentContent);
+                        this.editingCommentContent = JSON.stringify(parsed, null, 2);
+                    } catch (e) {
+                        // 如果解析失败，保持原内容
+                        console.warn('[CodeView] JSON 解析失败，保持原内容');
+                    }
+                    this.editingCommentContentIsJson = false;
+                } else {
+                    // 从文本模式切换到 JSON 模式
+                    try {
+                        const parsed = JSON.parse(this.editingCommentContent);
+                        this.editingCommentContent = JSON.stringify(parsed, null, 2);
+                        this.editingCommentContentIsJson = true;
+                    } catch (e) {
+                        alert('当前内容不是有效的 JSON 格式，无法切换到 JSON 模式');
+                    }
+                }
             },
             
             // 保存编辑后的评论详情
@@ -3454,6 +3489,17 @@ const createCodeView = async () => {
                 if (!this.editingCommentContent.trim()) {
                     alert('评论内容不能为空');
                     return;
+                }
+                
+                // 如果标记为 JSON 格式，验证 JSON 有效性
+                let processedContent = this.editingCommentContent.trim();
+                if (this.editingCommentContentIsJson) {
+                    try {
+                        JSON.parse(processedContent);
+                    } catch (e) {
+                        alert('JSON 格式无效，请检查评论内容格式');
+                        return;
+                    }
                 }
                 
                 this.editingSaving = true;
@@ -3473,7 +3519,7 @@ const createCodeView = async () => {
                     const updateData = {
                         key: this.currentCommentDetail.key,
                         author: this.editingCommentAuthor.trim(),
-                        content: this.editingCommentContent.trim(),
+                        content: this.editingCommentContentIsJson ? JSON.parse(processedContent) : processedContent,
                         text: this.editingCommentText.trim(),
                         improvementText: this.editingImprovementText.trim(),
                         type: this.editingCommentType,

@@ -6150,5 +6150,48 @@
     display: none !important;
 }
 
+/* ========== JSON 模式样式 ========== */
+.json-toggle-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
 
+.json-toggle-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-secondary);
+    color: var(--text-primary);
+}
+
+.json-toggle-btn.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.json-toggle-btn i {
+    font-size: 10px;
+}
+
+.comment-content-textarea.json-mode {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    background: var(--bg-code);
+    border-color: var(--accent-primary);
+}
+
+.comment-content-textarea.json-mode:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.1);
+}
 
