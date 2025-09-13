@@ -831,10 +831,14 @@ const createCodeView = async () => {
                 this.isMarkdownPreviewMode = !this.isMarkdownPreviewMode;
                 console.log('[CodeView] 切换Markdown预览模式:', this.isMarkdownPreviewMode);
                 
-                // 预览模式下不需要计算评论标记位置
                 if (this.isMarkdownPreviewMode) {
                     // 切换到预览模式时，立即隐藏评论按钮
                     this.hideSelectionButton();
+                } else {
+                    // 切换到源码模式时，检查当前是否有选择，如果有则显示评论按钮
+                    setTimeout(() => {
+                        this.onSelectionChange();
+                    }, 100);
                 }
             },
             
@@ -2816,8 +2820,8 @@ const createCodeView = async () => {
             // 监听选择变化并定位"评论"按钮
             onSelectionChange() {
                 try {
-                    // 预览模式下禁用评论功能
-                    if (this.shouldShowMarkdownPreview) {
+                    // 预览模式下禁用评论功能，但源码模式下启用
+                    if (this.shouldShowMarkdownPreview && this.isMarkdownPreviewMode) {
                         this.hideSelectionButton();
                         return;
                     }
