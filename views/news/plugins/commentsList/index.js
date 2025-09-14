@@ -146,7 +146,7 @@ const createCommentsList = async () => {
                     // 依据新闻日期拉取评论
                     const today = formatDate ? formatDate(new Date()) : new Date().toISOString().slice(0,10);
                     const dateStr = (this.dateStr && this.dateStr.trim()) || today;
-                    let url = `${window.API_URL}/mongodb/?cname=comments&timestamp=${encodeURIComponent(dateStr)},${encodeURIComponent(dateStr)}`;
+                    let url = `${window.API_URL}/mongodb/?cname=comments&createdTime=${encodeURIComponent(dateStr)},${encodeURIComponent(dateStr)}`;
                     if (this.newsLink) {
                         // 约定：服务端若支持，可通过 newsLink 进行筛选
                         url += `&newsLink=${encodeURIComponent(this.newsLink)}`;
