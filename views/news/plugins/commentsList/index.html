@@ -74,7 +74,7 @@
             </div>
             <pre class="quote-code">{{ comment.text }}</pre>
           </div>
-          <div v-if="comment.content" class="comment-content md-preview-body" v-html="comment.content"></div>
+          <div v-if="comment.content" class="comment-content md-preview-body" v-html="renderMarkdown(comment.content)"></div>
           <div v-if="comment.improvementText" class="comment-improvement">
             <div class="improvement-header">
               <i class="fas fa-magic"></i>

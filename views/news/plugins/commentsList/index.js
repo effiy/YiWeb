@@ -4,6 +4,7 @@
 import { loadCSSFiles } from '/utils/baseView.js';
 import { getData } from '/apis/index.js';
 import { formatDate } from '/utils/date.js';
+import { safeExecute } from '/utils/error.js';
 // 导入日志工具，确保 window.logError 等函数可用
 import '/utils/log.js';
 
@@ -139,6 +140,110 @@ const createCommentsList = async () => {
                 return map[status] || 'fas fa-circle';
             },
             formatTime,
+            // 将Markdown渲染为HTML（与AICR评论面板保持一致的实现）
+            renderMarkdown(text) {
+                return safeExecute(() => {
+                    if (!text) return '';
+                    
+                    // 检查是否为JSON对象
+                    let processedText = text;
+                    let isJsonContent = false;
+                    
+                    if (typeof text === 'object') {
+                        try {
+                            // 如果是对象，格式化为JSON字符串
+                            processedText = JSON.stringify(text, null, 2);
+                            isJsonContent = true;
+                        } catch (e) {
+                            // 如果JSON.stringify失败，使用toString()
+                            processedText = text.toString();
+                        }
+                    } else if (typeof text === 'string') {
+                        // 尝试解析为JSON，如果是有效的JSON则格式化
+                        try {
+                            const parsed = JSON.parse(text);
+                            if (typeof parsed === 'object' && parsed !== null) {
+                                processedText = JSON.stringify(parsed, null, 2);
+                                isJsonContent = true;
+                            }
+                        } catch (e) {
+                            // 不是有效的JSON，保持原样
+                            processedText = text;
+                        }
+                    }
+                    
+                    let html = processedText;
+
+                    const escapeHtml = (s) => s
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                    html = escapeHtml(html);
+
+                    // 如果是JSON内容，包装在代码块中
+                    if (isJsonContent) {
+                        html = `<pre class="md-code json-content"><code>${html}</code></pre>`;
+                    }
+
+                    // 代码块 ```
+                    html = html.replace(/```([\s\S]*?)```/g, (m, code) => {
+                        return `<pre class="md-code"><code>${code}</code></pre>`;
+                    });
+
+                    // 行内代码 `code`
+                    html = html.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
+
+                    // 图片 ![alt](url)
+                    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, url) => {
+                        const safeUrl = /^https?:\/\//i.test(url) ? url : '';
+                        const altText = alt || '';
+                        return safeUrl ? `<img src="${safeUrl}" alt="${altText}" class="md-image"/>` : m;
+                    });
+
+                    // 标题 # ## ### #### ##### ######（行首）- 修复解析顺序
+                    html = html.replace(/^#{1}\s+(.+)$/gm, '<h1>$1<\/h1>')
+                               .replace(/^#{2}\s+(.+)$/gm, '<h2>$1<\/h2>')
+                               .replace(/^#{3}\s+(.+)$/gm, '<h3>$1<\/h3>')
+                               .replace(/^#{4}\s+(.+)$/gm, '<h4>$1<\/h4>')
+                               .replace(/^#{5}\s+(.+)$/gm, '<h5>$1<\/h5>')
+                               .replace(/^#{6}\s+(.+)$/gm, '<h6>$1<\/h6>');
+
+                    // 粗体/斜体（先粗体）
+                    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1<\/strong>');
+                    html = html.replace(/\*([^*]+)\*/g, '<em>$1<\/em>');
+
+                    // 链接 [text](url)
+                    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer noopener">$1<\/a>');
+
+                    // 有序列表
+                    html = html.replace(/^(\d+)\.\s+(.+)$/gm, '<li>$2<\/li>');
+                    html = html.replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ol>${m.replace(/\n/g, '')}<\/ol>`);
+                    // 无序列表
+                    html = html.replace(/^[-*+]\s+(.+)$/gm, '<li>$1<\/li>');
+                    html = html.replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ul>${m.replace(/\n/g, '')}<\/ul>`);
+
+                    // 段落/换行
+                    const blockTags = ['h1','h2','h3','h4','h5','h6','pre','ul','ol','li','blockquote'];
+                    // 优化：先清理多余的换行符，避免多个连续的\n
+                    html = html.replace(/\n{3,}/g, '\n\n'); // 将3个或更多换行符替换为2个
+                    html = html.split(/\n{2,}/).map(block => {
+                        const trimmed = block.trim();
+                        if (!trimmed) return '';
+                        const isBlock = blockTags.some(tag => new RegExp(`^<${tag}[\\s>]`, 'i').test(trimmed));
+                        return isBlock ? trimmed : `<p>${trimmed.replace(/\n/g, '<br/>')}<\/p>`;
+                    }).join('');
+
+                    // 清理空列表
+                    html = html.replace(/<(ul|ol)>\s*<\/\1>/g, '');
+
+                    // 独立图片链接行转图片
+                    html = html.replace(/(?:^|\n)(https?:[^\s]+\.(?:png|jpe?g|gif|webp|svg))(?:\n|$)/gi, (m, url) => {
+                        return `\n<p><img src="${url}" alt="image" class="md-image"\/><\/p>\n`;
+                    });
+
+                    return html;
+                }, 'Markdown渲染(CommentsList)');
+            },
             async loadComments() {
                 try {
                     this.loading = true;
