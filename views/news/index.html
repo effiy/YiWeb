@@ -29,10 +29,14 @@
             :selected-categories="selectedCategories"
             :active-category="activeCategory"
             :sidebar-collapsed="sidebarCollapsed"
+            :original-data="newsData"
+            :available-views="categories"
+            :current-view="activeCategory"
             @search-keydown="handleSearchKeydown"
             @clear-search="handleClearSearch"
             @toggle-category="handleToggleCategory"
             @toggle-sidebar="handleToggleSidebar"
+            @set-current-view="handleToggleCategory"
         ></search-header>
         
         <main class="main-content" role="main">

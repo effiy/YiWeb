@@ -34,28 +34,33 @@ const createSearchHeader = async () => {
                 type: String,
                 default: ''
             },
-            // 新增：当前视图
-            currentView: {
-                type: String,
-                default: 'list'
-            },
-            // 新增：可用视图列表
-            availableViews: {
+            // 分类列表
+            categories: {
                 type: Array,
                 default: () => []
             },
-            // 新增：原始数据源，用于生成搜索建议
+            // 选中的分类
+            selectedCategories: {
+                type: Set,
+                default: () => new Set()
+            },
+            // 当前激活的分类
+            activeCategory: {
+                type: String,
+                default: 'all'
+            },
+            // 原始数据源，用于生成搜索建议
             originalData: {
                 type: Array,
                 default: () => []
             },
-            // 新增：侧边栏折叠状态
+            // 侧边栏折叠状态
             sidebarCollapsed: {
                 type: Boolean,
                 default: false
             }
         },
-        emits: ['update:searchQuery', 'search-keydown', 'clear-search', 'set-current-view', 'filter-change', 'toggle-sidebar'],
+        emits: ['update:searchQuery', 'search-keydown', 'clear-search', 'toggle-category', 'filter-change', 'toggle-sidebar'],
         data() {
             return {
                 // 搜索建议相关
@@ -91,60 +96,36 @@ const createSearchHeader = async () => {
                         });
                     }
 
-                    // 提取描述关键词
-                    if (item.description) {
-                        const descWords = item.description.split(/[\s,，。.、]+/);
-                        descWords.forEach(word => {
+                    // 提取内容关键词
+                    if (item.content) {
+                        const contentWords = item.content.split(/[\s,，。.、]+/);
+                        contentWords.forEach(word => {
                             if (word.toLowerCase().includes(query) && word.length > 1) {
                                 suggestions.add(word);
                             }
                         });
                     }
 
-                    // 提取输入输出关键词
-                    if (item.input) {
-                        const inputWords = item.input.split(/[\s,，。.、]+/);
-                        inputWords.forEach(word => {
-                            if (word.toLowerCase().includes(query) && word.length > 1) {
-                                suggestions.add(word);
+                    // 提取分类关键词
+                    if (item.categories) {
+                        const categories = Array.isArray(item.categories) ? item.categories : [item.categories];
+                        categories.forEach(cat => {
+                            if (cat.toLowerCase().includes(query) && cat.length > 1) {
+                                suggestions.add(cat);
                             }
                         });
                     }
 
-                    if (item.output) {
-                        const outputWords = item.output.split(/[\s,，。.、]+/);
-                        outputWords.forEach(word => {
+                    // 提取链接关键词
+                    if (item.link) {
+                        const linkWords = item.link.split(/[\s,，。.、\/]+/);
+                        linkWords.forEach(word => {
                             if (word.toLowerCase().includes(query) && word.length > 1) {
                                 suggestions.add(word);
-                            }
-                        });
-                    }
-
-                    // 提取功能名称和卡片标题
-                    if (item.featureName && item.featureName.toLowerCase().includes(query)) {
-                        suggestions.add(item.featureName);
-                    }
-
-                    if (item.cardTitle && item.cardTitle.toLowerCase().includes(query)) {
-                        suggestions.add(item.cardTitle);
-                    }
-
-                    // 提取步骤内容关键词
-                    if (item.steps) {
-                        Object.values(item.steps).forEach(step => {
-                            if (typeof step === 'string') {
-                                const stepWords = step.split(/[\s,，。.、]+/);
-                                stepWords.forEach(word => {
-                                    if (word.toLowerCase().includes(query) && word.length > 1) {
-                                        suggestions.add(word);
-                                    }
-                                });
                             }
                         });
                     }
                 });
-
-
 
                 return Array.from(suggestions).slice(0, 8);
             },

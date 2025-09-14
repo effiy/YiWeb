@@ -83,15 +83,15 @@
             <div class="view-switcher-container">
                 <div class="view-switcher">
                     <button 
-                        v-for="view in availableViews" 
-                        :key="view.key"
-                        @click="$emit('set-current-view', view.key)"
-                        :class="['view-btn', { active: currentView === view.key }]"
-                        :title="view.description"
-                        :aria-label="view.description"
+                        v-for="category in categories" 
+                        :key="category.key"
+                        @click="$emit('toggle-category', category.key)"
+                        :class="['view-btn', { active: activeCategory === category.key }]"
+                        :title="category.title"
+                        :aria-label="category.title"
                     >
-                        <i :class="view.icon"></i>
-                        <span>{{ view.name }}</span>
+                        <i :class="category.icon"></i>
+                        <span>{{ category.title }}</span>
                     </button>
                 </div>
             </div>
