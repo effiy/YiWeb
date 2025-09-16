@@ -6195,3 +6195,229 @@
     box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.1);
 }
 
+/* ========== Mermaid 图表样式 ========== */
+.mermaid-diagram-wrapper {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    margin: 16px 0;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s ease;
+}
+
+.mermaid-diagram-wrapper:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.mermaid-diagram-header {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    border-bottom: 1px solid var(--border-primary);
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 36px;
+}
+
+.mermaid-diagram-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mermaid-diagram-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mermaid-diagram-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.mermaid-diagram-copy,
+.mermaid-diagram-fullscreen {
+    background: transparent;
+    border: 1px solid var(--border-secondary);
+    color: var(--text-secondary);
+    padding: 4px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+}
+
+.mermaid-diagram-copy:hover,
+.mermaid-diagram-fullscreen:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    transform: translateY(-1px);
+}
+
+.mermaid-diagram-copy:active,
+.mermaid-diagram-fullscreen:active {
+    transform: translateY(0);
+}
+
+.mermaid-diagram-container {
+    padding: 20px;
+    background: var(--bg-primary);
+    overflow-x: auto;
+    min-height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.mermaid-diagram-container svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Mermaid 错误状态样式 */
+.mermaid-error {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    margin: 10px;
+}
+
+.mermaid-error i {
+    font-size: 24px;
+    color: var(--error-color, #e74c3c);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.mermaid-error p {
+    margin: 8px 0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.mermaid-error details {
+    margin-top: 12px;
+    text-align: left;
+}
+
+.mermaid-error summary {
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--accent-primary);
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border-primary);
+    margin-bottom: 8px;
+}
+
+.mermaid-error summary:hover {
+    color: var(--accent-secondary);
+}
+
+.mermaid-error pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border-primary);
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 11px;
+    line-height: 1.4;
+    overflow-x: auto;
+    margin: 8px 0 0 0;
+}
+
+.mermaid-error code {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    color: var(--text-primary);
+}
+
+/* 评论区域的 Mermaid 样式调整 */
+.comment-mermaid .mermaid-diagram-wrapper {
+    margin: 12px 0;
+    font-size: 12px;
+}
+
+.comment-mermaid .mermaid-diagram-header {
+    padding: 6px 10px;
+    min-height: 32px;
+}
+
+.comment-mermaid .mermaid-diagram-container {
+    padding: 15px;
+}
+
+.comment-mermaid .mermaid-diagram-label {
+    font-size: 10px;
+}
+
+/* 新闻评论区域的 Mermaid 样式调整 */
+.news-mermaid .mermaid-diagram-wrapper {
+    margin: 12px 0;
+    font-size: 12px;
+}
+
+.news-mermaid .mermaid-diagram-header {
+    padding: 6px 10px;
+    min-height: 32px;
+}
+
+.news-mermaid .mermaid-diagram-container {
+    padding: 15px;
+}
+
+.news-mermaid .mermaid-diagram-label {
+    font-size: 10px;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .mermaid-diagram-wrapper {
+        margin: 12px 0;
+    }
+    
+    .mermaid-diagram-header {
+        padding: 6px 10px;
+        min-height: 32px;
+    }
+    
+    .mermaid-diagram-container {
+        padding: 15px 10px;
+    }
+    
+    .mermaid-diagram-label {
+        font-size: 10px;
+    }
+    
+    .mermaid-diagram-copy,
+    .mermaid-diagram-fullscreen {
+        min-width: 20px;
+        height: 20px;
+        padding: 2px 4px;
+        font-size: 9px;
+    }
+}
+
+/* 暗色主题适配 */
+@media (prefers-color-scheme: dark) {
+    .mermaid-diagram-container svg {
+        filter: invert(0.9) hue-rotate(180deg);
+    }
+    
+    .mermaid-error {
+        background: var(--bg-tertiary);
+    }
+}
+
+

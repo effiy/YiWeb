@@ -185,9 +185,17 @@ const createCommentsList = async () => {
                         html = `<pre class="md-code json-content"><code>${html}</code></pre>`;
                     }
 
-                    // 代码块 ```
-                    html = html.replace(/```([\s\S]*?)```/g, (m, code) => {
-                        return `<pre class="md-code"><code>${code}</code></pre>`;
+                    // 代码块 ``` - 支持语言标识和 Mermaid
+                    html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, (m, lang, code) => {
+                        const language = lang || 'text';
+                        const codeId = `news-code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                        
+                        // 如果是 mermaid 图表，创建图表容器
+                        if (language.toLowerCase() === 'mermaid') {
+                            return this.createMermaidDiagram(code.trim(), codeId);
+                        }
+                        
+                        return `<pre class="md-code"><code class="language-${language}">${code}</code></pre>`;
                     });
 
                     // 行内代码 `code`
@@ -243,6 +251,182 @@ const createCommentsList = async () => {
 
                     return html;
                 }, 'Markdown渲染(CommentsList)');
+            },
+            
+            // 创建 Mermaid 图表
+            createMermaidDiagram(code, diagramId) {
+                if (typeof mermaid === 'undefined') {
+                    console.warn('[CommentsList] Mermaid.js 未加载，显示原始代码');
+                    return `<pre class="md-code"><code class="language-mermaid">${this.escapeHtml(code)}</code></pre>`;
+                }
+                
+                const container = `
+                    <div class="mermaid-diagram-wrapper news-mermaid">
+                        <div class="mermaid-diagram-header">
+                            <div class="mermaid-diagram-info">
+                                <span class="mermaid-diagram-label">MERMAID 图表</span>
+                            </div>
+                            <div class="mermaid-diagram-actions">
+                                <button class="mermaid-diagram-copy" onclick="copyMermaidCode('${diagramId}')" title="复制图表代码">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mermaid-diagram-container" id="${diagramId}" data-mermaid-code="${this.escapeHtml(code)}">
+                            ${code}
+                        </div>
+                    </div>
+                `;
+                
+                // 延迟渲染图表
+                this.$nextTick(() => {
+                    this.renderMermaidDiagram(diagramId, code);
+                });
+                
+                return container;
+            },
+            
+            // 渲染单个 Mermaid 图表
+            renderMermaidDiagram(diagramId, code) {
+                if (typeof mermaid === 'undefined') {
+                    return;
+                }
+                
+                const diagram = document.getElementById(diagramId);
+                if (!diagram || diagram.hasAttribute('data-mermaid-rendered')) {
+                    return;
+                }
+                
+                // 解码和清理代码
+                let cleanCode = code;
+                if (typeof code === 'string') {
+                    // 解码 HTML 实体
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = code;
+                    cleanCode = tempDiv.textContent || tempDiv.innerText || '';
+                    
+                    // 手动处理一些常见的 HTML 实体
+                    cleanCode = cleanCode
+                        .replace(/&amp;/g, '&')
+                        .replace(/&lt;/g, '<')
+                        .replace(/&gt;/g, '>')
+                        .replace(/&quot;/g, '"')
+                        .replace(/&#39;/g, "'")
+                        .replace(/&nbsp;/g, ' ');
+                    
+                    // 清理代码格式
+                    cleanCode = cleanCode
+                        .trim()
+                        .replace(/^\s+/gm, '')
+                        .replace(/\s+$/gm, '')
+                        .replace(/\n{3,}/g, '\n\n');
+                }
+                
+                console.log('[CommentsList] 准备渲染 Mermaid 代码:', {
+                    original: code,
+                    cleaned: cleanCode,
+                    diagramId: diagramId
+                });
+                
+                if (!cleanCode.trim()) {
+                    console.warn('[CommentsList] Mermaid 代码为空，跳过渲染');
+                    diagram.innerHTML = `
+                        <div class="mermaid-error">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>图表代码为空</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                try {
+                    // 配置 Mermaid（如果还没有配置）
+                    if (!window.mermaidInitialized) {
+                        mermaid.initialize({
+                            startOnLoad: false,
+                            theme: 'default',
+                            securityLevel: 'loose',
+                            fontFamily: '"Segoe UI", "Microsoft YaHei", sans-serif',
+                            fontSize: 12,
+                            flowchart: {
+                                useMaxWidth: true,
+                                htmlLabels: true,
+                                curve: 'basis'
+                            },
+                            sequence: {
+                                diagramMarginX: 50,
+                                diagramMarginY: 10,
+                                actorMargin: 50,
+                                width: 150,
+                                height: 65,
+                                boxMargin: 10,
+                                boxTextMargin: 5,
+                                noteMargin: 10,
+                                messageMargin: 35,
+                                mirrorActors: true,
+                                bottomMarginAdj: 1,
+                                useMaxWidth: true,
+                                rightAngles: false,
+                                showSequenceNumbers: false
+                            }
+                        });
+                        window.mermaidInitialized = true;
+                    }
+                    
+                    mermaid.render(`mermaid-news-svg-${Date.now()}`, cleanCode)
+                        .then(({ svg }) => {
+                            diagram.innerHTML = svg;
+                            diagram.setAttribute('data-mermaid-rendered', 'true');
+                            console.log('[CommentsList] Mermaid 图表渲染成功:', diagramId);
+                        })
+                        .catch(error => {
+                            console.error('[CommentsList] Mermaid 渲染失败:', error);
+                            diagram.innerHTML = `
+                                <div class="mermaid-error">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <p>图表渲染失败</p>
+                                    <details>
+                                        <summary>查看错误详情</summary>
+                                        <pre>${this.escapeHtml(error.message || error.toString())}</pre>
+                                    </details>
+                                    <details>
+                                        <summary>查看原始代码</summary>
+                                        <pre><code>${this.escapeHtml(cleanCode)}</code></pre>
+                                    </details>
+                                    <details>
+                                        <summary>查看原始输入</summary>
+                                        <pre><code>${this.escapeHtml(code)}</code></pre>
+                                    </details>
+                                </div>
+                            `;
+                        });
+                } catch (error) {
+                    console.error('[CommentsList] Mermaid 渲染异常:', error);
+                    diagram.innerHTML = `
+                        <div class="mermaid-error">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>图表渲染异常</p>
+                            <details>
+                                <summary>查看错误详情</summary>
+                                <pre>${this.escapeHtml(error.message || error.toString())}</pre>
+                            </details>
+                            <details>
+                                <summary>查看原始代码</summary>
+                                <pre><code>${this.escapeHtml(cleanCode)}</code></pre>
+                            </details>
+                        </div>
+                    `;
+                }
+            },
+            
+            // HTML 转义方法
+            escapeHtml(str) {
+                return str
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
             },
             async loadComments() {
                 try {
@@ -305,6 +489,7 @@ const createCommentsList = async () => {
         console.error('[CommentsList] 组件初始化失败:', e);
     }
 })();
+
 
 
 

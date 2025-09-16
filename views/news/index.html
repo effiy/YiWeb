@@ -19,6 +19,10 @@
 
     <!-- Vue3 CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    <!-- Mermaid.js for diagram rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
 </head>
 <body>
     <div id="app">
@@ -97,6 +101,9 @@
 
     <script type="module" src="/config.js"></script>
 
+    <!-- Mermaid 工具函数 -->
+    <script src="/utils/mermaid.js"></script>
+    <script src="/utils/mermaidDebug.js"></script>
     <!-- 主功能脚本 -->
     <script type="module" src="/plugins/searchHeader/index.js"></script>
     <script type="module" src="/plugins/calendar/index.js"></script>
@@ -108,5 +115,6 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 
