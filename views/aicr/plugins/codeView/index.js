@@ -1669,6 +1669,10 @@ const createCodeView = async () => {
                             }
                         });
                     });
+                    
+                    // 重新初始化 Mermaid 图表（修复切换模式后丢失的问题）
+                    this.initializeMermaidDiagrams();
+                    
                     } catch (error) {
                         console.error('[CodeView] addMarkdownInteractions 执行出错:', error);
                     }
@@ -2433,17 +2437,30 @@ const createCodeView = async () => {
                     
                     // 渲染所有 Mermaid 图表
                     const diagrams = document.querySelectorAll('.mermaid-diagram-container');
+                    console.log(`[CodeView] 找到 ${diagrams.length} 个 Mermaid 图表容器`);
+                    
                     diagrams.forEach((diagram, index) => {
-                        if (!diagram.hasAttribute('data-mermaid-rendered')) {
+                        // 检查是否已经渲染过，如果是切换模式，需要重新渲染
+                        const isAlreadyRendered = diagram.hasAttribute('data-mermaid-rendered');
+                        const hasContent = diagram.querySelector('svg');
+                        
+                        // 如果已经渲染过且有内容，跳过
+                        if (isAlreadyRendered && hasContent) {
+                            console.log(`[CodeView] 图表 ${diagram.id} 已渲染且有内容，跳过`);
+                            return;
+                        }
+                        
+                        if (!isAlreadyRendered || !hasContent) {
                             const rawCode = diagram.getAttribute('data-mermaid-code');
                             if (rawCode) {
                                 // 解码代码
                                 const code = this.unescapeHtml(rawCode);
                                 
-                                console.log('[CodeView] 准备渲染 Mermaid 代码:', {
+                                console.log(`[CodeView] 准备渲染图表 ${diagram.id}:`, {
                                     raw: rawCode,
                                     decoded: code,
-                                    diagramId: diagram.id
+                                    alreadyRendered: isAlreadyRendered,
+                                    hasContent: hasContent
                                 });
                                 
                                 // 验证代码是否为空
@@ -2467,6 +2484,9 @@ const createCodeView = async () => {
                                     if (!isValidMermaid) {
                                         console.warn('[CodeView] 可能不是有效的 Mermaid 语法:', firstLine);
                                     }
+                                    
+                                    // 显示加载指示器
+                                    diagram.innerHTML = '<div class="mermaid-loading" style="padding: 20px; text-align: center; color: #666;"><i class="fas fa-spinner fa-spin"></i> 正在渲染图表...</div>';
                                     
                                     mermaid.render(`mermaid-svg-${Date.now()}-${index}`, code)
                                         .then(({ svg }) => {
@@ -4947,6 +4967,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 
