@@ -314,12 +314,12 @@ const createCommentsList = async () => {
                         .replace(/&#39;/g, "'")
                         .replace(/&nbsp;/g, ' ');
                     
-                    // 清理代码格式
+                    // 清理代码格式：保留必要的换行，只移除多余的空白
                     cleanCode = cleanCode
                         .trim()
-                        .replace(/^\s+/gm, '')
-                        .replace(/\s+$/gm, '')
-                        .replace(/\n{3,}/g, '\n\n');
+                        .replace(/[ \t]+$/gm, '') // 只移除每行末尾的空格和制表符，保留换行
+                        .replace(/\n{3,}/g, '\n\n') // 将多个连续换行替换为最多两个
+                        .replace(/^[ \t]+/gm, ''); // 移除每行开头的空格和制表符，但保留换行结构
                 }
                 
                 console.log('[CommentsList] 准备渲染 Mermaid 代码:', {

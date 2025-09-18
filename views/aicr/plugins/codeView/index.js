@@ -2338,12 +2338,12 @@ const createCodeView = async () => {
                     // 解码 HTML 实体
                     mermaidCode = this.unescapeHtml(mermaidCode);
                     
-                    // 清理代码：移除多余的空白和换行
+                    // 清理代码：保留必要的换行，只移除多余的空白
                     mermaidCode = mermaidCode
                         .trim()
-                        .replace(/^\s+/gm, '') // 移除每行开头的空白
-                        .replace(/\s+$/gm, '') // 移除每行末尾的空白
-                        .replace(/\n{3,}/g, '\n\n'); // 将多个连续换行替换为最多两个
+                        .replace(/[ \t]+$/gm, '') // 只移除每行末尾的空格和制表符，保留换行
+                        .replace(/\n{3,}/g, '\n\n') // 将多个连续换行替换为最多两个
+                        .replace(/^[ \t]+/gm, ''); // 移除每行开头的空格和制表符，但保留换行结构
                     
                     if (!mermaidCode) {
                         console.warn('[CodeView] Mermaid 代码为空，跳过');
@@ -2495,7 +2495,7 @@ const createCodeView = async () => {
                                             console.log('[CodeView] Mermaid 图表渲染成功:', diagram.id);
                                         })
                                         .catch(error => {
-                                            console.error('[CodeView] Mermaid 渲染失败:', error);
+                                            console.warn('[CodeView] Mermaid 渲染失败:', error);
                                             diagram.innerHTML = `
                                                 <div class="mermaid-error">
                                                     <i class="fas fa-exclamation-triangle"></i>
