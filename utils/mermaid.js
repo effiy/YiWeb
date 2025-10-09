@@ -105,51 +105,119 @@ window.showMermaidFullscreen = function(diagramId) {
         console.warn(`[Mermaid] 图表 ${diagramId} 没有 SVG 内容`);
         return;
     }
+
+    // 获取图表代码
+    const code = diagram.getAttribute('data-mermaid-code') || '';
     
-    // 创建全屏模态框
+    // 使用统一的全屏查看器
+    if (window.fullscreenViewer) {
+        window.fullscreenViewer.open({
+            title: `Mermaid 图表 - ${diagramId}`,
+            content: svg.outerHTML,
+            type: 'svg',
+            actions: [
+                {
+                    label: '复制代码',
+                    icon: 'fas fa-copy',
+                    type: 'default',
+                    action: 'copy-code'
+                },
+                {
+                    label: '下载SVG',
+                    icon: 'fas fa-download',
+                    type: 'default',
+                    action: 'download-svg'
+                }
+            ],
+            onAction: (action) => {
+                switch (action) {
+                    case 'copy-code':
+                        if (code) {
+                            copyMermaidCode(diagramId);
+                        } else {
+                            console.warn('[Mermaid] 没有找到图表代码');
+                        }
+                        break;
+                    case 'download-svg':
+                        downloadMermaidSVG(diagramId, svg);
+                        break;
+                }
+            }
+        });
+    } else {
+        console.warn('[Mermaid] 全屏查看器未初始化，使用降级方案');
+        // 降级到原始实现
+        showMermaidFullscreenLegacy(diagramId);
+    }
+};
+
+// 下载 Mermaid SVG
+function downloadMermaidSVG(diagramId, svgElement) {
+    try {
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        const blob = new Blob([svgData], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${diagramId}.svg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        URL.revokeObjectURL(url);
+        console.log(`[Mermaid] SVG 已下载: ${diagramId}.svg`);
+    } catch (error) {
+        console.error('[Mermaid] SVG 下载失败:', error);
+    }
+}
+
+// 降级实现（保留向后兼容）
+function showMermaidFullscreenLegacy(diagramId) {
+    const diagram = document.getElementById(diagramId);
+    if (!diagram) return;
+    
+    const svg = diagram.querySelector('svg');
+    if (!svg) return;
+    
+    // 创建简单的全屏模态框
     const modal = document.createElement('div');
-    modal.className = 'mermaid-fullscreen-modal';
+    modal.className = 'mermaid-fullscreen-modal-legacy';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        cursor: pointer;
+    `;
+    
     modal.innerHTML = `
-        <div class="mermaid-fullscreen-backdrop" onclick="closeMermaidFullscreen()"></div>
-        <div class="mermaid-fullscreen-content">
-            <div class="mermaid-fullscreen-header">
-                <h3>Mermaid 图表 - 全屏查看</h3>
-                <button class="mermaid-fullscreen-close" onclick="closeMermaidFullscreen()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="mermaid-fullscreen-body">
-                ${svg.outerHTML}
-            </div>
+        <div style="
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 95vw;
+            max-height: 95vh;
+            overflow: auto;
+        ">
+            ${svg.outerHTML}
         </div>
     `;
     
-    document.body.appendChild(modal);
-    document.body.style.overflow = 'hidden';
-    
-    // 添加 ESC 键关闭功能
-    const handleEscKey = (e) => {
-        if (e.key === 'Escape') {
-            closeMermaidFullscreen();
-        }
-    };
-    document.addEventListener('keydown', handleEscKey);
-    modal.setAttribute('data-esc-handler', 'true');
-};
-
-// 关闭全屏模态框
-window.closeMermaidFullscreen = function() {
-    const modal = document.querySelector('.mermaid-fullscreen-modal');
-    if (modal) {
+    modal.onclick = () => {
         document.body.removeChild(modal);
         document.body.style.overflow = '';
-        
-        // 移除 ESC 键监听
-        if (modal.hasAttribute('data-esc-handler')) {
-            document.removeEventListener('keydown', handleEscKey);
-        }
-    }
-};
+    };
+    
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+}
 
 // 降级复制方法
 function fallbackCopyTextToClipboard(text) {
@@ -356,111 +424,7 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
-// 添加全屏模态框样式
-const style = document.createElement('style');
-style.textContent = `
-.mermaid-fullscreen-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mermaid-fullscreen-backdrop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(4px);
-}
-
-.mermaid-fullscreen-content {
-    position: relative;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    max-width: 95vw;
-    max-height: 95vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.mermaid-fullscreen-header {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-bottom: 1px solid #dee2e6;
-    padding: 16px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.mermaid-fullscreen-header h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-.mermaid-fullscreen-close {
-    background: transparent;
-    border: none;
-    font-size: 18px;
-    color: #6c757d;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-}
-
-.mermaid-fullscreen-close:hover {
-    background: #e9ecef;
-    color: #495057;
-}
-
-.mermaid-fullscreen-body {
-    padding: 30px;
-    overflow: auto;
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.mermaid-fullscreen-body svg {
-    max-width: 100%;
-    max-height: 100%;
-    display: block;
-}
-
-@media (max-width: 768px) {
-    .mermaid-fullscreen-content {
-        max-width: 98vw;
-        max-height: 98vh;
-        border-radius: 8px;
-    }
-    
-    .mermaid-fullscreen-header {
-        padding: 12px 16px;
-    }
-    
-    .mermaid-fullscreen-header h3 {
-        font-size: 14px;
-    }
-    
-    .mermaid-fullscreen-body {
-        padding: 20px 16px;
-    }
-}
-`;
-document.head.appendChild(style);
+// 样式已迁移到 fullscreenViewer.js 中统一管理
 
 console.log('[Mermaid Utils] 工具函数已加载');
 
