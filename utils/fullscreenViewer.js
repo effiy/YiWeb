@@ -166,24 +166,137 @@ class FullscreenViewer {
             }
 
             .fullscreen-viewer-close {
-                background: transparent;
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
                 border: none;
-                font-size: 20px;
-                color: var(--text-secondary, #6b7280);
+                font-size: 16px;
+                color: white;
                 cursor: pointer;
-                padding: 8px;
-                border-radius: 8px;
-                transition: all 0.2s ease;
+                padding: 0;
+                border-radius: 50%;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                width: 36px;
-                height: 36px;
+                width: 40px;
+                height: 40px;
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            }
+
+            .fullscreen-viewer-close::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+                opacity: 0;
+                transition: opacity 0.3s ease;
+                border-radius: 50%;
             }
 
             .fullscreen-viewer-close:hover {
-                background: var(--bg-tertiary, #f3f4f6);
-                color: var(--text-primary, #1f2937);
+                transform: scale(1.1) rotate(90deg);
+                box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+            }
+
+            .fullscreen-viewer-close:hover::before {
+                opacity: 1;
+            }
+
+            .fullscreen-viewer-close:active {
+                transform: scale(0.95) rotate(90deg);
+                box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+            }
+
+            .fullscreen-viewer-close i {
+                position: relative;
+                z-index: 1;
+                transition: all 0.3s ease;
+            }
+
+            .fullscreen-viewer-close:hover i {
+                transform: scale(1.1);
+            }
+
+            /* 关闭按钮的脉冲动画 */
+            .fullscreen-viewer-close.pulse {
+                animation: closeButtonPulse 2s infinite;
+            }
+
+            @keyframes closeButtonPulse {
+                0% {
+                    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+                }
+                50% {
+                    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3), 0 0 0 8px rgba(239, 68, 68, 0.1);
+                }
+                100% {
+                    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+                }
+            }
+
+            /* 关闭按钮的呼吸效果 */
+            .fullscreen-viewer-close.breathing {
+                animation: closeButtonBreathing 3s ease-in-out infinite;
+            }
+
+            @keyframes closeButtonBreathing {
+                0%, 100% {
+                    transform: scale(1);
+                }
+                50% {
+                    transform: scale(1.05);
+                }
+            }
+
+            /* 关闭按钮的变体样式 */
+            .fullscreen-viewer-close.variant-1 {
+                background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            }
+
+            .fullscreen-viewer-close.variant-1::before {
+                background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            }
+
+            .fullscreen-viewer-close.variant-2 {
+                background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+                box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+            }
+
+            .fullscreen-viewer-close.variant-2::before {
+                background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+            }
+
+            .fullscreen-viewer-close.variant-3 {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            }
+
+            .fullscreen-viewer-close.variant-3::before {
+                background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            }
+
+            /* 关闭按钮的加载状态 */
+            .fullscreen-viewer-close.loading {
+                pointer-events: none;
+                opacity: 0.7;
+            }
+
+            .fullscreen-viewer-close.loading i {
+                animation: closeButtonSpin 1s linear infinite;
+            }
+
+            @keyframes closeButtonSpin {
+                from {
+                    transform: rotate(0deg);
+                }
+                to {
+                    transform: rotate(360deg);
+                }
             }
 
             .fullscreen-viewer-body {
@@ -296,12 +409,18 @@ class FullscreenViewer {
                 }
 
                 .fullscreen-viewer-close {
-                    color: var(--text-secondary-dark, #9ca3af);
+                    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                    color: white;
+                    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+                }
+
+                .fullscreen-viewer-close::before {
+                    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
                 }
 
                 .fullscreen-viewer-close:hover {
-                    background: var(--bg-tertiary-dark, #1f2937);
-                    color: var(--text-primary-dark, #f9fafb);
+                    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+                    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
                 }
             }
 
@@ -398,7 +517,7 @@ class FullscreenViewer {
                     </h3>
                     <div class="fullscreen-viewer-actions">
                         ${actionsHtml}
-                        <button class="fullscreen-viewer-close" data-action="close" aria-label="关闭">
+                        <button class="fullscreen-viewer-close" data-action="close" aria-label="关闭全屏" title="关闭 (ESC)">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -478,12 +597,49 @@ class FullscreenViewer {
             }
         };
 
+        // 关闭按钮特殊处理
+        const closeButtonHandler = (e) => {
+            if (e.target.closest('.fullscreen-viewer-close')) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 添加点击反馈动画
+                const closeBtn = e.target.closest('.fullscreen-viewer-close');
+                closeBtn.classList.add('pulse');
+                
+                // 延迟关闭，让用户看到反馈
+                setTimeout(() => {
+                    this.close();
+                    if (onClose) onClose();
+                }, 150);
+            }
+        };
+
+        // 键盘事件处理
+        const keyHandler = (e) => {
+            if (e.key === 'Escape' && this.isOpen) {
+                e.preventDefault();
+                const closeBtn = modal.querySelector('.fullscreen-viewer-close');
+                if (closeBtn) {
+                    closeBtn.classList.add('pulse');
+                    setTimeout(() => {
+                        this.close();
+                        if (onClose) onClose();
+                    }, 150);
+                }
+            }
+        };
+
         modal.addEventListener('click', closeHandler);
         modal.addEventListener('click', actionHandler);
+        modal.addEventListener('click', closeButtonHandler);
+        modal.addEventListener('keydown', keyHandler);
 
         // 存储事件处理器以便后续移除
         this.eventHandlers.set('modal-close', closeHandler);
         this.eventHandlers.set('modal-action', actionHandler);
+        this.eventHandlers.set('modal-close-button', closeButtonHandler);
+        this.eventHandlers.set('modal-keyboard', keyHandler);
     }
 
     /**
@@ -498,6 +654,18 @@ class FullscreenViewer {
 
             // 聚焦到模态框
             this.currentModal.focus();
+
+            // 为关闭按钮添加初始动画效果
+            setTimeout(() => {
+                const closeBtn = this.currentModal.querySelector('.fullscreen-viewer-close');
+                if (closeBtn) {
+                    closeBtn.classList.add('breathing');
+                    // 3秒后移除呼吸效果
+                    setTimeout(() => {
+                        closeBtn.classList.remove('breathing');
+                    }, 3000);
+                }
+            }, 500);
         }
     }
 
@@ -552,6 +720,45 @@ class FullscreenViewer {
      */
     updateConfig(newConfig) {
         this.config = { ...this.config, ...newConfig };
+    }
+
+    /**
+     * 设置关闭按钮样式变体
+     * @param {string} variant - 变体名称 ('default', 'variant-1', 'variant-2', 'variant-3')
+     */
+    setCloseButtonVariant(variant = 'default') {
+        if (this.currentModal) {
+            const closeBtn = this.currentModal.querySelector('.fullscreen-viewer-close');
+            if (closeBtn) {
+                // 移除所有变体类
+                closeBtn.classList.remove('variant-1', 'variant-2', 'variant-3');
+                
+                // 添加新的变体类
+                if (variant !== 'default') {
+                    closeBtn.classList.add(variant);
+                }
+            }
+        }
+    }
+
+    /**
+     * 为关闭按钮添加特殊效果
+     * @param {string} effect - 效果名称 ('pulse', 'breathing', 'loading')
+     * @param {number} duration - 持续时间（毫秒）
+     */
+    addCloseButtonEffect(effect, duration = 3000) {
+        if (this.currentModal) {
+            const closeBtn = this.currentModal.querySelector('.fullscreen-viewer-close');
+            if (closeBtn) {
+                closeBtn.classList.add(effect);
+                
+                if (duration > 0) {
+                    setTimeout(() => {
+                        closeBtn.classList.remove(effect);
+                    }, duration);
+                }
+            }
+        }
     }
 }
 
