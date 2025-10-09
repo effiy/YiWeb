@@ -167,10 +167,57 @@ window.decodeMermaidCode = function(code) {
     return cleaned;
 };
 
-// 渲染调试器
+// 渲染调试器 - 已集成到 MermaidRenderer
+// 保留此函数以向后兼容，但建议使用 MermaidRenderer
 window.debugMermaidRender = function(code, containerId) {
     debugLog('MermaidDebugger', '开始调试渲染', { code, containerId });
     
+    // 如果新的渲染管理器可用，使用它
+    if (typeof window.mermaidRenderer !== 'undefined') {
+        const container = document.getElementById(containerId);
+        if (!container) {
+            const error = `容器 ${containerId} 不存在`;
+            console.error('[MermaidDebugger]', error);
+            return { valid: false, error };
+        }
+        
+        const renderStart = performance.now();
+        
+        return window.mermaidRenderer.renderDiagram(containerId, code, {
+            showLoading: false,
+            onSuccess: (svg) => {
+                const renderEnd = performance.now();
+                debugLog('MermaidDebugger', '渲染成功', {
+                    renderTime: `${(renderEnd - renderStart).toFixed(2)}ms`,
+                    svgLength: svg.length
+                });
+                
+                return { 
+                    valid: true, 
+                    rendered: true, 
+                    renderTime: renderEnd - renderStart,
+                    svg: svg.substring(0, 200) + '...'
+                };
+            },
+            onError: (error) => {
+                const renderEnd = performance.now();
+                console.error('[MermaidDebugger] 渲染失败:', error);
+                debugLog('MermaidDebugger', '渲染失败', {
+                    error: error.message,
+                    renderTime: `${(renderEnd - renderStart).toFixed(2)}ms`,
+                    code: code
+                });
+                
+                return { 
+                    valid: false, 
+                    error: error.message,
+                    renderTime: renderEnd - renderStart
+                };
+            }
+        });
+    }
+    
+    // 降级到原始实现
     // 验证代码
     const validation = window.validateMermaidCode(code);
     debugLog('MermaidDebugger', '代码验证结果', validation);
@@ -361,4 +408,5 @@ console.log('- window.validateMermaidCode(code)');
 console.log('- window.decodeMermaidCode(code)');
 console.log('- window.debugMermaidRender(code, containerId)');
 console.log('- window.diagnoseMermaidSystem()');
+
 

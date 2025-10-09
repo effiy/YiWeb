@@ -3,7 +3,8 @@
  * 提供全局的 Mermaid 图表支持功能
  */
 
-// 全局 Mermaid 配置
+// 全局 Mermaid 配置 - 已迁移到 MermaidRenderer
+// 保留此配置以向后兼容，但建议使用 MermaidRenderer
 window.MERMAID_CONFIG = {
     startOnLoad: false,
     theme: 'default',
@@ -235,8 +236,18 @@ function showMermaidMessage(message, type = 'info') {
     }, 3000);
 }
 
-// 初始化 Mermaid 的通用方法
+// 初始化 Mermaid 的通用方法 - 已迁移到 MermaidRenderer
+// 保留此函数以向后兼容，但建议使用 MermaidRenderer
 window.initMermaid = function(config = {}) {
+    // 如果新的渲染管理器可用，使用它
+    if (typeof window.mermaidRenderer !== 'undefined') {
+        if (config) {
+            window.mermaidRenderer.updateConfig(config);
+        }
+        return window.mermaidRenderer.initialize();
+    }
+    
+    // 降级到原始实现
     if (typeof mermaid === 'undefined') {
         console.warn('[Mermaid] Mermaid.js 未加载');
         return false;
@@ -254,8 +265,18 @@ window.initMermaid = function(config = {}) {
     }
 };
 
-// 渲染单个 Mermaid 图表的通用方法
+// 渲染单个 Mermaid 图表的通用方法 - 已迁移到 MermaidRenderer
+// 保留此函数以向后兼容，但建议使用 MermaidRenderer
 window.renderMermaidDiagram = function(diagramId, code, callback) {
+    // 如果新的渲染管理器可用，使用它
+    if (typeof window.mermaidRenderer !== 'undefined') {
+        return window.mermaidRenderer.renderDiagram(diagramId, code, {
+            onSuccess: callback ? (svg) => callback(null, svg) : null,
+            onError: callback ? (error) => callback(error, null) : null
+        });
+    }
+    
+    // 降级到原始实现
     if (typeof mermaid === 'undefined') {
         console.warn('[Mermaid] Mermaid.js 未加载');
         return;
@@ -442,4 +463,5 @@ style.textContent = `
 document.head.appendChild(style);
 
 console.log('[Mermaid Utils] 工具函数已加载');
+
 

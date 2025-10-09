@@ -2319,8 +2319,8 @@ const createCodeView = async () => {
             
             // 处理 Mermaid 图表
             processMermaidDiagrams(html) {
-                if (typeof mermaid === 'undefined') {
-                    console.warn('[CodeView] Mermaid.js 未加载，跳过图表渲染');
+                if (typeof window.mermaidRenderer === 'undefined') {
+                    console.warn('[CodeView] MermaidRenderer 未加载，跳过图表渲染');
                     return html;
                 }
                 
@@ -2354,27 +2354,13 @@ const createCodeView = async () => {
                     
                     console.log('[CodeView] 处理 Mermaid 代码:', mermaidCode);
                     
-                    // 创建 Mermaid 图表容器
-                    const mermaidContainer = `
-                        <div class="mermaid-diagram-wrapper" data-source-line="${this.getCurrentSourceLine()}">
-                            <div class="mermaid-diagram-header">
-                                <div class="mermaid-diagram-info">
-                                    <span class="mermaid-diagram-label">MERMAID 图表</span>
-                                </div>
-                                <div class="mermaid-diagram-actions">
-                                    <button class="mermaid-diagram-copy" onclick="copyMermaidCode('${diagramId}')" title="复制图表代码">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                    <button class="mermaid-diagram-fullscreen" onclick="showMermaidFullscreen('${diagramId}')" title="全屏查看">
-                                        <i class="fas fa-expand"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="mermaid-diagram-container" id="${diagramId}" data-mermaid-code="${this.escapeHtml(mermaidCode)}">
-                                ${mermaidCode}
-                            </div>
-                        </div>
-                    `;
+                    // 使用统一的渲染管理器创建图表容器
+                    const mermaidContainer = window.mermaidRenderer.createDiagramContainer(diagramId, mermaidCode, {
+                        showHeader: true,
+                        showActions: true,
+                        headerLabel: 'MERMAID 图表',
+                        sourceLine: this.getCurrentSourceLine()
+                    });
                     
                     // 替换原来的代码块
                     processedHtml = processedHtml.replace(match[0], mermaidContainer);
@@ -2391,152 +2377,18 @@ const createCodeView = async () => {
             },
             
             // 初始化 Mermaid 图表
-            initializeMermaidDiagrams() {
-                if (typeof mermaid === 'undefined') {
+            async initializeMermaidDiagrams() {
+                if (typeof window.mermaidRenderer === 'undefined') {
+                    console.warn('[CodeView] MermaidRenderer 未加载');
                     return;
                 }
                 
                 try {
-                    // 配置 Mermaid
-                    mermaid.initialize({
-                        startOnLoad: false,
-                        theme: 'default',
-                        securityLevel: 'loose',
-                        fontFamily: '"Segoe UI", "Microsoft YaHei", sans-serif',
-                        fontSize: 14,
-                        flowchart: {
-                            useMaxWidth: true,
-                            htmlLabels: true,
-                            curve: 'basis'
-                        },
-                        sequence: {
-                            diagramMarginX: 50,
-                            diagramMarginY: 10,
-                            actorMargin: 50,
-                            width: 150,
-                            height: 65,
-                            boxMargin: 10,
-                            boxTextMargin: 5,
-                            noteMargin: 10,
-                            messageMargin: 35,
-                            mirrorActors: true,
-                            bottomMarginAdj: 1,
-                            useMaxWidth: true,
-                            rightAngles: false,
-                            showSequenceNumbers: false
-                        },
-                        gantt: {
-                            titleTopMargin: 25,
-                            barHeight: 20,
-                            fontSize: 11,
-                            fontFamily: '"Segoe UI", "Microsoft YaHei", sans-serif',
-                            sectionFontSize: 11,
-                            numberSectionStyles: 4
-                        }
-                    });
-                    
-                    // 渲染所有 Mermaid 图表
-                    const diagrams = document.querySelectorAll('.mermaid-diagram-container');
-                    console.log(`[CodeView] 找到 ${diagrams.length} 个 Mermaid 图表容器`);
-                    
-                    diagrams.forEach((diagram, index) => {
-                        // 检查是否已经渲染过，如果是切换模式，需要重新渲染
-                        const isAlreadyRendered = diagram.hasAttribute('data-mermaid-rendered');
-                        const hasContent = diagram.querySelector('svg');
-                        
-                        // 如果已经渲染过且有内容，跳过
-                        if (isAlreadyRendered && hasContent) {
-                            console.log(`[CodeView] 图表 ${diagram.id} 已渲染且有内容，跳过`);
-                            return;
-                        }
-                        
-                        if (!isAlreadyRendered || !hasContent) {
-                            const rawCode = diagram.getAttribute('data-mermaid-code');
-                            if (rawCode) {
-                                // 解码代码
-                                const code = this.unescapeHtml(rawCode);
-                                
-                                console.log(`[CodeView] 准备渲染图表 ${diagram.id}:`, {
-                                    raw: rawCode,
-                                    decoded: code,
-                                    alreadyRendered: isAlreadyRendered,
-                                    hasContent: hasContent
-                                });
-                                
-                                // 验证代码是否为空
-                                if (!code.trim()) {
-                                    console.warn('[CodeView] Mermaid 代码为空，跳过渲染');
-                                    diagram.innerHTML = `
-                                        <div class="mermaid-error">
-                                            <i class="fas fa-exclamation-triangle"></i>
-                                            <p>图表代码为空</p>
-                                        </div>
-                                    `;
-                                    return;
-                                }
-                                
-                                try {
-                                    // 验证 Mermaid 代码的基本格式
-                                    const firstLine = code.split('\n')[0].trim();
-                                    const validTypes = ['graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram', 'gantt', 'pie', 'gitgraph', 'erDiagram', 'journey'];
-                                    const isValidMermaid = validTypes.some(type => firstLine.startsWith(type));
-                                    
-                                    if (!isValidMermaid) {
-                                        console.warn('[CodeView] 可能不是有效的 Mermaid 语法:', firstLine);
-                                    }
-                                    
-                                    // 显示加载指示器
-                                    diagram.innerHTML = '<div class="mermaid-loading" style="padding: 20px; text-align: center; color: #666;"><i class="fas fa-spinner fa-spin"></i> 正在渲染图表...</div>';
-                                    
-                                    mermaid.render(`mermaid-svg-${Date.now()}-${index}`, code)
-                                        .then(({ svg }) => {
-                                            diagram.innerHTML = svg;
-                                            diagram.setAttribute('data-mermaid-rendered', 'true');
-                                            console.log('[CodeView] Mermaid 图表渲染成功:', diagram.id);
-                                        })
-                                        .catch(error => {
-                                            console.warn('[CodeView] Mermaid 渲染失败:', error);
-                                            diagram.innerHTML = `
-                                                <div class="mermaid-error">
-                                                    <i class="fas fa-exclamation-triangle"></i>
-                                                    <p>图表渲染失败</p>
-                                                    <details>
-                                                        <summary>查看错误详情</summary>
-                                                        <pre>${this.escapeHtml(error.message || error.toString())}</pre>
-                                                    </details>
-                                                    <details>
-                                                        <summary>查看原始代码</summary>
-                                                        <pre><code>${this.escapeHtml(code)}</code></pre>
-                                                    </details>
-                                                    <details>
-                                                        <summary>查看解码前代码</summary>
-                                                        <pre><code>${this.escapeHtml(rawCode)}</code></pre>
-                                                    </details>
-                                                </div>
-                                            `;
-                                        });
-                                } catch (error) {
-                                    console.error('[CodeView] Mermaid 渲染异常:', error);
-                                    diagram.innerHTML = `
-                                        <div class="mermaid-error">
-                                            <i class="fas fa-exclamation-triangle"></i>
-                                            <p>图表渲染异常</p>
-                                            <details>
-                                                <summary>查看错误详情</summary>
-                                                <pre>${this.escapeHtml(error.message || error.toString())}</pre>
-                                            </details>
-                                            <details>
-                                                <summary>查看原始代码</summary>
-                                                <pre><code>${this.escapeHtml(code)}</code></pre>
-                                            </details>
-                                        </div>
-                                    `;
-                                }
-                            }
-                        }
-                    });
+                    // 使用统一的渲染管理器
+                    await window.mermaidRenderer.renderDiagrams('.mermaid-diagram-container');
+                    console.log('[CodeView] Mermaid 图表渲染完成');
                 } catch (error) {
-                    console.error('[CodeView] Mermaid 初始化失败:', error);
+                    console.error('[CodeView] Mermaid 渲染异常:', error);
                 }
             },
             
@@ -4967,6 +4819,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 
