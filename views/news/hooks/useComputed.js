@@ -6,7 +6,7 @@
  * @param {Object} store - 状态存储对象（包含newsData, searchQuery, currentDate等）
  * @returns {Object} 计算属性集合
  */
-import { getCategoriesConfig, categorizeNewsItem } from './store.js';
+import { getCategoriesConfig, categorizeNewsItem, batchCategorizeNewsItems, getClassificationPerformanceReport } from './store.js';
 import { 
     getRelativeDateText, 
     isToday, 
@@ -587,6 +587,13 @@ export const useComputed = (store) => {
         }),
 
         /**
+         * 分类性能统计
+         */
+        classificationPerformance: computed(() => {
+            return getClassificationPerformanceReport();
+        }),
+
+        /**
          * 综合统计报告
          */
         comprehensiveStats: computed(() => {
@@ -595,13 +602,15 @@ export const useComputed = (store) => {
             const distribution = categoryDistribution.value;
             const content = contentQuality.value;
             const time = timeDistribution.value;
+            const performance = classificationPerformance.value;
             
             return {
                 overview: {
                     totalNews: newsData.value.length,
                     totalCategories: Object.keys(categorized).filter(k => categorized[k].count > 0).length,
                     averageConfidence: Object.values(quality).reduce((acc, cat) => acc + cat.confidence, 0) / Object.keys(quality).length || 0,
-                    contentQuality: content.qualityScore
+                    contentQuality: content.qualityScore,
+                    classificationAccuracy: performance.overall.accuracy
                 },
                 topCategories: distribution.slice(0, 5),
                 qualityBreakdown: {
@@ -618,6 +627,12 @@ export const useComputed = (store) => {
                     withExcerpt: content.withExcerpt,
                     withImages: content.withImages,
                     averageLength: content.averageLength
+                },
+                performanceInsights: {
+                    accuracy: performance.overall.accuracy,
+                    recentAccuracy: performance.recentAccuracy,
+                    totalFeedback: performance.overall.totalFeedback,
+                    correctPredictions: performance.overall.correctPredictions
                 }
             };
         })

@@ -75,18 +75,29 @@ const createEnhancedStatistics = async () => {
                     peakDays: []
                 })
             },
-            contentQuality: {
-                type: Object,
-                default: () => ({
-                    total: 0,
-                    withContent: 0,
-                    withExcerpt: 0,
-                    withImages: 0,
-                    withLinks: 0,
-                    averageLength: 0,
-                    qualityScore: 0
-                })
-            },
+        contentQuality: {
+            type: Object,
+            default: () => ({
+                total: 0,
+                withContent: 0,
+                withExcerpt: 0,
+                withImages: 0,
+                withLinks: 0,
+                averageLength: 0,
+                qualityScore: 0
+            })
+        },
+        classificationPerformance: {
+            type: Object,
+            default: () => ({
+                overall: {
+                    accuracy: 0,
+                    totalFeedback: 0,
+                    correctPredictions: 0
+                },
+                recentAccuracy: 0
+            })
+        },
             visible: {
                 type: Boolean,
                 default: false
