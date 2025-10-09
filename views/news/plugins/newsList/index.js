@@ -2,10 +2,10 @@
 // 作者：liangliang
 
 // 导入共享的分类工具函数
-import { getCategoriesConfig, categorizeNewsItem } from '../../hooks/store.js';
 import { getTimeAgo } from '/utils/date.js';
 import { safeExecute, createError, ErrorTypes } from '/utils/error.js';
 import { loadCSSFiles } from '/utils/baseView.js';
+import { extractDomainCategory } from '/utils/domain.js';
 
 // 自动加载相关的CSS文件
 loadCSSFiles([
@@ -98,28 +98,22 @@ const createNewsList = async () => {
                 }, '新闻高亮检查');
             },
             
-            // 获取分类标签 - 使用 useComputed 中的分类逻辑
-            getCategoryTag(item) {
+
+            // 获取域名分类信息
+            getDomainCategory(item) {
                 return safeExecute(() => {
-                    // 优先显示 item.categories 中的标签
-                    if (item.categories && item.categories.length > 0) {
-                        // 如果 categories 是数组，返回数组
-                        if (Array.isArray(item.categories)) {
-                            return item.categories;
-                        }
-                        // 如果 categories 是字符串，返回包含该字符串的数组
-                        if (typeof item.categories === 'string') {
-                            return [item.categories];
-                        }
-                    }
-                    
-                    // 使用 useComputed 中的分类逻辑
-                    const categoryKey = categorizeNewsItem(item);
-                    const categoriesConfig = getCategoriesConfig();
-                    const category = categoriesConfig.find(cat => cat.key === categoryKey);
-                    
-                    return category ? [category.title] : ['其他'];
-                }, '分类标签获取');
+                    if (!item.link) return null;
+                    return extractDomainCategory(item);
+                }, '域名分类获取');
+            },
+
+            // 获取域名显示名称
+            getDomainDisplayName(item) {
+                return safeExecute(() => {
+                    if (!item.link) return '';
+                    const domainCategory = extractDomainCategory(item);
+                    return domainCategory.title;
+                }, '域名显示名称获取');
             },
             
             // 获取时间差显示

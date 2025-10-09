@@ -14,6 +14,7 @@ import {
     getTimeAgo, 
     generateCalendarDays 
 } from '/utils/date.js';
+import { extractDomainCategory } from '/utils/domain.js';
 
 export const useComputed = (store) => {
     const { computed } = Vue;
@@ -359,6 +360,61 @@ export const useComputed = (store) => {
             });
             
             return stats;
+        }),
+
+        /**
+         * 域名统计
+         */
+        domainStats: computed(() => {
+            const stats = {};
+            
+            newsData.value.forEach(item => {
+                if (item.link) {
+                    const domainCategory = extractDomainCategory(item);
+                    const key = domainCategory.key;
+                    if (!stats[key]) {
+                        stats[key] = {
+                            count: 0,
+                            title: domainCategory.title,
+                            icon: domainCategory.icon,
+                            color: domainCategory.color,
+                            domains: new Set()
+                        };
+                    }
+                    stats[key].count++;
+                    
+                    // 记录具体的域名
+                    const domain = item.link.match(/https?:\/\/([^\/]+)/);
+                    if (domain) {
+                        stats[key].domains.add(domain[1]);
+                    }
+                }
+            });
+            
+            // 转换Set为Array
+            Object.keys(stats).forEach(key => {
+                stats[key].domains = Array.from(stats[key].domains);
+            });
+            
+            return stats;
+        }),
+
+        /**
+         * 热门域名
+         */
+        popularDomains: computed(() => {
+            const stats = domainStats.value;
+            return Object.entries(stats)
+                .sort(([,a], [,b]) => b.count - a.count)
+                .slice(0, 10)
+                .map(([key, data]) => ({
+                    key,
+                    title: data.title,
+                    count: data.count,
+                    icon: data.icon,
+                    color: data.color,
+                    domains: data.domains
+                }));
         })
     };
 };

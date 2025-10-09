@@ -6,6 +6,7 @@
 import { getData } from '/apis/index.js';
 import { formatDate, isFutureDate } from '/utils/date.js';
 import { safeExecuteAsync, createError, ErrorTypes } from '/utils/error.js';
+import { extractDomainCategory } from '/utils/domain.js';
 
 // 兼容Vue2和Vue3的ref获取方式
 const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ value: val });
@@ -320,7 +321,7 @@ export const createStore = () => {
 };
 
 /**
- * 获取分类配置 - 基于featureCards.json的功能模块
+ * 获取分类配置 - 基于featureCards.json的功能模块和域名分类
  * @returns {Array} 分类配置数组
  */
 export function getCategoriesConfig() {
@@ -329,16 +330,33 @@ export function getCategoriesConfig() {
         { key: 'data-analysis', icon: 'fas fa-chart-line', title: '数据分析', badge: '数据分析' },
         { key: 'code-assistant', icon: 'fas fa-code', title: '代码助手', badge: '代码编写' },
         { key: 'ai-art', icon: 'fas fa-palette', title: 'AI艺术', badge: '生图创造' },
-        { key: 'other', icon: 'fas fa-ellipsis-h', title: '其他' }
+        { key: 'github', icon: 'fab fa-github', title: 'GitHub', badge: 'GitHub' },
+        { key: 'stackoverflow', icon: 'fab fa-stack-overflow', title: 'Stack Overflow', badge: 'Stack Overflow' },
+        { key: 'tech-blog', icon: 'fas fa-blog', title: '技术博客', badge: '技术博客' },
+        { key: 'chinese-tech', icon: 'fas fa-globe-asia', title: '中文技术社区', badge: '中文社区' },
+        { key: 'community', icon: 'fas fa-users', title: '技术社区', badge: '社区' },
+        { key: 'documentation', icon: 'fas fa-book', title: '技术文档', badge: '文档' },
+        { key: 'coding-challenge', icon: 'fas fa-code', title: '编程挑战', badge: '编程' },
+        { key: 'video', icon: 'fab fa-youtube', title: '视频教程', badge: '视频' },
+        { key: 'other', icon: 'fas fa-ellipsis-h', title: '其他', badge: '其他' }
     ];
 }
 
 /**
- * 分类新闻项 - 基于featureCards.json的功能模块
+ * 分类新闻项 - 基于featureCards.json的功能模块和域名分类
  * @param {Object} item - 新闻项
  * @returns {string} 分类键
  */
 export function categorizeNewsItem(item) {
+    // 优先使用域名分类
+    if (item.link) {
+        const domainCategory = extractDomainCategory(item);
+        if (domainCategory.key !== 'other') {
+            return domainCategory.key;
+        }
+    }
+    
+    // 如果没有链接或域名分类为other，则使用原有的category分类
     if (!item.category) return 'other';
     
     // 基于featureCards.json的功能模块分类

@@ -66,11 +66,13 @@
                 <div class="news-meta">
                     <div class="news-category-tags">
                         <span 
-                            v-for="tag in getCategoryTag(item)" 
-                            :key="tag"
-                            class="news-category-tag"
+                            v-if="getDomainCategory(item)" 
+                            class="news-domain-tag"
+                            :style="{ backgroundColor: getDomainCategory(item).color }"
+                            :title="getDomainDisplayName(item)"
                         >
-                            {{ tag }}
+                            <i :class="getDomainCategory(item).icon"></i>
+                            {{ getDomainDisplayName(item) }}
                         </span>
                     </div>
                     <time class="news-time" :datetime="item.isoDate">
@@ -156,11 +158,13 @@
                     <div class="news-meta">
                         <div class="news-category-tags">
                             <span 
-                                v-for="tag in getCategoryTag(item)" 
-                                :key="tag"
-                                class="news-category-tag"
+                                v-if="getDomainCategory(item)" 
+                                class="news-domain-tag"
+                                :style="{ backgroundColor: getDomainCategory(item).color }"
+                                :title="getDomainDisplayName(item)"
                             >
-                                {{ tag }}
+                                <i :class="getDomainCategory(item).icon"></i>
+                                {{ getDomainDisplayName(item) }}
                             </span>
                         </div>
                         <time class="news-time" :datetime="item.isoDate">
