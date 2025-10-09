@@ -10,40 +10,43 @@ class MermaidRenderer {
             startOnLoad: false,
             theme: 'dark',
             themeVariables: {
-                primaryColor: '#4f46e5',
+                // 默认使用现代深色主题
+                primaryColor: '#6366f1',
                 primaryTextColor: '#f8fafc',
-                primaryBorderColor: '#6366f1',
-                lineColor: '#94a3b8',
+                primaryBorderColor: '#8b5cf6',
+                lineColor: '#64748b',
                 secondaryColor: '#1e293b',
                 tertiaryColor: '#334155',
-                background: '#0f172a',
-                mainBkg: '#0f172a',
-                secondBkg: '#1e293b',
-                tertiaryBkg: '#334155',
+                background: '#0f0f23',
+                mainBkg: '#0f0f23',
+                secondBkg: '#1a1a2e',
+                tertiaryBkg: '#16213e',
                 nodeBkg: '#1e293b',
-                nodeTextColor: '#f8fafc',
+                nodeTextColor: '#f1f5f9',
                 clusterBkg: '#334155',
                 clusterTextColor: '#cbd5e1',
                 edgeLabelBackground: '#1e293b',
-                edgeLabelColor: '#f8fafc',
+                edgeLabelColor: '#f1f5f9',
                 titleColor: '#f8fafc',
                 sectionBkgColor: '#1e293b',
                 altSectionBkgColor: '#334155',
                 gridColor: '#475569',
-                textColor: '#f8fafc',
-                taskBkgColor: '#4f46e5',
+                textColor: '#f1f5f9',
+                taskBkgColor: '#6366f1',
                 taskTextColor: '#ffffff',
                 taskTextLightColor: '#ffffff',
-                taskTextOutsideColor: '#f8fafc',
+                taskTextOutsideColor: '#f1f5f9',
                 taskTextClickableColor: '#06b6d4',
-                activeTaskBkgColor: '#6366f1',
-                activeTaskBorderColor: '#4f46e5',
-                gridColor: '#475569',
-                section0: '#4f46e5',
-                section1: '#7c3aed',
-                section2: '#a855f7',
+                activeTaskBkgColor: '#8b5cf6',
+                activeTaskBorderColor: '#6366f1',
+                section0: '#6366f1',
+                section1: '#8b5cf6',
+                section2: '#ec4899',
                 section3: '#06b6d4',
-                section4: '#10b981'
+                section4: '#10b981',
+                section5: '#f59e0b',
+                section6: '#ef4444',
+                section7: '#84cc16'
             },
             securityLevel: 'loose',
             fontFamily: '"Segoe UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif',
@@ -677,85 +680,102 @@ class MermaidRenderer {
     }
 
     /**
-     * 设置主题（支持浅色/深色模式）
+     * 设置主题（支持主题管理器）
      */
-    setTheme(theme = 'dark') {
+    setTheme(theme = 'modern-dark') {
+        // 如果传入了主题管理器中的主题键，使用主题管理器
+        if (window.mermaidThemeManager && window.mermaidThemeManager.getThemeConfig(theme)) {
+            const themeConfig = window.mermaidThemeManager.getThemeConfig(theme);
+            this.updateConfig({
+                theme: themeConfig.theme,
+                themeVariables: themeConfig.themeVariables
+            });
+            return;
+        }
+
+        // 兼容旧的简单主题设置
         if (theme === 'dark') {
             this.updateConfig({
                 theme: 'dark',
                 themeVariables: {
-                    primaryColor: '#4f46e5',
+                    primaryColor: '#6366f1',
                     primaryTextColor: '#f8fafc',
-                    primaryBorderColor: '#6366f1',
-                    lineColor: '#94a3b8',
+                    primaryBorderColor: '#8b5cf6',
+                    lineColor: '#64748b',
                     secondaryColor: '#1e293b',
                     tertiaryColor: '#334155',
-                    background: '#0f172a',
-                    mainBkg: '#0f172a',
-                    secondBkg: '#1e293b',
-                    tertiaryBkg: '#334155',
+                    background: '#0f0f23',
+                    mainBkg: '#0f0f23',
+                    secondBkg: '#1a1a2e',
+                    tertiaryBkg: '#16213e',
                     nodeBkg: '#1e293b',
-                    nodeTextColor: '#f8fafc',
+                    nodeTextColor: '#f1f5f9',
                     clusterBkg: '#334155',
                     clusterTextColor: '#cbd5e1',
                     edgeLabelBackground: '#1e293b',
-                    edgeLabelColor: '#f8fafc',
+                    edgeLabelColor: '#f1f5f9',
                     titleColor: '#f8fafc',
                     sectionBkgColor: '#1e293b',
                     altSectionBkgColor: '#334155',
                     gridColor: '#475569',
-                    textColor: '#f8fafc',
-                    taskBkgColor: '#4f46e5',
+                    textColor: '#f1f5f9',
+                    taskBkgColor: '#6366f1',
                     taskTextColor: '#ffffff',
                     taskTextLightColor: '#ffffff',
-                    taskTextOutsideColor: '#f8fafc',
+                    taskTextOutsideColor: '#f1f5f9',
                     taskTextClickableColor: '#06b6d4',
-                    activeTaskBkgColor: '#6366f1',
-                    activeTaskBorderColor: '#4f46e5',
-                    section0: '#4f46e5',
-                    section1: '#7c3aed',
-                    section2: '#a855f7',
+                    activeTaskBkgColor: '#8b5cf6',
+                    activeTaskBorderColor: '#6366f1',
+                    section0: '#6366f1',
+                    section1: '#8b5cf6',
+                    section2: '#ec4899',
                     section3: '#06b6d4',
-                    section4: '#10b981'
+                    section4: '#10b981',
+                    section5: '#f59e0b',
+                    section6: '#ef4444',
+                    section7: '#84cc16'
                 }
             });
         } else {
             this.updateConfig({
                 theme: 'base',
                 themeVariables: {
-                    primaryColor: '#4f46e5',
-                    primaryTextColor: '#0f172a',
-                    primaryBorderColor: '#6366f1',
-                    lineColor: '#64748b',
-                    secondaryColor: '#f1f5f9',
-                    tertiaryColor: '#ffffff',
+                    primaryColor: '#3b82f6',
+                    primaryTextColor: '#1e293b',
+                    primaryBorderColor: '#2563eb',
+                    lineColor: '#94a3b8',
+                    secondaryColor: '#f8fafc',
+                    tertiaryColor: '#e2e8f0',
                     background: '#ffffff',
                     mainBkg: '#ffffff',
                     secondBkg: '#f8fafc',
                     tertiaryBkg: '#f1f5f9',
-                    nodeBkg: '#ffffff',
-                    nodeTextColor: '#0f172a',
-                    clusterBkg: '#f8fafc',
-                    clusterTextColor: '#1e293b',
-                    edgeLabelBackground: '#ffffff',
-                    edgeLabelColor: '#0f172a',
+                    nodeBkg: '#f8fafc',
+                    nodeTextColor: '#1e293b',
+                    clusterBkg: '#e2e8f0',
+                    clusterTextColor: '#475569',
+                    edgeLabelBackground: '#f8fafc',
+                    edgeLabelColor: '#1e293b',
                     titleColor: '#0f172a',
                     sectionBkgColor: '#f8fafc',
-                    altSectionBkgColor: '#f1f5f9',
-                    gridColor: '#e2e8f0',
-                    textColor: '#0f172a',
-                    taskBkgColor: '#4f46e5',
+                    altSectionBkgColor: '#e2e8f0',
+                    gridColor: '#cbd5e1',
+                    textColor: '#1e293b',
+                    taskBkgColor: '#3b82f6',
                     taskTextColor: '#ffffff',
                     taskTextLightColor: '#ffffff',
-                    taskTextOutsideColor: '#0f172a',
-                    taskTextClickableColor: '#06b6d4',
-                    activeTaskBkgColor: '#6366f1',
-                    activeTaskBorderColor: '#4f46e5',
-                    section0: '#4f46e5',
-                    section1: '#7c3aed',
-                    section2: '#a855f7',
+                    taskTextOutsideColor: '#1e293b',
+                    taskTextClickableColor: '#0284c7',
+                    activeTaskBkgColor: '#2563eb',
+                    activeTaskBorderColor: '#3b82f6',
+                    section0: '#3b82f6',
+                    section1: '#8b5cf6',
+                    section2: '#ec4899',
                     section3: '#06b6d4',
-                    section4: '#10b981'
+                    section4: '#10b981',
+                    section5: '#f59e0b',
+                    section6: '#ef4444',
+                    section7: '#84cc16'
                 }
             });
         }
@@ -919,13 +939,19 @@ window.getMermaidStats = function() {
 };
 
 // 全局主题切换函数
-window.setMermaidTheme = function(theme = 'light') {
+window.setMermaidTheme = function(theme = 'modern-light') {
     if (typeof window.mermaidRenderer === 'undefined') {
         console.error('[MermaidRenderer] 渲染管理器未加载');
         return;
     }
     
     window.mermaidRenderer.setTheme(theme);
+    
+    // 如果主题管理器可用，也更新主题管理器
+    if (window.mermaidThemeManager) {
+        window.mermaidThemeManager.saveTheme(theme);
+    }
+    
     console.log(`[MermaidRenderer] 主题已切换为: ${theme}`);
 };
 
