@@ -7,7 +7,6 @@
 // 保留此配置以向后兼容，但建议使用 MermaidRenderer
 window.MERMAID_CONFIG = {
     startOnLoad: false,
-    theme: 'default',
     securityLevel: 'loose',
     fontFamily: '"Segoe UI", "Microsoft YaHei", sans-serif',
     fontSize: 14,
