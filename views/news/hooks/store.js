@@ -321,29 +321,59 @@ export const createStore = () => {
 };
 
 /**
- * 获取分类配置 - 基于featureCards.json的功能模块和域名分类
+ * 获取分类配置 - 基于域名分类的完整配置
  * @returns {Array} 分类配置数组
  */
 export function getCategoriesConfig() {
     // 注意：此配置用于新闻内部分类与渲染，不影响顶部（全部/新闻/评论）分类
     return [
-        { key: 'data-analysis', icon: 'fas fa-chart-line', title: '数据分析', badge: '数据分析' },
-        { key: 'code-assistant', icon: 'fas fa-code', title: '代码助手', badge: '代码编写' },
-        { key: 'ai-art', icon: 'fas fa-palette', title: 'AI艺术', badge: '生图创造' },
-        { key: 'github', icon: 'fab fa-github', title: 'GitHub', badge: 'GitHub' },
-        { key: 'stackoverflow', icon: 'fab fa-stack-overflow', title: 'Stack Overflow', badge: 'Stack Overflow' },
-        { key: 'tech-blog', icon: 'fas fa-blog', title: '技术博客', badge: '技术博客' },
-        { key: 'chinese-tech', icon: 'fas fa-globe-asia', title: '中文技术社区', badge: '中文社区' },
-        { key: 'community', icon: 'fas fa-users', title: '技术社区', badge: '社区' },
-        { key: 'documentation', icon: 'fas fa-book', title: '技术文档', badge: '文档' },
-        { key: 'coding-challenge', icon: 'fas fa-code', title: '编程挑战', badge: '编程' },
-        { key: 'video', icon: 'fab fa-youtube', title: '视频教程', badge: '视频' },
-        { key: 'other', icon: 'fas fa-ellipsis-h', title: '其他', badge: '其他' }
+        // 代码托管平台
+        { key: 'github', icon: 'fab fa-github', title: 'GitHub', badge: 'GitHub', color: '#24292e' },
+        { key: 'code-hosting', icon: 'fab fa-git-alt', title: '代码托管', badge: '代码托管', color: '#f39c12' },
+        
+        // 技术问答社区
+        { key: 'stackoverflow', icon: 'fab fa-stack-overflow', title: 'Stack Overflow', badge: 'Stack Overflow', color: '#f48024' },
+        
+        // 技术博客平台
+        { key: 'tech-blog', icon: 'fas fa-blog', title: '技术博客', badge: '技术博客', color: '#00ab6c' },
+        
+        // 视频平台
+        { key: 'video', icon: 'fab fa-youtube', title: '视频教程', badge: '视频', color: '#ff0000' },
+        
+        // 中文技术社区
+        { key: 'chinese-tech', icon: 'fas fa-globe-asia', title: '中文技术社区', badge: '中文社区', color: '#1890ff' },
+        
+        // 技术社区和论坛
+        { key: 'community', icon: 'fas fa-users', title: '技术社区', badge: '社区', color: '#ff6b35' },
+        
+        // 技术文档和教程
+        { key: 'documentation', icon: 'fas fa-book', title: '技术文档', badge: '文档', color: '#4caf50' },
+        
+        // 编程挑战和练习
+        { key: 'coding-challenge', icon: 'fas fa-code', title: '编程挑战', badge: '编程', color: '#9c27b0' },
+        
+        // 云服务和平台
+        { key: 'cloud-platform', icon: 'fas fa-cloud', title: '云服务平台', badge: '云服务', color: '#3498db' },
+        
+        // 设计工具
+        { key: 'design-tools', icon: 'fas fa-palette', title: '设计工具', badge: '设计', color: '#e74c3c' },
+        
+        // 新闻和资讯
+        { key: 'tech-news', icon: 'fas fa-newspaper', title: '科技新闻', badge: '新闻', color: '#2c3e50' },
+        
+        // 社交媒体
+        { key: 'social-media', icon: 'fas fa-share-alt', title: '社交媒体', badge: '社交', color: '#8e44ad' },
+        
+        // 其他
+        { key: 'other', icon: 'fas fa-external-link-alt', title: '其他', badge: '其他', color: '#6c757d' },
+        
+        // 未知来源
+        { key: 'unknown', icon: 'fas fa-question-circle', title: '未知来源', badge: '未知', color: '#6c757d' }
     ];
 }
 
 /**
- * 分类新闻项 - 基于featureCards.json的功能模块和域名分类
+ * 分类新闻项 - 完全基于域名分类
  * @param {Object} item - 新闻项
  * @returns {string} 分类键
  */
@@ -351,32 +381,41 @@ export function categorizeNewsItem(item) {
     // 优先使用域名分类
     if (item.link) {
         const domainCategory = extractDomainCategory(item);
-        if (domainCategory.key !== 'other') {
-            return domainCategory.key;
+        return domainCategory.key;
+    }
+    
+    // 如果没有链接，尝试从标题或内容中推断分类
+    if (item.title || item.content) {
+        const text = (item.title + ' ' + (item.content || '')).toLowerCase();
+        
+        // 基于关键词的备用分类逻辑
+        if (text.includes('github') || text.includes('git') || text.includes('repository')) {
+            return 'github';
+        } else if (text.includes('stackoverflow') || text.includes('stack exchange') || text.includes('问答')) {
+            return 'stackoverflow';
+        } else if (text.includes('youtube') || text.includes('视频') || text.includes('教程')) {
+            return 'video';
+        } else if (text.includes('leetcode') || text.includes('算法') || text.includes('编程题')) {
+            return 'coding-challenge';
+        } else if (text.includes('medium') || text.includes('blog') || text.includes('博客')) {
+            return 'tech-blog';
+        } else if (text.includes('知乎') || text.includes('掘金') || text.includes('csdn')) {
+            return 'chinese-tech';
+        } else if (text.includes('reddit') || text.includes('hacker news') || text.includes('社区')) {
+            return 'community';
+        } else if (text.includes('documentation') || text.includes('文档') || text.includes('tutorial')) {
+            return 'documentation';
+        } else if (text.includes('aws') || text.includes('azure') || text.includes('cloud') || text.includes('云')) {
+            return 'cloud-platform';
+        } else if (text.includes('design') || text.includes('figma') || text.includes('设计')) {
+            return 'design-tools';
+        } else if (text.includes('news') || text.includes('新闻') || text.includes('techcrunch')) {
+            return 'tech-news';
+        } else if (text.includes('twitter') || text.includes('linkedin') || text.includes('social')) {
+            return 'social-media';
         }
     }
     
-    // 如果没有链接或域名分类为other，则使用原有的category分类
-    if (!item.category) return 'other';
-    
-    // 基于featureCards.json的功能模块分类
-    const categoryMap = {
-        '数据分析': 'data-analysis',
-        '智能数据分析': 'data-analysis',
-        '数据': 'data-analysis',
-        '统计': 'data-analysis',
-        '预测': 'data-analysis',
-        '代码': 'code-assistant',
-        '智能代码助手': 'code-assistant',
-        '编程': 'code-assistant',
-        '开发': 'code-assistant',
-        '脚本': 'code-assistant',
-        'AI艺术': 'ai-art',
-        '艺术创作': 'ai-art',
-        '生图': 'ai-art',
-        '图像': 'ai-art',
-        '创意': 'ai-art'
-    };
-    
-    return categoryMap[item.category] || 'other';
+    // 如果都没有匹配，返回其他分类
+    return 'other';
 } 
