@@ -321,101 +321,486 @@ export const createStore = () => {
 };
 
 /**
+ * 分类配置管理器 - 集中管理所有分类配置
+ */
+class CategoryConfigManager {
+    constructor() {
+        this.categories = new Map();
+        this.initializeDefaultCategories();
+    }
+
+    /**
+     * 初始化默认分类配置
+     */
+    initializeDefaultCategories() {
+        const defaultCategories = [
+            // 代码托管平台
+            { 
+                key: 'github', 
+                icon: 'fab fa-github', 
+                title: 'GitHub', 
+                badge: 'GitHub', 
+                color: '#24292e',
+                priority: 1,
+                description: 'GitHub相关的内容和项目'
+            },
+            { 
+                key: 'code-hosting', 
+                icon: 'fab fa-git-alt', 
+                title: '代码托管', 
+                badge: '代码托管', 
+                color: '#f39c12',
+                priority: 2,
+                description: '其他代码托管平台'
+            },
+            
+            // 技术问答社区
+            { 
+                key: 'stackoverflow', 
+                icon: 'fab fa-stack-overflow', 
+                title: 'Stack Overflow', 
+                badge: 'Stack Overflow', 
+                color: '#f48024',
+                priority: 1,
+                description: '技术问答和解决方案'
+            },
+            
+            // 技术博客平台
+            { 
+                key: 'tech-blog', 
+                icon: 'fas fa-blog', 
+                title: '技术博客', 
+                badge: '技术博客', 
+                color: '#00ab6c',
+                priority: 2,
+                description: '技术文章和教程'
+            },
+            
+            // 视频平台
+            { 
+                key: 'video', 
+                icon: 'fab fa-youtube', 
+                title: '视频教程', 
+                badge: '视频', 
+                color: '#ff0000',
+                priority: 2,
+                description: '视频教程和演示'
+            },
+            
+            // 中文技术社区
+            { 
+                key: 'chinese-tech', 
+                icon: 'fas fa-globe-asia', 
+                title: '中文技术社区', 
+                badge: '中文社区', 
+                color: '#1890ff',
+                priority: 1,
+                description: '中文技术社区和平台'
+            },
+            
+            // 技术社区和论坛
+            { 
+                key: 'community', 
+                icon: 'fas fa-users', 
+                title: '技术社区', 
+                badge: '社区', 
+                color: '#ff6b35',
+                priority: 2,
+                description: '技术讨论和社区'
+            },
+            
+            // 技术文档和教程
+            { 
+                key: 'documentation', 
+                icon: 'fas fa-book', 
+                title: '技术文档', 
+                badge: '文档', 
+                color: '#4caf50',
+                priority: 2,
+                description: '官方文档和教程'
+            },
+            
+            // 编程挑战和练习
+            { 
+                key: 'coding-challenge', 
+                icon: 'fas fa-code', 
+                title: '编程挑战', 
+                badge: '编程', 
+                color: '#9c27b0',
+                priority: 2,
+                description: '编程练习和算法题'
+            },
+            
+            // 云服务和平台
+            { 
+                key: 'cloud-platform', 
+                icon: 'fas fa-cloud', 
+                title: '云服务平台', 
+                badge: '云服务', 
+                color: '#3498db',
+                priority: 2,
+                description: '云计算和云服务'
+            },
+            
+            // 设计工具
+            { 
+                key: 'design-tools', 
+                icon: 'fas fa-palette', 
+                title: '设计工具', 
+                badge: '设计', 
+                color: '#e74c3c',
+                priority: 3,
+                description: '设计和创意工具'
+            },
+            
+            // 新闻和资讯
+            { 
+                key: 'tech-news', 
+                icon: 'fas fa-newspaper', 
+                title: '科技新闻', 
+                badge: '新闻', 
+                color: '#2c3e50',
+                priority: 1,
+                description: '科技新闻和资讯'
+            },
+            
+            // 社交媒体
+            { 
+                key: 'social-media', 
+                icon: 'fas fa-share-alt', 
+                title: '社交媒体', 
+                badge: '社交', 
+                color: '#8e44ad',
+                priority: 3,
+                description: '社交媒体平台'
+            },
+            
+            // 其他
+            { 
+                key: 'other', 
+                icon: 'fas fa-external-link-alt', 
+                title: '其他', 
+                badge: '其他', 
+                color: '#6c757d',
+                priority: 4,
+                description: '其他类型的内容'
+            },
+            
+            // 未知来源
+            { 
+                key: 'unknown', 
+                icon: 'fas fa-question-circle', 
+                title: '未知来源', 
+                badge: '未知', 
+                color: '#6c757d',
+                priority: 5,
+                description: '无法识别的来源'
+            }
+        ];
+
+        defaultCategories.forEach(category => {
+            this.categories.set(category.key, category);
+        });
+    }
+
+    /**
+     * 获取所有分类配置
+     * @returns {Array} 分类配置数组
+     */
+    getAllCategories() {
+        return Array.from(this.categories.values()).sort((a, b) => a.priority - b.priority);
+    }
+
+    /**
+     * 根据键获取分类配置
+     * @param {string} key - 分类键
+     * @returns {Object|null} 分类配置
+     */
+    getCategory(key) {
+        return this.categories.get(key) || null;
+    }
+
+    /**
+     * 添加或更新分类配置
+     * @param {Object} category - 分类配置
+     */
+    setCategory(category) {
+        if (category && category.key) {
+            this.categories.set(category.key, {
+                ...category,
+                priority: category.priority || 5
+            });
+        }
+    }
+
+    /**
+     * 删除分类配置
+     * @param {string} key - 分类键
+     */
+    removeCategory(key) {
+        this.categories.delete(key);
+    }
+
+    /**
+     * 获取分类统计信息
+     * @returns {Object} 统计信息
+     */
+    getStats() {
+        const categories = Array.from(this.categories.values());
+        return {
+            total: categories.length,
+            byPriority: categories.reduce((acc, cat) => {
+                acc[cat.priority] = (acc[cat.priority] || 0) + 1;
+                return acc;
+            }, {}),
+            colors: categories.map(cat => cat.color),
+            icons: categories.map(cat => cat.icon)
+        };
+    }
+}
+
+// 创建全局分类配置管理器实例
+const categoryConfigManager = new CategoryConfigManager();
+
+/**
  * 获取分类配置 - 基于域名分类的完整配置
  * @returns {Array} 分类配置数组
  */
 export function getCategoriesConfig() {
-    // 注意：此配置用于新闻内部分类与渲染，不影响顶部（全部/新闻/评论）分类
-    return [
-        // 代码托管平台
-        { key: 'github', icon: 'fab fa-github', title: 'GitHub', badge: 'GitHub', color: '#24292e' },
-        { key: 'code-hosting', icon: 'fab fa-git-alt', title: '代码托管', badge: '代码托管', color: '#f39c12' },
-        
-        // 技术问答社区
-        { key: 'stackoverflow', icon: 'fab fa-stack-overflow', title: 'Stack Overflow', badge: 'Stack Overflow', color: '#f48024' },
-        
-        // 技术博客平台
-        { key: 'tech-blog', icon: 'fas fa-blog', title: '技术博客', badge: '技术博客', color: '#00ab6c' },
-        
-        // 视频平台
-        { key: 'video', icon: 'fab fa-youtube', title: '视频教程', badge: '视频', color: '#ff0000' },
-        
-        // 中文技术社区
-        { key: 'chinese-tech', icon: 'fas fa-globe-asia', title: '中文技术社区', badge: '中文社区', color: '#1890ff' },
-        
-        // 技术社区和论坛
-        { key: 'community', icon: 'fas fa-users', title: '技术社区', badge: '社区', color: '#ff6b35' },
-        
-        // 技术文档和教程
-        { key: 'documentation', icon: 'fas fa-book', title: '技术文档', badge: '文档', color: '#4caf50' },
-        
-        // 编程挑战和练习
-        { key: 'coding-challenge', icon: 'fas fa-code', title: '编程挑战', badge: '编程', color: '#9c27b0' },
-        
-        // 云服务和平台
-        { key: 'cloud-platform', icon: 'fas fa-cloud', title: '云服务平台', badge: '云服务', color: '#3498db' },
-        
-        // 设计工具
-        { key: 'design-tools', icon: 'fas fa-palette', title: '设计工具', badge: '设计', color: '#e74c3c' },
-        
-        // 新闻和资讯
-        { key: 'tech-news', icon: 'fas fa-newspaper', title: '科技新闻', badge: '新闻', color: '#2c3e50' },
-        
-        // 社交媒体
-        { key: 'social-media', icon: 'fas fa-share-alt', title: '社交媒体', badge: '社交', color: '#8e44ad' },
-        
-        // 其他
-        { key: 'other', icon: 'fas fa-external-link-alt', title: '其他', badge: '其他', color: '#6c757d' },
-        
-        // 未知来源
-        { key: 'unknown', icon: 'fas fa-question-circle', title: '未知来源', badge: '未知', color: '#6c757d' }
-    ];
+    return categoryConfigManager.getAllCategories();
 }
 
 /**
- * 分类新闻项 - 完全基于域名分类
+ * 获取分类配置管理器
+ * @returns {CategoryConfigManager} 分类配置管理器实例
+ */
+export function getCategoryConfigManager() {
+    return categoryConfigManager;
+}
+
+/**
+ * 智能分类器 - 基于多维度特征进行分类
  * @param {Object} item - 新闻项
- * @returns {string} 分类键
+ * @returns {Object} 分类信息对象
  */
 export function categorizeNewsItem(item) {
-    // 优先使用域名分类
+    if (!item) {
+        return {
+            key: 'unknown',
+            title: '未知来源',
+            icon: 'fas fa-question-circle',
+            color: '#6c757d',
+            confidence: 0
+        };
+    }
+
+    // 1. 优先使用域名分类（最高置信度）
     if (item.link) {
         const domainCategory = extractDomainCategory(item);
-        return domainCategory.key;
+        return {
+            ...domainCategory,
+            confidence: 0.9,
+            method: 'domain'
+        };
     }
     
-    // 如果没有链接，尝试从标题或内容中推断分类
+    // 2. 基于标题和内容的关键词分类（中等置信度）
     if (item.title || item.content) {
         const text = (item.title + ' ' + (item.content || '')).toLowerCase();
+        const keywordCategory = getCategoryByKeywords(text);
         
-        // 基于关键词的备用分类逻辑
-        if (text.includes('github') || text.includes('git') || text.includes('repository')) {
-            return 'github';
-        } else if (text.includes('stackoverflow') || text.includes('stack exchange') || text.includes('问答')) {
-            return 'stackoverflow';
-        } else if (text.includes('youtube') || text.includes('视频') || text.includes('教程')) {
-            return 'video';
-        } else if (text.includes('leetcode') || text.includes('算法') || text.includes('编程题')) {
-            return 'coding-challenge';
-        } else if (text.includes('medium') || text.includes('blog') || text.includes('博客')) {
-            return 'tech-blog';
-        } else if (text.includes('知乎') || text.includes('掘金') || text.includes('csdn')) {
-            return 'chinese-tech';
-        } else if (text.includes('reddit') || text.includes('hacker news') || text.includes('社区')) {
-            return 'community';
-        } else if (text.includes('documentation') || text.includes('文档') || text.includes('tutorial')) {
-            return 'documentation';
-        } else if (text.includes('aws') || text.includes('azure') || text.includes('cloud') || text.includes('云')) {
-            return 'cloud-platform';
-        } else if (text.includes('design') || text.includes('figma') || text.includes('设计')) {
-            return 'design-tools';
-        } else if (text.includes('news') || text.includes('新闻') || text.includes('techcrunch')) {
-            return 'tech-news';
-        } else if (text.includes('twitter') || text.includes('linkedin') || text.includes('social')) {
-            return 'social-media';
+        if (keywordCategory) {
+            return {
+                ...keywordCategory,
+                confidence: 0.7,
+                method: 'keywords'
+            };
         }
     }
     
-    // 如果都没有匹配，返回其他分类
-    return 'other';
+    // 3. 基于RSS源分类（如果存在）
+    if (item.source) {
+        const sourceCategory = getCategoryBySource(item.source);
+        if (sourceCategory) {
+            return {
+                ...sourceCategory,
+                confidence: 0.6,
+                method: 'source'
+            };
+        }
+    }
+    
+    // 4. 默认分类
+    return {
+        key: 'other',
+        title: '其他',
+        icon: 'fas fa-external-link-alt',
+        color: '#6c757d',
+        confidence: 0.3,
+        method: 'default'
+    };
+}
+
+/**
+ * 基于关键词获取分类
+ * @param {string} text - 文本内容
+ * @returns {Object|null} 分类信息
+ */
+function getCategoryByKeywords(text) {
+    const keywordRules = [
+        {
+            patterns: ['github', 'git', 'repository', 'commit', 'pull request', 'issue'],
+            category: {
+                key: 'github',
+                title: 'GitHub',
+                icon: 'fab fa-github',
+                color: '#24292e'
+            }
+        },
+        {
+            patterns: ['stackoverflow', 'stack exchange', '问答', 'question', 'answer'],
+            category: {
+                key: 'stackoverflow',
+                title: 'Stack Overflow',
+                icon: 'fab fa-stack-overflow',
+                color: '#f48024'
+            }
+        },
+        {
+            patterns: ['youtube', '视频', '教程', 'tutorial', 'bilibili', 'vimeo'],
+            category: {
+                key: 'video',
+                title: '视频教程',
+                icon: 'fab fa-youtube',
+                color: '#ff0000'
+            }
+        },
+        {
+            patterns: ['leetcode', '算法', '编程题', 'coding', 'programming', 'algorithm'],
+            category: {
+                key: 'coding-challenge',
+                title: '编程挑战',
+                icon: 'fas fa-code',
+                color: '#9c27b0'
+            }
+        },
+        {
+            patterns: ['medium', 'blog', '博客', 'article', 'post', 'dev.to'],
+            category: {
+                key: 'tech-blog',
+                title: '技术博客',
+                icon: 'fas fa-blog',
+                color: '#00ab6c'
+            }
+        },
+        {
+            patterns: ['知乎', '掘金', 'csdn', 'segmentfault', 'infoq', 'oschina'],
+            category: {
+                key: 'chinese-tech',
+                title: '中文技术社区',
+                icon: 'fas fa-globe-asia',
+                color: '#1890ff'
+            }
+        },
+        {
+            patterns: ['reddit', 'hacker news', '社区', 'community', 'forum', 'discussion'],
+            category: {
+                key: 'community',
+                title: '技术社区',
+                icon: 'fas fa-users',
+                color: '#ff6b35'
+            }
+        },
+        {
+            patterns: ['documentation', '文档', 'tutorial', 'guide', 'manual', 'api'],
+            category: {
+                key: 'documentation',
+                title: '技术文档',
+                icon: 'fas fa-book',
+                color: '#4caf50'
+            }
+        },
+        {
+            patterns: ['aws', 'azure', 'cloud', '云', 'serverless', 'kubernetes', 'docker'],
+            category: {
+                key: 'cloud-platform',
+                title: '云服务平台',
+                icon: 'fas fa-cloud',
+                color: '#3498db'
+            }
+        },
+        {
+            patterns: ['design', 'figma', '设计', 'ui', 'ux', 'sketch', 'adobe'],
+            category: {
+                key: 'design-tools',
+                title: '设计工具',
+                icon: 'fas fa-palette',
+                color: '#e74c3c'
+            }
+        },
+        {
+            patterns: ['news', '新闻', 'techcrunch', 'theverge', 'arstechnica', 'engadget'],
+            category: {
+                key: 'tech-news',
+                title: '科技新闻',
+                icon: 'fas fa-newspaper',
+                color: '#2c3e50'
+            }
+        },
+        {
+            patterns: ['twitter', 'linkedin', 'social', 'facebook', 'instagram', 'tiktok'],
+            category: {
+                key: 'social-media',
+                title: '社交媒体',
+                icon: 'fas fa-share-alt',
+                color: '#8e44ad'
+            }
+        }
+    ];
+    
+    for (const rule of keywordRules) {
+        for (const pattern of rule.patterns) {
+            if (text.includes(pattern)) {
+                return rule.category;
+            }
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * 基于RSS源获取分类
+ * @param {string} source - RSS源
+ * @returns {Object|null} 分类信息
+ */
+function getCategoryBySource(source) {
+    const sourceRules = {
+        'github.com': {
+            key: 'github',
+            title: 'GitHub',
+            icon: 'fab fa-github',
+            color: '#24292e'
+        },
+        'stackoverflow.com': {
+            key: 'stackoverflow',
+            title: 'Stack Overflow',
+            icon: 'fab fa-stack-overflow',
+            color: '#f48024'
+        },
+        'medium.com': {
+            key: 'tech-blog',
+            title: 'Medium',
+            icon: 'fas fa-blog',
+            color: '#00ab6c'
+        },
+        'youtube.com': {
+            key: 'video',
+            title: 'YouTube',
+            icon: 'fab fa-youtube',
+            color: '#ff0000'
+        }
+    };
+    
+    return sourceRules[source] || null;
 } 

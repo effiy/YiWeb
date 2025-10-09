@@ -6,6 +6,7 @@ import { getTimeAgo } from '/utils/date.js';
 import { safeExecute, createError, ErrorTypes } from '/utils/error.js';
 import { loadCSSFiles } from '/utils/baseView.js';
 import { extractDomainCategory } from '/utils/domain.js';
+import { categorizeNewsItem } from '/views/news/hooks/store.js';
 
 // 自动加载相关的CSS文件
 loadCSSFiles([
@@ -99,7 +100,15 @@ const createNewsList = async () => {
             },
             
 
-            // 获取域名分类信息
+            // 获取分类信息 - 使用新的智能分类器
+            getCategoryInfo(item) {
+                return safeExecute(() => {
+                    if (!item) return null;
+                    return categorizeNewsItem(item);
+                }, '分类信息获取');
+            },
+
+            // 获取域名分类信息（保持向后兼容）
             getDomainCategory(item) {
                 return safeExecute(() => {
                     if (!item.link) return null;
@@ -114,6 +123,22 @@ const createNewsList = async () => {
                     const domainCategory = extractDomainCategory(item);
                     return domainCategory.title;
                 }, '域名显示名称获取');
+            },
+
+            // 获取分类置信度
+            getCategoryConfidence(item) {
+                return safeExecute(() => {
+                    const categoryInfo = this.getCategoryInfo(item);
+                    return categoryInfo ? categoryInfo.confidence : 0;
+                }, '分类置信度获取');
+            },
+
+            // 获取分类方法
+            getCategoryMethod(item) {
+                return safeExecute(() => {
+                    const categoryInfo = this.getCategoryInfo(item);
+                    return categoryInfo ? categoryInfo.method : 'unknown';
+                }, '分类方法获取');
             },
             
             // 获取时间差显示

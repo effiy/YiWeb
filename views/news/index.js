@@ -19,6 +19,7 @@ import { createBaseView } from '/utils/baseView.js';
                 'NewsList',
                 'Calendar',
                 'TagStatistics',
+                'EnhancedStatistics',
                 'CommentsList'
             ],
             plugins: [],

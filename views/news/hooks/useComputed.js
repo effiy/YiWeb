@@ -29,16 +29,20 @@ export const useComputed = (store) => {
         tagStatistics
     } = store;
 
-    // 先定义 categorizedNews 计算属性
+    // 先定义 categorizedNews 计算属性 - 优化版本
     const categorizedNews = computed(() => {
         const result = {};
         const categoriesConfig = getCategoriesConfig();
         
+        // 初始化所有分类
         categoriesConfig.forEach(category => {
             result[category.key] = {
                 icon: category.icon,
                 title: category.title,
-                news: []
+                news: [],
+                count: 0,
+                confidence: 0,
+                methods: new Set()
             };
         });
 
@@ -48,7 +52,8 @@ export const useComputed = (store) => {
         console.log('[categorizedNews] 处理新闻数据:', dataToProcess.length, '条');
         
         dataToProcess.forEach(item => {
-            const categoryKey = categorizeNewsItem(item);
+            const categoryInfo = categorizeNewsItem(item);
+            const categoryKey = categoryInfo.key;
             
             if (!result[categoryKey]) {
                 console.warn(`未知的分类键: ${categoryKey}，使用'other'分类`);
@@ -56,12 +61,29 @@ export const useComputed = (store) => {
                     result['other'] = {
                         icon: 'fas fa-ellipsis-h',
                         title: '其他',
-                        news: []
+                        news: [],
+                        count: 0,
+                        confidence: 0,
+                        methods: new Set()
                     };
                 }
                 result['other'].news.push(item);
+                result['other'].count++;
+                result['other'].confidence += categoryInfo.confidence || 0;
+                result['other'].methods.add(categoryInfo.method || 'unknown');
             } else {
                 result[categoryKey].news.push(item);
+                result[categoryKey].count++;
+                result[categoryKey].confidence += categoryInfo.confidence || 0;
+                result[categoryKey].methods.add(categoryInfo.method || 'unknown');
+            }
+        });
+
+        // 计算平均置信度
+        Object.keys(result).forEach(key => {
+            if (result[key].count > 0) {
+                result[key].confidence = result[key].confidence / result[key].count;
+                result[key].methods = Array.from(result[key].methods);
             }
         });
 
@@ -205,10 +227,15 @@ export const useComputed = (store) => {
         }),
 
         /**
-         * 过滤后的新闻数据
+         * 过滤后的新闻数据 - 优化版本，减少重复计算
          */
         filteredNewsData: computed(() => {
             let data = newsData.value || [];
+            
+            // 如果没有过滤条件，直接返回原始数据
+            if (!searchQuery.value && selectedCategories.value.size === 0 && selectedTags.value.size === 0) {
+                return data;
+            }
             
             // 搜索过滤
             if (searchQuery.value) {
@@ -219,11 +246,11 @@ export const useComputed = (store) => {
                 );
             }
             
-            // 分类过滤
+            // 分类过滤 - 使用缓存的分类结果
             if (selectedCategories.value.size > 0) {
                 data = data.filter(item => {
-                    const categoryKey = categorizeNewsItem(item);
-                    return selectedCategories.value.has(categoryKey);
+                    const categoryInfo = categorizeNewsItem(item);
+                    return selectedCategories.value.has(categoryInfo.key);
                 });
             }
             
@@ -415,6 +442,184 @@ export const useComputed = (store) => {
                     color: data.color,
                     domains: data.domains
                 }));
+        }),
+
+        /**
+         * 分类质量分析
+         */
+        categoryQuality: computed(() => {
+            const categorized = categorizedNews.value;
+            const quality = {};
+            
+            Object.keys(categorized).forEach(key => {
+                const category = categorized[key];
+                if (category.count > 0) {
+                    quality[key] = {
+                        title: category.title,
+                        count: category.count,
+                        confidence: category.confidence,
+                        methods: category.methods,
+                        quality: category.confidence > 0.7 ? 'high' : category.confidence > 0.4 ? 'medium' : 'low'
+                    };
+                }
+            });
+            
+            return quality;
+        }),
+
+        /**
+         * 分类分布统计
+         */
+        categoryDistribution: computed(() => {
+            const categorized = categorizedNews.value;
+            const total = newsData.value.length;
+            const distribution = [];
+            
+            Object.keys(categorized).forEach(key => {
+                const category = categorized[key];
+                if (category.count > 0) {
+                    distribution.push({
+                        key,
+                        title: category.title,
+                        count: category.count,
+                        percentage: ((category.count / total) * 100).toFixed(1),
+                        icon: category.icon,
+                        color: category.color
+                    });
+                }
+            });
+            
+            return distribution.sort((a, b) => b.count - a.count);
+        }),
+
+        /**
+         * 内容质量分析
+         */
+        contentQuality: computed(() => {
+            const data = newsData.value;
+            const analysis = {
+                total: data.length,
+                withContent: 0,
+                withExcerpt: 0,
+                withImages: 0,
+                withLinks: 0,
+                averageLength: 0,
+                qualityScore: 0
+            };
+            
+            let totalLength = 0;
+            let qualityFactors = 0;
+            
+            data.forEach(item => {
+                if (item.content && item.content.length > 50) {
+                    analysis.withContent++;
+                    totalLength += item.content.length;
+                    qualityFactors++;
+                }
+                
+                if (item.excerpt) {
+                    analysis.withExcerpt++;
+                    qualityFactors++;
+                }
+                
+                if (item.enclosure && item.enclosure.type && item.enclosure.type.startsWith('image/')) {
+                    analysis.withImages++;
+                    qualityFactors++;
+                }
+                
+                if (item.link) {
+                    analysis.withLinks++;
+                    qualityFactors++;
+                }
+            });
+            
+            analysis.averageLength = analysis.withContent > 0 ? Math.round(totalLength / analysis.withContent) : 0;
+            analysis.qualityScore = analysis.total > 0 ? Math.round((qualityFactors / (analysis.total * 4)) * 100) : 0;
+            
+            return analysis;
+        }),
+
+        /**
+         * 时间分布分析
+         */
+        timeDistribution: computed(() => {
+            const data = newsData.value;
+            const distribution = {
+                byHour: {},
+                byDayOfWeek: {},
+                byMonth: {},
+                peakHours: [],
+                peakDays: []
+            };
+            
+            data.forEach(item => {
+                if (!item.pubDate) return;
+                
+                const date = new Date(item.pubDate);
+                const hour = date.getHours();
+                const dayOfWeek = date.getDay();
+                const month = date.getMonth();
+                
+                // 按小时统计
+                distribution.byHour[hour] = (distribution.byHour[hour] || 0) + 1;
+                
+                // 按星期统计
+                const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+                distribution.byDayOfWeek[dayNames[dayOfWeek]] = (distribution.byDayOfWeek[dayNames[dayOfWeek]] || 0) + 1;
+                
+                // 按月份统计
+                const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+                distribution.byMonth[monthNames[month]] = (distribution.byMonth[monthNames[month]] || 0) + 1;
+            });
+            
+            // 找出高峰时段
+            distribution.peakHours = Object.entries(distribution.byHour)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 3)
+                .map(([hour, count]) => ({ hour: parseInt(hour), count }));
+            
+            distribution.peakDays = Object.entries(distribution.byDayOfWeek)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 3)
+                .map(([day, count]) => ({ day, count }));
+            
+            return distribution;
+        }),
+
+        /**
+         * 综合统计报告
+         */
+        comprehensiveStats: computed(() => {
+            const categorized = categorizedNews.value;
+            const quality = categoryQuality.value;
+            const distribution = categoryDistribution.value;
+            const content = contentQuality.value;
+            const time = timeDistribution.value;
+            
+            return {
+                overview: {
+                    totalNews: newsData.value.length,
+                    totalCategories: Object.keys(categorized).filter(k => categorized[k].count > 0).length,
+                    averageConfidence: Object.values(quality).reduce((acc, cat) => acc + cat.confidence, 0) / Object.keys(quality).length || 0,
+                    contentQuality: content.qualityScore
+                },
+                topCategories: distribution.slice(0, 5),
+                qualityBreakdown: {
+                    high: Object.values(quality).filter(cat => cat.quality === 'high').length,
+                    medium: Object.values(quality).filter(cat => cat.quality === 'medium').length,
+                    low: Object.values(quality).filter(cat => cat.quality === 'low').length
+                },
+                timeInsights: {
+                    peakHours: time.peakHours,
+                    peakDays: time.peakDays
+                },
+                contentInsights: {
+                    withContent: content.withContent,
+                    withExcerpt: content.withExcerpt,
+                    withImages: content.withImages,
+                    averageLength: content.averageLength
+                }
+            };
         })
     };
 };
