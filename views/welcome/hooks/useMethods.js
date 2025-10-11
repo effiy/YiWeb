@@ -1930,6 +1930,7 @@ export const useMethods = (store) => {
                     item.month = selectedTime.month;
                     item.week = selectedTime.week;
                     item.day = selectedTime.day;
+                    item.tags = [];
                     try {
                         const saveResult = await postData(`${window.API_URL}/mongodb/?cname=goals`, item);
                         if (saveResult && saveResult.success !== false) {

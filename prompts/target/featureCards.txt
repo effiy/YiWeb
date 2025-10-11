@@ -65,7 +65,6 @@
     "footerIcon": "fas fa-code-branch",
     "key": "a9ee3e46-de49-41ed-b9f9-050a68be49ed",
     "order": 25,
-    "tags": [],
     "updatedAt": "2025-08-18T06:03:23.650Z",
     "link": ""
   }
