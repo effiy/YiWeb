@@ -1908,9 +1908,28 @@ export const useMethods = (store) => {
                 const savedItems = [];
                 
                 for (let item of response.data) {
-                    item.year = new Date().getFullYear().toString();
-                    item.quarter = `Q${Math.ceil((new Date().getMonth() + 1) / 3)}`;
-                    item.month = new Date().getMonth() + 1;
+                    // 获取用户选择的时间，如果没有选择则使用当前时间
+                    const getSelectedTime = () => {
+                        const now = new Date();
+                        const currentYear = now.getFullYear().toString();
+                        const currentMonth = now.getMonth() + 1;
+                        const currentQuarter = `Q${Math.ceil(currentMonth / 3)}`;
+                        
+                        return {
+                            year: store.selectedYear.value || currentYear,
+                            quarter: store.selectedQuarter.value || currentQuarter,
+                            month: store.selectedMonth.value || currentMonth.toString().padStart(2, '0'),
+                            week: store.selectedWeek.value || '',
+                            day: store.selectedDay.value || ''
+                        };
+                    };
+                    
+                    const selectedTime = getSelectedTime();
+                    item.year = selectedTime.year;
+                    item.quarter = selectedTime.quarter;
+                    item.month = selectedTime.month;
+                    item.week = selectedTime.week;
+                    item.day = selectedTime.day;
                     try {
                         const saveResult = await postData(`${window.API_URL}/mongodb/?cname=goals`, item);
                         if (saveResult && saveResult.success !== false) {

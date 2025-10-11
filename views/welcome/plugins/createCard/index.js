@@ -107,6 +107,22 @@ export async function openCreateCardModal(store) {
 
     console.log('[CreateCardPlugin] 表单元素已创建:', form);
 
+    // 获取当前选择的时间作为默认值，如果没有选择则使用当前时间
+    const getDefaultTime = () => {
+      const now = new Date();
+      const currentYear = now.getFullYear().toString();
+      const currentMonth = now.getMonth() + 1;
+      const currentQuarter = `Q${Math.ceil(currentMonth / 3)}`;
+      
+      return {
+        year: store.selectedYear.value || currentYear,
+        quarter: store.selectedQuarter.value || currentQuarter,
+        month: store.selectedMonth.value || currentMonth.toString().padStart(2, '0')
+      };
+    };
+    
+    const defaultTime = getDefaultTime();
+    
     const formData = {
       title: '',
       description: '',
@@ -117,9 +133,9 @@ export async function openCreateCardModal(store) {
       features: [],
       stats: [],
       tags: [],
-      year: '',
-      quarter: '',
-      month: ''
+      year: defaultTime.year,
+      quarter: defaultTime.quarter,
+      month: defaultTime.month
     };
 
     // ==================== 时间属性选择器（移到最前面，与编辑卡片一致）====================

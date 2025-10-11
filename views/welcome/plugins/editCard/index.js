@@ -345,9 +345,24 @@ export async function openEditCardModal(card, store) {
     const formData = { ...card };
 
     // 初始化时间属性 - 将年度、季度、月度提升到顶层
-    formData.year = card.year || '';
-    formData.quarter = card.quarter || '';
-    formData.month = card.month || '';
+    // 如果卡片没有时间信息，使用当前选择的时间作为默认值
+    const getDefaultTime = () => {
+      const now = new Date();
+      const currentYear = now.getFullYear().toString();
+      const currentMonth = now.getMonth() + 1;
+      const currentQuarter = `Q${Math.ceil(currentMonth / 3)}`;
+      
+      return {
+        year: store.selectedYear.value || currentYear,
+        quarter: store.selectedQuarter.value || currentQuarter,
+        month: store.selectedMonth.value || currentMonth.toString().padStart(2, '0')
+      };
+    };
+    
+    const defaultTime = getDefaultTime();
+    formData.year = card.year || defaultTime.year;
+    formData.quarter = card.quarter || defaultTime.quarter;
+    formData.month = card.month || defaultTime.month;
 
     // ==================== 时间属性选择器 ====================
     const timePropertiesContainer = document.createElement('div');
