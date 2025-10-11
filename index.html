@@ -349,6 +349,13 @@
                                         <div class="tags-header">
                                             <span class="tags-label">
                                                 项目标签
+                                                <span class="time-info" v-if="card.year || card.quarter || card.month || card.week || card.day">
+                                                    <span v-if="card.year" class="time-badge">{{ card.year }}</span>
+                                                    <span v-if="card.quarter" class="time-badge">{{ card.quarter }}</span>
+                                                    <span v-if="card.month" class="time-badge">{{ card.month }}月</span>
+                                                    <span v-if="card.week" class="time-badge">第{{ card.week }}周</span>
+                                                    <span v-if="card.day" class="time-badge">{{ card.day }}</span>
+                                                </span>
                                             </span>
                                         </div>
                                         <div class="tags-container">
