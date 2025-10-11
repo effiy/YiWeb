@@ -657,6 +657,8 @@ export const useMethods = (store) => {
                 store.selectedYear.value = currentYear;
                 store.selectedQuarter.value = currentQuarter;
                 store.selectedMonth.value = currentMonth;
+                store.selectedWeek.value = '';
+                store.selectedDay.value = '';
                 
                 // 更新全部选择状态
                 store.isAllSelected.value = false;
@@ -674,6 +676,8 @@ export const useMethods = (store) => {
                 store.selectedYear.value = '';
                 store.selectedQuarter.value = '';
                 store.selectedMonth.value = '';
+                store.selectedWeek.value = '';
+                store.selectedDay.value = '';
                 
                 // 更新全部选择状态
                 store.isAllSelected.value = true;
@@ -741,6 +745,10 @@ export const useMethods = (store) => {
                 month: store.selectedMonth.value
             });
             
+            // 重置周和日选择
+            store.selectedWeek.value = '';
+            store.selectedDay.value = '';
+            
             // 更新全部选择状态（选择具体时间时，退出全部选择状态）
             store.isAllSelected.value = false;
             
@@ -751,6 +759,58 @@ export const useMethods = (store) => {
             }
         } catch (error) {
             handleError(error, '月度选择');
+        }
+    };
+
+    // 处理周选择变化
+    const handleWeekChange = async () => {
+        try {
+            console.log('[时间选择] 周选择变化:', store.selectedWeek.value);
+            console.log('[时间选择] 当前选择:', {
+                year: store.selectedYear.value,
+                quarter: store.selectedQuarter.value,
+                month: store.selectedMonth.value,
+                week: store.selectedWeek.value
+            });
+            
+            // 重置日选择
+            store.selectedDay.value = '';
+            
+            // 更新全部选择状态（选择具体时间时，退出全部选择状态）
+            store.isAllSelected.value = false;
+            
+            // 自动重新加载数据
+            if (store.selectedWeek.value && store.selectedMonth.value && store.selectedQuarter.value && store.selectedYear.value && store.loadFeatureCards) {
+                console.log('[时间选择] 周变化，重新加载功能卡片数据');
+                await store.loadFeatureCards(true);
+            }
+        } catch (error) {
+            handleError(error, '周选择');
+        }
+    };
+
+    // 处理日选择变化
+    const handleDayChange = async () => {
+        try {
+            console.log('[时间选择] 日选择变化:', store.selectedDay.value);
+            console.log('[时间选择] 当前选择:', {
+                year: store.selectedYear.value,
+                quarter: store.selectedQuarter.value,
+                month: store.selectedMonth.value,
+                week: store.selectedWeek.value,
+                day: store.selectedDay.value
+            });
+            
+            // 更新全部选择状态（选择具体时间时，退出全部选择状态）
+            store.isAllSelected.value = false;
+            
+            // 自动重新加载数据
+            if (store.selectedDay.value && store.selectedWeek.value && store.selectedMonth.value && store.selectedQuarter.value && store.selectedYear.value && store.loadFeatureCards) {
+                console.log('[时间选择] 日变化，重新加载功能卡片数据');
+                await store.loadFeatureCards(true);
+            }
+        } catch (error) {
+            handleError(error, '日选择');
         }
     };
 
@@ -779,6 +839,93 @@ export const useMethods = (store) => {
             ]
         };
         return monthsMap[quarter] || [];
+    };
+
+    // 根据年月获取周列表
+    const getWeeksByMonth = (year, month) => {
+        if (!year || !month) return [];
+        
+        const yearNum = parseInt(year);
+        const monthNum = parseInt(month);
+        
+        // 获取该月第一天和最后一天
+        const firstDay = new Date(yearNum, monthNum - 1, 1);
+        const lastDay = new Date(yearNum, monthNum, 0);
+        
+        const weeks = [];
+        let currentWeek = 1;
+        let currentDate = new Date(firstDay);
+        
+        // 找到该月第一个周一
+        while (currentDate.getDay() !== 1 && currentDate <= lastDay) {
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        // 如果该月没有周一，从第一天开始
+        if (currentDate > lastDay) {
+            currentDate = new Date(firstDay);
+        }
+        
+        while (currentDate <= lastDay) {
+            const weekStart = new Date(currentDate);
+            const weekEnd = new Date(currentDate);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            
+            // 确保周结束日期不超过月末
+            if (weekEnd > lastDay) {
+                weekEnd.setTime(lastDay.getTime());
+            }
+            
+            const weekValue = `W${currentWeek.toString().padStart(2, '0')}`;
+            const weekLabel = `第${currentWeek}周 (${weekStart.getDate()}-${weekEnd.getDate()}日)`;
+            
+            weeks.push({
+                value: weekValue,
+                label: weekLabel,
+                startDate: weekStart,
+                endDate: weekEnd
+            });
+            
+            currentWeek++;
+            currentDate.setDate(currentDate.getDate() + 7);
+        }
+        
+        return weeks;
+    };
+
+    // 根据年周获取日列表
+    const getDaysByWeek = (year, week) => {
+        if (!year || !week) return [];
+        
+        const yearNum = parseInt(year);
+        const weekNum = parseInt(week.replace('W', ''));
+        
+        // 计算该周的第一天（周一）
+        const jan1 = new Date(yearNum, 0, 1);
+        const daysToFirstMonday = (8 - jan1.getDay()) % 7;
+        const firstMonday = new Date(jan1);
+        firstMonday.setDate(jan1.getDate() + daysToFirstMonday);
+        
+        // 计算目标周的周一
+        const targetMonday = new Date(firstMonday);
+        targetMonday.setDate(firstMonday.getDate() + (weekNum - 1) * 7);
+        
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(targetMonday);
+            currentDay.setDate(targetMonday.getDate() + i);
+            
+            const dayValue = currentDay.getDate().toString().padStart(2, '0');
+            const dayLabel = `${currentDay.getDate()}日 (周${['日', '一', '二', '三', '四', '五', '六'][currentDay.getDay()]})`;
+            
+            days.push({
+                value: dayValue,
+                label: dayLabel,
+                date: currentDay
+            });
+        }
+        
+        return days;
     };
 
     // 处理下载数据
@@ -2440,7 +2587,11 @@ export const useMethods = (store) => {
         handleYearChange,
         handleQuarterChange,
         handleMonthChange,
+        handleWeekChange,
+        handleDayChange,
         getMonthsByQuarter,
+        getWeeksByMonth,
+        getDaysByWeek,
         // 上传下载相关方法
         handleDownloadData,
         triggerUploadData,

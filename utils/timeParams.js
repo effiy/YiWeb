@@ -2,13 +2,15 @@
 // 作者：liangliang
 
 /**
- * 将年度、季度、月度转换为时间范围信息
+ * 将年度、季度、月度、周、日转换为时间范围信息
  * @param {string} year - 年度 (如 "2024")
  * @param {string} quarter - 季度 (如 "Q1", "Q2", "Q3", "Q4")
  * @param {string} month - 月度 (如 "01", "02", ..., "12")
+ * @param {string} week - 周 (如 "W01", "W02", ...)
+ * @param {string} day - 日 (如 "01", "02", ..., "31")
  * @returns {Object} 包含时间范围信息的对象
  */
-export const convertTimeParamsToDateRange = (year, quarter, month) => {
+export const convertTimeParamsToDateRange = (year, quarter, month, week, day) => {
     try {
         if (!year) {
             return null;
@@ -21,7 +23,65 @@ export const convertTimeParamsToDateRange = (year, quarter, month) => {
 
         let startDate, endDate;
 
-        if (month && quarter) {
+        if (day && week && month && quarter) {
+            // 具体到日
+            const monthNum = parseInt(month);
+            const dayNum = parseInt(day);
+            if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+                throw new Error('无效的月份');
+            }
+            if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
+                throw new Error('无效的日期');
+            }
+            
+            startDate = new Date(yearNum, monthNum - 1, dayNum);
+            endDate = new Date(yearNum, monthNum - 1, dayNum, 23, 59, 59, 999);
+            
+        } else if (week && month && quarter) {
+            // 具体到周
+            const monthNum = parseInt(month);
+            const weekNum = parseInt(week.replace('W', ''));
+            if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+                throw new Error('无效的月份');
+            }
+            if (isNaN(weekNum) || weekNum < 1 || weekNum > 6) {
+                throw new Error('无效的周数');
+            }
+            
+            // 计算该月第一周的开始日期
+            const firstDay = new Date(yearNum, monthNum - 1, 1);
+            let currentWeek = 1;
+            let currentDate = new Date(firstDay);
+            
+            // 找到该月第一个周一
+            while (currentDate.getDay() !== 1 && currentDate <= new Date(yearNum, monthNum, 0)) {
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            // 如果该月没有周一，从第一天开始
+            if (currentDate > new Date(yearNum, monthNum, 0)) {
+                currentDate = new Date(firstDay);
+            }
+            
+            // 找到目标周
+            while (currentWeek < weekNum && currentDate <= new Date(yearNum, monthNum, 0)) {
+                currentDate.setDate(currentDate.getDate() + 7);
+                currentWeek++;
+            }
+            
+            startDate = new Date(currentDate);
+            endDate = new Date(currentDate);
+            endDate.setDate(endDate.getDate() + 6);
+            endDate.setHours(23, 59, 59, 999);
+            
+            // 确保周结束日期不超过月末
+            const monthEnd = new Date(yearNum, monthNum, 0);
+            if (endDate > monthEnd) {
+                endDate = monthEnd;
+                endDate.setHours(23, 59, 59, 999);
+            }
+            
+        } else if (month && quarter) {
             // 具体到月份
             const monthNum = parseInt(month);
             if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
@@ -58,7 +118,9 @@ export const convertTimeParamsToDateRange = (year, quarter, month) => {
             timeRange: {
                 year: year,
                 quarter: quarter || null,
-                month: month || null
+                month: month || null,
+                week: week || null,
+                day: day || null
             }
         };
         
@@ -73,10 +135,12 @@ export const convertTimeParamsToDateRange = (year, quarter, month) => {
  * @param {string} year - 年度
  * @param {string} quarter - 季度
  * @param {string} month - 月度
+ * @param {string} week - 周
+ * @param {string} day - 日
  * @returns {string} URL查询参数字符串
  */
-export const buildTimeQueryParams = (year, quarter, month) => {
-    const dateRange = convertTimeParamsToDateRange(year, quarter, month);
+export const buildTimeQueryParams = (year, quarter, month, week, day) => {
+    const dateRange = convertTimeParamsToDateRange(year, quarter, month, week, day);
     if (!dateRange) {
         return '';
     }
@@ -87,6 +151,8 @@ export const buildTimeQueryParams = (year, quarter, month) => {
     if (year) params.append('year', year);
     if (quarter) params.append('quarter', quarter);
     if (month) params.append('month', month);
+    if (week) params.append('week', week);
+    if (day) params.append('day', day);
     
     return params.toString();
 };
@@ -96,9 +162,11 @@ export const buildTimeQueryParams = (year, quarter, month) => {
  * @param {string} year - 年度
  * @param {string} quarter - 季度  
  * @param {string} month - 月度
+ * @param {string} week - 周
+ * @param {string} day - 日
  * @returns {Object} 验证结果
  */
-export const validateTimeParams = (year, quarter, month) => {
+export const validateTimeParams = (year, quarter, month, week, day) => {
     const errors = [];
     
     if (!year) {
@@ -136,6 +204,45 @@ export const validateTimeParams = (year, quarter, month) => {
         }
     }
     
+    if (week) {
+        const weekNum = parseInt(week.replace('W', ''));
+        if (isNaN(weekNum) || weekNum < 1 || weekNum > 6) {
+            errors.push('周数必须在W01-W06之间');
+        }
+        
+        // 验证周与月份的匹配性
+        if (month) {
+            const monthNum = parseInt(month);
+            const daysInMonth = new Date(parseInt(year), monthNum, 0).getDate();
+            const maxWeeks = Math.ceil(daysInMonth / 7);
+            if (weekNum > maxWeeks) {
+                errors.push(`${month}月最多有${maxWeeks}周`);
+            }
+        }
+    }
+    
+    if (day) {
+        const dayNum = parseInt(day);
+        if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
+            errors.push('日期必须在01-31之间');
+        }
+        
+        // 验证日期与月份的匹配性
+        if (month) {
+            const monthNum = parseInt(month);
+            const daysInMonth = new Date(parseInt(year), monthNum, 0).getDate();
+            if (dayNum > daysInMonth) {
+                errors.push(`${month}月只有${daysInMonth}天`);
+            }
+        }
+        
+        // 验证日期与周的匹配性
+        if (week && month) {
+            // 这里可以添加更复杂的周日期匹配验证
+            // 暂时跳过，因为周的计算比较复杂
+        }
+    }
+    
     return {
         isValid: errors.length === 0,
         errors
@@ -147,9 +254,11 @@ export const validateTimeParams = (year, quarter, month) => {
  * @param {string} year - 年度
  * @param {string} quarter - 季度
  * @param {string} month - 月度
+ * @param {string} week - 周
+ * @param {string} day - 日
  * @returns {string} 格式化的显示文本
  */
-export const formatTimeRangeText = (year, quarter, month) => {
+export const formatTimeRangeText = (year, quarter, month, week, day) => {
     if (!year) return '未选择时间';
     
     let text = `${year}年`;
@@ -165,6 +274,15 @@ export const formatTimeRangeText = (year, quarter, month) => {
         
         if (month) {
             text += `${parseInt(month)}月`;
+            
+            if (week) {
+                const weekNum = parseInt(week.replace('W', ''));
+                text += `第${weekNum}周`;
+                
+                if (day) {
+                    text += `${parseInt(day)}日`;
+                }
+            }
         }
     }
     

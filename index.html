@@ -140,6 +140,44 @@
                                         {{ month.label }}
                                     </option>
                                 </select>
+                                <label class="visually-hidden" for="weekSelect">周选择器</label>
+                                <select 
+                                    id="weekSelect"
+                                    class="filter-btn week-select"
+                                    v-model="selectedWeek"
+                                    @change="handleWeekChange"
+                                    :disabled="!selectedMonth || loading"
+                                    :title="selectedWeek ? `当前周: ${selectedWeek}` : (selectedMonth ? '选择周' : '请先选择月度')"
+                                    aria-label="周选择器"
+                                >
+                                    <option value="" disabled>{{ selectedMonth ? '选择周' : '请先选择月度' }}</option>
+                                    <option 
+                                        v-for="week in getWeeksByMonth(selectedYear, selectedMonth)" 
+                                        :key="week.value" 
+                                        :value="week.value"
+                                        :title="`选择周: ${week.label}`">
+                                        {{ week.label }}
+                                    </option>
+                                </select>
+                                <label class="visually-hidden" for="daySelect">日选择器</label>
+                                <select 
+                                    id="daySelect"
+                                    class="filter-btn day-select"
+                                    v-model="selectedDay"
+                                    @change="handleDayChange"
+                                    :disabled="!selectedWeek || loading"
+                                    :title="selectedDay ? `当前日: ${selectedDay}` : (selectedWeek ? '选择日' : '请先选择周')"
+                                    aria-label="日选择器"
+                                >
+                                    <option value="" disabled>{{ selectedWeek ? '选择日' : '请先选择周' }}</option>
+                                    <option 
+                                        v-for="day in getDaysByWeek(selectedYear, selectedWeek)" 
+                                        :key="day.value" 
+                                        :value="day.value"
+                                        :title="`选择日: ${day.label}`">
+                                        {{ day.label }}
+                                    </option>
+                                </select>
                             </div>
                         </li>
                         

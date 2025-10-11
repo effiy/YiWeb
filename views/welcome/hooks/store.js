@@ -40,6 +40,8 @@ export const createStore = () => {
     const selectedYear = vueRef(currentYear.toString());
     const selectedQuarter = vueRef(`Q${currentQuarter}`);
     const selectedMonth = vueRef(currentMonth.toString().padStart(2, '0')); // 格式化为两位数
+    const selectedWeek = vueRef(''); // 周选择器
+    const selectedDay = vueRef(''); // 日选择器
     
     // 全部选择状态跟踪
     const isAllSelected = vueRef(false);
@@ -231,20 +233,24 @@ export const createStore = () => {
                 const timeValidation = validateTimeParams(
                     selectedYear.value, 
                     selectedQuarter.value, 
-                    selectedMonth.value
+                    selectedMonth.value,
+                    selectedWeek.value,
+                    selectedDay.value
                 );
                 
                 if (timeValidation.isValid) {
                     const timeParams = buildTimeQueryParams(
                         selectedYear.value, 
                         selectedQuarter.value, 
-                        selectedMonth.value
+                        selectedMonth.value,
+                        selectedWeek.value,
+                        selectedDay.value
                     );
                     
                     if (timeParams) {
                         mongoUrl += `&${timeParams}`;
                         logInfo('[Store] 使用时间参数查询:', {
-                            timeRange: formatTimeRangeText(selectedYear.value, selectedQuarter.value, selectedMonth.value),
+                            timeRange: formatTimeRangeText(selectedYear.value, selectedQuarter.value, selectedMonth.value, selectedWeek.value, selectedDay.value),
                             params: timeParams
                         });
                     }
@@ -346,6 +352,8 @@ export const createStore = () => {
             selectedYear,
             selectedQuarter, 
             selectedMonth,
+            selectedWeek,   // 周选择器
+            selectedDay,    // 日选择器
             years,
             quarters,
             isAllSelected,  // 全部选择状态
