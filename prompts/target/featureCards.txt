@@ -67,10 +67,7 @@
     "order": 25,
     "tags": [],
     "updatedAt": "2025-08-18T06:03:23.650Z",
-    "link": "",
-    "month": "08",
-    "quarter": "Q3",
-    "year": "2025"
+    "link": ""
   }
 ]
 
