@@ -1892,7 +1892,7 @@ export const useMethods = (store) => {
                 fromUser: message
             });
 
-            const fromSystem = await window.getData(`/prompts/welcome/featureCards.txt`);
+            const fromSystem = await window.getData(`/prompts/target/featureCards.txt`);
             
             // 发送消息请求到API
             const response = await postData(`${window.API_URL}/prompt`, {
