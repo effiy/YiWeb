@@ -18,21 +18,6 @@
 
   <!-- 评论内容 -->
   <div v-else class="comment-panel-content">
-    <!-- 评论统计 -->
-    <div v-if="comments.length > 0" class="comment-stats">
-      <div class="stats-item stats-item-total">
-        <span class="stats-number">{{ comments.length }}</span>
-        <span class="stats-label">评论</span>
-      </div>
-      <div class="stats-item stats-item-resolved">
-        <span class="stats-number">{{ comments.filter(c => c.status === 'resolved').length }}</span>
-        <span class="stats-label">已解决</span>
-      </div>
-      <div class="stats-item stats-item-pending">
-        <span class="stats-number">{{ comments.filter(c => !c.status || c.status === 'pending').length }}</span>
-        <span class="stats-label">待处理</span>
-      </div>
-    </div>
 
     <!-- 评论列表 -->
     <div v-if="comments && comments.length > 0" class="comment-list" role="list">

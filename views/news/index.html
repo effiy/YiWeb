@@ -33,7 +33,7 @@
             :selected-categories="selectedCategories"
             :active-category="activeCategory"
             :sidebar-collapsed="sidebarCollapsed"
-            :original-data="newsData"
+            :original-data="originalData"
             :available-views="categories"
             :current-view="activeCategory"
             @search-keydown="handleSearchKeydown"
@@ -109,8 +109,6 @@
     <script type="module" src="/plugins/searchHeader/index.js"></script>
     <script type="module" src="/plugins/calendar/index.js"></script>
     <script type="module" src="/views/news/plugins/newsList/index.js"></script>
-    <script type="module" src="/views/news/plugins/tagStatistics/index.js"></script>
-    <script type="module" src="/views/news/plugins/enhancedStatistics/index.js"></script>
     <script type="module" src="/views/news/plugins/commentsList/index.js"></script>
     <script type="module" src="/views/news/index.js"></script>
     <!-- 性能监控脚本 -->

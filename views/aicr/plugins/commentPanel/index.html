@@ -115,21 +115,6 @@
             </div>
         </div>
 
-        <!-- 评论统计 -->
-        <div v-if="renderComments.length > 0" class="comment-stats">
-            <div class="stats-item stats-item-total">
-                <span class="stats-number">{{ commentStats.total }}</span>
-                <span class="stats-label">评论</span>
-            </div>
-            <div class="stats-item stats-item-resolved">
-                <span class="stats-number">{{ commentStats.resolved }}</span>
-                <span class="stats-label">已解决</span>
-            </div>
-            <div class="stats-item stats-item-pending">
-                <span class="stats-number">{{ commentStats.pending }}</span>
-                <span class="stats-label">待处理</span>
-            </div>
-        </div>
 
         <!-- 评论列表 -->
         <div v-if="renderComments && renderComments.length > 0" class="comment-list" role="list">

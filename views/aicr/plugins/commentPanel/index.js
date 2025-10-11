@@ -214,15 +214,6 @@ const createCommentPanel = async () => {
             };
         },
         computed: {
-            commentStats() {
-                return safeExecute(() => {
-                    const commentsArr = this.renderComments;
-                    const total = commentsArr.length;
-                    const resolved = commentsArr.filter(c => c.status === 'resolved').length;
-                    const pending = commentsArr.filter(c => c.status === 'pending' || !c.status).length;
-                    return { total, resolved, pending };
-                }, '评论统计计算');
-            },
             commenterStats() {
                 return safeExecute(() => {
                     const total = this.commenters.length;

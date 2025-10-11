@@ -127,26 +127,6 @@ export const useComputed = (store) => {
             return stats;
         }),
 
-        /**
-         * 评论统计信息
-         */
-        commentStats: computed(() => {
-            const stats = { total: 0, byFile: {} };
-            
-            if (store.comments?.value) {
-                stats.total = store.comments.value.length;
-                
-                store.comments.value.forEach(comment => {
-                    const fileId = comment.fileId;
-                    if (!stats.byFile[fileId]) {
-                        stats.byFile[fileId] = 0;
-                    }
-                    stats.byFile[fileId]++;
-                });
-            }
-            
-            return stats;
-        }),
 
         /**
          * 选中的版本名称
