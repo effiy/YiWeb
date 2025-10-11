@@ -83,101 +83,171 @@
                                   <i :class="isAllSelected ? 'fas fa-undo' : 'fas fa-globe'" aria-hidden="true"></i>
                                   <span>{{ isAllSelected ? '恢复' : '全部' }}</span>
                                 </button>
-                                <label class="visually-hidden" for="yearSelect">年度选择器</label>
-                                <select 
-                                    id="yearSelect"
-                                    class="filter-btn year-select"
-                                    v-model="selectedYear"
-                                    @change="handleYearChange($event.target.value)"
-                                    :disabled="loading"
-                                    :title="selectedYear ? `当前年度: ${selectedYear}` : '选择年度'"
-                                    aria-label="年度选择器"
-                                >
-                                    <option value="" disabled>选择年度</option>
-                                    <option 
-                                        v-for="year in years" 
-                                        :key="year" 
-                                        :value="year"
-                                        :title="`选择年度: ${year}`">
-                                        {{ year }}年
-                                    </option>
-                                </select>
-                                <label class="visually-hidden" for="quarterSelect">季度选择器</label>
-                                <select 
-                                    id="quarterSelect"
-                                    class="filter-btn quarter-select"
-                                    v-model="selectedQuarter"
-                                    @change="handleQuarterChange"
-                                    :disabled="!selectedYear || loading"
-                                    :title="selectedQuarter ? `当前季度: ${selectedQuarter}` : (selectedYear ? '选择季度' : '请先选择年度')"
-                                    aria-label="季度选择器"
-                                >
-                                    <option value="" disabled>{{ selectedYear ? '选择季度' : '请先选择年度' }}</option>
-                                    <option 
-                                        v-for="quarter in quarters" 
-                                        :key="quarter.value" 
-                                        :value="quarter.value"
-                                        :title="`选择季度: ${quarter.label}`">
-                                        {{ quarter.label }}
-                                    </option>
-                                </select>
-                                <label class="visually-hidden" for="monthSelect">月度选择器</label>
-                                <select 
-                                    id="monthSelect"
-                                    class="filter-btn month-select"
-                                    v-model="selectedMonth"
-                                    @change="handleMonthChange"
-                                    :disabled="!selectedQuarter || loading"
-                                    :title="selectedMonth ? `当前月度: ${selectedMonth}` : (selectedQuarter ? '选择月度' : '请先选择季度')"
-                                    aria-label="月度选择器"
-                                >
-                                    <option value="" disabled>{{ selectedQuarter ? '选择月度' : '请先选择季度' }}</option>
-                                    <option 
-                                        v-for="month in getMonthsByQuarter(selectedQuarter)" 
-                                        :key="month.value" 
-                                        :value="month.value"
-                                        :title="`选择月度: ${month.label}`">
-                                        {{ month.label }}
-                                    </option>
-                                </select>
-                                <label class="visually-hidden" for="weekSelect">周选择器</label>
-                                <select 
-                                    id="weekSelect"
-                                    class="filter-btn week-select"
-                                    v-model="selectedWeek"
-                                    @change="handleWeekChange"
-                                    :disabled="!selectedMonth || loading"
-                                    :title="selectedWeek ? `当前周: ${selectedWeek}` : (selectedMonth ? '选择周' : '请先选择月度')"
-                                    aria-label="周选择器"
-                                >
-                                    <option value="" disabled>{{ selectedMonth ? '选择周' : '请先选择月度' }}</option>
-                                    <option 
-                                        v-for="week in getWeeksByMonth(selectedYear, selectedMonth)" 
-                                        :key="week.value" 
-                                        :value="week.value"
-                                        :title="`选择周: ${week.label}`">
-                                        {{ week.label }}
-                                    </option>
-                                </select>
-                                <label class="visually-hidden" for="daySelect">日选择器</label>
-                                <select 
-                                    id="daySelect"
-                                    class="filter-btn day-select"
-                                    v-model="selectedDay"
-                                    @change="handleDayChange"
-                                    :disabled="!selectedWeek || loading"
-                                    :title="selectedDay ? `当前日: ${selectedDay}` : (selectedWeek ? '选择日' : '请先选择周')"
-                                    aria-label="日选择器"
-                                >
-                                    <option value="" disabled>{{ selectedWeek ? '选择日' : '请先选择周' }}</option>
-                                    <option 
-                                        v-for="day in getDaysByWeek(selectedYear, selectedWeek)" 
-                                        :key="day.value" 
-                                        :value="day.value"
-                                        :title="`选择日: ${day.label}`">
-                                        {{ day.label }}
-                                    </option>
-                                </select>
+                                <div class="time-selector-group">
+                                    <label class="visually-hidden" for="yearSelect">年度选择器</label>
+                                    <div class="select-with-clear">
+                                        <select 
+                                            id="yearSelect"
+                                            class="filter-btn year-select"
+                                            v-model="selectedYear"
+                                            @change="handleYearChange($event.target.value)"
+                                            :disabled="loading"
+                                            :title="selectedYear ? `当前年度: ${selectedYear}` : '选择年度'"
+                                            aria-label="年度选择器"
+                                        >
+                                            <option value="" disabled>选择年度</option>
+                                            <option 
+                                                v-for="year in years" 
+                                                :key="year" 
+                                                :value="year"
+                                                :title="`选择年度: ${year}`">
+                                                {{ year }}年
+                                            </option>
+                                        </select>
+                                        <button 
+                                            v-if="selectedYear"
+                                            type="button"
+                                            class="clear-btn year-clear"
+                                            @click="clearYear"
+                                            :disabled="loading"
+                                            title="清空年度选择"
+                                            aria-label="清空年度选择">
+                                            <i class="fas fa-times" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="time-selector-group">
+                                    <label class="visually-hidden" for="quarterSelect">季度选择器</label>
+                                    <div class="select-with-clear">
+                                        <select 
+                                            id="quarterSelect"
+                                            class="filter-btn quarter-select"
+                                            v-model="selectedQuarter"
+                                            @change="handleQuarterChange"
+                                            :disabled="!selectedYear || loading"
+                                            :title="selectedQuarter ? `当前季度: ${selectedQuarter}` : (selectedYear ? '选择季度' : '请先选择年度')"
+                                            aria-label="季度选择器"
+                                        >
+                                            <option value="" disabled>{{ selectedYear ? '选择季度' : '请先选择年度' }}</option>
+                                            <option 
+                                                v-for="quarter in quarters" 
+                                                :key="quarter.value" 
+                                                :value="quarter.value"
+                                                :title="`选择季度: ${quarter.label}`">
+                                                {{ quarter.label }}
+                                            </option>
+                                        </select>
+                                        <button 
+                                            v-if="selectedQuarter"
+                                            type="button"
+                                            class="clear-btn quarter-clear"
+                                            @click="clearQuarter"
+                                            :disabled="loading"
+                                            title="清空季度选择"
+                                            aria-label="清空季度选择">
+                                            <i class="fas fa-times" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="time-selector-group">
+                                    <label class="visually-hidden" for="monthSelect">月度选择器</label>
+                                    <div class="select-with-clear">
+                                        <select 
+                                            id="monthSelect"
+                                            class="filter-btn month-select"
+                                            v-model="selectedMonth"
+                                            @change="handleMonthChange"
+                                            :disabled="!selectedQuarter || loading"
+                                            :title="selectedMonth ? `当前月度: ${selectedMonth}` : (selectedQuarter ? '选择月度' : '请先选择季度')"
+                                            aria-label="月度选择器"
+                                        >
+                                            <option value="" disabled>{{ selectedQuarter ? '选择月度' : '请先选择季度' }}</option>
+                                            <option 
+                                                v-for="month in getMonthsByQuarter(selectedQuarter)" 
+                                                :key="month.value" 
+                                                :value="month.value"
+                                                :title="`选择月度: ${month.label}`">
+                                                {{ month.label }}
+                                            </option>
+                                        </select>
+                                        <button 
+                                            v-if="selectedMonth"
+                                            type="button"
+                                            class="clear-btn month-clear"
+                                            @click="clearMonth"
+                                            :disabled="loading"
+                                            title="清空月度选择"
+                                            aria-label="清空月度选择">
+                                            <i class="fas fa-times" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="time-selector-group">
+                                    <label class="visually-hidden" for="weekSelect">周选择器</label>
+                                    <div class="select-with-clear">
+                                        <select 
+                                            id="weekSelect"
+                                            class="filter-btn week-select"
+                                            v-model="selectedWeek"
+                                            @change="handleWeekChange"
+                                            :disabled="!selectedMonth || loading"
+                                            :title="selectedWeek ? `当前周: ${selectedWeek}` : (selectedMonth ? '选择周' : '请先选择月度')"
+                                            aria-label="周选择器"
+                                        >
+                                            <option value="" disabled>{{ selectedMonth ? '选择周' : '请先选择月度' }}</option>
+                                            <option 
+                                                v-for="week in getWeeksByMonth(selectedYear, selectedMonth)" 
+                                                :key="week.value" 
+                                                :value="week.value"
+                                                :title="`选择周: ${week.label}`">
+                                                {{ week.label }}
+                                            </option>
+                                        </select>
+                                        <button 
+                                            v-if="selectedWeek"
+                                            type="button"
+                                            class="clear-btn week-clear"
+                                            @click="clearWeek"
+                                            :disabled="loading"
+                                            title="清空周选择"
+                                            aria-label="清空周选择">
+                                            <i class="fas fa-times" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="time-selector-group">
+                                    <label class="visually-hidden" for="daySelect">日选择器</label>
+                                    <div class="select-with-clear">
+                                        <select 
+                                            id="daySelect"
+                                            class="filter-btn day-select"
+                                            v-model="selectedDay"
+                                            @change="handleDayChange"
+                                            :disabled="!selectedWeek || loading"
+                                            :title="selectedDay ? `当前日: ${selectedDay}` : (selectedWeek ? '选择日' : '请先选择周')"
+                                            aria-label="日选择器"
+                                        >
+                                            <option value="" disabled>{{ selectedWeek ? '选择日' : '请先选择周' }}</option>
+                                            <option 
+                                                v-for="day in getDaysByWeek(selectedYear, selectedWeek)" 
+                                                :key="day.value" 
+                                                :value="day.value"
+                                                :title="`选择日: ${day.label}`">
+                                                {{ day.label }}
+                                            </option>
+                                        </select>
+                                        <button 
+                                            v-if="selectedDay"
+                                            type="button"
+                                            class="clear-btn day-clear"
+                                            @click="clearDay"
+                                            :disabled="loading"
+                                            title="清空日选择"
+                                            aria-label="清空日选择">
+                                            <i class="fas fa-times" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </li>
                         

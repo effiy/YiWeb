@@ -928,6 +928,121 @@ export const useMethods = (store) => {
         return days;
     };
 
+    // 清空年度选择
+    const clearYear = async () => {
+        try {
+            console.log('[清空选择] 清空年度选择');
+            
+            // 清空所有时间选择
+            store.selectedYear.value = '';
+            store.selectedQuarter.value = '';
+            store.selectedMonth.value = '';
+            store.selectedWeek.value = '';
+            store.selectedDay.value = '';
+            
+            // 更新全部选择状态
+            store.isAllSelected.value = false;
+            
+            // 重新加载全部数据
+            if (store.loadFeatureCards) {
+                console.log('[清空选择] 清空年度后，重新加载全部数据');
+                await store.loadFeatureCards(true);
+            }
+        } catch (error) {
+            handleError(error, '清空年度选择');
+        }
+    };
+
+    // 清空季度选择
+    const clearQuarter = async () => {
+        try {
+            console.log('[清空选择] 清空季度选择');
+            
+            // 清空季度及以下选择
+            store.selectedQuarter.value = '';
+            store.selectedMonth.value = '';
+            store.selectedWeek.value = '';
+            store.selectedDay.value = '';
+            
+            // 更新全部选择状态
+            store.isAllSelected.value = false;
+            
+            // 重新加载年度数据
+            if (store.selectedYear.value && store.loadFeatureCards) {
+                console.log('[清空选择] 清空季度后，重新加载年度数据');
+                await store.loadFeatureCards(true);
+            }
+        } catch (error) {
+            handleError(error, '清空季度选择');
+        }
+    };
+
+    // 清空月度选择
+    const clearMonth = async () => {
+        try {
+            console.log('[清空选择] 清空月度选择');
+            
+            // 清空月度及以下选择
+            store.selectedMonth.value = '';
+            store.selectedWeek.value = '';
+            store.selectedDay.value = '';
+            
+            // 更新全部选择状态
+            store.isAllSelected.value = false;
+            
+            // 重新加载季度数据
+            if (store.selectedYear.value && store.selectedQuarter.value && store.loadFeatureCards) {
+                console.log('[清空选择] 清空月度后，重新加载季度数据');
+                await store.loadFeatureCards(true);
+            }
+        } catch (error) {
+            handleError(error, '清空月度选择');
+        }
+    };
+
+    // 清空周选择
+    const clearWeek = async () => {
+        try {
+            console.log('[清空选择] 清空周选择');
+            
+            // 清空周及以下选择
+            store.selectedWeek.value = '';
+            store.selectedDay.value = '';
+            
+            // 更新全部选择状态
+            store.isAllSelected.value = false;
+            
+            // 重新加载月度数据
+            if (store.selectedYear.value && store.selectedQuarter.value && store.selectedMonth.value && store.loadFeatureCards) {
+                console.log('[清空选择] 清空周后，重新加载月度数据');
+                await store.loadFeatureCards(true);
+            }
+        } catch (error) {
+            handleError(error, '清空周选择');
+        }
+    };
+
+    // 清空日选择
+    const clearDay = async () => {
+        try {
+            console.log('[清空选择] 清空日选择');
+            
+            // 清空日选择
+            store.selectedDay.value = '';
+            
+            // 更新全部选择状态
+            store.isAllSelected.value = false;
+            
+            // 重新加载周数据
+            if (store.selectedYear.value && store.selectedQuarter.value && store.selectedMonth.value && store.selectedWeek.value && store.loadFeatureCards) {
+                console.log('[清空选择] 清空日后，重新加载周数据');
+                await store.loadFeatureCards(true);
+            }
+        } catch (error) {
+            handleError(error, '清空日选择');
+        }
+    };
+
     // 处理下载数据
     const handleDownloadData = async () => {
         try {
@@ -2589,6 +2704,11 @@ export const useMethods = (store) => {
         handleMonthChange,
         handleWeekChange,
         handleDayChange,
+        clearYear,
+        clearQuarter,
+        clearMonth,
+        clearWeek,
+        clearDay,
         getMonthsByQuarter,
         getWeeksByMonth,
         getDaysByWeek,
