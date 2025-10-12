@@ -152,7 +152,7 @@
     
     <!-- 引入工具类（使用ES6模块） -->
     <script type="module" src="/config.js"></script>
-    <script src="/utils/index.js"></script>
+    <script type="module" src="/utils/index.js"></script>
     <script type="module" src="/utils/log.js"></script>
     <script type="module" src="/utils/baseView.js"></script>
     
@@ -165,27 +165,27 @@
     <script type="module" src="/apis/modules/crud.js"></script>
     
     <!-- 引入数据（必须在其他脚本之前加载） -->
-    <script src="/views/tasks/data/mockData.js"></script>
+    <script type="module" src="/views/tasks/data/mockData.js"></script>
     
     <!-- 引入hooks逻辑 -->
-    <script src="/views/tasks/hooks/store.js"></script>
-    <script src="/views/tasks/hooks/useComputed.js"></script>
-    <script src="/views/tasks/hooks/useMethods.js"></script>
+    <script type="module" src="/views/tasks/hooks/store.js"></script>
+    <script type="module" src="/views/tasks/hooks/useComputed.js"></script>
+    <script type="module" src="/views/tasks/hooks/useMethods.js"></script>
     
     <!-- 引入新组件（优先兼容现有组件） -->
-    <script src="/views/tasks/plugins/enhancedTaskList/index.js"></script>
+    <script type="module" src="/views/tasks/plugins/enhancedTaskList/index.js"></script>
 
-    <script src="/views/tasks/plugins/enhancedGanttChart/index.js"></script>
-    <script src="/views/tasks/plugins/taskEditor/index.js"></script>
+    <script type="module" src="/views/tasks/plugins/enhancedGanttChart/index.js"></script>
+    <script type="module" src="/views/tasks/plugins/taskEditor/index.js"></script>
 
     
     <!-- 兼容现有组件 -->
-    <script src="/views/tasks/plugins/taskList/index.js"></script>
-    <script src="/views/tasks/plugins/ganttChart/index.js"></script>
+    <script type="module" src="/views/tasks/plugins/taskList/index.js"></script>
+    <script type="module" src="/views/tasks/plugins/ganttChart/index.js"></script>
 
     
     <!-- 引入页面逻辑 -->
-    <script src="/views/tasks/index.js"></script>
+    <script type="module" src="/views/tasks/index.js"></script>
     
     
     

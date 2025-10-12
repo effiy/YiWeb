@@ -392,8 +392,19 @@ const { computed } = Vue;
                 });
                 
                 // 添加ESC快捷键监听，取消文件选中
+                // 监听全屏查看器的ESC事件，如果全屏查看器已处理则跳过
+                window.addEventListener('fullscreenViewerEscPressed', (e) => {
+                    logInfo('[代码审查页面] 检测到全屏查看器ESC事件，跳过文件选中取消');
+                });
+                
                 window.addEventListener('keydown', (e) => {
                     if (e.key === 'Escape') {
+                        // 检查是否有全屏查看器打开，如果有则跳过处理
+                        if (window.fullscreenViewer && window.fullscreenViewer.isOpen) {
+                            logInfo('[代码审查页面] 全屏查看器已打开，跳过ESC处理');
+                            return;
+                        }
+                        
                         logInfo('[代码审查页面] ESC键被按下，取消文件选中');
                         if (store && store.selectedFileId.value) {
                             const previousFileId = store.selectedFileId.value;

@@ -11,6 +11,42 @@ export const useMethods = (store) => {
         element.addEventListener(event, handler, finalOptions);
     };
     
+    // 添加全局ESC按键处理
+    const setupGlobalEscHandler = () => {
+        // 监听全屏查看器的ESC事件
+        window.addEventListener('fullscreenViewerEscPressed', (e) => {
+            console.log('[欢迎页面] 检测到全屏查看器ESC事件，跳过其他ESC处理');
+        });
+        
+        // 添加全局ESC按键监听
+        const handleGlobalEsc = (e) => {
+            if (e.key === 'Escape') {
+                // 检查是否有全屏查看器打开，如果有则跳过处理
+                if (window.fullscreenViewer && window.fullscreenViewer.isOpen) {
+                    console.log('[欢迎页面] 全屏查看器已打开，跳过ESC处理');
+                    return;
+                }
+                
+                // 这里可以添加首页特定的ESC处理逻辑
+                console.log('[欢迎页面] ESC键被按下');
+            }
+        };
+        
+        document.addEventListener('keydown', handleGlobalEsc);
+        
+        // 返回清理函数
+        return () => {
+            document.removeEventListener('keydown', handleGlobalEsc);
+        };
+    };
+    
+    // 在组件挂载时设置ESC处理
+    if (typeof window !== 'undefined') {
+        const cleanup = setupGlobalEscHandler();
+        // 在页面卸载时清理
+        window.addEventListener('beforeunload', cleanup);
+    }
+    
     // 输入法状态标记
     let isComposing = false;
     

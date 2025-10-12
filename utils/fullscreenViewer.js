@@ -455,14 +455,25 @@ class FullscreenViewer {
      * 设置全局事件监听器
      */
     setupGlobalEventListeners() {
-        // ESC键关闭
+        // ESC键关闭 - 使用高优先级事件监听
         if (this.config.closeOnEscape) {
             this.eventHandlers.set('keydown', (e) => {
                 if (e.key === 'Escape' && this.isOpen) {
+                    // 阻止事件冒泡，确保优先处理
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    
+                    // 发送自定义事件通知其他组件
+                    window.dispatchEvent(new CustomEvent('fullscreenViewerEscPressed', {
+                        detail: { source: 'fullscreenViewer' }
+                    }));
+                    
                     this.close();
                 }
             });
-            document.addEventListener('keydown', this.eventHandlers.get('keydown'));
+            // 使用 capture: true 确保优先捕获事件
+            document.addEventListener('keydown', this.eventHandlers.get('keydown'), true);
         }
     }
 
