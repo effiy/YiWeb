@@ -320,7 +320,22 @@
                                     </div>
                                 </header>
                                 <section class="card-content">
-                                    <h3 class="card-title">
+                                    <h3 
+                                        class="card-title" 
+                                        @click="handleCardTitleClick(card, null, $event)"
+                                        @keydown.enter="handleCardTitleClick(card, null, $event)"
+                                        @keydown.space.prevent="handleCardTitleClick(card, null, $event)"
+                                        @mousedown="handleCardTitleMouseDown($event)"
+                                        @mouseup="handleCardTitleMouseUp($event)"
+                                        @mouseleave="handleCardTitleMouseUp($event)"
+                                        @touchstart="handleCardTitleTouchStart($event)"
+                                        @touchend="handleCardTitleTouchEnd($event)"
+                                        @touchcancel="handleCardTitleTouchEnd($event)"
+                                        tabindex="0"
+                                        role="button"
+                                        :aria-label="'打开' + card.title + '的任务列表'"
+                                        :title="'点击打开' + card.title + '的任务列表'"
+                                    >
                                         <i :class="card.icon" aria-hidden="true"></i> {{ card.title }}
                                     </h3>
                                     <p class="card-description">{{ card.description }}</p>

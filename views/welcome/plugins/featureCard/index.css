@@ -655,42 +655,162 @@
     justify-content: space-between;
     position: relative;
     z-index: 2;
+    padding: var(--spacing-sm) 0;
 }
 
 .card-title {
-    font-size: 1.5rem;
-    font-weight: 800;
+    font-size: 1.4rem;
+    font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: var(--spacing-md);
-    letter-spacing: -0.8px;
-    line-height: 1.3;
+    margin: 0 0 var(--spacing-lg) 0;
+    letter-spacing: -0.5px;
+    line-height: 1.4;
     position: relative;
     background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     transition: all var(--duration-slow) var(--ease-smooth);
+    
+    /* 优化点击体验 */
+    cursor: pointer;
+    padding: 12px 16px;
+    margin: -12px -16px var(--spacing-lg) -16px;
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    
+    /* 点击状态指示 */
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, 
+            rgba(6, 182, 212, 0.1) 0%, 
+            rgba(79, 70, 229, 0.08) 50%,
+            rgba(124, 58, 237, 0.06) 100%);
+        opacity: 0;
+        transition: opacity var(--duration-fast) var(--ease-smooth);
+        border-radius: inherit;
+        pointer-events: none;
+    }
+    
+    /* 点击波纹效果 */
+    &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: radial-gradient(circle, rgba(6, 182, 212, 0.3) 0%, transparent 70%);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width 0.3s ease, height 0.3s ease, opacity 0.3s ease;
+        opacity: 0;
+        pointer-events: none;
+    }
 }
 
 /* 优化标题悬停效果 */
 .feature-card:hover .card-title {
-    transform: translateY(-3px);
+    transform: translateY(-2px) scale(1.02);
     background: linear-gradient(135deg, #06b6d4 0%, #4f46e5 50%, #7c3aed 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    filter: brightness(1.2);
+    filter: brightness(1.15);
+    
+    /* 悬停时显示背景指示 */
+    &::before {
+        opacity: 0.8;
+    }
+}
+
+/* 点击状态样式 */
+.card-title:active,
+.card-title.clicking {
+    transform: translateY(-1px) scale(0.98);
+    background: linear-gradient(135deg, #06b6d4 0%, #4f46e5 50%, #7c3aed 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    
+    /* 点击时显示背景指示 */
+    &::before {
+        opacity: 1;
+        background: linear-gradient(135deg, 
+            rgba(6, 182, 212, 0.2) 0%, 
+            rgba(79, 70, 229, 0.15) 50%,
+            rgba(124, 58, 237, 0.1) 100%);
+    }
+    
+    /* 触发波纹效果 */
+    &::after {
+        width: 200px;
+        height: 200px;
+        opacity: 1;
+    }
+}
+
+/* 焦点状态优化 */
+.card-title:focus-visible {
+    outline: 2px solid rgba(6, 182, 212, 0.6);
+    outline-offset: 4px;
+    border-radius: 8px;
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+    .card-title {
+        /* 增大触摸区域 */
+        padding: 16px 20px;
+        margin: -16px -20px var(--spacing-lg) -20px;
+        
+        /* 优化触摸反馈 */
+        -webkit-tap-highlight-color: rgba(6, 182, 212, 0.2);
+        tap-highlight-color: rgba(6, 182, 212, 0.2);
+    }
+    
+    .card-title:active {
+        transform: scale(0.95);
+        background: linear-gradient(135deg, #06b6d4 0%, #4f46e5 50%, #7c3aed 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+}
+
+/* 减少动画偏好设置 */
+@media (prefers-reduced-motion: reduce) {
+    .card-title {
+        transition: none;
+    }
+    
+    .card-title::before,
+    .card-title::after {
+        transition: none;
+    }
+    
+    .card-title:active,
+    .card-title.clicking {
+        transform: none;
+    }
 }
 
 .card-description {
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
-    line-height: 1.7;
-    margin-bottom: var(--spacing-lg);
-    opacity: 0.9;
+    line-height: 1.6;
+    margin: 0 0 var(--spacing-xl) 0;
+    opacity: 0.85;
     font-weight: 400;
     transition: all var(--duration-slow) var(--ease-smooth);
     position: relative;
+    padding-left: 2px;
 }
 
 .feature-card:hover .card-description {
@@ -702,8 +822,8 @@
 .card-features {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
     justify-items: center;
     position: relative;
 }
@@ -1073,7 +1193,15 @@
     }
     
     .card-title {
-        font-size: var(--font-size-xl);
+        font-size: 1.2rem;
+        margin: 0 0 var(--spacing-md) 0;
+        padding: 10px 14px;
+        margin: -10px -14px var(--spacing-md) -14px;
+    }
+    
+    .card-description {
+        font-size: 0.9rem;
+        margin: 0 0 var(--spacing-lg) 0;
     }
     
     .card-features {

@@ -2374,6 +2374,84 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 处理卡片标题点击事件（优化版本）
+     * @param {Object} card - 卡片对象
+     * @param {Object} feature - 功能特性对象
+     * @param {Event} event - 事件对象
+     */
+    const handleCardTitleClick = (card, feature, event) => {
+        // 阻止事件冒泡
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        // 添加点击视觉反馈
+        const titleElement = event?.target?.closest('.card-title');
+        if (titleElement) {
+            titleElement.classList.add('clicking');
+            
+            // 移除点击状态类
+            setTimeout(() => {
+                titleElement.classList.remove('clicking');
+            }, 200);
+        }
+        
+        // 调用原有的导航逻辑
+        navigateToTasks(card, feature, event);
+    };
+
+    /**
+     * 处理卡片标题鼠标按下事件
+     * @param {Event} event - 事件对象
+     */
+    const handleCardTitleMouseDown = (event) => {
+        const titleElement = event.target.closest('.card-title');
+        if (titleElement) {
+            titleElement.classList.add('clicking');
+        }
+    };
+
+    /**
+     * 处理卡片标题鼠标释放事件
+     * @param {Event} event - 事件对象
+     */
+    const handleCardTitleMouseUp = (event) => {
+        const titleElement = event.target.closest('.card-title');
+        if (titleElement) {
+            // 延迟移除点击状态，确保用户能看到反馈
+            setTimeout(() => {
+                titleElement.classList.remove('clicking');
+            }, 150);
+        }
+    };
+
+    /**
+     * 处理卡片标题触摸开始事件
+     * @param {Event} event - 事件对象
+     */
+    const handleCardTitleTouchStart = (event) => {
+        const titleElement = event.target.closest('.card-title');
+        if (titleElement) {
+            titleElement.classList.add('clicking');
+        }
+    };
+
+    /**
+     * 处理卡片标题触摸结束事件
+     * @param {Event} event - 事件对象
+     */
+    const handleCardTitleTouchEnd = (event) => {
+        const titleElement = event.target.closest('.card-title');
+        if (titleElement) {
+            // 延迟移除点击状态，确保用户能看到反馈
+            setTimeout(() => {
+                titleElement.classList.remove('clicking');
+            }, 200);
+        }
+    };
+
+    /**
      * 跳转到任务列表页面
      * @param {Object} card - 卡片对象
      * @param {Object} feature - 功能特性对象
@@ -2386,12 +2464,14 @@ export const useMethods = (store) => {
         }
         
         try {
-            // 构建跳转URL，参考 window.open 格式
-            const tasksUrl = `/views/tasks/index.html?cardTitle=${encodeURIComponent(card.title)}&featureName=${encodeURIComponent(feature.name)}`;
+            // 兼容 feature 为空
+            const cardTitle = card && card.title ? encodeURIComponent(card.title) : '';
+            const featureName = feature && feature.name ? encodeURIComponent(feature.name) : '';
+            const tasksUrl = `/views/tasks/index.html?cardTitle=${cardTitle}&featureName=${featureName}`;
             
             console.log('[导航] 跳转到任务列表:', {
-                card: card.title,
-                feature: feature.name,
+                card: card?.title,
+                feature: feature?.name,
                 url: tasksUrl
             });
             
@@ -2665,6 +2745,11 @@ export const useMethods = (store) => {
         searchTags,
         getTagStats,
         navigateToTasks,
+        handleCardTitleClick,
+        handleCardTitleMouseDown,
+        handleCardTitleMouseUp,
+        handleCardTitleTouchStart,
+        handleCardTitleTouchEnd,
         openAicrFromTag,
         editCard,
         createCard,
