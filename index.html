@@ -353,7 +353,7 @@
                                                     <span v-if="card.year" class="time-badge">{{ card.year }}</span>
                                                     <span v-if="card.quarter" class="time-badge">{{ card.quarter }}</span>
                                                     <span v-if="card.month" class="time-badge">{{ card.month }}月</span>
-                                                    <span v-if="card.week" class="time-badge">第{{ card.week }}周</span>
+                                                    <span v-if="card.week" class="time-badge">{{ getWeekDisplayText(card.year, card.month, card.week) }}</span>
                                                     <span v-if="card.day" class="time-badge">{{ card.day }}</span>
                                                 </span>
                                             </span>

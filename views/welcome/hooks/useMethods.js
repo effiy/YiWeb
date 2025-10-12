@@ -2591,6 +2591,27 @@ export const useMethods = (store) => {
         }
     };
 
+    // 获取周显示文本（包含日期期间信息）
+    const getWeekDisplayText = (year, month, week) => {
+        if (!year || !month || !week) {
+            return `第${week}周`;
+        }
+        
+        try {
+            const weeks = getWeeksByMonth(year, month);
+            const weekData = weeks.find(w => w.value === week);
+            
+            if (weekData) {
+                return weekData.label; // 返回 "第X周 (X-X日)" 格式
+            } else {
+                return `第${week}周`;
+            }
+        } catch (error) {
+            console.error('[getWeekDisplayText] 获取周显示文本失败:', error);
+            return `第${week}周`;
+        }
+    };
+
     // 返回方法集合
     const methods = {
         openLink,
@@ -2620,6 +2641,7 @@ export const useMethods = (store) => {
         getMonthsByQuarter,
         getWeeksByMonth,
         getDaysByWeek,
+        getWeekDisplayText,
         // 上传下载相关方法
         handleDownloadData,
         triggerUploadData,
