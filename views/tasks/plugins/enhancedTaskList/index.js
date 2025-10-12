@@ -56,6 +56,12 @@ const createEnhancedTaskList = () => {
 
                             </div>
                         </div>
+                        
+                        <!-- 功能名称标识 -->
+                        <div class="task-feature-name" v-if="task.featureName">
+                            <i class="fas fa-tag"></i>
+                            <span>{{ task.featureName }}</span>
+                        </div>
                         <div class="task-description" v-if="task.description">{{ task.description }}</div>
                         
                         <!-- 输入输出信息 -->
