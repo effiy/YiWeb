@@ -6,6 +6,7 @@
 console.log('[CreateCardPlugin] 插件开始加载...');
 
 import { showError, showSuccess } from '/utils/message.js';
+import { getWeeksByMonth, getDaysByWeek, getMonthsByQuarter, getQuarters } from '/utils/timeSelectors.js';
 
 console.log('[CreateCardPlugin] 依赖模块导入完成');
 
@@ -330,96 +331,13 @@ export async function openCreateCardModal(store) {
     `;
     daySelect.disabled = !formData.week;
 
-    // 季度选项数据
-    const quarters = [
-      { value: 'Q1', label: '第一季度' },
-      { value: 'Q2', label: '第二季度' },
-      { value: 'Q3', label: '第三季度' },
-      { value: 'Q4', label: '第四季度' }
-    ];
-
-    // 月份映射
+    // 使用共享的时间选择器函数
+    const quarters = getQuarters();
     const monthsByQuarter = {
-      'Q1': [
-        { value: '01', label: '1月' },
-        { value: '02', label: '2月' },
-        { value: '03', label: '3月' }
-      ],
-      'Q2': [
-        { value: '04', label: '4月' },
-        { value: '05', label: '5月' },
-        { value: '06', label: '6月' }
-      ],
-      'Q3': [
-        { value: '07', label: '7月' },
-        { value: '08', label: '8月' },
-        { value: '09', label: '9月' }
-      ],
-      'Q4': [
-        { value: '10', label: '10月' },
-        { value: '11', label: '11月' },
-        { value: '12', label: '12月' }
-      ]
-    };
-
-    // 计算指定年月的周数
-    const getWeeksInMonth = (year, month) => {
-      const firstDay = new Date(year, month - 1, 1);
-      const lastDay = new Date(year, month, 0);
-      const firstWeekStart = new Date(firstDay);
-      firstWeekStart.setDate(firstDay.getDate() - firstDay.getDay());
-      
-      const lastWeekEnd = new Date(lastDay);
-      lastWeekEnd.setDate(lastDay.getDate() + (6 - lastDay.getDay()));
-      
-      const weeks = [];
-      let currentWeek = new Date(firstWeekStart);
-      let weekNumber = 1;
-      
-      while (currentWeek <= lastWeekEnd) {
-        const weekStart = new Date(currentWeek);
-        const weekEnd = new Date(currentWeek);
-        weekEnd.setDate(weekStart.getDate() + 6);
-        
-        // 检查这一周是否与目标月份有重叠
-        if (weekStart.getMonth() === month - 1 || weekEnd.getMonth() === month - 1) {
-          weeks.push({
-            value: weekNumber.toString().padStart(2, '0'),
-            label: `第${weekNumber}周 (${weekStart.getMonth() + 1}/${weekStart.getDate()}-${weekEnd.getMonth() + 1}/${weekEnd.getDate()})`
-          });
-        }
-        
-        currentWeek.setDate(currentWeek.getDate() + 7);
-        weekNumber++;
-      }
-      
-      return weeks;
-    };
-
-    // 计算指定年月的指定周的天数
-    const getDaysInWeek = (year, month, weekNumber) => {
-      const firstDay = new Date(year, month - 1, 1);
-      const firstWeekStart = new Date(firstDay);
-      firstWeekStart.setDate(firstDay.getDate() - firstDay.getDay());
-      
-      const targetWeekStart = new Date(firstWeekStart);
-      targetWeekStart.setDate(firstWeekStart.getDate() + (weekNumber - 1) * 7);
-      
-      const days = [];
-      for (let i = 0; i < 7; i++) {
-        const day = new Date(targetWeekStart);
-        day.setDate(targetWeekStart.getDate() + i);
-        
-        // 只包含目标月份的天数
-        if (day.getMonth() === month - 1) {
-          days.push({
-            value: day.getDate().toString().padStart(2, '0'),
-            label: `${day.getDate()}日 (${['日', '一', '二', '三', '四', '五', '六'][day.getDay()]})`
-          });
-        }
-      }
-      
-      return days;
+      'Q1': getMonthsByQuarter('Q1'),
+      'Q2': getMonthsByQuarter('Q2'),
+      'Q3': getMonthsByQuarter('Q3'),
+      'Q4': getMonthsByQuarter('Q4')
     };
 
     // 更新季度选择器
@@ -480,7 +398,7 @@ export async function openCreateCardModal(store) {
       weekSelect.appendChild(emptyOption);
 
       if (formData.month && formData.year) {
-        const weeks = getWeeksInMonth(parseInt(formData.year), parseInt(formData.month));
+        const weeks = getWeeksByMonth(formData.year, formData.month);
         weeks.forEach(week => {
           const option = document.createElement('option');
           option.value = week.value;
@@ -504,8 +422,8 @@ export async function openCreateCardModal(store) {
       emptyOption.textContent = formData.week ? '选择日度' : '请先选择周度';
       daySelect.appendChild(emptyOption);
 
-      if (formData.week && formData.month && formData.year) {
-        const days = getDaysInWeek(parseInt(formData.year), parseInt(formData.month), parseInt(formData.week));
+      if (formData.week && formData.year) {
+        const days = getDaysByWeek(formData.year, formData.week);
         days.forEach(day => {
           const option = document.createElement('option');
           option.value = day.value;

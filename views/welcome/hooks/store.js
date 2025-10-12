@@ -4,6 +4,7 @@
 import { safeExecuteAsync } from '/utils/error.js';
 import { logInfo, logWarn, logError } from '/utils/log.js';
 import { buildTimeQueryParams, validateTimeParams, formatTimeRangeText } from '/utils/timeParams.js';
+import { getQuarters } from '/utils/timeSelectors.js';
 
     // 兼容Vue2和Vue3的ref获取方式
     const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ value: val });
@@ -50,12 +51,7 @@ export const createStore = () => {
     const years = vueRef([]);
     
     // 季度列表
-    const quarters = vueRef([
-        { value: 'Q1', label: '第一季度' },
-        { value: 'Q2', label: '第二季度' },
-        { value: 'Q3', label: '第三季度' },
-        { value: 'Q4', label: '第四季度' }
-    ]);
+    const quarters = vueRef(getQuarters());
 
     /**
      * 强制触发Vue响应式更新
