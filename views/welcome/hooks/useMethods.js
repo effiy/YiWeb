@@ -876,7 +876,7 @@ export const useMethods = (store) => {
                 weekEnd.setTime(lastDay.getTime());
             }
             
-            const weekValue = `W${currentWeek.toString().padStart(2, '0')}`;
+            const weekValue = currentWeek.toString().padStart(2, '0');
             const weekLabel = `第${currentWeek}周 (${weekStart.getDate()}-${weekEnd.getDate()}日)`;
             
             weeks.push({
@@ -898,7 +898,7 @@ export const useMethods = (store) => {
         if (!year || !week) return [];
         
         const yearNum = parseInt(year);
-        const weekNum = parseInt(week.replace('W', ''));
+        const weekNum = parseInt(week);
         
         // 计算该周的第一天（周一）
         const jan1 = new Date(yearNum, 0, 1);

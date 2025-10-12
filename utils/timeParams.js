@@ -6,7 +6,7 @@
  * @param {string} year - 年度 (如 "2024")
  * @param {string} quarter - 季度 (如 "Q1", "Q2", "Q3", "Q4")
  * @param {string} month - 月度 (如 "01", "02", ..., "12")
- * @param {string} week - 周 (如 "W01", "W02", ...)
+ * @param {string} week - 周 (如 "01", "02", ...)
  * @param {string} day - 日 (如 "01", "02", ..., "31")
  * @returns {Object} 包含时间范围信息的对象
  */
@@ -40,7 +40,7 @@ export const convertTimeParamsToDateRange = (year, quarter, month, week, day) =>
         } else if (week && month && quarter) {
             // 具体到周
             const monthNum = parseInt(month);
-            const weekNum = parseInt(week.replace('W', ''));
+            const weekNum = parseInt(week);
             if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
                 throw new Error('无效的月份');
             }
@@ -205,9 +205,9 @@ export const validateTimeParams = (year, quarter, month, week, day) => {
     }
     
     if (week) {
-        const weekNum = parseInt(week.replace('W', ''));
+        const weekNum = parseInt(week);
         if (isNaN(weekNum) || weekNum < 1 || weekNum > 6) {
-            errors.push('周数必须在W01-W06之间');
+            errors.push('周数必须在01-06之间');
         }
         
         // 验证周与月份的匹配性
@@ -276,7 +276,7 @@ export const formatTimeRangeText = (year, quarter, month, week, day) => {
             text += `${parseInt(month)}月`;
             
             if (week) {
-                const weekNum = parseInt(week.replace('W', ''));
+                const weekNum = parseInt(week);
                 text += `第${weekNum}周`;
                 
                 if (day) {
