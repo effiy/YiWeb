@@ -87,62 +87,164 @@ window.createStore = () => {
             
             console.log('[loadTasksData] 正在加载任务数据...');
             
-
-            // 根据浏览器请求参数拼接featureName和cardTitle进行条件查询
-            const urlParams = new URLSearchParams(window.location.search);
-            let queryUrl = `${window.API_URL}/mongodb/?cname=tasks`;
-            const featureName = urlParams.get('featureName');
-            const cardTitle = urlParams.get('cardTitle');
-            if (featureName) {
-                queryUrl += `&featureName=${encodeURIComponent(featureName)}`;
-            }
-            if (cardTitle) {
-                queryUrl += `&cardTitle=${encodeURIComponent(cardTitle)}`;
-            }
-            const mongoResponse = await window.getData(queryUrl);
-
-            const mongoData = mongoResponse.data.list;
-
-            console.log('[loadTasksData] 加载到的mongo数据:', mongoData);
-            
-            // 去重，避免重复的任务
-            const allTasks = Array.isArray(mongoData) ? mongoData : [];
-            const uniqueTasks = [];
-            const seenTitles = new Set();
-            
-            for (const task of allTasks) {
-                if (task && task.title && !seenTitles.has(task.title)) {
-                    seenTitles.add(task.title);
-                    
-                    // 确保每个任务都有唯一的key
-                    if (!task.key) {
-                        task.key = generateUniqueId();
-                    }
-                    
-                    uniqueTasks.push(task);
+            try {
+                // 根据浏览器请求参数拼接featureName和cardTitle进行条件查询
+                const urlParams = new URLSearchParams(window.location.search);
+                let queryUrl = `${window.API_URL}/mongodb/?cname=tasks`;
+                const featureName = urlParams.get('featureName');
+                const cardTitle = urlParams.get('cardTitle');
+                if (featureName) {
+                    queryUrl += `&featureName=${encodeURIComponent(featureName)}`;
                 }
+                if (cardTitle) {
+                    queryUrl += `&cardTitle=${encodeURIComponent(cardTitle)}`;
+                }
+                
+                console.log('[loadTasksData] 查询URL:', queryUrl);
+                
+                const mongoResponse = await window.getData(queryUrl);
+                
+                // 验证响应数据
+                if (!mongoResponse || !mongoResponse.data) {
+                    throw new Error('API响应数据格式错误');
+                }
+                
+                const mongoData = mongoResponse.data.list;
+                console.log('[loadTasksData] 加载到的mongo数据:', mongoData);
+                
+                // 验证数据格式
+                if (!Array.isArray(mongoData)) {
+                    console.warn('[loadTasksData] API返回的数据不是数组，使用空数组');
+                    tasksData.value = [];
+                    return [];
+                }
+                
+                // 去重，避免重复的任务
+                const allTasks = mongoData;
+                const uniqueTasks = [];
+                const seenTitles = new Set();
+                
+                for (const task of allTasks) {
+                    if (task && task.title && !seenTitles.has(task.title)) {
+                        seenTitles.add(task.title);
+                        
+                        // 确保每个任务都有唯一的key
+                        if (!task.key) {
+                            task.key = generateUniqueId();
+                        }
+                        
+                        // 验证任务数据完整性
+                        if (validateTaskData(task)) {
+                            uniqueTasks.push(task);
+                        } else {
+                            console.warn('[loadTasksData] 跳过无效任务:', task.title);
+                        }
+                    }
+                }
+                
+                tasksData.value = uniqueTasks;
+                console.log(`[loadTasksData] 成功加载 ${uniqueTasks.length} 条唯一任务数据（去重前：${allTasks.length} 条）`);
+                
+                // 验证所有任务都有唯一的key
+                const keys = uniqueTasks.map(task => task.key).filter(Boolean);
+                const uniqueKeys = new Set(keys);
+                console.log(`[loadTasksData] 任务key验证: 总key数 ${keys.length}, 唯一key数 ${uniqueKeys.size}`);
+                
+                if (keys.length !== uniqueKeys.size) {
+                    console.warn('[loadTasksData] 警告：存在重复的key，这可能导致Vue渲染问题');
+                }
+                
+                // 如果加载的数据为空，提供更详细的日志
+                if (uniqueTasks.length === 0) {
+                    console.warn('[loadTasksData] 加载的任务数据为空');
+                    console.warn('[loadTasksData] 原始数据:', mongoData);
+                    console.warn('[loadTasksData] 查询参数:', { featureName, cardTitle });
+                } else {
+                    // 数据加载成功，保存到缓存
+                    saveCachedData(uniqueTasks);
+                }
+                
+                return uniqueTasks;
+                
+            } catch (apiError) {
+                console.error('[loadTasksData] API调用失败:', apiError);
+                
+                // 如果是网络错误，尝试使用缓存数据
+                const cachedData = getCachedData();
+                if (cachedData && cachedData.length > 0) {
+                    console.log('[loadTasksData] 使用缓存数据作为备用');
+                    tasksData.value = cachedData;
+                    return cachedData;
+                }
+                
+                // 如果API失败且没有缓存，抛出错误
+                throw new Error(`数据加载失败: ${apiError.message || '网络连接错误'}`);
             }
             
-            tasksData.value = uniqueTasks;
-            console.log(`[loadTasksData] 成功加载 ${uniqueTasks.length} 条唯一任务数据（去重前：${allTasks.length} 条）`);
-            
-            // 验证所有任务都有唯一的key
-            const keys = uniqueTasks.map(task => task.key).filter(Boolean);
-            const uniqueKeys = new Set(keys);
-            console.log(`[loadTasksData] 任务key验证: 总key数 ${keys.length}, 唯一key数 ${uniqueKeys.size}`);
-            
-            if (keys.length !== uniqueKeys.size) {
-                console.warn('[loadTasksData] 警告：存在重复的key，这可能导致Vue渲染问题');
-            }
-            
-            return uniqueTasks;
         }, '任务数据加载', (errorInfo) => {
             error.value = errorInfo.message;
             errorMessage.value = errorInfo.message;
             tasksData.value = [];
+            
+            // 显示用户友好的错误信息
+            if (window.showError) {
+                window.showError(`数据加载失败: ${errorInfo.message}`);
+            }
         }).finally(() => {
             loading.value = false;
         });
+    };
+    
+    /**
+     * 验证任务数据完整性
+     */
+    const validateTaskData = (task) => {
+        try {
+            if (!task || typeof task !== 'object') {
+                return false;
+            }
+            
+            if (!task.title || typeof task.title !== 'string' || task.title.trim() === '') {
+                return false;
+            }
+            
+            return true;
+        } catch (error) {
+            console.warn('[validateTaskData] 任务数据验证失败:', error);
+            return false;
+        }
+    };
+    
+    /**
+     * 获取缓存数据
+     */
+    const getCachedData = () => {
+        try {
+            const cached = localStorage.getItem('taskpro_cached_tasks');
+            if (cached) {
+                const data = JSON.parse(cached);
+                // 检查缓存是否过期（24小时）
+                const cacheTime = localStorage.getItem('taskpro_cache_time');
+                if (cacheTime && Date.now() - parseInt(cacheTime) < 24 * 60 * 60 * 1000) {
+                    return data;
+                }
+            }
+        } catch (error) {
+            console.warn('[getCachedData] 获取缓存数据失败:', error);
+        }
+        return null;
+    };
+    
+    /**
+     * 保存数据到缓存
+     */
+    const saveCachedData = (data) => {
+        try {
+            localStorage.setItem('taskpro_cached_tasks', JSON.stringify(data));
+            localStorage.setItem('taskpro_cache_time', Date.now().toString());
+        } catch (error) {
+            console.warn('[saveCachedData] 保存缓存数据失败:', error);
+        }
     };
 
     /**

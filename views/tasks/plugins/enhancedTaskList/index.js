@@ -18,9 +18,21 @@ const createEnhancedTaskList = () => {
                     <button @click="$emit('retry')" class="retry-btn">重新加载</button>
                 </div>
                 <div v-else-if="tasks.length === 0" class="empty-state">
-                    <i class="fas fa-tasks"></i>
-                    <h3>暂无任务</h3>
-                    <p>开始创建您的第一个任务吧</p>
+                    <div class="empty-state-content">
+                        <i class="fas fa-tasks"></i>
+                        <h3>暂无任务</h3>
+                        <p>开始创建您的第一个任务吧</p>
+                        <div class="empty-state-actions">
+                            <button @click="$emit('create-task')" class="create-task-btn">
+                                <i class="fas fa-plus"></i>
+                                创建任务
+                            </button>
+                            <button @click="$emit('retry')" class="retry-btn" v-if="error">
+                                <i class="fas fa-redo"></i>
+                                重新加载
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div v-else class="task-list-content">
                     <div v-for="task in tasks" :key="task.key || task.id" 
@@ -113,7 +125,7 @@ const createEnhancedTaskList = () => {
                 default: () => []
             }
         },
-        emits: ['task-click', 'task-select', 'task-update', 'task-delete', 'task-edit', 'selection-change', 'retry'],
+        emits: ['task-click', 'task-select', 'task-update', 'task-delete', 'task-edit', 'selection-change', 'retry', 'create-task'],
         data() {
             return {
                 // 长按删除相关变量

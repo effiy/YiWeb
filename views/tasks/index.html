@@ -118,6 +118,8 @@
                         @task-update="handleTaskUpdate"
                         @task-delete="handleTaskDelete"
                         @task-edit="handleTaskEdit"
+                        @create-task="createTask"
+                        @retry="loadTasksData"
                     ></enhanced-task-list>
                     <!-- 甘特图视图 -->
                     <enhanced-gantt-chart

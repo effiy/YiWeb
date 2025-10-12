@@ -515,13 +515,8 @@ class TaskProApp {
                     
 
                     
-                    // 验证数据是否正确加载，只有在数据为空时才重新加载
-                    if (!this.tasks || this.tasks.length === 0) {
-                        console.warn('[TaskPro] 任务数据为空，尝试重新加载');
-                        this.loadTasksData();
-                    } else {
-                        console.log('[TaskPro] 任务数据已存在，无需重新加载，数量:', this.tasks.length);
-                    }
+                    // 智能数据验证和重新加载
+                    this.validateAndReloadData();
                     
                     // 验证编辑相关状态
                     console.log('[TaskPro] 编辑状态验证:', {
@@ -764,6 +759,191 @@ class TaskProApp {
                             this.showTaskEditor = true;
                         } catch (error) {
                             console.error('[TaskPro] 创建任务失败:', error);
+                        }
+                    },
+                    
+                    // 智能数据验证和重新加载
+                    async validateAndReloadData() {
+                        try {
+                            console.log('[TaskPro] 开始数据验证...');
+                            
+                            // 检查数据状态
+                            const hasData = this.tasks && this.tasks.length > 0;
+                            const hasStore = window.store && window.store.tasksData && window.store.tasksData.value;
+                            const storeHasData = hasStore && window.store.tasksData.value.length > 0;
+                            
+                            console.log('[TaskPro] 数据状态检查:', {
+                                hasData,
+                                hasStore,
+                                storeHasData,
+                                currentTasksCount: this.tasks ? this.tasks.length : 0,
+                                storeTasksCount: hasStore ? window.store.tasksData.value.length : 0
+                            });
+                            
+                            // 如果主应用没有数据，但store有数据，同步store数据
+                            if (!hasData && storeHasData) {
+                                console.log('[TaskPro] 主应用数据为空，从store同步数据');
+                                this.tasks = [...window.store.tasksData.value];
+                                this.extractLabels();
+                                this.initNotifications();
+                                return;
+                            }
+                            
+                            // 如果主应用和store都没有数据，尝试重新加载
+                            if (!hasData && !storeHasData) {
+                                console.log('[TaskPro] 主应用和store都没有数据，尝试重新加载');
+                                await this.loadTasksDataWithRetry();
+                                return;
+                            }
+                            
+                            // 如果主应用有数据，验证数据完整性
+                            if (hasData) {
+                                const isValidData = this.validateTaskData(this.tasks);
+                                if (!isValidData) {
+                                    console.warn('[TaskPro] 数据验证失败，尝试重新加载');
+                                    await this.loadTasksDataWithRetry();
+                                    return;
+                                }
+                                console.log('[TaskPro] 数据验证通过，任务数量:', this.tasks.length);
+                            }
+                            
+                        } catch (error) {
+                            console.error('[TaskPro] 数据验证失败:', error);
+                            // 最后的备用方案：加载默认数据
+                            this.loadDefaultData();
+                        }
+                    },
+                    
+                    // 验证任务数据完整性
+                    validateTaskData(tasks) {
+                        try {
+                            if (!Array.isArray(tasks)) {
+                                console.warn('[TaskPro] 任务数据不是数组');
+                                return false;
+                            }
+                            
+                            if (tasks.length === 0) {
+                                console.warn('[TaskPro] 任务数据为空数组');
+                                return false;
+                            }
+                            
+                            // 检查每个任务的基本结构
+                            for (const task of tasks) {
+                                if (!task || typeof task !== 'object') {
+                                    console.warn('[TaskPro] 发现无效任务对象:', task);
+                                    return false;
+                                }
+                                
+                                if (!task.title || typeof task.title !== 'string') {
+                                    console.warn('[TaskPro] 发现无效任务标题:', task);
+                                    return false;
+                                }
+                            }
+                            
+                            return true;
+                        } catch (error) {
+                            console.error('[TaskPro] 数据验证过程出错:', error);
+                            return false;
+                        }
+                    },
+                    
+                    // 带重试机制的数据加载
+                    async loadTasksDataWithRetry(maxRetries = 3) {
+                        let retryCount = 0;
+                        let lastError = null;
+                        
+                        while (retryCount < maxRetries) {
+                            try {
+                                console.log(`[TaskPro] 尝试加载数据 (第${retryCount + 1}次)`);
+                                
+                                // 显示加载状态
+                                this.loading = true;
+                                this.error = null;
+                                
+                                // 尝试加载数据
+                                await this.loadTasksData();
+                                
+                                // 验证加载结果
+                                if (this.tasks && this.tasks.length > 0) {
+                                    console.log('[TaskPro] 数据加载成功，任务数量:', this.tasks.length);
+                                    this.loading = false;
+                                    return;
+                                } else {
+                                    throw new Error('数据加载后仍为空');
+                                }
+                                
+                            } catch (error) {
+                                lastError = error;
+                                retryCount++;
+                                console.warn(`[TaskPro] 第${retryCount}次加载失败:`, error.message);
+                                
+                                if (retryCount < maxRetries) {
+                                    // 等待一段时间后重试
+                                    const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+                                    console.log(`[TaskPro] ${delay}ms后重试...`);
+                                    await new Promise(resolve => setTimeout(resolve, delay));
+                                }
+                            }
+                        }
+                        
+                        // 所有重试都失败了
+                        console.error('[TaskPro] 所有重试都失败，使用默认数据');
+                        this.loading = false;
+                        this.error = lastError ? lastError.message : '数据加载失败';
+                        this.loadDefaultData();
+                        
+                        // 显示用户友好的错误信息
+                        this.showDataLoadError(lastError);
+                    },
+                    
+                    // 显示数据加载错误
+                    showDataLoadError(error) {
+                        try {
+                            const errorMessage = error ? error.message : '数据加载失败';
+                            
+                            // 创建错误提示元素
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'data-load-error';
+                            errorDiv.innerHTML = `
+                                <div class="error-content">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <h3>数据加载失败</h3>
+                                    <p>${errorMessage}</p>
+                                    <div class="error-actions">
+                                        <button onclick="this.retryDataLoad()" class="retry-btn">
+                                            <i class="fas fa-redo"></i>
+                                            重新加载
+                                        </button>
+                                        <button onclick="this.useDefaultData()" class="default-btn">
+                                            <i class="fas fa-database"></i>
+                                            使用示例数据
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            // 添加到页面
+                            const appContainer = document.getElementById('app');
+                            if (appContainer) {
+                                // 在现有内容前插入错误提示
+                                appContainer.insertBefore(errorDiv, appContainer.firstChild);
+                            }
+                            
+                            // 添加重试方法到全局
+                            window.retryDataLoad = () => {
+                                errorDiv.remove();
+                                this.loadTasksDataWithRetry();
+                            };
+                            
+                            // 添加使用默认数据方法到全局
+                            window.useDefaultData = () => {
+                                errorDiv.remove();
+                                this.loadDefaultData();
+                                this.showSuccess('已切换到示例数据');
+                            };
+                            
+                        } catch (error) {
+                            console.error('[TaskPro] 显示错误信息失败:', error);
                         }
                     },
                     
@@ -1291,6 +1471,20 @@ class TaskProApp {
                     // 显示错误
                     showError(message) {
                         // 这里可以添加错误显示的逻辑
+                    },
+                    
+                    // 显示成功消息
+                    showSuccess(message) {
+                        try {
+                            if (window.showSuccess) {
+                                window.showSuccess(message);
+                            } else {
+                                // 降级到原生alert
+                                alert(message);
+                            }
+                        } catch (error) {
+                            console.error('[TaskPro] 显示成功消息失败:', error);
+                        }
                     },
                     
 
