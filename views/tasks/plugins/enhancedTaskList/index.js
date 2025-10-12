@@ -44,6 +44,13 @@ const createEnhancedTaskList = () => {
                          @mousedown="startLongPress(task, $event)"
                          @mouseup="endLongPress"
                          @mouseleave="endLongPress">
+                        
+                        <!-- 功能名称标识 -->
+                        <div class="task-feature-name" v-if="task.featureName">
+                            <i class="fas fa-tag"></i>
+                            <span>{{ task.featureName }}</span>
+                        </div>
+                        
                         <div class="task-header">
                             <div class="task-title">{{ task.title }}</div>
                             <div class="task-actions">
@@ -55,12 +62,6 @@ const createEnhancedTaskList = () => {
                                 </button>
 
                             </div>
-                        </div>
-                        
-                        <!-- 功能名称标识 -->
-                        <div class="task-feature-name" v-if="task.featureName">
-                            <i class="fas fa-tag"></i>
-                            <span>{{ task.featureName }}</span>
                         </div>
                         <div class="task-description" v-if="task.description">{{ task.description }}</div>
                         
