@@ -135,7 +135,9 @@ export async function openCreateCardModal(store) {
       tags: [],
       year: defaultTime.year,
       quarter: defaultTime.quarter,
-      month: defaultTime.month
+      month: defaultTime.month,
+      week: '',
+      day: ''
     };
 
     // ==================== 时间属性选择器（移到最前面，与编辑卡片一致）====================
@@ -270,6 +272,64 @@ export async function openCreateCardModal(store) {
     `;
     monthSelect.disabled = !formData.quarter;
 
+    // 周度选择器
+    const weekContainer = document.createElement('div');
+    weekContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 100px;
+    `;
+
+    const weekLabel = document.createElement('label');
+    weekLabel.textContent = '周度';
+    weekLabel.style.cssText = `
+      font-size: 12px;
+      color: var(--text-secondary, #ccc);
+      font-weight: 500;
+    `;
+
+    const weekSelect = document.createElement('select');
+    weekSelect.style.cssText = `
+      padding: 6px 8px;
+      border: 1px solid var(--border-primary, #333);
+      border-radius: 4px;
+      background: var(--bg-secondary, #2a2a2a);
+      color: var(--text-primary, #fff);
+      font-size: 12px;
+      cursor: pointer;
+    `;
+    weekSelect.disabled = !formData.month;
+
+    // 日度选择器
+    const dayContainer = document.createElement('div');
+    dayContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 100px;
+    `;
+
+    const dayLabel = document.createElement('label');
+    dayLabel.textContent = '日度';
+    dayLabel.style.cssText = `
+      font-size: 12px;
+      color: var(--text-secondary, #ccc);
+      font-weight: 500;
+    `;
+
+    const daySelect = document.createElement('select');
+    daySelect.style.cssText = `
+      padding: 6px 8px;
+      border: 1px solid var(--border-primary, #333);
+      border-radius: 4px;
+      background: var(--bg-secondary, #2a2a2a);
+      color: var(--text-primary, #fff);
+      font-size: 12px;
+      cursor: pointer;
+    `;
+    daySelect.disabled = !formData.week;
+
     // 季度选项数据
     const quarters = [
       { value: 'Q1', label: '第一季度' },
@@ -300,6 +360,66 @@ export async function openCreateCardModal(store) {
         { value: '11', label: '11月' },
         { value: '12', label: '12月' }
       ]
+    };
+
+    // 计算指定年月的周数
+    const getWeeksInMonth = (year, month) => {
+      const firstDay = new Date(year, month - 1, 1);
+      const lastDay = new Date(year, month, 0);
+      const firstWeekStart = new Date(firstDay);
+      firstWeekStart.setDate(firstDay.getDate() - firstDay.getDay());
+      
+      const lastWeekEnd = new Date(lastDay);
+      lastWeekEnd.setDate(lastDay.getDate() + (6 - lastDay.getDay()));
+      
+      const weeks = [];
+      let currentWeek = new Date(firstWeekStart);
+      let weekNumber = 1;
+      
+      while (currentWeek <= lastWeekEnd) {
+        const weekStart = new Date(currentWeek);
+        const weekEnd = new Date(currentWeek);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        
+        // 检查这一周是否与目标月份有重叠
+        if (weekStart.getMonth() === month - 1 || weekEnd.getMonth() === month - 1) {
+          weeks.push({
+            value: weekNumber.toString().padStart(2, '0'),
+            label: `第${weekNumber}周 (${weekStart.getMonth() + 1}/${weekStart.getDate()}-${weekEnd.getMonth() + 1}/${weekEnd.getDate()})`
+          });
+        }
+        
+        currentWeek.setDate(currentWeek.getDate() + 7);
+        weekNumber++;
+      }
+      
+      return weeks;
+    };
+
+    // 计算指定年月的指定周的天数
+    const getDaysInWeek = (year, month, weekNumber) => {
+      const firstDay = new Date(year, month - 1, 1);
+      const firstWeekStart = new Date(firstDay);
+      firstWeekStart.setDate(firstDay.getDate() - firstDay.getDay());
+      
+      const targetWeekStart = new Date(firstWeekStart);
+      targetWeekStart.setDate(firstWeekStart.getDate() + (weekNumber - 1) * 7);
+      
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const day = new Date(targetWeekStart);
+        day.setDate(targetWeekStart.getDate() + i);
+        
+        // 只包含目标月份的天数
+        if (day.getMonth() === month - 1) {
+          days.push({
+            value: day.getDate().toString().padStart(2, '0'),
+            label: `${day.getDate()}日 (${['日', '一', '二', '三', '四', '五', '六'][day.getDay()]})`
+          });
+        }
+      }
+      
+      return days;
     };
 
     // 更新季度选择器
@@ -351,32 +471,110 @@ export async function openCreateCardModal(store) {
       }
     };
 
+    // 更新周度选择器
+    const updateWeekSelect = () => {
+      weekSelect.innerHTML = '';
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = formData.month ? '选择周度' : '请先选择月度';
+      weekSelect.appendChild(emptyOption);
+
+      if (formData.month && formData.year) {
+        const weeks = getWeeksInMonth(parseInt(formData.year), parseInt(formData.month));
+        weeks.forEach(week => {
+          const option = document.createElement('option');
+          option.value = week.value;
+          option.textContent = week.label;
+          if (formData.week === week.value) {
+            option.selected = true;
+          }
+          weekSelect.appendChild(option);
+        });
+        weekSelect.disabled = false;
+      } else {
+        weekSelect.disabled = true;
+      }
+    };
+
+    // 更新日度选择器
+    const updateDaySelect = () => {
+      daySelect.innerHTML = '';
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = formData.week ? '选择日度' : '请先选择周度';
+      daySelect.appendChild(emptyOption);
+
+      if (formData.week && formData.month && formData.year) {
+        const days = getDaysInWeek(parseInt(formData.year), parseInt(formData.month), parseInt(formData.week));
+        days.forEach(day => {
+          const option = document.createElement('option');
+          option.value = day.value;
+          option.textContent = day.label;
+          if (formData.day === day.value) {
+            option.selected = true;
+          }
+          daySelect.appendChild(option);
+        });
+        daySelect.disabled = false;
+      } else {
+        daySelect.disabled = true;
+      }
+    };
+
     // 年度选择事件
     yearSelect.addEventListener('change', (e) => {
       formData.year = e.target.value;
       formData.quarter = '';
       formData.month = '';
+      formData.week = '';
+      formData.day = '';
       
       updateQuarterSelect();
       updateMonthSelect();
+      updateWeekSelect();
+      updateDaySelect();
     });
 
     // 季度选择事件
     quarterSelect.addEventListener('change', (e) => {
       formData.quarter = e.target.value;
       formData.month = '';
+      formData.week = '';
+      formData.day = '';
       
       updateMonthSelect();
+      updateWeekSelect();
+      updateDaySelect();
     });
 
     // 月度选择事件
     monthSelect.addEventListener('change', (e) => {
       formData.month = e.target.value;
+      formData.week = '';
+      formData.day = '';
+      
+      updateWeekSelect();
+      updateDaySelect();
+    });
+
+    // 周度选择事件
+    weekSelect.addEventListener('change', (e) => {
+      formData.week = e.target.value;
+      formData.day = '';
+      
+      updateDaySelect();
+    });
+
+    // 日度选择事件
+    daySelect.addEventListener('change', (e) => {
+      formData.day = e.target.value;
     });
 
     // 初始化选择器状态
     updateQuarterSelect();
     updateMonthSelect();
+    updateWeekSelect();
+    updateDaySelect();
 
     // 组装时间选择器
     yearContainer.appendChild(yearLabel);
@@ -385,10 +583,16 @@ export async function openCreateCardModal(store) {
     quarterContainer.appendChild(quarterSelect);
     monthContainer.appendChild(monthLabel);
     monthContainer.appendChild(monthSelect);
+    weekContainer.appendChild(weekLabel);
+    weekContainer.appendChild(weekSelect);
+    dayContainer.appendChild(dayLabel);
+    dayContainer.appendChild(daySelect);
 
     timeSelectorsContainer.appendChild(yearContainer);
     timeSelectorsContainer.appendChild(quarterContainer);
     timeSelectorsContainer.appendChild(monthContainer);
+    timeSelectorsContainer.appendChild(weekContainer);
+    timeSelectorsContainer.appendChild(dayContainer);
 
     timePropertiesContainer.appendChild(timeTitle);
     timePropertiesContainer.appendChild(timeSelectorsContainer);
@@ -1132,6 +1336,8 @@ export async function openCreateCardModal(store) {
             year: newCard.year || '',
             quarter: newCard.quarter || '',
             month: newCard.month || '',
+            week: newCard.week || '',
+            day: newCard.day || '',
             createdAt: newCard.createdAt,
             updatedAt: newCard.updatedAt
           };
