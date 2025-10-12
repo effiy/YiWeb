@@ -1367,6 +1367,7 @@
     font-size: 14px;
     font-weight: 500;
     flex-wrap: wrap;
+    flex: 1;
 }
 
 .tags-label i {
@@ -1375,11 +1376,11 @@
 }
 
 .time-info {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 6px;
-    margin-left: 8px;
     flex-wrap: wrap;
+    margin-left: auto;
 }
 
 .time-badge {
