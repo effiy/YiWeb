@@ -109,7 +109,6 @@ const { computed } = Vue;
                 pvNewProjectName: store.pvNewProjectName,
                 pvNewVersionId: store.pvNewVersionId,
                 pvNewVersionName: store.pvNewVersionName,
-                pvDirty: store.pvDirty,
                 pvError: store.pvError,
 
                 // 搜索相关状态
@@ -802,10 +801,6 @@ const { computed } = Vue;
                     const methods = useMethods(store);
                     methods.pvDeleteVersion(versionId);
                 },
-                pvSave: async function() {
-                    const methods = useMethods(store);
-                    await methods.pvSave();
-                }
             }
         });
         window.aicrApp = app;
@@ -831,6 +826,7 @@ const { computed } = Vue;
         logError('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
 
 
 

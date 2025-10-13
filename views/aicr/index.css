@@ -515,7 +515,6 @@
 .pv-danger-btn { background: transparent; border: 1px solid rgba(244,63,94,0.45); color: rgba(244,63,94,0.9); border-radius: 6px; padding: 4px 8px; cursor: pointer; }
 .pv-danger-btn:hover { background: rgba(244,63,94,0.12); }
 
-.pv-manager-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--border-primary); }
 .pv-primary-btn { background: var(--primary-blue); border-color: var(--primary-blue); color: #fff; }
 .pv-primary-btn:hover { background: var(--primary-cyan); border-color: var(--primary-cyan); }
 .pv-primary-btn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -1088,6 +1087,7 @@
     .sidebar-expand-handle { animation: none; transition: none; }
     .sidebar-expand-handle i, .sidebar-expand-handle .label { transition: none; }
 } 
+
 
 
 

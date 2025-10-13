@@ -52,7 +52,6 @@ export const createStore = () => {
     const pvNewProjectName = vueRef('');
     const pvNewVersionId = vueRef('');
     const pvNewVersionName = vueRef('');
-    const pvDirty = vueRef(false);
     const pvError = vueRef('');
     
     // 搜索相关状态
@@ -91,14 +90,19 @@ export const createStore = () => {
             const response = await getData(tree_url);
 
             // 检查响应结构和数据有效性
-            if (
-                !response ||
-                typeof response !== 'object' ||
-                !response.data ||
-                !Array.isArray(response.data.list) ||
-                response.data.list.length === 0
-            ) {
-                throw createError('文件树数据格式错误或无数据', ErrorTypes.API, '文件树加载');
+            if (!response || typeof response !== 'object') {
+                console.warn('[loadFileTree] API响应格式错误:', response);
+                fileTree.value = [];
+                fileTreeDocKey.value = '';
+                return [];
+            }
+
+            // 检查是否有数据
+            if (!response.data || !Array.isArray(response.data.list) || response.data.list.length === 0) {
+                console.warn('[loadFileTree] 文件树数据为空，项目/版本可能不存在:', { project, version });
+                fileTree.value = [];
+                fileTreeDocKey.value = '';
+                return [];
             }
 
             // 只取第一个文件树对象，确保格式正确
@@ -1548,7 +1552,6 @@ export const createStore = () => {
         pvNewProjectName,
         pvNewVersionId,
         pvNewVersionName,
-        pvDirty,
         pvError,
         
         // 搜索相关状态
@@ -1592,6 +1595,7 @@ export const createStore = () => {
         clearError
     };
 };
+
 
 
 

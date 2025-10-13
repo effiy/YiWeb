@@ -1612,6 +1612,70 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 初始化项目根目录结构
+     * @param {string} projectId - 项目ID
+     * @param {string} versionId - 版本ID
+     */
+    const initializeProjectRootDirectory = async (projectId, versionId) => {
+        return safeExecute(async () => {
+            console.log('[初始化根目录] 开始初始化项目根目录结构:', { projectId, versionId });
+            
+            try {
+                const { postData } = await import('/apis/modules/crud.js');
+                
+                // 创建基本的项目根目录结构 - 只包含根目录
+                const rootDirectory = {
+                    id: projectId,
+                    name: projectId,
+                    type: 'folder',
+                    path: projectId,
+                    children: []
+                };
+                
+                // 创建文件树文档
+                const treeUrl = `${window.API_URL}/mongodb/?cname=projectVersionTree`;
+                await postData(treeUrl, {
+                    projectId: projectId,
+                    versionId: versionId,
+                    data: rootDirectory
+                });
+                
+                console.log('[初始化根目录] 项目根目录结构创建成功');
+                
+                // 只创建 README.md 文件
+                const filesUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles`;
+                const basicFiles = [
+                    {
+                        projectId: projectId,
+                        versionId: versionId,
+                        fileId: `${projectId}/README.md`,
+                        id: `${projectId}/README.md`,
+                        path: `${projectId}/README.md`,
+                        name: 'README.md',
+                        content: `# ${projectId}\n\n项目描述：这是一个新创建的项目版本 ${versionId}。\n\n## 开始使用\n\n请在此处添加项目的使用说明。`
+                    }
+                ];
+                
+                // 批量创建文件
+                for (const file of basicFiles) {
+                    try {
+                        await postData(filesUrl, file);
+                        console.log('[初始化根目录] 创建文件:', file.name);
+                    } catch (error) {
+                        console.warn('[初始化根目录] 创建文件失败:', file.name, error);
+                    }
+                }
+                
+                console.log('[初始化根目录] 项目根目录初始化完成');
+                
+            } catch (error) {
+                console.error('[初始化根目录] 初始化失败:', error);
+                throw error;
+            }
+        }, '初始化项目根目录');
+    };
+
+    /**
      * 处理评论重新加载事件
      * @param {Object} detail - 事件详情
      */
@@ -2034,7 +2098,6 @@ export const useMethods = (store) => {
                 const currentId = store.selectedProject?.value || '';
                 const exists = store.pvProjects.value.find(p => p.id === currentId);
                 store.pvSelectedProjectId.value = exists ? currentId : (store.pvProjects.value[0]?.id || '');
-                store.pvDirty.value = false;
                 store.pvError.value = '';
                 store.showPvManager.value = true;
             } catch (e) {
@@ -2053,26 +2116,75 @@ export const useMethods = (store) => {
             store.pvSelectedProjectId.value = projectId; 
             store.pvError.value = '';
         },
-        pvAddProject: () => {
+        pvAddProject: async () => {
             const id = (store.pvNewProjectId.value || '').trim();
             if (!id) return;
             if (store.pvProjects.value.find(p => p.id === id)) return;
-            store.pvProjects.value.push({ id, versions: [] });
-            store.pvSelectedProjectId.value = id;
-            store.pvNewProjectId.value = '';
-            store.pvNewProjectName.value = '';
-            store.pvDirty.value = true;
-            store.pvError.value = '';
-        },
-        pvDeleteProject: (projectId) => {
-            store.pvProjects.value = store.pvProjects.value.filter(p => p.id !== projectId);
-            if (store.pvSelectedProjectId.value === projectId) {
-                store.pvSelectedProjectId.value = store.pvProjects.value[0]?.id || '';
+            
+            try {
+                // 调用后端API创建项目
+                const { postData, getData } = await import('/apis/modules/crud.js');
+                const url = `${window.API_URL}/mongodb/?cname=projectVersions`;
+                
+                // 检查项目是否已存在
+                const existingProject = await getData(`${url}&id=${id}`, {}, false);
+                const projectExists = existingProject?.data?.list && existingProject.data.list.length > 0;
+                
+                if (projectExists) {
+                    store.pvError.value = `项目 ${id} 已存在`;
+                    return;
+                }
+                
+                // 创建新项目
+                await postData(url, { id, versions: [] });
+                console.log('[pvAddProject] 新项目已创建:', { projectId: id });
+                
+                // 更新本地状态
+                store.pvProjects.value.push({ id, versions: [] });
+                store.pvSelectedProjectId.value = id;
+                store.pvNewProjectId.value = '';
+                store.pvNewProjectName.value = '';
+                store.pvError.value = '';
+                
+                console.log('[pvAddProject] 项目添加成功');
+            } catch (error) {
+                console.error('[pvAddProject] 项目添加失败:', error);
+                store.pvError.value = `项目添加失败: ${error.message}`;
             }
-            store.pvDirty.value = true;
-            store.pvError.value = '';
         },
-        pvAddVersion: () => {
+        pvDeleteProject: async (projectId) => {
+            try {
+                // 调用后端API删除项目
+                const { deleteData, getData } = await import('/apis/modules/crud.js');
+                const url = `${window.API_URL}/mongodb/?cname=projectVersions`;
+                
+                // 获取项目信息
+                const existingProject = await getData(`${url}&id=${projectId}`, {}, false);
+                const projectExists = existingProject?.data?.list && existingProject.data.list.length > 0;
+                
+                if (projectExists) {
+                    const existingProjectData = existingProject.data.list[0];
+                    const key = existingProjectData.key || existingProjectData._id || existingProjectData.id;
+                    
+                    // 删除项目
+                    await deleteData(`${url}&key=${key}`);
+                    console.log('[pvDeleteProject] 项目已删除:', { projectId });
+                }
+                
+                // 更新本地状态
+                store.pvProjects.value = store.pvProjects.value.filter(p => p.id !== projectId);
+                if (store.pvSelectedProjectId.value === projectId) {
+                    store.pvSelectedProjectId.value = store.pvProjects.value[0]?.id || '';
+                }
+                store.pvError.value = '';
+                
+                console.log('[pvDeleteProject] 项目删除成功');
+            } catch (error) {
+                console.error('[pvDeleteProject] 项目删除失败:', error);
+                store.pvError.value = `项目删除失败: ${error.message}`;
+            }
+        },
+        pvAddVersion: async () => {
             if (!store.pvSelectedProjectId.value) return;
             const id = (store.pvNewVersionId.value || '').trim();
             if (!id) return;
@@ -2080,172 +2192,133 @@ export const useMethods = (store) => {
             if (!proj) return;
             proj.versions = Array.isArray(proj.versions) ? proj.versions : [];
             if (proj.versions.find(v => (typeof v === 'string' ? v : v.id) === id)) return;
-            proj.versions.push(id);
-            store.pvNewVersionId.value = '';
-            store.pvNewVersionName.value = '';
-            store.pvDirty.value = true;
-            store.pvError.value = '';
+            
+            try {
+                // 调用后端API添加版本
+                const { postData, updateData, getData } = await import('/apis/modules/crud.js');
+                const url = `${window.API_URL}/mongodb/?cname=projectVersions`;
+                
+                // 检查项目是否已存在
+                const existingProject = await getData(`${url}&id=${store.pvSelectedProjectId.value}`, {}, false);
+                const projectExists = existingProject?.data?.list && existingProject.data.list.length > 0;
+                
+                if (projectExists) {
+                    // 项目存在，更新版本列表
+                    const existingProjectData = existingProject.data.list[0];
+                    const key = existingProjectData.key || existingProjectData._id || existingProjectData.id;
+                    const currentVersions = Array.isArray(existingProjectData.versions) 
+                        ? existingProjectData.versions.map(v => typeof v === 'string' ? v : v.id).filter(Boolean)
+                        : [];
+                    
+                    if (!currentVersions.includes(id)) {
+                        const updatedVersions = [...currentVersions, id];
+                        await updateData(url, { key, id: store.pvSelectedProjectId.value, versions: updatedVersions });
+                        console.log('[pvAddVersion] 版本已添加到现有项目:', { projectId: store.pvSelectedProjectId.value, versionId: id });
+                    }
+                } else {
+                    // 项目不存在，创建新项目
+                    await postData(url, { id: store.pvSelectedProjectId.value, versions: [id] });
+                    console.log('[pvAddVersion] 新项目已创建并添加版本:', { projectId: store.pvSelectedProjectId.value, versionId: id });
+                }
+                
+                // 初始化项目根目录结构
+                await initializeProjectRootDirectory(store.pvSelectedProjectId.value, id);
+                
+                // 更新本地状态
+                proj.versions.push(id);
+                store.pvNewVersionId.value = '';
+                store.pvNewVersionName.value = '';
+                store.pvError.value = '';
+                
+                // 如果当前选中的是刚创建版本的项目，自动切换到新版本并刷新数据
+                if (store.selectedProject?.value === store.pvSelectedProjectId.value) {
+                    console.log('[pvAddVersion] 自动切换到新版本并刷新数据');
+                    try {
+                        // 设置新版本为选中状态
+                        setSelectedVersion(id);
+                        
+                        // 刷新项目列表以获取最新数据
+                        if (typeof store.loadProjects === 'function') {
+                            await store.loadProjects();
+                        }
+                        
+                        // 加载文件树和文件数据
+                        if (typeof loadFileTree === 'function' && typeof loadFiles === 'function') {
+                            await Promise.all([
+                                loadFileTree(store.pvSelectedProjectId.value, id),
+                                loadFiles(store.pvSelectedProjectId.value, id)
+                            ]);
+                        }
+                        
+                        // 触发项目/版本就绪事件
+                        window.dispatchEvent(new CustomEvent('projectVersionReady', {
+                            detail: {
+                                projectId: store.pvSelectedProjectId.value,
+                                versionId: id
+                            }
+                        }));
+                        
+                        console.log('[pvAddVersion] 数据刷新完成');
+                    } catch (refreshError) {
+                        console.warn('[pvAddVersion] 数据刷新失败:', refreshError);
+                    }
+                }
+                
+                console.log('[pvAddVersion] 版本添加成功');
+            } catch (error) {
+                console.error('[pvAddVersion] 版本添加失败:', error);
+                store.pvError.value = `版本添加失败: ${error.message}`;
+            }
         },
-        pvDeleteVersion: (versionId) => {
+        pvDeleteVersion: async (versionId) => {
             if (!store.pvSelectedProjectId.value) return;
             const proj = store.pvProjects.value.find(p => p.id === store.pvSelectedProjectId.value);
             if (!proj) return;
-            proj.versions = (proj.versions || []).filter(v => (typeof v === 'string' ? v : v.id) !== versionId);
-            store.pvDirty.value = true;
-            store.pvError.value = '';
-        },
-        pvSave: async () => {
+            
             try {
-                // 1) 规整化本地编辑后的列表
-                const cleanList = (store.pvProjects.value || []).map(p => ({
-                    id: p.id,
-                    versions: Array.isArray(p.versions)
-                        ? p.versions.map(v => (typeof v === 'string' ? v : (v.id || ''))).filter(Boolean)
-                        : []
-                }));
-
-                // 校验：每个项目至少一个版本（允许为空项目列表）
-                for (const p of cleanList) {
-                    if (!p.id || p.versions.length === 0) {
-                        store.pvError.value = `项目 ${p.id || '(未命名)'} 至少需要一个版本`;
-                        return;
-                    }
-                }
-
-                // 2) 计算增删改集合
-                const originalList = Array.isArray(store.projects?.value) ? store.projects.value : [];
-                const originalMap = new Map(originalList.map(item => [item.id, item]));
-                const nextMap = new Map(cleanList.map(item => [item.id, item]));
-
-                const normalize = (arr) => (arr || [])
-                    .map(v => (typeof v === 'string' ? v : v?.id))
-                    .filter(Boolean)
-                    .sort()
-                    .join(',');
-
-                const toAdd = cleanList.filter(item => !originalMap.has(item.id));
-                const toDelete = originalList.filter(item => !nextMap.has(item.id));
-                const toUpdate = cleanList.filter(item => {
-                    const old = originalMap.get(item.id);
-                    if (!old) return false;
-                    return normalize(old.versions) !== normalize(item.versions);
-                });
-
-                // 3) 调用后端 CRUD 接口
-                const { postData, updateData, deleteData, getData } = await import('/apis/modules/crud.js');
+                // 调用后端API删除版本
+                const { updateData, getData } = await import('/apis/modules/crud.js');
                 const url = `${window.API_URL}/mongodb/?cname=projectVersions`;
-
-                // 新增
-                for (const item of toAdd) {
-                    await postData(url, { id: item.id, versions: item.versions });
-                }
-
-                // 更新（需要 key）
-                for (const item of toUpdate) {
-                    const old = originalMap.get(item.id) || {};
-                    const key = old.key;
-                    if (!key) {
-                        // 若无key，回退为新增
-                        await postData(url, { id: item.id, versions: item.versions });
-                    } else {
-                        await updateData(url, { key, id: item.id, versions: item.versions });
-                    }
-                }
-
-                // 删除（使用 key）
-                for (const item of toDelete) {
-                    if (item && item.key) {
-                        await deleteData(`${url}&key=${item.key}`);
-                    }
-                }
-
-                // 3.1) 计算被移除的版本（用于级联删除tree与files）
-                const extractVersionIds = (vers) => (Array.isArray(vers) ? vers.map(v => (typeof v === 'string' ? v : v?.id)).filter(Boolean) : []);
-                const removedByProject = new Map();
-                for (const oldItem of originalList) {
-                    const oldVersions = extractVersionIds(oldItem.versions);
-                    const nextItem = nextMap.get(oldItem.id);
-                    let removed = [];
-                    if (!nextItem) {
-                        removed = oldVersions.slice();
-                    } else {
-                        const newVersions = extractVersionIds(nextItem.versions);
-                        removed = oldVersions.filter(v => !newVersions.includes(v));
-                    }
-                    if (removed.length > 0) {
-                        removedByProject.set(oldItem.id, removed);
-                    }
-                }
-
-                // 3.2) 对每个被移除的 (projectId, versionId) 执行级联删除
-                for (const [projectId, removedVersions] of removedByProject.entries()) {
-                    for (const versionId of removedVersions) {
-                        try {
-                            // 删除对应的文件树
-                            const treeQueryUrl = `${window.API_URL}/mongodb/?cname=projectVersionTree&projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}`;
-                            const treeResp = await getData(treeQueryUrl, {}, false);
-                            const treeList = treeResp?.data?.list || [];
-                            for (const doc of treeList) {
-                                const treeKey = doc?.key || doc?._id || doc?.id;
-                                if (treeKey) {
-                                    await deleteData(`${treeQueryUrl}&key=${treeKey}`);
-                                }
-                            }
-
-                            // 删除对应的文件集合
-                            const filesQueryUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}`;
-                            const filesResp = await getData(filesQueryUrl, {}, false);
-                            const fileList = filesResp?.data?.list || [];
-                            for (const f of fileList) {
-                                const fileKey = f?.key || f?._id || f?.id;
-                                if (fileKey) {
-                                    await deleteData(`${filesQueryUrl}&key=${fileKey}`);
-                                }
-                            }
-                        } catch (cleanupErr) {
-                            console.warn('[PV管理] 级联删除失败（忽略继续）:', projectId, versionId, cleanupErr);
-                        }
-                    }
-                }
-
-                // 4) 刷新远端数据并更新到 store
-                const refreshed = await getData(url, {}, false);
-                const remoteList = refreshed?.data?.list || [];
-                if (setProjects) setProjects(remoteList);
-
-                // 5) 对齐当前选中的项目/版本
-                const currentProject = selectedProject?.value || '';
-                const currentVersion = selectedVersion?.value || '';
-                const newProject = remoteList.find(p => p.id === currentProject) || remoteList[0];
-                if (newProject) {
-                    setSelectedProject(newProject.id);
-                    const versions = Array.isArray(newProject.versions)
-                        ? newProject.versions.map(v => (typeof v === 'string' ? v : v.id)).filter(Boolean)
+                
+                // 获取项目信息
+                const existingProject = await getData(`${url}&id=${store.pvSelectedProjectId.value}`, {}, false);
+                const projectExists = existingProject?.data?.list && existingProject.data.list.length > 0;
+                
+                if (projectExists) {
+                    const existingProjectData = existingProject.data.list[0];
+                    const key = existingProjectData.key || existingProjectData._id || existingProjectData.id;
+                    const currentVersions = Array.isArray(existingProjectData.versions) 
+                        ? existingProjectData.versions.map(v => typeof v === 'string' ? v : v.id).filter(Boolean)
                         : [];
-                    const versionExists = versions.includes(currentVersion);
-                    const targetVersion = versionExists ? currentVersion : (versions[0] || '');
-                    if (targetVersion) {
-                        setSelectedVersion(targetVersion);
-                        await refreshData();
+                    
+                    // 从版本列表中移除指定版本
+                    const updatedVersions = currentVersions.filter(v => v !== versionId);
+                    
+                    if (updatedVersions.length > 0) {
+                        // 如果还有其他版本，更新项目
+                        await updateData(url, { key, id: store.pvSelectedProjectId.value, versions: updatedVersions });
+                        console.log('[pvDeleteVersion] 版本已从项目中删除:', { projectId: store.pvSelectedProjectId.value, versionId });
                     } else {
-                        setSelectedVersion('');
+                        // 如果没有版本了，删除整个项目
+                        const { deleteData } = await import('/apis/modules/crud.js');
+                        await deleteData(`${url}&key=${key}`);
+                        console.log('[pvDeleteVersion] 项目已删除（无版本）:', { projectId: store.pvSelectedProjectId.value });
                     }
-                } else {
-                    setSelectedProject('');
-                    setSelectedVersion('');
                 }
-
-                // 6) 收尾
-                store.showPvManager.value = false;
-                store.pvDirty.value = false;
+                
+                // 更新本地状态
+                proj.versions = (proj.versions || []).filter(v => (typeof v === 'string' ? v : v.id) !== versionId);
                 store.pvError.value = '';
-            } catch (e) {
-                console.error('[PV管理] 保存失败:', e);
-                store.pvError.value = e?.message || '保存失败';
+                
+                console.log('[pvDeleteVersion] 版本删除成功');
+            } catch (error) {
+                console.error('[pvDeleteVersion] 版本删除失败:', error);
+                store.pvError.value = `版本删除失败: ${error.message}`;
             }
         }
     };
 };
+
 
 
 
