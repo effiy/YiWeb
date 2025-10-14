@@ -87,6 +87,19 @@
                                 </div>
                             </div>
                             
+                            <!-- 导出按钮 -->
+                            <div class="export-item">
+                                <button 
+                                    @click="handleExportAllTasks"
+                                    class="export-btn"
+                                    type="button"
+                                    title="导出所有任务数据"
+                                    aria-label="导出所有任务数据">
+                                    <i class="fas fa-download" aria-hidden="true"></i>
+                                    <span>导出</span>
+                                </button>
+                            </div>
+
                             <!-- 创建任务按钮 - 与首页保持一致 -->
                             <div class="create-card-item">
                                 <button 
@@ -146,6 +159,9 @@
 
     <!-- 引入Vue.js -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- 引入JSZip库用于导出功能 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
     <!-- 引入任务编辑器组件 -->
     <link rel="stylesheet" href="plugins/taskEditor/index.css">
@@ -266,6 +282,7 @@
     </script>
 </body>
 </html> 
+
 
 
 

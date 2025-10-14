@@ -625,6 +625,253 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
     };
 
     /**
+     * 处理所有任务导出
+     * 按照cardTitle -> featureName -> taskTitle的目录结构导出
+     */
+    const handleExportAllTasks = async () => {
+        try {
+            console.log('[导出任务] 开始导出所有任务');
+            
+            // 显示加载状态
+            if (window.showGlobalLoading) {
+                window.showGlobalLoading('正在准备导出数据...');
+            }
+            
+            // 获取所有任务数据
+            const tasks = store.tasksData.value || [];
+            if (tasks.length === 0) {
+                window.showError('没有任务数据可导出');
+                return;
+            }
+            
+            console.log(`[导出任务] 找到 ${tasks.length} 个任务`);
+            
+            // 按cardTitle分组
+            const groupedByCardTitle = {};
+            tasks.forEach(task => {
+                const cardTitle = task.cardTitle || '未分类';
+                if (!groupedByCardTitle[cardTitle]) {
+                    groupedByCardTitle[cardTitle] = {};
+                }
+                
+                const featureName = task.featureName || '未分类功能';
+                if (!groupedByCardTitle[cardTitle][featureName]) {
+                    groupedByCardTitle[cardTitle][featureName] = [];
+                }
+                
+                groupedByCardTitle[cardTitle][featureName].push(task);
+            });
+            
+            console.log('[导出任务] 任务分组完成:', Object.keys(groupedByCardTitle));
+            
+            // 创建ZIP文件
+            const zip = new JSZip();
+            
+            // 遍历每个cardTitle
+            Object.keys(groupedByCardTitle).forEach(cardTitle => {
+                const cardTitleDir = zip.folder(sanitizeFileName(cardTitle));
+                
+                // 遍历每个featureName
+                Object.keys(groupedByCardTitle[cardTitle]).forEach(featureName => {
+                    const tasks = groupedByCardTitle[cardTitle][featureName];
+                    const featureNameDir = cardTitleDir.folder(`${getNextNumber()}-${sanitizeFileName(featureName)}`);
+                    
+                    // 遍历每个任务
+                    tasks.forEach((task, index) => {
+                        const taskDir = featureNameDir.folder(`${index + 1}-${sanitizeFileName(task.title)}`);
+                        
+                        // 生成metadata.md内容
+                        const metadataContent = generateTaskMetadata(task);
+                        taskDir.file('metadata.md', metadataContent);
+                    });
+                });
+            });
+            
+            // 生成ZIP文件
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            
+            // 下载文件
+            const url = URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `任务导出_${new Date().toISOString().split('T')[0]}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('[导出任务] 导出完成');
+            window.showSuccess(`成功导出 ${tasks.length} 个任务`);
+            
+        } catch (error) {
+            console.error('[导出任务] 导出失败:', error);
+            window.showError('导出失败，请稍后重试');
+        } finally {
+            if (window.hideGlobalLoading) {
+                window.hideGlobalLoading();
+            }
+        }
+    };
+
+    /**
+     * 生成任务元数据内容
+     * @param {Object} task - 任务对象
+     * @returns {string} markdown格式的元数据内容
+     */
+    const generateTaskMetadata = (task) => {
+        const now = new Date().toLocaleString('zh-CN');
+        
+        let content = `# ${task.title}\n\n`;
+        
+        // 基本信息
+        content += `## 基本信息\n\n`;
+        content += `- **任务ID**: ${task.id || 'N/A'}\n`;
+        content += `- **任务类型**: ${task.type || 'N/A'}\n`;
+        content += `- **状态**: ${task.status || 'N/A'}\n`;
+        content += `- **优先级**: ${task.priority || 'N/A'}\n`;
+        content += `- **复杂度**: ${task.complexity || 'N/A'}\n`;
+        content += `- **进度**: ${task.progress || 0}%\n`;
+        content += `- **创建时间**: ${task.createdAt ? new Date(task.createdAt).toLocaleString('zh-CN') : 'N/A'}\n`;
+        content += `- **更新时间**: ${task.updatedAt ? new Date(task.updatedAt).toLocaleString('zh-CN') : 'N/A'}\n`;
+        content += `- **截止时间**: ${task.dueDate ? new Date(task.dueDate).toLocaleString('zh-CN') : 'N/A'}\n`;
+        content += `- **开始时间**: ${task.startDate ? new Date(task.startDate).toLocaleString('zh-CN') : 'N/A'}\n\n`;
+        
+        // 描述
+        if (task.description) {
+            content += `## 任务描述\n\n${task.description}\n\n`;
+        }
+        
+        // 输入输出
+        if (task.input) {
+            content += `## 输入\n\n${task.input}\n\n`;
+        }
+        
+        if (task.output) {
+            content += `## 输出\n\n${task.output}\n\n`;
+        }
+        
+        // 步骤
+        if (task.steps) {
+            content += `## 执行步骤\n\n`;
+            if (typeof task.steps === 'object') {
+                Object.entries(task.steps).forEach(([key, value], index) => {
+                    if (typeof value === 'object' && value.text) {
+                        const status = value.completed ? '✅' : '⏳';
+                        content += `${index + 1}. ${status} ${value.text}\n`;
+                    } else if (typeof value === 'string') {
+                        content += `${index + 1}. ${value}\n`;
+                    }
+                });
+            }
+            content += `\n`;
+        }
+        
+        // 子任务
+        if (task.subtasks && task.subtasks.length > 0) {
+            content += `## 子任务\n\n`;
+            task.subtasks.forEach((subtask, index) => {
+                const status = subtask.status === 'completed' ? '✅' : '⏳';
+                content += `${index + 1}. ${status} ${subtask.title}\n`;
+                if (subtask.estimatedHours) {
+                    content += `   - 预估工时: ${subtask.estimatedHours}小时\n`;
+                }
+                if (subtask.actualHours) {
+                    content += `   - 实际工时: ${subtask.actualHours}小时\n`;
+                }
+            });
+            content += `\n`;
+        }
+        
+        // 标签
+        if (task.labels && task.labels.length > 0) {
+            content += `## 标签\n\n`;
+            task.labels.forEach(label => {
+                content += `- ${label.name}\n`;
+            });
+            content += `\n`;
+        }
+        
+        // 依赖关系
+        if (task.dependencies) {
+            content += `## 依赖关系\n\n`;
+            if (task.dependencies.blockedBy && task.dependencies.blockedBy.length > 0) {
+                content += `**被阻塞于**:\n`;
+                task.dependencies.blockedBy.forEach(dep => {
+                    content += `- ${dep}\n`;
+                });
+            }
+            if (task.dependencies.blocking && task.dependencies.blocking.length > 0) {
+                content += `**阻塞任务**:\n`;
+                task.dependencies.blocking.forEach(dep => {
+                    content += `- ${dep}\n`;
+                });
+            }
+            if (task.dependencies.relatedTo && task.dependencies.relatedTo.length > 0) {
+                content += `**相关任务**:\n`;
+                task.dependencies.relatedTo.forEach(dep => {
+                    content += `- ${dep}\n`;
+                });
+            }
+            content += `\n`;
+        }
+        
+        // 时间跟踪
+        if (task.estimatedHours || task.actualHours) {
+            content += `## 时间跟踪\n\n`;
+            if (task.estimatedHours) {
+                content += `- **预估工时**: ${task.estimatedHours}小时\n`;
+            }
+            if (task.actualHours) {
+                content += `- **实际工时**: ${task.actualHours}小时\n`;
+            }
+            content += `\n`;
+        }
+        
+        // 自定义字段
+        if (task.customFields) {
+            content += `## 自定义字段\n\n`;
+            Object.entries(task.customFields).forEach(([key, value]) => {
+                content += `- **${key}**: ${value}\n`;
+            });
+            content += `\n`;
+        }
+        
+        // 时间记录
+        if (task.timeEntries && task.timeEntries.length > 0) {
+            content += `## 时间记录\n\n`;
+            task.timeEntries.forEach((entry, index) => {
+                content += `${index + 1}. **${entry.description}**\n`;
+                content += `   - 开始时间: ${new Date(entry.startTime).toLocaleString('zh-CN')}\n`;
+                content += `   - 结束时间: ${new Date(entry.endTime).toLocaleString('zh-CN')}\n`;
+                content += `   - 持续时间: ${entry.duration}分钟\n\n`;
+            });
+        }
+        
+        // 导出信息
+        content += `---\n\n`;
+        content += `*此文件由YiTasks系统自动生成于 ${now}*\n`;
+        
+        return content;
+    };
+
+    /**
+     * 清理文件名，移除非法字符
+     * @param {string} fileName - 原始文件名
+     * @returns {string} 清理后的文件名
+     */
+    const sanitizeFileName = (fileName) => {
+        return fileName.replace(/[<>:"/\\|?*]/g, '_').trim();
+    };
+
+    /**
+     * 获取下一个序号（用于featureName编号）
+     */
+    let featureNumber = 0;
+    const getNextNumber = () => {
+        return ++featureNumber;
+    };
+
+    /**
      * 处理任务点击事件
      * @param {Object} task - 任务对象
      */
@@ -778,6 +1025,7 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         handleCopyTask,
         handleShareTask,
         handleExportTask,
+        handleExportAllTasks,
         handleClearError,
         deleteTask,
         cleanupEventListeners,
@@ -938,6 +1186,7 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
 
     };
 }; 
+
 
 
 

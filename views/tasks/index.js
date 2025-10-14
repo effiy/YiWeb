@@ -1513,6 +1513,500 @@ class TaskProApp {
                         window.location.href = '/';
                     },
 
+                    // 导出任务数据 - 调用useMethods中的导出方法
+                    async exportTasks() {
+                        try {
+                            console.log('[TaskPro] 调用导出方法...');
+                            
+                            // 调用useMethods中的导出方法
+                            if (this.methods && this.methods.handleExportAllTasks) {
+                                await this.methods.handleExportAllTasks();
+                            } else {
+                                console.error('[TaskPro] 导出方法未找到');
+                                if (window.showError) {
+                                    window.showError('导出功能未正确初始化');
+                                }
+                            }
+                            
+                        } catch (error) {
+                            console.error('[TaskPro] 导出任务失败:', error);
+                            if (window.showError) {
+                                window.showError('导出任务失败，请重试');
+                            }
+                        }
+                    },
+                    
+                    // 按cardTitle和功能名称分组任务
+                    groupTasksByFeature(tasks) {
+                        const grouped = {};
+                        
+                        tasks.forEach(task => {
+                            const cardTitle = task.cardTitle || '未命名卡片';
+                            const featureName = task.featureName || '未分类功能';
+                            
+                            // 第一层：cardTitle
+                            if (!grouped[cardTitle]) {
+                                grouped[cardTitle] = {};
+                            }
+                            
+                            // 第二层：featureName
+                            if (!grouped[cardTitle][featureName]) {
+                                grouped[cardTitle][featureName] = [];
+                            }
+                            
+                            grouped[cardTitle][featureName].push(task);
+                        });
+                        
+                        return grouped;
+                    },
+                    
+                    // 创建任务导出ZIP文件
+                    async createTaskExportZip(groupedTasks) {
+                        // 动态导入JSZip库
+                        if (typeof JSZip === 'undefined') {
+                            await this.loadJSZipLibrary();
+                        }
+                        
+                        const zip = new JSZip();
+                        
+                        // 新的目录结构：
+                        // 第一层：cardTitle
+                        // 第二层：带序号的 featureName
+                        // 第三层：带序号的 task title
+                        // 文件：metadata.md 在第三层
+                        
+                        for (const [cardTitle, featureGroups] of Object.entries(groupedTasks)) {
+                            // 第一层目录：cardTitle
+                            const cardFolder = zip.folder(this.sanitizeFileName(cardTitle));
+                            
+                            let featureIndex = 0;
+                            for (const [featureName, tasks] of Object.entries(featureGroups)) {
+                                featureIndex++;
+                                // 第二层目录：带序号的 featureName
+                                const featureFolder = cardFolder.folder(`${featureIndex}-${this.sanitizeFileName(featureName)}`);
+                                
+                                // 为每个任务创建第三层目录
+                                tasks.forEach((task, taskIndex) => {
+                                    // 第三层目录：带序号的 task title
+                                    const taskFolder = featureFolder.folder(`${taskIndex + 1}-${this.sanitizeFileName(task.title)}`);
+                                    
+                                    // 在第三层目录下生成 metadata.md
+                                    const metadataContent = this.generateTaskMetadata(task, cardTitle, featureName);
+                                    taskFolder.file('metadata.md', metadataContent);
+                                });
+                            }
+                        }
+                        
+                        // 生成总览文件
+                        const overviewContent = this.generateOverviewContent(groupedTasks);
+                        zip.file('README.md', overviewContent);
+                        
+                        return zip;
+                    },
+                    
+                    // 生成单个任务的元数据内容
+                    generateTaskMetadata(task, cardTitle, featureName) {
+                        const statusLabel = this.getStatusLabel(task.status);
+                        const priorityLabel = this.getPriorityLabel(task.priority);
+                        const typeLabel = this.getTypeLabel(task.type);
+                        
+                        // 生成各个部分的内容
+                        const stepsContent = this.generateStepsContent(task.steps);
+                        const subtasksContent = this.generateSubtasksContent(task.subtasks);
+                        const dependenciesContent = this.generateDependenciesContent(task.dependencies);
+                        const customFieldsContent = this.generateCustomFieldsContent(task.customFields);
+                        
+                        // 生成标签内容
+                        const labelsContent = task.labels && task.labels.length > 0 
+                            ? task.labels.map(label => `- ${label.name}`).join('\n') 
+                            : '无标签';
+                        
+                        return `# ${task.title}
+
+## 卡片信息
+- **卡片标题**: ${cardTitle}
+- **功能名称**: ${featureName}
+- **任务ID**: ${task.id || task.key || 'N/A'}
+
+## 基本信息
+- **状态**: ${statusLabel}
+- **优先级**: ${priorityLabel}
+- **类型**: ${typeLabel}
+- **创建时间**: ${task.createdAt ? new Date(task.createdAt).toLocaleString('zh-CN') : 'N/A'}
+- **更新时间**: ${task.updatedAt ? new Date(task.updatedAt).toLocaleString('zh-CN') : 'N/A'}
+- **截止日期**: ${task.dueDate ? new Date(task.dueDate).toLocaleString('zh-CN') : 'N/A'}
+
+## 描述
+${task.description || '无描述'}
+
+## 输入输出
+- **输入**: ${task.input || '无'}
+- **输出**: ${task.output || '无'}
+
+## 时间信息
+- **预估工时**: ${task.estimatedHours || 0} 小时
+- **实际工时**: ${task.actualHours || 0} 小时
+- **进度**: ${task.progress || 0}%
+
+## 步骤
+${stepsContent}
+
+## 子任务
+${subtasksContent}
+
+## 标签
+${labelsContent}
+
+## 依赖关系
+${dependenciesContent}
+
+## 自定义字段
+${customFieldsContent}
+
+---
+*导出时间: ${new Date().toLocaleString('zh-CN')}*
+*此文件由 TaskPro Enterprise 系统自动生成*
+`;
+                    },
+                    
+                    // 生成元数据内容（保留用于兼容性）
+                    generateMetadataContent(tasks, featureName, cardTitle) {
+                        const totalTasks = tasks.length;
+                        const completedTasks = tasks.filter(task => task.status === 'completed').length;
+                        const inProgressTasks = tasks.filter(task => ['in_progress', 'in_review', 'testing'].includes(task.status)).length;
+                        const todoTasks = tasks.filter(task => ['todo', 'backlog'].includes(task.status)).length;
+                        
+                        const totalEstimatedHours = tasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0);
+                        const totalActualHours = tasks.reduce((sum, task) => sum + (task.actualHours || 0), 0);
+                        
+                        const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+                        
+                        // 生成任务列表
+                        const taskList = tasks.map((task, index) => {
+                            const statusLabel = this.getStatusLabel(task.status);
+                            return `${index + 1}. **${task.title}** (${statusLabel}) - ${task.priority || '无优先级'}`;
+                        }).join('\n');
+                        
+                        // 生成标签统计
+                        const labelStats = this.generateLabelStatistics(tasks);
+                        
+                        return `# ${cardTitle} - 任务元数据
+
+## 基本信息
+- **功能名称**: ${featureName}
+- **卡片标题**: ${cardTitle}
+- **导出时间**: ${new Date().toLocaleString('zh-CN')}
+- **任务总数**: ${totalTasks}
+
+## 任务状态统计
+- **已完成**: ${completedTasks} (${Math.round((completedTasks / totalTasks) * 100)}%)
+- **进行中**: ${inProgressTasks} (${Math.round((inProgressTasks / totalTasks) * 100)}%)
+- **待办**: ${todoTasks} (${Math.round((todoTasks / totalTasks) * 100)}%)
+- **总体进度**: ${progress}%
+
+## 时间统计
+- **预估总工时**: ${totalEstimatedHours} 小时
+- **实际总工时**: ${totalActualHours} 小时
+- **工时完成率**: ${totalEstimatedHours > 0 ? Math.round((totalActualHours / totalEstimatedHours) * 100) : 0}%
+
+## 任务列表
+${taskList}
+
+## 标签统计
+${labelStats}
+
+---
+*此文件由 TaskPro Enterprise 系统自动生成*
+`;
+                    },
+                    
+                    // 生成任务详细内容
+                    generateTaskContent(task) {
+                        const statusLabel = this.getStatusLabel(task.status);
+                        const priorityLabel = this.getPriorityLabel(task.priority);
+                        const typeLabel = this.getTypeLabel(task.type);
+                        
+                        // 生成各个部分的内容
+                        const stepsContent = this.generateStepsContent(task.steps);
+                        const subtasksContent = this.generateSubtasksContent(task.subtasks);
+                        const dependenciesContent = this.generateDependenciesContent(task.dependencies);
+                        const customFieldsContent = this.generateCustomFieldsContent(task.customFields);
+                        
+                        // 生成标签内容
+                        const labelsContent = task.labels && task.labels.length > 0 
+                            ? task.labels.map(label => `- ${label.name}`).join('\n') 
+                            : '无标签';
+                        
+                        return `# ${task.title}
+
+## 基本信息
+- **任务ID**: ${task.id || 'N/A'}
+- **状态**: ${statusLabel}
+- **优先级**: ${priorityLabel}
+- **类型**: ${typeLabel}
+- **创建时间**: ${task.createdAt ? new Date(task.createdAt).toLocaleString('zh-CN') : 'N/A'}
+- **更新时间**: ${task.updatedAt ? new Date(task.updatedAt).toLocaleString('zh-CN') : 'N/A'}
+- **截止日期**: ${task.dueDate ? new Date(task.dueDate).toLocaleString('zh-CN') : 'N/A'}
+
+## 描述
+${task.description || '无描述'}
+
+## 输入输出
+- **输入**: ${task.input || '无'}
+- **输出**: ${task.output || '无'}
+
+## 时间信息
+- **预估工时**: ${task.estimatedHours || 0} 小时
+- **实际工时**: ${task.actualHours || 0} 小时
+- **进度**: ${task.progress || 0}%
+
+## 步骤
+${stepsContent}
+
+## 子任务
+${subtasksContent}
+
+## 标签
+${labelsContent}
+
+## 依赖关系
+${dependenciesContent}
+
+## 自定义字段
+${customFieldsContent}
+
+---
+*此文件由 TaskPro Enterprise 系统自动生成*
+`;
+                    },
+                    
+                    // 生成总览内容
+                    generateOverviewContent(groupedTasks) {
+                        // 计算统计信息
+                        const totalCards = Object.keys(groupedTasks).length;
+                        let totalFeatures = 0;
+                        let totalTasks = 0;
+                        
+                        // 生成卡片列表
+                        const cardList = Object.entries(groupedTasks).map(([cardTitle, featureGroups]) => {
+                            const featureCount = Object.keys(featureGroups).length;
+                            const taskCount = Object.values(featureGroups).reduce((sum, tasks) => sum + tasks.length, 0);
+                            totalFeatures += featureCount;
+                            totalTasks += taskCount;
+                            
+                            const featureDetails = Object.entries(featureGroups).map(([featureName, tasks]) => {
+                                return `  - **${featureName}** (${tasks.length} 个任务)`;
+                            }).join('\n');
+                            
+                            return `### ${cardTitle}\n- 功能数量: ${featureCount}\n- 任务总数: ${taskCount}\n\n**包含的功能:**\n${featureDetails}`;
+                        }).join('\n\n');
+                        
+                        return `# 任务导出总览
+
+## 导出信息
+- **导出时间**: ${new Date().toLocaleString('zh-CN')}
+- **卡片数量**: ${totalCards}
+- **功能总数**: ${totalFeatures}
+- **任务总数**: ${totalTasks}
+
+## 卡片列表
+${cardList}
+
+## 目录结构
+\`\`\`
+task-export/
+├── README.md (本文件)
+└── [卡片标题]/
+    └── [序号-功能名称]/
+        └── [序号-任务标题]/
+            └── metadata.md (任务详细信息)
+\`\`\`
+
+## 使用说明
+1. **第一层目录**: 卡片标题 (cardTitle)
+2. **第二层目录**: 带序号的功能名称 (如: 1-功能A, 2-功能B)
+3. **第三层目录**: 带序号的任务标题 (如: 1-任务A, 2-任务B)
+4. **metadata.md**: 每个任务目录下包含该任务的完整详细信息
+
+## 文件说明
+- \`README.md\`: 本文件，包含导出的整体概览
+- \`metadata.md\`: 每个任务的详细信息，包括：
+  - 基本信息（状态、优先级、类型等）
+  - 任务描述
+  - 输入输出
+  - 时间信息（预估工时、实际工时、进度）
+  - 步骤和子任务
+  - 标签和依赖关系
+  - 自定义字段
+
+---
+*此文件由 TaskPro Enterprise 系统自动生成*
+`;
+                    },
+                    
+                    // 辅助方法
+                    getStatusLabel(status) {
+                        const statusMap = {
+                            'backlog': '待办',
+                            'todo': '计划中',
+                            'in_progress': '进行中',
+                            'in_review': '待审核',
+                            'testing': '测试中',
+                            'completed': '已完成',
+                            'cancelled': '已取消',
+                            'on_hold': '暂停'
+                        };
+                        return statusMap[status] || status;
+                    },
+                    
+                    getPriorityLabel(priority) {
+                        const priorityMap = {
+                            'critical': '紧急',
+                            'high': '高优先级',
+                            'medium': '中等优先级',
+                            'low': '低优先级',
+                            'none': '无优先级'
+                        };
+                        return priorityMap[priority] || priority;
+                    },
+                    
+                    getTypeLabel(type) {
+                        const typeMap = {
+                            'feature': '功能开发',
+                            'bug': '缺陷修复',
+                            'improvement': '优化改进',
+                            'documentation': '文档编写',
+                            'research': '研究调研',
+                            'maintenance': '维护',
+                            'meeting': '会议',
+                            'review': '评审'
+                        };
+                        return typeMap[type] || type;
+                    },
+                    
+                    generateStepsContent(steps) {
+                        if (!steps || typeof steps !== 'object') return '无步骤';
+                        
+                        return Object.entries(steps).map(([key, step]) => {
+                            if (typeof step === 'string') {
+                                return `- ${step}`;
+                            }
+                            const status = step.completed ? '✅' : '⏳';
+                            return `${status} ${step.text || step}`;
+                        }).join('\n');
+                    },
+                    
+                    generateSubtasksContent(subtasks) {
+                        if (!subtasks || !Array.isArray(subtasks) || subtasks.length === 0) return '无子任务';
+                        
+                        return subtasks.map(subtask => {
+                            const status = this.getStatusLabel(subtask.status);
+                            return `- **${subtask.title}** (${status}) - ${subtask.estimatedHours || 0}h`;
+                        }).join('\n');
+                    },
+                    
+                    generateDependenciesContent(dependencies) {
+                        if (!dependencies || typeof dependencies !== 'object') return '无依赖关系';
+                        
+                        const deps = [];
+                        if (dependencies.blockedBy && dependencies.blockedBy.length > 0) {
+                            deps.push(`**被阻塞**: ${dependencies.blockedBy.join(', ')}`);
+                        }
+                        if (dependencies.blocking && dependencies.blocking.length > 0) {
+                            deps.push(`**阻塞**: ${dependencies.blocking.join(', ')}`);
+                        }
+                        if (dependencies.relatedTo && dependencies.relatedTo.length > 0) {
+                            deps.push(`**相关**: ${dependencies.relatedTo.join(', ')}`);
+                        }
+                        
+                        return deps.length > 0 ? deps.join('\n') : '无依赖关系';
+                    },
+                    
+                    generateCustomFieldsContent(customFields) {
+                        if (!customFields || typeof customFields !== 'object') return '无自定义字段';
+                        
+                        return Object.entries(customFields).map(([key, value]) => {
+                            return `- **${key}**: ${value}`;
+                        }).join('\n');
+                    },
+                    
+                    generateLabelStatistics(tasks) {
+                        const labelCount = {};
+                        tasks.forEach(task => {
+                            if (task.labels && Array.isArray(task.labels)) {
+                                task.labels.forEach(label => {
+                                    const labelName = label.name || label;
+                                    labelCount[labelName] = (labelCount[labelName] || 0) + 1;
+                                });
+                            }
+                        });
+                        
+                        const sortedLabels = Object.entries(labelCount)
+                            .sort(([,a], [,b]) => b - a)
+                            .slice(0, 10); // 只显示前10个标签
+                        
+                        return sortedLabels.length > 0 
+                            ? sortedLabels.map(([label, count]) => `- **${label}**: ${count} 次`).join('\n')
+                            : '无标签';
+                    },
+                    
+                    sanitizeFileName(fileName) {
+                        return fileName.replace(/[<>:"/\\|?*]/g, '_').substring(0, 50);
+                    },
+                    
+                    // 加载JSZip库
+                    async loadJSZipLibrary() {
+                        return new Promise((resolve, reject) => {
+                            if (typeof JSZip !== 'undefined') {
+                                resolve();
+                                return;
+                            }
+                            
+                            const script = document.createElement('script');
+                            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                            script.onload = () => resolve();
+                            script.onerror = () => reject(new Error('Failed to load JSZip library'));
+                            document.head.appendChild(script);
+                        });
+                    },
+                    
+                    // 下载ZIP文件
+                    downloadZip(zip, filename) {
+                        zip.generateAsync({ type: 'blob' }).then(content => {
+                            const url = URL.createObjectURL(content);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = filename;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                        });
+                    },
+
+                    // 导出所有任务 - 调用useMethods中的导出方法
+                    async handleExportAllTasks() {
+                        try {
+                            console.log('[TaskPro] 调用导出方法...');
+                            
+                            // 调用useMethods中的导出方法
+                            if (window.store && window.store.methods && window.store.methods.handleExportAllTasks) {
+                                await window.store.methods.handleExportAllTasks();
+                            } else {
+                                console.error('[TaskPro] 导出方法未找到');
+                                if (window.showError) {
+                                    window.showError('导出功能未正确初始化');
+                                }
+                            }
+                            
+                        } catch (error) {
+                            console.error('[TaskPro] 导出任务失败:', error);
+                            if (window.showError) {
+                                window.showError('导出任务失败，请重试');
+                            }
+                        }
+                    },
+
                     
                 }
             });
@@ -1978,6 +2472,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
+
 
 
 
