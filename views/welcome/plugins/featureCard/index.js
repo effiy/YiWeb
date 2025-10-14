@@ -104,6 +104,8 @@ class ThemeManager {
     constructor() {
         this.appliedThemes = new Map();
         this.initialized = false;
+        this.observerStarted = false;
+        this.observer = null;
     }
 
     /**
@@ -123,45 +125,75 @@ class ThemeManager {
      * 监听卡片创建
      */
     observeCardCreation() {
-        // 确保document.body存在
-        if (!document.body) {
-            console.warn('[ThemeManager] document.body不存在，延迟初始化');
+        // 防止重复启动observer
+        if (this.observerStarted) {
+            console.log('[ThemeManager] Observer已经启动，跳过重复初始化');
+            return;
+        }
+
+        // 确保document.body存在且是有效的DOM节点
+        if (!document.body || !(document.body instanceof Node)) {
+            console.warn('[ThemeManager] document.body不存在或无效，延迟初始化');
             // 延迟重试
             setTimeout(() => this.observeCardCreation(), 100);
             return;
         }
 
-        // 使用MutationObserver监听DOM变化
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === Node.ELEMENT_NODE) {
-                        // 检查新添加的卡片
-                        if (node.classList && node.classList.contains('feature-card')) {
-                            this.applyRandomTheme(node);
+        // 创建MutationObserver实例
+        try {
+            this.observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            // 检查新添加的卡片
+                            if (node.classList && node.classList.contains('feature-card')) {
+                                this.applyRandomTheme(node);
+                            }
+                            // 检查子元素中的卡片
+                            const cards = node.querySelectorAll ? node.querySelectorAll('.feature-card') : [];
+                            cards.forEach(card => this.applyRandomTheme(card));
                         }
-                        // 检查子元素中的卡片
-                        const cards = node.querySelectorAll ? node.querySelectorAll('.feature-card') : [];
-                        cards.forEach(card => this.applyRandomTheme(card));
-                    }
+                    });
                 });
             });
-        });
-
-        // 开始观察
-        try {
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-            console.log('[ThemeManager] MutationObserver已启动');
         } catch (error) {
-            console.error('[ThemeManager] MutationObserver启动失败:', error);
+            console.error('[ThemeManager] 创建MutationObserver失败:', error);
+            setTimeout(() => this.observeCardCreation(), 200);
             return;
         }
 
-        // 处理已存在的卡片
-        this.applyThemesToExistingCards();
+        // 开始观察 - 严格检查以确保安全
+        try {
+            // 再次检查 document.body 的有效性
+            const targetNode = document.body;
+            if (!targetNode) {
+                throw new Error('document.body为null');
+            }
+            if (!(targetNode instanceof Node)) {
+                throw new Error('document.body不是有效的Node对象');
+            }
+            
+            // 安全地启动观察
+            this.observer.observe(targetNode, {
+                childList: true,
+                subtree: true
+            });
+            
+            this.observerStarted = true;
+            console.log('[ThemeManager] MutationObserver已启动');
+            
+            // 处理已存在的卡片
+            this.applyThemesToExistingCards();
+        } catch (error) {
+            console.error('[ThemeManager] MutationObserver启动失败:', error);
+            // 清理已创建的observer
+            if (this.observer) {
+                this.observer.disconnect();
+                this.observer = null;
+            }
+            // 重试
+            setTimeout(() => this.observeCardCreation(), 200);
+        }
     }
 
     /**
@@ -248,6 +280,20 @@ class ThemeManager {
         });
         return stats;
     }
+
+    /**
+     * 销毁主题管理器，清理资源
+     */
+    destroy() {
+        if (this.observer) {
+            this.observer.disconnect();
+            this.observer = null;
+        }
+        this.observerStarted = false;
+        this.appliedThemes.clear();
+        this.initialized = false;
+        console.log('[ThemeManager] 主题管理器已销毁');
+    }
 }
 
 // 创建全局主题管理器实例
@@ -256,10 +302,16 @@ const themeManager = new ThemeManager();
 // 导出主题管理器
 window.FeatureCardThemeManager = themeManager;
 
-// 自动初始化
-document.addEventListener('DOMContentLoaded', () => {
+// 自动初始化 - 处理DOMContentLoaded已触发的情况
+if (document.readyState === 'loading') {
+    // DOM还在加载中，添加事件监听器
+    document.addEventListener('DOMContentLoaded', () => {
+        themeManager.init();
+    });
+} else {
+    // DOM已经加载完成，立即初始化
     themeManager.init();
-});
+}
 
 // 提供全局方法供外部调用
 window.regenerateCardThemes = () => {
@@ -270,4 +322,9 @@ window.getCardThemeStats = () => {
     return themeManager.getThemeStats();
 };
 
+window.destroyCardThemeManager = () => {
+    themeManager.destroy();
+};
+
 console.log('[FeatureCard] 主题管理器已加载'); 
+

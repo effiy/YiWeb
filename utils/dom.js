@@ -149,6 +149,63 @@ export function createIntersectionObserver(callback, options = {}) {
 }
 
 /**
+ * 安全地观察 DOM 节点
+ * @param {Observer} observer - Observer 实例 (MutationObserver 或 IntersectionObserver)
+ * @param {Node|Element} target - 要观察的目标节点
+ * @param {Object} options - 观察选项
+ * @returns {boolean} 是否成功开始观察
+ */
+export function safeObserve(observer, target, options = {}) {
+    try {
+        // 验证 observer
+        if (!observer || typeof observer.observe !== 'function') {
+            console.error('[safeObserve] Invalid observer:', observer);
+            return false;
+        }
+        
+        // 验证 target
+        if (!target) {
+            console.error('[safeObserve] Target is null or undefined');
+            return false;
+        }
+        
+        if (!(target instanceof Node)) {
+            console.error('[safeObserve] Target is not a valid Node:', target);
+            return false;
+        }
+        
+        // 安全地调用 observe
+        observer.observe(target, options);
+        return true;
+    } catch (error) {
+        console.error('[safeObserve] Failed to observe:', error);
+        return false;
+    }
+}
+
+/**
+ * 批量安全地观察多个 DOM 节点
+ * @param {Observer} observer - Observer 实例
+ * @param {NodeList|Array} targets - 要观察的目标节点列表
+ * @param {Object} options - 观察选项
+ * @returns {number} 成功观察的节点数量
+ */
+export function safeObserveAll(observer, targets, options = {}) {
+    if (!targets || !targets.length) {
+        return 0;
+    }
+    
+    let successCount = 0;
+    targets.forEach(target => {
+        if (safeObserve(observer, target, options)) {
+            successCount++;
+        }
+    });
+    
+    return successCount;
+}
+
+/**
  * 复制文本到剪贴板
  * @param {string} text - 要复制的文本
  * @returns {Promise<boolean>} 是否复制成功
@@ -310,4 +367,5 @@ export default {
     getFormData,
     setFormData
 }; 
+
 

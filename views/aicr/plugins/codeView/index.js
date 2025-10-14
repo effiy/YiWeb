@@ -755,14 +755,21 @@ const createCodeView = async () => {
                         });
                     }, { rootMargin: '50px' });
                     
-                    images.forEach(img => imageObserver.observe(img));
+                    // 安全地观察每个图片元素
+                    images.forEach(img => {
+                        if (img && img instanceof Node) {
+                            imageObserver.observe(img);
+                        }
+                    });
                 } else {
                     // 降级处理
                     images.forEach(img => {
-                        img.style.cursor = 'pointer';
-                        img.addEventListener('click', () => {
-                            this.showImageLightbox(img.src, img.alt);
-                        });
+                        if (img && img instanceof HTMLElement) {
+                            img.style.cursor = 'pointer';
+                            img.addEventListener('click', () => {
+                                this.showImageLightbox(img.src, img.alt);
+                            });
+                        }
                     });
                 }
             },
@@ -4819,6 +4826,7 @@ const createCodeView = async () => {
         console.error('CodeView 组件初始化失败:', error);
     }
 })();
+
 
 
 
