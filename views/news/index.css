@@ -4,14 +4,28 @@
 .container {
     min-height: 100vh;
     min-height: calc(var(--vh, 1vh) * 100);
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-areas: 
-        "news sidebar";
-    gap: var(--spacing-xl);
     position: relative;
     width: 100%;
     max-width: 100%;
+}
+
+/* 内容包装器 */
+.content-wrapper {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 
+        "main sidebar";
+    gap: var(--spacing-xl);
+    width: 100%;
+}
+
+/* 主列布局 */
+.main-column {
+    grid-area: main;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2xl);
+    width: 100%;
 }
 
 /* 评论列表区块间距 */
@@ -165,6 +179,18 @@
 }
 
 @media (max-width: 768px) {
+    .content-wrapper {
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+            "main"
+            "sidebar";
+        gap: var(--spacing-lg);
+    }
+    
+    .main-column {
+        gap: var(--spacing-xl);
+    }
+    
     .sidebar-navigation {
         position: static;
         order: 2;
@@ -203,6 +229,7 @@
         font-size: 0.8rem;
     }
 } 
+
 
 
 

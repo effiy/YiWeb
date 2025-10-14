@@ -12,6 +12,7 @@ import { safeExecute, createError, ErrorTypes, showSuccessMessage } from '/utils
 export const useMethods = (store) => {
     const { 
         newsData, 
+        projectFilesData,
         searchQuery, 
         selectedCategories, 
         selectedTags, 
@@ -21,6 +22,7 @@ export const useMethods = (store) => {
         clickedItems,
         sidebarCollapsed,
         loadNewsData,
+        loadProjectFilesData,
         setSearchQuery,
         setActiveCategory,
         toggleCategory,
@@ -98,22 +100,31 @@ export const useMethods = (store) => {
                 throw createError('分类参数无效', ErrorTypes.VALIDATION, '分类切换');
             }
 
-            // 顶部分类：全部/新闻/评论
-            if (['all', 'news', 'comments'].includes(category)) {
+            // 顶部分类：全部/新闻/评论/项目文件
+            if (['all', 'news', 'comments', 'projectFiles'].includes(category)) {
                 setActiveCategory(category);
 
                 // 点击后请求对应接口
                 if (category === 'all') {
-                    // 同时刷新新闻与评论
+                    // 同时刷新新闻、评论和项目文件
                     loadNewsData();
+                    loadProjectFilesData();
                     window.dispatchEvent(new CustomEvent('ReloadComments'));
                 } else if (category === 'news') {
                     loadNewsData();
                 } else if (category === 'comments') {
                     window.dispatchEvent(new CustomEvent('ReloadComments'));
+                } else if (category === 'projectFiles') {
+                    loadProjectFilesData();
                 }
 
-                showSuccessMessage(`已切换到: ${category === 'all' ? '全部' : category === 'news' ? '新闻' : '评论'}`);
+                const categoryNames = {
+                    'all': '全部',
+                    'news': '新闻',
+                    'comments': '评论',
+                    'projectFiles': '项目文件'
+                };
+                showSuccessMessage(`已切换到: ${categoryNames[category]}`);
                 console.log(`[顶部分类切换] 切换到: ${category}`);
                 return;
             }
@@ -182,6 +193,45 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 处理项目文件点击
+     * @param {Object} item - 项目文件项
+     */
+    const handleProjectFileClick = (item) => {
+        return safeExecute(() => {
+            if (!item) {
+                throw createError('项目文件项无效', ErrorTypes.VALIDATION, '项目文件点击');
+            }
+
+            const itemKey = item.fileId || item.filePath || item.fileName || item.title;
+            addClickedItem(itemKey);
+            // 标记为已读
+            markItemRead(itemKey);
+            
+            setTimeout(() => clickedItems.value.delete(itemKey), 300);
+
+            // 构建AICR跳转链接
+            const base = '/views/aicr/index.html';
+            const params = new URLSearchParams();
+            
+            // 优先使用 fileId，如果没有则使用 filePath
+            const fileId = item.fileId || item.filePath;
+            if (fileId) {
+                params.set('fileId', fileId);
+            }
+            if (item.projectId) {
+                params.set('projectId', item.projectId);
+            }
+            if (item.versionId) {
+                params.set('versionId', item.versionId);
+            }
+            
+            const url = params.toString() ? `${base}?${params.toString()}` : base;
+            window.open(url, '_blank', 'noopener,noreferrer');
+            showSuccessMessage('已在AICR中打开文件');
+        }, '项目文件点击处理');
+    };
+
+    /**
      * 打开链接的统一方法
      * @param {string} link - 链接地址
      */
@@ -212,8 +262,9 @@ export const useMethods = (store) => {
             // 更新URL参数
             updateUrlParams(newDate);
             
-            // 加载新日期的新闻数据
+            // 加载新日期的新闻数据和项目文件数据
             await loadNewsData(newDate);
+            await loadProjectFilesData(newDate);
             
             console.log('[日期导航] 前往前一天:', newDate);
         }, '日期导航-前一天');
@@ -235,8 +286,9 @@ export const useMethods = (store) => {
             setCurrentDate(newDate);
             updateUrlParams(newDate);
             
-            // 加载新日期的新闻数据
+            // 加载新日期的新闻数据和项目文件数据
             await loadNewsData(newDate);
+            await loadProjectFilesData(newDate);
             
             console.log('[日期导航] 前往后一天:', newDate);
         }, '日期导航-后一天');
@@ -247,8 +299,9 @@ export const useMethods = (store) => {
             setCurrentDate(today.value);
             updateUrlParams(today.value);
             
-            // 加载今天的新闻数据
+            // 加载今天的新闻数据和项目文件数据
             await loadNewsData(today.value);
+            await loadProjectFilesData(today.value);
             
             console.log('[日期导航] 前往今天:', today.value);
         }, '日期导航-今天');
@@ -283,8 +336,9 @@ export const useMethods = (store) => {
             setCurrentDate(date);
             updateUrlParams(date);
             
-            // 加载选中日期的新闻数据
+            // 加载选中日期的新闻数据和项目文件数据
             await loadNewsData(date);
+            await loadProjectFilesData(date);
             
             console.log('[日期选择] 选择日期:', date);
         }, '日期选择');
@@ -301,6 +355,12 @@ export const useMethods = (store) => {
         return safeExecute(async () => {
             await loadNewsData(date);
         }, '新闻数据加载');
+    };
+
+    const handleLoadProjectFilesData = async (date) => {
+        return safeExecute(async () => {
+            await loadProjectFilesData(date);
+        }, '项目文件数据加载');
     };
 
     const updateUrlParams = (date) => {
@@ -357,6 +417,7 @@ export const useMethods = (store) => {
         
         // 新闻相关方法
         handleNewsClick,
+        handleProjectFileClick,
         openLink,
         
         // 日期导航方法
@@ -370,6 +431,7 @@ export const useMethods = (store) => {
         // 界面控制方法
         handleToggleSidebar,
         handleLoadNewsData,
+        handleLoadProjectFilesData,
         handleToggleFavorite,
         
         // 工具方法
@@ -380,4 +442,5 @@ export const useMethods = (store) => {
         shouldShowCategory
     };
 }; 
+
 

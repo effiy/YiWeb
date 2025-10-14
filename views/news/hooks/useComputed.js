@@ -15,10 +15,65 @@ import {
 } from '/utils/date.js';
 import { categorizeNewsItem } from '/views/news/hooks/store.js';
 
+/**
+ * 根据文件扩展名获取文件类型
+ * @param {string} extension - 文件扩展名
+ * @returns {string} 文件类型
+ */
+const getFileType = (extension) => {
+    if (!extension) return 'other';
+    
+    const ext = extension.toLowerCase();
+    const typeMap = {
+        'js': 'javascript',
+        'ts': 'typescript',
+        'jsx': 'react',
+        'tsx': 'react',
+        'vue': 'vue',
+        'html': 'html',
+        'css': 'css',
+        'scss': 'css',
+        'sass': 'css',
+        'less': 'css',
+        'json': 'json',
+        'xml': 'xml',
+        'yaml': 'yaml',
+        'yml': 'yaml',
+        'md': 'markdown',
+        'py': 'python',
+        'java': 'java',
+        'cpp': 'cpp',
+        'c': 'c',
+        'php': 'php',
+        'rb': 'ruby',
+        'go': 'go',
+        'rs': 'rust',
+        'swift': 'swift',
+        'kt': 'kotlin',
+        'scala': 'scala',
+        'sh': 'shell',
+        'bat': 'shell',
+        'ps1': 'shell',
+        'sql': 'sql',
+        'dockerfile': 'docker',
+        'dockerignore': 'docker',
+        'gitignore': 'git',
+        'gitattributes': 'git',
+        'txt': 'text',
+        'log': 'log',
+        'conf': 'config',
+        'ini': 'config',
+        'env': 'config'
+    };
+    
+    return typeMap[ext] || 'other';
+};
+
 export const useComputed = (store) => {
     const { computed } = Vue;
     const { 
         newsData, 
+        projectFilesData,
         searchQuery, 
         selectedCategories, 
         selectedTags, 
@@ -37,13 +92,21 @@ export const useComputed = (store) => {
         }),
 
         /**
+         * 是否有项目文件数据
+         */
+        hasProjectFilesData: computed(() => {
+            return projectFilesData.value && projectFilesData.value.length > 0;
+        }),
+
+        /**
          * 顶部分类（仅用于头部筛选按钮）
          */
         categories: computed(() => {
             return [
                 { key: 'all', icon: 'fas fa-layer-group', title: '全部' },
-                { key: 'news', icon: 'fas fa-newspaper', title: '新闻' },
-                { key: 'comments', icon: 'fas fa-comments', title: '评论' }
+                { key: 'projectFiles', icon: 'fas fa-file-code', title: '项目文件' },
+                { key: 'comments', icon: 'fas fa-comments', title: '评论' },
+                { key: 'news', icon: 'fas fa-newspaper', title: '新闻' }
             ];
         }),
 
@@ -60,8 +123,9 @@ export const useComputed = (store) => {
         availableViews: computed(() => {
             return [
                 { key: 'all', icon: 'fas fa-layer-group', title: '全部' },
-                { key: 'news', icon: 'fas fa-newspaper', title: '新闻' },
-                { key: 'comments', icon: 'fas fa-comments', title: '评论' }
+                { key: 'projectFiles', icon: 'fas fa-file-code', title: '项目文件' },
+                { key: 'comments', icon: 'fas fa-comments', title: '评论' },
+                { key: 'news', icon: 'fas fa-newspaper', title: '新闻' }
             ];
         }),
 
@@ -229,6 +293,49 @@ export const useComputed = (store) => {
         }),
 
         /**
+         * 过滤后的项目文件数据
+         */
+        filteredProjectFilesData: computed(() => {
+            let data = projectFilesData.value || [];
+            
+            // 如果没有过滤条件，直接返回原始数据
+            if (!searchQuery.value && selectedCategories.value.size === 0 && selectedTags.value.size === 0) {
+                return data;
+            }
+            
+            // 搜索过滤
+            if (searchQuery.value) {
+                const query = searchQuery.value.toLowerCase();
+                data = data.filter(item => 
+                    (item.title && item.title.toLowerCase().includes(query)) || 
+                    (item.content && item.content.toLowerCase().includes(query)) ||
+                    (item.fileName && item.fileName.toLowerCase().includes(query)) ||
+                    (item.filePath && item.filePath.toLowerCase().includes(query))
+                );
+            }
+            
+            // 分类过滤 - 项目文件可以按文件类型分类
+            if (selectedCategories.value.size > 0) {
+                data = data.filter(item => {
+                    const fileExtension = item.fileName ? item.fileName.split('.').pop() : '';
+                    const fileType = getFileType(fileExtension);
+                    return selectedCategories.value.has(fileType);
+                });
+            }
+            
+            // 标签过滤
+            if (selectedTags.value.size > 0) {
+                data = data.filter(item => {
+                    if (!item.tags) return false;
+                    const itemTags = Array.isArray(item.tags) ? item.tags : [item.tags];
+                    return itemTags.some(tag => selectedTags.value.has(tag));
+                });
+            }
+            
+            return data;
+        }),
+
+        /**
          * 显示分类 - 将新闻按分类组织
          */
         displayCategories: computed(() => {
@@ -254,5 +361,6 @@ export const useComputed = (store) => {
 
     };
 };
+
 
 

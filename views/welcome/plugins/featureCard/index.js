@@ -123,6 +123,14 @@ class ThemeManager {
      * 监听卡片创建
      */
     observeCardCreation() {
+        // 确保document.body存在
+        if (!document.body) {
+            console.warn('[ThemeManager] document.body不存在，延迟初始化');
+            // 延迟重试
+            setTimeout(() => this.observeCardCreation(), 100);
+            return;
+        }
+
         // 使用MutationObserver监听DOM变化
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
@@ -141,10 +149,16 @@ class ThemeManager {
         });
 
         // 开始观察
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+        try {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+            console.log('[ThemeManager] MutationObserver已启动');
+        } catch (error) {
+            console.error('[ThemeManager] MutationObserver启动失败:', error);
+            return;
+        }
 
         // 处理已存在的卡片
         this.applyThemesToExistingCards();

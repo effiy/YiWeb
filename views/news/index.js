@@ -18,7 +18,8 @@ import { createBaseView } from '/utils/baseView.js';
                 'SearchHeader',
                 'NewsList',
                 'Calendar',
-                'CommentsList'
+                'CommentsList',
+                'ProjectFilesList'
             ],
             plugins: [],
             onMounted: (app) => {
@@ -32,3 +33,4 @@ import { createBaseView } from '/utils/baseView.js';
         console.error('[新闻页面] 应用初始化失败:', error);
     }
 })();
+

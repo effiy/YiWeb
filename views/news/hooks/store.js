@@ -38,13 +38,15 @@ const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ val
 export const createStore = () => {
     // 新闻数据
     const newsData = vueRef([]);
+    // 项目文件数据
+    const projectFilesData = vueRef([]);
     // 搜索查询
     const searchQuery = vueRef('');
     // 当前选中的分类
     const selectedCategories = vueRef(new Set());
     // 当前选中的标签
     const selectedTags = vueRef(new Set());
-    // 顶部分类（全部/新闻/评论）
+    // 顶部分类（全部/新闻/评论/项目文件）
     const activeCategory = vueRef('all');
     // 当前日期
     const currentDate = vueRef(new Date());
@@ -104,6 +106,46 @@ export const createStore = () => {
             error.value = errorInfo.message;
             errorMessage.value = errorInfo.message;
             newsData.value = [];
+        }).finally(() => {
+            loading.value = false;
+        });
+    };
+
+    /**
+     * 异步加载项目文件数据
+     * 使用updatedTime字段进行日期搜索
+     */
+    const loadProjectFilesData = async (date) => {
+        return safeExecuteAsync(async () => {
+            loading.value = true;
+            error.value = null;
+            errorMessage.value = '';
+            
+            const targetDate = date || currentDate.value;
+            const dateStr = formatDate(targetDate);
+            const todayStr = formatDate(today.value);
+            
+            if (isFutureDate(targetDate, today.value)) {
+                throw createError('无法查看未来日期的项目文件', ErrorTypes.VALIDATION, '项目文件加载');
+            }
+            
+            console.log(`[loadProjectFilesData] 正在加载 ${dateStr} 的项目文件数据...`);
+            
+            const response = await getData(`${window.API_URL}/mongodb/?cname=projectVersionFiles&updatedTime=${dateStr},${dateStr}`);
+            const data = response.data.list;
+            
+            if (!Array.isArray(data)) {
+                throw createError('项目文件数据格式错误', ErrorTypes.API, '项目文件加载');
+            }
+            
+            projectFilesData.value = data;
+            console.log(`[loadProjectFilesData] 成功加载 ${data.length} 条项目文件数据`);
+            
+            return data;
+        }, '项目文件数据加载', (errorInfo) => {
+            error.value = errorInfo.message;
+            errorMessage.value = errorInfo.message;
+            projectFilesData.value = [];
         }).finally(() => {
             loading.value = false;
         });
@@ -279,10 +321,10 @@ export const createStore = () => {
 
     /**
      * 设置顶部分类
-     * @param {('all'|'news'|'comments')} key
+     * @param {('all'|'news'|'comments'|'projectFiles')} key
      */
     const setActiveCategory = (key) => {
-        const allowed = new Set(['all', 'news', 'comments']);
+        const allowed = new Set(['all', 'news', 'comments', 'projectFiles']);
         if (allowed.has(key)) {
             activeCategory.value = key;
         }
@@ -291,6 +333,7 @@ export const createStore = () => {
     // 自动初始化加载 - 延迟执行以确保组件完全初始化
     setTimeout(() => {
         loadNewsData();
+        loadProjectFilesData();
     }, 100);
 
     // 恢复本地持久化
@@ -300,6 +343,7 @@ export const createStore = () => {
     return {
         // 响应式数据
         newsData,
+        projectFilesData,
         searchQuery,
         selectedCategories,
         selectedTags,
@@ -318,6 +362,7 @@ export const createStore = () => {
         
         // 方法
         loadNewsData,
+        loadProjectFilesData,
         setSearchQuery,
         toggleCategory,
         toggleTag,
@@ -334,6 +379,7 @@ export const createStore = () => {
         toggleFavorite
     };
 };
+
 
 
 
