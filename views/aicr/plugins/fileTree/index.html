@@ -26,7 +26,7 @@
     <!-- 文件树内容 -->
     <div v-else-if="tree.length > 0" class="file-tree-content">
         <ul class="file-tree" role="tree">
-            <template v-for="item in tree" :key="item.id">
+            <template v-for="item in sortedTree" :key="item.id">
                 <!-- 递归组件：文件树节点 -->
                 <file-tree-node 
                     :item="item" 
@@ -53,6 +53,7 @@
         <div class="empty-subtitle">请检查文件目录或联系管理员</div>
     </div>
 </aside>
+
 
 
 

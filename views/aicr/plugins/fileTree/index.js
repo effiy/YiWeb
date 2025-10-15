@@ -43,6 +43,39 @@ async function loadTemplate() {
     }
 }
 
+// 文件树排序函数
+const sortFileTreeItems = (items) => {
+    if (!Array.isArray(items)) return items;
+    
+    return items.sort((a, b) => {
+        // 首先按类型排序：文件夹在前，文件在后
+        if (a.type === 'folder' && b.type !== 'folder') {
+            return -1;
+        }
+        if (a.type !== 'folder' && b.type === 'folder') {
+            return 1;
+        }
+        
+        // 同类型按名称排序（不区分大小写）
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB, 'zh-CN');
+    });
+};
+
+// 递归排序文件树
+const sortFileTreeRecursively = (node) => {
+    if (!node || typeof node !== 'object') return node;
+    
+    // 如果有子节点，递归排序
+    if (node.type === 'folder' && Array.isArray(node.children)) {
+        node.children = sortFileTreeItems(node.children);
+        node.children.forEach(child => sortFileTreeRecursively(child));
+    }
+    
+    return node;
+};
+
 // 创建递归节点组件
 const createFileTreeNode = () => {
     return {
@@ -70,8 +103,19 @@ const createFileTreeNode = () => {
                 _lastClickTime: null
             };
         },
+        computed: {
+            // 排序后的文件树数据
+            sortedTree() {
+                if (!Array.isArray(this.tree)) return [];
+                return this.tree.map(item => sortFileTreeRecursively(item));
+            }
+        },
         emits: ['file-select', 'folder-toggle', 'create-folder', 'create-file', 'rename-item', 'delete-item'],
         methods: {
+            // 排序函数，供模板使用
+            sortFileTreeItems(items) {
+                return sortFileTreeItems(items);
+            },
             // 切换文件夹展开状态
             toggleFolder(folderId) {
                 return safeExecute(() => {
@@ -377,7 +421,7 @@ const createFileTreeNode = () => {
                     class="file-tree-children"
                     role="group"
                 >
-                    <template v-for="child in item.children" :key="child.id">
+                    <template v-for="child in sortFileTreeItems(item.children)" :key="child.id">
                         <file-tree-node 
                             :item="child"
                             :selected-file-id="selectedFileId"
@@ -436,8 +480,19 @@ const createFileTree = async () => {
                 default: false
             }
         },
+        computed: {
+            // 排序后的文件树数据
+            sortedTree() {
+                if (!Array.isArray(this.tree)) return [];
+                return this.tree.map(item => sortFileTreeRecursively(item));
+            }
+        },
         emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item'],
         methods: {
+            // 排序函数，供模板使用
+            sortFileTreeItems(items) {
+                return sortFileTreeItems(items);
+            },
             // 切换收起状态
             toggleCollapse() {
                 return safeExecute(() => {
@@ -652,6 +707,7 @@ const createFileTree = async () => {
         console.error('FileTree 组件初始化失败:', error);
     }
 })();
+
 
 
 

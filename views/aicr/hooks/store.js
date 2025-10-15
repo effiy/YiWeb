@@ -125,10 +125,46 @@ export const createStore = () => {
                 }
             };
             addPaths(rootNode, '');
-            fileTree.value = [rootNode]; 
+            
+            // 对文件树进行排序
+            const sortFileTreeItems = (items) => {
+                if (!Array.isArray(items)) return items;
+                
+                return items.sort((a, b) => {
+                    // 首先按类型排序：文件夹在前，文件在后
+                    if (a.type === 'folder' && b.type !== 'folder') {
+                        return -1;
+                    }
+                    if (a.type !== 'folder' && b.type === 'folder') {
+                        return 1;
+                    }
+                    
+                    // 同类型按名称排序（不区分大小写）
+                    const nameA = (a.name || '').toLowerCase();
+                    const nameB = (b.name || '').toLowerCase();
+                    return nameA.localeCompare(nameB, 'zh-CN');
+                });
+            };
+            
+            // 递归排序文件树
+            const sortFileTreeRecursively = (node) => {
+                if (!node || typeof node !== 'object') return node;
+                
+                // 如果有子节点，递归排序
+                if (node.type === 'folder' && Array.isArray(node.children)) {
+                    node.children = sortFileTreeItems(node.children);
+                    node.children.forEach(child => sortFileTreeRecursively(child));
+                }
+                
+                return node;
+            };
+            
+            // 对根节点进行排序
+            const sortedRootNode = sortFileTreeRecursively(rootNode);
+            fileTree.value = [sortedRootNode]; 
             // 保存文档key用于后续更新
             fileTreeDocKey.value = treeDoc.key || treeDoc._id || treeDoc.id || '';
-            console.log(`[loadFileTree] 成功加载文件树数据`);
+            console.log(`[loadFileTree] 成功加载并排序文件树数据`);
 
             // 默认展开所有文件夹
             function collectAllFolderIds(nodes, set) {
@@ -257,6 +293,28 @@ export const createStore = () => {
 
             const newId = (parentNode.id ? `${parentNode.id}/` : '') + name;
             parentNode.children.push({ id: newId, name, type: 'folder', children: [] });
+            
+            // 对父节点的子节点进行排序
+            const sortFileTreeItems = (items) => {
+                if (!Array.isArray(items)) return items;
+                
+                return items.sort((a, b) => {
+                    // 首先按类型排序：文件夹在前，文件在后
+                    if (a.type === 'folder' && b.type !== 'folder') {
+                        return -1;
+                    }
+                    if (a.type !== 'folder' && b.type === 'folder') {
+                        return 1;
+                    }
+                    
+                    // 同类型按名称排序（不区分大小写）
+                    const nameA = (a.name || '').toLowerCase();
+                    const nameB = (b.name || '').toLowerCase();
+                    return nameA.localeCompare(nameB, 'zh-CN');
+                });
+            };
+            
+            parentNode.children = sortFileTreeItems(parentNode.children);
             // 保持全部展开
             expandAllFolders();
 
@@ -294,6 +352,28 @@ export const createStore = () => {
             const newId = (parentNode.id ? `${parentNode.id}/` : '') + name;
             const now = Date.now();
             parentNode.children.push({ id: newId, name, type: 'file', size: content ? content.length : 0, modified: now });
+            
+            // 对父节点的子节点进行排序
+            const sortFileTreeItems = (items) => {
+                if (!Array.isArray(items)) return items;
+                
+                return items.sort((a, b) => {
+                    // 首先按类型排序：文件夹在前，文件在后
+                    if (a.type === 'folder' && b.type !== 'folder') {
+                        return -1;
+                    }
+                    if (a.type !== 'folder' && b.type === 'folder') {
+                        return 1;
+                    }
+                    
+                    // 同类型按名称排序（不区分大小写）
+                    const nameA = (a.name || '').toLowerCase();
+                    const nameB = (b.name || '').toLowerCase();
+                    return nameA.localeCompare(nameB, 'zh-CN');
+                });
+            };
+            
+            parentNode.children = sortFileTreeItems(parentNode.children);
             // 保持全部展开
             expandAllFolders();
 
@@ -365,6 +445,30 @@ export const createStore = () => {
                 }
             };
             updateIdsRecursively(node, oldId, newId);
+            
+            // 对父节点的子节点进行排序
+            const sortFileTreeItems = (items) => {
+                if (!Array.isArray(items)) return items;
+                
+                return items.sort((a, b) => {
+                    // 首先按类型排序：文件夹在前，文件在后
+                    if (a.type === 'folder' && b.type !== 'folder') {
+                        return -1;
+                    }
+                    if (a.type !== 'folder' && b.type === 'folder') {
+                        return 1;
+                    }
+                    
+                    // 同类型按名称排序（不区分大小写）
+                    const nameA = (a.name || '').toLowerCase();
+                    const nameB = (b.name || '').toLowerCase();
+                    return nameA.localeCompare(nameB, 'zh-CN');
+                });
+            };
+            
+            if (parent && parent.children) {
+                parent.children = sortFileTreeItems(parent.children);
+            }
             // 保持全部展开
             expandAllFolders();
 
@@ -1595,6 +1699,7 @@ export const createStore = () => {
         clearError
     };
 };
+
 
 
 
