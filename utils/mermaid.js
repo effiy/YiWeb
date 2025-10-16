@@ -108,11 +108,23 @@ window.showMermaidFullscreen = function(diagramId) {
     // 获取图表代码
     const code = diagram.getAttribute('data-mermaid-code') || '';
     
+    // 克隆 SVG 并确保样式完全一致
+    const svgClone = svg.cloneNode(true);
+    
+    // 确保克隆的 SVG 有正确的样式和属性
+    ensureSVGConsistency(svgClone, svg);
+    
+    console.log('[Mermaid] 全屏显示 SVG，原始尺寸:', {
+        width: svg.getAttribute('width'),
+        height: svg.getAttribute('height'),
+        viewBox: svg.getAttribute('viewBox')
+    });
+    
     // 使用统一的全屏查看器
     if (window.fullscreenViewer) {
         window.fullscreenViewer.open({
             title: `Mermaid 图表 - ${diagramId}`,
-            content: svg.outerHTML,
+            content: svgClone.outerHTML,
             type: 'svg',
             actions: [
                 {
@@ -148,11 +160,11 @@ window.showMermaidFullscreen = function(diagramId) {
                         break;
                     case 'download-svg':
                         // 使用全屏查看器中的 SVG
-                        downloadMermaidSVG(diagramId, fullscreenSvg || svg);
+                        downloadMermaidSVG(diagramId, fullscreenSvg || svgClone);
                         break;
                     case 'download-png':
                         // 使用全屏查看器中的 SVG 确保一致性
-                        window.downloadMermaidPNG(diagramId, fullscreenSvg || svg);
+                        window.downloadMermaidPNG(diagramId, fullscreenSvg || svgClone);
                         break;
                 }
             }
@@ -163,6 +175,124 @@ window.showMermaidFullscreen = function(diagramId) {
         showMermaidFullscreenLegacy(diagramId);
     }
 };
+
+// 确保 SVG 克隆与原始 SVG 完全一致
+function ensureSVGConsistency(svgClone, originalSvg) {
+    try {
+        // 复制所有属性
+        Array.from(originalSvg.attributes).forEach(attr => {
+            svgClone.setAttribute(attr.name, attr.value);
+        });
+        
+        // 确保命名空间
+        if (!svgClone.getAttribute('xmlns')) {
+            svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        }
+        if (!svgClone.getAttribute('xmlns:xlink')) {
+            svgClone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+        }
+        
+        // 确保尺寸属性
+        const width = originalSvg.getAttribute('width') || originalSvg.getBoundingClientRect().width;
+        const height = originalSvg.getAttribute('height') || originalSvg.getBoundingClientRect().height;
+        const viewBox = originalSvg.getAttribute('viewBox');
+        
+        if (width) svgClone.setAttribute('width', width);
+        if (height) svgClone.setAttribute('height', height);
+        if (viewBox) svgClone.setAttribute('viewBox', viewBox);
+        
+        // 确保 preserveAspectRatio
+        const preserveAspectRatio = originalSvg.getAttribute('preserveAspectRatio');
+        if (preserveAspectRatio) {
+            svgClone.setAttribute('preserveAspectRatio', preserveAspectRatio);
+        } else {
+            svgClone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        }
+        
+        // 复制所有样式（包括内联样式和计算样式）
+        copyAllStyles(svgClone, originalSvg);
+        
+        console.log('[Mermaid] SVG 一致性确保完成');
+        
+    } catch (error) {
+        console.error('[Mermaid] SVG 一致性确保失败:', error);
+    }
+}
+
+// 复制所有样式到克隆的 SVG
+function copyAllStyles(svgClone, originalSvg) {
+    try {
+        // 复制所有 <style> 标签
+        const originalStyles = originalSvg.querySelectorAll('style');
+        const cloneStyles = svgClone.querySelectorAll('style');
+        
+        // 确保克隆中有相同数量的 style 标签
+        originalStyles.forEach((styleEl, index) => {
+            if (cloneStyles[index]) {
+                cloneStyles[index].textContent = styleEl.textContent;
+            } else {
+                // 如果克隆中没有对应的 style 标签，创建一个
+                const newStyle = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+                newStyle.textContent = styleEl.textContent;
+                svgClone.insertBefore(newStyle, svgClone.firstChild);
+            }
+        });
+        
+        // 复制所有元素的样式
+        const allOriginalElements = originalSvg.querySelectorAll('*');
+        const allCloneElements = svgClone.querySelectorAll('*');
+        
+        allOriginalElements.forEach((originalEl, index) => {
+            const cloneEl = allCloneElements[index];
+            if (cloneEl) {
+                // 复制内联样式
+                const inlineStyle = originalEl.getAttribute('style');
+                if (inlineStyle) {
+                    cloneEl.setAttribute('style', inlineStyle);
+                }
+                
+                // 复制计算样式（作为内联样式）
+                try {
+                    const computedStyle = window.getComputedStyle(originalEl);
+                    const importantStyles = [
+                        'fill', 'stroke', 'stroke-width', 'stroke-dasharray', 
+                        'stroke-linecap', 'stroke-linejoin', 'stroke-opacity',
+                        'font-family', 'font-size', 'font-weight', 'font-style', 
+                        'text-anchor', 'text-decoration', 'letter-spacing',
+                        'color', 'opacity', 'transform', 'transform-origin',
+                        'display', 'visibility', 'overflow',
+                        'fill-opacity', 'fill-rule'
+                    ];
+                    
+                    let computedInlineStyle = '';
+                    importantStyles.forEach(prop => {
+                        const value = computedStyle.getPropertyValue(prop);
+                        if (value && 
+                            value !== 'none' && 
+                            value !== 'normal' && 
+                            value !== 'auto' &&
+                            value !== 'initial' &&
+                            value !== 'inherit' &&
+                            value !== 'unset' &&
+                            value !== '') {
+                            computedInlineStyle += `${prop}: ${value} !important; `;
+                        }
+                    });
+                    
+                    if (computedInlineStyle) {
+                        const existingStyle = cloneEl.getAttribute('style') || '';
+                        cloneEl.setAttribute('style', existingStyle + ' ' + computedInlineStyle);
+                    }
+                } catch (e) {
+                    // 某些元素可能无法获取计算样式，忽略
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('[Mermaid] 样式复制失败:', error);
+    }
+}
 
 // 下载 Mermaid SVG
 function downloadMermaidSVG(diagramId, svgElement) {
