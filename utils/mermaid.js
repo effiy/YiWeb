@@ -8,6 +8,22 @@
 window.MERMAID_CONFIG = {
     startOnLoad: false,
     securityLevel: 'loose',
+    theme: 'dark',
+    themeVariables: {
+        primaryTextColor: '#ffffff',
+        primaryColor: '#4f46e5',
+        primaryBorderColor: '#6366f1',
+        lineColor: '#e5e7eb',
+        sectionBkgColor: '#1e293b',
+        altSectionBkgColor: '#334155',
+        gridColor: '#374151',
+        secondaryColor: '#7c3aed',
+        tertiaryColor: '#a855f7',
+        background: '#0f172a',
+        mainBkg: '#1e293b',
+        secondBkg: '#334155',
+        tertiaryBkg: '#475569'
+    },
     fontFamily: '"Segoe UI", "Microsoft YaHei", sans-serif',
     fontSize: 14,
     flowchart: {
