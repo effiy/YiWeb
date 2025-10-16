@@ -13,17 +13,17 @@ export const useMethods = (store) => {
     
     // 添加全局ESC按键处理
     const setupGlobalEscHandler = () => {
-        // 监听全屏查看器的ESC事件
-        window.addEventListener('fullscreenViewerEscPressed', (e) => {
-            console.log('[欢迎页面] 检测到全屏查看器ESC事件，跳过其他ESC处理');
+        // 监听模态框的ESC事件
+        window.addEventListener('modalEscPressed', (e) => {
+            console.log('[欢迎页面] 检测到模态框ESC事件，跳过其他ESC处理');
         });
         
         // 添加全局ESC按键监听
         const handleGlobalEsc = (e) => {
             if (e.key === 'Escape') {
-                // 检查是否有全屏查看器打开，如果有则跳过处理
-                if (window.fullscreenViewer && window.fullscreenViewer.isOpen) {
-                    console.log('[欢迎页面] 全屏查看器已打开，跳过ESC处理');
+                // 检查是否有模态框打开，如果有则跳过处理
+                if (document.querySelector('.modal, .modal-backdrop')) {
+                    console.log('[欢迎页面] 模态框已打开，跳过ESC处理');
                     return;
                 }
                 

@@ -4,71 +4,36 @@
  * @author liangliang
  */
 
-import FullscreenViewer from './fullscreenViewer.js';
-
 class ChartViewer {
     constructor() {
-        this.fullscreenViewer = window.fullscreenViewer;
         this.supportedTypes = ['mermaid', 'svg', 'image', 'text', 'html'];
     }
 
     /**
-     * 查看 Mermaid 图表
+     * 复制 Mermaid 图表代码
      * @param {string} diagramId - 图表ID
-     * @param {Object} options - 选项
      */
-    viewMermaid(diagramId, options = {}) {
+    copyMermaidCode(diagramId) {
         const diagram = document.getElementById(diagramId);
         if (!diagram) {
             console.warn(`[图表查看器] 未找到图表元素: ${diagramId}`);
             return;
         }
 
-        const svg = diagram.querySelector('svg');
-        if (!svg) {
-            console.warn(`[图表查看器] 图表 ${diagramId} 没有 SVG 内容`);
-            return;
-        }
-
         const code = diagram.getAttribute('data-mermaid-code') || '';
-        const title = options.title || `Mermaid 图表 - ${diagramId}`;
-
-        this.fullscreenViewer.open({
-            title,
-            content: svg.outerHTML,
-            type: 'svg',
-            actions: [
-                {
-                    label: '复制代码',
-                    icon: 'fas fa-copy',
-                    type: 'default',
-                    action: 'copy-code'
-                },
-                {
-                    label: '下载SVG',
-                    icon: 'fas fa-download',
-                    type: 'default',
-                    action: 'download-svg'
-                },
-                {
-                    label: '导出PNG',
-                    icon: 'fas fa-image',
-                    type: 'default',
-                    action: 'export-png'
-                }
-            ],
-            onAction: (action) => {
-                this.handleMermaidAction(action, diagramId, svg, code);
-            }
-        });
+        if (code) {
+            this.copyToClipboard(code);
+        } else {
+            console.warn(`[图表查看器] 图表 ${diagramId} 没有代码数据`);
+        }
     }
 
     /**
-     * 查看 SVG 图表
+     * 下载 SVG 图表
      * @param {string} elementId - 元素ID
      * @param {Object} options - 选项
      */
-    viewSVG(elementId, options = {}) {
+    downloadSVG(elementId, options = {}) {
         const element = document.getElementById(elementId);
         if (!element) {
             console.warn(`[图表查看器] 未找到元素: ${elementId}`);
@@ -81,203 +46,48 @@ class ChartViewer {
             return;
         }
 
-        const title = options.title || `SVG 图表 - ${elementId}`;
-
-        this.fullscreenViewer.open({
-            title,
-            content: svg.outerHTML,
-            type: 'svg',
-            actions: [
-                {
-                    label: '下载SVG',
-                    icon: 'fas fa-download',
-                    type: 'default',
-                    action: 'download-svg'
-                },
-                {
-                    label: '导出PNG',
-                    icon: 'fas fa-image',
-                    type: 'default',
-                    action: 'export-png'
-                }
-            ],
-            onAction: (action) => {
-                this.handleSVGAction(action, elementId, svg);
-            }
-        });
+        const filename = options.filename || elementId;
+        this.downloadSVGFile(filename, svg);
     }
 
     /**
-     * 查看图片
+     * 下载图片
      * @param {string} imageSrc - 图片源
      * @param {Object} options - 选项
      */
-    viewImage(imageSrc, options = {}) {
-        const title = options.title || '图片查看';
-        const alt = options.alt || '图片';
-
-        this.fullscreenViewer.open({
-            title,
-            content: `<img src="${imageSrc}" alt="${alt}" />`,
-            type: 'image',
-            actions: [
-                {
-                    label: '下载图片',
-                    icon: 'fas fa-download',
-                    type: 'default',
-                    action: 'download-image'
-                },
-                {
-                    label: '复制链接',
-                    icon: 'fas fa-link',
-                    type: 'default',
-                    action: 'copy-link'
-                }
-            ],
-            onAction: (action) => {
-                this.handleImageAction(action, imageSrc);
-            }
-        });
+    downloadImage(imageSrc, options = {}) {
+        const filename = options.filename || imageSrc.split('/').pop() || 'image';
+        this.downloadImageFile(imageSrc, filename);
     }
 
     /**
-     * 查看文本内容
+     * 复制文本内容
+     * @param {string} content - 文本内容
+     */
+    copyText(content) {
+        this.copyToClipboard(content);
+    }
+
+    /**
+     * 下载文本文件
      * @param {string} content - 文本内容
      * @param {Object} options - 选项
      */
-    viewText(content, options = {}) {
-        const title = options.title || '文本查看';
-        const language = options.language || 'text';
-
-        this.fullscreenViewer.open({
-            title,
-            content: `<pre><code class="language-${language}">${this.escapeHtml(content)}</code></pre>`,
-            type: 'html',
-            actions: [
-                {
-                    label: '复制文本',
-                    icon: 'fas fa-copy',
-                    type: 'default',
-                    action: 'copy-text'
-                },
-                {
-                    label: '下载文件',
-                    icon: 'fas fa-download',
-                    type: 'default',
-                    action: 'download-text'
-                }
-            ],
-            onAction: (action) => {
-                this.handleTextAction(action, content, options);
-            }
-        });
+    downloadText(content, options = {}) {
+        const filename = options.filename || 'content.txt';
+        const mimeType = options.mimeType || 'text/plain';
+        this.downloadTextFile(content, filename, mimeType);
     }
 
     /**
-     * 查看 HTML 内容
+     * 复制 HTML 内容
      * @param {string|HTMLElement} content - HTML内容
-     * @param {Object} options - 选项
      */
-    viewHTML(content, options = {}) {
-        const title = options.title || 'HTML 查看';
+    copyHTML(content) {
         const htmlContent = typeof content === 'string' ? content : content.outerHTML;
-
-        this.fullscreenViewer.open({
-            title,
-            content: htmlContent,
-            type: 'html',
-            actions: [
-                {
-                    label: '复制HTML',
-                    icon: 'fas fa-copy',
-                    type: 'default',
-                    action: 'copy-html'
-                },
-                {
-                    label: '查看源码',
-                    icon: 'fas fa-code',
-                    type: 'default',
-                    action: 'view-source'
-                }
-            ],
-            onAction: (action) => {
-                this.handleHTMLAction(action, htmlContent);
-            }
-        });
+        this.copyToClipboard(htmlContent);
     }
 
-    /**
-     * 处理 Mermaid 图表操作
-     */
-    handleMermaidAction(action, diagramId, svg, code) {
-        switch (action) {
-            case 'copy-code':
-                this.copyToClipboard(code);
-                break;
-            case 'download-svg':
-                this.downloadSVG(diagramId, svg);
-                break;
-            case 'export-png':
-                this.exportSVGToPNG(diagramId, svg);
-                break;
-        }
-    }
-
-    /**
-     * 处理 SVG 操作
-     */
-    handleSVGAction(action, elementId, svg) {
-        switch (action) {
-            case 'download-svg':
-                this.downloadSVG(elementId, svg);
-                break;
-            case 'export-png':
-                this.exportSVGToPNG(elementId, svg);
-                break;
-        }
-    }
-
-    /**
-     * 处理图片操作
-     */
-    handleImageAction(action, imageSrc) {
-        switch (action) {
-            case 'download-image':
-                this.downloadImage(imageSrc);
-                break;
-            case 'copy-link':
-                this.copyToClipboard(imageSrc);
-                break;
-        }
-    }
-
-    /**
-     * 处理文本操作
-     */
-    handleTextAction(action, content, options) {
-        switch (action) {
-            case 'copy-text':
-                this.copyToClipboard(content);
-                break;
-            case 'download-text':
-                this.downloadText(content, options);
-                break;
-        }
-    }
-
-    /**
-     * 处理 HTML 操作
-     */
-    handleHTMLAction(action, htmlContent) {
-        switch (action) {
-            case 'copy-html':
-                this.copyToClipboard(htmlContent);
-                break;
-            case 'view-source':
-                this.viewText(htmlContent, { title: 'HTML 源码', language: 'html' });
-                break;
-        }
-    }
 
     /**
      * 复制到剪贴板
@@ -325,9 +135,9 @@ class ChartViewer {
     }
 
     /**
-     * 下载 SVG
+     * 下载 SVG 文件
      */
-    downloadSVG(filename, svgElement) {
+    downloadSVGFile(filename, svgElement) {
         try {
             const svgData = new XMLSerializer().serializeToString(svgElement);
             const blob = new Blob([svgData], { type: 'image/svg+xml' });
@@ -389,13 +199,13 @@ class ChartViewer {
     }
 
     /**
-     * 下载图片
+     * 下载图片文件
      */
-    downloadImage(imageSrc) {
+    downloadImageFile(imageSrc, filename) {
         try {
             const link = document.createElement('a');
             link.href = imageSrc;
-            link.download = imageSrc.split('/').pop() || 'image';
+            link.download = filename;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -407,13 +217,10 @@ class ChartViewer {
     }
 
     /**
-     * 下载文本
+     * 下载文本文件
      */
-    downloadText(content, options = {}) {
+    downloadTextFile(content, filename, mimeType) {
         try {
-            const filename = options.filename || 'content.txt';
-            const mimeType = options.mimeType || 'text/plain';
-            
             const blob = new Blob([content], { type: mimeType });
             const url = URL.createObjectURL(blob);
             

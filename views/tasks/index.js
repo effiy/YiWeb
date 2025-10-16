@@ -2185,8 +2185,8 @@ task-export/
             
             // Esc 关闭模态
             if (event.key === 'Escape') {
-                // 检查是否有全屏查看器打开，如果有则跳过处理
-                if (window.fullscreenViewer && window.fullscreenViewer.isOpen) {
+                // 检查是否有模态框打开，如果有则跳过处理
+                if (document.querySelector('.modal, .modal-backdrop')) {
                     return;
                 }
                 

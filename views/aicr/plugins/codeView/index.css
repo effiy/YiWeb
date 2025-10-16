@@ -6280,8 +6280,7 @@
     gap: 6px;
 }
 
-.mermaid-diagram-copy,
-.mermaid-diagram-fullscreen {
+.mermaid-diagram-copy {
     background: var(--bg-glass, rgba(255,255,255,0.03));
     border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.08));
     color: var(--text-muted, #94a3b8);
@@ -6300,8 +6299,7 @@
     box-shadow: var(--shadow-xs, 0 1px 2px 0 rgba(0, 0, 0, 0.4));
 }
 
-.mermaid-diagram-copy:hover,
-.mermaid-diagram-fullscreen:hover {
+.mermaid-diagram-copy:hover {
     background: var(--primary-alpha, rgba(79, 70, 229, 0.1));
     border-color: var(--primary, #4f46e5);
     color: var(--primary, #4f46e5);
@@ -6309,8 +6307,7 @@
     box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.4));
 }
 
-.mermaid-diagram-copy:active,
-.mermaid-diagram-fullscreen:active {
+.mermaid-diagram-copy:active {
     transform: translateY(0);
 }
 
@@ -6470,8 +6467,7 @@
         font-size: 10px;
     }
     
-    .mermaid-diagram-copy,
-    .mermaid-diagram-fullscreen {
+    .mermaid-diagram-copy {
         min-width: 20px;
         height: 20px;
         padding: 2px 4px;
