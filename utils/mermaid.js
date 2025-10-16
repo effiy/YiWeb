@@ -167,8 +167,41 @@ window.showMermaidFullscreen = function(diagramId) {
 // 下载 Mermaid SVG
 function downloadMermaidSVG(diagramId, svgElement) {
     try {
-        const svgData = new XMLSerializer().serializeToString(svgElement);
-        const blob = new Blob([svgData], { type: 'image/svg+xml' });
+        console.log('[Mermaid] 开始下载 SVG，元素:', svgElement);
+        
+        // 计算所有元素的完整边界（包括文本）
+        const bounds = calculateSVGBounds(svgElement);
+        console.log('[Mermaid] SVG 完整边界:', bounds);
+        
+        // 克隆 SVG 以进行处理，不修改原始元素
+        const svgClone = svgElement.cloneNode(true);
+        
+        // 设置明确的尺寸属性
+        svgClone.setAttribute('width', bounds.width);
+        svgClone.setAttribute('height', bounds.height);
+        
+        // 确保 xmlns 命名空间
+        if (!svgClone.getAttribute('xmlns')) {
+            svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        }
+        if (!svgClone.getAttribute('xmlns:xlink')) {
+            svgClone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+        }
+        
+        // 使用计算出的完整 viewBox
+        svgClone.setAttribute('viewBox', bounds.viewBox);
+        console.log('[Mermaid] SVG viewBox:', bounds.viewBox);
+        
+        // 确保 preserveAspectRatio
+        if (!svgClone.getAttribute('preserveAspectRatio')) {
+            svgClone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        }
+        
+        // 序列化 SVG
+        const svgData = new XMLSerializer().serializeToString(svgClone);
+        console.log('[Mermaid] SVG 数据长度:', svgData.length);
+        
+        const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         
         const link = document.createElement('a');
@@ -180,8 +213,200 @@ function downloadMermaidSVG(diagramId, svgElement) {
         
         URL.revokeObjectURL(url);
         console.log(`[Mermaid] SVG 已下载: ${diagramId}.svg`);
+        showMermaidMessage('SVG 文件下载成功', 'success');
     } catch (error) {
         console.error('[Mermaid] SVG 下载失败:', error);
+        showMermaidMessage('SVG 下载失败: ' + error.message, 'error');
+    }
+}
+
+// 计算 SVG 的完整边界（包括所有元素和文本）
+function calculateSVGBounds(svg) {
+    try {
+        console.log('[Mermaid] 开始计算 SVG 边界');
+        
+        // 首先检查是否有原始 viewBox，如果有就优先使用
+        const existingViewBox = svg.getAttribute('viewBox');
+        const svgRect = svg.getBoundingClientRect();
+        
+        if (existingViewBox && existingViewBox.trim()) {
+            console.log('[Mermaid] 使用原始 viewBox:', existingViewBox);
+            const parts = existingViewBox.split(/[\s,]+/).map(parseFloat).filter(n => !isNaN(n));
+            
+            if (parts.length === 4) {
+                // 为了安全，稍微扩展一下边界
+                const padding = 10;
+                return {
+                    x: parts[0] - padding,
+                    y: parts[1] - padding,
+                    width: parts[2] + padding * 2,
+                    height: parts[3] + padding * 2,
+                    viewBox: `${parts[0] - padding} ${parts[1] - padding} ${parts[2] + padding * 2} ${parts[3] + padding * 2}`
+                };
+            }
+        }
+        
+        // 如果没有 viewBox，或者 viewBox 无效，就计算完整边界
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        let hasValidBounds = false;
+        
+        // 获取所有元素（包括所有层级）
+        const allElements = svg.querySelectorAll('*');
+        console.log('[Mermaid] 找到总元素数量:', allElements.length);
+        
+        let validElementCount = 0;
+        
+        // 遍历所有元素
+        allElements.forEach((element) => {
+            try {
+                // 跳过某些不需要计算的元素
+                const tagName = element.tagName.toLowerCase();
+                if (tagName === 'style' || tagName === 'defs' || tagName === 'marker' || tagName === 'clippath') {
+                    return;
+                }
+                
+                let bbox = null;
+                
+                // 尝试获取 getBBox（对于 SVG 图形元素最准确）
+                if (typeof element.getBBox === 'function') {
+                    try {
+                        bbox = element.getBBox();
+                        if (bbox && bbox.width > 0 && bbox.height > 0) {
+                            validElementCount++;
+                        }
+                    } catch (e) {
+                        // getBBox 可能失败，继续尝试其他方法
+                    }
+                }
+                
+                // 如果 getBBox 失败，尝试 getBoundingClientRect
+                if (!bbox || bbox.width === 0 || bbox.height === 0) {
+                    try {
+                        const rect = element.getBoundingClientRect();
+                        if (rect && rect.width > 0 && rect.height > 0) {
+                            // 转换为 SVG 坐标系
+                            const ctm = element.getScreenCTM();
+                            if (ctm) {
+                                const inverse = ctm.inverse();
+                                const topLeft = svg.createSVGPoint();
+                                topLeft.x = rect.left;
+                                topLeft.y = rect.top;
+                                const svgTopLeft = topLeft.matrixTransform(inverse);
+                                
+                                const bottomRight = svg.createSVGPoint();
+                                bottomRight.x = rect.right;
+                                bottomRight.y = rect.bottom;
+                                const svgBottomRight = bottomRight.matrixTransform(inverse);
+                                
+                                bbox = {
+                                    x: Math.min(svgTopLeft.x, svgBottomRight.x),
+                                    y: Math.min(svgTopLeft.y, svgBottomRight.y),
+                                    width: Math.abs(svgBottomRight.x - svgTopLeft.x),
+                                    height: Math.abs(svgBottomRight.y - svgTopLeft.y)
+                                };
+                                validElementCount++;
+                            } else {
+                                // 简单的坐标转换
+                                bbox = {
+                                    x: rect.left - svgRect.left,
+                                    y: rect.top - svgRect.top,
+                                    width: rect.width,
+                                    height: rect.height
+                                };
+                                validElementCount++;
+                            }
+                        }
+                    } catch (e) {
+                        // 也失败了，跳过这个元素
+                    }
+                }
+                
+                // 更新边界
+                if (bbox && isFinite(bbox.x) && isFinite(bbox.y) && bbox.width > 0 && bbox.height > 0) {
+                    minX = Math.min(minX, bbox.x);
+                    minY = Math.min(minY, bbox.y);
+                    maxX = Math.max(maxX, bbox.x + bbox.width);
+                    maxY = Math.max(maxY, bbox.y + bbox.height);
+                    hasValidBounds = true;
+                }
+            } catch (e) {
+                // 忽略无法处理的元素
+            }
+        });
+        
+        console.log('[Mermaid] 有效元素数量:', validElementCount);
+        
+        // 如果没有找到有效边界，尝试使用 SVG 本身的 getBBox
+        if (!hasValidBounds || !isFinite(minX)) {
+            console.log('[Mermaid] 使用 SVG 整体边界');
+            try {
+                const bbox = svg.getBBox();
+                minX = bbox.x;
+                minY = bbox.y;
+                maxX = bbox.x + bbox.width;
+                maxY = bbox.y + bbox.height;
+                hasValidBounds = true;
+            } catch (e) {
+                // 如果这也失败了，使用屏幕尺寸
+                console.log('[Mermaid] 使用屏幕尺寸作为后备');
+                minX = 0;
+                minY = 0;
+                maxX = svgRect.width || 800;
+                maxY = svgRect.height || 600;
+                hasValidBounds = true;
+            }
+        }
+        
+        // 如果还是没有有效边界，使用默认值
+        if (!hasValidBounds || !isFinite(minX)) {
+            console.warn('[Mermaid] 无法计算边界，使用默认值');
+            return {
+                x: 0,
+                y: 0,
+                width: svgRect.width || 800,
+                height: svgRect.height || 600,
+                viewBox: `0 0 ${svgRect.width || 800} ${svgRect.height || 600}`
+            };
+        }
+        
+        // 添加 padding，确保内容不会被裁剪
+        const padding = 50; // 增加到 50px
+        minX -= padding;
+        minY -= padding;
+        maxX += padding;
+        maxY += padding;
+        
+        const width = maxX - minX;
+        const height = maxY - minY;
+        
+        console.log('[Mermaid] 最终边界:', {
+            minX: minX.toFixed(2),
+            minY: minY.toFixed(2),
+            maxX: maxX.toFixed(2),
+            maxY: maxY.toFixed(2),
+            width: width.toFixed(2),
+            height: height.toFixed(2)
+        });
+        
+        return {
+            x: minX,
+            y: minY,
+            width: width,
+            height: height,
+            viewBox: `${minX} ${minY} ${width} ${height}`
+        };
+        
+    } catch (error) {
+        console.error('[Mermaid] 边界计算异常:', error);
+        // 最后的降级方案
+        const rect = svg.getBoundingClientRect();
+        return {
+            x: 0,
+            y: 0,
+            width: rect.width || 800,
+            height: rect.height || 600,
+            viewBox: `0 0 ${rect.width || 800} ${rect.height || 600}`
+        };
     }
 }
 
@@ -201,45 +426,33 @@ window.downloadMermaidPNG = function(diagramId, svgElement) {
         
         console.log('[Mermaid] 开始处理 SVG，元素:', svg);
 
-        // 获取 SVG 的实际尺寸
-        const svgRect = svg.getBoundingClientRect();
-        const svgWidth = svgRect.width || parseFloat(svg.getAttribute('width')) || 800;
-        const svgHeight = svgRect.height || parseFloat(svg.getAttribute('height')) || 600;
+        // 计算所有元素的完整边界（包括文本）
+        const bounds = calculateSVGBounds(svg);
+        console.log('[Mermaid] PNG 完整边界:', bounds);
         
-        console.log('[Mermaid] SVG 尺寸:', svgWidth, 'x', svgHeight);
+        // 克隆 SVG 以进行处理，不修改原始元素
+        const svgClone = svg.cloneNode(true);
         
-        // 直接使用原始 SVG 的序列化字符串，不进行任何修改
-        // 这样可以保持与显示完全一致的样式
-        let svgString = new XMLSerializer().serializeToString(svg);
+        // 设置明确的尺寸属性
+        svgClone.setAttribute('width', bounds.width);
+        svgClone.setAttribute('height', bounds.height);
         
-        // 确保 SVG 有正确的命名空间
-        if (!svgString.includes('xmlns=')) {
-            svgString = svgString.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+        // 确保 xmlns 命名空间
+        if (!svgClone.getAttribute('xmlns')) {
+            svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
         }
         
-        // 如果 SVG 没有明确的宽高，添加它们
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = svgString;
-        const tempSvg = tempDiv.querySelector('svg');
+        // 使用计算出的完整 viewBox
+        svgClone.setAttribute('viewBox', bounds.viewBox);
+        console.log('[Mermaid] PNG viewBox:', bounds.viewBox);
         
-        if (!tempSvg.getAttribute('width')) {
-            tempSvg.setAttribute('width', svgWidth);
-        }
-        if (!tempSvg.getAttribute('height')) {
-            tempSvg.setAttribute('height', svgHeight);
-        }
-        if (!tempSvg.getAttribute('viewBox')) {
-            const vb = svg.getAttribute('viewBox');
-            if (vb) {
-                tempSvg.setAttribute('viewBox', vb);
-            } else {
-                tempSvg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
-            }
+        // 确保 preserveAspectRatio
+        if (!svgClone.getAttribute('preserveAspectRatio')) {
+            svgClone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         }
         
-        // 获取处理后的 SVG 字符串
-        svgString = new XMLSerializer().serializeToString(tempSvg);
-        
+        // 序列化 SVG
+        const svgString = new XMLSerializer().serializeToString(svgClone);
         console.log('[Mermaid] SVG 字符串长度:', svgString.length);
         
         // 创建 canvas 元素
@@ -248,8 +461,8 @@ window.downloadMermaidPNG = function(diagramId, svgElement) {
         
         // 设置 canvas 尺寸（支持高分辨率）
         const scale = 2; // 2倍分辨率
-        canvas.width = svgWidth * scale;
-        canvas.height = svgHeight * scale;
+        canvas.width = bounds.width * scale;
+        canvas.height = bounds.height * scale;
         
         console.log('[Mermaid] Canvas 尺寸:', canvas.width, 'x', canvas.height);
         
@@ -271,7 +484,7 @@ window.downloadMermaidPNG = function(diagramId, svgElement) {
                 console.log('[Mermaid] SVG 图片加载成功，开始绘制到 Canvas');
                 
                 // 将 SVG 绘制到 canvas 上
-                ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+                ctx.drawImage(img, 0, 0, bounds.width, bounds.height);
                 
                 console.log('[Mermaid] Canvas 绘制完成，开始转换为 PNG');
                 
