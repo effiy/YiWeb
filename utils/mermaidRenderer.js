@@ -553,6 +553,26 @@ class MermaidRenderer {
                                 onmouseout="this.style.background='var(--bg-glass, rgba(255,255,255,0.03))'; this.style.borderColor='var(--border-primary, rgba(255, 255, 255, 0.08))'; this.style.color='var(--text-muted, #94a3b8)'; this.style.transform='translateY(0)'">
                             <i class="fas fa-copy"></i>
                         </button>
+                        <button class="mermaid-diagram-download-png" 
+                                onclick="window.downloadMermaidPNG('${diagramId}')" 
+                                title="下载PNG"
+                                style="
+                                    background: var(--bg-glass, rgba(255,255,255,0.03));
+                                    border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.08));
+                                    border-radius: 6px;
+                                    padding: 6px 10px;
+                                    cursor: pointer;
+                                    color: var(--text-muted, #94a3b8);
+                                    font-size: 11px;
+                                    transition: all 0.2s ease;
+                                    -webkit-backdrop-filter: blur(4px);
+                                    backdrop-filter: blur(4px);
+                                    box-shadow: var(--shadow-xs, 0 1px 2px 0 rgba(0, 0, 0, 0.4));
+                                "
+                                onmouseover="this.style.background='var(--primary-alpha, rgba(79, 70, 229, 0.1))'; this.style.borderColor='var(--primary, #4f46e5)'; this.style.color='var(--primary, #4f46e5)'; this.style.transform='translateY(-1px)'"
+                                onmouseout="this.style.background='var(--bg-glass, rgba(255,255,255,0.03))'; this.style.borderColor='var(--border-primary, rgba(255, 255, 255, 0.08))'; this.style.color='var(--text-muted, #94a3b8)'; this.style.transform='translateY(0)'">
+                            <i class="fas fa-image"></i>
+                        </button>
                         <button class="mermaid-diagram-fullscreen" 
                                 onclick="showMermaidFullscreen('${diagramId}')" 
                                 title="全屏查看"

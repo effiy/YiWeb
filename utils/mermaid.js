@@ -126,9 +126,18 @@ window.showMermaidFullscreen = function(diagramId) {
                     icon: 'fas fa-download',
                     type: 'default',
                     action: 'download-svg'
+                },
+                {
+                    label: '下载PNG',
+                    icon: 'fas fa-image',
+                    type: 'default',
+                    action: 'download-png'
                 }
             ],
             onAction: (action) => {
+                // 从全屏查看器中获取当前显示的 SVG
+                const fullscreenSvg = document.querySelector('.fullscreen-viewer-body svg');
+                
                 switch (action) {
                     case 'copy-code':
                         if (code) {
@@ -138,7 +147,12 @@ window.showMermaidFullscreen = function(diagramId) {
                         }
                         break;
                     case 'download-svg':
-                        downloadMermaidSVG(diagramId, svg);
+                        // 使用全屏查看器中的 SVG
+                        downloadMermaidSVG(diagramId, fullscreenSvg || svg);
+                        break;
+                    case 'download-png':
+                        // 使用全屏查看器中的 SVG 确保一致性
+                        window.downloadMermaidPNG(diagramId, fullscreenSvg || svg);
                         break;
                 }
             }
@@ -170,6 +184,142 @@ function downloadMermaidSVG(diagramId, svgElement) {
         console.error('[Mermaid] SVG 下载失败:', error);
     }
 }
+
+// 下载 Mermaid PNG
+window.downloadMermaidPNG = function(diagramId, svgElement) {
+    try {
+        // 获取 SVG 元素（优先使用传入的元素）
+        const svg = svgElement || document.querySelector(`#${diagramId} svg`);
+        if (!svg) {
+            console.warn(`[Mermaid] 未找到图表 SVG 元素: ${diagramId}`);
+            showMermaidMessage('未找到图表内容', 'error');
+            return;
+        }
+
+        // 显示下载进度提示
+        showMermaidMessage('正在生成 PNG 图片...', 'info');
+        
+        console.log('[Mermaid] 开始处理 SVG，元素:', svg);
+
+        // 获取 SVG 的实际尺寸
+        const svgRect = svg.getBoundingClientRect();
+        const svgWidth = svgRect.width || parseFloat(svg.getAttribute('width')) || 800;
+        const svgHeight = svgRect.height || parseFloat(svg.getAttribute('height')) || 600;
+        
+        console.log('[Mermaid] SVG 尺寸:', svgWidth, 'x', svgHeight);
+        
+        // 直接使用原始 SVG 的序列化字符串，不进行任何修改
+        // 这样可以保持与显示完全一致的样式
+        let svgString = new XMLSerializer().serializeToString(svg);
+        
+        // 确保 SVG 有正确的命名空间
+        if (!svgString.includes('xmlns=')) {
+            svgString = svgString.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+        
+        // 如果 SVG 没有明确的宽高，添加它们
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = svgString;
+        const tempSvg = tempDiv.querySelector('svg');
+        
+        if (!tempSvg.getAttribute('width')) {
+            tempSvg.setAttribute('width', svgWidth);
+        }
+        if (!tempSvg.getAttribute('height')) {
+            tempSvg.setAttribute('height', svgHeight);
+        }
+        if (!tempSvg.getAttribute('viewBox')) {
+            const vb = svg.getAttribute('viewBox');
+            if (vb) {
+                tempSvg.setAttribute('viewBox', vb);
+            } else {
+                tempSvg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+            }
+        }
+        
+        // 获取处理后的 SVG 字符串
+        svgString = new XMLSerializer().serializeToString(tempSvg);
+        
+        console.log('[Mermaid] SVG 字符串长度:', svgString.length);
+        
+        // 创建 canvas 元素
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 设置 canvas 尺寸（支持高分辨率）
+        const scale = 2; // 2倍分辨率
+        canvas.width = svgWidth * scale;
+        canvas.height = svgHeight * scale;
+        
+        console.log('[Mermaid] Canvas 尺寸:', canvas.width, 'x', canvas.height);
+        
+        // 设置 canvas 背景为白色
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // 缩放上下文以支持高分辨率
+        ctx.scale(scale, scale);
+        
+        // 创建包含 SVG 的 data URL
+        const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+        
+        // 创建 Image 对象
+        const img = new Image();
+        
+        img.onload = function() {
+            try {
+                console.log('[Mermaid] SVG 图片加载成功，开始绘制到 Canvas');
+                
+                // 将 SVG 绘制到 canvas 上
+                ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+                
+                console.log('[Mermaid] Canvas 绘制完成，开始转换为 PNG');
+                
+                // 将 canvas 转换为 PNG blob
+                canvas.toBlob(function(blob) {
+                    if (!blob) {
+                        console.error('[Mermaid] PNG 生成失败');
+                        showMermaidMessage('PNG 生成失败', 'error');
+                        return;
+                    }
+                    
+                    console.log('[Mermaid] PNG Blob 生成成功，大小:', blob.size, 'bytes');
+                    
+                    // 创建下载链接
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `${diagramId}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    URL.revokeObjectURL(url);
+                    console.log(`[Mermaid] PNG 已下载: ${diagramId}.png`);
+                    showMermaidMessage('PNG 图片下载成功', 'success');
+                }, 'image/png', 0.95);
+                
+            } catch (error) {
+                console.error('[Mermaid] PNG 绘制失败:', error);
+                showMermaidMessage('PNG 生成失败: ' + error.message, 'error');
+            }
+        };
+        
+        img.onerror = function(e) {
+            console.error('[Mermaid] SVG 图片加载失败', e);
+            console.error('[Mermaid] SVG Data URL 前100个字符:', svgDataUrl.substring(0, 100));
+            showMermaidMessage('SVG 图片加载失败，请重试', 'error');
+        };
+        
+        // 设置图片源为 data URL
+        img.src = svgDataUrl;
+        
+    } catch (error) {
+        console.error('[Mermaid] PNG 下载失败:', error);
+        showMermaidMessage('PNG 下载失败: ' + error.message, 'error');
+    }
+};
+
 
 // 降级实现（保留向后兼容）
 function showMermaidFullscreenLegacy(diagramId) {
