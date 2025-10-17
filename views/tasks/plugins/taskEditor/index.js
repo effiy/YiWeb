@@ -324,7 +324,11 @@ const TaskEditor = {
                 this.submitting = true;
                 
                 if (!this.formData.title.trim()) {
-                    alert('请输入任务标题');
+                    if (window.showError) {
+                        window.showError('请输入任务标题');
+                    } else {
+                        alert('请输入任务标题');
+                    }
                     return;
                 }
                 
@@ -335,23 +339,117 @@ const TaskEditor = {
                 saveData.steps = this.convertStepsToMockFormat(validSteps);
                 
                 if (this.isEditing) {
+                    // 编辑现有任务
                     saveData.key = this.task.key || this.task.id;
                     saveData.id = this.task.id || this.task.key;
                     saveData.updated = new Date().toISOString();
+                    
+                    // 调用API更新任务
+                    await this.updateTaskViaAPI(saveData);
                 } else {
+                    // 创建新任务
                     saveData.id = Date.now().toString();
                     saveData.key = `task_${Date.now()}`;
                     saveData.created = new Date().toISOString();
                     saveData.updated = new Date().toISOString();
+                    
+                    // 调用API创建任务
+                    await this.createTaskViaAPI(saveData);
                 }
                 
+                // 通知父组件保存成功
                 this.$emit('save', saveData);
                 this.closeEditor();
                 
             } catch (error) {
-                alert('保存失败，请重试');
+                console.error('[TaskEditor] 保存任务失败:', error);
+                if (window.showError) {
+                    window.showError(`保存失败: ${error.message || '请重试'}`);
+                } else {
+                    alert(`保存失败: ${error.message || '请重试'}`);
+                }
             } finally {
                 this.submitting = false;
+            }
+        },
+        
+        /**
+         * 通过API创建任务
+         */
+        async createTaskViaAPI(taskData) {
+            try {
+                console.log('[TaskEditor] 通过API创建任务:', taskData.title);
+                
+                // 构建API URL
+                const urlParams = new URLSearchParams(window.location.search);
+                let apiUrl = `${window.API_URL}/mongodb/?cname=tasks`;
+                const featureName = urlParams.get('featureName');
+                const cardTitle = urlParams.get('cardTitle');
+                
+                if (featureName) {
+                    apiUrl += `&featureName=${encodeURIComponent(featureName)}`;
+                }
+                if (cardTitle) {
+                    apiUrl += `&cardTitle=${encodeURIComponent(cardTitle)}`;
+                }
+                
+                console.log('[TaskEditor] 创建任务API URL:', apiUrl);
+                
+                // 调用API创建任务
+                const response = await window.postData(apiUrl, taskData);
+                
+                if (response && response.success !== false) {
+                    console.log('[TaskEditor] 任务创建成功');
+                    if (window.showSuccess) {
+                        window.showSuccess(`任务"${taskData.title}"创建成功`);
+                    }
+                    return response;
+                } else {
+                    throw new Error('API创建失败：' + (response?.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('[TaskEditor] API创建任务失败:', error);
+                throw error;
+            }
+        },
+        
+        /**
+         * 通过API更新任务
+         */
+        async updateTaskViaAPI(taskData) {
+            try {
+                console.log('[TaskEditor] 通过API更新任务:', taskData.title);
+                
+                // 构建API URL
+                const urlParams = new URLSearchParams(window.location.search);
+                let apiUrl = `${window.API_URL}/mongodb/?cname=tasks&key=${taskData.key}`;
+                const featureName = urlParams.get('featureName');
+                const cardTitle = urlParams.get('cardTitle');
+                
+                if (featureName) {
+                    apiUrl += `&featureName=${encodeURIComponent(featureName)}`;
+                }
+                if (cardTitle) {
+                    apiUrl += `&cardTitle=${encodeURIComponent(cardTitle)}`;
+                }
+                
+                console.log('[TaskEditor] 更新任务API URL:', apiUrl);
+                
+                // 调用API更新任务
+                const response = await window.updateData(apiUrl, taskData);
+                
+                if (response && response.success !== false) {
+                    console.log('[TaskEditor] 任务更新成功');
+                    if (window.showSuccess) {
+                        window.showSuccess(`任务"${taskData.title}"更新成功`);
+                    }
+                    return response;
+                } else {
+                    throw new Error('API更新失败：' + (response?.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('[TaskEditor] API更新任务失败:', error);
+                throw error;
             }
         },
         

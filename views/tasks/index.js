@@ -700,41 +700,35 @@ class TaskProApp {
                     // 保存任务
                     async handleTaskSave(taskData) {
                         try {
-                            console.log('[TaskPro] 开始保存任务:', taskData.title);
+                            console.log('[TaskPro] 任务保存回调:', taskData.title);
                             
+                            // TaskEditor组件已经处理了API调用，这里只需要更新本地数据
                             if (this.isCreatingTask) {
-                                // 创建新任务
+                                // 创建新任务 - 添加到本地列表
                                 this.tasks.push(taskData);
-                                console.log('[TaskPro] 新任务已创建:', taskData.title);
-                                
-                                if (window.showSuccess) {
-                                    window.showSuccess(`任务"${taskData.title}"创建成功`);
-                                }
+                                console.log('[TaskPro] 新任务已添加到本地列表:', taskData.title);
                             } else {
-                                // 更新现有任务 - 使用key来查找
+                                // 更新现有任务 - 使用key来查找并更新本地数据
                                 const taskIndex = this.tasks.findIndex(t => t.key === taskData.key);
                                 if (taskIndex !== -1) {
                                     this.tasks[taskIndex] = { ...taskData };
-                                    console.log('[TaskPro] 任务已更新:', taskData.title);
-                                    
-                                    if (window.showSuccess) {
-                                        window.showSuccess(`任务"${taskData.title}"更新成功`);
-                                    }
+                                    console.log('[TaskPro] 任务已更新到本地列表:', taskData.title);
                                 } else {
                                     console.warn('[TaskPro] 未找到要更新的任务:', taskData.title);
-                                    console.warn('[TaskPro] 查找的key:', taskData.key);
-                                    console.warn('[TaskPro] 当前任务列表:', this.tasks.map(t => ({ key: t.key, title: t.title })));
+                                    // 如果没找到，重新加载数据
+                                    await this.loadTasksData();
+                                    return;
                                 }
                             }
                             
                             // 关闭编辑器
                             this.closeTaskEditor();
                             
-                            // 刷新任务列表数据
+                            // 刷新任务列表数据以确保与服务器同步
                             await this.loadTasksData();
                             
                         } catch (error) {
-                            console.error('[TaskPro] 保存任务失败:', error);
+                            console.error('[TaskPro] 保存任务回调失败:', error);
                             if (window.showError) {
                                 window.showError('保存任务失败，请重试');
                             } else {

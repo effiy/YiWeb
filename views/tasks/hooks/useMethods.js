@@ -1077,11 +1077,23 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
                             updated: new Date().toISOString()
                         };
                         
-                        // 调用API更新任务
-                        const response = await window.postData(
-                            `${window.API_URL}/mongodb/?cname=tasks&featureName=${encodeURIComponent(task.featureName || '')}&cardTitle=${encodeURIComponent(task.cardTitle || '')}`, 
-                            updatePayload
-                        );
+                        // 构建API URL
+                        const urlParams = new URLSearchParams(window.location.search);
+                        let apiUrl = `${window.API_URL}/mongodb/?cname=tasks&key=${task.key}`;
+                        const featureName = urlParams.get('featureName');
+                        const cardTitle = urlParams.get('cardTitle');
+                        
+                        if (featureName) {
+                            apiUrl += `&featureName=${encodeURIComponent(featureName)}`;
+                        }
+                        if (cardTitle) {
+                            apiUrl += `&cardTitle=${encodeURIComponent(cardTitle)}`;
+                        }
+                        
+                        console.log('[任务更新] API更新URL:', apiUrl);
+                        
+                        // 调用API更新任务 - 使用updateData方法
+                        const response = await window.updateData(apiUrl, updatePayload);
                         
                         if (response && response.success !== false) {
                             console.log('[任务更新] 任务数据更新成功');
@@ -1094,32 +1106,19 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
                                 window.showSuccess('任务更新成功');
                             }
                         } else {
-                            throw new Error('API更新失败');
+                            throw new Error('API更新失败：' + (response?.message || '未知错误'));
                         }
                     } catch (apiError) {
                         console.error('[任务更新] API更新失败:', apiError);
                         
-                        // 如果API更新失败，尝试使用updateData方法
-                        try {
-                            const success = await window.updateData(
-                                `${window.API_URL}/mongodb/?cname=tasks&featureName=${encodeURIComponent(task.featureName || '')}&cardTitle=${encodeURIComponent(task.cardTitle || '')}`, 
-                                task
-                            );
-                            
-                            if (success) {
-                                console.log('[任务更新] 使用updateData更新成功');
-                                // 不再重新加载所有数据
-                                // await loadTasksData();
-                                
-                                if (window.showSuccess) {
-                                    window.showSuccess('任务更新成功');
-                                }
-                            } else {
-                                throw new Error('updateData更新失败');
-                            }
-                        } catch (updateError) {
-                            console.error('[任务更新] updateData更新失败:', updateError);
-                            throw updateError;
+                        // 如果API更新失败，回滚本地更新
+                        if (store.updateTask) {
+                            console.warn('[任务更新] API更新失败，本地数据可能不一致');
+                        }
+                        
+                        // 显示错误消息
+                        if (window.showError) {
+                            window.showError(`任务更新失败: ${apiError.message || '请重试'}`);
                         }
                     }
                 } else {
