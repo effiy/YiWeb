@@ -27,8 +27,7 @@ class TaskProApp {
             // 视图状态
             currentView: 'list',
             availableViews: [
-                { key: 'list', name: '列表', icon: 'fas fa-list', description: '以列表形式查看任务' },
-                { key: 'gantt', name: '甘特图', icon: 'fas fa-chart-gantt', description: '时间线和依赖关系' }
+                { key: 'list', name: '列表', icon: 'fas fa-list', description: '以列表形式查看任务' }
             ],
             
             // UI状态
@@ -1205,8 +1204,7 @@ class TaskProApp {
                     // 根据视图获取组件名称
                     getComponentNameByView(view) {
                         const viewComponentMap = {
-                            'list': 'enhanced-task-list',
-                            'gantt': 'enhanced-gantt-chart'
+                            'list': 'enhanced-task-list'
                         };
                         return viewComponentMap[view];
                     },
@@ -1214,8 +1212,7 @@ class TaskProApp {
                     // 根据视图获取全局组件名称
                     getGlobalComponentName(view) {
                         const viewComponentMap = {
-                            'list': 'EnhancedTaskList',
-                            'gantt': 'EnhancedGanttChart'
+                            'list': 'EnhancedTaskList'
                         };
                         return viewComponentMap[view];
                     },
@@ -2014,7 +2011,6 @@ task-export/
             // 等待组件加载完成后注册
             const components = [
                 'EnhancedTaskList',
-                'EnhancedGanttChart',
                 'TaskEditor'
             ];
             
@@ -2032,7 +2028,7 @@ task-export/
                 
                 console.log(`[TaskPro] 开始组件注册 (第${retryCount + 1}次尝试)`);
                 console.log('[TaskPro] 当前全局组件状态:', Object.keys(window).filter(key => 
-                    ['EnhancedTaskList', 'EnhancedGanttChart', 'TaskEditor'].includes(key)
+                    ['EnhancedTaskList', 'TaskEditor'].includes(key)
                 ));
                 
                 components.forEach(componentName => {
@@ -2409,7 +2405,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 页面已完全加载，检查组件
                 const requiredComponents = [
                     'EnhancedTaskList',
-                    'EnhancedGanttChart',
                     'TaskEditor'
                 ];
                 
@@ -2427,7 +2422,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.addEventListener('load', () => {
                     const requiredComponents = [
                         'EnhancedTaskList',
-                        'EnhancedGanttChart',
                         'TaskEditor'
                     ];
                     

@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="/views/tasks/index.css">
     <link rel="stylesheet" href="/plugins/searchHeader/index.css">
 
-    <link rel="stylesheet" href="/views/tasks/plugins/enhancedGanttChart/index.css">
     <link rel="stylesheet" href="/views/tasks/plugins/calendarView/index.css">
 
     <link rel="stylesheet" href="/views/tasks/plugins/enhancedTaskList/index.css">
@@ -134,12 +133,6 @@
                         @create-task="createTask"
                         @retry="loadTasksData"
                     ></enhanced-task-list>
-                    <!-- 甘特图视图 -->
-                    <enhanced-gantt-chart
-                        v-if="currentView === 'gantt'"
-                        :tasks="filteredTasks"
-                        @task-update="handleTaskUpdate"
-                    ></enhanced-gantt-chart>
                 </div>
                 
                 <!-- 任务编辑器 -->
@@ -191,13 +184,11 @@
     <!-- 引入新组件（优先兼容现有组件） -->
     <script type="module" src="/views/tasks/plugins/enhancedTaskList/index.js"></script>
 
-    <script type="module" src="/views/tasks/plugins/enhancedGanttChart/index.js"></script>
     <script type="module" src="/views/tasks/plugins/taskEditor/index.js"></script>
 
     
     <!-- 兼容现有组件 -->
     <script type="module" src="/views/tasks/plugins/taskList/index.js"></script>
-    <script type="module" src="/views/tasks/plugins/ganttChart/index.js"></script>
 
     
     <!-- 引入页面逻辑 -->

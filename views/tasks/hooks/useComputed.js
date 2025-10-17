@@ -279,12 +279,6 @@ window.useComputed = (store) => {
                 name: '列表视图',
                 icon: 'fas fa-list',
                 description: '以列表形式查看和管理任务'
-            },
-            {
-                key: 'gantt',
-                name: '甘特图',
-                icon: 'fas fa-chart-bar',
-                description: '以时间线方式查看任务进度和依赖关系'
             }
         ]),
 

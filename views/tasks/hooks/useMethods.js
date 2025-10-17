@@ -916,9 +916,7 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
     const getCurrentViewName = () => {
         const viewMap = {
             'list': '列表视图',
-            'gantt': '甘特图',
             'calendar': '日历视图',
-
             'table': '表格视图'
         };
         return viewMap[store.currentView] || '未知视图';

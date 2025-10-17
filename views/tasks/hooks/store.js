@@ -44,7 +44,7 @@ window.createStore = () => {
     // 搜索历史
     const searchHistory = vueRef([]);
 
-    // 当前视图模式：list、gantt
+    // 当前视图模式：list
     const currentView = vueRef('list');
     // 日期范围
     const dateRange = vueRef({
@@ -397,10 +397,10 @@ window.createStore = () => {
 
     /**
      * 切换视图模式
-     * @param {string} view - 视图模式 ('list', 'gantt')
+     * @param {string} view - 视图模式 ('list')
      */
     const setCurrentView = (view) => {
-        if (['list', 'gantt'].includes(view)) {
+        if (['list'].includes(view)) {
             currentView.value = view;
             console.log(`[视图切换] 切换到${view}视图`);
         }

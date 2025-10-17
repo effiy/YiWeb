@@ -2170,7 +2170,6 @@ body {
 /* 兼容现有组件的基础样式 */
 enhanced-task-list,
 kanban-board,
-enhanced-gantt-chart,
 calendar-view,
 matrix-view {
     display: block;
@@ -2998,7 +2997,6 @@ matrix-view {
 
 /* 占位符样式 */
 .kanban-placeholder,
-.gantt-placeholder,
 .calendar-placeholder,
 .table-placeholder,
 .matrix-placeholder,
@@ -3017,7 +3015,6 @@ matrix-view {
 }
 
 .kanban-placeholder i,
-.gantt-placeholder i,
 .calendar-placeholder i,
 .table-placeholder i,
 .matrix-placeholder i,
@@ -3028,7 +3025,6 @@ matrix-view {
 }
 
 .kanban-placeholder h3,
-.gantt-placeholder h3,
 .calendar-placeholder h3,
 .table-placeholder h3,
 .matrix-placeholder h3 {
@@ -3039,7 +3035,6 @@ matrix-view {
 }
 
 .kanban-placeholder p,
-.gantt-placeholder p,
 .calendar-placeholder p,
 .table-placeholder p,
 .matrix-placeholder p,
@@ -3447,7 +3442,6 @@ matrix-view {
 /* 任务列表滚动条 */
 .task-list-container::-webkit-scrollbar,
 .kanban-column::-webkit-scrollbar,
-.gantt-container::-webkit-scrollbar,
 .matrix-container::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -3455,7 +3449,6 @@ matrix-view {
 
 .task-list-container::-webkit-scrollbar-track,
 .kanban-column::-webkit-scrollbar-track,
-.gantt-container::-webkit-scrollbar-track,
 .matrix-container::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.03);
     border-radius: 3px;
@@ -3464,7 +3457,6 @@ matrix-view {
 
 .task-list-container::-webkit-scrollbar-thumb,
 .kanban-column::-webkit-scrollbar-thumb,
-.gantt-container::-webkit-scrollbar-thumb,
 .matrix-container::-webkit-scrollbar-thumb {
     background: linear-gradient(135deg, 
         rgba(79, 70, 229, 0.5) 0%, 
@@ -3476,7 +3468,6 @@ matrix-view {
 
 .task-list-container::-webkit-scrollbar-thumb:hover,
 .kanban-column::-webkit-scrollbar-thumb:hover,
-.gantt-container::-webkit-scrollbar-thumb:hover,
 .matrix-container::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(135deg, 
         rgba(79, 70, 229, 0.7) 0%, 
@@ -3604,7 +3595,6 @@ matrix-view {
 /* 通用滚动条Firefox支持 */
 .task-list-container,
 .kanban-column,
-.gantt-container,
 .matrix-container,
 .sidebar,
 .navigation,
