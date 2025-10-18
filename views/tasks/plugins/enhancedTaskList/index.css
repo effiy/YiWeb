@@ -375,10 +375,11 @@
 .list-task-info .task-description {
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    word-wrap: break-word;
     margin: 0;
+    line-height: 1.4;
 }
 
 .list-task-info .task-feature-name {
@@ -816,7 +817,9 @@
     }
     
     .list-task-info .task-description {
-        display: none;
+        display: block;
+        font-size: var(--font-size-xs);
+        margin-top: 4px;
     }
 }
 

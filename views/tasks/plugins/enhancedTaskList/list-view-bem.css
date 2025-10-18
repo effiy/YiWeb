@@ -129,11 +129,12 @@
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
     margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    word-wrap: break-word;
     line-height: 1.4;
     max-width: 100%;
+    max-height: none;
 }
 
 .task-info__io-tags {
@@ -800,7 +801,9 @@
     }
     
     .task-info__description {
-        display: none;
+        display: block;
+        font-size: var(--font-size-xs);
+        margin-top: 4px;
     }
     
     /* 移动端优化动画 */
