@@ -211,6 +211,38 @@ const createEnhancedTaskList = () => {
                                             {{ task.featureName }}
                                         </span>
                                     </div>
+                                    
+                                    <!-- 任务步骤折叠区域 -->
+                                    <div class="task-steps-collapse" v-if="task.steps && Object.keys(task.steps).length > 0">
+                                        <button class="steps-toggle-btn" 
+                                                @click.stop="toggleStepsCollapse(task.key || task.id)"
+                                                :class="{ 'expanded': isStepsExpanded(task.key || task.id) }">
+                                            <i class="fas fa-list-ol"></i>
+                                            <span>执行步骤</span>
+                                            <span class="steps-count">({{ getStepsProgress(task) }})</span>
+                                            <i class="fas fa-chevron-down toggle-icon"></i>
+                                        </button>
+                                        
+                                        <div class="steps-collapse-content" 
+                                             v-show="isStepsExpanded(task.key || task.id)"
+                                             :class="{ 'expanded': isStepsExpanded(task.key || task.id) }">
+                                            <div class="steps-list">
+                                                <div v-for="(step, stepKey) in task.steps" :key="stepKey" 
+                                                     class="step-item-compact"
+                                                     :class="{ 'completed': isStepCompleted(task, stepKey) }">
+                                                    <div class="step-checkbox" @click.stop="toggleStepComplete(task.key || task.id, stepKey)">
+                                                        <i :class="getStepCheckIcon(task, stepKey)" class="step-check-icon"></i>
+                                                    </div>
+                                                    <span class="step-number" :class="{ 'completed': isStepCompleted(task, stepKey) }">
+                                                        {{ getStepNumber(stepKey) }}
+                                                    </span>
+                                                    <span class="step-text" :class="{ 'completed': isStepCompleted(task, stepKey) }">
+                                                        {{ getStepText(step) }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -314,7 +346,9 @@ const createEnhancedTaskList = () => {
                 longPressProgress: 0, // 长按进度 (0-100)
                 LONG_PRESS_DURATION: 2000, // 减少到2秒
                 LONG_PRESS_MOVE_THRESHOLD: 15, // 增加移动阈值
-                PROGRESS_UPDATE_INTERVAL: 50 // 进度更新间隔（毫秒）
+                PROGRESS_UPDATE_INTERVAL: 50, // 进度更新间隔（毫秒）
+                // 步骤折叠状态
+                expandedSteps: new Set() // 记录哪些任务的步骤是展开的
             };
         },
         mounted() {
@@ -323,6 +357,9 @@ const createEnhancedTaskList = () => {
             
             // 初始化步骤状态
             this.initializeStepStates();
+            
+            // 恢复步骤折叠状态
+            this.restoreStepsCollapseState();
         },
         methods: {
 
@@ -1688,6 +1725,64 @@ const createEnhancedTaskList = () => {
                     }
                 } catch (error) {
                     console.warn('[IO工具提示] 隐藏失败:', error);
+                }
+            },
+            
+            /**
+             * 切换步骤折叠状态
+             */
+            toggleStepsCollapse(taskId) {
+                try {
+                    console.log('[步骤折叠] 切换步骤折叠状态:', taskId);
+                    
+                    if (this.expandedSteps.has(taskId)) {
+                        this.expandedSteps.delete(taskId);
+                        console.log('[步骤折叠] 折叠步骤');
+                    } else {
+                        this.expandedSteps.add(taskId);
+                        console.log('[步骤折叠] 展开步骤');
+                    }
+                    
+                    // 保存到本地存储
+                    this.saveStepsCollapseState();
+                } catch (error) {
+                    console.error('[步骤折叠] 切换失败:', error);
+                }
+            },
+            
+            /**
+             * 检查步骤是否展开
+             */
+            isStepsExpanded(taskId) {
+                return this.expandedSteps.has(taskId);
+            },
+            
+            /**
+             * 保存步骤折叠状态到本地存储
+             */
+            saveStepsCollapseState() {
+                try {
+                    const state = Array.from(this.expandedSteps);
+                    localStorage.setItem('task_steps_collapse_state', JSON.stringify(state));
+                    console.log('[步骤折叠] 状态已保存:', state);
+                } catch (error) {
+                    console.warn('[步骤折叠] 保存状态失败:', error);
+                }
+            },
+            
+            /**
+             * 从本地存储恢复步骤折叠状态
+             */
+            restoreStepsCollapseState() {
+                try {
+                    const stored = localStorage.getItem('task_steps_collapse_state');
+                    if (stored) {
+                        const state = JSON.parse(stored);
+                        this.expandedSteps = new Set(state);
+                        console.log('[步骤折叠] 状态已恢复:', state);
+                    }
+                } catch (error) {
+                    console.warn('[步骤折叠] 恢复状态失败:', error);
                 }
             }
         }
