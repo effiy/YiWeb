@@ -682,7 +682,7 @@
     
     /* 移动端步骤折叠优化 */
     .task-steps-collapse {
-        margin-top: var(--spacing-xs);
+        padding: var(--spacing-sm);
     }
     
     .steps-toggle-btn {
@@ -691,7 +691,16 @@
     }
     
     .steps-collapse-content.expanded {
-        max-height: 200px;
+        max-height: 250px;
+    }
+    
+    .steps-list {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-xs);
+    }
+    
+    .task-steps-collapse {
+        padding: var(--spacing-sm);
     }
     
     .step-item-compact {
@@ -979,11 +988,32 @@
     background: rgba(79, 70, 229, 0.5);
 }
 
+/* 任务步骤行样式 - 独占一行 */
+.task-steps-row {
+    grid-column: 1 / -1; /* 跨越所有列 */
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.01) 0%, 
+        rgba(255, 255, 255, 0.005) 50%,
+        rgba(255, 255, 255, 0.01) 100%
+    );
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-left: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.task-steps-row:hover {
+    background: linear-gradient(90deg, 
+        rgba(79, 70, 229, 0.03) 0%, 
+        rgba(124, 58, 237, 0.02) 50%,
+        rgba(79, 70, 229, 0.03) 100%
+    );
+    border-left-color: rgba(79, 70, 229, 0.3);
+}
+
 /* 任务步骤折叠样式 */
 .task-steps-collapse {
-    margin-top: var(--spacing-sm);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding-top: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-xl);
+    margin: 0;
 }
 
 .steps-toggle-btn {
@@ -1074,14 +1104,14 @@
 }
 
 .steps-collapse-content.expanded {
-    max-height: 300px;
+    max-height: 400px;
 }
 
 .steps-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-xs);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 8px;

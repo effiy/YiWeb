@@ -211,38 +211,6 @@ const createEnhancedTaskList = () => {
                                             {{ task.featureName }}
                                         </span>
                                     </div>
-                                    
-                                    <!-- 任务步骤折叠区域 -->
-                                    <div class="task-steps-collapse" v-if="task.steps && Object.keys(task.steps).length > 0">
-                                        <button class="steps-toggle-btn" 
-                                                @click.stop="toggleStepsCollapse(task.key || task.id)"
-                                                :class="{ 'expanded': isStepsExpanded(task.key || task.id) }">
-                                            <i class="fas fa-list-ol"></i>
-                                            <span>执行步骤</span>
-                                            <span class="steps-count">({{ getStepsProgress(task) }})</span>
-                                            <i class="fas fa-chevron-down toggle-icon"></i>
-                                        </button>
-                                        
-                                        <div class="steps-collapse-content" 
-                                             v-show="isStepsExpanded(task.key || task.id)"
-                                             :class="{ 'expanded': isStepsExpanded(task.key || task.id) }">
-                                            <div class="steps-list">
-                                                <div v-for="(step, stepKey) in task.steps" :key="stepKey" 
-                                                     class="step-item-compact"
-                                                     :class="{ 'completed': isStepCompleted(task, stepKey) }">
-                                                    <div class="step-checkbox" @click.stop="toggleStepComplete(task.key || task.id, stepKey)">
-                                                        <i :class="getStepCheckIcon(task, stepKey)" class="step-check-icon"></i>
-                                                    </div>
-                                                    <span class="step-number" :class="{ 'completed': isStepCompleted(task, stepKey) }">
-                                                        {{ getStepNumber(stepKey) }}
-                                                    </span>
-                                                    <span class="step-text" :class="{ 'completed': isStepCompleted(task, stepKey) }">
-                                                        {{ getStepText(step) }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                             
@@ -302,6 +270,40 @@ const createEnhancedTaskList = () => {
                                         :aria-label="'删除任务: ' + task.title">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
+                            </div>
+                            
+                            <!-- 任务步骤折叠区域 - 独占一行 -->
+                            <div class="task-steps-row" v-if="task.steps && Object.keys(task.steps).length > 0">
+                                <div class="task-steps-collapse">
+                                    <button class="steps-toggle-btn" 
+                                            @click.stop="toggleStepsCollapse(task.key || task.id)"
+                                            :class="{ 'expanded': isStepsExpanded(task.key || task.id) }">
+                                        <i class="fas fa-list-ol"></i>
+                                        <span>执行步骤</span>
+                                        <span class="steps-count">({{ getStepsProgress(task) }})</span>
+                                        <i class="fas fa-chevron-down toggle-icon"></i>
+                                    </button>
+                                    
+                                    <div class="steps-collapse-content" 
+                                         v-show="isStepsExpanded(task.key || task.id)"
+                                         :class="{ 'expanded': isStepsExpanded(task.key || task.id) }">
+                                        <div class="steps-list">
+                                            <div v-for="(step, stepKey) in task.steps" :key="stepKey" 
+                                                 class="step-item-compact"
+                                                 :class="{ 'completed': isStepCompleted(task, stepKey) }">
+                                                <div class="step-checkbox" @click.stop="toggleStepComplete(task.key || task.id, stepKey)">
+                                                    <i :class="getStepCheckIcon(task, stepKey)" class="step-check-icon"></i>
+                                                </div>
+                                                <span class="step-number" :class="{ 'completed': isStepCompleted(task, stepKey) }">
+                                                    {{ getStepNumber(stepKey) }}
+                                                </span>
+                                                <span class="step-text" :class="{ 'completed': isStepCompleted(task, stepKey) }">
+                                                    {{ getStepText(step) }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </article>
                     </div>
