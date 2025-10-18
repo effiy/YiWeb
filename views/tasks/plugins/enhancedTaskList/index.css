@@ -146,7 +146,7 @@
 /* 列表表头 */
 .task-list-view__header {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 120px;
     gap: var(--spacing-md);
     padding: var(--spacing-lg) var(--spacing-xl);
     background: linear-gradient(135deg, 
@@ -789,7 +789,7 @@
 @media (max-width: 1200px) {
     .task-list-header,
     .task-list-item {
-        grid-template-columns: 2fr 1fr 1fr 1fr 60px;
+        grid-template-columns: 2fr 1fr 1fr 1fr 100px;
     }
     
     .list-header-item:nth-child(5),
@@ -801,7 +801,7 @@
 @media (max-width: 768px) {
     .task-list-header,
     .task-list-item {
-        grid-template-columns: 1fr 80px 60px;
+        grid-template-columns: 1fr 80px 90px;
         gap: var(--spacing-sm);
         padding: var(--spacing-sm);
     }

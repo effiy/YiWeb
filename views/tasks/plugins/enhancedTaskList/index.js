@@ -176,13 +176,7 @@ const createEnhancedTaskList = () => {
                         <article v-for="task in tasks" :key="task.key || task.id" 
                                  class="task-list-view__item"
                                  :class="getTaskItemClasses(task)"
-                                 @click="handleTaskClick(task)"
-                                 @touchstart="startLongPress(task, $event)"
-                                 @touchend="endLongPress"
-                                 @touchcancel="endLongPress"
-                                 @mousedown="startLongPress(task, $event)"
-                                 @mouseup="endLongPress"
-                                 @mouseleave="endLongPress">
+                                 @click="handleTaskClick(task)">
                             
                             <!-- 任务信息列 -->
                             <div class="task-list-view__cell task-list-view__cell--info">
@@ -263,6 +257,12 @@ const createEnhancedTaskList = () => {
                                         :title="'编辑 ' + task.title"
                                         :aria-label="'编辑任务: ' + task.title">
                                     <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn action-btn--delete" 
+                                        @click.stop="handleDeleteTask(task)"
+                                        :title="'删除 ' + task.title"
+                                        :aria-label="'删除任务: ' + task.title">
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
                         </article>
@@ -1275,6 +1275,35 @@ const createEnhancedTaskList = () => {
                     this.$emit('task-edit', task);
                 } catch (error) {
                     console.error('[编辑任务] 编辑失败:', error);
+                }
+            },
+            
+            /**
+             * 处理删除任务（列表视图直接调用）
+             */
+            async handleDeleteTask(task) {
+                try {
+                    console.log('[删除任务] 列表视图删除任务:', task.title);
+                    
+                    // 显示删除确认对话框
+                    const confirmed = await this.showDeleteConfirmation(task.title);
+                    if (!confirmed) {
+                        console.log('[删除任务] 用户取消删除');
+                        return;
+                    }
+                    
+                    // 触发删除事件，让父组件处理
+                    this.$emit('task-delete', task);
+                    
+                    // 显示删除成功提示
+                    this.showDeleteSuccessIndicator(task.title);
+                    
+                    console.log('[删除任务] 删除成功:', task.title);
+                } catch (error) {
+                    console.error('[删除任务] 删除失败:', error);
+                    if (window.showError) {
+                        window.showError('删除任务失败，请稍后重试');
+                    }
                 }
             },
             
