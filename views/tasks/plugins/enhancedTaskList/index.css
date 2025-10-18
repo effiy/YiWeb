@@ -188,6 +188,130 @@
     height: auto;
 }
 
+/* 数组格式内容样式 */
+.io-array-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.io-array-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-tertiary);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: visible;
+}
+
+.io-array-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border-secondary);
+    transform: translateX(2px);
+}
+
+.io-item-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    color: white;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.io-array-item:hover .io-item-number {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.io-item-text {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: normal;
+    overflow: visible;
+    padding-top: 2px;
+}
+
+/* 文本格式内容样式 */
+.io-text-content {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: var(--line-height-relaxed);
+    word-wrap: break-word;
+    white-space: normal;
+    overflow: visible;
+}
+
+/* 数组格式内容的动画效果 */
+.io-array-content {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 数组项的交错动画 */
+.io-array-item {
+    animation: slideInLeft 0.4s ease-out;
+    animation-fill-mode: both;
+}
+
+.io-array-item:nth-child(1) { animation-delay: 0.1s; }
+.io-array-item:nth-child(2) { animation-delay: 0.2s; }
+.io-array-item:nth-child(3) { animation-delay: 0.3s; }
+.io-array-item:nth-child(4) { animation-delay: 0.4s; }
+.io-array-item:nth-child(5) { animation-delay: 0.5s; }
+.io-array-item:nth-child(n+6) { animation-delay: 0.6s; }
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 数组项编号的脉冲效果 */
+.io-item-number {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+}
+
 .task-steps-section {
     margin-bottom: var(--spacing-md);
     border-top: 1px solid var(--border-tertiary);

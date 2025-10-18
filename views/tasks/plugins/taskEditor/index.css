@@ -700,14 +700,16 @@ label {
 }
 
 .input-output-textarea {
-    min-height: 100px !important;
+    min-height: 120px !important;
     padding-right: 40px !important;
     background: rgba(255, 255, 255, 0.05) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     transition: all 0.3s ease !important;
     font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
     font-size: 13px !important;
-    line-height: 1.6 !important;
+    line-height: 1.8 !important;
+    position: relative !important;
+    resize: vertical !important;
 }
 
 .input-output-textarea:focus {
@@ -730,6 +732,37 @@ label {
 .input-output-textarea:focus + .input-output-icon {
     color: #4f46e5;
     transform: scale(1.1);
+}
+
+/* 输入输出字段的序号样式增强 */
+.input-output-textarea {
+    background-image: 
+        linear-gradient(90deg, transparent 0%, transparent 20px, rgba(79, 70, 229, 0.1) 20px, transparent 25px),
+        linear-gradient(90deg, transparent 0%, transparent 20px, rgba(79, 70, 229, 0.05) 20px, transparent 25px);
+    background-size: 100% 1.8em, 100% 1.8em;
+    background-position: 0 0, 0 0;
+    background-repeat: repeat-y, repeat-y;
+}
+
+/* 输入输出字段的序号行高调整 */
+.input-output-textarea::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, transparent 20px, rgba(79, 70, 229, 0.08) 20px, transparent 25px);
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 8px;
+}
+
+/* 输入输出字段聚焦时的序号样式 */
+.input-output-textarea:focus {
+    background-image: 
+        linear-gradient(90deg, transparent 0%, transparent 20px, rgba(79, 70, 229, 0.15) 20px, transparent 25px),
+        linear-gradient(90deg, transparent 0%, transparent 20px, rgba(79, 70, 229, 0.08) 20px, transparent 25px);
 }
 
 .input-output-hint {

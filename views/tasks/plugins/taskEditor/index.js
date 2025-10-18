@@ -116,9 +116,9 @@ const TaskEditor = {
                                         <textarea 
                                             id="taskInput"
                                             v-model="formData.input" 
-                                            placeholder="请描述任务的输入要求，每行一个要求...&#10;例如：&#10;- 用户ID&#10;- 数据格式&#10;- 参数说明"
+                                            placeholder="请描述任务的输入要求，每行一个要求...&#10;例如：&#10;1. 用户ID&#10;2. 数据格式&#10;3. 参数说明&#10;&#10;提示：系统会自动为每行添加序号，支持数组格式存储"
                                             class="form-textarea input-output-textarea"
-                                            rows="3"
+                                            rows="4"
                                             maxlength="500"
                                             @focus="handleInputFocus"
                                             @blur="handleInputBlur">
@@ -129,7 +129,7 @@ const TaskEditor = {
                                     </div>
                                     <div class="input-output-hint" v-if="!formData.input">
                                         <i class="fas fa-lightbulb"></i>
-                                        提示：每行一个输入要求，系统会自动转换为数组格式存储
+                                        提示：每行一个输入要求，系统会自动添加序号并转换为数组格式存储
                                     </div>
                                 </div>
                                 
@@ -151,9 +151,9 @@ const TaskEditor = {
                                         <textarea 
                                             id="taskOutput"
                                             v-model="formData.output" 
-                                            placeholder="请描述任务的输出要求，每行一个要求...&#10;例如：&#10;- 返回数据格式&#10;- 状态码&#10;- 错误处理"
+                                            placeholder="请描述任务的输出要求，每行一个要求...&#10;例如：&#10;1. 返回数据格式&#10;2. 状态码&#10;3. 错误处理&#10;&#10;提示：系统会自动为每行添加序号，支持数组格式存储"
                                             class="form-textarea input-output-textarea"
-                                            rows="3"
+                                            rows="4"
                                             maxlength="500"
                                             @focus="handleOutputFocus"
                                             @blur="handleOutputBlur">
@@ -164,7 +164,7 @@ const TaskEditor = {
                                     </div>
                                     <div class="input-output-hint" v-if="!formData.output">
                                         <i class="fas fa-lightbulb"></i>
-                                        提示：每行一个输出要求，系统会自动转换为数组格式存储
+                                        提示：每行一个输出要求，系统会自动添加序号并转换为数组格式存储
                                     </div>
                                 </div>
                             </div>
@@ -553,22 +553,30 @@ const TaskEditor = {
             // 处理input字段
             if (processed.input) {
                 if (Array.isArray(processed.input)) {
-                    // 数组格式转换为字符串
-                    processed.input = processed.input.join('\n');
+                    // 数组格式转换为字符串，每行添加序号
+                    processed.input = processed.input
+                        .map((item, index) => `${index + 1}. ${item}`)
+                        .join('\n');
                 } else if (typeof processed.input === 'object') {
-                    // 对象格式转换为字符串
-                    processed.input = Object.values(processed.input).join('\n');
+                    // 对象格式转换为字符串，保持键值对格式
+                    processed.input = Object.entries(processed.input)
+                        .map(([key, value]) => `${key}: ${value}`)
+                        .join('\n');
                 }
             }
             
             // 处理output字段
             if (processed.output) {
                 if (Array.isArray(processed.output)) {
-                    // 数组格式转换为字符串
-                    processed.output = processed.output.join('\n');
+                    // 数组格式转换为字符串，每行添加序号
+                    processed.output = processed.output
+                        .map((item, index) => `${index + 1}. ${item}`)
+                        .join('\n');
                 } else if (typeof processed.output === 'object') {
-                    // 对象格式转换为字符串
-                    processed.output = Object.values(processed.output).join('\n');
+                    // 对象格式转换为字符串，保持键值对格式
+                    processed.output = Object.entries(processed.output)
+                        .map(([key, value]) => `${key}: ${value}`)
+                        .join('\n');
                 }
             }
             
@@ -586,7 +594,15 @@ const TaskEditor = {
             // 处理input字段 - 字符串转数组
             if (processed.input && typeof processed.input === 'string') {
                 if (processed.input.trim()) {
-                    processed.input = processed.input.split('\n').filter(line => line.trim());
+                    processed.input = processed.input
+                        .split('\n')
+                        .filter(line => line.trim())
+                        .map(line => {
+                            // 移除序号前缀（如 "1. " 或 "1: "）
+                            const trimmed = line.trim();
+                            const match = trimmed.match(/^\d+[\.:]\s*(.+)$/);
+                            return match ? match[1] : trimmed;
+                        });
                 } else {
                     processed.input = [];
                 }
@@ -595,7 +611,15 @@ const TaskEditor = {
             // 处理output字段 - 字符串转数组
             if (processed.output && typeof processed.output === 'string') {
                 if (processed.output.trim()) {
-                    processed.output = processed.output.split('\n').filter(line => line.trim());
+                    processed.output = processed.output
+                        .split('\n')
+                        .filter(line => line.trim())
+                        .map(line => {
+                            // 移除序号前缀（如 "1. " 或 "1: "）
+                            const trimmed = line.trim();
+                            const match = trimmed.match(/^\d+[\.:]\s*(.+)$/);
+                            return match ? match[1] : trimmed;
+                        });
                 } else {
                     processed.output = [];
                 }
@@ -823,20 +847,20 @@ const TaskEditor = {
         applyTemplate(templateType) {
             const templates = {
                 api: {
-                    input: '请求参数：\n- method: HTTP方法 (GET/POST/PUT/DELETE)\n- url: 接口地址\n- headers: 请求头\n- body: 请求体数据',
-                    output: '响应数据：\n- status: HTTP状态码\n- data: 响应数据\n- message: 响应消息\n- timestamp: 时间戳'
+                    input: '1. method: HTTP方法 (GET/POST/PUT/DELETE)\n2. url: 接口地址\n3. headers: 请求头\n4. body: 请求体数据',
+                    output: '1. status: HTTP状态码\n2. data: 响应数据\n3. message: 响应消息\n4. timestamp: 时间戳'
                 },
                 ui: {
-                    input: '设计要求：\n- 组件类型：按钮/表单/列表等\n- 设计风格：Material Design/Flat Design等\n- 响应式：支持移动端/桌面端\n- 主题：深色/浅色模式',
-                    output: '交付物：\n- 设计稿：Figma/Sketch文件\n- 组件代码：Vue/React组件\n- 样式文件：CSS/SCSS\n- 文档：使用说明和API文档'
+                    input: '1. 组件类型：按钮/表单/列表等\n2. 设计风格：Material Design/Flat Design等\n3. 响应式：支持移动端/桌面端\n4. 主题：深色/浅色模式',
+                    output: '1. 设计稿：Figma/Sketch文件\n2. 组件代码：Vue/React组件\n3. 样式文件：CSS/SCSS\n4. 文档：使用说明和API文档'
                 },
                 data: {
-                    input: '数据源：\n- 数据格式：JSON/CSV/XML等\n- 数据量：记录数量\n- 字段结构：字段名称和类型\n- 数据质量：完整性、准确性要求',
-                    output: '处理结果：\n- 清洗后数据：格式统一的数据\n- 统计报告：数据概览和异常\n- 可视化图表：图表类型和样式\n- 导出文件：处理后的数据文件'
+                    input: '1. 数据格式：JSON/CSV/XML等\n2. 数据量：记录数量\n3. 字段结构：字段名称和类型\n4. 数据质量：完整性、准确性要求',
+                    output: '1. 清洗后数据：格式统一的数据\n2. 统计报告：数据概览和异常\n3. 可视化图表：图表类型和样式\n4. 导出文件：处理后的数据文件'
                 },
                 test: {
-                    input: '测试场景：\n- 功能测试：核心功能验证\n- 边界测试：极限值测试\n- 异常测试：错误处理测试\n- 性能测试：响应时间和并发',
-                    output: '测试结果：\n- 测试报告：通过率和失败用例\n- 缺陷列表：发现的问题和优先级\n- 性能指标：响应时间和资源使用\n- 建议改进：优化建议和最佳实践'
+                    input: '1. 功能测试：核心功能验证\n2. 边界测试：极限值测试\n3. 异常测试：错误处理测试\n4. 性能测试：响应时间和并发',
+                    output: '1. 测试报告：通过率和失败用例\n2. 缺陷列表：发现的问题和优先级\n3. 性能指标：响应时间和资源使用\n4. 建议改进：优化建议和最佳实践'
                 }
             };
             

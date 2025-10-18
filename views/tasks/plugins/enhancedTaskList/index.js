@@ -72,14 +72,42 @@ const createEnhancedTaskList = () => {
                                     <i class="fas fa-arrow-down"></i>
                                     <span>输入</span>
                                 </div>
-                                <div class="io-content">{{ task.input }}</div>
+                                <div class="io-content">
+                                    <div v-if="Array.isArray(task.input)" class="io-array-content">
+                                        <div v-for="(item, index) in task.input" :key="index" class="io-array-item">
+                                            <span class="io-item-number">{{ index + 1 }}</span>
+                                            <span class="io-item-text">{{ item }}</span>
+                                        </div>
+                                    </div>
+                                    <div v-else-if="typeof task.input === 'object' && task.input !== null" class="io-array-content">
+                                        <div v-for="(item, key) in task.input" :key="key" class="io-array-item">
+                                            <span class="io-item-number">{{ key }}</span>
+                                            <span class="io-item-text">{{ item }}</span>
+                                        </div>
+                                    </div>
+                                    <div v-else class="io-text-content">{{ task.input }}</div>
+                                </div>
                             </div>
                             <div class="task-output" v-if="task.output">
                                 <div class="io-label">
                                     <i class="fas fa-arrow-up"></i>
                                     <span>输出</span>
                                 </div>
-                                <div class="io-content">{{ task.output }}</div>
+                                <div class="io-content">
+                                    <div v-if="Array.isArray(task.output)" class="io-array-content">
+                                        <div v-for="(item, index) in task.output" :key="index" class="io-array-item">
+                                            <span class="io-item-number">{{ index + 1 }}</span>
+                                            <span class="io-item-text">{{ item }}</span>
+                                        </div>
+                                    </div>
+                                    <div v-else-if="typeof task.output === 'object' && task.output !== null" class="io-array-content">
+                                        <div v-for="(item, key) in task.output" :key="key" class="io-array-item">
+                                            <span class="io-item-number">{{ key }}</span>
+                                            <span class="io-item-text">{{ item }}</span>
+                                        </div>
+                                    </div>
+                                    <div v-else class="io-text-content">{{ task.output }}</div>
+                                </div>
                             </div>
                         </div>
                         
