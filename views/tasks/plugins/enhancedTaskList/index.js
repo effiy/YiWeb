@@ -186,23 +186,6 @@ const createEnhancedTaskList = () => {
                                         {{ task.description }}
                                     </p>
                                     
-                                    <!-- 输入输出标签 -->
-                                    <div class="task-info__io-tags" v-if="task.input || task.output">
-                                        <span class="io-tag io-tag--input" v-if="task.input" 
-                                              :title="'输入: ' + getIOFullText(task.input)"
-                                              @mouseenter="showIOTooltip($event, task.input, 'input')"
-                                              @mouseleave="hideIOTooltip">
-                                            <i class="fas fa-arrow-down"></i>
-                                            <span>输入: {{ getIOPreview(task.input) }}</span>
-                                        </span>
-                                        <span class="io-tag io-tag--output" v-if="task.output" 
-                                              :title="'输出: ' + getIOFullText(task.output)"
-                                              @mouseenter="showIOTooltip($event, task.output, 'output')"
-                                              @mouseleave="hideIOTooltip">
-                                            <i class="fas fa-arrow-up"></i>
-                                            <span>输出: {{ getIOPreview(task.output) }}</span>
-                                        </span>
-                                    </div>
                                     
                                     <!-- 功能标签 -->
                                     <div class="task-info__meta" v-if="task.featureName">
@@ -270,6 +253,72 @@ const createEnhancedTaskList = () => {
                                         :aria-label="'删除任务: ' + task.title">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
+                            </div>
+                            
+                            <!-- 输入输出折叠区域 - 独占一行 -->
+                            <div class="task-io-row" v-if="task.input || task.output">
+                                <div class="task-io-collapse">
+                                    <button class="io-toggle-btn" 
+                                            @click.stop="toggleIOCollapse(task.key || task.id)"
+                                            :class="{ 'expanded': isIOExpanded(task.key || task.id) }">
+                                        <i class="fas fa-exchange-alt"></i>
+                                        <span>输入输出</span>
+                                        <span class="io-count">({{ getIOCount(task) }})</span>
+                                        <i class="fas fa-chevron-down toggle-icon"></i>
+                                    </button>
+                                    
+                                    <div class="io-collapse-content" 
+                                         v-show="isIOExpanded(task.key || task.id)"
+                                         :class="{ 'expanded': isIOExpanded(task.key || task.id) }">
+                                        <div class="io-list">
+                                            <!-- 输入信息 -->
+                                            <div class="io-section" v-if="task.input">
+                                                <div class="io-section-header">
+                                                    <i class="fas fa-arrow-down"></i>
+                                                    <span>输入</span>
+                                                </div>
+                                                <div class="io-section-content">
+                                                    <div v-if="Array.isArray(task.input)" class="io-array-content">
+                                                        <div v-for="(item, index) in task.input" :key="index" class="io-array-item">
+                                                            <span class="io-item-number">{{ index + 1 }}</span>
+                                                            <span class="io-item-text">{{ item }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div v-else-if="typeof task.input === 'object' && task.input !== null" class="io-array-content">
+                                                        <div v-for="(item, key) in task.input" :key="key" class="io-array-item">
+                                                            <span class="io-item-number">{{ key }}</span>
+                                                            <span class="io-item-text">{{ item }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div v-else class="io-text-content">{{ task.input }}</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- 输出信息 -->
+                                            <div class="io-section" v-if="task.output">
+                                                <div class="io-section-header">
+                                                    <i class="fas fa-arrow-up"></i>
+                                                    <span>输出</span>
+                                                </div>
+                                                <div class="io-section-content">
+                                                    <div v-if="Array.isArray(task.output)" class="io-array-content">
+                                                        <div v-for="(item, index) in task.output" :key="index" class="io-array-item">
+                                                            <span class="io-item-number">{{ index + 1 }}</span>
+                                                            <span class="io-item-text">{{ item }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div v-else-if="typeof task.output === 'object' && task.output !== null" class="io-array-content">
+                                                        <div v-for="(item, key) in task.output" :key="key" class="io-array-item">
+                                                            <span class="io-item-number">{{ key }}</span>
+                                                            <span class="io-item-text">{{ item }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div v-else class="io-text-content">{{ task.output }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- 任务步骤折叠区域 - 独占一行 -->
@@ -350,7 +399,9 @@ const createEnhancedTaskList = () => {
                 LONG_PRESS_MOVE_THRESHOLD: 15, // 增加移动阈值
                 PROGRESS_UPDATE_INTERVAL: 50, // 进度更新间隔（毫秒）
                 // 步骤折叠状态
-                expandedSteps: new Set() // 记录哪些任务的步骤是展开的
+                expandedSteps: new Set(), // 记录哪些任务的步骤是展开的
+                // 输入输出折叠状态
+                expandedIO: new Set() // 记录哪些任务的输入输出是展开的
             };
         },
         mounted() {
@@ -362,6 +413,9 @@ const createEnhancedTaskList = () => {
             
             // 恢复步骤折叠状态
             this.restoreStepsCollapseState();
+            
+            // 恢复输入输出折叠状态
+            this.restoreIOCollapseState();
         },
         methods: {
 
@@ -1786,6 +1840,90 @@ const createEnhancedTaskList = () => {
                 } catch (error) {
                     console.warn('[步骤折叠] 恢复状态失败:', error);
                 }
+            },
+            
+            /**
+             * 切换输入输出折叠状态
+             */
+            toggleIOCollapse(taskId) {
+                try {
+                    console.log('[IO折叠] 切换输入输出折叠状态:', taskId);
+                    
+                    if (this.expandedIO.has(taskId)) {
+                        this.expandedIO.delete(taskId);
+                        console.log('[IO折叠] 折叠输入输出');
+                    } else {
+                        this.expandedIO.add(taskId);
+                        console.log('[IO折叠] 展开输入输出');
+                    }
+                    
+                    // 保存到本地存储
+                    this.saveIOCollapseState();
+                } catch (error) {
+                    console.error('[IO折叠] 切换失败:', error);
+                }
+            },
+            
+            /**
+             * 检查输入输出是否展开
+             */
+            isIOExpanded(taskId) {
+                return this.expandedIO.has(taskId);
+            },
+            
+            /**
+             * 保存输入输出折叠状态到本地存储
+             */
+            saveIOCollapseState() {
+                try {
+                    const state = Array.from(this.expandedIO);
+                    localStorage.setItem('task_io_collapse_state', JSON.stringify(state));
+                    console.log('[IO折叠] 状态已保存:', state);
+                } catch (error) {
+                    console.warn('[IO折叠] 保存状态失败:', error);
+                }
+            },
+            
+            /**
+             * 从本地存储恢复输入输出折叠状态
+             */
+            restoreIOCollapseState() {
+                try {
+                    const stored = localStorage.getItem('task_io_collapse_state');
+                    if (stored) {
+                        const state = JSON.parse(stored);
+                        this.expandedIO = new Set(state);
+                        console.log('[IO折叠] 状态已恢复:', state);
+                    }
+                } catch (error) {
+                    console.warn('[IO折叠] 恢复状态失败:', error);
+                }
+            },
+            
+            /**
+             * 获取输入输出数量
+             */
+            getIOCount(task) {
+                let count = 0;
+                if (task.input) {
+                    if (Array.isArray(task.input)) {
+                        count += task.input.length;
+                    } else if (typeof task.input === 'object' && task.input !== null) {
+                        count += Object.keys(task.input).length;
+                    } else {
+                        count += 1;
+                    }
+                }
+                if (task.output) {
+                    if (Array.isArray(task.output)) {
+                        count += task.output.length;
+                    } else if (typeof task.output === 'object' && task.output !== null) {
+                        count += Object.keys(task.output).length;
+                    } else {
+                        count += 1;
+                    }
+                }
+                return count;
             }
         }
     };

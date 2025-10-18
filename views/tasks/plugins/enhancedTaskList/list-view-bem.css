@@ -680,6 +680,45 @@
         padding: var(--spacing-sm);
     }
     
+    /* 移动端输入输出折叠优化 */
+    .task-io-collapse {
+        padding: var(--spacing-sm);
+    }
+    
+    .io-toggle-btn {
+        padding: var(--spacing-xs);
+        font-size: 10px;
+    }
+    
+    .io-collapse-content.expanded {
+        max-height: 250px;
+    }
+    
+    .io-section-header {
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+    
+    .io-array-item {
+        padding: 4px;
+        min-height: 24px;
+    }
+    
+    .io-item-number {
+        font-size: 9px;
+        padding: 1px 4px;
+        min-width: 16px;
+    }
+    
+    .io-item-text {
+        font-size: 10px;
+    }
+    
+    .io-text-content {
+        padding: var(--spacing-xs);
+        font-size: 10px;
+    }
+    
     /* 移动端步骤折叠优化 */
     .task-steps-collapse {
         padding: var(--spacing-sm);
@@ -697,10 +736,6 @@
     .steps-list {
         grid-template-columns: 1fr;
         gap: var(--spacing-xs);
-    }
-    
-    .task-steps-collapse {
-        padding: var(--spacing-sm);
     }
     
     .step-item-compact {
@@ -988,6 +1023,28 @@
     background: rgba(79, 70, 229, 0.5);
 }
 
+/* 输入输出行样式 - 独占一行 */
+.task-io-row {
+    grid-column: 1 / -1; /* 跨越所有列 */
+    background: linear-gradient(90deg, 
+        rgba(34, 197, 94, 0.02) 0%, 
+        rgba(34, 197, 94, 0.01) 50%,
+        rgba(34, 197, 94, 0.02) 100%
+    );
+    border-top: 1px solid rgba(34, 197, 94, 0.1);
+    border-left: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.task-io-row:hover {
+    background: linear-gradient(90deg, 
+        rgba(34, 197, 94, 0.05) 0%, 
+        rgba(34, 197, 94, 0.03) 50%,
+        rgba(34, 197, 94, 0.05) 100%
+    );
+    border-left-color: rgba(34, 197, 94, 0.4);
+}
+
 /* 任务步骤行样式 - 独占一行 */
 .task-steps-row {
     grid-column: 1 / -1; /* 跨越所有列 */
@@ -1010,10 +1067,88 @@
     border-left-color: rgba(79, 70, 229, 0.3);
 }
 
+/* 输入输出折叠样式 */
+.task-io-collapse {
+    padding: var(--spacing-md) var(--spacing-xl);
+    margin: 0;
+}
+
 /* 任务步骤折叠样式 */
 .task-steps-collapse {
     padding: var(--spacing-md) var(--spacing-xl);
     margin: 0;
+}
+
+/* 输入输出切换按钮 */
+.io-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    width: 100%;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: linear-gradient(135deg, 
+        rgba(34, 197, 94, 0.08) 0%, 
+        rgba(16, 185, 129, 0.05) 100%
+    );
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.io-toggle-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.io-toggle-btn:hover::before {
+    left: 100%;
+}
+
+.io-toggle-btn:hover {
+    background: linear-gradient(135deg, 
+        rgba(34, 197, 94, 0.15) 0%, 
+        rgba(16, 185, 129, 0.1) 100%
+    );
+    border-color: rgba(34, 197, 94, 0.4);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(34, 197, 94, 0.2);
+}
+
+.io-toggle-btn.expanded {
+    background: linear-gradient(135deg, 
+        rgba(34, 197, 94, 0.12) 0%, 
+        rgba(16, 185, 129, 0.08) 100%
+    );
+    border-color: rgba(34, 197, 94, 0.3);
+    color: var(--success);
+}
+
+.io-toggle-btn i {
+    font-size: 10px;
+    transition: transform 0.3s ease;
+}
+
+.io-count {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .steps-toggle-btn {
@@ -1096,6 +1231,17 @@
     transform: rotate(180deg);
 }
 
+.io-collapse-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-top: var(--spacing-xs);
+}
+
+.io-collapse-content.expanded {
+    max-height: 400px;
+}
+
 .steps-collapse-content {
     max-height: 0;
     overflow: hidden;
@@ -1105,6 +1251,108 @@
 
 .steps-collapse-content.expanded {
     max-height: 400px;
+}
+
+.io-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.io-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.io-section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: linear-gradient(135deg, 
+        rgba(34, 197, 94, 0.05) 0%, 
+        rgba(16, 185, 129, 0.03) 100%
+    );
+    border: 1px solid rgba(34, 197, 94, 0.1);
+    border-radius: 6px;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--success);
+}
+
+.io-section-header i {
+    font-size: 10px;
+}
+
+.io-section-content {
+    padding: var(--spacing-xs);
+    background: rgba(255, 255, 255, 0.01);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+}
+
+.io-array-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.io-array-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.io-array-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(2px);
+}
+
+.io-item-number {
+    font-size: 10px;
+    font-weight: var(--font-weight-medium);
+    color: var(--text-tertiary);
+    background: rgba(34, 197, 94, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    min-width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.io-item-text {
+    flex: 1;
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.io-text-content {
+    padding: var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    line-height: 1.5;
+    word-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 .steps-list {
