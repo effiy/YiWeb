@@ -1464,5 +1464,169 @@
     50% { transform: translateY(-6px) rotate(2deg); }
 }
 
+/* ========================================
+   输入输出水平布局样式
+   ======================================== */
+
+/* 水平布局容器 */
+.io-list-horizontal {
+    display: flex;
+    gap: var(--spacing-md);
+    width: 100%;
+}
+
+/* 输入输出各占一半 */
+.io-section-half {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 输入输出区域头部 */
+.io-section-half .io-section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.io-section-half .io-section-header i {
+    font-size: 10px;
+    width: 12px;
+    text-align: center;
+}
+
+/* 输入区域特殊样式 */
+.io-section-half:first-child .io-section-header {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
+    border-color: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+}
+
+.io-section-half:first-child .io-section-header i {
+    color: #10b981;
+}
+
+/* 输出区域特殊样式 */
+.io-section-half:last-child .io-section-header {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
+    border-color: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+}
+
+.io-section-half:last-child .io-section-header i {
+    color: #f59e0b;
+}
+
+/* 输入输出内容区域 */
+.io-section-half .io-section-content {
+    flex: 1;
+    padding: var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-sm);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    min-height: 60px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* 输入区域内容特殊样式 */
+.io-section-half:first-child .io-section-content {
+    border-color: rgba(16, 185, 129, 0.15);
+    background: rgba(16, 185, 129, 0.02);
+}
+
+/* 输出区域内容特殊样式 */
+.io-section-half:last-child .io-section-content {
+    border-color: rgba(245, 158, 11, 0.15);
+    background: rgba(245, 158, 11, 0.02);
+}
+
+/* 数组内容在水平布局中的优化 */
+.io-section-half .io-array-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.io-section-half .io-array-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+}
+
+.io-section-half .io-array-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(2px);
+}
+
+.io-section-half .io-item-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    color: white;
+    font-size: 10px;
+    font-weight: var(--font-weight-semibold);
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.io-section-half .io-item-text {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: normal;
+    padding-top: 1px;
+}
+
+/* 文本内容样式 */
+.io-section-half .io-text-content {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .io-list-horizontal {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+    
+    .io-section-half {
+        min-width: 100%;
+    }
+    
+    .io-section-half .io-section-content {
+        max-height: 150px;
+    }
+}
+
 
 

@@ -280,9 +280,9 @@ const createEnhancedTaskList = () => {
                                     <div class="io-collapse-content" 
                                          v-show="isIOExpanded(task.key || task.id)"
                                          :class="{ 'expanded': isIOExpanded(task.key || task.id) }">
-                                        <div class="io-list">
-                                            <!-- 输入信息 -->
-                                            <div class="io-section" v-if="task.input">
+                                        <div class="io-list-horizontal">
+                                            <!-- 输入信息 - 占一半 -->
+                                            <div class="io-section-half" v-if="task.input">
                                                 <div class="io-section-header">
                                                     <i class="fas fa-arrow-down"></i>
                                                     <span>输入</span>
@@ -304,8 +304,8 @@ const createEnhancedTaskList = () => {
                                                 </div>
                                             </div>
                                             
-                                            <!-- 输出信息 -->
-                                            <div class="io-section" v-if="task.output">
+                                            <!-- 输出信息 - 占一半 -->
+                                            <div class="io-section-half" v-if="task.output">
                                                 <div class="io-section-header">
                                                     <i class="fas fa-arrow-up"></i>
                                                     <span>输出</span>
