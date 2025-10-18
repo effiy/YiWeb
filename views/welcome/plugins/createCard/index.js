@@ -138,7 +138,9 @@ export async function openCreateCardModal(store) {
       quarter: defaultTime.quarter,
       month: defaultTime.month,
       week: '',
-      day: ''
+      day: '',
+      input: '',
+      output: ''
     };
 
     // ==================== 时间属性选择器（移到最前面，与编辑卡片一致）====================
@@ -535,7 +537,9 @@ export async function openCreateCardModal(store) {
       { key: 'icon', label: '图标类名', type: 'text', required: false },
       { key: 'badge', label: '徽章文本', type: 'text', required: false },
       { key: 'hint', label: '提示文本', type: 'text', required: false },
-      { key: 'footerIcon', label: '底部图标', type: 'text', required: false }
+      { key: 'footerIcon', label: '底部图标', type: 'text', required: false },
+      { key: 'input', label: '输入要求', type: 'textarea', required: false },
+      { key: 'output', label: '输出要求', type: 'textarea', required: false }
     ];
 
     console.log('[CreateCardPlugin] 开始创建表单字段，字段数量:', fields.length);
@@ -564,7 +568,10 @@ export async function openCreateCardModal(store) {
       if (field.type === 'textarea') {
         input = document.createElement('textarea');
         input.rows = 3;
-        input.style.cssText = `
+        
+        // 为input和output字段添加特殊样式
+        const isInputOutputField = field.key === 'input' || field.key === 'output';
+        const baseStyle = `
           padding: 12px;
           border: 1px solid var(--border-primary, #333);
           border-radius: 6px;
@@ -577,6 +584,69 @@ export async function openCreateCardModal(store) {
           box-sizing: border-box;
           width: 100%;
         `;
+        
+        const inputOutputStyle = `
+          padding: 12px;
+          border: 1px solid ${field.key === 'input' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'};
+          border-radius: 8px;
+          background: ${field.key === 'input' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(245, 158, 11, 0.05)'};
+          color: var(--text-primary, #fff);
+          font-size: 14px;
+          resize: vertical;
+          font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+          min-height: 100px;
+          box-sizing: border-box;
+          width: 100%;
+          transition: all 0.3s ease;
+          line-height: 1.6;
+        `;
+        
+        input.style.cssText = isInputOutputField ? inputOutputStyle : baseStyle;
+        
+        // 为input和output字段添加特殊属性
+        if (isInputOutputField) {
+          input.placeholder = field.key === 'input' 
+            ? '请描述输入要求，每行一个要求...\n例如：\n- 用户ID\n- 数据格式\n- 参数说明'
+            : '请描述输出要求，每行一个要求...\n例如：\n- 返回数据格式\n- 状态码\n- 错误处理';
+          input.maxLength = 1000;
+          
+          // 添加字符计数
+          const charCounter = document.createElement('div');
+          charCounter.style.cssText = `
+            position: absolute;
+            bottom: 8px;
+            right: 12px;
+            font-size: 12px;
+            color: var(--text-secondary, #888);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 6px;
+            border-radius: 4px;
+            pointer-events: none;
+          `;
+          
+          const updateCharCount = () => {
+            charCounter.textContent = `${input.value.length}/1000`;
+            charCounter.style.color = input.value.length > 900 ? '#f59e0b' : 'var(--text-secondary, #888)';
+          };
+          
+          input.addEventListener('input', updateCharCount);
+          updateCharCount();
+          
+          // 添加焦点效果
+          input.addEventListener('focus', () => {
+            input.style.borderColor = field.key === 'input' ? 'rgba(16, 185, 129, 0.6)' : 'rgba(245, 158, 11, 0.6)';
+            input.style.boxShadow = `0 0 0 3px ${field.key === 'input' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`;
+          });
+          
+          input.addEventListener('blur', () => {
+            input.style.borderColor = field.key === 'input' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)';
+            input.style.boxShadow = 'none';
+          });
+          
+          // 将字符计数添加到容器
+          fieldContainer.style.position = 'relative';
+          fieldContainer.appendChild(charCounter);
+        }
       } else {
         input = document.createElement('input');
         input.type = field.type;
@@ -606,6 +676,115 @@ export async function openCreateCardModal(store) {
     });
 
     console.log('[CreateCardPlugin] 所有表单字段创建完成');
+    
+    // 添加数组格式兼容性处理函数
+    const processArrayFormat = (data) => {
+      if (!data || typeof data !== 'object') {
+        return data;
+      }
+      
+      const processed = { ...data };
+      
+      // 处理input字段
+      if (processed.input) {
+        if (Array.isArray(processed.input)) {
+          // 数组格式转换为字符串
+          processed.input = processed.input.join('\n');
+        } else if (typeof processed.input === 'object') {
+          // 对象格式转换为字符串
+          processed.input = Object.values(processed.input).join('\n');
+        }
+      }
+      
+      // 处理output字段
+      if (processed.output) {
+        if (Array.isArray(processed.output)) {
+          // 数组格式转换为字符串
+          processed.output = processed.output.join('\n');
+        } else if (typeof processed.output === 'object') {
+          // 对象格式转换为字符串
+          processed.output = Object.values(processed.output).join('\n');
+        }
+      }
+      
+      return processed;
+    };
+    
+    // 添加字符串转数组格式处理函数
+    const processStringToArray = (data) => {
+      if (!data || typeof data !== 'object') {
+        return data;
+      }
+      
+      const processed = { ...data };
+      
+      // 处理input字段 - 字符串转数组
+      if (processed.input && typeof processed.input === 'string') {
+        if (processed.input.trim()) {
+          processed.input = processed.input.split('\n').filter(line => line.trim());
+        } else {
+          processed.input = [];
+        }
+      }
+      
+      // 处理output字段 - 字符串转数组
+      if (processed.output && typeof processed.output === 'string') {
+        if (processed.output.trim()) {
+          processed.output = processed.output.split('\n').filter(line => line.trim());
+        } else {
+          processed.output = [];
+        }
+      }
+      
+      return processed;
+    };
+    
+    // 添加数据验证函数
+    const validateCardData = (data) => {
+      const errors = [];
+      
+      // 验证基本字段
+      if (!data.title || typeof data.title !== 'string' || data.title.trim() === '') {
+        errors.push('卡片标题不能为空');
+      }
+      
+      if (!data.description || typeof data.description !== 'string' || data.description.trim() === '') {
+        errors.push('卡片描述不能为空');
+      }
+      
+      // 验证input字段
+      if (data.input) {
+        if (Array.isArray(data.input)) {
+          // 验证数组格式
+          data.input.forEach((item, index) => {
+            if (typeof item !== 'string') {
+              errors.push(`输入要求第${index + 1}项格式不正确`);
+            }
+          });
+        } else if (typeof data.input !== 'string') {
+          errors.push('输入要求格式不正确');
+        }
+      }
+      
+      // 验证output字段
+      if (data.output) {
+        if (Array.isArray(data.output)) {
+          // 验证数组格式
+          data.output.forEach((item, index) => {
+            if (typeof item !== 'string') {
+              errors.push(`输出要求第${index + 1}项格式不正确`);
+            }
+          });
+        } else if (typeof data.output !== 'string') {
+          errors.push('输出要求格式不正确');
+        }
+      }
+      
+      return {
+        isValid: errors.length === 0,
+        errors: errors
+      };
+    };
 
     // 功能特性编辑
     const featuresContainer = document.createElement('div');
@@ -1234,19 +1413,31 @@ export async function openCreateCardModal(store) {
           updatedAt: new Date().toISOString()
         };
 
-        console.log('[CreateCardPlugin] 准备创建卡片:', newCard);
+        // 处理数组格式兼容性
+        const processedCard = processStringToArray(newCard);
+        console.log('[CreateCardPlugin] 准备创建卡片:', processedCard);
+        
+        // 验证数据格式
+        const validation = validateCardData(processedCard);
+        if (!validation.isValid) {
+          console.error('[CreateCardPlugin] 数据验证失败:', validation.errors);
+          showError(`数据格式错误: ${validation.errors.join(', ')}`);
+          return;
+        }
 
         // 保存到数据库
         try {
           const { postData } = await import('/apis/index.js');
           const url = `${window.API_URL}/mongodb/?cname=goals`;
           const payload = {
-            key: newCard.key,
-            title: newCard.title,
-            description: newCard.description,
-            icon: newCard.icon || 'fas fa-plus',
-            badge: newCard.badge || '新建',
-            hint: newCard.hint || '点击进入功能',
+            key: processedCard.key,
+            title: processedCard.title,
+            description: processedCard.description,
+            icon: processedCard.icon || 'fas fa-plus',
+            badge: processedCard.badge || '新建',
+            hint: processedCard.hint || '点击进入功能',
+            input: processedCard.input || [],
+            output: processedCard.output || [],
             footerIcon: newCard.footerIcon || 'fas fa-arrow-right',
             features: newCard.features || [],
             stats: newCard.stats || [],

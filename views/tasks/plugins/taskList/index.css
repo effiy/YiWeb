@@ -949,6 +949,68 @@
     flex-shrink: 0;
 }
 
+/* 数组格式的输入输出样式 */
+.io-array-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: var(--spacing-xs);
+}
+
+.io-array-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-glass);
+    transition: all var(--transition-normal);
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+}
+
+.io-array-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--border-secondary);
+    transform: translateX(2px);
+}
+
+.io-array-item i {
+    color: var(--text-secondary);
+    font-size: 6px;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+
+.task-input .io-array-item i {
+    color: var(--info);
+}
+
+.task-output .io-array-item i {
+    color: var(--success);
+}
+
+.io-string-content {
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    line-height: 1.4;
+    margin: 0;
+    padding: var(--spacing-xs);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-glass);
+    transition: all var(--transition-normal);
+    overflow: visible;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.io-string-content:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--border-secondary);
+}
+
 .task-input p:hover, .task-output p:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: var(--border-secondary);

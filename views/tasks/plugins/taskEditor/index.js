@@ -116,7 +116,7 @@ const TaskEditor = {
                                         <textarea 
                                             id="taskInput"
                                             v-model="formData.input" 
-                                            placeholder="请描述任务的输入要求，包括数据格式、参数说明等..."
+                                            placeholder="请描述任务的输入要求，每行一个要求...&#10;例如：&#10;- 用户ID&#10;- 数据格式&#10;- 参数说明"
                                             class="form-textarea input-output-textarea"
                                             rows="3"
                                             maxlength="500"
@@ -129,7 +129,7 @@ const TaskEditor = {
                                     </div>
                                     <div class="input-output-hint" v-if="!formData.input">
                                         <i class="fas fa-lightbulb"></i>
-                                        提示：描述任务需要什么输入数据或条件
+                                        提示：每行一个输入要求，系统会自动转换为数组格式存储
                                     </div>
                                 </div>
                                 
@@ -151,7 +151,7 @@ const TaskEditor = {
                                         <textarea 
                                             id="taskOutput"
                                             v-model="formData.output" 
-                                            placeholder="请描述任务的输出要求，包括预期结果、格式要求等..."
+                                            placeholder="请描述任务的输出要求，每行一个要求...&#10;例如：&#10;- 返回数据格式&#10;- 状态码&#10;- 错误处理"
                                             class="form-textarea input-output-textarea"
                                             rows="3"
                                             maxlength="500"
@@ -164,7 +164,7 @@ const TaskEditor = {
                                     </div>
                                     <div class="input-output-hint" v-if="!formData.output">
                                         <i class="fas fa-lightbulb"></i>
-                                        提示：描述任务应该产生什么输出或结果
+                                        提示：每行一个输出要求，系统会自动转换为数组格式存储
                                     </div>
                                 </div>
                             </div>
@@ -324,21 +324,24 @@ const TaskEditor = {
             if (this.task && (this.task.key || this.task.id)) {
                 // 编辑现有任务 - 先进行数据格式检测和转换
                 const taskData = this.detectAndConvertDataFormat(this.task);
+                // 处理input/output数组格式转换为字符串用于编辑
+                const processedTaskData = this.processInputOutputArrayToString(taskData);
                 this.formData = {
-                    title: taskData.title || '',
-                    description: taskData.description || '',
-                    priority: taskData.priority || 'none',
-                    status: taskData.status || 'todo',
-                    type: taskData.type || 'task',
-                    dueDate: taskData.dueDate || '',
-                    input: taskData.input || '',
-                    output: taskData.output || '',
-                    steps: this.parseSteps(taskData.steps)
+                    title: processedTaskData.title || '',
+                    description: processedTaskData.description || '',
+                    priority: processedTaskData.priority || 'none',
+                    status: processedTaskData.status || 'todo',
+                    type: processedTaskData.type || 'task',
+                    dueDate: processedTaskData.dueDate || '',
+                    input: processedTaskData.input || '',
+                    output: processedTaskData.output || '',
+                    steps: this.parseSteps(processedTaskData.steps)
                 };
                 
                 console.log('[TaskEditor] 编辑任务，数据转换:', {
                     original: this.task,
                     converted: taskData,
+                    processed: processedTaskData,
                     parsedSteps: this.formData.steps
                 });
             } else {
@@ -539,6 +542,68 @@ const TaskEditor = {
             return colors[Math.floor(Math.random() * colors.length)];
         },
         
+        // 处理input/output数组格式转换为字符串
+        processInputOutputArrayToString(data) {
+            if (!data || typeof data !== 'object') {
+                return data;
+            }
+            
+            const processed = { ...data };
+            
+            // 处理input字段
+            if (processed.input) {
+                if (Array.isArray(processed.input)) {
+                    // 数组格式转换为字符串
+                    processed.input = processed.input.join('\n');
+                } else if (typeof processed.input === 'object') {
+                    // 对象格式转换为字符串
+                    processed.input = Object.values(processed.input).join('\n');
+                }
+            }
+            
+            // 处理output字段
+            if (processed.output) {
+                if (Array.isArray(processed.output)) {
+                    // 数组格式转换为字符串
+                    processed.output = processed.output.join('\n');
+                } else if (typeof processed.output === 'object') {
+                    // 对象格式转换为字符串
+                    processed.output = Object.values(processed.output).join('\n');
+                }
+            }
+            
+            return processed;
+        },
+        
+        // 处理input/output字符串转换为数组格式
+        processInputOutputStringToArray(data) {
+            if (!data || typeof data !== 'object') {
+                return data;
+            }
+            
+            const processed = { ...data };
+            
+            // 处理input字段 - 字符串转数组
+            if (processed.input && typeof processed.input === 'string') {
+                if (processed.input.trim()) {
+                    processed.input = processed.input.split('\n').filter(line => line.trim());
+                } else {
+                    processed.input = [];
+                }
+            }
+            
+            // 处理output字段 - 字符串转数组
+            if (processed.output && typeof processed.output === 'string') {
+                if (processed.output.trim()) {
+                    processed.output = processed.output.split('\n').filter(line => line.trim());
+                } else {
+                    processed.output = [];
+                }
+            }
+            
+            return processed;
+        },
+        
         // 验证数据格式
         validateDataFormat(data) {
             const errors = [];
@@ -601,9 +666,11 @@ const TaskEditor = {
                 
                 // 确保保存的数据格式正确
                 const finalSaveData = this.detectAndConvertDataFormat(saveData);
+                // 处理input/output字符串转换为数组格式用于保存
+                const processedSaveData = this.processInputOutputStringToArray(finalSaveData);
                 
                 // 验证数据格式
-                const validation = this.validateDataFormat(finalSaveData);
+                const validation = this.validateDataFormat(processedSaveData);
                 if (!validation.isValid) {
                     console.error('[TaskEditor] 数据验证失败:', validation.errors);
                     if (window.showError) {
@@ -616,25 +683,25 @@ const TaskEditor = {
                 
                 if (this.isEditing) {
                     // 编辑现有任务
-                    finalSaveData.key = this.task.key || this.task.id;
-                    finalSaveData.id = this.task.id || this.task.key;
-                    finalSaveData.updated = new Date().toISOString();
+                    processedSaveData.key = this.task.key || this.task.id;
+                    processedSaveData.id = this.task.id || this.task.key;
+                    processedSaveData.updated = new Date().toISOString();
                     
                     // 调用API更新任务
-                    await this.updateTaskViaAPI(finalSaveData);
+                    await this.updateTaskViaAPI(processedSaveData);
                 } else {
                     // 创建新任务
-                    finalSaveData.id = Date.now().toString();
-                    finalSaveData.key = `task_${Date.now()}`;
-                    finalSaveData.created = new Date().toISOString();
-                    finalSaveData.updated = new Date().toISOString();
+                    processedSaveData.id = Date.now().toString();
+                    processedSaveData.key = `task_${Date.now()}`;
+                    processedSaveData.created = new Date().toISOString();
+                    processedSaveData.updated = new Date().toISOString();
                     
                     // 调用API创建任务
-                    await this.createTaskViaAPI(finalSaveData);
+                    await this.createTaskViaAPI(processedSaveData);
                 }
                 
                 // 通知父组件保存成功
-                this.$emit('save', finalSaveData);
+                this.$emit('save', processedSaveData);
                 this.closeEditor();
                 
             } catch (error) {
