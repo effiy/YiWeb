@@ -142,91 +142,133 @@ const createEnhancedTaskList = () => {
                     </div>
                 </div>
                 <!-- 列表视图 -->
-                <div v-else-if="viewMode === 'list'" class="task-list-content">
-                    <div class="task-list-header">
-                        <div class="list-header-item">任务</div>
-                        <div class="list-header-item">状态</div>
-                        <div class="list-header-item">优先级</div>
-                        <div class="list-header-item">进度</div>
-                        <div class="list-header-item">截止日期</div>
-                        <div class="list-header-item">操作</div>
-                    </div>
-                    <div v-for="task in tasks" :key="task.key || task.id" 
-                         class="task-list-item"
-                         @click="handleTaskClick(task)"
-                         @touchstart="startLongPress(task, $event)"
-                         @touchend="endLongPress"
-                         @touchcancel="endLongPress"
-                         @mousedown="startLongPress(task, $event)"
-                         @mouseup="endLongPress"
-                         @mouseleave="endLongPress">
-                        
-                        <!-- 任务信息 -->
-                        <div class="list-task-info">
-                            <div class="task-title">{{ task.title }}</div>
-                            <div class="task-description" v-if="task.description">{{ task.description }}</div>
+                <div v-else-if="viewMode === 'list'" class="task-list-view">
+                    <!-- 列表表头 -->
+                    <header class="task-list-view__header">
+                        <div class="task-list-view__header-cell task-list-view__header-cell--info" title="任务信息">
+                            <i class="fas fa-tasks"></i>
+                            <span>任务</span>
+                        </div>
+                        <div class="task-list-view__header-cell task-list-view__header-cell--status" title="任务状态">
+                            <i class="fas fa-flag"></i>
+                            <span>状态</span>
+                        </div>
+                        <div class="task-list-view__header-cell task-list-view__header-cell--priority" title="优先级">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span>优先级</span>
+                        </div>
+                        <div class="task-list-view__header-cell task-list-view__header-cell--progress" title="完成进度">
+                            <i class="fas fa-chart-line"></i>
+                            <span>进度</span>
+                        </div>
+                        <div class="task-list-view__header-cell task-list-view__header-cell--date" title="截止日期">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>截止日期</span>
+                        </div>
+                        <div class="task-list-view__header-cell task-list-view__header-cell--actions" title="操作">
+                            <i class="fas fa-cog"></i>
+                            <span>操作</span>
+                        </div>
+                    </header>
+                    
+                    <!-- 列表主体 -->
+                    <div class="task-list-view__body">
+                        <article v-for="task in tasks" :key="task.key || task.id" 
+                                 class="task-list-view__item"
+                                 :class="getTaskItemClasses(task)"
+                                 @click="handleTaskClick(task)"
+                                 @touchstart="startLongPress(task, $event)"
+                                 @touchend="endLongPress"
+                                 @touchcancel="endLongPress"
+                                 @mousedown="startLongPress(task, $event)"
+                                 @mouseup="endLongPress"
+                                 @mouseleave="endLongPress">
                             
-                            <!-- 输入输出信息（列表视图简化版） -->
-                            <div class="list-io-info" v-if="task.input || task.output">
-                                <div class="list-input" v-if="task.input">
-                                    <i class="fas fa-arrow-down"></i>
-                                    <span class="io-label">输入:</span>
-                                    <span class="io-preview">{{ getIOPreview(task.input) }}</span>
-                                </div>
-                                <div class="list-output" v-if="task.output">
-                                    <i class="fas fa-arrow-up"></i>
-                                    <span class="io-label">输出:</span>
-                                    <span class="io-preview">{{ getIOPreview(task.output) }}</span>
+                            <!-- 任务信息列 -->
+                            <div class="task-list-view__cell task-list-view__cell--info">
+                                <div class="task-info">
+                                    <h3 class="task-info__title">{{ task.title }}</h3>
+                                    <p class="task-info__description" v-if="task.description">
+                                        {{ task.description }}
+                                    </p>
+                                    
+                                    <!-- 输入输出标签 -->
+                                    <div class="task-info__io-tags" v-if="task.input || task.output">
+                                        <span class="io-tag io-tag--input" v-if="task.input" :title="getIOFullText(task.input)">
+                                            <i class="fas fa-arrow-down"></i>
+                                            <span>输入: {{ getIOPreview(task.input) }}</span>
+                                        </span>
+                                        <span class="io-tag io-tag--output" v-if="task.output" :title="getIOFullText(task.output)">
+                                            <i class="fas fa-arrow-up"></i>
+                                            <span>输出: {{ getIOPreview(task.output) }}</span>
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- 功能标签 -->
+                                    <div class="task-info__meta" v-if="task.featureName">
+                                        <span class="feature-tag">
+                                            <i class="fas fa-tag"></i>
+                                            {{ task.featureName }}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                             
-                            <div class="task-feature-name" v-if="task.featureName">
-                                <i class="fas fa-tag"></i>
-                                <span>{{ task.featureName }}</span>
+                            <!-- 状态列 -->
+                            <div class="task-list-view__cell task-list-view__cell--status">
+                                <span :class="['badge', 'badge--status', getStatusClass(task.status)]">
+                                    <i :class="getStatusIcon(task.status)"></i>
+                                    <span>{{ getStatusText(task.status) }}</span>
+                                </span>
                             </div>
-                        </div>
-                        
-                        <!-- 状态 -->
-                        <div class="list-status">
-                            <span :class="['status-badge', getStatusClass(task.status)]">
-                                {{ getStatusText(task.status) }}
-                            </span>
-                        </div>
-                        
-                        <!-- 优先级 -->
-                        <div class="list-priority">
-                            <span :class="['priority-badge', getPriorityClass(task.priority)]">
-                                {{ getPriorityText(task.priority) }}
-                            </span>
-                        </div>
-                        
-                        <!-- 进度 -->
-                        <div class="list-progress">
-                            <div class="progress-bar">
-                                <div class="progress-fill" :style="{ width: getTaskProgress(task) + '%' }"></div>
+                            
+                            <!-- 优先级列 -->
+                            <div class="task-list-view__cell task-list-view__cell--priority">
+                                <span :class="['badge', 'badge--priority', getPriorityClass(task.priority)]">
+                                    <i :class="getPriorityIcon(task.priority)"></i>
+                                    <span>{{ getPriorityText(task.priority) }}</span>
+                                </span>
                             </div>
-                            <span class="progress-text">{{ getTaskProgress(task) }}%</span>
-                        </div>
-                        
-                        <!-- 截止日期 -->
-                        <div class="list-due-date">
-                            <span v-if="task.dueDate" :class="['due-date', getDueDateClass(task.dueDate)]">
-                                {{ formatDueDate(task.dueDate) }}
-                            </span>
-                            <span v-else class="no-due-date">无</span>
-                        </div>
-                        
-                        <!-- 操作 -->
-                        <div class="list-actions">
-                            <button 
-                                class="edit-btn" 
-                                @click.stop="handleEditTask(task)"
-                                title="编辑任务">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        </div>
+                            
+                            <!-- 进度列 -->
+                            <div class="task-list-view__cell task-list-view__cell--progress">
+                                <div class="progress">
+                                    <div class="progress__bar">
+                                        <div class="progress__fill" 
+                                             :style="{ width: getTaskProgress(task) + '%' }"
+                                             :data-progress="getTaskProgress(task)">
+                                        </div>
+                                    </div>
+                                    <span class="progress__text">{{ getTaskProgress(task) }}%</span>
+                                </div>
+                            </div>
+                            
+                            <!-- 截止日期列 -->
+                            <div class="task-list-view__cell task-list-view__cell--date">
+                                <span v-if="task.dueDate" 
+                                      :class="['badge', 'badge--date', getDueDateClass(task.dueDate)]">
+                                    <i :class="getDueDateIcon(task.dueDate)"></i>
+                                    <span>{{ formatDueDate(task.dueDate) }}</span>
+                                </span>
+                                <span v-else class="badge badge--empty">
+                                    <i class="fas fa-minus"></i>
+                                    <span>无</span>
+                                </span>
+                            </div>
+                            
+                            <!-- 操作列 -->
+                            <div class="task-list-view__cell task-list-view__cell--actions">
+                                <button class="action-btn action-btn--edit" 
+                                        @click.stop="handleEditTask(task)"
+                                        :title="'编辑 ' + task.title"
+                                        :aria-label="'编辑任务: ' + task.title">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </article>
                     </div>
                 </div>
+            </div>
             </div>
         `,
         props: {
@@ -1443,6 +1485,98 @@ const createEnhancedTaskList = () => {
                 } catch (error) {
                     console.warn('[IO预览] 处理IO数据失败:', error);
                     return String(ioData);
+                }
+            },
+            
+            // 获取输入输出完整文本
+            getIOFullText(ioData) {
+                if (!ioData) return '';
+                
+                try {
+                    if (Array.isArray(ioData)) {
+                        return ioData.join('\n');
+                    } else if (typeof ioData === 'object' && ioData !== null) {
+                        return Object.values(ioData).join('\n');
+                    }
+                    return String(ioData);
+                } catch (error) {
+                    return String(ioData);
+                }
+            },
+            
+            // 获取任务项CSS类
+            getTaskItemClasses(task) {
+                const classes = [];
+                
+                // 根据优先级添加类
+                if (task.priority) {
+                    classes.push(`task-list-view__item--${task.priority}`);
+                }
+                
+                // 根据状态添加类
+                if (task.status) {
+                    classes.push(`task-list-view__item--${task.status.replace('_', '-')}`);
+                }
+                
+                // 根据截止日期添加类
+                if (task.dueDate) {
+                    const dueClass = this.getDueDateClass(task.dueDate);
+                    if (dueClass) {
+                        classes.push(`task-list-view__item--${dueClass.replace('due-', '')}`);
+                    }
+                }
+                
+                return classes.join(' ');
+            },
+            
+            // 获取状态图标
+            getStatusIcon(status) {
+                const iconMap = {
+                    'backlog': 'fas fa-inbox',
+                    'todo': 'fas fa-clipboard-list',
+                    'in_progress': 'fas fa-spinner',
+                    'in_review': 'fas fa-search',
+                    'testing': 'fas fa-vial',
+                    'completed': 'fas fa-check-circle',
+                    'cancelled': 'fas fa-times-circle',
+                    'on_hold': 'fas fa-pause-circle'
+                };
+                return iconMap[status] || 'fas fa-circle';
+            },
+            
+            // 获取优先级图标
+            getPriorityIcon(priority) {
+                const iconMap = {
+                    'none': 'fas fa-minus',
+                    'low': 'fas fa-arrow-down',
+                    'medium': 'fas fa-equals',
+                    'high': 'fas fa-arrow-up',
+                    'critical': 'fas fa-exclamation-triangle'
+                };
+                return iconMap[priority] || 'fas fa-minus';
+            },
+            
+            // 获取截止日期图标
+            getDueDateIcon(dueDate) {
+                if (!dueDate) return 'fas fa-calendar';
+                
+                try {
+                    const date = new Date(dueDate);
+                    const now = new Date();
+                    const diffTime = date.getTime() - now.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays < 0) {
+                        return 'fas fa-calendar-times';
+                    } else if (diffDays <= 1) {
+                        return 'fas fa-exclamation-triangle';
+                    } else if (diffDays <= 3) {
+                        return 'fas fa-exclamation';
+                    } else {
+                        return 'fas fa-calendar-check';
+                    }
+                } catch (error) {
+                    return 'fas fa-calendar';
                 }
             }
         }
