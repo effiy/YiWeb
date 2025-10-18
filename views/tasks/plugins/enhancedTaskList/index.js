@@ -215,14 +215,15 @@ const createEnhancedTaskList = () => {
                             
                             <!-- 进度列 -->
                             <div class="task-list-view__cell task-list-view__cell--progress">
-                                <div class="progress">
+                                <div class="progress" :key="'progress-' + (task.key || task.id) + '-' + (task.progress || 0)">
                                     <div class="progress__bar">
                                         <div class="progress__fill" 
                                              :style="{ width: getTaskProgress(task) + '%' }"
-                                             :data-progress="getTaskProgress(task)">
+                                             :data-progress="getTaskProgress(task)"
+                                             :key="'fill-' + getTaskProgress(task)">
                                         </div>
                                     </div>
-                                    <span class="progress__text">{{ getTaskProgress(task) }}%</span>
+                                    <span class="progress__text" :key="'text-' + getTaskProgress(task)">{{ getTaskProgress(task) }}%</span>
                                 </div>
                             </div>
                             
@@ -459,6 +460,7 @@ const createEnhancedTaskList = () => {
             },
             async toggleStepComplete(taskId, stepKey) {
                 console.log('[步骤更新] 开始更新步骤:', { taskId, stepKey });
+                console.log('[步骤更新] Vue版本检查:', this.$set ? 'Vue 2' : 'Vue 3');
                 
                 try {
                     // 找到任务并创建深拷贝，避免影响其他组件
@@ -479,6 +481,11 @@ const createEnhancedTaskList = () => {
                         console.log('[步骤更新] 初始化步骤对象');
                     }
                     
+                    // 记录原始进度
+                    const originalProgress = updatedTask.progress || 0;
+                    const originalCompletedSteps = updatedTask.completedSubtasks || 0;
+                    const originalTotalSteps = updatedTask.totalSubtasks || 0;
+                    
                     // 确保步骤数据结构正确
                     if (updatedTask.steps[stepKey]) {
                         // 如果步骤已存在，切换完成状态
@@ -496,10 +503,33 @@ const createEnhancedTaskList = () => {
                     
                     // 更新任务的完成进度
                     this.updateTaskProgress(updatedTask);
-                    console.log('[进度更新] 任务进度已更新:', updatedTask.progress + '%');
                     
-                    // 更新本地任务数组，替换原任务
+                    // 计算进度变化
+                    const progressChange = (updatedTask.progress || 0) - originalProgress;
+                    const stepsChange = (updatedTask.completedSubtasks || 0) - originalCompletedSteps;
+                    
+                    console.log('[步骤更新] 进度变化:', {
+                        originalProgress,
+                        newProgress: updatedTask.progress,
+                        progressChange,
+                        originalCompletedSteps,
+                        newCompletedSteps: updatedTask.completedSubtasks,
+                        stepsChange
+                    });
+                    
+                    // 更新本地任务数组，替换原任务（使用splice触发响应式更新）
                     this.tasks.splice(taskIndex, 1, updatedTask);
+                    
+                    // 确保响应式更新
+                    this.$nextTick(() => {
+                        // 强制更新视图
+                        this.$forceUpdate();
+                    });
+                    
+                    // 在下一个tick更新进度显示
+                    this.$nextTick(() => {
+                        this.forceProgressUpdate(updatedTask);
+                    });
                     
                     // 调用API更新步骤状态到后端
                     await this.updateStepStatusToAPI(updatedTask, stepKey);
@@ -514,6 +544,11 @@ const createEnhancedTaskList = () => {
                     
                     // 添加成功反馈
                     this.showStepUpdateFeedback(stepKey, updatedTask.steps[stepKey].completed);
+                    
+                    // 显示进度更新反馈
+                    if (progressChange !== 0) {
+                        this.showProgressUpdateFeedback(progressChange, updatedTask.progress);
+                    }
                     
                     // 保存步骤状态到本地存储
                     this.saveStepStateToLocal(taskId, stepKey, updatedTask.steps[stepKey].completed);
@@ -726,22 +761,39 @@ const createEnhancedTaskList = () => {
                             }
                         });
                         
-                        // 更新任务进度
-                        task.progress = Math.round((completedSteps / totalSteps) * 100);
+                        // 计算进度百分比，确保在0-100范围内
+                        const progressPercentage = Math.min(100, Math.max(0, Math.round((completedSteps / totalSteps) * 100)));
+                        
+                        // 直接更新任务属性（Vue 3中不需要$set）
+                        task.progress = progressPercentage;
                         task.completedSubtasks = completedSteps;
                         task.totalSubtasks = totalSteps;
+                        
+                        // 根据进度更新任务状态
+                        let newStatus = task.status;
+                        if (progressPercentage === 100) {
+                            newStatus = 'completed';
+                        } else if (progressPercentage > 0) {
+                            newStatus = 'in_progress';
+                        } else {
+                            newStatus = 'pending';
+                        }
+                        
+                        task.status = newStatus;
                         
                         console.log('[进度更新] 任务进度已更新:', {
                             title: task.title,
                             totalSteps,
                             completedSteps,
-                            progress: task.progress + '%'
+                            progress: task.progress + '%',
+                            status: task.status
                         });
                     } else {
                         // 如果没有步骤，设置默认值
                         task.progress = 0;
                         task.completedSubtasks = 0;
                         task.totalSubtasks = 0;
+                        task.status = 'pending';
                     }
                 } catch (error) {
                     console.error('[进度更新] 更新任务进度失败:', error);
@@ -749,6 +801,7 @@ const createEnhancedTaskList = () => {
                     task.progress = 0;
                     task.completedSubtasks = 0;
                     task.totalSubtasks = 0;
+                    task.status = 'pending';
                 }
             },
             
@@ -1520,26 +1573,35 @@ const createEnhancedTaskList = () => {
             },
             
             getTaskProgress(task) {
-                if (task.progress !== undefined) {
-                    return task.progress;
-                }
-                
-                if (task.steps && Object.keys(task.steps).length > 0) {
-                    const totalSteps = Object.keys(task.steps).length;
-                    let completedSteps = 0;
+                try {
+                    // 如果任务已经有进度值，直接返回
+                    if (typeof task.progress === 'number') {
+                        return Math.min(100, Math.max(0, Math.round(task.progress)));
+                    }
                     
-                    Object.values(task.steps).forEach(step => {
-                        if (step && typeof step === 'object' && step.completed) {
-                            completedSteps++;
-                        } else if (step === true) {
-                            completedSteps++;
-                        }
-                    });
+                    // 如果没有进度值但有步骤，计算进度
+                    if (task.steps && Object.keys(task.steps).length > 0) {
+                        const totalSteps = Object.keys(task.steps).length;
+                        let completedSteps = 0;
+                        
+                        Object.values(task.steps).forEach(step => {
+                            if (step && typeof step === 'object' && step.completed) {
+                                completedSteps++;
+                            } else if (step === true) {
+                                completedSteps++;
+                            }
+                        });
+                        
+                        const progressPercentage = Math.min(100, Math.max(0, Math.round((completedSteps / totalSteps) * 100)));
+                        return progressPercentage;
+                    }
                     
-                    return Math.round((completedSteps / totalSteps) * 100);
+                    // 默认返回0
+                    return 0;
+                } catch (error) {
+                    console.warn('[进度计算] 计算任务进度失败:', error);
+                    return 0;
                 }
-                
-                return 0;
             },
             
             formatDueDate(dueDate) {
@@ -1924,6 +1986,95 @@ const createEnhancedTaskList = () => {
                     }
                 }
                 return count;
+            },
+            
+            /**
+             * 显示进度更新反馈
+             */
+            showProgressUpdateFeedback(progressChange, newProgress) {
+                try {
+                    console.log('[进度反馈] 显示进度更新反馈:', { progressChange, newProgress });
+                    
+                    // 创建进度更新指示器
+                    const indicator = document.createElement('div');
+                    indicator.className = 'progress-update-indicator';
+                    indicator.innerHTML = `
+                        <div class="progress-update-content">
+                            <i class="fas fa-chart-line"></i>
+                            <span class="progress-change">${progressChange > 0 ? '+' : ''}${progressChange}%</span>
+                            <span class="progress-total">${newProgress}%</span>
+                        </div>
+                    `;
+                    
+                    // 添加到页面
+                    document.body.appendChild(indicator);
+                    
+                    // 显示动画
+                    setTimeout(() => {
+                        indicator.classList.add('show');
+                    }, 10);
+                    
+                    // 自动隐藏
+                    setTimeout(() => {
+                        indicator.classList.remove('show');
+                        setTimeout(() => {
+                            if (indicator.parentNode) {
+                                indicator.parentNode.removeChild(indicator);
+                            }
+                        }, 300);
+                    }, 2000);
+                    
+                } catch (error) {
+                    console.warn('[进度反馈] 显示进度更新反馈失败:', error);
+                }
+            },
+            
+            /**
+             * 强制更新进度显示
+             */
+            forceProgressUpdate(task) {
+                try {
+                    console.log('[进度更新] 强制更新进度显示:', task.title, task.progress + '%');
+                    
+                    // 触发Vue的响应式更新
+                    this.$forceUpdate();
+                    
+                    // 手动更新DOM中的进度条
+                    const taskElements = document.querySelectorAll('.task-list-view__item');
+                    taskElements.forEach(element => {
+                        const taskTitle = element.querySelector('.task-info__title');
+                        if (taskTitle && taskTitle.textContent === task.title) {
+                            const progressFill = element.querySelector('.progress__fill');
+                            const progressText = element.querySelector('.progress__text');
+                            
+                            if (progressFill) {
+                                // 添加更新动画类
+                                progressFill.classList.add('updating');
+                                progressFill.style.width = `${task.progress}%`;
+                                progressFill.setAttribute('data-progress', task.progress);
+                                
+                                // 移除动画类
+                                setTimeout(() => {
+                                    progressFill.classList.remove('updating');
+                                }, 600);
+                            }
+                            
+                            if (progressText) {
+                                // 添加更新动画类
+                                progressText.classList.add('updating');
+                                progressText.textContent = `${task.progress}%`;
+                                
+                                // 移除动画类
+                                setTimeout(() => {
+                                    progressText.classList.remove('updating');
+                                }, 300);
+                            }
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.warn('[进度更新] 强制更新进度显示失败:', error);
+                }
             }
         }
     };
