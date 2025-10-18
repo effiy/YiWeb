@@ -232,24 +232,7 @@ const createEnhancedTaskList = () => {
                                         </div>
                                     </div>
                                     
-                                    <!-- 步骤统计 -->
-                                    <div class="progress-stats" v-if="task.steps && Object.keys(task.steps).length > 0">
-                                        <div class="steps-info">
-                                            <span class="completed-steps">{{ getCompletedSteps(task) }}</span>
-                                            <span class="separator">/</span>
-                                            <span class="total-steps">{{ getTotalSteps(task) }}</span>
-                                            <span class="steps-label">步骤</span>
-                                        </div>
-                                        <div class="progress-indicator" :class="getProgressStatusClass(task)">
-                                            <i :class="getProgressStatusIcon(task)"></i>
-                                        </div>
-                                    </div>
                                     
-                                    <!-- 无步骤时的状态 -->
-                                    <div class="no-steps" v-else>
-                                        <span class="no-steps-text">无步骤</span>
-                                        <i class="fas fa-info-circle"></i>
-                                    </div>
                                 </div>
                             </div>
                             
@@ -1715,6 +1698,7 @@ const createEnhancedTaskList = () => {
                     return 'fas fa-check-circle';
                 }
             },
+            
             
             formatDueDate(dueDate) {
                 if (!dueDate) return '';
