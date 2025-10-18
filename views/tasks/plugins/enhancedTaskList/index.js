@@ -188,11 +188,17 @@ const createEnhancedTaskList = () => {
                                     
                                     <!-- 输入输出标签 -->
                                     <div class="task-info__io-tags" v-if="task.input || task.output">
-                                        <span class="io-tag io-tag--input" v-if="task.input" :title="getIOFullText(task.input)">
+                                        <span class="io-tag io-tag--input" v-if="task.input" 
+                                              :title="'输入: ' + getIOFullText(task.input)"
+                                              @mouseenter="showIOTooltip($event, task.input, 'input')"
+                                              @mouseleave="hideIOTooltip">
                                             <i class="fas fa-arrow-down"></i>
                                             <span>输入: {{ getIOPreview(task.input) }}</span>
                                         </span>
-                                        <span class="io-tag io-tag--output" v-if="task.output" :title="getIOFullText(task.output)">
+                                        <span class="io-tag io-tag--output" v-if="task.output" 
+                                              :title="'输出: ' + getIOFullText(task.output)"
+                                              @mouseenter="showIOTooltip($event, task.output, 'output')"
+                                              @mouseleave="hideIOTooltip">
                                             <i class="fas fa-arrow-up"></i>
                                             <span>输出: {{ getIOPreview(task.output) }}</span>
                                         </span>
@@ -1497,17 +1503,17 @@ const createEnhancedTaskList = () => {
                 
                 try {
                     if (Array.isArray(ioData)) {
-                        // 数组格式：显示前2项
-                        const preview = ioData.slice(0, 2).join(', ');
-                        return ioData.length > 2 ? preview + '...' : preview;
+                        // 数组格式：显示前3项
+                        const preview = ioData.slice(0, 3).join(', ');
+                        return ioData.length > 3 ? preview + '...' : preview;
                     } else if (typeof ioData === 'object' && ioData !== null) {
-                        // 对象格式：显示前2个值
-                        const values = Object.values(ioData).slice(0, 2);
+                        // 对象格式：显示前3个值
+                        const values = Object.values(ioData).slice(0, 3);
                         const preview = values.join(', ');
-                        return Object.keys(ioData).length > 2 ? preview + '...' : preview;
+                        return Object.keys(ioData).length > 3 ? preview + '...' : preview;
                     } else if (typeof ioData === 'string') {
-                        // 字符串格式：显示前50个字符
-                        return ioData.length > 50 ? ioData.substring(0, 50) + '...' : ioData;
+                        // 字符串格式：显示前80个字符
+                        return ioData.length > 80 ? ioData.substring(0, 80) + '...' : ioData;
                     }
                     
                     return String(ioData);
@@ -1606,6 +1612,82 @@ const createEnhancedTaskList = () => {
                     }
                 } catch (error) {
                     return 'fas fa-calendar';
+                }
+            },
+            
+            /**
+             * 显示IO信息工具提示
+             */
+            showIOTooltip(event, ioData, type) {
+                try {
+                    const fullText = this.getIOFullText(ioData);
+                    if (!fullText || fullText === this.getIOPreview(ioData)) {
+                        return; // 如果完整文本和预览文本相同，不需要显示工具提示
+                    }
+                    
+                    // 创建工具提示元素
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'io-tooltip';
+                    tooltip.innerHTML = `
+                        <div class="io-tooltip__header">
+                            <i class="fas fa-${type === 'input' ? 'arrow-down' : 'arrow-up'}"></i>
+                            <span>${type === 'input' ? '输入' : '输出'}</span>
+                        </div>
+                        <div class="io-tooltip__content">${fullText}</div>
+                    `;
+                    
+                    // 添加到页面
+                    document.body.appendChild(tooltip);
+                    
+                    // 定位工具提示
+                    const rect = event.target.getBoundingClientRect();
+                    const tooltipRect = tooltip.getBoundingClientRect();
+                    
+                    let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+                    let top = rect.top - tooltipRect.height - 10;
+                    
+                    // 确保工具提示不超出视窗
+                    if (left < 10) left = 10;
+                    if (left + tooltipRect.width > window.innerWidth - 10) {
+                        left = window.innerWidth - tooltipRect.width - 10;
+                    }
+                    if (top < 10) {
+                        top = rect.bottom + 10;
+                    }
+                    
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = top + 'px';
+                    
+                    // 添加显示动画
+                    setTimeout(() => {
+                        tooltip.classList.add('show');
+                    }, 10);
+                    
+                    // 存储引用以便清理
+                    event.target._ioTooltip = tooltip;
+                    
+                } catch (error) {
+                    console.warn('[IO工具提示] 显示失败:', error);
+                }
+            },
+            
+            /**
+             * 隐藏IO信息工具提示
+             */
+            hideIOTooltip(event) {
+                try {
+                    const tooltip = event.target._ioTooltip;
+                    if (tooltip) {
+                        tooltip.classList.remove('show');
+                        setTimeout(() => {
+                            if (tooltip && tooltip.parentNode) {
+                                tooltip.parentNode.removeChild(tooltip);
+                            }
+                        }, 200);
+                        delete event.target._ioTooltip;
+                    }
+                } catch (error) {
+                    console.warn('[IO工具提示] 隐藏失败:', error);
                 }
             }
         }
