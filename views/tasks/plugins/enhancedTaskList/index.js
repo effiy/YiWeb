@@ -215,15 +215,41 @@ const createEnhancedTaskList = () => {
                             
                             <!-- 进度列 -->
                             <div class="task-list-view__cell task-list-view__cell--progress">
-                                <div class="progress" :key="'progress-' + (task.key || task.id) + '-' + (task.progress || 0)">
-                                    <div class="progress__bar">
-                                        <div class="progress__fill" 
-                                             :style="{ width: getTaskProgress(task) + '%' }"
-                                             :data-progress="getTaskProgress(task)"
-                                             :key="'fill-' + getTaskProgress(task)">
+                                <div class="progress-container" :key="'progress-' + (task.key || task.id) + '-' + (task.progress || 0)">
+                                    <!-- 进度条 -->
+                                    <div class="progress-bar-wrapper">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" 
+                                                 :class="getProgressClass(task)"
+                                                 :style="{ width: getTaskProgress(task) + '%' }"
+                                                 :data-progress="getTaskProgress(task)"
+                                                 :key="'fill-' + getTaskProgress(task)">
+                                                <div class="progress-glow"></div>
+                                            </div>
+                                        </div>
+                                        <div class="progress-percentage" :key="'text-' + getTaskProgress(task)">
+                                            {{ getTaskProgress(task) }}%
                                         </div>
                                     </div>
-                                    <span class="progress__text" :key="'text-' + getTaskProgress(task)">{{ getTaskProgress(task) }}%</span>
+                                    
+                                    <!-- 步骤统计 -->
+                                    <div class="progress-stats" v-if="task.steps && Object.keys(task.steps).length > 0">
+                                        <div class="steps-info">
+                                            <span class="completed-steps">{{ getCompletedSteps(task) }}</span>
+                                            <span class="separator">/</span>
+                                            <span class="total-steps">{{ getTotalSteps(task) }}</span>
+                                            <span class="steps-label">步骤</span>
+                                        </div>
+                                        <div class="progress-indicator" :class="getProgressStatusClass(task)">
+                                            <i :class="getProgressStatusIcon(task)"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 无步骤时的状态 -->
+                                    <div class="no-steps" v-else>
+                                        <span class="no-steps-text">无步骤</span>
+                                        <i class="fas fa-info-circle"></i>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -1601,6 +1627,92 @@ const createEnhancedTaskList = () => {
                 } catch (error) {
                     console.warn('[进度计算] 计算任务进度失败:', error);
                     return 0;
+                }
+            },
+            
+            /**
+             * 获取完成的步骤数
+             */
+            getCompletedSteps(task) {
+                try {
+                    if (!task.steps || Object.keys(task.steps).length === 0) {
+                        return 0;
+                    }
+                    
+                    let completedSteps = 0;
+                    Object.values(task.steps).forEach(step => {
+                        if (step && typeof step === 'object' && step.completed) {
+                            completedSteps++;
+                        } else if (step === true) {
+                            completedSteps++;
+                        }
+                    });
+                    
+                    return completedSteps;
+                } catch (error) {
+                    console.warn('[步骤统计] 计算完成步骤数失败:', error);
+                    return 0;
+                }
+            },
+            
+            /**
+             * 获取总步骤数
+             */
+            getTotalSteps(task) {
+                try {
+                    if (!task.steps) {
+                        return 0;
+                    }
+                    return Object.keys(task.steps).length;
+                } catch (error) {
+                    console.warn('[步骤统计] 计算总步骤数失败:', error);
+                    return 0;
+                }
+            },
+            
+            /**
+             * 获取进度条样式类
+             */
+            getProgressClass(task) {
+                const progress = this.getTaskProgress(task);
+                if (progress === 0) {
+                    return 'progress-fill--empty';
+                } else if (progress < 30) {
+                    return 'progress-fill--low';
+                } else if (progress < 70) {
+                    return 'progress-fill--medium';
+                } else if (progress < 100) {
+                    return 'progress-fill--high';
+                } else {
+                    return 'progress-fill--complete';
+                }
+            },
+            
+            /**
+             * 获取进度状态样式类
+             */
+            getProgressStatusClass(task) {
+                const progress = this.getTaskProgress(task);
+                if (progress === 0) {
+                    return 'progress-indicator--pending';
+                } else if (progress < 100) {
+                    return 'progress-indicator--in-progress';
+                } else {
+                    return 'progress-indicator--completed';
+                }
+            },
+            
+            /**
+             * 获取进度状态图标
+             */
+            getProgressStatusIcon(task) {
+                const progress = this.getTaskProgress(task);
+                if (progress === 0) {
+                    return 'fas fa-clock';
+                } else if (progress < 100) {
+                    return 'fas fa-play-circle';
+                } else {
+                    return 'fas fa-check-circle';
                 }
             },
             
