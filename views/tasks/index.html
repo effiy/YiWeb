@@ -122,10 +122,11 @@
                 <div class="content-area">
                     <!-- 任务列表视图 -->
                     <enhanced-task-list
-                        v-if="currentView === 'list'"
+                        v-if="currentView === 'card' || currentView === 'list'"
                         :tasks="filteredTasks"
                         :loading="loading"
                         :error="error"
+                        :view-mode="currentView"
                         @task-click="handleTaskClick"
                         @task-update="handleTaskUpdate"
                         @task-delete="handleTaskDelete"

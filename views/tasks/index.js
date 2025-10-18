@@ -25,8 +25,9 @@ class TaskProApp {
             tasks: [],
             
             // 视图状态
-            currentView: 'list',
+            currentView: 'card',
             availableViews: [
+                { key: 'card', name: '卡片', icon: 'fas fa-th-large', description: '以卡片形式查看任务' },
                 { key: 'list', name: '列表', icon: 'fas fa-list', description: '以列表形式查看任务' }
             ],
             

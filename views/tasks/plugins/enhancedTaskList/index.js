@@ -34,7 +34,8 @@ const createEnhancedTaskList = () => {
                         </div>
                     </div>
                 </div>
-                <div v-else class="task-list-content">
+                <!-- 卡片视图 -->
+                <div v-else-if="viewMode === 'card'" class="task-card-content">
                     <div v-for="task in tasks" :key="task.key || task.id" 
                          class="task-item-enhanced"
                          @click="handleTaskClick(task)"
@@ -140,6 +141,92 @@ const createEnhancedTaskList = () => {
 
                     </div>
                 </div>
+                <!-- 列表视图 -->
+                <div v-else-if="viewMode === 'list'" class="task-list-content">
+                    <div class="task-list-header">
+                        <div class="list-header-item">任务</div>
+                        <div class="list-header-item">状态</div>
+                        <div class="list-header-item">优先级</div>
+                        <div class="list-header-item">进度</div>
+                        <div class="list-header-item">截止日期</div>
+                        <div class="list-header-item">操作</div>
+                    </div>
+                    <div v-for="task in tasks" :key="task.key || task.id" 
+                         class="task-list-item"
+                         @click="handleTaskClick(task)"
+                         @touchstart="startLongPress(task, $event)"
+                         @touchend="endLongPress"
+                         @touchcancel="endLongPress"
+                         @mousedown="startLongPress(task, $event)"
+                         @mouseup="endLongPress"
+                         @mouseleave="endLongPress">
+                        
+                        <!-- 任务信息 -->
+                        <div class="list-task-info">
+                            <div class="task-title">{{ task.title }}</div>
+                            <div class="task-description" v-if="task.description">{{ task.description }}</div>
+                            
+                            <!-- 输入输出信息（列表视图简化版） -->
+                            <div class="list-io-info" v-if="task.input || task.output">
+                                <div class="list-input" v-if="task.input">
+                                    <i class="fas fa-arrow-down"></i>
+                                    <span class="io-label">输入:</span>
+                                    <span class="io-preview">{{ getIOPreview(task.input) }}</span>
+                                </div>
+                                <div class="list-output" v-if="task.output">
+                                    <i class="fas fa-arrow-up"></i>
+                                    <span class="io-label">输出:</span>
+                                    <span class="io-preview">{{ getIOPreview(task.output) }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="task-feature-name" v-if="task.featureName">
+                                <i class="fas fa-tag"></i>
+                                <span>{{ task.featureName }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 状态 -->
+                        <div class="list-status">
+                            <span :class="['status-badge', getStatusClass(task.status)]">
+                                {{ getStatusText(task.status) }}
+                            </span>
+                        </div>
+                        
+                        <!-- 优先级 -->
+                        <div class="list-priority">
+                            <span :class="['priority-badge', getPriorityClass(task.priority)]">
+                                {{ getPriorityText(task.priority) }}
+                            </span>
+                        </div>
+                        
+                        <!-- 进度 -->
+                        <div class="list-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" :style="{ width: getTaskProgress(task) + '%' }"></div>
+                            </div>
+                            <span class="progress-text">{{ getTaskProgress(task) }}%</span>
+                        </div>
+                        
+                        <!-- 截止日期 -->
+                        <div class="list-due-date">
+                            <span v-if="task.dueDate" :class="['due-date', getDueDateClass(task.dueDate)]">
+                                {{ formatDueDate(task.dueDate) }}
+                            </span>
+                            <span v-else class="no-due-date">无</span>
+                        </div>
+                        
+                        <!-- 操作 -->
+                        <div class="list-actions">
+                            <button 
+                                class="edit-btn" 
+                                @click.stop="handleEditTask(task)"
+                                title="编辑任务">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         `,
         props: {
@@ -158,6 +245,11 @@ const createEnhancedTaskList = () => {
             selectedTasks: {
                 type: Array,
                 default: () => []
+            },
+            viewMode: {
+                type: String,
+                default: 'card',
+                validator: (value) => ['card', 'list'].includes(value)
             }
         },
         emits: ['task-click', 'task-select', 'task-update', 'task-delete', 'task-edit', 'selection-change', 'retry', 'create-task'],
@@ -1203,6 +1295,154 @@ const createEnhancedTaskList = () => {
                 } catch (error) {
                     console.error('[步骤进度] 计算步骤进度失败:', error);
                     return '0%';
+                }
+            },
+            
+            // 列表视图相关方法
+            getStatusText(status) {
+                const statusMap = {
+                    'backlog': '待办',
+                    'todo': '计划中',
+                    'in_progress': '进行中',
+                    'in_review': '待审核',
+                    'testing': '测试中',
+                    'completed': '已完成',
+                    'cancelled': '已取消',
+                    'on_hold': '暂停'
+                };
+                return statusMap[status] || '未知';
+            },
+            
+            getStatusClass(status) {
+                const classMap = {
+                    'backlog': 'status-backlog',
+                    'todo': 'status-todo',
+                    'in_progress': 'status-in-progress',
+                    'in_review': 'status-in-review',
+                    'testing': 'status-testing',
+                    'completed': 'status-completed',
+                    'cancelled': 'status-cancelled',
+                    'on_hold': 'status-on-hold'
+                };
+                return classMap[status] || 'status-unknown';
+            },
+            
+            getPriorityText(priority) {
+                const priorityMap = {
+                    'none': '无',
+                    'low': '低',
+                    'medium': '中',
+                    'high': '高',
+                    'critical': '紧急'
+                };
+                return priorityMap[priority] || '无';
+            },
+            
+            getPriorityClass(priority) {
+                const classMap = {
+                    'none': 'priority-none',
+                    'low': 'priority-low',
+                    'medium': 'priority-medium',
+                    'high': 'priority-high',
+                    'critical': 'priority-critical'
+                };
+                return classMap[priority] || 'priority-none';
+            },
+            
+            getTaskProgress(task) {
+                if (task.progress !== undefined) {
+                    return task.progress;
+                }
+                
+                if (task.steps && Object.keys(task.steps).length > 0) {
+                    const totalSteps = Object.keys(task.steps).length;
+                    let completedSteps = 0;
+                    
+                    Object.values(task.steps).forEach(step => {
+                        if (step && typeof step === 'object' && step.completed) {
+                            completedSteps++;
+                        } else if (step === true) {
+                            completedSteps++;
+                        }
+                    });
+                    
+                    return Math.round((completedSteps / totalSteps) * 100);
+                }
+                
+                return 0;
+            },
+            
+            formatDueDate(dueDate) {
+                if (!dueDate) return '';
+                
+                try {
+                    const date = new Date(dueDate);
+                    const now = new Date();
+                    const diffTime = date.getTime() - now.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays < 0) {
+                        return `逾期 ${Math.abs(diffDays)} 天`;
+                    } else if (diffDays === 0) {
+                        return '今天';
+                    } else if (diffDays === 1) {
+                        return '明天';
+                    } else if (diffDays <= 7) {
+                        return `${diffDays} 天后`;
+                    } else {
+                        return date.toLocaleDateString('zh-CN');
+                    }
+                } catch (error) {
+                    return dueDate;
+                }
+            },
+            
+            getDueDateClass(dueDate) {
+                if (!dueDate) return '';
+                
+                try {
+                    const date = new Date(dueDate);
+                    const now = new Date();
+                    const diffTime = date.getTime() - now.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays < 0) {
+                        return 'due-overdue';
+                    } else if (diffDays <= 1) {
+                        return 'due-urgent';
+                    } else if (diffDays <= 3) {
+                        return 'due-warning';
+                    } else {
+                        return 'due-normal';
+                    }
+                } catch (error) {
+                    return 'due-normal';
+                }
+            },
+            
+            // 获取输入输出预览文本
+            getIOPreview(ioData) {
+                if (!ioData) return '';
+                
+                try {
+                    if (Array.isArray(ioData)) {
+                        // 数组格式：显示前2项
+                        const preview = ioData.slice(0, 2).join(', ');
+                        return ioData.length > 2 ? preview + '...' : preview;
+                    } else if (typeof ioData === 'object' && ioData !== null) {
+                        // 对象格式：显示前2个值
+                        const values = Object.values(ioData).slice(0, 2);
+                        const preview = values.join(', ');
+                        return Object.keys(ioData).length > 2 ? preview + '...' : preview;
+                    } else if (typeof ioData === 'string') {
+                        // 字符串格式：显示前50个字符
+                        return ioData.length > 50 ? ioData.substring(0, 50) + '...' : ioData;
+                    }
+                    
+                    return String(ioData);
+                } catch (error) {
+                    console.warn('[IO预览] 处理IO数据失败:', error);
+                    return String(ioData);
                 }
             }
         }
