@@ -189,10 +189,10 @@
 /* 基础变量定义 */
 :root {
     /* 量子美学色彩系统 - 与首页保持一致 */
-    --primary: #4f46e5;                /* 主色：量子靛蓝 */
-    --primary-hover: #3730a3;          /* 悬停：深量子蓝 */
-    --primary-light: #6366f1;          /* 浅量子蓝 */
-    --primary-dark: #3730a3;           /* 深量子蓝 */
+    --primary: #6366f1;                /* 主色：现代靛蓝 */
+    --primary-hover: #4f46e5;          /* 悬停：深靛蓝 */
+    --primary-light: #818cf8;          /* 浅靛蓝 */
+    --primary-dark: #4f46e5;           /* 深靛蓝 */
     
     --secondary: #7c3aed;              /* 量子紫 */
     --secondary-hover: #6d28d9;        /* 深量子紫 */
@@ -201,9 +201,9 @@
     --accent: #06b6d4;                 /* 量子青 */
     --accent-hover: #0891b2;           /* 深量子青 */
     
-    --success: #10b981;                /* 量子绿 */
-    --success-hover: #059669;          /* 深量子绿 */
-    --success-light: #22c55e;          /* 浅量子绿 */
+    --success: #22c55e;                /* 现代绿 */
+    --success-hover: #16a34a;          /* 深现代绿 */
+    --success-light: #4ade80;          /* 浅现代绿 */
     
     --warning: #f59e0b;                /* 量子橙 */
     --warning-hover: #d97706;          /* 深量子橙 */

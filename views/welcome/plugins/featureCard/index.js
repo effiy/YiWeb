@@ -6,20 +6,20 @@
 
 // 主题色配置
 const THEME_CONFIG = {
-    // 主题色系 - 丰富的色彩搭配
+    // 主题色系 - 现代色彩搭配
     colors: [
-        { primary: '#9333ea', secondary: '#06b6d4', name: '量子紫青' },
-        { primary: '#22c55e', secondary: '#10b981', name: '量子绿蓝' },
-        { primary: '#a855f7', secondary: '#ec4899', name: '量子紫粉' },
-        { primary: '#f59e0b', secondary: '#ef4444', name: '量子橙红' },
-        { primary: '#8b5cf6', secondary: '#06d6a0', name: '量子紫绿' },
-        { primary: '#f97316', secondary: '#e11d48', name: '量子橙粉' },
-        { primary: '#06b6d4', secondary: '#3b82f6', name: '量子青蓝' },
-        { primary: '#10b981', secondary: '#059669', name: '量子绿深' },
-        { primary: '#ec4899', secondary: '#be185d', name: '量子粉深' },
-        { primary: '#ef4444', secondary: '#dc2626', name: '量子红深' },
-        { primary: '#06d6a0', secondary: '#059669', name: '量子青绿' },
-        { primary: '#e11d48', secondary: '#be185d', name: '量子粉红' }
+        { primary: '#6366f1', secondary: '#06b6d4', name: '现代靛青' },
+        { primary: '#22c55e', secondary: '#10b981', name: '现代绿蓝' },
+        { primary: '#8b5cf6', secondary: '#ec4899', name: '现代紫粉' },
+        { primary: '#f59e0b', secondary: '#ef4444', name: '现代橙红' },
+        { primary: '#a855f7', secondary: '#06d6a0', name: '现代紫绿' },
+        { primary: '#f97316', secondary: '#e11d48', name: '现代橙粉' },
+        { primary: '#06b6d4', secondary: '#3b82f6', name: '现代青蓝' },
+        { primary: '#10b981', secondary: '#059669', name: '现代绿深' },
+        { primary: '#ec4899', secondary: '#be185d', name: '现代粉深' },
+        { primary: '#ef4444', secondary: '#dc2626', name: '现代红深' },
+        { primary: '#06d6a0', secondary: '#059669', name: '现代青绿' },
+        { primary: '#e11d48', secondary: '#be185d', name: '现代粉红' }
     ],
     
     // 透明度配置
