@@ -70,10 +70,20 @@ const calculateSafePosition = () => {
     const adjustedTop = safeTop + scrollTop;
     const adjustedRight = safeRight + scrollLeft;
     
+    // 根据屏幕尺寸动态调整最大宽度
+    let maxWidth;
+    if (viewportInfo.width <= 480) {
+        maxWidth = viewportInfo.width - 20; // 小屏幕：几乎全宽
+    } else if (viewportInfo.width <= 768) {
+        maxWidth = viewportInfo.width - 40; // 中等屏幕：留出边距
+    } else {
+        maxWidth = Math.min(600, viewportInfo.width - 40); // 大屏幕：最大600px
+    }
+    
     return {
         top: adjustedTop,
         right: adjustedRight,
-        maxWidth: Math.min(400, viewportInfo.width - 40) // 确保不超出屏幕宽度
+        maxWidth: maxWidth
     };
 };
 
@@ -165,7 +175,7 @@ const createMessageElement = (message, type) => {
         border-radius: 6px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         font-size: 14px;
-        line-height: 1.4;
+        line-height: 1.5;
         pointer-events: auto;
         cursor: pointer;
         transition: all 0.3s ease;
@@ -173,7 +183,11 @@ const createMessageElement = (message, type) => {
         opacity: 0;
         word-wrap: break-word;
         overflow-wrap: break-word;
+        word-break: break-word;
+        white-space: pre-wrap;
         max-width: 100%;
+        min-width: 200px;
+        width: fit-content;
     `;
 
     // 添加图标
@@ -247,15 +261,18 @@ const createComplexMessageElement = (config) => {
         border-radius: 8px;
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         font-size: 14px;
-        line-height: 1.4;
+        line-height: 1.5;
         pointer-events: auto;
         transition: all 0.3s ease;
         transform: translateX(100%);
         opacity: 0;
         word-wrap: break-word;
         overflow-wrap: break-word;
+        word-break: break-word;
+        white-space: pre-wrap;
         max-width: 100%;
-        min-width: 300px;
+        min-width: 250px;
+        width: fit-content;
     `;
 
     // 创建头部

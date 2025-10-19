@@ -181,7 +181,7 @@ function calculateSVGBounds(svg) {
             
             if (parts.length === 4) {
                 // 为了安全，稍微扩展一下边界
-                const padding = 10;
+                const padding = 20;
                 return {
                     x: parts[0] - padding,
                     y: parts[1] - padding,
@@ -207,14 +207,34 @@ function calculateSVGBounds(svg) {
             try {
                 // 跳过某些不需要计算的元素
                 const tagName = element.tagName.toLowerCase();
-                if (tagName === 'style' || tagName === 'defs' || tagName === 'marker' || tagName === 'clippath') {
+                if (tagName === 'style' || tagName === 'defs' || tagName === 'marker' || tagName === 'clippath' || tagName === 'pattern') {
                     return;
                 }
                 
                 let bbox = null;
                 
+                // 对于文本元素，使用特殊处理
+                if (tagName === 'text' || tagName === 'tspan') {
+                    try {
+                        // 文本元素需要特殊处理，因为getBBox可能不准确
+                        const textBBox = element.getBBox();
+                        if (textBBox && textBBox.width > 0 && textBBox.height > 0) {
+                            // 为文本添加额外的边距
+                            bbox = {
+                                x: textBBox.x - 5,
+                                y: textBBox.y - 5,
+                                width: textBBox.width + 10,
+                                height: textBBox.height + 10
+                            };
+                            validElementCount++;
+                        }
+                    } catch (e) {
+                        // 如果getBBox失败，尝试其他方法
+                    }
+                }
+                
                 // 尝试获取 getBBox（对于 SVG 图形元素最准确）
-                if (typeof element.getBBox === 'function') {
+                if (!bbox && typeof element.getBBox === 'function') {
                     try {
                         bbox = element.getBBox();
                         if (bbox && bbox.width > 0 && bbox.height > 0) {
@@ -316,7 +336,7 @@ function calculateSVGBounds(svg) {
         }
         
         // 添加 padding，确保内容不会被裁剪
-        const padding = 50; // 增加到 50px
+        const padding = 80; // 增加到 80px，确保有足够的边距
         minX -= padding;
         minY -= padding;
         maxX += padding;
@@ -357,7 +377,9 @@ function calculateSVGBounds(svg) {
 }
 
 // 下载 Mermaid PNG
-window.downloadMermaidPNG = function(diagramId, svgElement) {
+window.downloadMermaidPNG = function(diagramId, svgElement, retryCount = 0) {
+    const maxRetries = 2;
+    
     try {
         // 获取 SVG 元素（优先使用传入的元素）
         const svg = svgElement || document.querySelector(`#${diagramId} svg`);
@@ -368,7 +390,10 @@ window.downloadMermaidPNG = function(diagramId, svgElement) {
         }
 
         // 显示下载进度提示
-        showMermaidMessage('正在生成 PNG 图片...', 'info');
+        const progressMessage = retryCount > 0 ? 
+            `正在重新生成 PNG 图片... (第${retryCount + 1}次尝试)` : 
+            '正在生成 PNG 图片...';
+        showMermaidMessage(progressMessage, 'info');
         
         console.log('[Mermaid] 开始处理 SVG，元素:', svg);
 
@@ -397,6 +422,49 @@ window.downloadMermaidPNG = function(diagramId, svgElement) {
             svgClone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         }
         
+        // 添加字体和样式确保机制
+        const styleElement = document.createElement('style');
+        styleElement.textContent = `
+            * {
+                font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Arial", sans-serif !important;
+                font-size: 14px !important;
+                font-weight: normal !important;
+                font-style: normal !important;
+                text-decoration: none !important;
+                text-anchor: middle !important;
+                dominant-baseline: central !important;
+            }
+            text, tspan {
+                font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Arial", sans-serif !important;
+                font-size: 14px !important;
+                font-weight: normal !important;
+                fill: #333333 !important;
+                stroke: none !important;
+            }
+            .node rect, .node circle, .node ellipse, .node polygon {
+                fill: #ffffff !important;
+                stroke: #333333 !important;
+                stroke-width: 1px !important;
+            }
+            .edgePath path {
+                stroke: #333333 !important;
+                stroke-width: 1px !important;
+                fill: none !important;
+            }
+            .edgeLabel {
+                background-color: #ffffff !important;
+                color: #333333 !important;
+            }
+        `;
+        
+        // 将样式添加到SVG的defs中
+        let defs = svgClone.querySelector('defs');
+        if (!defs) {
+            defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            svgClone.insertBefore(defs, svgClone.firstChild);
+        }
+        defs.appendChild(styleElement);
+        
         // 序列化 SVG
         const svgString = new XMLSerializer().serializeToString(svgClone);
         console.log('[Mermaid] SVG 字符串长度:', svgString.length);
@@ -406,9 +474,16 @@ window.downloadMermaidPNG = function(diagramId, svgElement) {
         const ctx = canvas.getContext('2d');
         
         // 设置 canvas 尺寸（支持高分辨率）
-        const scale = 2; // 2倍分辨率
+        const scale = 3; // 提高到3倍分辨率，获得更清晰的图片
         canvas.width = bounds.width * scale;
         canvas.height = bounds.height * scale;
+        
+        // 设置高质量绘制选项
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.textRenderingOptimization = 'optimizeQuality';
+        ctx.textBaseline = 'top';
+        ctx.textAlign = 'left';
         
         console.log('[Mermaid] Canvas 尺寸:', canvas.width, 'x', canvas.height);
         
@@ -428,13 +503,15 @@ window.downloadMermaidPNG = function(diagramId, svgElement) {
         img.onload = function() {
             try {
                 console.log('[Mermaid] SVG 图片加载成功，开始绘制到 Canvas');
+                showMermaidMessage('正在绘制图表到画布...', 'info');
                 
                 // 将 SVG 绘制到 canvas 上
                 ctx.drawImage(img, 0, 0, bounds.width, bounds.height);
                 
                 console.log('[Mermaid] Canvas 绘制完成，开始转换为 PNG');
+                showMermaidMessage('正在生成高质量 PNG 图片...', 'info');
                 
-                // 将 canvas 转换为 PNG blob
+                // 将 canvas 转换为 PNG blob（使用最高质量）
                 canvas.toBlob(function(blob) {
                     if (!blob) {
                         console.error('[Mermaid] PNG 生成失败');
@@ -443,6 +520,7 @@ window.downloadMermaidPNG = function(diagramId, svgElement) {
                     }
                     
                     console.log('[Mermaid] PNG Blob 生成成功，大小:', blob.size, 'bytes');
+                    showMermaidMessage('正在准备下载...', 'info');
                     
                     // 创建下载链接
                     const url = URL.createObjectURL(blob);
@@ -455,8 +533,8 @@ window.downloadMermaidPNG = function(diagramId, svgElement) {
                     
                     URL.revokeObjectURL(url);
                     console.log(`[Mermaid] PNG 已下载: ${diagramId}.png`);
-                    showMermaidMessage('PNG 图片下载成功', 'success');
-                }, 'image/png', 0.95);
+                    showMermaidMessage(`PNG 图片下载成功！文件大小: ${(blob.size / 1024).toFixed(1)}KB`, 'success');
+                }, 'image/png', 1.0); // 使用最高质量 1.0
                 
             } catch (error) {
                 console.error('[Mermaid] PNG 绘制失败:', error);
@@ -467,7 +545,15 @@ window.downloadMermaidPNG = function(diagramId, svgElement) {
         img.onerror = function(e) {
             console.error('[Mermaid] SVG 图片加载失败', e);
             console.error('[Mermaid] SVG Data URL 前100个字符:', svgDataUrl.substring(0, 100));
-            showMermaidMessage('SVG 图片加载失败，请重试', 'error');
+            
+            if (retryCount < maxRetries) {
+                console.log(`[Mermaid] 准备重试，当前重试次数: ${retryCount + 1}/${maxRetries}`);
+                setTimeout(() => {
+                    window.downloadMermaidPNG(diagramId, svgElement, retryCount + 1);
+                }, 1000 * (retryCount + 1)); // 递增延迟
+            } else {
+                showMermaidMessage('SVG 图片加载失败，已达到最大重试次数', 'error');
+            }
         };
         
         // 设置图片源为 data URL
@@ -475,7 +561,15 @@ window.downloadMermaidPNG = function(diagramId, svgElement) {
         
     } catch (error) {
         console.error('[Mermaid] PNG 下载失败:', error);
-        showMermaidMessage('PNG 下载失败: ' + error.message, 'error');
+        
+        if (retryCount < maxRetries) {
+            console.log(`[Mermaid] 准备重试，当前重试次数: ${retryCount + 1}/${maxRetries}`);
+            setTimeout(() => {
+                window.downloadMermaidPNG(diagramId, svgElement, retryCount + 1);
+            }, 1000 * (retryCount + 1)); // 递增延迟
+        } else {
+            showMermaidMessage('PNG 下载失败: ' + error.message + ' (已达到最大重试次数)', 'error');
+        }
     }
 };
 
