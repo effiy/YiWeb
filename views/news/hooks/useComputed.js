@@ -77,6 +77,7 @@ export const useComputed = (store) => {
         searchQuery, 
         selectedCategories, 
         selectedTags, 
+        activeCategory,
         currentDate, 
         calendarMonth, 
         today
@@ -104,6 +105,7 @@ export const useComputed = (store) => {
         categories: computed(() => {
             return [
                 { key: 'all', icon: 'fas fa-layer-group', title: '全部' },
+                { key: 'dailyChecklist', icon: 'fas fa-tasks', title: '每日清单' },
                 { key: 'projectFiles', icon: 'fas fa-file-code', title: '项目文件' },
                 { key: 'comments', icon: 'fas fa-comments', title: '评论' },
                 { key: 'news', icon: 'fas fa-newspaper', title: '新闻' }
@@ -123,6 +125,7 @@ export const useComputed = (store) => {
         availableViews: computed(() => {
             return [
                 { key: 'all', icon: 'fas fa-layer-group', title: '全部' },
+                { key: 'dailyChecklist', icon: 'fas fa-tasks', title: '每日清单' },
                 { key: 'projectFiles', icon: 'fas fa-file-code', title: '项目文件' },
                 { key: 'comments', icon: 'fas fa-comments', title: '评论' },
                 { key: 'news', icon: 'fas fa-newspaper', title: '新闻' }
@@ -361,6 +364,7 @@ export const useComputed = (store) => {
 
     };
 };
+
 
 
 

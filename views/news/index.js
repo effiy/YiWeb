@@ -16,6 +16,7 @@ import { createBaseView } from '/utils/baseView.js';
             useMethods,
             components: [
                 'SearchHeader',
+                'DailyChecklist',
                 'NewsList',
                 'Calendar',
                 'CommentsList',
@@ -33,4 +34,5 @@ import { createBaseView } from '/utils/baseView.js';
         console.error('[新闻页面] 应用初始化失败:', error);
     }
 })();
+
 

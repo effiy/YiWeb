@@ -178,7 +178,7 @@
     }
     
     .current-date-display {
-        min-width: 120px;
+        min-width: 148px;
         padding: 4px 10px;
         font-size: 0.8rem;
     }
@@ -197,7 +197,7 @@
     }
     
     .current-date-display {
-        min-width: 100px;
+        min-width: 148px;
         padding: 3px 8px;
         font-size: 0.75rem;
     }
@@ -301,4 +301,5 @@
         text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(79, 70, 229, 0.7);
     }
 } 
+
 

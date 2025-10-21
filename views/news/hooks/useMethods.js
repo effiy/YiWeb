@@ -100,8 +100,8 @@ export const useMethods = (store) => {
                 throw createError('分类参数无效', ErrorTypes.VALIDATION, '分类切换');
             }
 
-            // 顶部分类：全部/新闻/评论/项目文件
-            if (['all', 'news', 'comments', 'projectFiles'].includes(category)) {
+            // 顶部分类：全部/每日清单/新闻/评论/项目文件
+            if (['all', 'dailyChecklist', 'news', 'comments', 'projectFiles'].includes(category)) {
                 setActiveCategory(category);
 
                 // 点击后请求对应接口
@@ -110,6 +110,9 @@ export const useMethods = (store) => {
                     loadNewsData();
                     loadProjectFilesData();
                     window.dispatchEvent(new CustomEvent('ReloadComments'));
+                } else if (category === 'dailyChecklist') {
+                    // 加载每日清单数据
+                    window.dispatchEvent(new CustomEvent('LoadDailyChecklist'));
                 } else if (category === 'news') {
                     loadNewsData();
                 } else if (category === 'comments') {
@@ -120,6 +123,7 @@ export const useMethods = (store) => {
 
                 const categoryNames = {
                     'all': '全部',
+                    'dailyChecklist': '每日清单',
                     'news': '新闻',
                     'comments': '评论',
                     'projectFiles': '项目文件'
@@ -262,6 +266,14 @@ export const useMethods = (store) => {
             // 更新URL参数
             updateUrlParams(newDate);
             
+            // 触发日期变化事件，通知每日清单组件
+            window.dispatchEvent(new CustomEvent('dateChanged', { 
+                detail: { 
+                    date: newDate,
+                    dateString: `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`
+                } 
+            }));
+            
             // 加载新日期的新闻数据和项目文件数据
             await loadNewsData(newDate);
             await loadProjectFilesData(newDate);
@@ -286,6 +298,14 @@ export const useMethods = (store) => {
             setCurrentDate(newDate);
             updateUrlParams(newDate);
             
+            // 触发日期变化事件，通知每日清单组件
+            window.dispatchEvent(new CustomEvent('dateChanged', { 
+                detail: { 
+                    date: newDate,
+                    dateString: `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`
+                } 
+            }));
+            
             // 加载新日期的新闻数据和项目文件数据
             await loadNewsData(newDate);
             await loadProjectFilesData(newDate);
@@ -298,6 +318,14 @@ export const useMethods = (store) => {
         return safeExecute(async () => {
             setCurrentDate(today.value);
             updateUrlParams(today.value);
+            
+            // 触发日期变化事件，通知每日清单组件
+            window.dispatchEvent(new CustomEvent('dateChanged', { 
+                detail: { 
+                    date: today.value,
+                    dateString: `${today.value.getFullYear()}-${String(today.value.getMonth() + 1).padStart(2, '0')}-${String(today.value.getDate()).padStart(2, '0')}`
+                } 
+            }));
             
             // 加载今天的新闻数据和项目文件数据
             await loadNewsData(today.value);
@@ -335,6 +363,14 @@ export const useMethods = (store) => {
             
             setCurrentDate(date);
             updateUrlParams(date);
+            
+            // 触发日期变化事件，通知每日清单组件
+            window.dispatchEvent(new CustomEvent('dateChanged', { 
+                detail: { 
+                    date: date,
+                    dateString: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                } 
+            }));
             
             // 加载选中日期的新闻数据和项目文件数据
             await loadNewsData(date);
@@ -442,5 +478,6 @@ export const useMethods = (store) => {
         shouldShowCategory
     };
 }; 
+
 
 

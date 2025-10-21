@@ -46,7 +46,7 @@ export const createStore = () => {
     const selectedCategories = vueRef(new Set());
     // 当前选中的标签
     const selectedTags = vueRef(new Set());
-    // 顶部分类（全部/新闻/评论/项目文件）
+    // 顶部分类（全部/每日清单/新闻/评论/项目文件）
     const activeCategory = vueRef('all');
     // 当前日期
     const currentDate = vueRef(new Date());
@@ -321,10 +321,10 @@ export const createStore = () => {
 
     /**
      * 设置顶部分类
-     * @param {('all'|'news'|'comments'|'projectFiles')} key
+     * @param {('all'|'dailyChecklist'|'news'|'comments'|'projectFiles')} key
      */
     const setActiveCategory = (key) => {
-        const allowed = new Set(['all', 'news', 'comments', 'projectFiles']);
+        const allowed = new Set(['all', 'dailyChecklist', 'news', 'comments', 'projectFiles']);
         if (allowed.has(key)) {
             activeCategory.value = key;
         }
@@ -379,6 +379,7 @@ export const createStore = () => {
         toggleFavorite
     };
 };
+
 
 
 

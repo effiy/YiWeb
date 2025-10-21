@@ -49,6 +49,14 @@
                 <div class="content-wrapper">
                     <!-- 主要内容区域 -->
                     <div class="main-column">
+                        <!-- 每日清单 -->
+                        <daily-checklist 
+                            v-show="activeCategory === 'all' || activeCategory === 'dailyChecklist'"
+                            :active-category="activeCategory"
+                            :current-date-display="currentDateDisplay"
+                            :current-date-subtitle="currentDateSubtitle"
+                        ></daily-checklist>
+                        
                         <!-- 项目文件列表 -->
                         <project-files-list 
                             v-show="activeCategory === 'all' || activeCategory === 'projectFiles'"
@@ -132,6 +140,7 @@
     <!-- 主功能脚本 -->
     <script type="module" src="/plugins/searchHeader/index.js"></script>
     <script type="module" src="/plugins/calendar/index.js"></script>
+    <script type="module" src="/views/news/plugins/dailyChecklist/simple.js"></script>
     <script type="module" src="/views/news/plugins/newsList/index.js"></script>
     <script type="module" src="/views/news/plugins/commentsList/index.js"></script>
     <script type="module" src="/views/news/plugins/projectFilesList/index.js"></script>
@@ -140,6 +149,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 
 
