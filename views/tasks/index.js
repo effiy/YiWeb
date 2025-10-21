@@ -100,7 +100,17 @@ class TaskProApp {
             // 任务编辑器状态
             showTaskEditor: false,
             editingTask: null,
-            isCreatingTask: false
+            isCreatingTask: false,
+            
+            // 时间段追踪状态
+            showTimeSlotTracker: false,
+            showTimeSlotSelector: false,
+            currentTimeSlot: null,
+            isTracking: false,
+            completedTasks: new Set(),
+            trackingMetrics: {},
+            timeSlotStats: null,
+            trackingHistory: []
         });
         
         // 计算属性（现在直接在Vue应用中定义）
@@ -518,6 +528,9 @@ class TaskProApp {
                     // 智能数据验证和重新加载
                     this.validateAndReloadData();
                     
+                    // 初始化时间段追踪器
+                    this.initializeTimeSlotTracker();
+                    
                     // 验证编辑相关状态
                     console.log('[TaskPro] 编辑状态验证:', {
                         showTaskEditor: this.showTaskEditor,
@@ -753,6 +766,225 @@ class TaskProApp {
                             this.showTaskEditor = true;
                         } catch (error) {
                             console.error('[TaskPro] 创建任务失败:', error);
+                        }
+                    },
+                    
+                    // ==================== 时间段追踪方法 ====================
+                    
+                    // 显示时间段追踪器
+                    showTimeSlotTracker() {
+                        this.showTimeSlotTracker = true;
+                        this.loadTimeSlotData();
+                    },
+                    
+                    // 隐藏时间段追踪器
+                    hideTimeSlotTracker() {
+                        this.showTimeSlotTracker = false;
+                    },
+                    
+                    // 显示时间段选择器
+                    showTimeSlotSelector() {
+                        this.showTimeSlotSelector = true;
+                    },
+                    
+                    // 隐藏时间段选择器
+                    hideTimeSlotSelector() {
+                        this.showTimeSlotSelector = false;
+                    },
+                    
+                    // 选择时间段
+                    selectTimeSlot(timeRange) {
+                        if (window.timeSlotTracker) {
+                            const config = window.timeSlotTracker.getTimeSlotConfig(timeRange);
+                            if (config) {
+                                this.currentTimeSlot = { timeRange, config };
+                                this.showTimeSlotSelector = false;
+                                this.showTimeSlotTracker = true;
+                                this.loadTimeSlotData();
+                            }
+                        }
+                    },
+                    
+                    // 开始追踪
+                    startTracking() {
+                        if (window.timeSlotTracker && this.currentTimeSlot) {
+                            window.timeSlotTracker.startTracking(this.currentTimeSlot);
+                            this.isTracking = true;
+                            this.trackingStartTime = new Date();
+                        }
+                    },
+                    
+                    // 停止追踪
+                    stopTracking() {
+                        if (window.timeSlotTracker) {
+                            window.timeSlotTracker.stopTracking();
+                            this.isTracking = false;
+                            this.trackingStartTime = null;
+                            this.loadTimeSlotData();
+                        }
+                    },
+                    
+                    // 切换任务完成状态
+                    toggleTask(index) {
+                        if (this.completedTasks.has(index)) {
+                            this.completedTasks.delete(index);
+                        } else {
+                            this.completedTasks.add(index);
+                        }
+                    },
+                    
+                    // 更新评分
+                    updateRating(metricKey, value) {
+                        this.trackingMetrics[metricKey] = value;
+                        this.updateMetric(metricKey, value);
+                    },
+                    
+                    // 更新指标
+                    updateMetric(metricKey, value) {
+                        if (window.timeSlotTracker && this.currentTimeSlot) {
+                            window.timeSlotTracker.updateMetric(
+                                this.currentTimeSlot.timeRange, 
+                                metricKey, 
+                                value
+                            );
+                        }
+                    },
+                    
+                    // 保存追踪数据
+                    saveTrackingData() {
+                        if (window.timeSlotTracker) {
+                            window.timeSlotTracker.saveTrackingData();
+                            this.loadTimeSlotData();
+                            if (window.showMessage) {
+                                window.showMessage('追踪数据已保存', 'success');
+                            }
+                        }
+                    },
+                    
+                    // 加载时间段数据
+                    loadTimeSlotData() {
+                        if (window.timeSlotTracker) {
+                            // 获取当前时间段
+                            const currentSlot = window.timeSlotTracker.getCurrentTimeSlot();
+                            if (currentSlot) {
+                                this.currentTimeSlot = currentSlot;
+                            }
+                            
+                            // 获取追踪数据
+                            const trackingData = window.timeSlotTracker.getTrackingData();
+                            if (this.currentTimeSlot && trackingData[this.currentTimeSlot.timeRange]) {
+                                const slotData = trackingData[this.currentTimeSlot.timeRange];
+                                this.trackingMetrics = slotData.metrics || {};
+                            }
+                            
+                            // 获取统计数据
+                            if (this.currentTimeSlot) {
+                                this.timeSlotStats = window.timeSlotTracker.getTimeSlotStats(
+                                    this.currentTimeSlot.timeRange
+                                );
+                            }
+                            
+                            // 获取历史记录
+                            this.loadTrackingHistory();
+                        }
+                    },
+                    
+                    // 加载追踪历史
+                    loadTrackingHistory() {
+                        if (window.timeSlotTracker && this.currentTimeSlot) {
+                            const trackingData = window.timeSlotTracker.getTrackingData();
+                            const history = [];
+                            
+                            // 获取最近7天的历史记录
+                            for (let i = 6; i >= 0; i--) {
+                                const date = new Date();
+                                date.setDate(date.getDate() - i);
+                                const dateStr = date.toISOString().split('T')[0];
+                                const dayData = trackingData[dateStr];
+                                
+                                if (dayData && dayData[this.currentTimeSlot.timeRange]) {
+                                    history.push({
+                                        date: dateStr,
+                                        duration: dayData[this.currentTimeSlot.timeRange].duration || 0
+                                    });
+                                }
+                            }
+                            
+                            this.trackingHistory = history;
+                        }
+                    },
+                    
+                    // 格式化日期
+                    formatDate(dateStr) {
+                        const date = new Date(dateStr);
+                        return date.toLocaleDateString('zh-CN', {
+                            month: 'short',
+                            day: 'numeric'
+                        });
+                    },
+                    
+                    // 获取所有时间段配置
+                    getAllTimeSlotConfigs() {
+                        if (window.timeSlotTracker) {
+                            return window.timeSlotTracker.getAllTimeSlotConfigs();
+                        }
+                        return {};
+                    },
+                    
+                    // 检查是否在追踪时间段内
+                    isInTrackingTimeSlot() {
+                        if (window.timeSlotTracker) {
+                            return window.timeSlotTracker.isInTrackingTimeSlot();
+                        }
+                        return false;
+                    },
+                    
+                    // 初始化时间段追踪器
+                    initializeTimeSlotTracker() {
+                        try {
+                            if (window.timeSlotTracker) {
+                                console.log('[TaskPro] 时间段追踪器已加载');
+                                
+                                // 检查当前是否在追踪时间段内
+                                const currentSlot = window.timeSlotTracker.getCurrentTimeSlot();
+                                if (currentSlot) {
+                                    this.currentTimeSlot = currentSlot;
+                                    console.log('[TaskPro] 当前时间段:', currentSlot.config.name);
+                                    
+                                    // 自动加载数据
+                                    this.loadTimeSlotData();
+                                }
+                                
+                                // 设置自动检查
+                                setInterval(() => {
+                                    this.checkTimeSlotStatus();
+                                }, 60000); // 每分钟检查一次
+                                
+                            } else {
+                                console.warn('[TaskPro] 时间段追踪器未加载');
+                            }
+                        } catch (error) {
+                            console.error('[TaskPro] 初始化时间段追踪器失败:', error);
+                        }
+                    },
+                    
+                    // 检查时间段状态
+                    checkTimeSlotStatus() {
+                        if (window.timeSlotTracker) {
+                            const currentSlot = window.timeSlotTracker.getCurrentTimeSlot();
+                            if (currentSlot && !this.currentTimeSlot) {
+                                // 新的时间段开始
+                                this.currentTimeSlot = currentSlot;
+                                this.loadTimeSlotData();
+                                console.log('[TaskPro] 检测到新时间段:', currentSlot.config.name);
+                            } else if (!currentSlot && this.currentTimeSlot) {
+                                // 时间段结束
+                                if (this.isTracking) {
+                                    this.stopTracking();
+                                }
+                                this.currentTimeSlot = null;
+                                console.log('[TaskPro] 时间段已结束');
+                            }
                         }
                     },
                     
@@ -2461,6 +2693,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
+
 
 
 

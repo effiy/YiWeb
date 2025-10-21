@@ -320,22 +320,30 @@ const createDailyChecklist = async () => {
                     },
                     {
                         time: '13:00-14:30',
-                        name: '项目任务',
-                        mainActivity: '处理项目、邮件',
+                        name: '深度项目工作',
+                        mainActivity: '专注项目开发、技术任务',
                         completed: false,
                         isCurrent: this.isCurrentTimeSlot('13:00', '14:30'),
                         checklist: [
-                            { text: '处理遗留任务', completed: false },
-                            { text: '集中处理邮件', completed: false },
-                            { text: '推进项目任务', completed: false },
-                            { text: '准备会议材料', completed: false }
+                            { text: '关闭所有通知和干扰源', completed: false },
+                            { text: '进入深度工作状态', completed: false },
+                            { text: '专注完成核心项目任务', completed: false },
+                            { text: '编写/调试代码', completed: false },
+                            { text: '技术文档整理', completed: false },
+                            { text: '代码审查和优化', completed: false },
+                            { text: '记录技术难点和解决方案', completed: false },
+                            { text: '每30分钟检查进度', completed: false }
                         ],
                         dataFields: [
-                            { label: '任务数', value: '', placeholder: '____个' },
                             { label: '专注时长', value: '', placeholder: '____h' },
-                            { label: '时间利用率', value: '', placeholder: '____%' }
+                            { label: '代码行数', value: '', placeholder: '____行' },
+                            { label: '完成任务', value: '', placeholder: '____个' },
+                            { label: '技术突破', value: '', placeholder: '____个' },
+                            { label: '代码质量', value: '', placeholder: '⭐⭐⭐⭐⭐' },
+                            { label: '专注度', value: '', placeholder: '____/10' },
+                            { label: '被打断次数', value: '', placeholder: '____次' }
                         ],
-                        phoneReminder: '💻 下午工作开始！'
+                        phoneReminder: '💻 深度项目工作！专注编程'
                     },
                     {
                         time: '14:30-14:45',
@@ -360,22 +368,32 @@ const createDailyChecklist = async () => {
                     },
                     {
                         time: '14:45-17:00',
-                        name: '沟通协作',
-                        mainActivity: '会议、沟通、协调',
+                        name: '协作与学习',
+                        mainActivity: '团队协作、知识分享、技能提升',
                         completed: false,
                         isCurrent: this.isCurrentTimeSlot('14:45', '17:00'),
                         checklist: [
-                            { text: '参加会议', completed: false },
-                            { text: '团队协作', completed: false },
-                            { text: '回复邮件消息', completed: false },
-                            { text: '处理临时任务', completed: false }
+                            { text: '参加团队会议和讨论', completed: false },
+                            { text: '代码审查和同行评审', completed: false },
+                            { text: '技术分享和知识传递', completed: false },
+                            { text: '学习新技术或框架', completed: false },
+                            { text: '阅读技术文章/文档', completed: false },
+                            { text: '回复重要邮件和消息', completed: false },
+                            { text: '处理紧急任务和问题', completed: false },
+                            { text: '记录学习心得和收获', completed: false },
+                            { text: '规划明日技术任务', completed: false }
                         ],
                         dataFields: [
                             { label: '会议时长', value: '', placeholder: '____h' },
-                            { label: '邮件数', value: '', placeholder: '____封' },
-                            { label: '沟通效率', value: '', placeholder: '⭐⭐⭐⭐⭐' }
+                            { label: '代码审查', value: '', placeholder: '____个' },
+                            { label: '学习内容', value: '', placeholder: '____' },
+                            { label: '知识分享', value: '', placeholder: '____次' },
+                            { label: '邮件处理', value: '', placeholder: '____封' },
+                            { label: '学习时长', value: '', placeholder: '____h' },
+                            { label: '技能提升', value: '', placeholder: '⭐⭐⭐⭐⭐' },
+                            { label: '协作效率', value: '', placeholder: '____/10' }
                         ],
-                        phoneReminder: '👥 协作沟通时间'
+                        phoneReminder: '👥📚 协作学习时间！团队成长'
                     },
                     {
                         time: '17:00-17:30',
@@ -843,4 +861,5 @@ const createDailyChecklist = async () => {
         };
     }
 })();
+
 

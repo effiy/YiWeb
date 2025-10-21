@@ -14,6 +14,7 @@
 
     <link rel="stylesheet" href="/views/tasks/plugins/enhancedTaskList/index.css">
     <link rel="stylesheet" href="/views/tasks/plugins/enhancedTaskList/list-view-bem.css">
+    <link rel="stylesheet" href="/views/tasks/plugins/timeSlotTracker/index.css">
 
     <!-- 引入字体图标 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -100,6 +101,19 @@
                                 </button>
                             </div>
 
+                            <!-- 时间段追踪按钮 -->
+                            <div class="time-slot-tracker-item">
+                                <button 
+                                    @click="showTimeSlotSelector"
+                                    class="time-slot-tracker-btn"
+                                    type="button"
+                                    title="时间段追踪"
+                                    aria-label="时间段追踪">
+                                    <i class="fas fa-clock" aria-hidden="true"></i>
+                                    <span>时间段追踪</span>
+                                </button>
+                            </div>
+
                             <!-- 创建任务按钮 - 与首页保持一致 -->
                             <div class="create-card-item">
                                 <button 
@@ -146,6 +160,169 @@
                     @save="handleTaskSave"
                     @refresh-data="loadTasksData"
                 ></task-editor>
+
+                <!-- 时间段追踪器 -->
+                <div id="time-slot-tracker" class="time-slot-tracker" v-if="showTimeSlotTracker">
+                    <!-- 时间段头部 -->
+                    <div class="time-slot-header">
+                        <div class="time-slot-title">
+                            <span class="time-slot-icon">{{ currentTimeSlot?.config?.icon || '⏰' }}</span>
+                            <span>{{ currentTimeSlot?.config?.name || '时间段追踪' }}</span>
+                        </div>
+                        <div class="time-slot-status">
+                            <div class="status-indicator" :class="{ tracking: isTracking }"></div>
+                            <span>{{ isTracking ? '追踪中' : '待开始' }}</span>
+                        </div>
+                    </div>
+
+                    <!-- 时间段描述 -->
+                    <div class="time-slot-description" v-if="currentTimeSlot?.config?.description">
+                        <p style="color: rgba(255, 255, 255, 0.9); margin-bottom: 15px;">
+                            {{ currentTimeSlot.config.description }}
+                        </p>
+                    </div>
+
+                    <!-- 任务清单 -->
+                    <div class="time-slot-tasks" v-if="currentTimeSlot?.config?.tasks">
+                        <h4>📋 任务清单</h4>
+                        <div class="task-checklist">
+                            <div 
+                                v-for="(task, index) in currentTimeSlot.config.tasks" 
+                                :key="index"
+                                class="task-item"
+                                @click="toggleTask(index)"
+                            >
+                                <div class="task-checkbox" :class="{ checked: completedTasks.has(index) }"></div>
+                                <span>{{ task }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 数据追踪指标 -->
+                    <div class="time-slot-metrics" v-if="currentTimeSlot?.config?.trackingMetrics">
+                        <h4 class="metrics-title">📊 数据追踪</h4>
+                        <div class="metrics-grid">
+                            <div 
+                                v-for="(metric, key) in currentTimeSlot.config.trackingMetrics" 
+                                :key="key"
+                                class="metric-item"
+                            >
+                                <label class="metric-label">{{ metric.label }}</label>
+                                <div v-if="metric.type === 'rating'" class="rating-input">
+                                    <span 
+                                        v-for="i in metric.max" 
+                                        :key="i"
+                                        class="rating-star"
+                                        :class="{ active: trackingMetrics[key] >= i }"
+                                        @click="updateRating(key, i)"
+                                    >
+                                        {{ metric.unit }}
+                                    </span>
+                                </div>
+                                <input 
+                                    v-else
+                                    v-model="trackingMetrics[key]"
+                                    :type="metric.type === 'number' ? 'number' : 'text'"
+                                    :placeholder="`请输入${metric.label}`"
+                                    class="metric-input"
+                                    @input="updateMetric(key, $event.target.value)"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="time-slot-actions">
+                        <button 
+                            v-if="!isTracking" 
+                            @click="startTracking" 
+                            class="action-btn start-btn"
+                        >
+                            ▶️ 开始追踪
+                        </button>
+                        <button 
+                            v-if="isTracking" 
+                            @click="stopTracking" 
+                            class="action-btn stop-btn"
+                        >
+                            ⏹️ 停止追踪
+                        </button>
+                        <button 
+                            @click="saveTrackingData" 
+                            class="action-btn save-btn"
+                        >
+                            💾 保存数据
+                        </button>
+                        <button 
+                            @click="hideTimeSlotTracker" 
+                            class="action-btn"
+                            style="background: #6c757d; color: white;"
+                        >
+                            ❌ 关闭
+                        </button>
+                    </div>
+
+                    <!-- 统计信息 -->
+                    <div class="time-slot-stats" v-if="timeSlotStats">
+                        <h4 class="stats-title">📈 统计信息</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value">{{ timeSlotStats.totalDays }}</div>
+                                <div class="stat-label">追踪天数</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">{{ timeSlotStats.averageDuration.toFixed(1) }}</div>
+                                <div class="stat-label">平均时长(h)</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">{{ (timeSlotStats.completionRate * 100).toFixed(0) }}%</div>
+                                <div class="stat-label">完成率</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">{{ timeSlotStats.totalDuration.toFixed(1) }}</div>
+                                <div class="stat-label">总时长(h)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 历史记录 -->
+                    <div class="time-slot-history" v-if="trackingHistory.length > 0">
+                        <h4 class="history-title">📅 历史记录</h4>
+                        <div class="history-list">
+                            <div 
+                                v-for="(record, index) in trackingHistory" 
+                                :key="index"
+                                class="history-item"
+                            >
+                                <span class="history-date">{{ formatDate(record.date) }}</span>
+                                <span class="history-duration">{{ record.duration.toFixed(1) }}h</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 时间段选择器 -->
+                <div id="time-slot-selector" class="time-slot-selector" v-if="showTimeSlotSelector">
+                    <div class="selector-header">
+                        <h3>选择要追踪的时间段</h3>
+                        <button @click="hideTimeSlotSelector" class="close-btn">×</button>
+                    </div>
+                    <div class="time-slot-options">
+                        <div 
+                            v-for="(config, timeRange) in getAllTimeSlotConfigs()" 
+                            :key="timeRange"
+                            class="time-slot-option"
+                            @click="selectTimeSlot(timeRange)"
+                        >
+                            <div class="option-icon">{{ config.icon }}</div>
+                            <div class="option-content">
+                                <div class="option-title">{{ config.name }}</div>
+                                <div class="option-time">{{ timeRange }}</div>
+                                <div class="option-description">{{ config.description }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
         </main>
     </div>
 
@@ -185,6 +362,7 @@
     
     <!-- 引入新组件（优先兼容现有组件） -->
     <script type="module" src="/views/tasks/plugins/enhancedTaskList/index.js"></script>
+    <script type="module" src="/views/tasks/plugins/timeSlotTracker/index.js"></script>
 
     <script type="module" src="/views/tasks/plugins/taskEditor/index.js"></script>
 
@@ -275,6 +453,7 @@
     </script>
 </body>
 </html> 
+
 
 
 

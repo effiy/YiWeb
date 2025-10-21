@@ -113,28 +113,42 @@ const OptimizedDailyChecklist = {
                     phoneReminder: '🚗 准备出门/开始工作'
                 },
                 {
-                    time: '09:00-11:30',
-                    name: '深度工作时间',
-                    mainActivity: '专注完成MIT任务',
+                    time: '09:00-11:00',
+                    name: '深度工作 #1',
+                    mainActivity: '专注完成MIT #1',
                     completed: false,
                     isCurrent: false,
                     checklist: [
                         { text: '关闭手机通知', completed: false },
                         { text: '进入专注模式', completed: false },
                         { text: '专注完成MIT #1', completed: false },
+                        { text: '记录干扰次数', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '专注时长', value: '', placeholder: '____h' },
+                        { label: '被打断', value: '', placeholder: '____次' },
+                        { label: '完成度', value: '', placeholder: '____%' }
+                    ],
+                    phoneReminder: '💼 开始深度工作！关闭通知'
+                },
+                {
+                    time: '11:00-11:30',
+                    name: '深度工作 #2',
+                    mainActivity: '继续专注工作',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '再次进入专注模式', completed: false },
                         { text: '完成MIT #2', completed: false },
                         { text: '保持高度专注', completed: false },
-                        { text: '记录干扰次数', completed: false },
                         { text: '记录工作进展', completed: false }
                     ],
                     dataFields: [
                         { label: '专注时长', value: '', placeholder: '____h' },
                         { label: '被打断', value: '', placeholder: '____次' },
-                        { label: 'MIT1完成度', value: '', placeholder: '____%' },
-                        { label: 'MIT2完成度', value: '', placeholder: '____%' },
-                        { label: '整体效率', value: '', placeholder: '____%' }
+                        { label: '完成度', value: '', placeholder: '____%' }
                     ],
-                    phoneReminder: '💼 深度工作时间！专注完成MIT任务'
+                    phoneReminder: '💼 继续深度工作！'
                 },
                 {
                     time: '11:30-13:00',
@@ -166,22 +180,30 @@ const OptimizedDailyChecklist = {
                 },
                 {
                     time: '13:00-14:30',
-                    name: '项目任务',
-                    mainActivity: '处理项目、邮件',
+                    name: '深度项目工作',
+                    mainActivity: '专注项目开发、技术任务',
                     completed: false,
                     isCurrent: false,
                     checklist: [
-                        { text: '处理遗留任务', completed: false },
-                        { text: '集中处理邮件', completed: false },
-                        { text: '推进项目任务', completed: false },
-                        { text: '准备会议材料', completed: false }
+                        { text: '关闭所有通知和干扰源', completed: false },
+                        { text: '进入深度工作状态', completed: false },
+                        { text: '专注完成核心项目任务', completed: false },
+                        { text: '编写/调试代码', completed: false },
+                        { text: '技术文档整理', completed: false },
+                        { text: '代码审查和优化', completed: false },
+                        { text: '记录技术难点和解决方案', completed: false },
+                        { text: '每30分钟检查进度', completed: false }
                     ],
                     dataFields: [
-                        { label: '任务数', value: '', placeholder: '____个' },
                         { label: '专注时长', value: '', placeholder: '____h' },
-                        { label: '时间利用率', value: '', placeholder: '____%' }
+                        { label: '代码行数', value: '', placeholder: '____行' },
+                        { label: '完成任务', value: '', placeholder: '____个' },
+                        { label: '技术突破', value: '', placeholder: '____个' },
+                        { label: '代码质量', value: '', placeholder: '⭐⭐⭐⭐⭐' },
+                        { label: '专注度', value: '', placeholder: '____/10' },
+                        { label: '被打断次数', value: '', placeholder: '____次' }
                     ],
-                    phoneReminder: '💻 下午工作开始！'
+                    phoneReminder: '💻 深度项目工作！专注编程'
                 },
                 {
                     time: '14:30-14:45',
@@ -206,22 +228,32 @@ const OptimizedDailyChecklist = {
                 },
                 {
                     time: '14:45-17:00',
-                    name: '沟通协作',
-                    mainActivity: '会议、沟通、协调',
+                    name: '协作与学习',
+                    mainActivity: '团队协作、知识分享、技能提升',
                     completed: false,
                     isCurrent: false,
                     checklist: [
-                        { text: '参加会议', completed: false },
-                        { text: '团队协作', completed: false },
-                        { text: '回复邮件消息', completed: false },
-                        { text: '处理临时任务', completed: false }
+                        { text: '参加团队会议和讨论', completed: false },
+                        { text: '代码审查和同行评审', completed: false },
+                        { text: '技术分享和知识传递', completed: false },
+                        { text: '学习新技术或框架', completed: false },
+                        { text: '阅读技术文章/文档', completed: false },
+                        { text: '回复重要邮件和消息', completed: false },
+                        { text: '处理紧急任务和问题', completed: false },
+                        { text: '记录学习心得和收获', completed: false },
+                        { text: '规划明日技术任务', completed: false }
                     ],
                     dataFields: [
                         { label: '会议时长', value: '', placeholder: '____h' },
-                        { label: '邮件数', value: '', placeholder: '____封' },
-                        { label: '沟通效率', value: '', placeholder: '⭐⭐⭐⭐⭐' }
+                        { label: '代码审查', value: '', placeholder: '____个' },
+                        { label: '学习内容', value: '', placeholder: '____' },
+                        { label: '知识分享', value: '', placeholder: '____次' },
+                        { label: '邮件处理', value: '', placeholder: '____封' },
+                        { label: '学习时长', value: '', placeholder: '____h' },
+                        { label: '技能提升', value: '', placeholder: '⭐⭐⭐⭐⭐' },
+                        { label: '协作效率', value: '', placeholder: '____/10' }
                     ],
-                    phoneReminder: '👥 协作沟通时间'
+                    phoneReminder: '👥📚 协作学习时间！团队成长'
                 },
                 {
                     time: '17:00-17:30',
@@ -812,10 +844,41 @@ const OptimizedDailyChecklist = {
             }
         },
         
+        // 判断是否为周末
+        isWeekend(dateStr) {
+            const date = dateStr ? new Date(dateStr) : new Date();
+            const dayOfWeek = date.getDay();
+            return dayOfWeek === 0 || dayOfWeek === 6; // 0=周日, 6=周六
+        },
+        
+        // 获取星期几
+        getDayOfWeek(dateStr) {
+            const date = dateStr ? new Date(dateStr) : new Date();
+            return date.getDay(); // 0=周日, 1=周一, ..., 6=周六
+        },
+        
         // 使用默认数据
         useDefaultData() {
-            // 根据每日提醒时间设置表格.md重置为默认数据
-            this.timeSlots = [
+            // 根据日期判断是工作日还是周末
+            const dateStr = this.tempDateString || this.currentDateSubtitle;
+            const dayOfWeek = this.getDayOfWeek(dateStr);
+            
+            // 周六使用周六时间表，周日使用周日时间表
+            if (dayOfWeek === 6) {
+                console.log('[DailyChecklist] 使用周六时间表');
+                this.timeSlots = this.getSaturdayTimeSlots();
+            } else if (dayOfWeek === 0) {
+                console.log('[DailyChecklist] 使用周日时间表');
+                this.timeSlots = this.getSundayTimeSlots();
+            } else {
+                console.log('[DailyChecklist] 使用工作日时间表');
+                this.timeSlots = this.getWeekdayTimeSlots();
+            }
+        },
+        
+        // 工作日时间表
+        getWeekdayTimeSlots() {
+            return [
                 {
                     time: '06:00-06:30',
                     name: '起床健康检查',
@@ -939,22 +1002,30 @@ const OptimizedDailyChecklist = {
                 },
                 {
                     time: '13:00-14:30',
-                    name: '项目任务',
-                    mainActivity: '处理项目、邮件',
+                    name: '深度项目工作',
+                    mainActivity: '专注项目开发、技术任务',
                     completed: false,
                     isCurrent: false,
                     checklist: [
-                        { text: '处理遗留任务', completed: false },
-                        { text: '集中处理邮件', completed: false },
-                        { text: '推进项目任务', completed: false },
-                        { text: '准备会议材料', completed: false }
+                        { text: '关闭所有通知和干扰源', completed: false },
+                        { text: '进入深度工作状态', completed: false },
+                        { text: '专注完成核心项目任务', completed: false },
+                        { text: '编写/调试代码', completed: false },
+                        { text: '技术文档整理', completed: false },
+                        { text: '代码审查和优化', completed: false },
+                        { text: '记录技术难点和解决方案', completed: false },
+                        { text: '每30分钟检查进度', completed: false }
                     ],
                     dataFields: [
-                        { label: '任务数', value: '', placeholder: '____个' },
                         { label: '专注时长', value: '', placeholder: '____h' },
-                        { label: '时间利用率', value: '', placeholder: '____%' }
+                        { label: '代码行数', value: '', placeholder: '____行' },
+                        { label: '完成任务', value: '', placeholder: '____个' },
+                        { label: '技术突破', value: '', placeholder: '____个' },
+                        { label: '代码质量', value: '', placeholder: '⭐⭐⭐⭐⭐' },
+                        { label: '专注度', value: '', placeholder: '____/10' },
+                        { label: '被打断次数', value: '', placeholder: '____次' }
                     ],
-                    phoneReminder: '💻 下午工作开始！'
+                    phoneReminder: '💻 深度项目工作！专注编程'
                 },
                 {
                     time: '14:30-14:45',
@@ -979,22 +1050,32 @@ const OptimizedDailyChecklist = {
                 },
                 {
                     time: '14:45-17:00',
-                    name: '沟通协作',
-                    mainActivity: '会议、沟通、协调',
+                    name: '协作与学习',
+                    mainActivity: '团队协作、知识分享、技能提升',
                     completed: false,
                     isCurrent: false,
                     checklist: [
-                        { text: '参加会议', completed: false },
-                        { text: '团队协作', completed: false },
-                        { text: '回复邮件消息', completed: false },
-                        { text: '处理临时任务', completed: false }
+                        { text: '参加团队会议和讨论', completed: false },
+                        { text: '代码审查和同行评审', completed: false },
+                        { text: '技术分享和知识传递', completed: false },
+                        { text: '学习新技术或框架', completed: false },
+                        { text: '阅读技术文章/文档', completed: false },
+                        { text: '回复重要邮件和消息', completed: false },
+                        { text: '处理紧急任务和问题', completed: false },
+                        { text: '记录学习心得和收获', completed: false },
+                        { text: '规划明日技术任务', completed: false }
                     ],
                     dataFields: [
                         { label: '会议时长', value: '', placeholder: '____h' },
-                        { label: '邮件数', value: '', placeholder: '____封' },
-                        { label: '沟通效率', value: '', placeholder: '⭐⭐⭐⭐⭐' }
+                        { label: '代码审查', value: '', placeholder: '____个' },
+                        { label: '学习内容', value: '', placeholder: '____' },
+                        { label: '知识分享', value: '', placeholder: '____次' },
+                        { label: '邮件处理', value: '', placeholder: '____封' },
+                        { label: '学习时长', value: '', placeholder: '____h' },
+                        { label: '技能提升', value: '', placeholder: '⭐⭐⭐⭐⭐' },
+                        { label: '协作效率', value: '', placeholder: '____/10' }
                     ],
-                    phoneReminder: '👥 协作沟通时间'
+                    phoneReminder: '👥📚 协作学习时间！团队成长'
                 },
                 {
                     time: '17:00-17:30',
@@ -1164,7 +1245,527 @@ const OptimizedDailyChecklist = {
                     phoneReminder: '😴 就寝时间！晚安'
                 }
             ];
-            console.log('[DailyChecklist] 已重置为默认数据');
+        },
+        
+        // 周六时间表
+        getSaturdayTimeSlots() {
+            return [
+                {
+                    time: '07:00-08:00',
+                    name: '周末起床',
+                    mainActivity: '自然醒、放松起床',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '自然醒，不设闹钟', completed: false },
+                        { text: '测量体重体脂', completed: false },
+                        { text: '测量血压心率', completed: false },
+                        { text: '记录睡眠质量', completed: false },
+                        { text: '简单伸展10分钟', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '起床时间', value: '', placeholder: '____' },
+                        { label: '睡眠时长', value: '', placeholder: '____h' },
+                        { label: '睡眠质量', value: '', placeholder: '⭐⭐⭐⭐⭐' },
+                        { label: '体重', value: '', placeholder: '____kg' },
+                        { label: '血压', value: '', placeholder: '____/____' }
+                    ],
+                    phoneReminder: '🌅 周末好！享受悠闲早晨'
+                },
+                {
+                    time: '08:00-09:00',
+                    name: '周末早餐',
+                    mainActivity: '丰盛早餐、家人时光',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '准备丰盛早餐', completed: false },
+                        { text: '与家人共进早餐', completed: false },
+                        { text: '享受慢节奏', completed: false },
+                        { text: '规划今日活动', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '早餐类型', value: '', placeholder: '____' },
+                        { label: '早餐热量', value: '', placeholder: '____千卡' },
+                        { label: '饮水', value: '', placeholder: '____ml' }
+                    ],
+                    phoneReminder: '☕ 享受周末早餐时光'
+                },
+                {
+                    time: '09:00-11:00',
+                    name: '学习/亲子活动',
+                    mainActivity: '个人学习、陪伴孩子',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '个人学习/阅读', completed: false },
+                        { text: '陪孩子阅读/游戏', completed: false },
+                        { text: '或亲子手工活动', completed: false },
+                        { text: '或户外活动准备', completed: false },
+                        { text: '记录学习和亲子互动', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '学习主题', value: '', placeholder: '____' },
+                        { label: '学习时长', value: '', placeholder: '____h' },
+                        { label: '亲子活动', value: '', placeholder: '____' },
+                        { label: '孩子满意度', value: '', placeholder: '⭐⭐⭐⭐⭐' }
+                    ],
+                    phoneReminder: '📚👶 学习时间 + 亲子时光'
+                },
+                {
+                    time: '11:00-12:00',
+                    name: '准备午餐',
+                    mainActivity: '准备午餐、轻松活动',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '确定午餐计划', completed: false },
+                        { text: '准备食材或外出准备', completed: false },
+                        { text: '孩子自由活动', completed: false },
+                        { text: '补充水分', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '午餐计划', value: '', placeholder: '____' },
+                        { label: '预计时长', value: '', placeholder: '____分钟' }
+                    ],
+                    phoneReminder: '🍳 准备午餐！'
+                },
+                {
+                    time: '12:00-13:00',
+                    name: '午餐时间',
+                    mainActivity: '营养午餐',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '营养均衡午餐', completed: false },
+                        { text: '蔬菜水果充足', completed: false },
+                        { text: '适量蛋白质', completed: false },
+                        { text: '细嚼慢咽', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '午餐热量', value: '', placeholder: '____千卡' },
+                        { label: '蛋白质', value: '', placeholder: '____g' },
+                        { label: '支出', value: '', placeholder: '¥____' }
+                    ],
+                    phoneReminder: '🍽️ 午餐时间！'
+                },
+                {
+                    time: '13:00-17:00',
+                    name: '户外亲子/家庭活动',
+                    mainActivity: '户外活动、亲子互动',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '户外亲子活动（公园/游乐场）', completed: false },
+                        { text: '或家庭外出', completed: false },
+                        { text: '或室内亲子游戏', completed: false },
+                        { text: '拍照记录美好时刻', completed: false },
+                        { text: '保持身心放松', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '活动类型', value: '', placeholder: '____' },
+                        { label: '活动时长', value: '', placeholder: '____h' },
+                        { label: '孩子表现', value: '', placeholder: '____' },
+                        { label: '步数', value: '', placeholder: '____步' },
+                        { label: '心情指数', value: '', placeholder: '____/10' }
+                    ],
+                    phoneReminder: '🏃👶 户外亲子时光！'
+                },
+                {
+                    time: '17:00-18:00',
+                    name: '准备晚餐',
+                    mainActivity: '返程、晚餐准备',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '返程回家（如外出）', completed: false },
+                        { text: '准备晚餐食材', completed: false },
+                        { text: '孩子自由活动', completed: false },
+                        { text: '补充水分', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '晚餐计划', value: '', placeholder: '____' },
+                        { label: '准备时长', value: '', placeholder: '____分钟' }
+                    ],
+                    phoneReminder: '🍳 准备晚餐！'
+                },
+                {
+                    time: '18:00-19:00',
+                    name: '晚餐时间',
+                    mainActivity: '家庭晚餐',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '准备/享用晚餐', completed: false },
+                        { text: '与家人交流', completed: false },
+                        { text: '分享今日见闻', completed: false },
+                        { text: '记录支出', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '晚餐热量', value: '', placeholder: '____千卡' },
+                        { label: '支出', value: '', placeholder: '¥____' },
+                        { label: '今日总热量', value: '', placeholder: '____千卡' }
+                    ],
+                    phoneReminder: '🍽️ 家庭晚餐时间'
+                },
+                {
+                    time: '19:00-21:00',
+                    name: '晚间亲子/娱乐',
+                    mainActivity: '亲子时光、家庭娱乐',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '陪孩子阅读/游戏', completed: false },
+                        { text: '或看家庭电影', completed: false },
+                        { text: '或亲子互动游戏', completed: false },
+                        { text: '或个人阅读学习', completed: false },
+                        { text: '记录亲子互动', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '亲子活动', value: '', placeholder: '____' },
+                        { label: '活动时长', value: '', placeholder: '____h' },
+                        { label: '阅读页数', value: '', placeholder: '____页' },
+                        { label: '满意度', value: '', placeholder: '____/10' }
+                    ],
+                    phoneReminder: '👶🎬 晚间亲子娱乐时间！'
+                },
+                {
+                    time: '21:00-22:00',
+                    name: '哄睡/周总结',
+                    mainActivity: '哄孩子睡觉、周总结',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '哄孩子睡觉', completed: false },
+                        { text: '讲睡前故事', completed: false },
+                        { text: '回顾本周工作', completed: false },
+                        { text: '规划下周重点', completed: false },
+                        { text: '设定下周目标', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '孩子入睡时间', value: '', placeholder: '____' },
+                        { label: '本周完成', value: '', placeholder: '____项' },
+                        { label: '下周目标1', value: '', placeholder: '______' },
+                        { label: '下周目标2', value: '', placeholder: '______' },
+                        { label: '下周目标3', value: '', placeholder: '______' }
+                    ],
+                    phoneReminder: '😴📝 哄睡 + 周总结时间'
+                },
+                {
+                    time: '22:00-22:30',
+                    name: '睡前准备',
+                    mainActivity: '准备明日、整理休息',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '查看明天日程', completed: false },
+                        { text: '准备明日物品', completed: false },
+                        { text: '整理卧室', completed: false },
+                        { text: '设置闹钟', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '明日计划', value: '', placeholder: '____' }
+                    ],
+                    phoneReminder: '🎒 准备明天！'
+                },
+                {
+                    time: '22:30-23:00',
+                    name: '睡前仪式',
+                    mainActivity: '放松、准备睡眠',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '洗漱护肤', completed: false },
+                        { text: '调节卧室环境', completed: false },
+                        { text: '阅读纸质书20-30分钟', completed: false },
+                        { text: '冥想10分钟', completed: false },
+                        { text: '23:00准时上床', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '阅读时长', value: '', placeholder: '____分钟' },
+                        { label: '冥想时长', value: '', placeholder: '____分钟' },
+                        { label: '上床时间', value: '', placeholder: '____' }
+                    ],
+                    phoneReminder: '📖 睡前仪式！准备休息'
+                },
+                {
+                    time: '23:00-07:00',
+                    name: '优质睡眠',
+                    mainActivity: '充足睡眠',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '23:00准时熄灯', completed: false },
+                        { text: '放下电子设备', completed: false },
+                        { text: '深呼吸放松', completed: false },
+                        { text: '保证8小时睡眠', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '入睡时间', value: '', placeholder: '____' },
+                        { label: '目标睡眠', value: '', placeholder: '8h' }
+                    ],
+                    phoneReminder: '😴 就寝时间！晚安'
+                }
+            ];
+        },
+        
+        // 周日时间表（与周六保持一致的时间段，便于带娃）
+        getSundayTimeSlots() {
+            return [
+                {
+                    time: '07:00-08:00',
+                    name: '周末起床',
+                    mainActivity: '自然醒、放松起床',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '自然醒，不设闹钟', completed: false },
+                        { text: '测量体重体脂', completed: false },
+                        { text: '测量血压心率', completed: false },
+                        { text: '记录睡眠质量', completed: false },
+                        { text: '简单伸展10分钟', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '起床时间', value: '', placeholder: '____' },
+                        { label: '睡眠时长', value: '', placeholder: '____h' },
+                        { label: '睡眠质量', value: '', placeholder: '⭐⭐⭐⭐⭐' },
+                        { label: '体重', value: '', placeholder: '____kg' },
+                        { label: '血压', value: '', placeholder: '____/____' }
+                    ],
+                    phoneReminder: '🌅 周日好！享受悠闲早晨'
+                },
+                {
+                    time: '08:00-09:00',
+                    name: '周末早餐',
+                    mainActivity: '家庭早餐、亲子时光',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '准备营养早餐', completed: false },
+                        { text: '与家人共进早餐', completed: false },
+                        { text: '享受慢节奏', completed: false },
+                        { text: '规划今日活动', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '早餐类型', value: '', placeholder: '____' },
+                        { label: '早餐热量', value: '', placeholder: '____千卡' },
+                        { label: '饮水', value: '', placeholder: '____ml' }
+                    ],
+                    phoneReminder: '☕ 享受周末早餐时光'
+                },
+                {
+                    time: '09:00-11:00',
+                    name: '家务/亲子活动',
+                    mainActivity: '家务整理、陪伴孩子',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '打扫卫生', completed: false },
+                        { text: '整理衣物', completed: false },
+                        { text: '陪孩子阅读/游戏', completed: false },
+                        { text: '或亲子手工活动', completed: false },
+                        { text: '记录亲子互动', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '家务项目', value: '', placeholder: '____' },
+                        { label: '亲子活动', value: '', placeholder: '____' },
+                        { label: '互动时长', value: '', placeholder: '____h' },
+                        { label: '孩子满意度', value: '', placeholder: '⭐⭐⭐⭐⭐' }
+                    ],
+                    phoneReminder: '🏠👶 家务整理 + 亲子时光'
+                },
+                {
+                    time: '11:00-12:00',
+                    name: '准备午餐',
+                    mainActivity: '准备午餐、轻松活动',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '采购食材或准备食材', completed: false },
+                        { text: '准备营养午餐', completed: false },
+                        { text: '或外出就餐准备', completed: false },
+                        { text: '补充水分', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '午餐计划', value: '', placeholder: '____' },
+                        { label: '预计时长', value: '', placeholder: '____分钟' }
+                    ],
+                    phoneReminder: '🍳 准备午餐！'
+                },
+                {
+                    time: '12:00-13:00',
+                    name: '午餐时间',
+                    mainActivity: '营养午餐',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '营养均衡午餐', completed: false },
+                        { text: '蔬菜水果充足', completed: false },
+                        { text: '适量蛋白质', completed: false },
+                        { text: '细嚼慢咽', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '午餐热量', value: '', placeholder: '____千卡' },
+                        { label: '蛋白质', value: '', placeholder: '____g' },
+                        { label: '支出', value: '', placeholder: '¥____' }
+                    ],
+                    phoneReminder: '🍽️ 午餐时间！'
+                },
+                {
+                    time: '13:00-17:00',
+                    name: '家庭活动/休息',
+                    mainActivity: '亲子活动、家庭时光',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '陪孩子午休（如需要）', completed: false },
+                        { text: '或室内亲子活动', completed: false },
+                        { text: '或准备下周工作', completed: false },
+                        { text: '或整理家务', completed: false },
+                        { text: '记录家庭活动', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '活动类型', value: '', placeholder: '____' },
+                        { label: '活动时长', value: '', placeholder: '____h' },
+                        { label: '孩子状态', value: '', placeholder: '____' },
+                        { label: '下周准备', value: '', placeholder: '____' },
+                        { label: '心情指数', value: '', placeholder: '____/10' }
+                    ],
+                    phoneReminder: '👨‍👩‍👧‍👦 家庭时光！'
+                },
+                {
+                    time: '17:00-18:00',
+                    name: '准备晚餐',
+                    mainActivity: '晚餐准备、轻松活动',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '准备晚餐食材', completed: false },
+                        { text: '或准备外出就餐', completed: false },
+                        { text: '孩子自由活动', completed: false },
+                        { text: '补充水分', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '晚餐计划', value: '', placeholder: '____' },
+                        { label: '准备时长', value: '', placeholder: '____分钟' }
+                    ],
+                    phoneReminder: '🍳 准备晚餐！'
+                },
+                {
+                    time: '18:00-19:00',
+                    name: '晚餐时间',
+                    mainActivity: '家庭晚餐',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '准备/享用晚餐', completed: false },
+                        { text: '与家人交流', completed: false },
+                        { text: '分享今日见闻', completed: false },
+                        { text: '记录支出', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '晚餐热量', value: '', placeholder: '____千卡' },
+                        { label: '支出', value: '', placeholder: '¥____' },
+                        { label: '今日总热量', value: '', placeholder: '____千卡' }
+                    ],
+                    phoneReminder: '🍽️ 家庭晚餐时间'
+                },
+                {
+                    time: '19:00-21:00',
+                    name: '晚间亲子/准备',
+                    mainActivity: '亲子时光、下周准备',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '陪孩子阅读/游戏', completed: false },
+                        { text: '或看家庭电影', completed: false },
+                        { text: '准备下周工作物品', completed: false },
+                        { text: '整理工作文件', completed: false },
+                        { text: '准备衣物', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '亲子活动', value: '', placeholder: '____' },
+                        { label: '活动时长', value: '', placeholder: '____h' },
+                        { label: '下周重点1', value: '', placeholder: '______' },
+                        { label: '下周重点2', value: '', placeholder: '______' }
+                    ],
+                    phoneReminder: '👶📋 亲子时光 + 下周准备'
+                },
+                {
+                    time: '21:00-22:00',
+                    name: '哄睡/放松',
+                    mainActivity: '哄孩子睡觉、个人放松',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '哄孩子睡觉', completed: false },
+                        { text: '讲睡前故事', completed: false },
+                        { text: '孩子入睡后放松', completed: false },
+                        { text: '或看轻松节目', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '孩子入睡时间', value: '', placeholder: '____' },
+                        { label: '个人放松', value: '', placeholder: '____' },
+                        { label: '心情指数', value: '', placeholder: '____/10' }
+                    ],
+                    phoneReminder: '😴 哄睡时间！'
+                },
+                {
+                    time: '22:00-22:30',
+                    name: '睡前准备',
+                    mainActivity: '整理、准备睡眠',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '确认明日闹钟', completed: false },
+                        { text: '检查明日物品', completed: false },
+                        { text: '整理卧室', completed: false },
+                        { text: '做好心理准备', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '闹钟时间', value: '', placeholder: '____' }
+                    ],
+                    phoneReminder: '🎒 准备明天！'
+                },
+                {
+                    time: '22:30-23:00',
+                    name: '睡前仪式',
+                    mainActivity: '放松、准备睡眠',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '洗漱护肤', completed: false },
+                        { text: '调节卧室环境', completed: false },
+                        { text: '阅读纸质书15-20分钟', completed: false },
+                        { text: '冥想5-10分钟', completed: false },
+                        { text: '23:00准时上床', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '阅读时长', value: '', placeholder: '____分钟' },
+                        { label: '冥想时长', value: '', placeholder: '____分钟' },
+                        { label: '上床时间', value: '', placeholder: '____' }
+                    ],
+                    phoneReminder: '📖 睡前仪式！准备休息'
+                },
+                {
+                    time: '23:00-06:00',
+                    name: '优质睡眠',
+                    mainActivity: '充分休息，迎接新周',
+                    completed: false,
+                    isCurrent: false,
+                    checklist: [
+                        { text: '23:00准时熄灯', completed: false },
+                        { text: '放下电子设备', completed: false },
+                        { text: '深呼吸放松', completed: false },
+                        { text: '保证7小时睡眠', completed: false }
+                    ],
+                    dataFields: [
+                        { label: '入睡时间', value: '', placeholder: '____' },
+                        { label: '目标睡眠', value: '', placeholder: '7h' }
+                    ],
+                    phoneReminder: '😴 就寝时间！为新周蓄力'
+                }
+            ];
         },
         
         // 显示成功消息
@@ -1431,4 +2032,5 @@ console.log('[OptimizedDailyChecklist] 优化版每日清单组件已注册');
 
 // 触发自定义事件
 window.dispatchEvent(new CustomEvent('DailyChecklistLoaded', { detail: OptimizedDailyChecklist }));
+
 
