@@ -343,6 +343,39 @@ export async function openEditCardModal(card, store) {
       gap: 16px;
     `;
 
+    // 添加数组格式兼容性处理函数
+    const processArrayFormat = (data) => {
+      if (!data || typeof data !== 'object') {
+        return data;
+      }
+      
+      const processed = { ...data };
+      
+      // 处理input字段
+      if (processed.input) {
+        if (Array.isArray(processed.input)) {
+          // 数组格式转换为字符串
+          processed.input = processed.input.join('\n');
+        } else if (typeof processed.input === 'object') {
+          // 对象格式转换为字符串
+          processed.input = Object.values(processed.input).join('\n');
+        }
+      }
+      
+      // 处理output字段
+      if (processed.output) {
+        if (Array.isArray(processed.output)) {
+          // 数组格式转换为字符串
+          processed.output = processed.output.join('\n');
+        } else if (typeof processed.output === 'object') {
+          // 对象格式转换为字符串
+          processed.output = Object.values(processed.output).join('\n');
+        }
+      }
+      
+      return processed;
+    };
+
     // 处理数组格式兼容性 - 将数组格式转换为字符串格式用于编辑
     const processedCard = processArrayFormat(card);
     const formData = { ...processedCard };
@@ -897,39 +930,6 @@ export async function openEditCardModal(card, store) {
       fieldContainer.appendChild(input);
       basicFieldsContainer.appendChild(fieldContainer);
     });
-    
-    // 添加数组格式兼容性处理函数
-    const processArrayFormat = (data) => {
-      if (!data || typeof data !== 'object') {
-        return data;
-      }
-      
-      const processed = { ...data };
-      
-      // 处理input字段
-      if (processed.input) {
-        if (Array.isArray(processed.input)) {
-          // 数组格式转换为字符串
-          processed.input = processed.input.join('\n');
-        } else if (typeof processed.input === 'object') {
-          // 对象格式转换为字符串
-          processed.input = Object.values(processed.input).join('\n');
-        }
-      }
-      
-      // 处理output字段
-      if (processed.output) {
-        if (Array.isArray(processed.output)) {
-          // 数组格式转换为字符串
-          processed.output = processed.output.join('\n');
-        } else if (typeof processed.output === 'object') {
-          // 对象格式转换为字符串
-          processed.output = Object.values(processed.output).join('\n');
-        }
-      }
-      
-      return processed;
-    };
     
     // 添加字符串转数组格式处理函数
     const processStringToArray = (data) => {
@@ -1997,6 +1997,7 @@ function stopScrollMonitoring() {
 
 // 启动全局滚动监控
 startScrollMonitoring();
+
 
 
 
