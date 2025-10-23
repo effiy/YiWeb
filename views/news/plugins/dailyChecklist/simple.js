@@ -1795,29 +1795,41 @@ const OptimizedDailyChecklist = {
         },
         
         // 导出数据
-        exportData() {
-            const data = {
-                date: this.currentDateSubtitle,
-                timeSlots: this.timeSlots,
-                stats: {
-                    totalCount: this.totalCount,
-                    completedCount: this.completedCount,
-                    completionRate: this.completionRate
-                },
-                exportedAt: new Date().toISOString()
-            };
-            
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `daily-checklist-${this.currentDateSubtitle}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            this.showSuccessMessage('数据已导出');
+        async exportData() {
+            try {
+                // 动态导入导出工具
+                const { exportCategoryData } = await import('/utils/exportUtils.js');
+                
+                // 准备每日清单数据
+                const dailyChecklistData = this.timeSlots.map(slot => ({
+                    ...slot,
+                    date: this.currentDateSubtitle,
+                    stats: {
+                        totalCount: slot.checklist.length,
+                        completedCount: slot.checklist.filter(item => item.completed).length,
+                        completionRate: slot.checklist.length > 0 ? 
+                            (slot.checklist.filter(item => item.completed).length / slot.checklist.length) * 100 : 0
+                    }
+                }));
+                
+                // 导出每日清单数据
+                const success = await exportCategoryData(
+                    dailyChecklistData, 
+                    '每日清单', 
+                    `每日清单_${this.currentDateSubtitle}`
+                );
+                
+                if (success) {
+                    this.showSuccessMessage('每日清单数据已导出');
+                    console.log('[DailyChecklist] 导出成功');
+                } else {
+                    this.showErrorMessage('导出失败，请重试');
+                    console.error('[DailyChecklist] 导出失败');
+                }
+            } catch (error) {
+                console.error('[DailyChecklist] 导出过程中出错:', error);
+                this.showErrorMessage('导出过程中出错');
+            }
         }
     },
     async mounted() {
@@ -1833,6 +1845,26 @@ const OptimizedDailyChecklist = {
         // 监听数据刷新事件
         window.addEventListener('reloadDailyChecklist', this.handleReload);
         
+        // 监听数据请求事件
+        this._dataRequestHandler = (event) => {
+            const { callback } = event.detail;
+            if (callback && typeof callback === 'function') {
+                // 准备每日清单数据
+                const dailyChecklistData = this.timeSlots.map(slot => ({
+                    ...slot,
+                    date: this.currentDateSubtitle,
+                    stats: {
+                        totalCount: slot.checklist.length,
+                        completedCount: slot.checklist.filter(item => item.completed).length,
+                        completionRate: slot.checklist.length > 0 ? 
+                            (slot.checklist.filter(item => item.completed).length / slot.checklist.length) * 100 : 0
+                    }
+                }));
+                callback(dailyChecklistData);
+            }
+        };
+        window.addEventListener('RequestDailyChecklistData', this._dataRequestHandler);
+        
         // 每分钟更新一次当前时段状态
         setInterval(() => {
             this.initializeCurrentTimeSlot();
@@ -1843,6 +1875,9 @@ const OptimizedDailyChecklist = {
         // 清理事件监听器
         window.removeEventListener('dateChanged', this.handleDateChange);
         window.removeEventListener('reloadDailyChecklist', this.handleReload);
+        if (this._dataRequestHandler) {
+            window.removeEventListener('RequestDailyChecklistData', this._dataRequestHandler);
+        }
         
         // 清理定时器
         if (this.saveTimeout) {
@@ -2032,5 +2067,6 @@ console.log('[OptimizedDailyChecklist] 优化版每日清单组件已注册');
 
 // 触发自定义事件
 window.dispatchEvent(new CustomEvent('DailyChecklistLoaded', { detail: OptimizedDailyChecklist }));
+
 
 

@@ -22,6 +22,14 @@
 
     <!-- 搜索结果显示 -->
     <div v-else-if="searchQuery && searchResults.length > 0" class="search-results">
+        <!-- 导出按钮 -->
+        <div class="export-section">
+            <button @click="exportData" class="export-btn" type="button" title="导出搜索结果">
+                <i class="fas fa-download" aria-hidden="true"></i>
+                <span>导出搜索结果</span>
+            </button>
+        </div>
+        
         <header class="search-results-header">
             <span class="search-results-count">找到 {{ searchResults.length }} 条相关新闻</span>
             <span class="search-query">"{{ searchQuery }}"</span>
@@ -203,4 +211,5 @@
         <div class="empty-subtitle">请稍后重试或联系管理员</div>
     </div>
 </section>
+
 

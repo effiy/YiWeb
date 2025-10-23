@@ -231,6 +231,43 @@ const createNewsList = async () => {
                     if (this.searchQuery) return `未找到包含"${this.searchQuery}"的新闻`;
                     return '暂无新闻数据';
                 }, '空状态消息获取');
+            },
+            
+            // 导出数据
+            async exportData() {
+                try {
+                    // 动态导入导出工具
+                    const { exportCategoryData } = await import('/utils/exportUtils.js');
+                    
+                    // 获取当前显示的新闻数据
+                    const newsData = this.getDisplayedItems().map(news => ({
+                        ...news,
+                        title: news.title || '未知标题',
+                        link: news.link || '',
+                        isoDate: news.isoDate || news.pubDate || '',
+                        contentSnippet: news.contentSnippet || news.description || '',
+                        content: news.content || '',
+                        category: news.category || '未知',
+                        tags: news.tags || []
+                    }));
+                    
+                    // 导出新闻数据
+                    const success = await exportCategoryData(
+                        newsData, 
+                        '新闻', 
+                        `新闻_${this.currentDateDisplay || new Date().toISOString().slice(0, 10)}`
+                    );
+                    
+                    if (success) {
+                        console.log('[NewsList] 导出成功');
+                        // 可以添加成功提示
+                    } else {
+                        console.error('[NewsList] 导出失败');
+                        // 可以添加失败提示
+                    }
+                } catch (error) {
+                    console.error('[NewsList] 导出过程中出错:', error);
+                }
             }
         },
         template: template
@@ -251,4 +288,5 @@ const createNewsList = async () => {
         console.error('NewsList 组件初始化失败:', error);
     }
 })();
+
 

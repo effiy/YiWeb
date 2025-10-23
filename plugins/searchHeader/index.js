@@ -60,7 +60,7 @@ const createSearchHeader = async () => {
                 default: false
             }
         },
-        emits: ['update:searchQuery', 'search-keydown', 'clear-search', 'toggle-category', 'filter-change', 'toggle-sidebar'],
+        emits: ['update:searchQuery', 'search-keydown', 'clear-search', 'toggle-category', 'filter-change', 'toggle-sidebar', 'export-all-data'],
         data() {
             return {
                 // 搜索建议相关
@@ -298,6 +298,7 @@ const createSearchHeader = async () => {
         console.error('SearchHeader 组件初始化失败:', error);
     }
 })(); 
+
 
 
 

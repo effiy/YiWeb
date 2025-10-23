@@ -111,6 +111,14 @@
 
     <!-- 项目文件显示 -->
     <div v-else-if="hasProjectFilesData">
+        <!-- 导出按钮 -->
+        <div class="export-section">
+            <button @click="exportData" class="export-btn" type="button" title="导出项目文件数据">
+                <i class="fas fa-download" aria-hidden="true"></i>
+                <span>导出项目文件</span>
+            </button>
+        </div>
+        
         <!-- 文件统计条 -->
         <div class="comment-stats" v-if="getFileStats().hasData">
             <div class="stats-item stats-item-total" title="总文件数">
@@ -199,4 +207,5 @@
         <div class="empty-subtitle">请稍后重试或联系管理员</div>
     </div>
 </section>
+
 

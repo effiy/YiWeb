@@ -18,6 +18,13 @@
 
   <!-- 评论内容 -->
   <div v-else class="comment-panel-content">
+    <!-- 导出按钮 -->
+    <div v-if="comments && comments.length > 0" class="export-section">
+      <button @click="exportData" class="export-btn" type="button" title="导出评论数据">
+        <i class="fas fa-download" aria-hidden="true"></i>
+        <span>导出评论</span>
+      </button>
+    </div>
 
     <!-- 评论列表 -->
     <div v-if="comments && comments.length > 0" class="comment-list" role="list">
@@ -81,6 +88,7 @@
     </div>
   </div>
 </aside>
+
 
 
 

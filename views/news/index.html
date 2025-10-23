@@ -41,6 +41,7 @@
             @toggle-category="handleToggleCategory"
             @toggle-sidebar="handleToggleSidebar"
             @set-current-view="handleToggleCategory"
+            @export-all-data="exportAllData"
         ></search-header>
         
         <main class="main-content" role="main">
@@ -133,6 +134,12 @@
 
     <script type="module" src="/config.js"></script>
 
+    <!-- JSZip 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    
+    <!-- 导出工具 -->
+    <script type="module" src="/utils/exportUtils.js"></script>
+    
     <!-- Mermaid 工具函数 -->
     <script type="module" src="/utils/mermaid.js"></script>
     <script type="module" src="/utils/mermaidDebug.js"></script>
@@ -149,6 +156,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 
 

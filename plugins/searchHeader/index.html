@@ -73,11 +73,11 @@
             <button 
                 @click="handleToggleSidebar"
                 class="sidebar-toggle-btn"
-                :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+                title="切换侧边栏"
                 :aria-label="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
                 :aria-expanded="!sidebarCollapsed"
             >
-                <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'"></i>
+                <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" aria-hidden="true"></i>
             </button>
             
             <div class="view-switcher-container">
@@ -95,9 +95,22 @@
                     </button>
                 </div>
             </div>
+            
+            <!-- 导出按钮 -->
+            <button 
+                v-if="activeCategory === 'all'"
+                @click="$emit('export-all-data')"
+                class="export-all-btn"
+                title="导出所有数据"
+                aria-label="导出所有数据"
+            >
+                <i class="fas fa-download" aria-hidden="true"></i>
+                <span>导出全部</span>
+            </button>
         </div>
     </div>
 </header> 
+
 
 
 

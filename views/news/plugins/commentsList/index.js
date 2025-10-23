@@ -461,6 +461,43 @@ const createCommentsList = async () => {
                 } finally {
                     this.loading = false;
                 }
+            },
+            
+            // 导出数据
+            async exportData() {
+                try {
+                    // 动态导入导出工具
+                    const { exportCategoryData } = await import('/utils/exportUtils.js');
+                    
+                    // 准备评论数据
+                    const commentsData = this.comments.map(comment => ({
+                        ...comment,
+                        author: comment.author || '匿名用户',
+                        content: comment.content || comment.text || '',
+                        timestamp: comment.timestamp || comment.createdAt,
+                        type: comment.type || '未知',
+                        status: comment.status || '未知',
+                        newsLink: comment.newsLink || '',
+                        fileId: comment.fileId || ''
+                    }));
+                    
+                    // 导出评论数据
+                    const success = await exportCategoryData(
+                        commentsData, 
+                        '评论', 
+                        `评论_${this.dateStr || new Date().toISOString().slice(0, 10)}`
+                    );
+                    
+                    if (success) {
+                        console.log('[CommentsList] 导出成功');
+                        // 可以添加成功提示
+                    } else {
+                        console.error('[CommentsList] 导出失败');
+                        // 可以添加失败提示
+                    }
+                } catch (error) {
+                    console.error('[CommentsList] 导出过程中出错:', error);
+                }
             }
         },
         async mounted() {
@@ -468,11 +505,35 @@ const createCommentsList = async () => {
             // 监听全局刷新事件
             this._reloadHandler = () => this.loadComments();
             window.addEventListener('ReloadComments', this._reloadHandler);
+            
+            // 监听数据请求事件
+            this._dataRequestHandler = (event) => {
+                const { callback } = event.detail;
+                if (callback && typeof callback === 'function') {
+                    // 准备评论数据
+                    const commentsData = this.comments.map(comment => ({
+                        ...comment,
+                        author: comment.author || '匿名用户',
+                        content: comment.content || comment.text || '',
+                        timestamp: comment.timestamp || comment.createdAt,
+                        type: comment.type || '未知',
+                        status: comment.status || '未知',
+                        newsLink: comment.newsLink || '',
+                        fileId: comment.fileId || ''
+                    }));
+                    callback(commentsData);
+                }
+            };
+            window.addEventListener('RequestCommentsData', this._dataRequestHandler);
         },
         beforeUnmount() {
             if (this._reloadHandler) {
                 window.removeEventListener('ReloadComments', this._reloadHandler);
                 this._reloadHandler = null;
+            }
+            if (this._dataRequestHandler) {
+                window.removeEventListener('RequestCommentsData', this._dataRequestHandler);
+                this._dataRequestHandler = null;
             }
         },
         template: template
@@ -489,6 +550,7 @@ const createCommentsList = async () => {
         console.error('[CommentsList] 组件初始化失败:', e);
     }
 })();
+
 
 
 

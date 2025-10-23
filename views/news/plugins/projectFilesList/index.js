@@ -463,6 +463,45 @@ const createProjectFilesList = async () => {
 
                     return html;
                 }, 'Markdown渲染(ProjectFilesList)');
+            },
+            
+            // 导出数据
+            async exportData() {
+                try {
+                    // 动态导入导出工具
+                    const { exportCategoryData } = await import('/utils/exportUtils.js');
+                    
+                    // 准备项目文件数据
+                    const projectFilesData = this.internalProjectFiles.map(file => ({
+                        ...file,
+                        fileName: file.fileName || file.fileId || '未命名文件',
+                        filePath: file.filePath || file.fileId || '未知路径',
+                        fileType: this.getFileTypeFromFile(file),
+                        fileSize: file.fileSize || '未知',
+                        lastModified: file.updatedTime || file.lastModified,
+                        createdAt: file.createdAt || file.createdTime,
+                        description: file.description || this.extractFileExcerpt(file),
+                        tags: file.tags || [],
+                        content: file.content || ''
+                    }));
+                    
+                    // 导出项目文件数据
+                    const success = await exportCategoryData(
+                        projectFilesData, 
+                        '项目文件', 
+                        `项目文件_${this.currentDateDisplay || new Date().toISOString().slice(0, 10)}`
+                    );
+                    
+                    if (success) {
+                        console.log('[ProjectFilesList] 导出成功');
+                        // 可以添加成功提示
+                    } else {
+                        console.error('[ProjectFilesList] 导出失败');
+                        // 可以添加失败提示
+                    }
+                } catch (error) {
+                    console.error('[ProjectFilesList] 导出过程中出错:', error);
+                }
             }
         },
         template: template
@@ -479,4 +518,5 @@ const createProjectFilesList = async () => {
         console.error('[ProjectFilesList] 组件初始化失败:', e);
     }
 })();
+
 

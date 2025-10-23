@@ -443,6 +443,82 @@ export const useMethods = (store) => {
         }, '分类显示判断');
     };
 
+    /**
+     * 导出所有数据
+     */
+    const exportAllData = async () => {
+        return safeExecute(async () => {
+            try {
+                // 动态导入导出工具
+                const { exportToZip } = await import('/utils/exportUtils.js');
+                
+                // 获取各个组件的数据
+                const allData = {
+                    dailyChecklist: await getDailyChecklistData(),
+                    projectFiles: projectFilesData.value || [],
+                    comments: await getCommentsData(),
+                    news: newsData.value || []
+                };
+                
+                console.log('[ExportAllData] 收集到的数据:', allData);
+                
+                // 导出所有数据
+                const success = await exportToZip(
+                    allData, 
+                    'YiWeb数据导出'
+                );
+                
+                if (success) {
+                    showSuccessMessage('所有数据已导出');
+                    console.log('[ExportAllData] 导出成功');
+                } else {
+                    console.error('[ExportAllData] 导出失败');
+                }
+            } catch (error) {
+                console.error('[ExportAllData] 导出过程中出错:', error);
+                throw createError(ErrorTypes.EXPORT_ERROR, '导出数据失败', error);
+            }
+        }, '导出所有数据');
+    };
+
+    /**
+     * 获取每日清单数据
+     */
+    const getDailyChecklistData = async () => {
+        return new Promise((resolve) => {
+            // 发送事件请求每日清单数据
+            const event = new CustomEvent('RequestDailyChecklistData', {
+                detail: { callback: resolve }
+            });
+            window.dispatchEvent(event);
+            
+            // 设置超时，如果5秒内没有响应则返回空数组
+            setTimeout(() => {
+                console.warn('[ExportAllData] 获取每日清单数据超时');
+                resolve([]);
+            }, 5000);
+        });
+    };
+
+    /**
+     * 获取评论数据
+     */
+    const getCommentsData = async () => {
+        return new Promise((resolve) => {
+            // 发送事件请求评论数据
+            const event = new CustomEvent('RequestCommentsData', {
+                detail: { callback: resolve }
+            });
+            window.dispatchEvent(event);
+            
+            // 设置超时，如果5秒内没有响应则返回空数组
+            setTimeout(() => {
+                console.warn('[ExportAllData] 获取评论数据超时');
+                resolve([]);
+            }, 5000);
+        });
+    };
+
     return {
         // 搜索相关方法
         handleSearchInput,
@@ -475,9 +551,13 @@ export const useMethods = (store) => {
         getCategoryTag,
         getTimeAgo,
         extractExcerpt,
-        shouldShowCategory
+        shouldShowCategory,
+        
+        // 导出方法
+        exportAllData
     };
 }; 
+
 
 
 
