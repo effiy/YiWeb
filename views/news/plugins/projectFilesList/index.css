@@ -79,7 +79,7 @@
     font-size: 0.85rem;
     line-height: 1.4;
     background: var(--bg-subtle);
-    padding: 8px 12px;
+    padding: 0 12px;
     border-radius: var(--radius-sm);
     border-left: 3px solid var(--border-secondary);
     margin: 8px 0;
@@ -128,7 +128,7 @@
     
     .news-excerpt {
         font-size: 0.8rem;
-        padding: 6px 10px;
+        padding: 0 10px;
     }
 }
 
@@ -375,3 +375,4 @@
     background-color: var(--other) !important;
     color: white;
 }
+
