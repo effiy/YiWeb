@@ -21,7 +21,7 @@
                     <i class="fas" :class="isMarkdownPreviewMode ? 'fa-code' : 'fa-eye'"></i>
                     <span>{{ isMarkdownPreviewMode ? '源码' : '预览' }}</span>
                 </button>
-                <button v-if="!isEditingFile" class="action-button edit-button" @click="startEditFile" :disabled="!file">
+                <button v-if="!isEditingFile" class="action-button preview-toggle-button" @click="startEditFile" :disabled="!file">
                     <i class="fas fa-pen"></i><span>编辑</span>
                 </button>
                 <template v-else>
