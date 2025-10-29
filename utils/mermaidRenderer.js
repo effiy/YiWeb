@@ -292,7 +292,9 @@ class MermaidRenderer {
             const errorHtml = this.createErrorHtml(error.message, validation.code, {
                 retryCount,
                 maxRetries,
-                canRetry: retryCount < maxRetries
+                canRetry: retryCount < maxRetries,
+                diagramId: diagramId,
+                enableAIFix: true
             });
             diagram.innerHTML = errorHtml;
             
@@ -407,10 +409,68 @@ class MermaidRenderer {
     }
 
     /**
+     * AI 自动修复 Mermaid 代码
+     */
+    async aiAutoFix(diagramId, originalCode, errorMessage) {
+        try {
+            console.log(`[MermaidRenderer] 开始 AI 自动修复图表 ${diagramId}`);
+            
+            // 加载修复 prompt
+            const fromSystem = await window.getData('/prompts/mermaid/autoFix.txt');
+            
+            // 构建用户输入
+            const fromUser = `请修复以下 Mermaid 图表代码。代码渲染失败，错误信息：${errorMessage}
+
+原始代码：
+\`\`\`
+${originalCode}
+\`\`\`
+
+请返回修复后的代码，不要包含任何解释或代码块标记。`;
+            
+            // 调用 AI API
+            const response = await window.postData(`${window.API_URL}/prompt`, {
+                fromSystem,
+                fromUser
+            });
+            
+            // 提取修复后的代码
+            let fixedCode = response;
+            
+            // 如果返回的是对象，尝试提取 data 或 content 字段
+            if (typeof response === 'object') {
+                fixedCode = response.data || response.content || response.text || JSON.stringify(response);
+            }
+            
+            // 移除可能的代码块标记
+            fixedCode = String(fixedCode)
+                .trim()
+                .replace(/^```[\w]*\n?/g, '')
+                .replace(/\n?```$/g, '')
+                .trim();
+            
+            // 检查是否是无效代码标记
+            if (fixedCode.startsWith('INVALID_CODE:')) {
+                throw new Error('AI 无法修复此代码：' + fixedCode.replace('INVALID_CODE:', '').trim());
+            }
+            
+            console.log(`[MermaidRenderer] AI 修复完成，重新渲染图表 ${diagramId}`);
+            return fixedCode;
+            
+        } catch (error) {
+            console.error(`[MermaidRenderer] AI 自动修复失败:`, error);
+            throw error;
+        }
+    }
+
+    /**
      * 创建错误 HTML
      */
     createErrorHtml(errorMessage, code, options = {}) {
-        const { retryCount = 0, maxRetries = 0, canRetry = false } = options;
+        const { retryCount = 0, maxRetries = 0, canRetry = false, diagramId = null, enableAIFix = true } = options;
+        
+        // 生成唯一 ID 用于修复按钮
+        const fixButtonId = diagramId ? `mermaid-ai-fix-${diagramId}` : `mermaid-ai-fix-${Date.now()}`;
         
         return `
             <div class="mermaid-error" style="
@@ -451,9 +511,36 @@ class MermaidRenderer {
                     </div>
                 </div>
                 <p style="margin: 12px 0; font-size: 14px; color: var(--text-secondary, #cbd5e1); line-height: 1.5;">${this.escapeHtml(errorMessage)}</p>
-                ${canRetry ? `
-                    <div style="margin: 16px 0;">
-                        <button onclick="window.mermaidRenderer.renderDiagram('${this.getCurrentDiagramId()}', '${this.escapeHtml(code)}')" 
+                <div style="margin: 16px 0; display: flex; gap: 10px; flex-wrap: wrap;">
+                    ${enableAIFix && diagramId ? `
+                        <button id="${fixButtonId}" 
+                                data-diagram-id="${diagramId}" 
+                                data-code="${this.escapeHtml(this.escapeJs(code))}" 
+                                data-error="${this.escapeHtml(this.escapeJs(errorMessage))}" 
+                                data-button-id="${fixButtonId}"
+                                onclick="window.mermaidRenderer.handleAIFix(this.dataset.diagramId, this.dataset.code, this.dataset.error, this.dataset.buttonId)" 
+                                style="
+                                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                                    color: white;
+                                    border: none;
+                                    padding: 10px 20px;
+                                    border-radius: 8px;
+                                    cursor: pointer;
+                                    font-size: 13px;
+                                    font-weight: 500;
+                                    transition: all 0.2s ease;
+                                    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 6px;
+                                "
+                                onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 8px 32px rgba(16, 185, 129, 0.6)'"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(16, 185, 129, 0.4)'">
+                            <i class="fas fa-magic"></i> AI 自动修复
+                        </button>
+                    ` : ''}
+                    ${canRetry ? `
+                        <button onclick="window.mermaidRenderer.renderDiagram('${diagramId || this.getCurrentDiagramId()}', '${this.escapeHtml(code)}')" 
                                 style="
                                     background: var(--primary-gradient, linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%));
                                     color: white;
@@ -465,13 +552,16 @@ class MermaidRenderer {
                                     font-weight: 500;
                                     transition: all 0.2s ease;
                                     box-shadow: var(--shadow-primary, 0 4px 20px rgba(79,70,229,0.4));
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 6px;
                                 "
                                 onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='var(--shadow-lg, 0 8px 32px rgba(0,0,0,0.6))'"
                                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-primary, 0 4px 20px rgba(79,70,229,0.4))'">
                             <i class="fas fa-redo" style="margin-right: 6px;"></i> 重试渲染
                         </button>
-                    </div>
-                ` : ''}
+                    ` : ''}
+                </div>
                 ${code ? `
                     <details style="margin: 16px 0; border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.08)); border-radius: 8px; overflow: hidden;">
                         <summary style="
@@ -706,6 +796,19 @@ class MermaidRenderer {
     }
 
     /**
+     * 转义 JavaScript 字符串（用于 onclick 等属性）
+     */
+    escapeJs(str) {
+        return String(str)
+            .replace(/\\/g, '\\\\')
+            .replace(/'/g, "\\'")
+            .replace(/"/g, '\\"')
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '\\r')
+            .replace(/\t/g, '\\t');
+    }
+
+    /**
      * 更新配置
      */
     updateConfig(newConfig) {
@@ -725,6 +828,117 @@ class MermaidRenderer {
             diagram.removeAttribute('data-mermaid-rendered');
             diagram.innerHTML = diagram.getAttribute('data-mermaid-code') || '';
         });
+    }
+
+    /**
+     * 处理 AI 修复按钮点击
+     */
+    async handleAIFix(diagramId, originalCode, errorMessage, buttonId) {
+        // 解码转义的代码
+        const decodeEscaped = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/\\n/g, '\n')
+                .replace(/\\r/g, '\r')
+                .replace(/\\t/g, '\t')
+                .replace(/\\'/g, "'")
+                .replace(/\\"/g, '"')
+                .replace(/\\\\/g, '\\');
+        };
+
+        const diagram = document.getElementById(diagramId);
+        if (!diagram) {
+            console.error(`[MermaidRenderer] 未找到图表元素: ${diagramId}`);
+            if (window.showError) {
+                window.showError('未找到图表元素');
+            }
+            return;
+        }
+
+        const button = document.getElementById(buttonId);
+        if (button) {
+            // 更新按钮状态
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI 正在修复中...';
+            button.style.opacity = '0.7';
+            button.style.cursor = 'not-allowed';
+        }
+
+        // 显示修复中状态
+        diagram.innerHTML = this.createLoadingHtml();
+        
+        try {
+            // 解码代码（如果需要）
+            let code = decodeEscaped(originalCode);
+            try {
+                code = this.cleanCode(code);
+            } catch (e) {
+                console.warn('[MermaidRenderer] 代码清理失败，使用原始代码');
+            }
+
+            // 调用 AI 修复
+            const fixedCode = await this.aiAutoFix(diagramId, code, errorMessage);
+            
+            console.log(`[MermaidRenderer] AI 修复成功，使用修复后的代码重新渲染`);
+            
+            // 使用修复后的代码重新渲染
+            await this.renderDiagram(diagramId, fixedCode, {
+                showLoading: false,
+                onSuccess: (svg) => {
+                    console.log(`[MermaidRenderer] 图表 ${diagramId} AI 修复后渲染成功`);
+                    if (window.showSuccess) {
+                        window.showSuccess('AI 修复成功，图表已重新渲染');
+                    }
+                    
+                    // 更新存储的代码
+                    diagram.setAttribute('data-mermaid-code', this.escapeHtml(fixedCode));
+                },
+                onError: (error) => {
+                    console.error(`[MermaidRenderer] 图表 ${diagramId} AI 修复后仍然失败:`, error);
+                    
+                    // 显示修复失败的错误信息
+                    const errorHtml = this.createErrorHtml(
+                        `AI 修复后仍然失败: ${error.message}`,
+                        fixedCode,
+                        {
+                            diagramId: diagramId,
+                            enableAIFix: false // 修复失败后不再显示修复按钮
+                        }
+                    );
+                    diagram.innerHTML = errorHtml;
+                    
+                    if (window.showError) {
+                        window.showError('AI 修复后仍然失败，请检查代码');
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.error(`[MermaidRenderer] AI 修复过程出错:`, error);
+            
+            // 显示修复失败的错误信息
+            const errorHtml = this.createErrorHtml(
+                `AI 修复失败: ${error.message}`,
+                originalCode,
+                {
+                    diagramId: diagramId,
+                    enableAIFix: false
+                }
+            );
+            diagram.innerHTML = errorHtml;
+            
+            if (window.showError) {
+                window.showError('AI 修复失败: ' + error.message);
+            }
+        } finally {
+            // 恢复按钮状态（如果按钮还在）
+            if (button && button.parentNode) {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-magic"></i> AI 自动修复';
+                button.style.opacity = '1';
+                button.style.cursor = 'pointer';
+            }
+        }
     }
 
     /**

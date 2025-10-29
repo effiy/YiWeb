@@ -287,7 +287,27 @@ const createCommentsList = async () => {
             },
             
             // 渲染单个 Mermaid 图表
-            renderMermaidDiagram(diagramId, code) {
+            async renderMermaidDiagram(diagramId, code) {
+                // 优先使用 MermaidRenderer（支持 AI 修复功能）
+                if (typeof window.mermaidRenderer !== 'undefined') {
+                    try {
+                        await window.mermaidRenderer.renderDiagram(diagramId, code, {
+                            showLoading: true,
+                            onSuccess: (svg) => {
+                                console.log('[CommentsList] Mermaid 图表渲染成功:', diagramId);
+                            },
+                            onError: (error) => {
+                                console.error('[CommentsList] Mermaid 渲染失败:', error);
+                            }
+                        });
+                        return;
+                    } catch (error) {
+                        console.warn('[CommentsList] 使用 MermaidRenderer 失败，降级到原始方法:', error);
+                        // 继续执行降级逻辑
+                    }
+                }
+                
+                // 降级到原始实现
                 if (typeof mermaid === 'undefined') {
                     return;
                 }
@@ -381,41 +401,67 @@ const createCommentsList = async () => {
                         })
                         .catch(error => {
                             console.error('[CommentsList] Mermaid 渲染失败:', error);
-                            diagram.innerHTML = `
-                                <div class="mermaid-error">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <p>图表渲染失败</p>
-                                    <details>
-                                        <summary>查看错误详情</summary>
-                                        <pre>${this.escapeHtml(error.message || error.toString())}</pre>
-                                    </details>
-                                    <details>
-                                        <summary>查看原始代码</summary>
-                                        <pre><code>${this.escapeHtml(cleanCode)}</code></pre>
-                                    </details>
-                                    <details>
-                                        <summary>查看原始输入</summary>
-                                        <pre><code>${this.escapeHtml(code)}</code></pre>
-                                    </details>
-                                </div>
-                            `;
+                            // 如果 MermaidRenderer 可用，尝试显示带 AI 修复按钮的错误
+                            if (typeof window.mermaidRenderer !== 'undefined') {
+                                const errorHtml = window.mermaidRenderer.createErrorHtml(
+                                    error.message || error.toString(),
+                                    cleanCode,
+                                    {
+                                        diagramId: diagramId,
+                                        enableAIFix: true
+                                    }
+                                );
+                                diagram.innerHTML = errorHtml;
+                            } else {
+                                diagram.innerHTML = `
+                                    <div class="mermaid-error">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <p>图表渲染失败</p>
+                                        <details>
+                                            <summary>查看错误详情</summary>
+                                            <pre>${this.escapeHtml(error.message || error.toString())}</pre>
+                                        </details>
+                                        <details>
+                                            <summary>查看原始代码</summary>
+                                            <pre><code>${this.escapeHtml(cleanCode)}</code></pre>
+                                        </details>
+                                        <details>
+                                            <summary>查看原始输入</summary>
+                                            <pre><code>${this.escapeHtml(code)}</code></pre>
+                                        </details>
+                                    </div>
+                                `;
+                            }
                         });
                 } catch (error) {
                     console.error('[CommentsList] Mermaid 渲染异常:', error);
-                    diagram.innerHTML = `
-                        <div class="mermaid-error">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <p>图表渲染异常</p>
-                            <details>
-                                <summary>查看错误详情</summary>
-                                <pre>${this.escapeHtml(error.message || error.toString())}</pre>
-                            </details>
-                            <details>
-                                <summary>查看原始代码</summary>
-                                <pre><code>${this.escapeHtml(cleanCode)}</code></pre>
-                            </details>
-                        </div>
-                    `;
+                    // 如果 MermaidRenderer 可用，尝试显示带 AI 修复按钮的错误
+                    if (typeof window.mermaidRenderer !== 'undefined') {
+                        const errorHtml = window.mermaidRenderer.createErrorHtml(
+                            error.message || error.toString(),
+                            cleanCode || code,
+                            {
+                                diagramId: diagramId,
+                                enableAIFix: true
+                            }
+                        );
+                        diagram.innerHTML = errorHtml;
+                    } else {
+                        diagram.innerHTML = `
+                            <div class="mermaid-error">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>图表渲染异常</p>
+                                <details>
+                                    <summary>查看错误详情</summary>
+                                    <pre>${this.escapeHtml(error.message || error.toString())}</pre>
+                                </details>
+                                <details>
+                                    <summary>查看原始代码</summary>
+                                    <pre><code>${this.escapeHtml(cleanCode || code)}</code></pre>
+                                </details>
+                            </div>
+                        `;
+                    }
                 }
             },
             
