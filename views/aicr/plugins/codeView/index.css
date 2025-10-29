@@ -1120,12 +1120,6 @@
 
 .code-actions .save-button { background: var(--success-gradient); color: var(--text-on-accent); border-color: rgba(16,185,129,.35); }
 .code-actions .cancel-button { background: var(--bg-secondary); }
-.code-actions .edit-button { 
-    background: var(--accent); 
-    color: var(--text-on-accent); 
-    border-color: rgba(6,182,212,.35); 
-    transition: all 0.2s ease;
- }
 .code-actions .jump-button { 
     background: var(--accent); 
     color: var(--text-on-accent); 
