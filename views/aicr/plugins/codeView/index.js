@@ -1,5 +1,5 @@
 // 代码查看组件 - 轻量实现，满足组件注册与基本展示需求
-import { safeExecute } from '/utils/error.js';
+import { safeExecute, safeGet, safeGetPath, safeArrayOperation } from '/utils/error.js';
 import { loadCSSFiles } from '/utils/baseView.js';
 import { showSuccess, showError } from '/utils/message.js';
 
@@ -44,9 +44,41 @@ const createCodeView = async () => {
             comments: {
                 type: Array,
                 default: () => []
+            },
+            projectId: {
+                type: String,
+                default: ''
+            },
+            versionId: {
+                type: String,
+                default: ''
+            },
+            hideJumpButton: {
+                type: Boolean,
+                default: false
             }
         },
         emits: ['comment-delete', 'comment-resolve', 'comment-reopen', 'reload-comments'],
+        // 错误边界处理
+        errorCaptured(error, instance, info) {
+            console.error('[CodeView] 捕获到子组件错误:', error, info);
+            
+            // 检查是否是浏览器扩展错误
+            if (window.handleBrowserExtensionError && window.handleBrowserExtensionError(error, 'CodeView')) {
+                return false; // 忽略扩展错误
+            }
+            
+            // 记录错误
+            if (window.errorLogger) {
+                window.errorLogger.log(error, 'CodeView子组件', window.ErrorLevels?.ERROR || 'error');
+            }
+            
+            // 尝试恢复
+            this.handleComponentError(error, info);
+            
+            // 阻止错误继续传播
+            return false;
+        },
         data() {
             return {
                 highlightedLines: [],
@@ -218,85 +250,114 @@ const createCodeView = async () => {
         },
         computed: {
             codeLines() {
-                const content = (this.file && typeof this.file.content === 'string') ? this.file.content : '';
-                console.log('[CodeView] codeLines计算 - 文件:', this.file?.name, '内容长度:', content.length);
-                
-                if (!content || content.length === 0) {
-                    console.log('[CodeView] codeLines计算 - 文件内容为空，返回空数组');
+                try {
+                    const content = (this.file && typeof this.file.content === 'string') ? this.file.content : '';
+                    console.log('[CodeView] codeLines计算 - 文件:', this.file?.name, '内容长度:', content.length);
+                    
+                    if (!content || content.length === 0) {
+                        console.log('[CodeView] codeLines计算 - 文件内容为空，返回空数组');
+                        return [];
+                    }
+                    
+                    const lines = content.split(/\r?\n/);
+                    console.log('[CodeView] codeLines计算 - 解析行数:', lines.length);
+                    return lines;
+                } catch (error) {
+                    console.error('[CodeView] codeLines计算失败:', error);
                     return [];
                 }
-                
-                const lines = content.split(/\r?\n/);
-                console.log('[CodeView] codeLines计算 - 解析行数:', lines.length);
-                return lines;
             },
             languageType() {
-                if (!this.file) return 'text';
-                const name = (this.file.path || this.file.name || '').toLowerCase();
-                if (name.endsWith('.js')) return 'javascript';
-                if (name.endsWith('.ts')) return 'typescript';
-                if (name.endsWith('.css')) return 'css';
-                if (name.endsWith('.html')) return 'html';
-                if (name.endsWith('.json')) return 'json';
-                if (name.endsWith('.md')) return 'markdown';
-                return 'text';
+                try {
+                    if (!this.file) return 'text';
+                    const name = (this.file.path || this.file.name || '').toLowerCase();
+                    if (name.endsWith('.js')) return 'javascript';
+                    if (name.endsWith('.ts')) return 'typescript';
+                    if (name.endsWith('.css')) return 'css';
+                    if (name.endsWith('.html')) return 'html';
+                    if (name.endsWith('.json')) return 'json';
+                    if (name.endsWith('.md')) return 'markdown';
+                    return 'text';
+                } catch (error) {
+                    console.error('[CodeView] languageType计算失败:', error);
+                    return 'text';
+                }
             },
             canSubmitManualComment() {
-                const len = (this.manualCommentText || '').trim().length;
-                return len > 0 && len <= this.manualMaxLength;
+                try {
+                    const len = (this.manualCommentText || '').trim().length;
+                    return len > 0 && len <= this.manualMaxLength;
+                } catch (error) {
+                    console.error('[CodeView] canSubmitManualComment计算失败:', error);
+                    return false;
+                }
             },
             manualCommentPreviewHtml() {
-                return this.renderMarkdown(this.manualCommentText || '');
+                try {
+                    return this.renderMarkdown(this.manualCommentText || '');
+                } catch (error) {
+                    console.error('[CodeView] manualCommentPreviewHtml计算失败:', error);
+                    return '';
+                }
             },
             // 按行号分组的评论数据
             lineComments() {
-                const result = {};
-                if (!this.comments || !Array.isArray(this.comments)) {
-                    console.log('[CodeView] lineComments - 无评论数据');
-                    return result;
-                }
-                
-                console.log('[CodeView] lineComments - 处理评论数据，数量:', this.comments.length);
-                
-                this.comments.forEach(comment => {
-                    // 从评论的rangeInfo中获取行号信息
-                    let startLine = null;
-                    let endLine = null;
-                    
-                    if (comment.rangeInfo) {
-                        startLine = comment.rangeInfo.startLine;
-                        endLine = comment.rangeInfo.endLine || startLine;
-                    } else if (comment.line) {
-                        // 兼容旧的line字段
-                        startLine = endLine = comment.line;
+                try {
+                    const result = {};
+                    if (!this.comments || !Array.isArray(this.comments)) {
+                        console.log('[CodeView] lineComments - 无评论数据');
+                        return result;
                     }
                     
-                    // 如果有有效的行号，添加到对应的所有行
-                    if (startLine && startLine > 0) {
-                        const start = parseInt(startLine);
-                        const end = parseInt(endLine) || start;
-                        
-                        // 为评论涉及的每一行都添加评论标记
-                        for (let lineNum = start; lineNum <= end; lineNum++) {
-                            if (!result[lineNum]) {
-                                result[lineNum] = [];
+                    console.log('[CodeView] lineComments - 处理评论数据，数量:', this.comments.length);
+                    
+                    this.comments.forEach(comment => {
+                        try {
+                            // 从评论的rangeInfo中获取行号信息
+                            let startLine = null;
+                            let endLine = null;
+                            
+                            if (comment && comment.rangeInfo) {
+                                startLine = comment.rangeInfo.startLine;
+                                endLine = comment.rangeInfo.endLine || startLine;
+                            } else if (comment && comment.line) {
+                                // 兼容旧的line字段
+                                startLine = endLine = comment.line;
                             }
-                            result[lineNum].push({
-                                ...comment,
-                                key: comment.key || comment.id || comment._id || `comment_${Date.now()}_${Math.random()}`,
-                                // 标记这是否为评论的起始行
-                                isStartLine: lineNum === start,
-                                // 标记这是否为评论的结束行
-                                isEndLine: lineNum === end,
-                                // 标记评论的总行数范围
-                                commentRange: { start, end }
-                            });
+                            
+                            // 如果有有效的行号，添加到对应的所有行
+                            if (startLine && startLine > 0) {
+                                const start = parseInt(startLine);
+                                const end = parseInt(endLine) || start;
+                                
+                                // 为评论涉及的每一行都添加评论标记
+                                for (let lineNum = start; lineNum <= end; lineNum++) {
+                                    if (!result[lineNum]) {
+                                        result[lineNum] = [];
+                                    }
+                                    result[lineNum].push({
+                                        ...comment,
+                                        key: comment.key || comment.id || comment._id || `comment_${Date.now()}_${Math.random()}`,
+                                        // 标记这是否为评论的起始行
+                                        isStartLine: lineNum === start,
+                                        // 标记这是否为评论的结束行
+                                        isEndLine: lineNum === end,
+                                        // 标记评论的总行数范围
+                                        commentRange: { start, end }
+                                    });
+                                }
+                            }
+                        } catch (commentError) {
+                            console.error('[CodeView] 处理单个评论时出错:', commentError, comment);
                         }
-                    }
-                });
-                
-                console.log('[CodeView] lineComments - 处理完成，结果行数:', Object.keys(result).length, '行号:', Object.keys(result));
-                return result;
+                    });
+                    
+                    console.log('[CodeView] lineComments - 处理完成，结果行数:', Object.keys(result).length, '行号:', Object.keys(result));
+                    return result;
+                } catch (error) {
+                    console.error('[CodeView] lineComments计算失败:', error);
+                    return {};
+                }
             },
             // 获取每行的主要评论标记（用于显示）
             lineCommentMarkers() {
@@ -844,6 +905,106 @@ const createCodeView = async () => {
             }
         },
         methods: {
+            // 处理组件错误
+            handleComponentError(error, info) {
+                try {
+                    console.error('[CodeView] 处理组件错误:', error, info);
+                    
+                    // 根据错误类型进行不同的恢复策略
+                    if (error.message && error.message.includes('Cannot read properties of null')) {
+                        console.log('[CodeView] 检测到null访问错误，尝试重置相关状态');
+                        this.resetComponentState();
+                    } else if (error.message && error.message.includes('Cannot read properties of undefined')) {
+                        console.log('[CodeView] 检测到undefined访问错误，尝试重新初始化');
+                        this.reinitializeComponent();
+                    } else {
+                        console.log('[CodeView] 未知错误类型，尝试通用恢复');
+                        this.genericErrorRecovery();
+                    }
+                    
+                    // 显示用户友好的错误提示
+                    this.showErrorNotification(error);
+                    
+                } catch (recoveryError) {
+                    console.error('[CodeView] 错误恢复失败:', recoveryError);
+                }
+            },
+            
+            // 重置组件状态
+            resetComponentState() {
+                try {
+                    console.log('[CodeView] 重置组件状态');
+                    this.highlightedLines = [];
+                    this.showManualImprovementModal = false;
+                    this.manualCommentText = '';
+                    this.showCommentDetailPopup = false;
+                    this.currentCommentDetail = null;
+                    this.isEditingCommentDetail = false;
+                    this.editingCommentContent = '';
+                    this.editingCommentText = '';
+                    this.editingImprovementText = '';
+                    this.editingSaving = false;
+                    console.log('[CodeView] 组件状态重置完成');
+                } catch (error) {
+                    console.error('[CodeView] 重置组件状态失败:', error);
+                }
+            },
+            
+            // 重新初始化组件
+            reinitializeComponent() {
+                try {
+                    console.log('[CodeView] 重新初始化组件');
+                    this.resetComponentState();
+                    
+                    // 重新绑定事件监听器
+                    this.$nextTick(() => {
+                        this.bindEventListeners();
+                        this.addSmoothScrolling();
+                    });
+                    
+                    console.log('[CodeView] 组件重新初始化完成');
+                } catch (error) {
+                    console.error('[CodeView] 重新初始化组件失败:', error);
+                }
+            },
+            
+            // 通用错误恢复
+            genericErrorRecovery() {
+                try {
+                    console.log('[CodeView] 执行通用错误恢复');
+                    
+                    // 清理可能的问题状态
+                    this.resetComponentState();
+                    
+                    // 重新渲染组件
+                    this.$forceUpdate();
+                    
+                    console.log('[CodeView] 通用错误恢复完成');
+                } catch (error) {
+                    console.error('[CodeView] 通用错误恢复失败:', error);
+                }
+            },
+            
+            // 显示错误通知
+            showErrorNotification(error) {
+                try {
+                    const errorMessage = error.message || '组件遇到未知错误';
+                    console.log('[CodeView] 显示错误通知:', errorMessage);
+                    
+                    // 使用消息系统显示错误
+                    if (window.showError && typeof window.showError === 'function') {
+                        window.showError(`代码查看器遇到问题: ${errorMessage}`);
+                    } else if (this.$message && typeof this.$message.error === 'function') {
+                        this.$message.error(`代码查看器遇到问题: ${errorMessage}`);
+                    } else {
+                        // 降级到控制台日志
+                        console.warn('[CodeView] 无法显示错误通知，请检查消息系统');
+                    }
+                } catch (notificationError) {
+                    console.error('[CodeView] 显示错误通知失败:', notificationError);
+                }
+            },
+            
             // 清除代码高亮
             clearHighlight() {
                 console.log('[CodeView] 清除代码高亮');
@@ -1814,12 +1975,78 @@ const createCodeView = async () => {
                     showError(e?.message || '复制失败');
                 }
             },
+            async downloadCurrentFile() {
+                try {
+                    if (!this.file) return;
+                    
+                    const content = (typeof this.file.content === 'string') ? this.file.content : '';
+                    if (!content) {
+                        showError('暂无可下载的内容');
+                        return;
+                    }
+                    
+                    // 获取文件名，优先使用path，其次使用name
+                    const fileName = this.file.path || this.file.name || 'file.txt';
+                    
+                    // 创建Blob对象
+                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                    
+                    // 创建下载链接
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName;
+                    
+                    // 触发下载
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // 清理URL对象
+                    URL.revokeObjectURL(url);
+                    
+                    showSuccess(`已下载文件: ${fileName}`);
+                } catch (e) {
+                    showError(e?.message || '下载失败');
+                }
+            },
+            jumpToCodePage() {
+                try {
+                    if (!this.file) return;
+                    
+                    console.log('[jumpToCodePage] 当前文件信息:', this.file);
+                    console.log('[jumpToCodePage] 父组件信息:', {
+                        selectedProject: this.$parent?.selectedProject,
+                        selectedVersion: this.$parent?.selectedVersion
+                    });
+                    
+                    // 构建跳转URL，传递文件信息
+                    const params = new URLSearchParams({
+                        fileId: this.file.id || this.file.name,
+                        fileName: this.file.name || this.file.path,
+                        filePath: this.file.path || '',
+                        project: this.$parent?.selectedProject || '',
+                        version: this.$parent?.selectedVersion || ''
+                    });
+                    
+                    const jumpUrl = `/views/aicr/aicr-code.html?${params.toString()}`;
+                    console.log('[jumpToCodePage] 跳转URL:', jumpUrl);
+                    
+                    // 跳转到新的 aicr-code 页面
+                    window.open(jumpUrl, '_blank');
+                } catch (e) {
+                    console.error('[jumpToCodePage] 跳转失败:', e);
+                    showError(e?.message || '跳转失败');
+                }
+            },
             escapeHtml(text) {
                 try {
                     return String(text)
                         .replace(/&/g, '&amp;')
                         .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;');
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#39;');
                 } catch (_) { return text; }
             },
             // ========== 文件编辑相关 ==========
@@ -1850,12 +2077,23 @@ const createCodeView = async () => {
                 this.editSaving = true;
                 this.saveError = '';
                 try {
-                    // 获取项目/版本
-                    const projectId = (window.aicrStore && window.aicrStore.selectedProject && window.aicrStore.selectedProject.value) || (document.getElementById('projectSelect')?.value) || '';
-                    const versionId = (window.aicrStore && window.aicrStore.selectedVersion && window.aicrStore.selectedVersion.value) || (document.getElementById('versionSelect')?.value) || '';
+                    // 获取项目/版本 - 优先使用 props，然后回退到其他方式
+                    const projectId = this.projectId || (window.aicrStore && window.aicrStore.selectedProject && window.aicrStore.selectedProject.value) || (document.getElementById('projectSelect')?.value) || '';
+                    const versionId = this.versionId || (window.aicrStore && window.aicrStore.selectedVersion && window.aicrStore.selectedVersion.value) || (document.getElementById('versionSelect')?.value) || '';
                     const fileId = this.file.fileId || this.file.id || this.file.path || this.file.name;
+                    
+                    console.log('[saveEditedFile] 保存参数:', {
+                        projectId,
+                        versionId,
+                        fileId,
+                        propsProjectId: this.projectId,
+                        propsVersionId: this.versionId,
+                        file: this.file
+                    });
+                    
                     if (!projectId || !versionId || !fileId) {
                         this.saveError = '缺少项目/版本/文件标识，无法保存';
+                        console.error('[saveEditedFile] 缺少必要参数:', { projectId, versionId, fileId });
                         return;
                     }
                     const { updateData, postData, getData } = await import('/apis/modules/crud.js');
@@ -1939,6 +2177,18 @@ const createCodeView = async () => {
                     this.isEditingFile = false;
                     this.editingFileContent = '';
                     this.saveError = '';
+                    
+                    // 发射文件保存成功事件
+                    this.$emit('file-saved', {
+                        fileId: fileId,
+                        content: content,
+                        lastModified: new Date().toISOString(),
+                        projectId: projectId,
+                        versionId: versionId
+                    });
+                    
+                    // 显示保存成功消息
+                    showSuccess('文件保存成功');
                 } catch (e) {
                     this.saveError = e?.message || '保存失败';
                 } finally {
@@ -3921,12 +4171,15 @@ const createCodeView = async () => {
                         tabCount++;
                     } else if (line.match(/^[ ]+/)) {
                         spaceCount++;
-                        const leadingSpaces = line.match(/^([ ]+)/)[1];
-                        if (spaceIndentSize === 0) {
-                            spaceIndentSize = leadingSpaces.length;
-                        } else {
-                            // 检测最常见的缩进大小
-                            spaceIndentSize = Math.min(spaceIndentSize, leadingSpaces.length);
+                        const leadingSpacesMatch = line.match(/^([ ]+)/);
+                        if (leadingSpacesMatch) {
+                            const leadingSpaces = leadingSpacesMatch[1];
+                            if (spaceIndentSize === 0) {
+                                spaceIndentSize = leadingSpaces.length;
+                            } else {
+                                // 检测最常见的缩进大小
+                                spaceIndentSize = Math.min(spaceIndentSize, leadingSpaces.length);
+                            }
                         }
                     }
                 });
@@ -4824,8 +5077,82 @@ const createCodeView = async () => {
         console.log('[CodeView] 组件初始化完成');
     } catch (error) {
         console.error('CodeView 组件初始化失败:', error);
+        
+        // 创建错误恢复组件
+        const ErrorRecoveryComponent = {
+            name: 'CodeViewErrorRecovery',
+            template: `
+                <div class="code-view-error-recovery" style="padding: 20px; text-align: center; color: #dc3545;">
+                    <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 30px; max-width: 500px; margin: 0 auto;">
+                        <h3 style="color: #dc3545; margin-bottom: 20px;">
+                            <i class="fas fa-exclamation-triangle" style="margin-right: 10px;"></i>
+                            代码查看器加载失败
+                        </h3>
+                        <p style="margin-bottom: 20px; color: #6c757d;">
+                            代码查看组件在初始化过程中遇到了问题。这可能是由于浏览器扩展冲突或网络问题导致的。
+                        </p>
+                        <div style="background: #fff; border: 1px solid #e9ecef; border-radius: 4px; padding: 15px; margin: 20px 0; text-align: left;">
+                            <strong>错误信息:</strong><br>
+                            <code style="color: #dc3545; font-size: 12px; word-break: break-all;">${error.message || error}</code>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <button onclick="window.location.reload()" 
+                                    style="padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; font-size: 14px;">
+                                <i class="fas fa-redo" style="margin-right: 5px;"></i>
+                                重新加载
+                            </button>
+                            <button onclick="retryCodeViewInit()" 
+                                    style="padding: 12px 24px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                <i class="fas fa-sync" style="margin-right: 5px;"></i>
+                                重试初始化
+                            </button>
+                        </div>
+                        <div style="margin-top: 20px; font-size: 12px; color: #6c757d;">
+                            <p>如果问题持续存在，请尝试：</p>
+                            <ul style="text-align: left; display: inline-block;">
+                                <li>禁用浏览器扩展后重新加载</li>
+                                <li>清除浏览器缓存</li>
+                                <li>检查网络连接</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `,
+            methods: {
+                retryInit() {
+                    console.log('[CodeView] 尝试重新初始化组件');
+                    window.location.reload();
+                }
+            }
+        };
+        
+        // 暴露错误恢复组件
+        window.CodeViewErrorRecovery = ErrorRecoveryComponent;
+        
+        // 暴露重试函数
+        window.retryCodeViewInit = async function() {
+            try {
+                console.log('[CodeView] 开始重试初始化');
+                const CodeView = await createCodeView();
+                window.CodeView = CodeView;
+                window.dispatchEvent(new CustomEvent('CodeViewLoaded', { detail: CodeView }));
+                console.log('[CodeView] 重试初始化成功');
+                
+                // 通知父组件重新渲染
+                window.dispatchEvent(new CustomEvent('CodeViewRetrySuccess'));
+            } catch (retryError) {
+                console.error('[CodeView] 重试初始化失败:', retryError);
+                alert('重试失败，请刷新页面');
+            }
+        };
+        
+        // 触发错误事件
+        window.dispatchEvent(new CustomEvent('CodeViewInitFailed', { 
+            detail: { error, recoveryComponent: ErrorRecoveryComponent } 
+        }));
     }
 })();
+
 
 
 

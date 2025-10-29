@@ -42,28 +42,28 @@
                 <span class="avatars-subtitle">点击头像选择评论者（默认选中第一个，支持多选）</span>
                 <span class="avatars-count">共 {{ commenterStats.total }} 位评论者，已选择 {{ commenterStats.selected }} 位</span>
             </div>
-            <div v-if="commentersLoading" class="avatars-loading">
+            <div v-if="finalCommentersLoading" class="avatars-loading">
                 <div class="loading-spinner"></div>
                 <span>加载评论者中...</span>
             </div>
-            <div v-else-if="commentersError" class="avatars-error">
-                <span>{{ commentersError }}</span>
+            <div v-else-if="finalCommentersError" class="avatars-error">
+                <span>{{ finalCommentersError }}</span>
             </div>
-            <div v-else-if="commenters.length > 0" class="avatars-container">
+            <div v-else-if="finalCommenters.length > 0" class="avatars-container">
                 <div 
-                    v-for="(commenter, index) in commenters" 
+                    v-for="(commenter, index) in finalCommenters" 
                     :key="commenter.key"
                     class="commenter-avatar"
                     :class="{ 
-                        'selected': selectedCommenterIds.includes(commenter.key),
-                        'multi-selected': selectedCommenterIds.length > 1 && selectedCommenterIds.includes(commenter.key)
+                        'selected': finalSelectedCommenterIds.includes(commenter.key),
+                        'multi-selected': finalSelectedCommenterIds.length > 1 && finalSelectedCommenterIds.includes(commenter.key)
                     }"
                     @click="toggleCommenter(commenter)"
                     @keydown.enter="toggleCommenter(commenter)"
                     @keydown.space="toggleCommenter(commenter)"
                     :title="commenter.name"
                     :aria-label="`选择评论者 ${commenter.name}`"
-                    :aria-pressed="selectedCommenterIds.includes(commenter.key)"
+                    :aria-pressed="finalSelectedCommenterIds.includes(commenter.key)"
                     tabindex="0"
                     role="button"
                 >
@@ -553,6 +553,7 @@
         </div>
     </div>
 </aside>
+
 
 
 

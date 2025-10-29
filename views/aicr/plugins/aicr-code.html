@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YiWeb - 代码查看</title>
+    <link rel="stylesheet" href="/views/aicr/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    <!-- Mermaid.js for diagram rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.0/dist/mermaid.min.js"></script>
+    <style>
+        /* 专门为 aicr-code 页面的样式 */
+        .aicr-code-page {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary, #ffffff);
+        }
+        
+        .aicr-code-header {
+            background: var(--bg-secondary, #f8f9fa);
+            border-bottom: 1px solid var(--border-color, #e9ecef);
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        
+        .aicr-code-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary, #333);
+        }
+        
+        .aicr-code-back-btn {
+            background: var(--bg-primary, #ffffff);
+            border: 1px solid var(--border-color, #e9ecef);
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary, #666);
+            transition: all 0.2s ease;
+        }
+        
+        .aicr-code-back-btn:hover {
+            background: var(--bg-hover, #f8f9fa);
+            color: var(--text-primary, #333);
+        }
+        
+        .aicr-code-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .aicr-code-comments-toggle {
+            background: var(--bg-primary, #ffffff);
+            border: 1px solid var(--border-color, #e9ecef);
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary, #666);
+            transition: all 0.2s ease;
+        }
+        
+        .aicr-code-comments-toggle:hover {
+            background: var(--bg-hover, #f8f9fa);
+            color: var(--text-primary, #333);
+        }
+        
+        .aicr-code-main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .aicr-code-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .aicr-code-viewer {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .aicr-code-comments {
+            width: 400px;
+            border-left: 1px solid var(--border-color, #e9ecef);
+            background: var(--bg-secondary, #f8f9fa);
+            overflow: visible;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        
+        .aicr-code-comments-content {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+        }
+        
+        .aicr-code-comments-expand-btn {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--bg-primary, #ffffff);
+            border: 1px solid var(--border-color, #e9ecef);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary, #666);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        
+        .aicr-code-comments-expand-btn:hover {
+            background: var(--bg-hover, #f8f9fa);
+            color: var(--text-primary, #333);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .aicr-code-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            flex-direction: column;
+            gap: 1rem;
+            color: var(--text-secondary, #666);
+        }
+        
+        .aicr-code-error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            flex-direction: column;
+            gap: 1rem;
+            color: var(--error-color, #dc3545);
+        }
+        
+        .aicr-code-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            flex-direction: column;
+            gap: 1rem;
+            color: var(--text-secondary, #666);
+        }
+        
+        @media (max-width: 768px) {
+            .aicr-code-comments {
+                width: 100%;
+                position: fixed;
+                top: 0;
+                right: 0;
+                height: 100vh;
+                z-index: 1000;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+            }
+            
+            .aicr-code-comments.show {
+                transform: translateX(0);
+            }
+            
+            
+            .aicr-code-comments-content {
+                padding-bottom: 20px;
+                overflow: auto;
+            }
+            
+            /* 移动端展开按钮样式 */
+            .aicr-code-comments-expand-btn {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                top: auto;
+                transform: none;
+                border-radius: 50px;
+                padding: 1rem;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            }
+            
+            .aicr-code-comments-expand-btn span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="aicr-code-page">
+        
+        <!-- 主要内容区域 -->
+        <main class="aicr-code-main">
+            <div class="aicr-code-content">
+                <!-- 代码查看器 -->
+                <div class="aicr-code-viewer">
+                    <div v-if="loading" class="aicr-code-loading">
+                        <div class="loading-spinner" aria-hidden="true"></div>
+                        <div>正在加载代码...</div>
+                    </div>
+                    <div v-else-if="error" class="aicr-code-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>{{ error }}</div>
+                    </div>
+                    <div v-else-if="currentFile" class="code-content">
+                        <code-view 
+                            :file="currentFile" 
+                            :loading="loading" 
+                            :error="error"
+                            :comments="currentComments"
+                            :project-id="fileInfo.project"
+                            :version-id="fileInfo.version"
+                            :hide-jump-button="true"
+                            @comment-delete="handleCommentDelete"
+                            @comment-resolve="handleCommentResolve"
+                            @comment-reopen="handleCommentReopen"
+                            @reload-comments="handleReloadComments"
+                            @file-saved="handleFileSaved"
+                        ></code-view>
+                    </div>
+                    <div v-else class="aicr-code-empty">
+                        <i class="fas fa-file-code"></i>
+                        <div>未找到文件</div>
+                    </div>
+                </div>
+                
+                <!-- 评论区 -->
+                <aside class="aicr-code-comments" :class="{ show: showComments }">
+                    <div class="aicr-code-comments-content">
+                        <comment-panel 
+                            :comments="currentComments" 
+                            :file="currentFile"
+                            :new-comment="newComment" 
+                            :loading="loading" 
+                            :error="error" 
+                            :collapsed="!showComments"
+                            :project-id="fileInfo.project"
+                            :version-id="fileInfo.version"
+                            :commenters="commenters"
+                            :selected-commenter-ids="selectedCommenterIds"
+                            :commenters-loading="commentersLoading"
+                            :commenters-error="commentersError"
+                            @comment-submit="handleCommentSubmit" 
+                            @comment-input="handleCommentInput"
+                            @commenter-select="handleCommenterSelect"
+                            @comment-delete="handleCommentDelete"
+                            @comment-resolve="handleCommentResolve"
+                            @comment-reopen="handleCommentReopen"
+                            @toggle-collapse="toggleComments"
+                        ></comment-panel>
+                    </div>
+                </aside>
+                
+                <!-- 评论区收起后的展开按钮 -->
+                <button 
+                    class="aicr-code-comments-expand-btn" 
+                    v-show="!showComments"
+                    @click="toggleComments"
+                    aria-label="展开评论区"
+                    title="展开评论区">
+                    <i class="fas fa-comments"></i>
+                    <span>展开评论</span>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- 全局加载指示器 -->
+    <section id="global-loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="全局加载中">
+        <div class="loading-content">
+            <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+            <p class="loading-text" id="loading-text">正在加载...</p>
+        </div>
+    </section>
+
+    <!-- 脚本标签 -->
+    <script type="module" src="/config.js"></script>
+    <script type="module" src="/utils/chartViewer.js"></script>
+    <script type="module" src="/utils/mermaid.js"></script>
+    <script type="module" src="/utils/mermaidDebug.js"></script>
+    <script type="module" src="/utils/mermaidRenderer.js"></script>
+    <script type="module" src="/views/aicr/plugins/codeView/index.js"></script>
+    <script type="module" src="/views/aicr/plugins/commentPanel/index.js"></script>
+    <script type="module" src="/views/aicr/aicr-code.js"></script>
+    <script type="module" src="/utils/performance.js"></script>
+</body>
+</html>
+

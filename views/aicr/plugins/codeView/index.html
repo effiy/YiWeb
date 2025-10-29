@@ -32,6 +32,12 @@
                         <i class="fas fa-times"></i><span>取消</span>
                     </button>
                 </template>
+                <button v-if="!isEditingFile && !hideJumpButton" class="action-button jump-button" @click="jumpToCodePage" :disabled="!file">
+                    <i class="fas fa-external-link-alt"></i><span>跳转</span>
+                </button>
+                <button v-if="!isEditingFile" class="action-button" @click="downloadCurrentFile" :disabled="!file">
+                    <i class="fas fa-download"></i><span>下载</span>
+                </button>
                 <button v-if="!isEditingFile" class="action-button" @click="copyEntireFile" :disabled="!file">
                     <i class="fas fa-copy"></i><span>复制</span>
                 </button>
@@ -604,6 +610,7 @@
         <div class="empty-subtitle">从左侧文件树中选择要查看的文件</div>
     </div>
 </section>
+
 
 
 

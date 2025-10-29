@@ -348,11 +348,13 @@ export const useMethods = (store) => {
                         const suggestNext = (v) => {
                             try {
                                 const m = String(v).match(/^(\d+)\.(\d+)\.(\d+)(.*)?$/);
-                                if (m) {
+                                if (m && m.length >= 4 && m[1] && m[2] && m[3]) {
                                     const major = parseInt(m[1], 10);
                                     const minor = parseInt(m[2], 10);
                                     const patch = parseInt(m[3], 10) + 1;
-                                    return `${major}.${minor}.${patch}`;
+                                    if (!isNaN(major) && !isNaN(minor) && !isNaN(patch)) {
+                                        return `${major}.${minor}.${patch}`;
+                                    }
                                 }
                             } catch (_) {}
                             return `${v}-new`;
@@ -2318,6 +2320,7 @@ export const useMethods = (store) => {
         }
     };
 };
+
 
 
 

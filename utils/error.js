@@ -303,6 +303,205 @@ export async function safeExecuteAsync(fn, context = '', onError = null) {
     }
 }
 
+/**
+ * 检查是否是浏览器扩展错误
+ * @param {Error|Object} error - 错误对象
+ * @param {string} filename - 文件名（可选）
+ * @param {string} stack - 错误堆栈（可选）
+ * @returns {boolean} 是否是浏览器扩展错误
+ */
+export function isBrowserExtensionError(error, filename = '', stack = '') {
+    // 检查文件名
+    if (filename && (
+        filename.includes('content.js') || 
+        filename.includes('extension') || 
+        filename.includes('chrome-extension') ||
+        filename.includes('moz-extension') ||
+        filename.includes('safari-extension')
+    )) {
+        return true;
+    }
+    
+    // 检查错误堆栈
+    if (stack && (
+        stack.includes('content.js') || 
+        stack.includes('extension') || 
+        stack.includes('chrome-extension') ||
+        stack.includes('moz-extension') ||
+        stack.includes('safari-extension')
+    )) {
+        return true;
+    }
+    
+    // 检查错误消息中的特定模式
+    if (error && error.message) {
+        const message = error.message.toLowerCase();
+        // 检查常见的浏览器扩展错误模式
+        if (message.includes('cannot read properties of null') && 
+            (message.includes("reading '0'") || 
+             message.includes("reading '1'") || 
+             message.includes("reading '2'") ||
+             message.includes("reading '3'"))) {
+            return true;
+        }
+        
+        // 检查其他常见的扩展错误
+        if (message.includes('extension') || 
+            message.includes('content script') ||
+            message.includes('injected script')) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * 处理浏览器扩展错误
+ * @param {Error|Object} error - 错误对象
+ * @param {string} context - 错误上下文
+ * @param {string} filename - 文件名（可选）
+ * @param {string} stack - 错误堆栈（可选）
+ * @returns {boolean} 是否已处理（true表示已忽略）
+ */
+export function handleBrowserExtensionError(error, context = '', filename = '', stack = '') {
+    if (isBrowserExtensionError(error, filename, stack)) {
+        console.log(`[${context}] 检测到浏览器扩展错误，已忽略:`, {
+            message: error?.message || '未知错误',
+            filename: filename || '未知文件',
+            stack: stack || '无堆栈信息'
+        });
+        return true; // 已处理，可以忽略
+    }
+    return false; // 未处理，需要继续处理
+}
+
+/**
+ * 设置浏览器扩展错误过滤器
+ * @param {string} context - 上下文名称
+ * @param {boolean} enablePromiseFilter - 是否启用Promise错误过滤
+ */
+export function setupBrowserExtensionErrorFilter(context = 'App', enablePromiseFilter = true) {
+    // 全局错误处理
+    window.addEventListener('error', (event) => {
+        if (handleBrowserExtensionError(event.error, context, event.filename)) {
+            event.preventDefault(); // 阻止默认的错误处理
+            return;
+        }
+        
+        // 如果不是扩展错误，记录到错误日志
+        if (event.error) {
+            errorLogger.log(event.error, context, ErrorLevels.ERROR);
+        }
+    });
+    
+    // Promise错误处理
+    if (enablePromiseFilter) {
+        window.addEventListener('unhandledrejection', (event) => {
+            if (handleBrowserExtensionError(event.reason, context, '', event.reason?.stack)) {
+                event.preventDefault(); // 阻止默认的错误处理
+                return;
+            }
+            
+            // 如果不是扩展错误，记录到错误日志
+            if (event.reason) {
+                errorLogger.log(event.reason, context, ErrorLevels.ERROR);
+            }
+        });
+    }
+    
+    console.log(`[${context}] 浏览器扩展错误过滤器已启用`);
+}
+
+/**
+ * 安全的数组访问函数
+ * @param {Array|Object} obj - 要访问的对象或数组
+ * @param {string|number} key - 要访问的键或索引
+ * @param {any} defaultValue - 默认值
+ * @returns {any} 安全访问的结果
+ */
+export function safeGet(obj, key, defaultValue = null) {
+    try {
+        if (obj === null || obj === undefined) {
+            return defaultValue;
+        }
+        
+        if (typeof key === 'number' && Array.isArray(obj)) {
+            return (key >= 0 && key < obj.length) ? obj[key] : defaultValue;
+        }
+        
+        if (typeof key === 'string' && typeof obj === 'object') {
+            return obj.hasOwnProperty(key) ? obj[key] : defaultValue;
+        }
+        
+        return defaultValue;
+    } catch (error) {
+        console.warn('[safeGet] 访问失败:', { obj, key, error: error.message });
+        return defaultValue;
+    }
+}
+
+/**
+ * 安全的数组访问函数（支持链式访问）
+ * @param {any} obj - 要访问的对象
+ * @param {string} path - 访问路径，如 'a.b.c' 或 'items[0].name'
+ * @param {any} defaultValue - 默认值
+ * @returns {any} 安全访问的结果
+ */
+export function safeGetPath(obj, path, defaultValue = null) {
+    try {
+        if (!obj || !path) {
+            return defaultValue;
+        }
+        
+        const keys = path.split(/[\.\[\]]+/).filter(key => key !== '');
+        let current = obj;
+        
+        for (const key of keys) {
+            if (current === null || current === undefined) {
+                return defaultValue;
+            }
+            
+            if (Array.isArray(current)) {
+                const index = parseInt(key, 10);
+                if (isNaN(index) || index < 0 || index >= current.length) {
+                    return defaultValue;
+                }
+                current = current[index];
+            } else if (typeof current === 'object') {
+                current = current[key];
+            } else {
+                return defaultValue;
+            }
+        }
+        
+        return current !== undefined ? current : defaultValue;
+    } catch (error) {
+        console.warn('[safeGetPath] 访问失败:', { obj, path, error: error.message });
+        return defaultValue;
+    }
+}
+
+/**
+ * 安全的数组操作函数
+ * @param {Array} arr - 要操作的数组
+ * @param {Function} operation - 操作函数
+ * @param {any} defaultValue - 默认值
+ * @returns {any} 操作结果
+ */
+export function safeArrayOperation(arr, operation, defaultValue = null) {
+    try {
+        if (!Array.isArray(arr)) {
+            return defaultValue;
+        }
+        
+        return operation(arr);
+    } catch (error) {
+        console.warn('[safeArrayOperation] 操作失败:', { arr, error: error.message });
+        return defaultValue;
+    }
+}
+
 // 导出错误记录器实例
 export { errorLogger };
 
@@ -318,5 +517,12 @@ if (typeof window !== 'undefined') {
     window.safeExecute = safeExecute;
     window.safeExecuteAsync = safeExecuteAsync;
     window.errorLogger = errorLogger;
+    window.isBrowserExtensionError = isBrowserExtensionError;
+    window.handleBrowserExtensionError = handleBrowserExtensionError;
+    window.setupBrowserExtensionErrorFilter = setupBrowserExtensionErrorFilter;
+    window.safeGet = safeGet;
+    window.safeGetPath = safeGetPath;
+    window.safeArrayOperation = safeArrayOperation;
 } 
+
 

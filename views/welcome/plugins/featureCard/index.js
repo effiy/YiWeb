@@ -41,7 +41,7 @@ class ColorUtils {
      */
     static hexToRgb(hex) {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? [
+        return result && result.length >= 4 && result[1] && result[2] && result[3] ? [
             parseInt(result[1], 16),
             parseInt(result[2], 16),
             parseInt(result[3], 16)
@@ -55,7 +55,10 @@ class ColorUtils {
      * @returns {string} rgba字符串
      */
     static rgbToRgba(rgb, alpha = 1) {
-        return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+        if (!Array.isArray(rgb) || rgb.length < 3) {
+            return `rgba(0, 0, 0, ${alpha})`;
+        }
+        return `rgba(${rgb[0] || 0}, ${rgb[1] || 0}, ${rgb[2] || 0}, ${alpha})`;
     }
 
     /**
@@ -327,4 +330,5 @@ window.destroyCardThemeManager = () => {
 };
 
 console.log('[FeatureCard] 主题管理器已加载'); 
+
 

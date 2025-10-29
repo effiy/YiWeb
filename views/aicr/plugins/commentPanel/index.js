@@ -144,6 +144,23 @@ const createCommentPanel = async () => {
             collapsed: {
                 type: Boolean,
                 default: false
+            },
+            // 新增：评论者相关props
+            commenters: {
+                type: Array,
+                default: () => []
+            },
+            selectedCommenterIds: {
+                type: Array,
+                default: () => []
+            },
+            commentersLoading: {
+                type: Boolean,
+                default: false
+            },
+            commentersError: {
+                type: String,
+                default: ''
             }
         },
         emits: [
@@ -161,17 +178,17 @@ const createCommentPanel = async () => {
                 mongoComments: [],
                 fileComments: [],
                 
-                // 评论者数据
-                commenters: [],
-                selectedCommenterIds: [],
+                // 评论者数据（优先使用props，如果没有则使用内部数据）
+                internalCommenters: [],
+                internalSelectedCommenterIds: [],
                 
                 // 加载状态
                 commentsLoading: false,
-                commentersLoading: false,
+                internalCommentersLoading: false,
                 
                 // 错误信息
                 commentsError: '',
-                commentersError: '',
+                internalCommentersError: '',
                 
                 // 编辑器状态
                 showCommenterEditor: false,
@@ -214,19 +231,62 @@ const createCommentPanel = async () => {
             };
         },
         computed: {
+            // 合并props和内部数据的评论者信息
+            finalCommenters() {
+                // 优先使用props中的评论者数据，如果没有则使用内部数据
+                const propsCommenters = this.commenters && Array.isArray(this.commenters) ? this.commenters : [];
+                const internalCommenters = this.internalCommenters && Array.isArray(this.internalCommenters) ? this.internalCommenters : [];
+                
+                // 如果props中有数据，使用props；否则使用内部数据
+                const result = propsCommenters.length > 0 ? propsCommenters : internalCommenters;
+                
+                console.log('[CommentPanel] finalCommenters计算:', {
+                    propsCommenters: propsCommenters.length,
+                    internalCommenters: internalCommenters.length,
+                    result: result.length
+                });
+                
+                return result;
+            },
+            finalSelectedCommenterIds() {
+                // 优先使用props中的选中状态，如果没有则使用内部状态
+                const propsSelected = this.selectedCommenterIds && Array.isArray(this.selectedCommenterIds) ? this.selectedCommenterIds : [];
+                const internalSelected = this.internalSelectedCommenterIds && Array.isArray(this.internalSelectedCommenterIds) ? this.internalSelectedCommenterIds : [];
+                
+                const result = propsSelected.length > 0 ? propsSelected : internalSelected;
+                
+                console.log('[CommentPanel] finalSelectedCommenterIds计算:', {
+                    propsSelected: propsSelected.length,
+                    internalSelected: internalSelected.length,
+                    result: result.length
+                });
+                
+                return result;
+            },
+            finalCommentersLoading() {
+                return this.commentersLoading || this.internalCommentersLoading;
+            },
+            finalCommentersError() {
+                return this.commentersError || this.internalCommentersError;
+            },
             commenterStats() {
                 return safeExecute(() => {
-                    const total = this.commenters.length;
-                    const selected = this.selectedCommenterIds.length;
+                    const total = this.finalCommenters.length;
+                    const selected = this.finalSelectedCommenterIds.length;
                     return { total, selected };
                 }, '评论者统计计算');
             },
             renderComments() {
                 // 优先使用mongoComments，如果没有则使用props中的comments
-                const commentsToRender = (this.mongoComments && this.mongoComments.length > 0) ? this.mongoComments : this.comments;
-                console.log('[CommentPanel] renderComments - mongoComments:', this.mongoComments);
-                console.log('[CommentPanel] renderComments - props comments:', this.comments);
-                console.log('[CommentPanel] renderComments - commentsToRender:', commentsToRender);
+                const mongoComments = this.mongoComments && Array.isArray(this.mongoComments) ? this.mongoComments : [];
+                const propsComments = this.comments && Array.isArray(this.comments) ? this.comments : [];
+                
+                // 如果mongoComments有数据，使用mongoComments；否则使用propsComments
+                const commentsToRender = mongoComments.length > 0 ? mongoComments : propsComments;
+                
+                console.log('[CommentPanel] renderComments - mongoComments:', mongoComments.length);
+                console.log('[CommentPanel] renderComments - props comments:', propsComments.length);
+                console.log('[CommentPanel] renderComments - commentsToRender:', commentsToRender.length);
                 
                 const comments = (commentsToRender || []).map(comment => ({
                     ...comment,
@@ -237,7 +297,7 @@ const createCommentPanel = async () => {
                     return timeB - timeA;
                 });
                 
-                console.log('[CommentPanel] renderComments - 最终评论列表:', comments);
+                console.log('[CommentPanel] renderComments - 最终评论列表:', comments.length);
                 
                 // 如果有评论数据，即使没有选中文件也显示
                 if (comments.length > 0) {
@@ -255,7 +315,7 @@ const createCommentPanel = async () => {
             shouldAutoCloseEditor() {
                 return this.showCommenterEditor && 
                        !this.editingCommenter && 
-                       this.commenters.length === 0;
+                       this.finalCommenters.length === 0;
             }
         },
         methods: {
@@ -534,8 +594,8 @@ const createCommentPanel = async () => {
                     }
                     
                     this._isLoadingCommenters = true;
-                    this.commentersLoading = true;
-                    this.commentersError = '';
+                    this.internalCommentersLoading = true;
+                    this.internalCommentersError = '';
 
                     try {
                         // 等待store初始化完成
@@ -550,16 +610,16 @@ const createCommentPanel = async () => {
                         
                         if (!window.aicrStore) {
                             console.warn('[CommentPanel] store初始化超时，使用默认评论者数据');
-                            this.commenters = [];
-                            this.selectedCommenterIds = [];
+                            this.internalCommenters = [];
+                            this.internalSelectedCommenterIds = [];
                             return;
                         }
                         
                         // 检查store中的评论者方法是否可用
                         if (!window.aicrStore.loadCommenters) {
                             console.warn('[CommentPanel] store中loadCommenters方法不可用，使用默认评论者数据');
-                            this.commenters = [];
-                            this.selectedCommenterIds = [];
+                            this.internalCommenters = [];
+                            this.internalSelectedCommenterIds = [];
                             return;
                         }
                         
@@ -596,26 +656,26 @@ const createCommentPanel = async () => {
                         console.log('[CommentPanel] 最终项目ID:', finalProjectId, '最终版本ID:', finalVersionId);
                         
                         const commenters = await window.aicrStore.loadCommenters(finalProjectId, finalVersionId);
-                        this.commenters = commenters || [];
-                        console.log('[CommentPanel] 从store加载评论者数据:', this.commenters);
+                        this.internalCommenters = commenters || [];
+                        console.log('[CommentPanel] 从store加载评论者数据:', this.internalCommenters);
                         
                         // 从store获取选中状态
                         if (window.aicrStore.selectedCommenterIds && window.aicrStore.selectedCommenterIds.value) {
-                            this.selectedCommenterIds = [...window.aicrStore.selectedCommenterIds.value];
-                            console.log('[CommentPanel] 从store加载选中状态:', this.selectedCommenterIds);
-                        } else if (this.commenters.length > 0) {
+                            this.internalSelectedCommenterIds = [...window.aicrStore.selectedCommenterIds.value];
+                            console.log('[CommentPanel] 从store加载选中状态:', this.internalSelectedCommenterIds);
+                        } else if (this.internalCommenters.length > 0) {
                             // 如果没有选中状态，默认选中第一个
-                            this.selectedCommenterIds = [this.commenters[0].key];
-                            console.log('[CommentPanel] 默认选中第一个评论者:', this.selectedCommenterIds);
+                            this.internalSelectedCommenterIds = [this.internalCommenters[0].key];
+                            console.log('[CommentPanel] 默认选中第一个评论者:', this.internalSelectedCommenterIds);
                         }
                     } catch (error) {
                         console.error('[CommentPanel] 加载评论者数据失败:', error);
-                        this.commentersError = '加载评论者数据失败';
+                        this.internalCommentersError = '加载评论者数据失败';
                         // 即使失败也设置空数组，避免界面卡住
-                        this.commenters = [];
-                        this.selectedCommenterIds = [];
+                        this.internalCommenters = [];
+                        this.internalSelectedCommenterIds = [];
                     } finally {
-                        this.commentersLoading = false;
+                        this.internalCommentersLoading = false;
                         this._isLoadingCommenters = false;
                     }
                 }, '评论者数据加载');
@@ -623,31 +683,41 @@ const createCommentPanel = async () => {
 
             // 选择评论者
             selectCommenters(commenterIds) {
-                this.selectedCommenterIds = commenterIds;
+                // 更新内部选中状态
+                this.internalSelectedCommenterIds = [...commenterIds];
                 
                 // 同步到store
                 if (window.aicrStore && window.aicrStore.setSelectedCommenterIds) {
                     window.aicrStore.setSelectedCommenterIds(commenterIds);
                 }
                 
-                this.$emit('commenter-select', this.commenters.filter(c => commenterIds.includes(c.key)));
+                // 使用finalCommenters获取评论者列表
+                const commenters = this.finalCommenters.filter(c => commenterIds.includes(c.key));
+                this.$emit('commenter-select', commenters);
             },
 
             // 切换单个评论者选择状态
             toggleCommenter(commenter) {
-                const index = this.selectedCommenterIds.indexOf(commenter.key);
+                const currentSelected = [...this.finalSelectedCommenterIds];
+                const index = currentSelected.indexOf(commenter.key);
+                
                 if (index > -1) {
-                    this.selectedCommenterIds.splice(index, 1);
+                    currentSelected.splice(index, 1);
                 } else {
-                    this.selectedCommenterIds.push(commenter.key);
+                    currentSelected.push(commenter.key);
                 }
+                
+                // 更新内部选中状态
+                this.internalSelectedCommenterIds = currentSelected;
                 
                 // 同步到store
                 if (window.aicrStore && window.aicrStore.setSelectedCommenterIds) {
-                    window.aicrStore.setSelectedCommenterIds(this.selectedCommenterIds);
+                    window.aicrStore.setSelectedCommenterIds(currentSelected);
                 }
                 
-                this.$emit('commenter-select', this.commenters.filter(c => this.selectedCommenterIds.includes(c.key)));
+                // 使用finalCommenters获取评论者列表
+                const commenters = this.finalCommenters.filter(c => currentSelected.includes(c.key));
+                this.$emit('commenter-select', commenters);
             },
 
             // 获取评论者头像样式
@@ -691,8 +761,8 @@ const createCommentPanel = async () => {
                     content: this.newCommentText.trim()
                 };
 
-                if (this.selectedCommenterIds.length > 0) {
-                    const selectedCommenters = this.commenters.filter(c => this.selectedCommenterIds.includes(c.key));
+                if (this.finalSelectedCommenterIds.length > 0) {
+                    const selectedCommenters = this.finalCommenters.filter(c => this.finalSelectedCommenterIds.includes(c.key));
                     if (selectedCommenters.length > 0) {
                         commentData.fromSystem = selectedCommenters;
                     }
@@ -1105,7 +1175,7 @@ const createCommentPanel = async () => {
                 console.log('[CommentPanel] 打开评论者编辑器');
                 
                 // 如果没有评论者，直接进入添加模式
-                if (this.commenters.length === 0) {
+                if (this.finalCommenters.length === 0) {
                     console.log('[CommentPanel] 没有评论者，直接进入添加模式');
                     this.showCommenterEditor = true;
                     this.addNewCommenter();
@@ -1220,12 +1290,12 @@ const createCommentPanel = async () => {
                         await this.loadCommenters();
                     } else {
                         // 如果没有store，使用本地更新
-                        const index = this.commenters.findIndex(c => c.key === this.editingCommenter.key);
+                        const index = this.internalCommenters.findIndex(c => c.key === this.editingCommenter.key);
                         if (index !== -1) {
-                            this.commenters[index] = { ...this.editingCommenter };
-                            console.log('[CommentPanel] 评论者已更新:', this.commenters[index]);
+                            this.internalCommenters[index] = { ...this.editingCommenter };
+                            console.log('[CommentPanel] 评论者已更新:', this.internalCommenters[index]);
                         } else {
-                            this.commenters.push({ ...this.editingCommenter });
+                            this.internalCommenters.push({ ...this.editingCommenter });
                             console.log('[CommentPanel] 新评论者已添加:', this.editingCommenter);
                         }
                     }
@@ -1251,9 +1321,9 @@ const createCommentPanel = async () => {
                 
                 // 恢复原始数据
                 if (this.originalCommenter && this.editingCommenter) {
-                    const index = this.commenters.findIndex(c => c.key === this.editingCommenter.key);
+                    const index = this.internalCommenters.findIndex(c => c.key === this.editingCommenter.key);
                     if (index !== -1) {
-                        this.commenters[index] = { ...this.originalCommenter };
+                        this.internalCommenters[index] = { ...this.originalCommenter };
                     }
                 }
                 
@@ -1292,17 +1362,17 @@ const createCommentPanel = async () => {
                     } else {
                         // 如果没有store或没有key，使用本地删除
                         console.log('[CommentPanel] 使用本地删除评论者:', commenter.key);
-                        const index = this.commenters.findIndex(c => c.key === commenter.key);
+                        const index = this.internalCommenters.findIndex(c => c.key === commenter.key);
                         if (index !== -1) {
-                            this.commenters.splice(index, 1);
+                            this.internalCommenters.splice(index, 1);
                             console.log('[CommentPanel] 评论者已删除');
                         }
                     }
 
                     // 从选中列表中移除
-                    const selectedIndex = this.selectedCommenterIds.indexOf(commenter.key);
+                    const selectedIndex = this.internalSelectedCommenterIds.indexOf(commenter.key);
                     if (selectedIndex > -1) {
-                        this.selectedCommenterIds.splice(selectedIndex, 1);
+                        this.internalSelectedCommenterIds.splice(selectedIndex, 1);
                     }
 
                     // 如果删除的是正在编辑的评论者，清理编辑状态
@@ -1399,18 +1469,18 @@ const createCommentPanel = async () => {
                         this._storeWatcherInterval = setInterval(() => {
                             if (window.aicrStore && window.aicrStore.commenters && window.aicrStore.commenters.value) {
                                 const storeCommenters = window.aicrStore.commenters.value;
-                                if (JSON.stringify(storeCommenters) !== JSON.stringify(this.commenters)) {
+                                if (JSON.stringify(storeCommenters) !== JSON.stringify(this.internalCommenters)) {
                                     console.log('[CommentPanel] 检测到store中评论者数据变化，同步更新');
-                                    this.commenters = [...storeCommenters];
+                                    this.internalCommenters = [...storeCommenters];
                                 }
                             }
                             
                             // 同步选中状态
                             if (window.aicrStore && window.aicrStore.selectedCommenterIds && window.aicrStore.selectedCommenterIds.value) {
                                 const storeSelectedIds = window.aicrStore.selectedCommenterIds.value;
-                                if (JSON.stringify(storeSelectedIds) !== JSON.stringify(this.selectedCommenterIds)) {
+                                if (JSON.stringify(storeSelectedIds) !== JSON.stringify(this.internalSelectedCommenterIds)) {
                                     console.log('[CommentPanel] 检测到store中选中状态变化，同步更新');
-                                    this.selectedCommenterIds = [...storeSelectedIds];
+                                    this.internalSelectedCommenterIds = [...storeSelectedIds];
                                 }
                             }
                         }, 1000); // 每秒检查一次
@@ -1489,13 +1559,13 @@ const createCommentPanel = async () => {
                 // 检查store中是否已经有评论者数据，如果有则直接使用
                 if (window.aicrStore.commenters && window.aicrStore.commenters.value && window.aicrStore.commenters.value.length > 0) {
                     console.log('[CommentPanel] store中已有评论者数据，直接使用');
-                    this.commenters = [...window.aicrStore.commenters.value];
+                    this.internalCommenters = [...window.aicrStore.commenters.value];
                     
                     // 从store获取选中状态
                     if (window.aicrStore.selectedCommenterIds && window.aicrStore.selectedCommenterIds.value) {
-                        this.selectedCommenterIds = [...window.aicrStore.selectedCommenterIds.value];
-                    } else if (this.commenters.length > 0) {
-                        this.selectedCommenterIds = [this.commenters[0].key];
+                        this.internalSelectedCommenterIds = [...window.aicrStore.selectedCommenterIds.value];
+                    } else if (this.internalCommenters.length > 0) {
+                        this.internalSelectedCommenterIds = [this.internalCommenters[0].key];
                     }
                 } else {
                     console.log('[CommentPanel] store中没有评论者数据，开始加载');
@@ -1639,7 +1709,7 @@ const createCommentPanel = async () => {
                         }, 3000);
                     }
                     // 如果没有评论者，自动打开评论者编辑器
-                    if (this.commenters.length === 0) {
+                    if (this.finalCommenters.length === 0) {
                         setTimeout(() => {
                             this.openCommenterEditor();
                         }, 500);
@@ -1825,6 +1895,7 @@ const createCommentPanel = async () => {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
+
 
 
 

@@ -14,13 +14,11 @@
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 12px;
     line-height: 1.4;
-    overflow-x: auto;
+    overflow: hidden;
     position: relative;
     min-height: 120px;
     box-shadow: var(--shadow-sm);
-    /* 确保滚动容器正确设置 */
-    overflow-y: auto;
-    max-height: calc(100vh - 86px);
+    max-height: 100vh;
 }
 
 /* ========== Markdown预览容器 ========== */
@@ -34,8 +32,7 @@
     min-height: 120px;
     box-shadow: var(--shadow-md);
     overflow: hidden;
-    max-height: calc(100vh - 160px);
-    backdrop-filter: blur(10px);
+    max-height: 100vh;
     background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(255, 255, 255, 0.02) 100%);
 }
 
@@ -44,7 +41,7 @@
     flex-direction: column;
     height: 100%;
     overflow-y: auto;
-    max-height: calc(100vh - 160px);
+    max-height: 100vh;
     scroll-behavior: smooth;
 }
 
@@ -1124,6 +1121,17 @@
 .code-actions .save-button { background: var(--success-gradient); color: var(--text-on-accent); border-color: rgba(16,185,129,.35); }
 .code-actions .cancel-button { background: var(--bg-secondary); }
 .code-actions .edit-button { background: var(--primary); color: var(--text-on-accent); border-color: rgba(79,70,229,.35); }
+.code-actions .jump-button { 
+    background: var(--accent); 
+    color: var(--text-on-accent); 
+    border-color: rgba(139,92,246,.35);
+    transition: all 0.2s ease;
+}
+.code-actions .jump-button:hover:not(:disabled) {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139,92,246,.3);
+}
 .code-actions .preview-toggle-button { 
     background: var(--accent); 
     color: var(--text-on-accent); 
@@ -6485,6 +6493,7 @@
         background: var(--bg-tertiary);
     }
 }
+
 
 
 

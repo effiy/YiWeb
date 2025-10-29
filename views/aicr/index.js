@@ -492,7 +492,28 @@ const { computed } = Vue;
                         console.log('[主页面] 传递给评论面板的版本ID:', versionId);
                         return versionId; 
                     },
-                    collapsed: function() { return store.commentsCollapsed ? store.commentsCollapsed.value : false; }
+                    collapsed: function() { return store.commentsCollapsed ? store.commentsCollapsed.value : false; },
+                    // 传递评论者相关数据
+                    commenters: function() { 
+                        const commenters = store.commenters ? store.commenters.value : [];
+                        console.log('[主页面] 传递给评论面板的评论者数据:', commenters);
+                        return commenters; 
+                    },
+                    selectedCommenterIds: function() { 
+                        const selectedIds = store.selectedCommenterIds ? store.selectedCommenterIds.value : [];
+                        console.log('[主页面] 传递给评论面板的选中评论者ID:', selectedIds);
+                        return selectedIds; 
+                    },
+                    commentersLoading: function() { 
+                        const loading = store.commentersLoading ? store.commentersLoading.value : false;
+                        console.log('[主页面] 传递给评论面板的评论者加载状态:', loading);
+                        return loading; 
+                    },
+                    commentersError: function() { 
+                        const error = store.commentersError ? store.commentersError.value : '';
+                        console.log('[主页面] 传递给评论面板的评论者错误:', error);
+                        return error; 
+                    }
                 }
             },
             methods: {
@@ -806,6 +827,37 @@ const { computed } = Vue;
         window.aicrApp = app;
         window.aicrStore = store;
         
+        // 全局错误处理
+        window.addEventListener('error', (event) => {
+            console.error('[aicr] 全局错误:', event.error);
+            
+            // 使用新的浏览器扩展错误处理函数
+            if (window.handleBrowserExtensionError && window.handleBrowserExtensionError(event.error, 'aicr', event.filename)) {
+                return; // 已处理，忽略
+            }
+            
+            // 如果不是扩展错误，记录到错误日志
+            if (window.errorLogger && event.error) {
+                window.errorLogger.log(event.error, 'aicr', window.ErrorLevels?.ERROR || 'error');
+            }
+        });
+
+        // 全局Promise错误处理
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('[aicr] 未处理的Promise错误:', event.reason);
+            
+            // 使用新的浏览器扩展错误处理函数
+            if (window.handleBrowserExtensionError && window.handleBrowserExtensionError(event.reason, 'aicr', '', event.reason?.stack)) {
+                event.preventDefault(); // 阻止默认的错误处理
+                return; // 已处理，忽略
+            }
+            
+            // 如果不是扩展错误，记录到错误日志
+            if (window.errorLogger && event.reason) {
+                window.errorLogger.log(event.reason, 'aicr', window.ErrorLevels?.ERROR || 'error');
+            }
+        });
+        
         // 确保store中的评论者方法可用
         logInfo('[代码审查页面] store已暴露到全局，评论者方法:', {
             loadCommenters: !!store.loadCommenters,
@@ -826,6 +878,7 @@ const { computed } = Vue;
         logError('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
 
 
 

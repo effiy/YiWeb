@@ -179,7 +179,9 @@ function calculateSVGBounds(svg) {
             console.log('[Mermaid] 使用原始 viewBox:', existingViewBox);
             const parts = existingViewBox.split(/[\s,]+/).map(parseFloat).filter(n => !isNaN(n));
             
-            if (parts.length === 4) {
+            if (parts && Array.isArray(parts) && parts.length >= 4 && 
+                typeof parts[0] === 'number' && typeof parts[1] === 'number' && 
+                typeof parts[2] === 'number' && typeof parts[3] === 'number') {
                 // 为了安全，稍微扩展一下边界
                 const padding = 20;
                 return {
@@ -783,5 +785,6 @@ function escapeHtml(str) {
 // 样式管理
 
 console.log('[Mermaid Utils] 工具函数已加载');
+
 
 

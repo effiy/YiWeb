@@ -442,18 +442,50 @@ const OptimizedDailyChecklist = {
             const currentTime = now.getHours() * 60 + now.getMinutes();
             
             return this.timeSlots.find(slot => {
-                const [startHour, startMin] = slot.time.split('-')[0].split(':').map(Number);
-                const [endHour, endMin] = slot.time.split('-')[1].split(':').map(Number);
-                
-                const startMinutes = startHour * 60 + startMin;
-                const endMinutes = endHour * 60 + endMin;
-                
-                // 处理跨天的情况
-                if (endMinutes < startMinutes) {
-                    return currentTime >= startMinutes || currentTime <= endMinutes;
+                try {
+                    if (!slot || !slot.time || typeof slot.time !== 'string') {
+                        return false;
+                    }
+                    
+                    const timeParts = slot.time.split('-');
+                    if (!timeParts || timeParts.length < 2) {
+                        return false;
+                    }
+                    
+                    const startTimeStr = timeParts[0];
+                    const endTimeStr = timeParts[1];
+                    
+                    if (!startTimeStr || !endTimeStr) {
+                        return false;
+                    }
+                    
+                    const startParts = startTimeStr.split(':').map(Number);
+                    const endParts = endTimeStr.split(':').map(Number);
+                    
+                    if (!startParts || startParts.length < 2 || !endParts || endParts.length < 2) {
+                        return false;
+                    }
+                    
+                    const [startHour, startMin] = startParts;
+                    const [endHour, endMin] = endParts;
+                    
+                    if (isNaN(startHour) || isNaN(startMin) || isNaN(endHour) || isNaN(endMin)) {
+                        return false;
+                    }
+                    
+                    const startMinutes = startHour * 60 + startMin;
+                    const endMinutes = endHour * 60 + endMin;
+                    
+                    // 处理跨天的情况
+                    if (endMinutes < startMinutes) {
+                        return currentTime >= startMinutes || currentTime <= endMinutes;
+                    }
+                    
+                    return currentTime >= startMinutes && currentTime <= endMinutes;
+                } catch (error) {
+                    console.error('[DailyChecklist] currentTimeSlot 计算错误:', error, slot);
+                    return false;
                 }
-                
-                return currentTime >= startMinutes && currentTime <= endMinutes;
             });
         },
         // 优化后的时间段排序：当天当前时段优先，其他按时间顺序连贯排列
@@ -2067,6 +2099,7 @@ console.log('[OptimizedDailyChecklist] 优化版每日清单组件已注册');
 
 // 触发自定义事件
 window.dispatchEvent(new CustomEvent('DailyChecklistLoaded', { detail: OptimizedDailyChecklist }));
+
 
 
 
