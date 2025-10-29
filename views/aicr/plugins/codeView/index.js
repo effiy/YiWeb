@@ -2124,10 +2124,10 @@ const createCodeView = async () => {
                                     key: foundKey,
                                     projectId,
                                     versionId,
-                                    fileId: path,
-                                    id: path,
-                                    path,
-                                    name: (this.file.name || (typeof path === 'string' ? path.split('/').pop() : '')),
+                                    fileId: fileId,
+                                    id: fileId,
+                                    path: fileId,
+                                    name: (this.file.name || (typeof fileId === 'string' ? fileId.split('/').pop() : '')),
                                     content
                                 });
                                 this.file.key = foundKey;
@@ -2135,10 +2135,10 @@ const createCodeView = async () => {
                                 await postData(url, {
                                     projectId,
                                     versionId,
-                                    fileId: path,
-                                    id: path,
-                                    path,
-                                    name: (this.file.name || (typeof path === 'string' ? path.split('/').pop() : '')),
+                                    fileId: fileId,
+                                    id: fileId,
+                                    path: fileId,
+                                    name: (this.file.name || (typeof fileId === 'string' ? fileId.split('/').pop() : '')),
                                     content
                                 });
                             }
@@ -2146,10 +2146,10 @@ const createCodeView = async () => {
                             await postData(url, {
                                 projectId,
                                 versionId,
-                                fileId: path,
-                                id: path,
-                                path,
-                                name: (this.file.name || (typeof path === 'string' ? path.split('/').pop() : '')),
+                                fileId: fileId,
+                                id: fileId,
+                                path: fileId,
+                                name: (this.file.name || (typeof fileId === 'string' ? fileId.split('/').pop() : '')),
                                 content
                             });
                         }
