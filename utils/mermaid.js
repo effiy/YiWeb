@@ -107,6 +107,75 @@ window.copyMermaidCode = function(diagramId) {
     }
 };
 
+// 在新标签页打开 Mermaid Live Editor 并加载图表代码
+window.openMermaidLive = function(diagramId) {
+    // 首先尝试从原始图表获取代码
+    let diagram = document.getElementById(diagramId);
+    
+    // 如果没找到，尝试查找全屏模式下的图表
+    if (!diagram) {
+        const fullscreenId = `mermaid-fullscreen-${diagramId}`;
+        diagram = document.getElementById(fullscreenId);
+        // 如果找到全屏图表，使用原始 ID 获取代码（因为代码存储在原始图表中）
+        if (diagram) {
+            diagram = document.getElementById(diagramId);
+        }
+    }
+    
+    if (!diagram) {
+        console.warn(`[Mermaid] 未找到图表元素: ${diagramId}`);
+        showMermaidMessage('未找到图表内容', 'error');
+        return;
+    }
+    
+    let code = diagram.getAttribute('data-mermaid-code');
+    if (!code) {
+        console.warn(`[Mermaid] 图表 ${diagramId} 没有代码数据`);
+        showMermaidMessage('图表没有代码数据', 'error');
+        return;
+    }
+    
+    // 解码 HTML 实体（如果代码被转义了）
+    try {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = code;
+        code = tempDiv.textContent || tempDiv.innerText || code;
+    } catch (e) {
+        // 如果解码失败，使用原始代码
+        console.warn('[Mermaid] HTML 解码失败，使用原始代码');
+    }
+    
+    // mermaid.live 支持通过 URL hash 传递代码
+    // 格式: https://mermaid.live/edit#pako:base64编码的压缩代码
+    // 如果代码较短，也可以尝试直接使用 base64 编码
+    try {
+        // 将代码转换为 base64 编码
+        // 使用 UTF-8 编码确保中文等字符正确处理
+        let encodedCode;
+        try {
+            // 方法1: 使用 btoa (仅支持 ASCII，需要先编码)
+            encodedCode = btoa(unescape(encodeURIComponent(code)));
+        } catch (e) {
+            // 方法2: 如果 btoa 失败，使用 URI 编码作为后备
+            console.warn('[Mermaid] Base64 编码失败，使用 URI 编码:', e);
+            encodedCode = encodeURIComponent(code);
+        }
+        
+        // mermaid.live 使用 #pako: 前缀 + base64 编码
+        // 如果代码很长，mermaid.live 可能需要压缩，但对于简单情况，直接 base64 也可以工作
+        const editorUrl = `https://mermaid.live/edit#pako:${encodedCode}`;
+        
+        window.open(editorUrl, '_blank', 'noopener,noreferrer');
+        console.log('[Mermaid] 已在 Mermaid Live Editor 中打开图表');
+        showMermaidMessage('正在在新标签页打开编辑器...', 'info');
+    } catch (error) {
+        console.error('[Mermaid] 打开编辑器失败:', error);
+        // 如果所有方法都失败，仍然打开编辑器（虽然代码不会自动填充）
+        window.open('https://mermaid.live/edit', '_blank', 'noopener,noreferrer');
+        showMermaidMessage('已打开编辑器，请手动粘贴代码', 'info');
+    }
+};
+
 
 
 
