@@ -80,31 +80,211 @@ window.MERMAID_CONFIG = {
     }
 };
 
+/**
+ * 解码 HTML 实体
+ * @param {string} text - 需要解码的文本
+ * @returns {string} 解码后的文本
+ */
+function decodeHtmlEntities(text) {
+    if (!text) return '';
+    
+    const tempDiv = document.createElement('div');
+    try {
+        tempDiv.innerHTML = text;
+        return tempDiv.textContent || tempDiv.innerText || text;
+    } catch (e) {
+        // 如果 HTML 解析失败，手动解码常见实体
+        return text
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&#x20;/g, ' ')
+            .replace(/&#32;/g, ' ');
+    }
+}
+
+/**
+ * 清理代码格式（去除多余空白，保持基本结构）
+ * @param {string} code - 原始代码
+ * @returns {string} 清理后的代码
+ */
+function cleanMermaidCode(code) {
+    if (!code) return '';
+    
+    return code
+        .trim()
+        .replace(/\r\n/g, '\n')  // 统一换行符
+        .replace(/\r/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')  // 多个连续换行最多保留两个
+        .replace(/[ \t]+$/gm, '');  // 移除每行末尾的空白
+}
+
+/**
+ * 添加复制按钮视觉反馈
+ * @param {HTMLElement} button - 复制按钮元素
+ */
+function addCopyButtonFeedback(button) {
+    if (!button) return;
+    
+    // 保存原始图标
+    const originalIcon = button.querySelector('i');
+    if (!originalIcon) return;
+    
+    const originalClass = originalIcon.className;
+    const originalColor = originalIcon.style.color || '';
+    
+    // 添加成功反馈动画
+    button.style.transition = 'transform 0.2s ease';
+    button.style.transform = 'scale(0.95)';
+    originalIcon.className = 'fas fa-check';
+    originalIcon.style.color = 'var(--success, #52c41a)';
+    originalIcon.style.transition = 'all 0.3s ease';
+    
+    setTimeout(() => {
+        button.style.transform = '';
+        originalIcon.className = originalClass;
+        originalIcon.style.color = originalColor;
+        
+        // 清理过渡样式
+        setTimeout(() => {
+            button.style.transition = '';
+            originalIcon.style.transition = '';
+        }, 300);
+    }, 600);
+}
+
 // 全局复制 Mermaid 代码函数
-window.copyMermaidCode = function(diagramId) {
-    const diagram = document.getElementById(diagramId);
+window.copyMermaidCode = async function(diagramId, options = {}) {
+    const {
+        showFeedback = true,
+        cleanCode = true,
+        silent = false
+    } = options;
+    
+    // 查找图表元素（支持全屏模式）
+    let diagram = document.getElementById(diagramId);
+    if (!diagram && diagramId.startsWith('mermaid-fullscreen-')) {
+        // 如果是全屏图表，尝试查找原始图表
+        const originalId = diagramId.replace('mermaid-fullscreen-', '');
+        diagram = document.getElementById(originalId);
+    }
+    
     if (!diagram) {
         console.warn(`[Mermaid] 未找到图表元素: ${diagramId}`);
-        return;
+        if (!silent) {
+            if (window.showError) {
+                window.showError('未找到图表内容');
+            } else {
+                showMermaidMessage('未找到图表内容', 'error');
+            }
+        }
+        return false;
     }
     
-    const code = diagram.getAttribute('data-mermaid-code');
+    // 获取代码
+    let code = diagram.getAttribute('data-mermaid-code');
     if (!code) {
         console.warn(`[Mermaid] 图表 ${diagramId} 没有代码数据`);
-        return;
+        if (!silent) {
+            if (window.showError) {
+                window.showError('图表没有代码数据');
+            } else {
+                showMermaidMessage('图表没有代码数据', 'error');
+            }
+        }
+        return false;
     }
     
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(code).then(() => {
-            console.log('[Mermaid] 图表代码已复制到剪贴板');
-            showMermaidMessage('图表代码已复制到剪贴板', 'success');
-        }).catch(err => {
-            console.error('[Mermaid] 复制失败:', err);
-            fallbackCopyTextToClipboard(code);
-        });
-    } else {
-        fallbackCopyTextToClipboard(code);
+    // 解码 HTML 实体
+    code = decodeHtmlEntities(code);
+    
+    // 清理代码格式
+    if (cleanCode) {
+        code = cleanMermaidCode(code);
     }
+    
+    // 查找相关的复制按钮以添加视觉反馈
+    let copyButton = null;
+    if (showFeedback) {
+        // 尝试查找复制按钮
+        const buttonSelector = `.mermaid-diagram-copy[onclick*="${diagramId}"], 
+                                 button[onclick*="copyMermaidCode('${diagramId}')"],
+                                 button[onclick*='copyMermaidCode("${diagramId}")']`;
+        copyButton = document.querySelector(buttonSelector);
+        
+        // 如果在全屏模式，查找全屏中的按钮
+        if (!copyButton && diagramId.startsWith('mermaid-fullscreen-')) {
+            const fullscreenModal = document.getElementById('mermaid-fullscreen-modal');
+            if (fullscreenModal) {
+                copyButton = fullscreenModal.querySelector('.mermaid-fullscreen-btn[onclick*="copyMermaidCode"]');
+            }
+        }
+    }
+    
+    // 使用统一的复制函数（如果可用）
+    if (typeof window.copyToClipboard === 'function' || 
+        (typeof window !== 'undefined' && window.dom && window.dom.copyToClipboard)) {
+        try {
+            const copyFn = window.copyToClipboard || window.dom.copyToClipboard;
+            const success = await copyFn(code);
+            
+            if (success) {
+                if (copyButton && showFeedback) {
+                    addCopyButtonFeedback(copyButton);
+                }
+                
+                if (!silent) {
+                    if (window.showSuccess) {
+                        window.showSuccess('图表代码已复制到剪贴板');
+                    } else {
+                        showMermaidMessage('图表代码已复制到剪贴板', 'success');
+                    }
+                }
+                console.log('[Mermaid] 图表代码已复制到剪贴板');
+                return true;
+            } else {
+                throw new Error('复制操作返回失败');
+            }
+        } catch (error) {
+            console.warn('[Mermaid] 使用统一复制函数失败，尝试降级方法:', error);
+            // 继续执行降级逻辑
+        }
+    }
+    
+    // 降级到原始实现
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+            await navigator.clipboard.writeText(code);
+            
+            if (copyButton && showFeedback) {
+                addCopyButtonFeedback(copyButton);
+            }
+            
+            if (!silent) {
+                if (window.showSuccess) {
+                    window.showSuccess('图表代码已复制到剪贴板');
+                } else {
+                    showMermaidMessage('图表代码已复制到剪贴板', 'success');
+                }
+            }
+            console.log('[Mermaid] 图表代码已复制到剪贴板');
+            return true;
+        }
+    } catch (err) {
+        console.warn('[Mermaid] Clipboard API 复制失败，使用降级方法:', err);
+    }
+    
+    // 使用降级方法
+    const fallbackSuccess = fallbackCopyTextToClipboard(code, silent);
+    
+    if (fallbackSuccess && copyButton && showFeedback) {
+        addCopyButtonFeedback(copyButton);
+    }
+    
+    return fallbackSuccess;
 };
 
 // 在新标签页打开 Mermaid Live Editor 并加载图表代码
@@ -667,40 +847,191 @@ window.downloadMermaidPNG = function(diagramId, svgElement, retryCount = 0) {
 
 
 
-// 降级复制方法
-function fallbackCopyTextToClipboard(text) {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.top = '0';
-    textArea.style.left = '0';
-    textArea.style.width = '2em';
-    textArea.style.height = '2em';
-    textArea.style.padding = '0';
-    textArea.style.border = 'none';
-    textArea.style.outline = 'none';
-    textArea.style.boxShadow = 'none';
-    textArea.style.background = 'transparent';
-    
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    
-    try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-            console.log('[Mermaid] 使用降级方法复制成功');
-            showMermaidMessage('图表代码已复制到剪贴板', 'success');
-        } else {
-            console.error('[Mermaid] 降级复制方法失败');
-            showMermaidMessage('复制失败，请手动复制', 'error');
-        }
-    } catch (err) {
-        console.error('[Mermaid] 降级复制方法异常:', err);
-        showMermaidMessage('复制失败，请手动复制', 'error');
+/**
+ * 降级复制方法（当 Clipboard API 不可用时使用）
+ * @param {string} text - 要复制的文本
+ * @param {boolean} silent - 是否静默模式（不显示消息）
+ * @returns {boolean} 是否复制成功
+ */
+function fallbackCopyTextToClipboard(text, silent = false) {
+    if (!text) {
+        console.warn('[Mermaid] 降级复制：文本为空');
+        return false;
     }
     
-    document.body.removeChild(textArea);
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    
+    // 优化样式，使其更不容易被发现
+    textArea.style.cssText = `
+        position: fixed;
+        top: -9999px;
+        left: -9999px;
+        width: 2em;
+        height: 2em;
+        padding: 0;
+        border: none;
+        outline: none;
+        box-shadow: none;
+        background: transparent;
+        opacity: 0;
+        pointer-events: none;
+        z-index: -1;
+    `;
+    
+    // 设置只读以防止键盘弹出（移动设备）
+    textArea.setAttribute('readonly', 'readonly');
+    
+    document.body.appendChild(textArea);
+    
+    // 针对 iOS 的特殊处理
+    if (/ipad|iphone/i.test(navigator.userAgent)) {
+        const range = document.createRange();
+        range.selectNodeContents(textArea);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        textArea.setSelectionRange(0, 999999);
+    } else {
+        textArea.focus();
+        textArea.select();
+    }
+    
+    let success = false;
+    
+    try {
+        success = document.execCommand('copy');
+        
+        if (success) {
+            console.log('[Mermaid] 使用降级方法复制成功');
+            if (!silent) {
+                if (window.showSuccess) {
+                    window.showSuccess('图表代码已复制到剪贴板');
+                } else {
+                    showMermaidMessage('图表代码已复制到剪贴板', 'success');
+                }
+            }
+        } else {
+            throw new Error('execCommand("copy") 返回 false');
+        }
+    } catch (err) {
+        console.error('[Mermaid] 降级复制方法失败:', err);
+        
+        // 最后尝试：显示一个可选择的文本区域
+        if (!silent) {
+            if (window.showError) {
+                window.showError('复制失败，请手动选择文本复制', 5000);
+            } else {
+                showMermaidMessage('复制失败，请手动复制', 'error');
+            }
+            
+            // 创建一个临时显示区域供用户手动复制
+            try {
+                const tempDiv = document.createElement('div');
+                tempDiv.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: var(--bg-secondary, #1e293b);
+                    border: 2px solid var(--primary, #4f46e5);
+                    border-radius: 12px;
+                    padding: 20px;
+                    max-width: 80%;
+                    max-height: 70vh;
+                    overflow: auto;
+                    z-index: 10000;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+                `;
+                
+                const header = document.createElement('div');
+                header.style.cssText = `
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 12px;
+                    padding-bottom: 12px;
+                    border-bottom: 1px solid var(--border-primary, rgba(255, 255, 255, 0.08));
+                `;
+                
+                const title = document.createElement('h3');
+                title.textContent = '请手动复制代码';
+                title.style.cssText = `
+                    margin: 0;
+                    font-size: 16px;
+                    color: var(--text-primary, #f8fafc);
+                `;
+                
+                const closeBtn = document.createElement('button');
+                closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                closeBtn.style.cssText = `
+                    background: transparent;
+                    border: none;
+                    color: var(--text-secondary, #cbd5e1);
+                    cursor: pointer;
+                    font-size: 18px;
+                    padding: 4px 8px;
+                `;
+                closeBtn.onclick = () => tempDiv.remove();
+                
+                header.appendChild(title);
+                header.appendChild(closeBtn);
+                
+                const pre = document.createElement('pre');
+                pre.style.cssText = `
+                    margin: 0;
+                    padding: 16px;
+                    background: var(--bg-primary, #0f172a);
+                    border-radius: 8px;
+                    overflow-x: auto;
+                    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+                    font-size: 13px;
+                    line-height: 1.6;
+                    color: var(--text-primary, #f8fafc);
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                `;
+                
+                const codeEl = document.createElement('code');
+                codeEl.textContent = text;
+                pre.appendChild(codeEl);
+                
+                tempDiv.appendChild(header);
+                tempDiv.appendChild(pre);
+                document.body.appendChild(tempDiv);
+                
+                // 选中文本
+                const range = document.createRange();
+                range.selectNodeContents(codeEl);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                // 5秒后自动关闭
+                setTimeout(() => {
+                    if (tempDiv.parentNode) {
+                        tempDiv.remove();
+                    }
+                }, 30000);
+            } catch (e) {
+                console.error('[Mermaid] 创建手动复制对话框失败:', e);
+            }
+        }
+    } finally {
+        // 清理
+        try {
+            document.body.removeChild(textArea);
+        } catch (e) {
+            // 忽略清理错误
+        }
+        
+        // 清除选择
+        if (window.getSelection) {
+            window.getSelection().removeAllRanges();
+        }
+    }
+    
+    return success;
 }
 
 // 显示 Mermaid 消息提示
