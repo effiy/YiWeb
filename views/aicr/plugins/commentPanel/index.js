@@ -122,8 +122,15 @@ const createCommentPanel = async () => {
                 default: null
             },
             newComment: {
-                type: String,
-                default: ''
+                type: Object,
+                default: () => ({
+                    content: '',
+                    author: '',
+                    text: '',
+                    improvementText: '',
+                    type: '',
+                    status: 'pending'
+                })
             },
             loading: {
                 type: Boolean,
@@ -1895,6 +1902,7 @@ const createCommentPanel = async () => {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
+
 
 
 
