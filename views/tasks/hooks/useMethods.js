@@ -488,10 +488,21 @@ window.useMethods = (store, computed) => {
                 try {
                     const fromSystem = await window.getData(`/prompts/tasks/tasks.txt`);
                     
-                    const response = await window.postData(`${window.API_URL}/prompt`, {
+                    // 使用流式请求处理 /prompt 接口
+                    const { streamPrompt } = await import('/apis/modules/crud.js');
+                    const responseText = await streamPrompt(`${window.API_URL}/prompt`, {
                         fromSystem,
                         fromUser: query
                     });
+                    
+                    // 解析 JSON 响应（期望返回 JSON 字符串）
+                    let response;
+                    try {
+                        response = JSON.parse(responseText);
+                    } catch (e) {
+                        // 如果不是 JSON，尝试包装为对象
+                        response = { data: responseText ? [responseText] : [] };
+                    }
                     
                     if (Array.isArray(response.data) && response.data.length > 0) {
                         await Promise.all(

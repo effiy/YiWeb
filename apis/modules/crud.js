@@ -285,6 +285,145 @@ async function deleteData(url, options = {}) {
 }
 
 /**
+ * 流式 Prompt 请求（处理 SSE 格式的响应）
+ * @param {string} url - API 端点
+ * @param {Object} data - 请求数据 { fromSystem, fromUser, model?, images? }
+ * @param {Object} options - 请求选项
+ * @param {Function} onChunk - 可选的回调函数，用于实时接收内容块
+ * @returns {Promise<string>} - 返回完整的响应内容
+ */
+async function streamPrompt(url, data, options = {}, onChunk = null) {
+  try {
+    const payload = {
+      fromSystem: data.fromSystem,
+      fromUser: data.fromUser,
+    };
+    
+    // 可选字段
+    if (data.model) {
+      payload.model = data.model;
+    }
+    if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+      payload.images = data.images;
+    }
+    
+    // 构建请求配置
+    const config = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      body: JSON.stringify(payload),
+      ...options,
+    };
+    
+    // 发送请求
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+    
+    // 读取流式响应
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullContent = '';
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) {
+        break;
+      }
+      
+      // 解码数据并添加到缓冲区
+      buffer += decoder.decode(value, { stream: true });
+      
+      // 处理完整的 SSE 消息
+      const messages = buffer.split('\n\n');
+      buffer = messages.pop() || '';
+      
+      for (const message of messages) {
+        if (message.startsWith('data: ')) {
+          try {
+            const dataStr = message.substring(6);
+            if (dataStr.trim() === '') continue;
+            
+            const chunk = JSON.parse(dataStr);
+            
+            // 解析 ollama 的原始响应格式
+            if (chunk.message && chunk.message.content) {
+              const content = chunk.message.content;
+              fullContent += content;
+              
+              // 如果有回调函数，实时传递内容块
+              if (onChunk && typeof onChunk === 'function') {
+                onChunk(content, fullContent);
+              }
+            }
+            
+            // 检查是否完成
+            if (chunk.done === true) {
+              // 流式响应完成
+              break;
+            }
+            
+            // 处理错误（自定义错误格式，当 ollama 调用失败时）
+            if (chunk.type === 'error') {
+              throw new Error(`API 错误: ${chunk.data || chunk.message || '未知错误'}`);
+            }
+            
+          } catch (e) {
+            // 如果不是 JSON 解析错误，抛出异常
+            if (e.message && !e.message.includes('JSON')) {
+              throw e;
+            }
+            // JSON 解析失败，可能是无效的数据行，跳过
+            console.warn('解析 SSE 消息失败:', message, e);
+          }
+        }
+      }
+    }
+    
+    // 处理最后的消息
+    if (buffer.trim()) {
+      const message = buffer.trim();
+      if (message.startsWith('data: ')) {
+        try {
+          const chunk = JSON.parse(message.substring(6));
+          if (chunk.message && chunk.message.content) {
+            fullContent += chunk.message.content;
+            if (onChunk && typeof onChunk === 'function') {
+              onChunk(chunk.message.content, fullContent);
+            }
+          }
+          if (chunk.type === 'error') {
+            throw new Error(`API 错误: ${chunk.data || chunk.message || '未知错误'}`);
+          }
+        } catch (e) {
+          if (e.message && !e.message.includes('JSON')) {
+            throw e;
+          }
+          console.warn('解析最后 SSE 消息失败:', message, e);
+        }
+      }
+    }
+    
+    // 清除相关缓存
+    CacheManager.clear();
+    
+    return fullContent.trim();
+    
+  } catch (error) {
+    window.logError('流式请求失败：', error);
+    throw error;
+  }
+}
+
+/**
  * 批量操作
  * @param {Array} operations - 操作数组
  * @returns {Promise} - 返回所有操作结果
@@ -339,6 +478,7 @@ if (typeof window !== 'undefined') {
     window.updateData = updateData;
     window.patchData = patchData;
     window.deleteData = deleteData;
+    window.streamPrompt = streamPrompt;
     window.batchOperations = batchOperations;
     window.CacheManager = CacheManager;
 }
@@ -350,6 +490,7 @@ export {
     updateData,
     patchData,
     deleteData,
+    streamPrompt,
     batchOperations,
     CacheManager
 };
@@ -363,6 +504,7 @@ if (typeof window !== 'undefined') {
     if (!window.updateData) window.updateData = updateData;
     if (!window.patchData) window.patchData = patchData;
     if (!window.deleteData) window.deleteData = deleteData;
+    if (!window.streamPrompt) window.streamPrompt = streamPrompt;
     if (!window.batchOperations) window.batchOperations = batchOperations;
     if (!window.CacheManager) window.CacheManager = CacheManager;
 }

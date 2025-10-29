@@ -428,19 +428,12 @@ ${originalCode}
 
 请返回修复后的代码，不要包含任何解释或代码块标记。`;
             
-            // 调用 AI API
-            const response = await window.postData(`${window.API_URL}/prompt`, {
+            // 调用 AI API（流式请求）
+            const { streamPrompt } = await import('/apis/modules/crud.js');
+            const fixedCode = await streamPrompt(`${window.API_URL}/prompt`, {
                 fromSystem,
                 fromUser
             });
-            
-            // 提取修复后的代码
-            let fixedCode = response;
-            
-            // 如果返回的是对象，尝试提取 data 或 content 字段
-            if (typeof response === 'object') {
-                fixedCode = response.data || response.content || response.text || JSON.stringify(response);
-            }
             
             // 移除可能的代码块标记
             fixedCode = String(fixedCode)

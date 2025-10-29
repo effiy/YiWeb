@@ -1739,10 +1739,20 @@ const createCommentPanel = async () => {
                             };
                             // 合并为字符串对象
                             const fromUser = JSON.stringify(fromUserObj);
-                            const response = await postData(`${window.API_URL}/prompt`, {
+                            // 使用流式请求处理 /prompt 接口
+                            const { streamPrompt } = await import('/apis/modules/crud.js');
+                            const responseText = await streamPrompt(`${window.API_URL}/prompt`, {
                                 fromSystem: commenter.forSystem,
                                 fromUser
                             });
+                            // 解析 JSON 响应（期望返回 JSON 字符串）
+                            let response;
+                            try {
+                                response = JSON.parse(responseText);
+                            } catch (e) {
+                                // 如果不是 JSON，尝试包装为对象
+                                response = { data: responseText ? [responseText] : [] };
+                            }
                             // 等待所有 postData 完成后再跳转页面
                             if (Array.isArray(response.data) && response.data.length > 0) {
                               await Promise.all(

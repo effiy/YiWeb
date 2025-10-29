@@ -591,10 +591,22 @@ export const useMethods = (store) => {
             } else if (typeof card.stats === 'string') {
                 statsText = card.stats;
             }
-            const response = await postData(`${window.API_URL}/prompt`, {
+            // 使用流式请求处理 /prompt 接口
+            const { streamPrompt } = await import('/apis/modules/crud.js');
+            const responseText = await streamPrompt(`${window.API_URL}/prompt`, {
                 fromSystem,
-                fromUser: `目标是:${target}, 描述:${description}, 指标是: ${statsText}`
+                fromUser: `目标是:${target}, 描述:${description}, 指标是: ${statsText}`,
+                model: 'qwq'
             });
+
+            // 解析 JSON 响应（期望返回 JSON 字符串）
+            let response;
+            try {
+                response = JSON.parse(responseText);
+            } catch (e) {
+                // 如果不是 JSON，尝试包装为对象
+                response = { data: responseText ? [responseText] : [] };
+            }
 
             console.log('[API响应] 收到服务器响应:', response.data);
 
@@ -1818,14 +1830,24 @@ export const useMethods = (store) => {
 
             const fromSystem = await window.getData(`/prompts/target/featureCards.txt`);
             
-            // 发送消息请求到API
-            const response = await postData(`${window.API_URL}/prompt`, {
+            // 使用流式请求处理 /prompt 接口
+            const { streamPrompt } = await import('/apis/modules/crud.js');
+            const responseText = await streamPrompt(`${window.API_URL}/prompt`, {
                 fromSystem: fromSystem,
                 fromUser: message
             });
             
+            // 解析 JSON 响应（期望返回 JSON 字符串）
+            let response;
+            try {
+                response = JSON.parse(responseText);
+            } catch (e) {
+                // 如果不是 JSON，尝试包装为对象
+                response = { data: responseText ? [responseText] : [] };
+            }
+            
             // 处理响应结果
-            if (response) {
+            if (response && Array.isArray(response.data)) {
                 // 显示保存进度
                 const totalItems = response.data.length;
                 let savedCount = 0;
