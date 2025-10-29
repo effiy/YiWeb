@@ -111,16 +111,37 @@ window.copyMermaidCode = function(diagramId) {
 
 
 // 下载 Mermaid SVG
-function downloadMermaidSVG(diagramId, svgElement) {
+window.downloadMermaidSVG = function(diagramId, svgElement) {
     try {
-        console.log('[Mermaid] 开始下载 SVG，元素:', svgElement);
+        // 获取 SVG 元素（优先使用传入的元素）
+        let svg = svgElement;
+        if (!svg) {
+            // 首先尝试直接查找
+            svg = document.querySelector(`#${diagramId} svg`);
+            // 如果没找到，尝试查找全屏模式下的图表
+            if (!svg && diagramId.startsWith('mermaid-fullscreen-')) {
+                svg = document.querySelector(`#${diagramId} svg`);
+            }
+            // 如果还是没找到，尝试反向查找（全屏模式下查找原始图表）
+            if (!svg) {
+                const fullscreenId = `mermaid-fullscreen-${diagramId}`;
+                svg = document.querySelector(`#${fullscreenId} svg`);
+            }
+        }
+        if (!svg) {
+            console.warn(`[Mermaid] 未找到图表 SVG 元素: ${diagramId}`);
+            showMermaidMessage('未找到图表内容', 'error');
+            return;
+        }
+        
+        console.log('[Mermaid] 开始下载 SVG，元素:', svg);
         
         // 计算所有元素的完整边界（包括文本）
-        const bounds = calculateSVGBounds(svgElement);
+        const bounds = calculateSVGBounds(svg);
         console.log('[Mermaid] SVG 完整边界:', bounds);
         
         // 克隆 SVG 以进行处理，不修改原始元素
-        const svgClone = svgElement.cloneNode(true);
+        const svgClone = svg.cloneNode(true);
         
         // 设置明确的尺寸属性
         svgClone.setAttribute('width', bounds.width);
@@ -164,7 +185,7 @@ function downloadMermaidSVG(diagramId, svgElement) {
         console.error('[Mermaid] SVG 下载失败:', error);
         showMermaidMessage('SVG 下载失败: ' + error.message, 'error');
     }
-}
+};
 
 // 计算 SVG 的完整边界（包括所有元素和文本）
 function calculateSVGBounds(svg) {
