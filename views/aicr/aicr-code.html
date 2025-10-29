@@ -90,7 +90,17 @@
         .aicr-code-content {
             flex: 1;
             display: flex;
+            position: relative;
+        }
+        
+        /* 代码查看器需要隐藏溢出 */
+        .aicr-code-content > .aicr-code-viewer {
             overflow: hidden;
+        }
+        
+        /* 评论区允许溢出，以显示切换按钮 */
+        .aicr-code-content > .aicr-code-comments {
+            overflow: visible;
         }
         
         .aicr-code-viewer {
@@ -106,8 +116,36 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            z-index: 10;
+            transition: width 0.3s ease, margin 0.3s ease, opacity 0.3s ease;
         }
         
+        /* 桌面端：隐藏评论区时缩小宽度到0 */
+        @media (min-width: 769px) {
+            .aicr-code-comments:not(.show) {
+                width: 0;
+                margin: 0;
+                border: none;
+                opacity: 0;
+                pointer-events: none;
+            }
+            
+            .aicr-code-comments:not(.show) .comment-panel-toggle {
+                display: none;
+            }
+        }
+        
+        /* 确保 comment-panel-toggle 按钮可见且可点击 */
+        .aicr-code-comments .comment-panel-container {
+            overflow: visible;
+            position: relative;
+        }
+        
+        /* 确保 comment-panel-toggle 按钮可见且可点击，z-index 高于其他元素 */
+        .aicr-code-comments .comment-panel-toggle {
+            z-index: 1001 !important;
+            pointer-events: auto !important;
+        }
         
         .aicr-code-comments-content {
             flex: 1;
@@ -283,8 +321,6 @@
                     @click="toggleComments"
                     aria-label="展开评论区"
                     title="展开评论区">
-                    <i class="fas fa-comments"></i>
-                    <span>展开评论</span>
                 </button>
             </div>
         </main>
