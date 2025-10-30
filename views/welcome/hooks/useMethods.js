@@ -1846,8 +1846,84 @@ export const useMethods = (store) => {
                 response = { data: responseText ? [responseText] : [] };
             }
             
+            // 兼容多种响应格式，提取数据数组
+            const normalizeResponseData = (response) => {
+                if (!response) return null;
+                
+                // 格式1: { data: [...] } - 标准格式
+                if (Array.isArray(response.data)) {
+                    return response.data;
+                }
+                
+                // 格式2: { data: {...} } - data 是单个对象，转换为数组
+                if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+                    return [response.data];
+                }
+                
+                // 格式3: [...] - 直接返回数组
+                if (Array.isArray(response)) {
+                    return response;
+                }
+                
+                // 格式4: { result: [...] } - 使用 result 字段
+                if (Array.isArray(response.result)) {
+                    return response.result;
+                }
+                
+                // 格式5: { result: {...} } - result 是单个对象
+                if (response.result && typeof response.result === 'object' && !Array.isArray(response.result)) {
+                    return [response.result];
+                }
+                
+                // 格式6: { items: [...] } - 使用 items 字段
+                if (Array.isArray(response.items)) {
+                    return response.items;
+                }
+                
+                // 格式7: { items: {...} } - items 是单个对象
+                if (response.items && typeof response.items === 'object' && !Array.isArray(response.items)) {
+                    return [response.items];
+                }
+                
+                // 格式8: { list: [...] } - 使用 list 字段
+                if (Array.isArray(response.list)) {
+                    return response.list;
+                }
+                
+                // 格式9: { content: [...] } - 使用 content 字段
+                if (Array.isArray(response.content)) {
+                    return response.content;
+                }
+                
+                // 格式10: 如果 response 本身是对象但没有标准字段，尝试提取所有非元数据属性
+                if (typeof response === 'object' && response !== null) {
+                    // 排除一些常见的元数据字段
+                    const metaFields = ['success', 'code', 'status', 'message', 'error', 'errorMessage', 'msg'];
+                    const dataFields = Object.keys(response).filter(key => !metaFields.includes(key));
+                    
+                    if (dataFields.length > 0) {
+                        // 检查第一个字段是否为数组
+                        const firstFieldValue = response[dataFields[0]];
+                        if (Array.isArray(firstFieldValue)) {
+                            return firstFieldValue;
+                        }
+                        if (firstFieldValue && typeof firstFieldValue === 'object') {
+                            return [firstFieldValue];
+                        }
+                    }
+                }
+                
+                return null;
+            };
+            
+            const normalizedData = normalizeResponseData(response);
+            
             // 处理响应结果
-            if (response && Array.isArray(response.data)) {
+            if (normalizedData && Array.isArray(normalizedData) && normalizedData.length > 0) {
+                // 将 normalizeResponseData 返回的数据赋值给 response.data，保持后续代码的一致性
+                if (!response.data) {
+                    response.data = normalizedData;
+                }
                 // 显示保存进度
                 const totalItems = response.data.length;
                 let savedCount = 0;
@@ -2016,8 +2092,170 @@ export const useMethods = (store) => {
                 
                 console.log('[消息处理] 处理完成，新增卡片数量:', savedItems.length);
             } else {
-                console.error('[API错误] 服务器返回错误:', response);
-                showError('服务器返回错误，请稍后重试');
+                // 使用 fullResponse 提取完整的错误信息
+                const fullResponse = response;
+                
+                // 检查是否是格式问题还是真正的错误
+                // 如果 normalizedData 为 null 或空数组，说明响应格式无法识别或数据为空
+                const isFormatError = normalizedData === null || 
+                                     (normalizedData && Array.isArray(normalizedData) && normalizedData.length === 0) ||
+                                     (!response || (typeof response === 'object' && Object.keys(response).length === 0));
+                
+                // 从 fullResponse 和 responseText 中提取所有可能的错误信息字段
+                const extractErrorMessage = (fullResponse, responseText) => {
+                    // 首先尝试从原始响应文本中提取错误信息
+                    if (responseText) {
+                        try {
+                            // 尝试解析 responseText 为 JSON
+                            const parsedText = JSON.parse(responseText);
+                            if (parsedText && typeof parsedText === 'object') {
+                                // 使用解析后的对象继续查找
+                                if (parsedText.message) return parsedText.message;
+                                if (parsedText.error) return parsedText.error;
+                                if (parsedText.errorMessage) return parsedText.errorMessage;
+                                if (parsedText.msg) return parsedText.msg;
+                                if (parsedText.err) return parsedText.err;
+                                if (parsedText.data?.error) return parsedText.data.error;
+                                if (parsedText.data?.message) return parsedText.data.message;
+                            }
+                        } catch (e) {
+                            // 如果不是 JSON，检查是否包含错误关键词
+                            const errorKeywords = ['error', 'Error', 'ERROR', '失败', '错误', '异常'];
+                            const lines = responseText.split('\n').filter(line => line.trim());
+                            for (const line of lines) {
+                                for (const keyword of errorKeywords) {
+                                    if (line.includes(keyword)) {
+                                        // 提取包含关键词的行，限制长度
+                                        const extracted = line.trim();
+                                        if (extracted.length > 0 && extracted.length < 200) {
+                                            return extracted;
+                                        }
+                                    }
+                                }
+                            }
+                            // 如果找不到关键词，但文本较短，直接使用
+                            if (responseText.trim().length > 0 && responseText.trim().length < 200) {
+                                return responseText.trim();
+                            }
+                        }
+                    }
+                    
+                    if (!fullResponse) return '未知错误';
+                    
+                    // 直接字段
+                    if (fullResponse.message) return fullResponse.message;
+                    if (fullResponse.error) return fullResponse.error;
+                    if (fullResponse.errorMessage) return fullResponse.errorMessage;
+                    if (fullResponse.msg) return fullResponse.msg;
+                    if (fullResponse.err) return fullResponse.err;
+                    
+                    // 嵌套字段
+                    if (fullResponse.error?.message) return fullResponse.error.message;
+                    if (fullResponse.error?.error) return fullResponse.error.error;
+                    if (fullResponse.data?.error) return fullResponse.data.error;
+                    if (fullResponse.data?.message) return fullResponse.data.message;
+                    if (fullResponse.result?.error) return fullResponse.result.error;
+                    if (fullResponse.result?.message) return fullResponse.result.message;
+                    
+                    // 如果是字符串，直接返回（限制长度）
+                    if (typeof fullResponse === 'string') {
+                        const trimmed = fullResponse.trim();
+                        if (trimmed && trimmed.length > 0) {
+                            return trimmed.length < 200 ? trimmed : trimmed.substring(0, 197) + '...';
+                        }
+                        return '未知错误';
+                    }
+                    
+                    // 尝试转换为字符串并提取关键信息
+                    try {
+                        const stringified = JSON.stringify(fullResponse);
+                        if (stringified && stringified !== '{}' && stringified !== '[]') {
+                            // 如果响应很长，尝试提取关键信息
+                            if (stringified.length >= 200) {
+                                // 尝试查找包含 "error" 或 "message" 的部分
+                                const errorMatch = stringified.match(/"error"\s*:\s*"([^"]+)"/i) ||
+                                                  stringified.match(/"message"\s*:\s*"([^"]+)"/i) ||
+                                                  stringified.match(/"errorMessage"\s*:\s*"([^"]+)"/i);
+                                if (errorMatch && errorMatch[1]) {
+                                    return errorMatch[1].length < 200 ? errorMatch[1] : errorMatch[1].substring(0, 197) + '...';
+                                }
+                                // 如果没有找到，返回前200字符
+                                return stringified.substring(0, 197) + '...';
+                            }
+                            return stringified;
+                        }
+                    } catch (e) {
+                        // 忽略转换错误
+                    }
+                    
+                    return '未知错误';
+                };
+                
+                const errorMessage = extractErrorMessage(fullResponse, responseText);
+                
+                // 构建详细的错误信息对象
+                const errorDetails = {
+                    response: fullResponse,
+                    responseText: responseText,
+                    responseType: typeof fullResponse,
+                    isArray: Array.isArray(fullResponse),
+                    hasData: fullResponse?.data !== undefined,
+                    dataType: Array.isArray(fullResponse?.data) ? 'array' : typeof fullResponse?.data,
+                    extractedErrorMessage: errorMessage,
+                    // 提取所有可能的错误相关字段
+                    errorFields: {
+                        message: fullResponse?.message,
+                        error: fullResponse?.error,
+                        errorMessage: fullResponse?.errorMessage,
+                        msg: fullResponse?.msg,
+                        err: fullResponse?.err,
+                        nestedError: fullResponse?.error?.message || fullResponse?.error?.error,
+                        dataError: fullResponse?.data?.error || fullResponse?.data?.message,
+                        resultError: fullResponse?.result?.error || fullResponse?.result?.message
+                    }
+                };
+                
+                console.error('[API错误] 服务器返回错误:', {
+                    errorMessage,
+                    errorDetails,
+                    fullResponse: fullResponse,
+                    rawResponseText: responseText,
+                    responseTextLength: responseText?.length,
+                    fullResponseKeys: fullResponse && typeof fullResponse === 'object' ? Object.keys(fullResponse) : []
+                });
+                
+                // 显示更具体的错误信息
+                // 如果错误消息有效且长度合适，显示具体错误；否则显示通用提示
+                let userMessage = '服务器返回错误，请稍后重试';
+                
+                // 如果是格式问题，给出更明确的提示
+                if (isFormatError) {
+                    userMessage = '服务器返回格式不正确，无法解析响应数据';
+                    // 如果能够提取到一些信息，尝试显示响应的结构
+                    if (fullResponse && typeof fullResponse === 'object') {
+                        const keys = Object.keys(fullResponse);
+                        if (keys.length > 0) {
+                            console.warn('[格式警告] 响应包含以下字段，但未找到标准数据字段:', keys);
+                            // 尝试从 responseText 中提取前100字符作为提示
+                            if (responseText && responseText.length > 0) {
+                                const preview = responseText.length < 100 
+                                    ? responseText 
+                                    : responseText.substring(0, 97) + '...';
+                                console.warn('[格式警告] 原始响应预览:', preview);
+                            }
+                        }
+                    }
+                } else if (errorMessage && errorMessage !== '未知错误' && typeof errorMessage === 'string') {
+                    // 真正的错误，显示错误消息
+                    if (errorMessage.length > 0 && errorMessage.length <= 150) {
+                        userMessage = `服务器返回错误: ${errorMessage}`;
+                    } else if (errorMessage.length > 150) {
+                        // 如果错误信息太长，截取前150字符
+                        userMessage = `服务器返回错误: ${errorMessage.substring(0, 147)}...`;
+                    }
+                }
+                
+                showError(userMessage);
                 
                 // 即使API错误也要清空输入框
                 clearInputField(messageInput, 'API错误');
@@ -2026,8 +2264,72 @@ export const useMethods = (store) => {
                 clearSearchState(store, 'API错误');
             }
         } catch (error) {
-            console.error('[消息处理错误]', error);
-            showError('消息发送失败，请稍后重试');
+            // 统一规范化错误对象
+            const normalizeError = (err) => {
+                const status = err?.status || err?.response?.status || null;
+                const statusText = err?.statusText || err?.response?.statusText || '';
+                const isAbort = err?.isAbortError === true || err?.name === 'AbortError';
+                const isNetwork = err?.isNetworkError === true || (err?.name === 'TypeError' && (err?.message || '').includes('fetch'));
+                const isCors = err?.isCorsError === true || /(CORS|cross-origin)/i.test(err?.message || '');
+                const isTimeout = /(timeout|超时)/i.test(err?.message || '');
+                const httpCode = typeof status === 'number' ? status : null;
+                
+                let rawMessage = err?.message || '';
+                if (rawMessage && rawMessage.length > 300) rawMessage = rawMessage.substring(0, 297) + '...';
+                
+                return {
+                    name: err?.name || 'Error',
+                    message: rawMessage,
+                    httpCode,
+                    statusText,
+                    url: err?.url || err?.response?.url || '',
+                    isAbort,
+                    isNetwork,
+                    isCors,
+                    isTimeout,
+                    stack: err?.stack,
+                };
+            };
+            
+            const nerr = normalizeError(error);
+            
+            // 根据类型选择更友好的用户提示
+            let errorMessage = '消息发送失败，请稍后重试';
+            if (nerr.isAbort) {
+                errorMessage = '请求已取消或超时';
+            } else if (nerr.isTimeout) {
+                errorMessage = '请求超时，请稍后重试';
+            } else if (nerr.isCors) {
+                errorMessage = '跨域请求被阻止，请检查服务器CORS配置';
+            } else if (nerr.isNetwork) {
+                errorMessage = '网络异常，无法连接到服务器';
+            } else if (nerr.httpCode) {
+                if (nerr.httpCode === 400) errorMessage = '请求参数有误，请检查输入后重试';
+                else if (nerr.httpCode === 401) errorMessage = '未登录或登录已过期，请重新登录';
+                else if (nerr.httpCode === 403) errorMessage = '无权限执行该操作';
+                else if (nerr.httpCode === 404) errorMessage = '接口不存在或地址错误';
+                else if (nerr.httpCode === 429) errorMessage = '请求过于频繁，请稍后再试';
+                else if (nerr.httpCode >= 500) errorMessage = '服务器繁忙，请稍后再试';
+            } else if (nerr.message) {
+                const msg = nerr.message.trim();
+                if (msg && msg.length <= 150) errorMessage = msg;
+                else if (msg && msg.length > 150) errorMessage = msg.substring(0, 147) + '...';
+            }
+            
+            // 结构化日志
+            console.error('[消息处理错误]', {
+                hint: '查看 httpCode/isNetwork/isCors/isTimeout 定位问题',
+                error: nerr,
+                request: {
+                    endpoint: `${window.API_URL}/prompt`,
+                    payloadMeta: {
+                        fromSystemType: typeof store?.fromSystem?.value,
+                        fromUserLength: (typeof message === 'string') ? message.length : 0
+                    }
+                }
+            });
+            
+            showError(errorMessage);
             
             // 清空输入框内容（不恢复原始内容，让用户重新输入）
             clearInputField(messageInput, '异常处理');
@@ -2824,6 +3126,7 @@ export const useMethods = (store) => {
     
     return methods;
 };
+
 
 
 
