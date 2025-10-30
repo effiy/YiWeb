@@ -294,20 +294,42 @@ async function deleteData(url, options = {}) {
  */
 async function streamPrompt(url, data, options = {}, onChunk = null) {
   try {
-    const payload = {
-      fromSystem: data.fromSystem,
-      fromUser: data.fromUser,
-    };
-    
-    // 可选字段
-    if (data.model) {
-      payload.model = data.model;
-    }
-    if (data.images && Array.isArray(data.images) && data.images.length > 0) {
-      payload.images = data.images;
-    }
+    // 支持两种请求结构：
+    // 1) 新结构：包含 type 字段时，认为是服务端定义的完整结构，原样透传
+    // 2) 旧结构：{ fromSystem, fromUser, model?, images? }
+    const isNewSchema = data && typeof data === 'object' && 'type' in data;
+    const payload = (() => {
+      if (isNewSchema) {
+        // 新协议：若携带 input，则转换为 fromUser 字符串，并删除 input
+        const clone = { ...data };
+        if (Object.prototype.hasOwnProperty.call(clone, 'input')) {
+          try {
+            clone.fromUser = typeof clone.input === 'string' ? clone.input : JSON.stringify(clone.input);
+          } catch (_) {
+            clone.fromUser = String(clone.input);
+          }
+          delete clone.input;
+        }
+        return clone;
+      }
+      // 旧协议：统一使用 fromUser（字符串）
+      const body = {
+        fromSystem: data.fromSystem,
+        fromUser: String(data.fromUser ?? '')
+      };
+      if (data.model) body.model = data.model;
+      if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+        body.images = data.images;
+      }
+      return body;
+    })();
     
     // 构建请求配置
+    // 移除不再支持的字段
+    if (payload && Object.prototype.hasOwnProperty.call(payload, 'type')) {
+      try { delete payload.type; } catch (_) {}
+    }
+
     const config = {
       method: 'POST',
       headers: {
@@ -319,7 +341,33 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
     };
     
     // 发送请求
-    const response = await fetch(url, config);
+    let response = await fetch(url, config);
+    
+    // 针对 422 做一次性回退重试（去除可选字段，如 model）
+    if (!response.ok && response.status === 422) {
+      try {
+        const fallbackPayload = (() => {
+          // 新协议保持原样，但尽量去除 model 等可选字段
+          if (isNewSchema) {
+            const clone = { ...payload };
+            if ('model' in clone) delete clone.model;
+            return clone;
+          }
+          // 旧协议缩减为最小字段
+          return {
+            fromSystem: String(data.fromSystem || ''),
+            fromUser: String(data.fromUser || '')
+          };
+        })();
+        const fallbackConfig = {
+          ...config,
+          body: JSON.stringify(fallbackPayload)
+        };
+        response = await fetch(url, fallbackConfig);
+      } catch (_) {
+        // 忽略回退流程内部错误，继续按原流程抛出
+      }
+    }
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -424,6 +472,101 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
 }
 
 /**
+ * 移除 <think>...</think> 标签内容
+ */
+function stripThinkTags(text) {
+  if (typeof text !== 'string') return text;
+  try {
+    return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  } catch (_) {
+    return text;
+  }
+}
+
+/**
+ * 如果整体是一个被 JSON.stringify 过的字符串，则尝试还原
+ * 例如："\n```json\n[...]\n```\n" -> 还原为包含换行与反引号的原始文本
+ */
+function tryUnescapeJsonString(text) {
+  if (typeof text !== 'string') return text;
+  try {
+    const maybe = JSON.parse(text);
+    if (typeof maybe === 'string') {
+      return maybe;
+    }
+    return text;
+  } catch (_) {
+    return text;
+  }
+}
+
+/**
+ * 去除 Markdown 代码围栏，优先提取第一个代码块内容
+ * 支持 ```json ... ``` 或 ``` ... ```
+ */
+function stripCodeFences(text) {
+  if (typeof text !== 'string') return text;
+  try {
+    const fenceRegex = /```[a-zA-Z0-9_-]*\n([\s\S]*?)```/m;
+    const m = text.match(fenceRegex);
+    if (m && m[1]) {
+      return m[1].trim();
+    }
+    return text;
+  } catch (_) {
+    return text;
+  }
+}
+
+/**
+ * 规范化 /prompt 文本响应为统一 JSON 结构：{ data: Task[] | any[] }
+ * - 先去除 <think> 标签内容
+ * - 若整体是被 JSON.stringify 的字符串，先反转义
+ * - 去除 Markdown 代码围栏（```json ... ```）
+ * - 然后若剩余内容是合法 JSON，则转为 JSON；否则保留为字符串
+ * @param {string} fullContent - 流式聚合后的完整文本
+ * @returns {{ data: any[] }}
+ */
+function normalizePromptResponse(fullContent) {
+  if (!fullContent || typeof fullContent !== 'string') {
+    return { data: [] };
+  }
+  let cleaned = stripThinkTags(fullContent);
+  cleaned = tryUnescapeJsonString(cleaned);
+  cleaned = stripCodeFences(cleaned);
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (Array.isArray(parsed)) {
+      return { data: parsed };
+    }
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.data)) {
+      return { data: parsed.data };
+    }
+    return { data: [parsed] };
+  } catch (_) {
+    return { data: cleaned ? [cleaned] : [] };
+  }
+}
+
+/**
+ * 流式 Prompt 请求（JSON 统一封装版）
+ * - 支持标准化任务生成功能的请求结构
+ * - 始终返回 { data: [...] }
+ *
+ * 兼容旧结构：{ fromSystem, fromUser, model }
+ */
+async function streamPromptJSON(url, data, options = {}, onChunk = null) {
+  // 兼容旧结构：直接透传 fromSystem/fromUser
+  const isLegacy = typeof data?.fromUser === 'string' && !('input' in (data || {}));
+  const payload = isLegacy
+    ? { fromSystem: data.fromSystem, fromUser: data.fromUser, model: data.model }
+    : data;
+
+  const fullText = await streamPrompt(url, payload, options, onChunk);
+  return normalizePromptResponse(fullText);
+}
+
+/**
  * 批量操作
  * @param {Array} operations - 操作数组
  * @returns {Promise} - 返回所有操作结果
@@ -491,6 +634,7 @@ export {
     patchData,
     deleteData,
     streamPrompt,
+    streamPromptJSON,
     batchOperations,
     CacheManager
 };
@@ -505,6 +649,7 @@ if (typeof window !== 'undefined') {
     if (!window.patchData) window.patchData = patchData;
     if (!window.deleteData) window.deleteData = deleteData;
     if (!window.streamPrompt) window.streamPrompt = streamPrompt;
+    if (!window.streamPromptJSON) window.streamPromptJSON = streamPromptJSON;
     if (!window.batchOperations) window.batchOperations = batchOperations;
     if (!window.CacheManager) window.CacheManager = CacheManager;
 }
@@ -512,6 +657,7 @@ if (typeof window !== 'undefined') {
 // 注意：由于HTML使用普通script标签，不支持ES6模块语法
 // 如果需要ES6模块支持，请将script标签改为 type="module"
 // 或者使用动态import()语法
+
 
 
 

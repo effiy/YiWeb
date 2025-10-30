@@ -488,27 +488,31 @@ window.useMethods = (store, computed) => {
                 try {
                     const fromSystem = await window.getData(`/prompts/tasks/tasks.txt`);
                     
-                    // 使用流式请求处理 /prompt 接口
-                    const { streamPrompt } = await import('/apis/modules/crud.js');
-                    const responseText = await streamPrompt(`${window.API_URL}/prompt`, {
+                    // 使用流式请求处理 /prompt 接口（统一 JSON 返回，兼容旧协议）
+                    const { streamPromptJSON } = await import('/apis/modules/crud.js');
+                    const response = await streamPromptJSON(`${window.API_URL}/prompt`, {
                         fromSystem,
                         fromUser: query
                     });
                     
-                    // 解析 JSON 响应（期望返回 JSON 字符串）
-                    let response;
-                    try {
-                        response = JSON.parse(responseText);
-                    } catch (e) {
-                        // 如果不是 JSON，尝试包装为对象
-                        response = { data: responseText ? [responseText] : [] };
-                    }
-                    
                     if (Array.isArray(response.data) && response.data.length > 0) {
                         await Promise.all(
-                            response.data.map(item =>
-                                window.postData(`${window.API_URL}/mongodb/?cname=tasks`, item)
-                            )
+                            response.data.map(rawItem => {
+                                let itemObj = null;
+                                if (typeof rawItem === 'string') {
+                                    try {
+                                        const maybe = JSON.parse(rawItem);
+                                        itemObj = (maybe && typeof maybe === 'object') ? maybe : { description: String(rawItem) };
+                                    } catch (_) {
+                                        itemObj = { description: String(rawItem) };
+                                    }
+                                } else if (rawItem && typeof rawItem === 'object') {
+                                    itemObj = rawItem;
+                                } else {
+                                    itemObj = { description: String(rawItem ?? '') };
+                                }
+                                return window.postData(`${window.API_URL}/mongodb/?cname=tasks`, itemObj);
+                            })
                         );
                         store.setSearchQuery('');
                         // 重新加载任务数据
@@ -1194,6 +1198,7 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
 
     };
 }; 
+
 
 
 

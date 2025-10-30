@@ -428,12 +428,13 @@ ${originalCode}
 
 请返回修复后的代码，不要包含任何解释或代码块标记。`;
             
-            // 调用 AI API（流式请求）
-            const { streamPrompt } = await import('/apis/modules/crud.js');
-            const fixedCode = await streamPrompt(`${window.API_URL}/prompt`, {
+            // 调用 AI API（流式请求，统一 JSON 返回）
+            const { streamPromptJSON } = await import('/apis/modules/crud.js');
+            const response = await streamPromptJSON(`${window.API_URL}/prompt`, {
                 fromSystem,
                 fromUser
             });
+            const fixedCode = Array.isArray(response?.data) ? response.data.join('') : (response?.data ?? '');
             
             // 移除可能的代码块标记
             fixedCode = String(fixedCode)
@@ -1562,4 +1563,5 @@ window.addMermaidFullscreenInteractions = function(containerId) {
 console.log('- window.debugMermaidRenderer() - 查看调试信息');
 console.log('- window.reRenderAllMermaid() - 重新渲染所有图表');
 console.log('- window.getMermaidStats() - 获取渲染统计');
+
 

@@ -764,34 +764,66 @@ const createCommentPanel = async () => {
                     return;
                 }
 
-                const commentData = {
-                    content: this.newCommentText.trim()
-                };
+                const text = this.newCommentText.trim();
+                // 清空输入框（先清以获得更顺畅的输入体验）
+                this.newCommentText = '';
 
-                if (this.finalSelectedCommenterIds.length > 0) {
-                    const selectedCommenters = this.finalCommenters.filter(c => this.finalSelectedCommenterIds.includes(c.key));
-                    if (selectedCommenters.length > 0) {
-                        commentData.fromSystem = selectedCommenters;
-                    }
+                const selectedIds = Array.isArray(this.finalSelectedCommenterIds) ? this.finalSelectedCommenterIds : [];
+                const selectedCommenters = (Array.isArray(this.finalCommenters) ? this.finalCommenters : []).filter(c => selectedIds.includes(c.key));
+
+                if (selectedCommenters.length === 0) {
+                    // 无选中评论者：按原流程走手动提交
+                    const commentData = { content: text };
+                    this.$emit('comment-submit', commentData);
+                    setTimeout(() => { this.debouncedLoadComments(); }, 100);
+                    setTimeout(() => { this.debouncedLoadComments(); }, 1000);
+                    return;
                 }
 
-                // 清空输入框
-                this.newCommentText = '';
-                
-                // 发出评论提交事件
-                this.$emit('comment-submit', commentData);
-                
-                // 立即刷新评论列表，确保新评论能够显示
-                console.log('[CommentPanel] 评论提交后立即刷新评论列表');
-                setTimeout(() => {
-                    this.debouncedLoadComments();
-                }, 100);
-                
-                // 额外确保刷新，延迟更长时间再次刷新
-                setTimeout(() => {
-                    console.log('[CommentPanel] 评论提交后延迟刷新评论列表');
-                    this.debouncedLoadComments();
-                }, 1000);
+                // 有选中评论者：直接调用 /prompt，结果即时加入列表并后台写库
+                try {
+                    await Promise.all(selectedCommenters.map(async (commenter) => {
+                        const fromUserObj = {
+                            text,
+                            rangeInfo: {},
+                            fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
+                            projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null)),
+                            versionId: (window.aicrStore && window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : (document.getElementById('versionSelect') ? document.getElementById('versionSelect').value : null)),
+                            author: commenter.name || commenter.author || 'AI评论者',
+                            status: 'pending',
+                            createdTime: new Date().toISOString(),
+                            updatedTime: new Date().toISOString()
+                        };
+                        const fromUser = JSON.stringify(fromUserObj);
+                        const { streamPromptJSON, postData } = await import('/apis/modules/crud.js');
+                        const response = await streamPromptJSON(`${window.API_URL}/prompt`, {
+                            fromSystem: commenter.forSystem,
+                            fromUser
+                        });
+                        if (Array.isArray(response?.data) && response.data.length > 0) {
+                            for (const item of response.data) {
+                                const commentObj = (item && typeof item === 'object') ? { ...item } : { content: String(item || '') };
+                                if (!commentObj.content) {
+                                    const alt = item && typeof item === 'object' ? (item.content || item.text || item.body || item.message || item.comment) : null;
+                                    if (alt) commentObj.content = String(alt);
+                                }
+                                commentObj.fileId = commentObj.fileId || fromUserObj.fileId;
+                                commentObj.projectId = commentObj.projectId || fromUserObj.projectId;
+                                commentObj.versionId = commentObj.versionId || fromUserObj.versionId;
+                                commentObj.author = commentObj.author || fromUserObj.author;
+                                commentObj.status = commentObj.status || 'pending';
+                                commentObj.createdTime = commentObj.createdTime || new Date().toISOString();
+                                commentObj.updatedTime = new Date().toISOString();
+
+                                try { if (Array.isArray(this.comments)) this.comments.push(commentObj); } catch (_) {}
+                                try { window.dispatchEvent(new CustomEvent('addNewComment', { detail: { comment: commentObj } })); } catch (_) {}
+                                try { await postData(`${window.API_URL}/mongodb/?cname=comments`, commentObj); } catch (e) { console.warn('[CommentPanel] 后台写库失败（已在本地显示）:', e); }
+                            }
+                        }
+                    }));
+                } finally {
+                    setTimeout(() => { this.debouncedLoadComments(); }, 150);
+                }
             },
 
             // 处理评论输入
@@ -1724,71 +1756,97 @@ const createCommentPanel = async () => {
                         // 显示加载动画
                         this.commentsLoading = true;
                         // 可以在此处触发AI生成评论内容的流程
+                        const selectedIds = Array.isArray(this.internalSelectedCommenterIds) ? this.internalSelectedCommenterIds : [];
+                        if (!selectedIds.length) {
+                          try { if (window.showWarning) { window.showWarning('请先选择至少一位评论者'); } } catch (_) {}
+                          this.commentsLoading = false;
+                          return;
+                        }
                         Promise.all(
-                          this.commenters.map(async commenter => {
-                            const fromUserObj = {
-                                text,
-                                rangeInfo,
-                                fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
-                                projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null)),
-                                versionId: (window.aicrStore && window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : (document.getElementById('versionSelect') ? document.getElementById('versionSelect').value : null)),
-                                author: commenter.name || commenter.author || 'AI评论者',
-                                status: "pending",
-                                createdTime: new Date().toISOString(),
-                                updatedTime: new Date().toISOString()
-                            };
-                            // 合并为字符串对象
-                            const fromUser = JSON.stringify(fromUserObj);
-                            // 使用流式请求处理 /prompt 接口
-                            const { streamPrompt } = await import('/apis/modules/crud.js');
-                            const responseText = await streamPrompt(`${window.API_URL}/prompt`, {
-                                fromSystem: commenter.forSystem,
-                                fromUser
-                            });
-                            // 解析 JSON 响应（期望返回 JSON 字符串）
-                            let response;
-                            try {
-                                response = JSON.parse(responseText);
-                            } catch (e) {
-                                // 如果不是 JSON，尝试包装为对象
-                                response = { data: responseText ? [responseText] : [] };
-                            }
-                            // 等待所有 postData 完成后再跳转页面
-                            if (Array.isArray(response.data) && response.data.length > 0) {
-                              await Promise.all(
-                                response.data.map(async item => {
-                                  await postData(`${window.API_URL}/mongodb/?cname=comments`, { ...item });
-                                })
-                              );
-                            }
+                          // 仅对当前选中的评论者调用
+                          (Array.isArray(this.finalCommenters) ? this.finalCommenters : this.commenters).filter(c => selectedIds.includes(c.key)).map(async commenter => {
+                             const fromUserObj = {
+                                 text,
+                                 rangeInfo,
+                                 fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
+                                 projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null)),
+                                 versionId: (window.aicrStore && window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : (document.getElementById('versionSelect') ? document.getElementById('versionSelect').value : null)),
+                                 author: commenter.name || commenter.author || 'AI评论者',
+                                 status: "pending",
+                                 createdTime: new Date().toISOString(),
+                                 updatedTime: new Date().toISOString()
+                             };
+                             // 合并为字符串对象
+                             const fromUser = JSON.stringify(fromUserObj);
+                             // 使用流式请求处理 /prompt 接口（统一 JSON 返回，兼容旧协议）
+                             const { streamPromptJSON } = await import('/apis/modules/crud.js');
+                             const response = await streamPromptJSON(`${window.API_URL}/prompt`, {
+                                 fromSystem: commenter.forSystem,
+                                 fromUser
+                             });
+                             // 将结果直接添加到本地评论列表，并后台写库
+                             let __added = 0;
+                             if (Array.isArray(response?.data) && response.data.length > 0) {
+                               const { postData } = await import('/apis/modules/crud.js');
+                              for (const item of response.data) {
+                                 // 规范化为评论对象
+                                const commentObj = (item && typeof item === 'object') ? { ...item } : { content: String(item || '') };
+                                // 内容字段兜底映射
+                                if (!commentObj.content) {
+                                  const alt = item && typeof item === 'object'
+                                    ? (item.content || item.text || item.body || item.message || item.comment)
+                                    : null;
+                                  if (alt) commentObj.content = String(alt);
+                                }
+                                 commentObj.fileId = commentObj.fileId || fromUserObj.fileId;
+                                 commentObj.projectId = commentObj.projectId || fromUserObj.projectId;
+                                 commentObj.versionId = commentObj.versionId || fromUserObj.versionId;
+                                 commentObj.author = commentObj.author || fromUserObj.author;
+                                 commentObj.status = commentObj.status || 'pending';
+                                 commentObj.createdTime = commentObj.createdTime || new Date().toISOString();
+                                 commentObj.updatedTime = new Date().toISOString();
+
+                                 // 1) 立即加入本地UI
+                                 try { this.addCommentToLocalData(commentObj); } catch (e) {}
+                                 try { window.dispatchEvent(new CustomEvent('addNewComment', { detail: { comment: commentObj } })); } catch (e) {}
+
+                                 // 2) 后台写库
+                                 try {
+                                   await postData(`${window.API_URL}/mongodb/?cname=comments`, commentObj);
+                                 } catch (e) {
+                                   console.warn('[CommentPanel] 后台写库失败（已在本地显示）:', e);
+                                 }
+                                 __added++;
+                               }
+                             }
+                             if (!__added) {
+                               const fallback = {
+                                 content: text,
+                                 fileId: fromUserObj.fileId,
+                                 projectId: fromUserObj.projectId,
+                                 versionId: fromUserObj.versionId,
+                                 author: fromUserObj.author,
+                                 status: 'pending',
+                                 createdTime: new Date().toISOString(),
+                                 updatedTime: new Date().toISOString(),
+                                 rangeInfo
+                               };
+                               try { this.addCommentToLocalData(fallback); } catch (_) {}
+                               try { const { postData } = await import('/apis/modules/crud.js'); await postData(`${window.API_URL}/mongodb/?cname=comments`, fallback); } catch (e) {}
+                             }
                           })
                         ).then(() => {
-                        // 通知评论面板刷新
-                        window.dispatchEvent(new CustomEvent('reloadComments', { 
-                            detail: { 
-                                forceReload: true, 
-                                showAllComments: false, 
-                                immediateReload: true,
-                                fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name))
-                            } 
+                         // 通知评论面板刷新
+                         window.dispatchEvent(new CustomEvent('reloadComments', { 
+                             detail: { 
+                                 projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null)), 
+                                 versionId: (window.aicrStore && window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : (document.getElementById('versionSelect') ? document.getElementById('versionSelect').value : null)) 
+                             } 
                         }));
-
-                        // 延迟后高亮刚添加的评论位置
-                        setTimeout(() => {
-                            if (rangeInfo && (this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)))) {
-                                console.log('[CommentPanel] 高亮新添加的评论位置:', rangeInfo);
-                                window.dispatchEvent(new CustomEvent('highlightCodeLines', {
-                                    detail: {
-                                        fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
-                                        rangeInfo: rangeInfo
-                                    }
-                                }));
-                            }
-                        }, 500); // 等待评论面板刷新完成
-                        }).finally(() => {
-                          // 隐藏加载动画
-                          this.commentsLoading = false;
-                        });
+                        this.commentsLoading = false;
+                      }).catch(() => {
+                        this.commentsLoading = false;
+                      })
                     }
                 }, 100);
             });
@@ -1912,6 +1970,7 @@ const createCommentPanel = async () => {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
+
 
 
 
