@@ -644,6 +644,12 @@
     overflow: hidden;
 }
 
+.action-btn--session {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(59, 130, 246, 0.1));
+    border-color: rgba(6, 182, 212, 0.3);
+    color: #06b6d4;
+}
+
 .action-btn--edit {
     background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1));
     border-color: rgba(79, 70, 229, 0.3);
@@ -675,6 +681,10 @@
 }
 
 /* 为编辑和删除按钮添加交错延迟 */
+.task-list-view__item:hover .action-btn--session {
+    animation-delay: 0s;
+}
+
 .task-list-view__item:hover .action-btn--edit {
     animation-delay: 0.05s;
 }
@@ -697,6 +707,14 @@
 .action-btn:hover::before {
     width: 100%;
     height: 100%;
+}
+
+.action-btn--session:hover {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(59, 130, 246, 0.25));
+    border-color: rgba(6, 182, 212, 0.6);
+    color: #06b6d4;
+    transform: scale(1.15) rotate(0deg);
+    box-shadow: 0 6px 16px rgba(6, 182, 212, 0.4);
 }
 
 .action-btn--edit:hover {
@@ -1700,4 +1718,5 @@
         opacity: 1;
     }
 }
+
 

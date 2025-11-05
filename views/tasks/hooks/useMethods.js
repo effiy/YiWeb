@@ -1195,9 +1195,162 @@ ${Object.entries(task.steps[0] || {}).map(([key, value]) => `${key}. ${value}`).
         // 设置相关方法
         openSettings,
 
+        // 创建 YiPet 会话
+        createYiPetSession: async (task) => {
+            if (!task || !task.title) {
+                if (window.showError) {
+                    window.showError('无效的任务数据');
+                }
+                return;
+            }
+
+            try {
+                // 显示加载状态
+                if (window.showGlobalLoading) {
+                    window.showGlobalLoading('正在生成页面上下文并创建会话...');
+                }
+                
+                // 构建任务内容数据，用于生成页面上下文
+                const taskData = {
+                    title: task.title || '',
+                    description: task.description || '',
+                    input: task.input || null,
+                    output: task.output || null,
+                    steps: task.steps || {},
+                    status: task.status || 'todo',
+                    priority: task.priority || 'none',
+                    dueDate: task.dueDate || null,
+                    featureName: task.featureName || '',
+                    cardTitle: task.cardTitle || '',
+                    tags: task.tags || []
+                };
+
+                // 构建用户输入内容，包含任务的所有信息
+                const taskInfoText = `
+任务标题：${taskData.title}
+任务描述：${taskData.description}
+任务状态：${taskData.status}
+优先级：${taskData.priority}
+截止日期：${taskData.dueDate || '无'}
+功能名称：${taskData.featureName}
+卡片标题：${taskData.cardTitle}
+
+输入信息：
+${taskData.input ? (Array.isArray(taskData.input) ? taskData.input.map((item, idx) => `${idx + 1}. ${item}`).join('\n') : (typeof taskData.input === 'object' ? Object.entries(taskData.input).map(([k, v]) => `${k}: ${v}`).join('\n') : taskData.input)) : '无'}
+
+输出信息：
+${taskData.output ? (Array.isArray(taskData.output) ? taskData.output.map((item, idx) => `${idx + 1}. ${item}`).join('\n') : (typeof taskData.output === 'object' ? Object.entries(taskData.output).map(([k, v]) => `${k}: ${v}`).join('\n') : taskData.output)) : '无'}
+
+执行步骤：
+${taskData.steps && Object.keys(taskData.steps).length > 0 
+    ? Object.entries(taskData.steps).map(([key, step]) => {
+        const stepText = typeof step === 'string' ? step : (step.text || step);
+        const completed = typeof step === 'object' && step.completed !== undefined ? step.completed : (typeof step === 'boolean' ? step : false);
+        return `${key}: ${stepText} [${completed ? '已完成' : '未完成'}]`;
+      }).join('\n')
+    : '无'}
+
+标签：
+${taskData.tags && taskData.tags.length > 0 ? taskData.tags.map(t => `- ${t}`).join('\n') : '无'}
+`.trim();
+
+                // 获取系统提示词
+                const fromSystem = await window.getData(`/prompts/target/taskContext.txt`);
+                
+                // 调用 prompt 接口生成 markdown 格式的页面上下文
+                const { streamPromptJSON } = await import('/apis/modules/crud.js');
+                const response = await streamPromptJSON(`${window.API_URL}/prompt`, {
+                    fromSystem: fromSystem,
+                    fromUser: `请根据以下任务信息生成完整的 Markdown 格式页面上下文内容：\n\n${taskInfoText}`
+                });
+
+                // 提取生成的 markdown 内容
+                let pageContent = '';
+                if (typeof response === 'string') {
+                    pageContent = response;
+                } else if (response && response.data) {
+                    // streamPromptJSON 返回格式为 { data: [...] }
+                    if (Array.isArray(response.data) && response.data.length > 0) {
+                        // 如果 data 是数组，取第一个元素
+                        const firstItem = response.data[0];
+                        pageContent = typeof firstItem === 'string' ? firstItem : JSON.stringify(firstItem, null, 2);
+                    } else if (typeof response.data === 'string') {
+                        pageContent = response.data;
+                    } else {
+                        pageContent = JSON.stringify(response.data, null, 2);
+                    }
+                } else if (response && response.content) {
+                    pageContent = typeof response.content === 'string' ? response.content : JSON.stringify(response.content, null, 2);
+                } else {
+                    pageContent = JSON.stringify(response, null, 2);
+                }
+
+                // 如果内容为空，使用任务信息作为后备
+                if (!pageContent || pageContent.trim() === '') {
+                    pageContent = `# ${taskData.title}\n\n## 描述\n${taskData.description || '暂无描述'}\n\n## 输入\n${taskData.input ? (Array.isArray(taskData.input) ? taskData.input.map((item, idx) => `${idx + 1}. ${item}`).join('\n') : String(taskData.input)) : '无'}\n\n## 输出\n${taskData.output ? (Array.isArray(taskData.output) ? taskData.output.map((item, idx) => `${idx + 1}. ${item}`).join('\n') : String(taskData.output)) : '无'}\n\n## 执行步骤\n${taskData.steps && Object.keys(taskData.steps).length > 0 ? Object.entries(taskData.steps).map(([key, step]) => {
+                        const stepText = typeof step === 'string' ? step : (step.text || step);
+                        const completed = typeof step === 'object' && step.completed !== undefined ? step.completed : (typeof step === 'boolean' ? step : false);
+                        return `- ${key}: ${stepText} [${completed ? '已完成' : '未完成'}]`;
+                    }).join('\n') : '无'}\n\n## 任务状态\n- 状态：${taskData.status}\n- 优先级：${taskData.priority}\n- 截止日期：${taskData.dueDate || '无'}`;
+                }
+
+                // 生成会话 ID（基于任务标题和当前时间戳）
+                const sessionId = `session_${Date.now()}_${taskData.title.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                
+                // 获取当前时间戳
+                const now = Date.now();
+
+                // 生成唯一的随机 URL（借鉴 YiPet 手动创建会话时的 url 字段）
+                // 使用自定义协议格式：blank-session://{timestamp}-{random}
+                const timestamp = Date.now();
+                const randomStr = Math.random().toString(36).substring(2, 11); // 9位随机字符串
+                const uniqueUrl = `blank-session://${timestamp}-${randomStr}`;
+
+                // 构建会话数据
+                const sessionData = {
+                    id: sessionId,
+                    url: uniqueUrl,
+                    title: taskData.title,
+                    pageTitle: taskData.title,
+                    pageDescription: taskData.description || '',
+                    pageContent: pageContent,
+                    messages: [],
+                    tags: taskData.tags && Array.isArray(taskData.tags) ? taskData.tags.filter(t => t) : [],
+                    createdAt: now,
+                    updatedAt: now,
+                    lastAccessTime: now
+                };
+
+                // 调用会话保存接口
+                const { postData } = await import('/apis/index.js');
+                const saveResult = await postData(`${window.API_URL}/session/save`, sessionData);
+
+                if (window.hideGlobalLoading) {
+                    window.hideGlobalLoading();
+                }
+                
+                if (saveResult && saveResult.success !== false) {
+                    if (window.showSuccess) {
+                        window.showSuccess(`已成功创建 YiPet 会话：${taskData.title}`);
+                    }
+                    console.log('[创建会话] 会话创建成功:', saveResult);
+                } else {
+                    throw new Error(saveResult?.message || '创建会话失败');
+                }
+            } catch (error) {
+                if (window.hideGlobalLoading) {
+                    window.hideGlobalLoading();
+                }
+                console.error('[创建会话] 创建会话失败:', error);
+                if (window.showError) {
+                    window.showError(`创建会话失败：${error.message || '未知错误'}`);
+                }
+            }
+        },
 
     };
 }; 
+
 
 
 

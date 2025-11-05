@@ -711,6 +711,27 @@ class TaskProApp {
                         }
                     },
                     
+                    // 创建 YiPet 会话
+                    handleTaskCreateSession(task) {
+                        try {
+                            console.log('[TaskPro] 创建会话:', task.title);
+                            // 调用 useMethods 中的创建会话函数
+                            if (window.store && window.store.methods && window.store.methods.createYiPetSession) {
+                                window.store.methods.createYiPetSession(task);
+                            } else {
+                                console.error('[TaskPro] 创建会话方法不存在');
+                                if (window.showError) {
+                                    window.showError('创建会话功能不可用');
+                                }
+                            }
+                        } catch (error) {
+                            console.error('[TaskPro] 创建会话失败:', error);
+                            if (window.showError) {
+                                window.showError('创建会话失败：' + (error.message || '未知错误'));
+                            }
+                        }
+                    },
+                    
                     // 保存任务
                     async handleTaskSave(taskData) {
                         try {
@@ -2693,6 +2714,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
+
 
 
 

@@ -56,6 +56,12 @@ const createEnhancedTaskList = () => {
                             <div class="task-title">{{ task.title }}</div>
                             <div class="task-actions">
                                 <button 
+                                    class="create-session-btn" 
+                                    @click.stop="handleCreateSession(task)"
+                                    title="创建 YiPet 会话">
+                                    <i class="fas fa-comments"></i>
+                                </button>
+                                <button 
                                     class="edit-btn" 
                                     @click.stop="handleEditTask(task)"
                                     title="编辑任务">
@@ -251,6 +257,12 @@ const createEnhancedTaskList = () => {
                             
                             <!-- 操作列 -->
                             <div class="task-list-view__cell task-list-view__cell--actions">
+                                <button class="action-btn action-btn--session" 
+                                        @click.stop="handleCreateSession(task)"
+                                        :title="'创建 YiPet 会话: ' + task.title"
+                                        :aria-label="'创建 YiPet 会话: ' + task.title">
+                                    <i class="fas fa-comments"></i>
+                                </button>
                                 <button class="action-btn action-btn--edit" 
                                         @click.stop="handleEditTask(task)"
                                         :title="'编辑 ' + task.title"
@@ -1440,6 +1452,19 @@ const createEnhancedTaskList = () => {
             },
             
             /**
+             * 创建 YiPet 会话
+             */
+            handleCreateSession(task) {
+                try {
+                    console.log('[创建会话] 开始创建会话:', task.title);
+                    // 触发创建会话事件，让父组件处理
+                    this.$emit('task-create-session', task);
+                } catch (error) {
+                    console.error('[创建会话] 创建会话失败:', error);
+                }
+            },
+            
+            /**
              * 处理删除任务（列表视图直接调用）
              */
             async handleDeleteTask(task) {
@@ -2183,6 +2208,7 @@ try {
 } catch (error) {
     console.error('EnhancedTaskList 组件初始化失败:', error);
 }
+
 
 
 

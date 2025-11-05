@@ -110,7 +110,7 @@ const createFileTreeNode = () => {
                 return this.tree.map(item => sortFileTreeRecursively(item));
             }
         },
-        emits: ['file-select', 'folder-toggle', 'create-folder', 'create-file', 'rename-item', 'delete-item'],
+        emits: ['file-select', 'folder-toggle', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session'],
         methods: {
             // 排序函数，供模板使用
             sortFileTreeItems(items) {
@@ -167,6 +167,26 @@ const createFileTreeNode = () => {
                     }
                     this.$emit('delete-item', { itemId });
                 }, '删除');
+            },
+            
+            // 创建会话
+            createSession(event, item) {
+                return safeExecute(() => {
+                    console.log('[FileTreeNode] 创建会话按钮被点击:', item);
+                    event && event.stopPropagation && event.stopPropagation();
+                    if (!item || !item.id) {
+                        throw createError('文件信息无效', ErrorTypes.VALIDATION, '创建会话');
+                    }
+                    const payload = { 
+                        fileId: item.fileId || item.id,
+                        id: item.id,
+                        name: item.name,
+                        path: item.path,
+                        originalItem: item
+                    };
+                    console.log('[FileTreeNode] 发射 create-session 事件:', payload);
+                    this.$emit('create-session', payload);
+                }, '创建会话');
             },
             
             // 检查文件夹是否展开
@@ -410,6 +430,7 @@ const createFileTreeNode = () => {
                     <span class="file-name">{{ item.name }}</span>
                     <span v-if="getFileSizeDisplay(item)" class="file-size">{{ getFileSizeDisplay(item) }}</span>
                     <span class="file-actions" @click.stop>
+                        <button class="action-btn create-session-btn" :title="'为 ' + item.name + ' 创建 YiPet 会话'" @click="createSession($event, item)"><i class="fas fa-comments"></i></button>
                         <button class="action-btn" :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
                         <button class="action-btn" :title="'删除 ' + item.name" @click="deleteItem($event, item.id)"><i class="fas fa-trash"></i></button>
                     </span>
@@ -433,6 +454,7 @@ const createFileTreeNode = () => {
                              @create-file="$emit('create-file', $event)"
                              @rename-item="$emit('rename-item', $event)"
                              @delete-item="$emit('delete-item', $event)"
+                             @create-session="$emit('create-session', $event)"
                         ></file-tree-node>
                     </template>
                 </ul>
@@ -487,7 +509,7 @@ const createFileTree = async () => {
                 return this.tree.map(item => sortFileTreeRecursively(item));
             }
         },
-        emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item'],
+        emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session'],
         methods: {
             // 排序函数，供模板使用
             sortFileTreeItems(items) {
@@ -707,6 +729,7 @@ const createFileTree = async () => {
         console.error('FileTree 组件初始化失败:', error);
     }
 })();
+
 
 
 

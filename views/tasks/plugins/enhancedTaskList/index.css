@@ -888,6 +888,37 @@
     flex-shrink: 0;
 }
 
+.create-session-btn {
+    background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: var(--radius-md);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    transition: var(--transition-normal);
+    opacity: 0;
+    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+}
+
+.task-item-enhanced:hover .create-session-btn {
+    opacity: 1;
+}
+
+.create-session-btn:hover {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border-color: rgba(59, 130, 246, 0.5);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.create-session-btn:active {
+    transform: scale(0.95);
+}
+
 .edit-btn {
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
@@ -1627,6 +1658,7 @@
         max-height: 150px;
     }
 }
+
 
 
 

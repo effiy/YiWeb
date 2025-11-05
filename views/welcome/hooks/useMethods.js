@@ -3049,6 +3049,150 @@ export const useMethods = (store) => {
         }
     };
 
+    /**
+     * 创建 YiPet 会话
+     * @param {Object} card - 卡片对象
+     * @param {Event} event - 事件对象
+     */
+    const createYiPetSession = async (card, event) => {
+        // 阻止事件冒泡，防止触发卡片点击
+        if (event) {
+            event.stopPropagation();
+        }
+
+        if (!card || !card.title) {
+            showError('无效的卡片数据');
+            return;
+        }
+
+        try {
+            // 显示加载状态
+            showGlobalLoading('正在生成页面上下文并创建会话...');
+            
+            // 构建卡片内容数据，用于生成页面上下文
+            const cardData = {
+                title: card.title,
+                description: card.description || '',
+                icon: card.icon || '',
+                badge: card.badge || '',
+                hint: card.hint || '',
+                features: card.features || [],
+                stats: card.stats || [],
+                tags: card.tags || [],
+                year: card.year || '',
+                quarter: card.quarter || '',
+                month: card.month || '',
+                week: card.week || '',
+                day: card.day || ''
+            };
+
+            // 构建用户输入内容，包含卡片的所有信息
+            const cardInfoText = `
+卡片标题：${cardData.title}
+卡片描述：${cardData.description}
+卡片图标：${cardData.icon}
+卡片徽章：${cardData.badge}
+卡片提示：${cardData.hint}
+
+功能特性：
+${cardData.features.map(f => `- ${f.icon || ''} ${f.name || ''}：${f.desc || ''}`).join('\n')}
+
+统计数据：
+${cardData.stats.map(s => `- ${s.number || ''}：${s.label || ''}`).join('\n')}
+
+项目标签：
+${cardData.tags.map(t => `- ${t.name || ''}`).join('\n')}
+
+时间信息：
+${cardData.year ? `年度：${cardData.year}` : ''}
+${cardData.quarter ? `季度：${cardData.quarter}` : ''}
+${cardData.month ? `月份：${cardData.month}` : ''}
+${cardData.week ? `周：${cardData.week}` : ''}
+${cardData.day ? `日期：${cardData.day}` : ''}
+`.trim();
+
+            // 获取系统提示词
+            const fromSystem = await window.getData(`/prompts/target/pageContext.txt`);
+            
+            // 调用 prompt 接口生成 markdown 格式的页面上下文
+            const { streamPromptJSON } = await import('/apis/modules/crud.js');
+            const response = await streamPromptJSON(`${window.API_URL}/prompt`, {
+                fromSystem: fromSystem,
+                fromUser: `请根据以下卡片信息生成完整的 Markdown 格式页面上下文内容：\n\n${cardInfoText}`
+            });
+
+            // 提取生成的 markdown 内容
+            let pageContent = '';
+            if (typeof response === 'string') {
+                pageContent = response;
+            } else if (response && response.data) {
+                // streamPromptJSON 返回格式为 { data: [...] }
+                if (Array.isArray(response.data) && response.data.length > 0) {
+                    // 如果 data 是数组，取第一个元素
+                    const firstItem = response.data[0];
+                    pageContent = typeof firstItem === 'string' ? firstItem : JSON.stringify(firstItem, null, 2);
+                } else if (typeof response.data === 'string') {
+                    pageContent = response.data;
+                } else {
+                    pageContent = JSON.stringify(response.data, null, 2);
+                }
+            } else if (response && response.content) {
+                pageContent = typeof response.content === 'string' ? response.content : JSON.stringify(response.content, null, 2);
+            } else {
+                pageContent = JSON.stringify(response, null, 2);
+            }
+
+            // 如果内容为空，使用卡片信息作为后备
+            if (!pageContent || pageContent.trim() === '') {
+                pageContent = `# ${cardData.title}\n\n## 描述\n${cardData.description || '暂无描述'}\n\n## 功能特性\n${cardData.features.map(f => `- ${f.icon || ''} ${f.name || ''}：${f.desc || ''}`).join('\n')}\n\n## 统计数据\n${cardData.stats.map(s => `- ${s.number || ''}：${s.label || ''}`).join('\n')}\n\n## 项目标签\n${cardData.tags.map(t => `- ${t.name || ''}`).join('\n')}`;
+            }
+
+            // 生成会话 ID（基于卡片标题和当前时间戳）
+            const sessionId = `session_${Date.now()}_${cardData.title.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            
+            // 获取当前时间戳
+            const now = Date.now();
+
+            // 生成唯一的随机 URL（借鉴 YiPet 手动创建会话时的 url 字段）
+            // 使用自定义协议格式：blank-session://{timestamp}-{random}
+            const timestamp = Date.now();
+            const randomStr = Math.random().toString(36).substring(2, 11); // 9位随机字符串
+            const uniqueUrl = `blank-session://${timestamp}-${randomStr}`;
+
+            // 构建会话数据
+            const sessionData = {
+                id: sessionId,
+                url: uniqueUrl,
+                title: cardData.title,
+                pageTitle: cardData.title,
+                pageDescription: cardData.description || '',
+                pageContent: pageContent,
+                messages: [],
+                tags: cardData.tags.map(t => t.name || '').filter(t => t),
+                createdAt: now,
+                updatedAt: now,
+                lastAccessTime: now
+            };
+
+            // 调用会话保存接口
+            const { postData } = await import('/apis/index.js');
+            const saveResult = await postData(`${window.API_URL}/session/save`, sessionData);
+
+            hideGlobalLoading();
+            
+            if (saveResult && saveResult.success !== false) {
+                showSuccess(`已成功创建 YiPet 会话：${cardData.title}`);
+                console.log('[创建会话] 会话创建成功:', saveResult);
+            } else {
+                throw new Error(saveResult?.message || '创建会话失败');
+            }
+        } catch (error) {
+            hideGlobalLoading();
+            console.error('[创建会话] 创建会话失败:', error);
+            showError(`创建会话失败：${error.message || '未知错误'}`);
+        }
+    };
+
     // 返回方法集合
     const methods = {
         openLink,
@@ -3111,6 +3255,7 @@ export const useMethods = (store) => {
         editCard,
         createCard,
         handleCreateCard,
+        createYiPetSession,  // 创建 YiPet 会话
         highlightNewCards,  // 新卡片高亮效果
         addTestCard,        // 测试函数
         clearInputField,    // 输入框清空函数
@@ -3123,6 +3268,7 @@ export const useMethods = (store) => {
     
     return methods;
 };
+
 
 
 

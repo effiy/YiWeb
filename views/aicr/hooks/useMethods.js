@@ -2064,6 +2064,142 @@ export const useMethods = (store) => {
                 }
             }, '删除');
         },
+        handleCreateSession: async (payload) => {
+            console.log('[handleCreateSession] 收到创建会话请求:', payload);
+            return safeExecute(async () => {
+                const fileId = payload?.fileId || payload?.id;
+                console.log('[handleCreateSession] 文件ID:', fileId);
+                if (!fileId) {
+                    console.error('[handleCreateSession] 无效的文件ID');
+                    if (window.showError) {
+                        window.showError('无效的文件ID');
+                    }
+                    return;
+                }
+
+                try {
+                    // 显示加载状态
+                    if (window.showGlobalLoading) {
+                        window.showGlobalLoading('正在获取文件内容并生成会话描述...');
+                    }
+
+                    const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
+                    const versionId = selectedVersion?.value || (document.getElementById('versionSelect')?.value) || '';
+
+                    if (!projectId || !versionId) {
+                        throw new Error('请先选择项目和版本');
+                    }
+
+                    // 获取文件内容
+                    let fileContent = '';
+                    let fileData = null;
+
+                    if (typeof loadFileById === 'function') {
+                        fileData = await loadFileById(projectId, versionId, fileId);
+                        if (fileData && fileData.content) {
+                            fileContent = fileData.content;
+                        }
+                    }
+
+                    // 如果通过 loadFileById 没有获取到内容，尝试直接调用 API
+                    if (!fileContent) {
+                        const { getData } = await import('/apis/modules/crud.js');
+                        const url = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}&fileId=${encodeURIComponent(fileId)}`;
+                        const response = await getData(url, {}, false);
+                        let list = (response?.data?.list && Array.isArray(response.data.list)) ? response.data.list : (Array.isArray(response) ? response : []);
+                        if (list.length > 0) {
+                            fileData = list[0];
+                            fileContent = fileData.content || '';
+                        }
+                    }
+
+                    if (!fileContent) {
+                        throw new Error('无法获取文件内容');
+                    }
+
+                    // 调用 prompt 接口生成描述
+                    const { streamPromptJSON } = await import('/apis/modules/crud.js');
+                    
+                    // 构建用于生成描述的 prompt
+                    const fileInfoText = `文件路径：${fileId}\n文件名称：${payload?.name || fileId.split('/').pop()}\n\n文件内容：\n${fileContent.substring(0, 10000)}`; // 限制内容长度避免过长
+                    
+                    // 调用 prompt 接口生成描述
+                    const descriptionResponse = await streamPromptJSON(`${window.API_URL}/prompt`, {
+                        fromSystem: '请根据以下文件内容生成一个简洁的文件描述（不超过200字），描述应该概括文件的主要功能和用途。',
+                        fromUser: fileInfoText
+                    });
+
+                    // 提取生成的描述
+                    let pageDescription = '';
+                    if (typeof descriptionResponse === 'string') {
+                        pageDescription = descriptionResponse;
+                    } else if (descriptionResponse && descriptionResponse.data) {
+                        if (Array.isArray(descriptionResponse.data) && descriptionResponse.data.length > 0) {
+                            const firstItem = descriptionResponse.data[0];
+                            pageDescription = typeof firstItem === 'string' ? firstItem : JSON.stringify(firstItem, null, 2);
+                        } else if (typeof descriptionResponse.data === 'string') {
+                            pageDescription = descriptionResponse.data;
+                        }
+                    }
+
+                    // 如果描述为空，使用默认描述
+                    if (!pageDescription || pageDescription.trim() === '') {
+                        pageDescription = `文件：${payload?.name || fileId}`;
+                    }
+
+                    // 生成会话 ID（使用 fileId 作为基础）
+                    const sessionId = `aicr_${Date.now()}_${fileId.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    
+                    // 获取当前时间戳
+                    const now = Date.now();
+
+                    // 生成唯一的随机 URL
+                    const timestamp = Date.now();
+                    const randomStr = Math.random().toString(36).substring(2, 11);
+                    const uniqueUrl = `aicr-session://${timestamp}-${randomStr}`;
+
+                    // 构建会话数据
+                    const sessionData = {
+                        id: sessionId,
+                        url: uniqueUrl,
+                        title: fileId, // 使用 fileId 作为会话标题
+                        pageTitle: fileId,
+                        pageDescription: pageDescription.trim(),
+                        pageContent: fileContent, // 使用文件内容作为页面上下文
+                        messages: [],
+                        tags: [],
+                        createdAt: now,
+                        updatedAt: now,
+                        lastAccessTime: now
+                    };
+
+                    // 调用会话保存接口
+                    const { postData } = await import('/apis/index.js');
+                    const saveResult = await postData(`${window.API_URL}/session/save`, sessionData);
+
+                    if (window.hideGlobalLoading) {
+                        window.hideGlobalLoading();
+                    }
+                    
+                    if (saveResult && saveResult.success !== false) {
+                        if (window.showSuccess) {
+                            window.showSuccess(`已成功创建 YiPet 会话：${fileId}`);
+                        }
+                        console.log('[创建会话] 会话创建成功:', saveResult);
+                    } else {
+                        throw new Error(saveResult?.message || '创建会话失败');
+                    }
+                } catch (error) {
+                    if (window.hideGlobalLoading) {
+                        window.hideGlobalLoading();
+                    }
+                    console.error('[创建会话] 创建会话失败:', error);
+                    if (window.showError) {
+                        window.showError(`创建会话失败：${error.message || '未知错误'}`);
+                    }
+                }
+            }, '创建会话');
+        },
         handleCommentSubmit,
         handleCommentInput,
         handleCommentKeydown,
@@ -2320,6 +2456,7 @@ export const useMethods = (store) => {
         }
     };
 };
+
 
 
 

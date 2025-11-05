@@ -538,6 +538,17 @@
     font-size: 12px;
 }
 
+/* 创建会话按钮特殊样式 */
+.file-actions .action-btn.create-session-btn {
+    color: var(--primary);
+}
+
+.file-actions .action-btn.create-session-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
 /* ========== 评论数量显示 ========== */
 .comment-count {
     display: inline-flex;
@@ -589,6 +600,7 @@
         padding: 1px 4px;
     }
 }
+
 
 
 

@@ -349,6 +349,97 @@
     gap: var(--spacing-sm);
 }
 
+.create-session-btn {
+    background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
+    transition: all var(--duration-normal) var(--ease-smooth);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    contain: layout style paint;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.create-session-btn:hover {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 
+        0 6px 16px rgba(59, 130, 246, 0.4),
+        0 0 0 1px rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px) scale(1.05) translate3d(0, 0, 0);
+}
+
+.create-session-btn:active {
+    transform: translateY(0px) scale(0.95) translate3d(0, 0, 0);
+    transition-duration: var(--duration-fast);
+    box-shadow: 
+        0 3px 8px rgba(59, 130, 246, 0.3);
+}
+
+.create-session-btn:focus-visible {
+    outline: 2px solid rgba(59, 130, 246, 0.6);
+    outline-offset: 2px;
+}
+
+.create-session-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.3), 
+        transparent);
+    transition: left var(--duration-slow) var(--ease-smooth);
+    will-change: left;
+    transform: translate3d(0, 0, 0);
+}
+
+.create-session-btn:hover::before {
+    left: 100%;
+}
+
+.create-session-btn i {
+    font-size: 0.9rem;
+    transition: transform var(--duration-normal) var(--ease-smooth);
+}
+
+.create-session-btn:hover i {
+    transform: scale(1.1);
+}
+
+.create-session-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.2);
+}
+
+.create-session-btn:disabled:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.2);
+}
+
 .card-delete-btn {
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: white;
@@ -1775,6 +1866,7 @@
         font-size: 10px;
     }
 }
+
 
 
 
