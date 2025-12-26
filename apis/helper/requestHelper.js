@@ -12,6 +12,8 @@ import '/utils/log.js';
 import '/apis/helper/checkStatus.js';
 // 导入认证工具，确保 getAuthHeaders 函数可用
 import { getAuthHeaders } from '/apis/helper/authUtils.js';
+// 导入认证错误处理器
+import { isAuthError, handle401Error } from '/apis/helper/authErrorHandler.js';
 
 /**
  * 默认请求配置
@@ -129,8 +131,67 @@ async function sendRequest(url, options = {}) {
     // 应用响应拦截器
     const interceptedResponse = responseInterceptor(response, interceptedConfig);
     
-    // 检查状态
-    await window.checkStatus(interceptedResponse);
+    // 检查状态（传入配置选项，用于自定义 401 处理）
+    try {
+      await window.checkStatus(interceptedResponse, {
+        autoClearToken: config.autoClearToken !== false,
+        showError: config.showError !== false,
+        promptLogin: config.promptLogin !== false,
+        customMessage: config.errorMessage
+      });
+    } catch (error) {
+      // 如果是 401 错误且配置了自动重试
+      if (isAuthError(error) && config.retryOn401 === true) {
+        window.logInfo('[请求重试] 检测到 401 错误，等待 token 更新后重试');
+        
+        // 等待用户可能输入新 token（最多等待 3 秒）
+        const maxWaitTime = 3000;
+        const checkInterval = 200;
+        const startTime = Date.now();
+        const originalToken = interceptedConfig.headers?.['X-Token'] || '';
+        
+        return new Promise((resolve, reject) => {
+          let timeoutId;
+          
+          const checkToken = () => {
+            const currentToken = getAuthHeaders()['X-Token'] || '';
+            
+            // 如果 token 已更新，重试请求
+            if (currentToken && currentToken !== originalToken) {
+              window.logInfo('[请求重试] 检测到 token 已更新，开始重试');
+              if (timeoutId) clearTimeout(timeoutId);
+              // 重新执行请求（禁用重试，防止无限循环）
+              sendRequest(url, {
+                ...config,
+                retryOn401: false,
+                retryCount: (config.retryCount || 0) + 1
+              }).then(resolve).catch(reject);
+              return;
+            }
+            
+            // 如果超时，直接抛出错误
+            if (Date.now() - startTime >= maxWaitTime) {
+              if (timeoutId) clearTimeout(timeoutId);
+              reject(error);
+              return;
+            }
+            
+            // 继续检查
+            setTimeout(checkToken, checkInterval);
+          };
+          
+          timeoutId = setTimeout(() => {
+            reject(error);
+          }, maxWaitTime);
+          
+          // 开始检查
+          checkToken();
+        });
+      }
+      
+      // 其他情况直接抛出错误
+      throw error;
+    }
     
     // 根据响应类型返回数据
     const result = window.isJsonResponse(interceptedResponse)
@@ -140,6 +201,11 @@ async function sendRequest(url, options = {}) {
     return result;
     
   } catch (error) {
+    // 如果是认证错误，已经处理过了，直接抛出
+    if (isAuthError(error)) {
+      throw error;
+    }
+    
     // 监控错误 - 提供更详细的错误信息
     window.logError('请求错误详情：', {
       url,

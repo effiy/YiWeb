@@ -41,6 +41,18 @@ export {
 export {
     getStoredToken,
     saveToken,
-    getAuthHeaders
+    getAuthHeaders,
+    clearToken,
+    hasValidToken
 } from './helper/authUtils.js';
+
+// 从authErrorHandler.js导出
+export {
+    handle401Error,
+    isAuthError,
+    clearToken as clearTokenFromHandler,
+    setAuthErrorConfig,
+    getAuthErrorConfig,
+    reset401Handler
+} from './helper/authErrorHandler.js';
 

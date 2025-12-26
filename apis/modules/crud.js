@@ -14,6 +14,10 @@
 import '/utils/log.js';
 // 导入请求工具，确保 window.getRequest、window.postRequest 等函数可用
 import '/apis/helper/requestHelper.js';
+// 导入认证工具
+import { getAuthHeaders } from '/apis/helper/authUtils.js';
+// 导入认证错误处理器
+import { handle401Error, isAuthError } from '/apis/helper/authErrorHandler.js';
 
 /**
  * 简单的内存缓存
@@ -330,10 +334,15 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
       try { delete payload.type; } catch (_) {}
     }
 
+    // 获取认证头
+    const authHeaders = getAuthHeaders();
+    
     const config = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...authHeaders,  // 添加认证头
         ...options.headers,
       },
       body: JSON.stringify(payload),
@@ -342,6 +351,17 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
     
     // 发送请求
     let response = await fetch(url, config);
+    
+    // 处理 401 错误
+    if (!response.ok && response.status === 401) {
+      const error = handle401Error(response, {
+        autoClearToken: options.autoClearToken !== false,
+        showError: options.showError !== false,
+        promptLogin: options.promptLogin !== false,
+        customMessage: options.errorMessage
+      });
+      throw error;
+    }
     
     // 针对 422 做一次性回退重试（去除可选字段，如 model）
     if (!response.ok && response.status === 422) {
@@ -361,17 +381,48 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
         })();
         const fallbackConfig = {
           ...config,
+          headers: {
+            ...config.headers,
+            ...authHeaders,  // 确保回退请求也包含认证头
+          },
           body: JSON.stringify(fallbackPayload)
         };
         response = await fetch(url, fallbackConfig);
+        
+        // 再次检查 401 错误
+        if (!response.ok && response.status === 401) {
+          const error = handle401Error(response, {
+            autoClearToken: options.autoClearToken !== false,
+            showError: options.showError !== false,
+            promptLogin: options.promptLogin !== false,
+            customMessage: options.errorMessage
+          });
+          throw error;
+        }
       } catch (_) {
         // 忽略回退流程内部错误，继续按原流程抛出
       }
     }
     
     if (!response.ok) {
+      // 如果是认证错误，已经处理过了
+      if (response.status === 401) {
+        const error = handle401Error(response, {
+          autoClearToken: options.autoClearToken !== false,
+          showError: options.showError !== false,
+          promptLogin: options.promptLogin !== false,
+          customMessage: options.errorMessage
+        });
+        throw error;
+      }
+      
+      // 其他错误
       const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
+      const error = new Error(`HTTP ${response.status}: ${errorText}`);
+      error.status = response.status;
+      error.statusText = response.statusText;
+      error.url = url;
+      throw error;
     }
     
     // 读取流式响应

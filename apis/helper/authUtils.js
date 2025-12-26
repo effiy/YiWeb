@@ -42,11 +42,29 @@ export const getAuthHeaders = (token) => {
   return { "X-Token": authToken };
 };
 
+/**
+ * 清除 Token（别名函数，用于统一接口）
+ */
+export const clearToken = () => {
+  saveToken('');
+};
+
+/**
+ * 检查是否有有效的 Token
+ * @returns {boolean} 是否有有效的 token
+ */
+export const hasValidToken = () => {
+  const token = getStoredToken();
+  return token && token.trim().length > 0;
+};
+
 // 在全局作用域中暴露（用于非模块环境）
 if (typeof window !== 'undefined') {
   window.getStoredToken = getStoredToken;
   window.saveToken = saveToken;
   window.getAuthHeaders = getAuthHeaders;
+  window.clearToken = clearToken;
+  window.hasValidToken = hasValidToken;
 }
 
 

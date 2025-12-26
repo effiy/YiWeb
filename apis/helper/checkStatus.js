@@ -1,6 +1,9 @@
 // 检查 HTTP 响应状态的辅助函数
 // 作者：liangliang
 
+// 导入认证错误处理器
+import { handle401Error } from './authErrorHandler.js';
+
 /**
  * HTTP 状态码映射
  */
@@ -18,9 +21,10 @@ const STATUS_MESSAGES = {
 /**
  * 检查响应状态是否成功
  * @param {Response} response - fetch 的响应对象
+ * @param {Object} options - 选项对象，用于自定义错误处理
  * @returns {Response} - 如果成功返回响应，否则抛出错误
  */
-function checkStatus(response) {
+function checkStatus(response, options = {}) {
   if (response.ok) {
     return response;
   }
@@ -28,6 +32,14 @@ function checkStatus(response) {
   // 获取错误信息
   const status = response.status;
   const statusText = response.statusText;
+  
+  // 特殊处理 401 错误
+  if (status === 401) {
+    const error = handle401Error(response, options);
+    throw error;
+  }
+  
+  // 其他错误处理
   const errorMessage = STATUS_MESSAGES[status] || `请求失败：${statusText}`;
   
   // 监控错误 - 记录详细信息
