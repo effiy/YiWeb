@@ -3,6 +3,7 @@ import { showError, showSuccess } from '/utils/message.js';
 import { showGlobalLoading, hideGlobalLoading } from '/utils/loading.js';
 import { formatTimeRangeText, validateTimeParams } from '/utils/timeParams.js';
 import { getWeeksByMonth, getDaysByWeek, getMonthsByQuarter, getQuarters } from '/utils/timeSelectors.js';
+import { getStoredToken, saveToken } from '/apis/helper/authUtils.js';
 
 export const useMethods = (store) => {
     // 辅助函数：添加被动事件监听器
@@ -188,6 +189,27 @@ export const useMethods = (store) => {
         }
         
         window.location.href = link;
+    };
+    
+    /**
+     * 打开 API 鉴权对话框
+     * 用于设置 X-Token
+     */
+    const openAuth = () => {
+        const curToken = getStoredToken();
+        const token = window.prompt("请输入 X-Token（用于访问 api.effiy.cn）", curToken);
+        if (token == null) return; // 用户取消
+        
+        const trimmedToken = String(token || "").trim();
+        saveToken(trimmedToken);
+        
+        // 显示成功提示
+        showSuccess('API 鉴权配置已保存');
+        
+        // 配置完立即尝试刷新数据（如果当前有加载功能卡片）
+        if (store && store.loadFeatureCards) {
+            store.loadFeatureCards();
+        }
     };
     
     /**
@@ -3260,6 +3282,7 @@ ${cardData.day ? `日期：${cardData.day}` : ''}
         addTestCard,        // 测试函数
         clearInputField,    // 输入框清空函数
         clearSearchState,   // 搜索状态清除函数
+        openAuth,            // API 鉴权配置
         loadFeatureCards: store.loadFeatureCards  // 暴露重新加载数据的方法
     };
     
@@ -3268,6 +3291,7 @@ ${cardData.day ? `日期：${cardData.day}` : ''}
     
     return methods;
 };
+
 
 
 

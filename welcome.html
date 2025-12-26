@@ -263,6 +263,21 @@
                                 <span>新建卡片</span>
                             </button>
                         </li>
+                        
+                        <!-- API 鉴权按钮 -->
+                        <li class="auth-btn-item">
+                            <button 
+                                id="authBtn"
+                                @click="openAuth"
+                                class="auth-btn"
+                                type="button"
+                                title="API 鉴权（X-Token）"
+                                aria-label="API 鉴权">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" class="auth-icon">
+                                    <path d="M7 10V8a5 5 0 0 1 10 0v2h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h1Zm2 0h6V8a3 3 0 0 0-6 0v2Zm3 4a1 1 0 0 0-1 1v2a1 1 0 1 0 2 0v-2a1 1 0 0 0-1-1Z"/>
+                                </svg>
+                            </button>
+                        </li>
 
                     </ul>
                 </nav>
@@ -451,6 +466,7 @@
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html>
+
 
 
 

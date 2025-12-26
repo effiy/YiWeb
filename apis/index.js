@@ -36,3 +36,11 @@ export {
     batchOperations,
     CacheManager
 } from './modules/crud.js';
+
+// 从authUtils.js导出
+export {
+    getStoredToken,
+    saveToken,
+    getAuthHeaders
+} from './helper/authUtils.js';
+

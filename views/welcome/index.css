@@ -57,6 +57,47 @@
     font-size: 16px;
 }
 
+/* ========== API 鉴权按钮样式 ========== */
+.auth-btn-item {
+    display: flex;
+    align-items: center;
+    margin-left: 8px;
+}
+
+.auth-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #495057;
+    padding: 0;
+}
+
+.auth-btn:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+    color: #212529;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.auth-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.auth-icon {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
 /* ========== 时间选择器按钮样式 ========== */
 .year-select,
 .quarter-select,
@@ -826,6 +867,7 @@
         border: 2px solid #28a745;
     }
 }
+
 
 
 

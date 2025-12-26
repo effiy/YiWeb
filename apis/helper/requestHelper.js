@@ -10,6 +10,8 @@
 import '/utils/log.js';
 // 导入状态检查工具，确保 window.checkStatus 和 window.isJsonResponse 函数可用
 import '/apis/helper/checkStatus.js';
+// 导入认证工具，确保 getAuthHeaders 函数可用
+import { getAuthHeaders } from '/apis/helper/authUtils.js';
 
 /**
  * 默认请求配置
@@ -32,6 +34,15 @@ const DEFAULT_CONFIG = {
 function requestInterceptor(config) {
   // 添加时间戳
   config.timestamp = Date.now();
+  
+  // 自动添加认证请求头（如果存在 token）
+  const authHeaders = getAuthHeaders();
+  if (authHeaders['X-Token']) {
+    config.headers = {
+      ...config.headers,
+      ...authHeaders
+    };
+  }
   
   // 记录请求日志
   window.logInfo('发送请求：', {
@@ -424,6 +435,7 @@ if (typeof window !== 'undefined') {
 // 注意：由于HTML使用普通script标签，不支持ES6模块语法
 // 如果需要ES6模块支持，请将script标签改为 type="module"
 // 或者使用动态import()语法
+
 
 
 
