@@ -406,10 +406,10 @@ const createFileTreeNode = () => {
                     <span class="file-name">{{ item.name }}</span>
                     <span v-if="item.children" class="folder-count">({{ item.children.length }})</span>
                     <span class="file-actions" @click.stop>
-                        <button class="action-btn" :title="'在 ' + item.name + ' 下新建文件夹'" @click="createSubFolder($event, item.id)"><i class="fas fa-folder-plus"></i></button>
-                        <button class="action-btn" :title="'在 ' + item.name + ' 下新建文件'" @click="createSubFile($event, item.id)"><i class="fas fa-file"></i></button>
-                        <button class="action-btn" :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
-                        <button class="action-btn" :title="'删除 ' + item.name" @click="deleteItem($event, item.id)"><i class="fas fa-trash"></i></button>
+                        <button :title="'在 ' + item.name + ' 下新建文件夹'" @click="createSubFolder($event, item.id)"><i class="fas fa-folder-plus"></i></button>
+                        <button :title="'在 ' + item.name + ' 下新建文件'" @click="createSubFile($event, item.id)"><i class="fas fa-file"></i></button>
+                        <button :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
+                        <button :title="'删除 ' + item.name" @click="deleteItem($event, item.id)"><i class="fas fa-trash"></i></button>
                     </span>
                 </div>
                 
@@ -430,9 +430,8 @@ const createFileTreeNode = () => {
                     <span class="file-name">{{ item.name }}</span>
                     <span v-if="getFileSizeDisplay(item)" class="file-size">{{ getFileSizeDisplay(item) }}</span>
                     <span class="file-actions" @click.stop>
-                        <button class="action-btn create-session-btn" :title="'为 ' + item.name + ' 创建 YiPet 会话'" @click="createSession($event, item)"><i class="fas fa-comments"></i></button>
-                        <button class="action-btn" :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
-                        <button class="action-btn" :title="'删除 ' + item.name" @click="deleteItem($event, item.id)"><i class="fas fa-trash"></i></button>
+                        <button :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
+                        <button :title="'删除 ' + item.name" @click="deleteItem($event, item.id)"><i class="fas fa-trash"></i></button>
                     </span>
                 </div>
                 

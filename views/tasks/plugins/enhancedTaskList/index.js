@@ -56,12 +56,6 @@ const createEnhancedTaskList = () => {
                             <div class="task-title">{{ task.title }}</div>
                             <div class="task-actions">
                                 <button 
-                                    class="create-session-btn" 
-                                    @click.stop="handleCreateSession(task)"
-                                    title="创建 YiPet 会话">
-                                    <i class="fas fa-comments"></i>
-                                </button>
-                                <button 
                                     class="edit-btn" 
                                     @click.stop="handleEditTask(task)"
                                     title="编辑任务">

@@ -2165,10 +2165,103 @@ export const useMethods = (store) => {
                 const projectExists = existingProject?.data?.list && existingProject.data.list.length > 0;
                 
                 if (projectExists) {
+                    // 1. 删除projectTree数据
+                    try {
+                        const treeQueryUrl = `${window.API_URL}/mongodb/?cname=projectTree&projectId=${encodeURIComponent(projectId)}`;
+                        const treeResp = await getData(treeQueryUrl, {}, false);
+                        const treeList = treeResp?.data?.list || [];
+                        for (const doc of treeList) {
+                            const treeKey = doc?.key || doc?._id || doc?.id;
+                            if (treeKey) {
+                                await deleteData(`${treeQueryUrl}&key=${treeKey}`);
+                            }
+                        }
+                        console.log('[pvDeleteProject] projectTree已删除:', { projectId, count: treeList.length });
+                    } catch (treeErr) {
+                        console.warn('[pvDeleteProject] 删除projectTree失败（已忽略）:', treeErr?.message);
+                    }
+                    
+                    // 2. 删除projectFiles数据
+                    try {
+                        const filesQueryUrl = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(projectId)}`;
+                        const filesResp = await getData(filesQueryUrl, {}, false);
+                        const fileList = filesResp?.data?.list || [];
+                        for (const f of fileList) {
+                            const fileKey = f?.key || f?._id || f?.id;
+                            if (fileKey) {
+                                await deleteData(`${filesQueryUrl}&key=${fileKey}`);
+                            } else {
+                                const path = String(f?.path || f?.id || f?.fileId || '');
+                                if (path) {
+                                    try { await deleteData(`${filesQueryUrl}&fileId=${encodeURIComponent(path)}`); } catch (_) {}
+                                }
+                            }
+                        }
+                        console.log('[pvDeleteProject] projectFiles已删除:', { projectId, count: fileList.length });
+                    } catch (filesErr) {
+                        console.warn('[pvDeleteProject] 删除projectFiles失败（已忽略）:', filesErr?.message);
+                    }
+                    
+                    // 3. 删除comments数据
+                    try {
+                        const commentsQueryUrl = `${window.API_URL}/mongodb/?cname=comments&projectId=${encodeURIComponent(projectId)}`;
+                        const commentsResp = await getData(commentsQueryUrl, {}, false);
+                        const commentsList = commentsResp?.data?.list || [];
+                        for (const c of commentsList) {
+                            const cKey = c?.key || c?._id || c?.id;
+                            if (cKey) {
+                                await deleteData(`${commentsQueryUrl}&key=${cKey}`);
+                            }
+                        }
+                        console.log('[pvDeleteProject] comments已删除:', { projectId, count: commentsList.length });
+                    } catch (commentsErr) {
+                        console.warn('[pvDeleteProject] 删除comments失败（已忽略）:', commentsErr?.message);
+                    }
+                    
+                    // 4. 删除所有第一个标签匹配该项目ID的会话
+                    try {
+                        const { getAuthHeaders } = await import('/apis/helper/authUtils.js');
+                        const sessionsUrl = `${window.API_URL}/session/list`;
+                        const sessionsResp = await fetch(sessionsUrl, {
+                            method: 'GET',
+                            headers: getAuthHeaders()
+                        });
+                        
+                        if (sessionsResp.ok) {
+                            const sessionsData = await sessionsResp.json();
+                            const sessions = sessionsData?.data?.list || sessionsData?.data || [];
+                            
+                            // 查找所有第一个标签匹配该项目ID的会话
+                            const matchingSessions = sessions.filter(session => {
+                                const tags = Array.isArray(session.tags) ? session.tags : [];
+                                return tags.length > 0 && tags[0] === projectId;
+                            });
+                            
+                            // 删除匹配的会话
+                            for (const session of matchingSessions) {
+                                const sessionId = session.id || session.key;
+                                if (sessionId) {
+                                    try {
+                                        const deleteUrl = `${window.API_URL}/session/${encodeURIComponent(sessionId)}`;
+                                        await fetch(deleteUrl, {
+                                            method: 'DELETE',
+                                            headers: getAuthHeaders()
+                                        });
+                                        console.log('[pvDeleteProject] 会话已删除:', { sessionId, projectId });
+                                    } catch (sessionErr) {
+                                        console.warn('[pvDeleteProject] 删除会话失败（已忽略）:', sessionId, sessionErr?.message);
+                                    }
+                                }
+                            }
+                            console.log('[pvDeleteProject] 匹配的会话已删除:', { projectId, count: matchingSessions.length });
+                        }
+                    } catch (sessionsErr) {
+                        console.warn('[pvDeleteProject] 删除匹配会话失败（已忽略）:', sessionsErr?.message);
+                    }
+                    
+                    // 5. 删除项目本身
                     const existingProjectData = existingProject.data.list[0];
                     const key = existingProjectData.key || existingProjectData._id || existingProjectData.id;
-                    
-                    // 删除项目
                     await deleteData(`${url}&key=${key}`);
                     console.log('[pvDeleteProject] 项目已删除:', { projectId });
                 }
