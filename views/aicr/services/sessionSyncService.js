@@ -195,19 +195,44 @@ class SessionSyncService {
 
     /**
      * 将评论转换为消息（统一格式）
+     * 统一字段：type, content, timestamp, imageDataUrl
      * @param {Object} comment - 评论对象
-     * @returns {Object} 消息对象（符合 YiPet 格式）
+     * @returns {Object} 消息对象（统一格式）
      */
     commentToMessage(comment) {
-        const type = this.normalizeRole(comment);
-        const content = this.normalizeText(comment);
+        if (!comment) return null;
+        
+        // 统一 type 字段
+        let type;
+        if (comment.type) {
+            type = comment.type;
+        } else if (comment.role) {
+            const role = String(comment.role).toLowerCase();
+            if (role === 'user' || role === 'me') {
+                type = 'user';
+            } else if (role === 'assistant' || role === 'pet' || role === 'bot' || role === 'ai') {
+                type = 'pet';
+            } else {
+                type = 'user'; // 默认
+            }
+        } else {
+            type = this.normalizeRole(comment);
+        }
+        
+        // 统一 content 字段
+        const content = String(comment.content || comment.text || comment.message || '').trim();
+        
+        // 统一 timestamp 字段（转换为毫秒数）
         const timestamp = this.normalizeTimestamp(comment.timestamp || comment.createdTime || comment.createdAt);
+        
+        // 统一 imageDataUrl 字段
+        const imageDataUrl = comment.imageDataUrl || comment.image || undefined;
         
         return {
             type: type, // 'user' 或 'pet'
             content: content,
             timestamp: timestamp, // 毫秒数
-            imageDataUrl: comment.imageDataUrl || comment.image || undefined
+            imageDataUrl: imageDataUrl
         };
     }
 
@@ -359,6 +384,7 @@ class SessionSyncService {
 
     /**
      * 规范化消息数组（确保格式统一）
+     * 统一字段：type, content, timestamp, imageDataUrl
      * @param {Array} messages - 消息数组
      * @returns {Array} 规范化后的消息数组
      */
@@ -366,28 +392,42 @@ class SessionSyncService {
         if (!Array.isArray(messages)) return [];
         
         return messages.map(msg => {
-            // 如果已经是标准格式，直接返回
-            if (msg.type && typeof msg.content === 'string' && typeof msg.timestamp === 'number') {
-                return {
-                    type: msg.type,
-                    content: String(msg.content || '').trim(),
-                    timestamp: Number(msg.timestamp),
-                    imageDataUrl: msg.imageDataUrl || undefined
-                };
+            if (!msg) return null;
+            
+            // 统一 type 字段
+            let type;
+            if (msg.type) {
+                type = msg.type;
+            } else if (msg.role) {
+                const role = String(msg.role).toLowerCase();
+                if (role === 'user' || role === 'me') {
+                    type = 'user';
+                } else if (role === 'assistant' || role === 'pet' || role === 'bot' || role === 'ai') {
+                    type = 'pet';
+                } else {
+                    type = 'user'; // 默认
+                }
+            } else {
+                // 根据 author 判断
+                type = this.normalizeRole(msg);
             }
             
-            // 否则转换为标准格式
-            const type = this.normalizeRole(msg);
-            const content = this.normalizeText(msg);
-            const timestamp = this.normalizeTimestamp(msg.timestamp || msg.ts);
+            // 统一 content 字段
+            const content = String(msg.content || msg.text || msg.message || '').trim();
+            
+            // 统一 timestamp 字段（转换为毫秒数）
+            const timestamp = this.normalizeTimestamp(msg.timestamp || msg.createdTime || msg.createdAt || msg.ts);
+            
+            // 统一 imageDataUrl 字段
+            const imageDataUrl = msg.imageDataUrl || msg.image || undefined;
             
             return {
                 type: type,
                 content: content,
                 timestamp: timestamp,
-                imageDataUrl: msg.imageDataUrl || msg.image || undefined
+                imageDataUrl: imageDataUrl
             };
-        }).filter(msg => msg.content); // 过滤空内容
+        }).filter(msg => msg && msg.content); // 过滤空内容和null
     }
 
     /**
@@ -622,21 +662,27 @@ class SessionSyncService {
                         };
                         files.push(file);
 
-                        // 将消息转换为评论
+                        // 将消息转换为评论（保持字段统一）
                         const normalizedMessages = this.normalizeMessages(session.messages || []);
                         for (let i = 0; i < normalizedMessages.length; i++) {
                             const message = normalizedMessages[i];
                             const comment = {
                                 key: `comment_${sessionId}_${i}_${message.timestamp}`,
                                 id: `comment_${sessionId}_${i}_${message.timestamp}`,
-                                fileId: filePath,
+                                // 统一的消息字段
+                                type: message.type,
                                 content: message.content,
-                                text: message.content,
-                                author: message.type === 'pet' ? 'AI助手' : '用户',
                                 timestamp: message.timestamp,
-                                createdTime: message.timestamp,
+                                imageDataUrl: message.imageDataUrl,
+                                // 评论特有字段
+                                fileId: filePath,
+                                projectId: projectId,
                                 status: 'pending',
-                                projectId: projectId
+                                // 兼容字段（保留以兼容旧代码）
+                                text: message.content, // content 和 text 保持一致
+                                author: message.type === 'pet' ? 'AI助手' : '用户',
+                                createdTime: message.timestamp, // 毫秒数
+                                createdAt: message.timestamp // 毫秒数
                             };
                             comments.push(comment);
                         }

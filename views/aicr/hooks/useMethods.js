@@ -995,13 +995,52 @@ export const useMethods = (store) => {
                     versionId = versionSelect.value;
                 }
 
-                // 构建评论数据
+                // 规范化时间戳（转换为毫秒数）
+                const now = Date.now();
+                let timestamp = now;
+                if (commentData.timestamp) {
+                    if (typeof commentData.timestamp === 'string') {
+                        const date = new Date(commentData.timestamp);
+                        timestamp = isNaN(date.getTime()) ? now : date.getTime();
+                    } else if (typeof commentData.timestamp === 'number') {
+                        // 如果是秒级时间戳，转换为毫秒
+                        timestamp = commentData.timestamp < 1e12 ? commentData.timestamp * 1000 : commentData.timestamp;
+                    }
+                }
+                
+                // 统一 type 字段（从 role 或 author 推断）
+                let type;
+                if (commentData.type) {
+                    type = commentData.type;
+                } else if (commentData.role) {
+                    const role = String(commentData.role).toLowerCase();
+                    type = (role === 'user' || role === 'me') ? 'user' : 'pet';
+                } else {
+                    // 根据 author 判断
+                    const author = String(commentData.author || '').toLowerCase();
+                    type = (author.includes('ai') || author.includes('助手') || author.includes('assistant')) ? 'pet' : 'user';
+                }
+                
+                // 统一 content 字段
+                const content = String(commentData.content || commentData.text || '').trim();
+                
+                // 构建评论数据（保留评论特有字段，同时包含统一的消息字段）
                 const comment = {
                     ...commentData,
+                    // 统一的消息字段
+                    type: type,
+                    content: content,
+                    timestamp: timestamp,
+                    // 保留评论特有字段
                     fileId: selectedFileId.value,
                     projectId: projectId,
                     versionId: versionId,
-                    timestamp: new Date().toISOString()
+                    // 兼容字段（保留原有字段以兼容旧代码）
+                    text: content, // content 和 text 保持一致
+                    createdTime: timestamp, // 毫秒数
+                    createdAt: timestamp, // 毫秒数
+                    // author 字段保留（用于显示）
+                    author: commentData.author || (type === 'pet' ? 'AI助手' : '用户')
                 };
 
                 // 处理fromSystem字段
