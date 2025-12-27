@@ -977,6 +977,24 @@ const createCommentPanel = async () => {
                             };
                         }
 
+                        // 同步更新会话消息
+                        try {
+                            const fileId = this.file?.fileId || this.file?.id || this.file?.path;
+                            if (fileId && projectId) {
+                                const { getSessionSyncService } = await import('/views/aicr/services/sessionSyncService.js');
+                                const sessionSync = getSessionSyncService();
+                                const updatedComment = {
+                                    ...this.editingComment,
+                                    ...payload,
+                                    key: this.editingComment.key
+                                };
+                                await sessionSync.syncCommentToMessage(updatedComment, fileId, projectId, false);
+                                console.log('[CommentPanel] 会话消息已同步更新');
+                            }
+                        } catch (syncError) {
+                            console.warn('[CommentPanel] 同步会话消息失败（已忽略）:', syncError?.message);
+                        }
+
                         // 关闭编辑器
                         this.closeCommentEditor();
 

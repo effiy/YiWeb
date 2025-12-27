@@ -1027,6 +1027,23 @@ export const useMethods = (store) => {
                 const result = await postData(`${window.API_URL}/mongodb/?cname=comments`, comment);
 
                 console.log('[评论提交] API调用成功:', result);
+                
+                // 同步评论到会话消息
+                if (projectId && selectedFileId.value) {
+                    try {
+                        const { getSessionSyncService } = await import('/views/aicr/services/sessionSyncService.js');
+                        const sessionSync = getSessionSyncService();
+                        const commentWithKey = {
+                            ...comment,
+                            key: result?.data?.key || result?.key || comment.key || `comment_${Date.now()}`
+                        };
+                        await sessionSync.syncCommentToMessage(commentWithKey, selectedFileId.value, projectId, false);
+                        console.log('[评论提交] 评论已同步到会话消息');
+                    } catch (syncError) {
+                        console.warn('[评论提交] 同步评论到会话消息失败（已忽略）:', syncError?.message);
+                    }
+                }
+                
                 showSuccessMessage('评论添加成功');
 
                 // 立即触发评论面板刷新，确保新评论能够显示
@@ -1334,6 +1351,21 @@ export const useMethods = (store) => {
                 const result = await deleteData(url);
 
                 console.log('[评论删除] 删除成功:', result);
+                
+                // 同步删除会话消息
+                if (projectId && selectedFileId.value) {
+                    try {
+                        const { getSessionSyncService } = await import('/views/aicr/services/sessionSyncService.js');
+                        const sessionSync = getSessionSyncService();
+                        
+                        // 查找评论对象以便准确匹配
+                        const comment = comments.value.find(c => (c.key || c.id) === commentId);
+                        await sessionSync.deleteCommentMessage(commentId, selectedFileId.value, projectId, comment);
+                        console.log('[评论删除] 会话消息已删除');
+                    } catch (syncError) {
+                        console.warn('[评论删除] 删除会话消息失败（已忽略）:', syncError?.message);
+                    }
+                }
                 
                 // 显示成功消息
                 const { showSuccess } = await import('/utils/message.js');
@@ -2158,31 +2190,7 @@ export const useMethods = (store) => {
                 console.error('[pvDeleteProject] 项目删除失败:', error);
                 store.pvError.value = `项目删除失败: ${error.message}`;
             }
-        },
-                const projectExists = existingProject?.data?.list && existingProject.data.list.length > 0;
-                
-                if (projectExists) {
-                    const existingProjectData = existingProject.data.list[0];
-                    const key = existingProjectData.key || existingProjectData._id || existingProjectData.id;
-                    const currentVersions = Array.isArray(existingProjectData.versions) 
-                        ? existingProjectData.versions.map(v => typeof v === 'string' ? v : v.id).filter(Boolean)
-                        : [];
-                    
-                    // 从版本列表中移除指定版本
-                    const updatedVersions = currentVersions.filter(v => v !== versionId);
-                    
-                    if (updatedVersions.length > 0) {
-                        // 如果还有其他版本，更新项目
-                        await updateData(url, { key, id: store.pvSelectedProjectId.value, versions: updatedVersions });
-                        console.log('[pvDeleteVersion] 版本已从项目中删除:', { projectId: store.pvSelectedProjectId.value, versionId });
-                    } else {
-                        // 如果没有版本了，删除整个项目
-                        const { deleteData } = await import('/apis/modules/crud.js');
-                        await deleteData(`${url}&key=${key}`);
-                        console.log('[pvDeleteVersion] 项目已删除（无版本）:', { projectId: store.pvSelectedProjectId.value });
-                    }
-                }
-                
+        }
     };
 };
 

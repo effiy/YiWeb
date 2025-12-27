@@ -2147,6 +2147,25 @@ const createCodeView = async () => {
 
                     // 更新本地 file 对象与 store.files
                     this.file.content = content;
+                    
+                    // 同步文件到会话
+                    try {
+                        const { getSessionSyncService } = await import('/views/aicr/services/sessionSyncService.js');
+                        const sessionSync = getSessionSyncService();
+                        const updatedFile = {
+                            ...this.file,
+                            content: content,
+                            fileId: fileId,
+                            id: fileId,
+                            path: fileId,
+                            name: (this.file.name || (typeof fileId === 'string' ? fileId.split('/').pop() : ''))
+                        };
+                        await sessionSync.syncFileToSession(updatedFile, projectId, false);
+                        console.log('[saveEditedFile] 文件已同步到会话:', fileId);
+                    } catch (syncError) {
+                        console.warn('[saveEditedFile] 同步文件到会话失败（已忽略）:', syncError?.message);
+                    }
+                    
                     try {
                         const store = window.aicrStore;
                         if (store && Array.isArray(store.files?.value)) {

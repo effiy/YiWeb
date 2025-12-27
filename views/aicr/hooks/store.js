@@ -5,6 +5,7 @@
 
 import { getData, postData, deleteData, updateData } from '/apis/index.js';
 import { safeExecuteAsync, createError, ErrorTypes } from '/utils/error.js';
+import { getSessionSyncService } from '/views/aicr/services/sessionSyncService.js';
 
 // 兼容Vue2和Vue3的ref获取方式
 const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ value: val });
@@ -60,6 +61,9 @@ export const createStore = () => {
     const selectedCommenterIds = vueRef([]);
     const commentersLoading = vueRef(false);
     const commentersError = vueRef('');
+
+    // 会话同步服务
+    const sessionSync = getSessionSyncService();
 
     /**
      * 异步加载文件树数据
@@ -393,9 +397,22 @@ export const createStore = () => {
             }
 
             // 更新本地files列表，携带后端返回的key，确保首次保存可PUT更新
+            const newFile = { fileId: newId, id: newId, path: newId, name, content, key: createdKey };
             if (Array.isArray(files.value)) {
-                files.value.push({ fileId: newId, id: newId, path: newId, name, content, key: createdKey });
+                files.value.push(newFile);
             }
+
+            // 同步文件到会话
+            try {
+                const project = projectId || selectedProject.value;
+                if (project) {
+                    await sessionSync.syncFileToSession(newFile, project, false);
+                    console.log('[createFile] 文件已同步到会话:', newId);
+                }
+            } catch (syncError) {
+                console.warn('[createFile] 同步文件到会话失败（已忽略）:', syncError?.message);
+            }
+
             return newId;
         }, '创建文件');
     };
@@ -481,6 +498,7 @@ export const createStore = () => {
             await persistFileTree(projectId);
 
             // 同步远端文件集合
+            const project = projectId || selectedProject.value;
             try {
                 const filesUrl = `${window.API_URL}/mongodb/?cname=projectFiles`;
                 const affected = prevFiles.filter(f => {
@@ -492,11 +510,27 @@ export const createStore = () => {
                     const newPath = oldPath.replace(oldId, newId);
                     const key = f.key || f._id || f.idKey;
                     if (key) {
-                        await updateData(filesUrl, { key, projectId: projectId || selectedProject.value, fileId: newPath, id: newPath, path: newPath, name: newPath.split('/').pop(), content: f.content || (f.data && f.data.content) || '' });
+                        await updateData(filesUrl, { key, projectId: project, fileId: newPath, id: newPath, path: newPath, name: newPath.split('/').pop(), content: f.content || (f.data && f.data.content) || '' });
                     } else {
                         // 无 key 时，尝试新增并删除旧文档
-                        await postData(filesUrl, { projectId: projectId || selectedProject.value, fileId: newPath, id: newPath, path: newPath, name: newPath.split('/').pop(), content: f.content || (f.data && f.data.content) || '' });
+                        await postData(filesUrl, { projectId: project, fileId: newPath, id: newPath, path: newPath, name: newPath.split('/').pop(), content: f.content || (f.data && f.data.content) || '' });
                         try { await deleteData(`${filesUrl}&fileId=${encodeURIComponent(oldPath)}`); } catch (e) {}
+                    }
+
+                    // 同步更新会话（如果是文件）
+                    if (node.type === 'file' && project) {
+                        try {
+                            // 删除旧会话
+                            const oldSessionId = sessionSync.generateSessionId(oldPath, project);
+                            await sessionSync.deleteSession(oldSessionId);
+                            
+                            // 创建新会话
+                            const updatedFile = { ...f, fileId: newPath, id: newPath, path: newPath, name: newPath.split('/').pop() };
+                            await sessionSync.syncFileToSession(updatedFile, project, false);
+                            console.log('[renameItem] 会话已同步更新:', oldPath, '->', newPath);
+                        } catch (syncError) {
+                            console.warn('[renameItem] 同步会话失败（已忽略）:', syncError?.message);
+                        }
                     }
                 }
             } catch (e) {
@@ -630,6 +664,18 @@ export const createStore = () => {
                     } else {
                         const path = String(f.path || f.id || f.fileId);
                         try { await deleteData(`${filesUrl}&fileId=${encodeURIComponent(path)}`); } catch (e) {}
+                    }
+
+                    // 删除对应的会话（如果是文件）
+                    if (node.type === 'file' && project) {
+                        try {
+                            const filePath = f.fileId || f.id || f.path || itemId;
+                            const sessionId = sessionSync.generateSessionId(filePath, project);
+                            await sessionSync.deleteSession(sessionId);
+                            console.log('[deleteItem] 会话已删除:', sessionId);
+                        } catch (syncError) {
+                            console.warn('[deleteItem] 删除会话失败（已忽略）:', syncError?.message);
+                        }
                     }
                 }
             } catch (e) {
@@ -780,6 +826,18 @@ export const createStore = () => {
 
             files.value = normalizedList;
             console.log(`[loadFiles] 成功加载 ${normalizedList.length} 个代码文件`);
+            
+            // 同步所有文件到会话
+            if (project && normalizedList.length > 0) {
+                try {
+                    for (const file of normalizedList) {
+                        await sessionSync.syncFileToSession(file, project, false);
+                    }
+                    console.log(`[loadFiles] 已同步 ${normalizedList.length} 个文件到会话`);
+                } catch (syncError) {
+                    console.warn('[loadFiles] 同步文件到会话失败（已忽略）:', syncError?.message);
+                }
+            }
             
             return normalizedList;
         }, '代码文件数据加载', (errorInfo) => {
@@ -1115,6 +1173,34 @@ export const createStore = () => {
                     comments.value = response.data.list;
                     console.log(`[loadComments] 成功加载 ${comments.value.length} 条评论`);
                     console.log('[loadComments] 评论数据详情:', comments.value);
+                    
+                    // 同步评论到会话消息
+                    if (project && comments.value.length > 0) {
+                        try {
+                            // 按文件分组评论
+                            const commentsByFile = new Map();
+                            for (const comment of comments.value) {
+                                const fileId = comment.fileId || (comment.fileInfo && comment.fileInfo.fileId);
+                                if (fileId) {
+                                    if (!commentsByFile.has(fileId)) {
+                                        commentsByFile.set(fileId, []);
+                                    }
+                                    commentsByFile.get(fileId).push(comment);
+                                }
+                            }
+                            
+                            // 为每个文件的评论同步到会话消息
+                            for (const [fileId, fileComments] of commentsByFile.entries()) {
+                                for (const comment of fileComments) {
+                                    await sessionSync.syncCommentToMessage(comment, fileId, project, false);
+                                }
+                            }
+                            console.log(`[loadComments] 已同步 ${comments.value.length} 条评论到会话消息`);
+                        } catch (syncError) {
+                            console.warn('[loadComments] 同步评论到会话消息失败（已忽略）:', syncError?.message);
+                        }
+                    }
+                    
                     return comments.value;
                 } else {
                     comments.value = [];
