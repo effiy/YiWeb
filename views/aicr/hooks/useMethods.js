@@ -26,11 +26,7 @@ export const useMethods = (store) => {
         toggleSidebar,
         toggleComments,
         selectedProject,
-        selectedVersion,
-        availableVersions,
         setSelectedProject,
-        setSelectedVersion,
-        getVersionsByProject, // 重构后的方法
         loadFileTree,
         loadFiles,
         loadFileById,
@@ -228,27 +224,26 @@ export const useMethods = (store) => {
     };
 
     /**
-     * 下载当前项目版本为ZIP
+     * 下载当前项目为ZIP
      */
     const handleDownloadProjectVersion = async () => {
         return safeExecute(async () => {
             const projectId = selectedProject?.value;
-            const versionId = selectedVersion?.value;
-            if (!projectId || !versionId) {
-                throw createError('请先选择项目与版本', ErrorTypes.VALIDATION, '项目版本下载');
+            if (!projectId) {
+                throw createError('请先选择项目', ErrorTypes.VALIDATION, '项目下载');
             }
 
             // 动态加载依赖
             const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
-            showGlobalLoading(`正在打包 ${projectId}/${versionId} ...`);
+            showGlobalLoading(`正在打包 ${projectId} ...`);
             try {
                 // 确保文件列表已加载
                 if (!Array.isArray(files?.value) || files.value.length === 0) {
-                    await loadFiles(projectId, versionId);
+                    await loadFiles(projectId);
                 }
                 const allFiles = Array.isArray(files?.value) ? files.value : [];
                 if (allFiles.length === 0) {
-                    throw createError('当前项目版本下没有文件可下载', ErrorTypes.VALIDATION, '项目版本下载');
+                    throw createError('当前项目下没有文件可下载', ErrorTypes.VALIDATION, '项目下载');
                 }
 
                 // 按路径构建ZIP
@@ -264,7 +259,7 @@ export const useMethods = (store) => {
                 }
 
                 const blob = await zip.generateAsync({ type: 'blob' });
-                const fileName = `${projectId}／${versionId}.zip`;
+                const fileName = `${projectId}.zip`;
 
                 // 触发下载
                 const url = URL.createObjectURL(blob);
@@ -280,11 +275,11 @@ export const useMethods = (store) => {
             } finally {
                 try { hideGlobalLoading(); } catch (_) {}
             }
-        }, '项目版本下载');
+        }, '项目下载');
     };
 
     /**
-     * 上传ZIP并覆盖当前项目/版本
+     * 上传ZIP并覆盖当前项目
      */
     const handleUploadProjectVersion = async (zipFileOrEvent) => {
         return safeExecute(async () => {
@@ -294,10 +289,9 @@ export const useMethods = (store) => {
                 zipFile = zipFileOrEvent.target.files[0];
             }
 
-            // 从文件名解析 项目/版本（优先使用文件名；无版本则默认为 1.0.0）
+            // 从文件名解析项目（优先使用文件名）
             // 同时兼容全角斜杠 "／" 和反斜杠 "\\"
             const uiProject = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
-            const uiVersion = selectedVersion?.value || (document.getElementById('versionSelect')?.value) || '';
             let baseName = '';
             try {
                 const rawName = (zipFile && zipFile.name) ? String(zipFile.name) : '';
@@ -305,36 +299,31 @@ export const useMethods = (store) => {
             } catch (_) { baseName = ''; }
             const parts = baseName.split(/[\/\\／]/).filter(Boolean);
             let projectId = parts[0] || uiProject || '';
-            let versionId = (parts[1] || '') || uiVersion || '';
-            if (!versionId) versionId = '1.0.0';
             if (!projectId) {
-                throw createError('无法从文件名解析项目。请将压缩包命名为 "项目/版本.zip"（或"项目／版本.zip"）或先选择项目', ErrorTypes.VALIDATION, '项目版本上传');
+                throw createError('无法从文件名解析项目。请将压缩包命名为 "项目.zip" 或先选择项目', ErrorTypes.VALIDATION, '项目上传');
             }
 
             // 动态加载依赖与工具
             const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
             let __uploadLoadingShown = false;
             try {
-                // 1) 校验项目/版本是否已存在；不存在则补充创建
+                // 1) 校验项目是否已存在；不存在则补充创建
                 const { getData, postData, updateData, deleteData } = await import('/apis/modules/crud.js');
-                const pvUrl = `${window.API_URL}/mongodb/?cname=projectVersions`;
+                const pvUrl = `${window.API_URL}/mongodb/?cname=projects`;
                 const pvResp = await getData(pvUrl, {}, false);
                 const pvList = pvResp?.data?.list || [];
                 const projectDoc = pvList.find(p => p && p.id === projectId);
-                const extractId = (v) => (typeof v === 'string' ? v : (v && (v.id || v.value)));
-                const projectVersions = Array.isArray(projectDoc?.versions) ? projectDoc.versions.map(extractId).filter(Boolean) : [];
-                const versionExists = projectVersions.includes(versionId);
 
-                if (versionExists) {
+                if (projectDoc) {
+                    // 项目已存在，询问是否覆盖
                     const { showMessage } = await import('/utils/message.js');
                     const userChoice = await new Promise((resolve) => {
                         showMessage({
                             type: 'warning',
-                            title: '项目版本已存在',
-                            content: `检测到 ${projectId}/${versionId} 已存在。请选择操作：`,
+                            title: '项目已存在',
+                            content: `检测到 ${projectId} 已存在。请选择操作：`,
                             actions: [
                                 { text: '覆盖导入', type: 'primary', action: () => resolve('overwrite') },
-                                { text: '更改版本号', action: () => resolve('rename') },
                                 { text: '取消', action: () => resolve('cancel') }
                             ],
                             duration: 0
@@ -343,59 +332,14 @@ export const useMethods = (store) => {
                     if (userChoice === 'cancel') {
                         return; // 用户取消
                     }
-                    if (userChoice === 'rename') {
-                        // 建议下一个版本号
-                        const suggestNext = (v) => {
-                            try {
-                                const m = String(v).match(/^(\d+)\.(\d+)\.(\d+)(.*)?$/);
-                                if (m && m.length >= 4 && m[1] && m[2] && m[3]) {
-                                    const major = parseInt(m[1], 10);
-                                    const minor = parseInt(m[2], 10);
-                                    const patch = parseInt(m[3], 10) + 1;
-                                    if (!isNaN(major) && !isNaN(minor) && !isNaN(patch)) {
-                                        return `${major}.${minor}.${patch}`;
-                                    }
-                                }
-                            } catch (_) {}
-                            return `${v}-new`;
-                        };
-                        const input = window.prompt('输入新的版本号：', suggestNext(versionId));
-                        if (!input || !input.trim()) return;
-                        const newVersion = input.trim();
-                        // 重新校验是否仍然存在
-                        const stillExists = projectVersions.includes(newVersion);
-                        if (stillExists) {
-                            const { showWarning } = await import('/utils/message.js');
-                            showWarning(`版本已存在：${projectId}/${newVersion}`);
-                            return;
-                        }
-                        versionId = newVersion; // 使用新版本号继续
-                    }
-                    // 若选择覆盖，则继续后续流程（不需要在PV中新增版本）
-                }
-
-                // 不存在则新建/更新项目版本信息
-                if (projectDoc) {
-                    const key = projectDoc?.key || projectDoc?._id || projectDoc?.id;
-                    if (key) {
-                        // 仅在该版本尚不存在时追加
-                        if (!projectVersions.includes(versionId)) {
-                            const nextVersions = Array.from(new Set([...projectVersions, versionId]));
-                            await updateData(pvUrl, { key, id: projectId, versions: nextVersions });
-                        }
-                    } else {
-                        // 无key容错：直接新增
-                        if (!projectVersions.includes(versionId)) {
-                            await postData(pvUrl, { id: projectId, versions: [versionId] });
-                        }
-                    }
                 } else {
-                    await postData(pvUrl, { id: projectId, versions: [versionId] });
+                    // 项目不存在，创建新项目
+                    await postData(pvUrl, { id: projectId });
                 }
 
                 // 显示loading（至此确定会继续进行上传/覆盖）
                 if (!__uploadLoadingShown) {
-                    showGlobalLoading(`正在上传并解析 ${projectId}/${versionId} ...`);
+                    showGlobalLoading(`正在上传并解析 ${projectId} ...`);
                     __uploadLoadingShown = true;
                 }
 
@@ -419,7 +363,7 @@ export const useMethods = (store) => {
                     }
                 });
                 if (entries.length === 0) {
-                    throw createError('ZIP 中未发现文件', ErrorTypes.VALIDATION, '项目版本上传');
+                    throw createError('ZIP 中未发现文件', ErrorTypes.VALIDATION, '项目上传');
                 }
                 
                 console.log(`[ZIP解析] 总共解析到 ${entries.length} 个文件`);
@@ -455,7 +399,7 @@ export const useMethods = (store) => {
                 };
                 // 计算是否需要去掉打包时多出的根目录：
                 // - 忽略排除项后再判断统一前缀
-                // - 优先剥离 projectId/versionId 或 projectId
+                // - 优先剥离 projectId（兼容旧格式 projectId/versionId，但只处理 projectId）
                 // - 否则剥离所有条目共有的单一（或多级）根目录（最多两级，避免过度剥离）
                 const normalizedAll = entries.map(e => normalizePathForFilter(e.path)).filter(Boolean);
                 const candidates = normalizedAll.filter(p => !hasExcludedSegment(p) && !isExcludedFile(p));
@@ -472,11 +416,8 @@ export const useMethods = (store) => {
                     return listSegs.length > 0 && listSegs.every(segs => prefixSegs.every((s, i) => segs[i] === s));
                 };
                 let stripSegs = [];
-                // 优先匹配 projectId/versionId 前缀
-                if (projectId && versionId && allStartsWith([projectId, versionId])) {
-                    stripSegs = [projectId, versionId];
-                    console.log('[路径剥离] 匹配项目/版本前缀:', stripSegs);
-                } else if (projectId && allStartsWith([projectId])) {
+                // 优先匹配 projectId 前缀
+                if (projectId && allStartsWith([projectId])) {
                     stripSegs = [projectId];
                     console.log('[路径剥离] 匹配项目前缀:', stripSegs);
                 } else {
@@ -626,7 +567,6 @@ export const useMethods = (store) => {
 
                     filesPayload.push({
                         projectId,
-                        versionId,
                         fileId: normPath,
                         id: normPath,
                         path: normPath,
@@ -779,11 +719,11 @@ export const useMethods = (store) => {
                 console.log(`[文件树构建统计] 深层次文件添加到树中: ${deepFilesInTree}`);
                 console.log(`[文件树构建统计] MoreButton.vue 添加到树中: ${moreButtonInTree ? '是' : '否'}`);
 
-                // 覆盖远端：先删除当前 project/version 的树与文件，再写入新内容
+                // 覆盖远端：先删除当前 project 的树与文件，再写入新内容
                 // 提示：前面已导入 CRUD
                 // 删除树
                 try {
-                    const treeQuery = `${window.API_URL}/mongodb/?cname=projectVersionTree&projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}`;
+                    const treeQuery = `${window.API_URL}/mongodb/?cname=projectTree&projectId=${encodeURIComponent(projectId)}`;
                     const treeResp = await getData(treeQuery, {}, false);
                     const treeList = treeResp?.data?.list || [];
                     for (const doc of treeList) {
@@ -794,7 +734,7 @@ export const useMethods = (store) => {
 
                 // 删除文件集合
                 try {
-                    const filesQuery = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}`;
+                    const filesQuery = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(projectId)}`;
                     const filesResp = await getData(filesQuery, {}, false);
                     const list = filesResp?.data?.list || [];
                     for (const doc of list) {
@@ -804,9 +744,8 @@ export const useMethods = (store) => {
                 } catch (e) {}
 
                 // 写入树
-                await postData(`${window.API_URL}/mongodb/?cname=projectVersionTree`, {
+                await postData(`${window.API_URL}/mongodb/?cname=projectTree`, {
                     projectId,
-                    versionId,
                     data: root
                 });
 
@@ -820,7 +759,7 @@ export const useMethods = (store) => {
                 
                 for (const payload of filesPayload) {
                     try {
-                        await postData(`${window.API_URL}/mongodb/?cname=projectVersionFiles`, payload);
+                        await postData(`${window.API_URL}/mongodb/?cname=projectFiles`, payload);
                         filesUploaded++;
                         
                         // 统计深层次文件保存
@@ -852,30 +791,29 @@ export const useMethods = (store) => {
                     console.log(`[数据库保存统计] 失败文件列表:`, failedFiles);
                 }
 
-                // 刷新本地数据，并自动切换到最新上传的项目/版本
+                // 刷新本地数据，并自动切换到最新上传的项目
                 try {
                     if (typeof store.loadProjects === 'function') {
                         await store.loadProjects();
                     }
                 } catch (_) {}
 
-                // 更新选择到刚上传的项目与版本
+                // 更新选择到刚上传的项目
                 try { setSelectedProject(projectId); } catch (_) {}
-                try { setSelectedVersion(versionId); } catch (_) {}
 
                 // 加载界面所需数据
                 await Promise.all([
-                    loadFileTree(projectId, versionId),
-                    loadFiles(projectId, versionId),
-                    (async () => { try { await loadComments(projectId, versionId); } catch (_) {} })()
+                    loadFileTree(projectId),
+                    loadFiles(projectId),
+                    (async () => { try { await loadComments(projectId); } catch (_) {} })()
                 ]);
 
                 // 可选：同步评论者数据
-                try { if (typeof store.loadCommenters === 'function') { await store.loadCommenters(projectId, versionId); } } catch (_) {}
+                try { if (typeof store.loadCommenters === 'function') { await store.loadCommenters(projectId); } } catch (_) {}
 
-                // 广播项目/版本就绪事件
+                // 广播项目就绪事件
                 try {
-                    window.dispatchEvent(new CustomEvent('projectVersionReady', { detail: { projectId, versionId } }));
+                    window.dispatchEvent(new CustomEvent('projectReady', { detail: { projectId } }));
                 } catch (_) {}
 
                 const { showSuccess, showWarning } = await import('/utils/message.js');
@@ -890,7 +828,7 @@ export const useMethods = (store) => {
                 if (skippedLarge > 0) {
                     msg += `，跳过大文件(>1MB) ${skippedLarge} 个`;
                 }
-                msg += `。已切换到 ${projectId}/${versionId}`;
+                msg += `。已切换到 ${projectId}`;
                 
                 if (filesFailed > 0) {
                     showWarning(msg);
@@ -900,7 +838,7 @@ export const useMethods = (store) => {
             } finally {
                 try { if (__uploadLoadingShown) hideGlobalLoading(); } catch (_) {}
             }
-        }, '项目版本上传');
+        }, '项目上传');
     };
 
     // 触发隐藏的文件选择
@@ -959,7 +897,7 @@ export const useMethods = (store) => {
             console.log('[文件选择] 设置选中的文件ID:', idNorm);
             setSelectedFileId(idNorm);
 
-            // 若项目/版本就绪，尝试按需加载内容
+            // 若项目就绪，尝试按需加载内容
             try {
                 const pj = selectedProject?.value;
                 const ver = selectedVersion?.value;
@@ -1043,7 +981,7 @@ export const useMethods = (store) => {
                 showGlobalLoading('正在提交评论...');
                 console.log('[评论提交] 显示全局loading');
 
-                // 从选择器获取项目/版本信息
+                // 从选择器获取项目信息
                 const projectSelect = document.getElementById('projectSelect');
                 const versionSelect = document.getElementById('versionSelect');
                 
@@ -1360,7 +1298,7 @@ export const useMethods = (store) => {
                 showGlobalLoading('正在删除评论...');
                 console.log('[评论删除] 显示全局loading');
                 
-                // 从选择器获取项目/版本信息
+                // 从选择器获取项目信息
                 const projectSelect = document.getElementById('projectSelect');
                 const versionSelect = document.getElementById('versionSelect');
                 
@@ -1461,7 +1399,7 @@ export const useMethods = (store) => {
                 showGlobalLoading('正在解决评论...');
                 console.log('[评论解决] 显示全局loading');
                 
-                // 从选择器获取项目/版本信息
+                // 从选择器获取项目信息
                 const projectSelect = document.getElementById('projectSelect');
                 const versionSelect = document.getElementById('versionSelect');
                 
@@ -1544,7 +1482,7 @@ export const useMethods = (store) => {
                 showGlobalLoading('正在重新打开评论...');
                 console.log('[评论重新打开] 显示全局loading');
                 
-                // 从选择器获取项目/版本信息
+                // 从选择器获取项目信息
                 const projectSelect = document.getElementById('projectSelect');
                 const versionSelect = document.getElementById('versionSelect');
                 
@@ -1616,11 +1554,10 @@ export const useMethods = (store) => {
     /**
      * 初始化项目根目录结构
      * @param {string} projectId - 项目ID
-     * @param {string} versionId - 版本ID
      */
-    const initializeProjectRootDirectory = async (projectId, versionId) => {
+    const initializeProjectRootDirectory = async (projectId) => {
         return safeExecute(async () => {
-            console.log('[初始化根目录] 开始初始化项目根目录结构:', { projectId, versionId });
+            console.log('[初始化根目录] 开始初始化项目根目录结构:', { projectId });
             
             try {
                 const { postData } = await import('/apis/modules/crud.js');
@@ -1635,26 +1572,24 @@ export const useMethods = (store) => {
                 };
                 
                 // 创建文件树文档
-                const treeUrl = `${window.API_URL}/mongodb/?cname=projectVersionTree`;
+                const treeUrl = `${window.API_URL}/mongodb/?cname=projectTree`;
                 await postData(treeUrl, {
                     projectId: projectId,
-                    versionId: versionId,
                     data: rootDirectory
                 });
                 
                 console.log('[初始化根目录] 项目根目录结构创建成功');
                 
                 // 只创建 README.md 文件
-                const filesUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles`;
+                const filesUrl = `${window.API_URL}/mongodb/?cname=projectFiles`;
                 const basicFiles = [
                     {
                         projectId: projectId,
-                        versionId: versionId,
                         fileId: `${projectId}/README.md`,
                         id: `${projectId}/README.md`,
                         path: `${projectId}/README.md`,
                         name: 'README.md',
-                        content: `# ${projectId}\n\n项目描述：这是一个新创建的项目版本 ${versionId}。\n\n## 开始使用\n\n请在此处添加项目的使用说明。`
+                        content: `# ${projectId}\n\n项目描述：这是一个新创建的项目。\n\n## 开始使用\n\n请在此处添加项目的使用说明。`
                     }
                 ];
                 
@@ -1686,7 +1621,7 @@ export const useMethods = (store) => {
             console.log('[评论重新加载] 收到重新加载评论的请求:', detail);
             
             try {
-                // 从选择器获取项目/版本信息
+                // 从选择器获取项目信息
                 const projectSelect = document.getElementById('projectSelect');
                 const versionSelect = document.getElementById('versionSelect');
                 
@@ -1857,58 +1792,36 @@ export const useMethods = (store) => {
                         console.log('[项目切换] 评论者数据已清空');
                     }
 
-                    // 自动选择第一个版本（优先从项目直接获取，避免异步时序问题）
-                    const versionsForProject = (typeof getVersionsByProject === 'function') 
-                        ? getVersionsByProject(projectId) 
-                        : (availableVersions?.value || []);
-                    if (versionsForProject && versionsForProject.length > 0) {
-                        const firstVersion = versionsForProject[0];
-                        const firstVersionId = (typeof firstVersion === 'string') 
-                            ? firstVersion 
-                            : (firstVersion.id || firstVersion.value || firstVersion.versionId || firstVersion.date || firstVersion.name);
-                        const firstVersionName = (typeof firstVersion === 'string') 
-                            ? firstVersion 
-                            : (firstVersion.name || firstVersion.label || firstVersionId);
-                        setSelectedVersion(firstVersionId);
-                        console.log('[项目切换] 自动选择第一个版本:', { id: firstVersionId, name: firstVersionName, raw: firstVersion });
-                        
-                        // 加载文件树和文件数据
-                        console.log('[项目切换] 开始加载文件树和文件数据...');
-                        await Promise.all([
-                            loadFileTree(projectId, firstVersionId),
-                            loadFiles(projectId, firstVersionId)
-                        ]);
-                        console.log('[项目切换] 文件树和文件数据加载完成');
-                        
-                        // 加载评论数据
-                        console.log('[项目切换] 开始加载评论数据...');
-                        await loadComments(projectId, firstVersionId);
-                        console.log('[项目切换] 评论数据加载完成');
-                        
-                        // 重新加载评论者数据
-                        console.log('[项目切换] 开始重新加载评论者数据...');
-                        if (store.loadCommenters) {
-                            await store.loadCommenters(projectId, firstVersionId);
-                            console.log('[项目切换] 评论者数据重新加载完成');
-                        }
-                        
-                        // 触发项目/版本就绪事件，通知评论面板重新加载
-                        console.log('[项目切换] 触发projectVersionReady事件');
-                        window.dispatchEvent(new CustomEvent('projectVersionReady', {
-                            detail: {
-                                projectId: projectId,
-                                versionId: firstVersionId
-                            }
-                        }));
-                        
-                        // 显示成功消息
-                        showSuccessMessage(`已切换到项目: ${projectId}，版本: ${firstVersionName}`);
-                    } else {
-                        // 如果没有可用版本，清空版本选择
-                        setSelectedVersion('');
-                        console.log('[项目切换] 项目没有可用版本');
-                        showSuccessMessage(`已切换到项目: ${projectId}`);
+                    // 加载文件树和文件数据
+                    console.log('[项目切换] 开始加载文件树和文件数据...');
+                    await Promise.all([
+                        loadFileTree(projectId),
+                        loadFiles(projectId)
+                    ]);
+                    console.log('[项目切换] 文件树和文件数据加载完成');
+                    
+                    // 加载评论数据
+                    console.log('[项目切换] 开始加载评论数据...');
+                    await loadComments(projectId);
+                    console.log('[项目切换] 评论数据加载完成');
+                    
+                    // 重新加载评论者数据
+                    console.log('[项目切换] 开始重新加载评论者数据...');
+                    if (store.loadCommenters) {
+                        await store.loadCommenters(projectId);
+                        console.log('[项目切换] 评论者数据重新加载完成');
                     }
+                    
+                    // 触发项目就绪事件，通知评论面板重新加载
+                    console.log('[项目切换] 触发projectReady事件');
+                    window.dispatchEvent(new CustomEvent('projectReady', {
+                        detail: {
+                            projectId: projectId
+                        }
+                    }));
+                    
+                    // 显示成功消息
+                    showSuccessMessage(`已切换到项目: ${projectId}`);
 
                 } catch (error) {
                     console.error('[项目切换] 项目切换失败:', error);
@@ -1921,79 +1834,6 @@ export const useMethods = (store) => {
         }, '项目切换处理');
     };
 
-    /**
-     * 处理版本切换
-     */
-    const handleVersionChange = (event) => {
-        return safeExecute(async () => {
-            const versionId = event.target.value;
-            console.log('[版本切换] 开始处理版本切换:', versionId);
-            console.log('[版本切换] 当前selectedVersion:', selectedVersion?.value);
-            console.log('[版本切换] 当前availableVersions:', availableVersions?.value);
-            
-            if (versionId && versionId !== '') {
-                console.log('[版本切换] 开始切换到版本:', versionId);
-                
-                // 设置loading状态
-                loading.value = true;
-                
-                try {
-                    // 设置选中的版本
-                    setSelectedVersion(versionId);
-                    console.log('[版本切换] 版本已设置:', versionId);
-                    
-                    // 清空文件选择
-                    setSelectedFileId(null);
-                    
-                    // 清空评论数据
-                    comments.value = [];
-                    
-                    // 加载文件树和文件数据
-                    console.log('[版本切换] 开始加载文件树和文件数据...');
-                    await Promise.all([
-                        loadFileTree(selectedProject.value, versionId),
-                        loadFiles(selectedProject.value, versionId)
-                    ]);
-                    console.log('[版本切换] 文件树和文件数据加载完成');
-                    
-                    // 加载评论数据
-                    console.log('[版本切换] 开始加载评论数据...');
-                    await loadComments(selectedProject.value, versionId);
-                    console.log('[版本切换] 评论数据加载完成');
-                    
-                    // 重新加载评论者数据
-                    console.log('[版本切换] 开始重新加载评论者数据...');
-                    if (store.loadCommenters) {
-                        await store.loadCommenters(selectedProject.value, versionId);
-                        console.log('[版本切换] 评论者数据重新加载完成');
-                    } else {
-                        console.warn('[版本切换] store中loadCommenters方法不可用');
-                    }
-                    
-                    // 触发项目/版本就绪事件，通知评论面板重新加载
-                    console.log('[版本切换] 触发projectVersionReady事件');
-                    window.dispatchEvent(new CustomEvent('projectVersionReady', {
-                        detail: {
-                            projectId: selectedProject.value,
-                            versionId: versionId
-                        }
-                    }));
-                    
-                    // 显示成功消息
-                    showSuccessMessage(`已切换到版本: ${versionId}`);
-                    
-                } catch (error) {
-                    console.error('[版本切换] 版本切换失败:', error);
-                    throw createError(`版本切换失败: ${error.message}`, ErrorTypes.API, '版本切换');
-                } finally {
-                    // 清除loading状态
-                    loading.value = false;
-                }
-            } else {
-                console.warn('[版本切换] versionId为空或无效');
-            }
-        }, '版本切换处理');
-    };
 
     /**
      * 刷新数据
@@ -2001,7 +1841,7 @@ export const useMethods = (store) => {
     const handleRefreshData = () => {
         return safeExecute(() => {
             refreshData();
-            console.log('[数据刷新] 刷新当前项目/版本数据');
+            console.log('[数据刷新] 刷新当前项目数据');
         }, '数据刷新处理');
     };
 
@@ -2019,9 +1859,8 @@ export const useMethods = (store) => {
                 const parentId = payload && payload.parentId;
                 const name = window.prompt('新建文件夹名称：');
                 if (!name) return;
-                const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
-                const versionId = selectedVersion?.value || (document.getElementById('versionSelect')?.value) || '';
-                await createFolder({ parentId, name, projectId, versionId });
+                const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value || '');
+                await createFolder({ parentId, name, projectId });
                 showSuccessMessage('文件夹创建成功');
             }, '新建文件夹');
         },
@@ -2030,9 +1869,8 @@ export const useMethods = (store) => {
                 const parentId = payload && payload.parentId;
                 const name = window.prompt('新建文件名称（含扩展名）：');
                 if (!name) return;
-                const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
-                const versionId = selectedVersion?.value || (document.getElementById('versionSelect')?.value) || '';
-                await createFile({ parentId, name, content: '', projectId, versionId });
+                const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value || '');
+                await createFile({ parentId, name, content: '', projectId });
                 showSuccessMessage('文件创建成功');
             }, '新建文件');
         },
@@ -2217,7 +2055,6 @@ export const useMethods = (store) => {
         toggleComments: handleToggleComments,
         // 项目/版本管理方法
         handleProjectChange,
-        handleVersionChange,
         refreshData: handleRefreshData,
         // 搜索相关方法
         handleSearchInput,
@@ -2322,104 +2159,6 @@ export const useMethods = (store) => {
                 store.pvError.value = `项目删除失败: ${error.message}`;
             }
         },
-        pvAddVersion: async () => {
-            if (!store.pvSelectedProjectId.value) return;
-            const id = (store.pvNewVersionId.value || '').trim();
-            if (!id) return;
-            const proj = store.pvProjects.value.find(p => p.id === store.pvSelectedProjectId.value);
-            if (!proj) return;
-            proj.versions = Array.isArray(proj.versions) ? proj.versions : [];
-            if (proj.versions.find(v => (typeof v === 'string' ? v : v.id) === id)) return;
-            
-            try {
-                // 调用后端API添加版本
-                const { postData, updateData, getData } = await import('/apis/modules/crud.js');
-                const url = `${window.API_URL}/mongodb/?cname=projectVersions`;
-                
-                // 检查项目是否已存在
-                const existingProject = await getData(`${url}&id=${store.pvSelectedProjectId.value}`, {}, false);
-                const projectExists = existingProject?.data?.list && existingProject.data.list.length > 0;
-                
-                if (projectExists) {
-                    // 项目存在，更新版本列表
-                    const existingProjectData = existingProject.data.list[0];
-                    const key = existingProjectData.key || existingProjectData._id || existingProjectData.id;
-                    const currentVersions = Array.isArray(existingProjectData.versions) 
-                        ? existingProjectData.versions.map(v => typeof v === 'string' ? v : v.id).filter(Boolean)
-                        : [];
-                    
-                    if (!currentVersions.includes(id)) {
-                        const updatedVersions = [...currentVersions, id];
-                        await updateData(url, { key, id: store.pvSelectedProjectId.value, versions: updatedVersions });
-                        console.log('[pvAddVersion] 版本已添加到现有项目:', { projectId: store.pvSelectedProjectId.value, versionId: id });
-                    }
-                } else {
-                    // 项目不存在，创建新项目
-                    await postData(url, { id: store.pvSelectedProjectId.value, versions: [id] });
-                    console.log('[pvAddVersion] 新项目已创建并添加版本:', { projectId: store.pvSelectedProjectId.value, versionId: id });
-                }
-                
-                // 初始化项目根目录结构
-                await initializeProjectRootDirectory(store.pvSelectedProjectId.value, id);
-                
-                // 更新本地状态
-                proj.versions.push(id);
-                store.pvNewVersionId.value = '';
-                store.pvNewVersionName.value = '';
-                store.pvError.value = '';
-                
-                // 如果当前选中的是刚创建版本的项目，自动切换到新版本并刷新数据
-                if (store.selectedProject?.value === store.pvSelectedProjectId.value) {
-                    console.log('[pvAddVersion] 自动切换到新版本并刷新数据');
-                    try {
-                        // 设置新版本为选中状态
-                        setSelectedVersion(id);
-                        
-                        // 刷新项目列表以获取最新数据
-                        if (typeof store.loadProjects === 'function') {
-                            await store.loadProjects();
-                        }
-                        
-                        // 加载文件树和文件数据
-                        if (typeof loadFileTree === 'function' && typeof loadFiles === 'function') {
-                            await Promise.all([
-                                loadFileTree(store.pvSelectedProjectId.value, id),
-                                loadFiles(store.pvSelectedProjectId.value, id)
-                            ]);
-                        }
-                        
-                        // 触发项目/版本就绪事件
-                        window.dispatchEvent(new CustomEvent('projectVersionReady', {
-                            detail: {
-                                projectId: store.pvSelectedProjectId.value,
-                                versionId: id
-                            }
-                        }));
-                        
-                        console.log('[pvAddVersion] 数据刷新完成');
-                    } catch (refreshError) {
-                        console.warn('[pvAddVersion] 数据刷新失败:', refreshError);
-                    }
-                }
-                
-                console.log('[pvAddVersion] 版本添加成功');
-            } catch (error) {
-                console.error('[pvAddVersion] 版本添加失败:', error);
-                store.pvError.value = `版本添加失败: ${error.message}`;
-            }
-        },
-        pvDeleteVersion: async (versionId) => {
-            if (!store.pvSelectedProjectId.value) return;
-            const proj = store.pvProjects.value.find(p => p.id === store.pvSelectedProjectId.value);
-            if (!proj) return;
-            
-            try {
-                // 调用后端API删除版本
-                const { updateData, getData } = await import('/apis/modules/crud.js');
-                const url = `${window.API_URL}/mongodb/?cname=projectVersions`;
-                
-                // 获取项目信息
-                const existingProject = await getData(`${url}&id=${store.pvSelectedProjectId.value}`, {}, false);
                 const projectExists = existingProject?.data?.list && existingProject.data.list.length > 0;
                 
                 if (projectExists) {
@@ -2444,16 +2183,6 @@ export const useMethods = (store) => {
                     }
                 }
                 
-                // 更新本地状态
-                proj.versions = (proj.versions || []).filter(v => (typeof v === 'string' ? v : v.id) !== versionId);
-                store.pvError.value = '';
-                
-                console.log('[pvDeleteVersion] 版本删除成功');
-            } catch (error) {
-                console.error('[pvDeleteVersion] 版本删除失败:', error);
-                store.pvError.value = `版本删除失败: ${error.message}`;
-            }
-        }
     };
 };
 

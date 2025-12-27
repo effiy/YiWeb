@@ -38,20 +38,16 @@ export const createStore = () => {
     // 评论区收缩状态
     const commentsCollapsed = vueRef(false);
     
-    // 重构后的项目/版本管理 - 一个项目对应多个版本
-    const projects = vueRef([]); // 存储项目列表，每个项目包含versions数组
+    // 项目管理 - 简化后只管理项目，不再有版本概念
+    const projects = vueRef([]); // 存储项目列表
     const selectedProject = vueRef('');
-    const selectedVersion = vueRef('');
-    const availableVersions = vueRef([]); // 当前选中项目的版本列表
     
-    // UI：项目/版本维护弹框与表单
+    // UI：项目维护弹框与表单
     const showPvManager = vueRef(false);
     const pvProjects = vueRef([]);
     const pvSelectedProjectId = vueRef('');
     const pvNewProjectId = vueRef('');
     const pvNewProjectName = vueRef('');
-    const pvNewVersionId = vueRef('');
-    const pvNewVersionName = vueRef('');
     const pvError = vueRef('');
     
     // 搜索相关状态
@@ -68,24 +64,23 @@ export const createStore = () => {
     /**
      * 异步加载文件树数据
      */
-    const loadFileTree = async (projectId = null, versionId = null) => {
+    const loadFileTree = async (projectId = null) => {
         return safeExecuteAsync(async () => {
             loading.value = true;
             error.value = null;
             errorMessage.value = '';
             
-            console.log('[loadFileTree] 正在加载文件树数据...', { projectId, versionId });
+            console.log('[loadFileTree] 正在加载文件树数据...', { projectId });
             
-            // 需要明确的项目与版本
+            // 需要明确的项目
             const project = projectId || selectedProject.value;
-            const version = versionId || selectedVersion.value;
-            if (!project || !version) {
-                console.warn('[loadFileTree] 缺少项目/版本，跳过文件树加载');
+            if (!project) {
+                console.warn('[loadFileTree] 缺少项目，跳过文件树加载');
                 fileTree.value = [];
                 fileTreeDocKey.value = '';
                 return [];
             }
-            const tree_url = `${window.API_URL}/mongodb/?cname=projectVersionTree&projectId=${project}&versionId=${version}`;
+            const tree_url = `${window.API_URL}/mongodb/?cname=projectTree&projectId=${project}`;
             
             const response = await getData(tree_url);
 
@@ -99,7 +94,7 @@ export const createStore = () => {
 
             // 检查是否有数据
             if (!response.data || !Array.isArray(response.data.list) || response.data.list.length === 0) {
-                console.warn('[loadFileTree] 文件树数据为空，项目/版本可能不存在:', { project, version });
+                console.warn('[loadFileTree] 文件树数据为空，项目可能不存在:', { project });
                 fileTree.value = [];
                 fileTreeDocKey.value = '';
                 return [];
@@ -246,20 +241,18 @@ export const createStore = () => {
     /**
      * 持久化文件树到后端
      */
-    const persistFileTree = async (projectId = null, versionId = null) => {
+    const persistFileTree = async (projectId = null) => {
         return safeExecuteAsync(async () => {
             const project = projectId || selectedProject.value;
-            const version = versionId || selectedVersion.value;
             if (!fileTreeDocKey.value) {
                 throw createError('缺少文件树文档key，无法持久化', ErrorTypes.API, '文件树保存');
             }
             const payload = {
                 key: fileTreeDocKey.value,
                 projectId: project,
-                versionId: version,
                 data: Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value
             };
-            const url = `${window.API_URL}/mongodb/?cname=projectVersionTree`;
+            const url = `${window.API_URL}/mongodb/?cname=projectTree`;
             const res = await updateData(url, payload);
             return res;
         }, '文件树持久化');
@@ -268,7 +261,7 @@ export const createStore = () => {
     /**
      * 创建文件夹
      */
-    const createFolder = async ({ parentId, name, projectId = null, versionId = null }) => {
+    const createFolder = async ({ parentId, name, projectId = null }) => {
         return safeExecuteAsync(async () => {
             if (!name || !name.trim()) {
                 throw createError('文件夹名称不能为空', ErrorTypes.VALIDATION, '新建文件夹');
@@ -318,7 +311,7 @@ export const createStore = () => {
             // 保持全部展开
             expandAllFolders();
 
-            await persistFileTree(projectId, versionId);
+            await persistFileTree(projectId);
             return newId;
         }, '创建文件夹');
     };
@@ -326,7 +319,7 @@ export const createStore = () => {
     /**
      * 创建文件
      */
-    const createFile = async ({ parentId, name, content = '', projectId = null, versionId = null }) => {
+    const createFile = async ({ parentId, name, content = '', projectId = null }) => {
         return safeExecuteAsync(async () => {
             if (!name || !name.trim()) {
                 throw createError('文件名称不能为空', ErrorTypes.VALIDATION, '新建文件');
@@ -378,15 +371,14 @@ export const createStore = () => {
             expandAllFolders();
 
             // 先持久化树
-            await persistFileTree(projectId, versionId);
+            await persistFileTree(projectId);
 
             // 在文件集合中新增占位（远端与本地）
             let createdKey = null;
             try {
-                const filesUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles`;
+                const filesUrl = `${window.API_URL}/mongodb/?cname=projectFiles`;
                 const createResult = await postData(filesUrl, {
                     projectId: projectId || selectedProject.value,
-                    versionId: versionId || selectedVersion.value,
                     fileId: newId,
                     id: newId,
                     path: newId,
@@ -411,7 +403,7 @@ export const createStore = () => {
     /**
      * 重命名节点
      */
-    const renameItem = async ({ itemId, newName, projectId = null, versionId = null }) => {
+    const renameItem = async ({ itemId, newName, projectId = null }) => {
         return safeExecuteAsync(async () => {
             if (!itemId) throw createError('缺少目标ID', ErrorTypes.VALIDATION, '重命名');
             if (!newName || !newName.trim()) throw createError('名称不能为空', ErrorTypes.VALIDATION, '重命名');
@@ -486,11 +478,11 @@ export const createStore = () => {
                 });
             }
 
-            await persistFileTree(projectId, versionId);
+            await persistFileTree(projectId);
 
             // 同步远端文件集合
             try {
-                const filesUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles`;
+                const filesUrl = `${window.API_URL}/mongodb/?cname=projectFiles`;
                 const affected = prevFiles.filter(f => {
                     const ids = [f.fileId, f.id, f.path].filter(Boolean);
                     return ids.some(v => String(v) === oldId || String(v).startsWith(oldId + '/'));
@@ -500,10 +492,10 @@ export const createStore = () => {
                     const newPath = oldPath.replace(oldId, newId);
                     const key = f.key || f._id || f.idKey;
                     if (key) {
-                        await updateData(filesUrl, { key, projectId: projectId || selectedProject.value, versionId: versionId || selectedVersion.value, fileId: newPath, id: newPath, path: newPath, name: newPath.split('/').pop(), content: f.content || (f.data && f.data.content) || '' });
+                        await updateData(filesUrl, { key, projectId: projectId || selectedProject.value, fileId: newPath, id: newPath, path: newPath, name: newPath.split('/').pop(), content: f.content || (f.data && f.data.content) || '' });
                     } else {
                         // 无 key 时，尝试新增并删除旧文档
-                        await postData(filesUrl, { projectId: projectId || selectedProject.value, versionId: versionId || selectedVersion.value, fileId: newPath, id: newPath, path: newPath, name: newPath.split('/').pop(), content: f.content || (f.data && f.data.content) || '' });
+                        await postData(filesUrl, { projectId: projectId || selectedProject.value, fileId: newPath, id: newPath, path: newPath, name: newPath.split('/').pop(), content: f.content || (f.data && f.data.content) || '' });
                         try { await deleteData(`${filesUrl}&fileId=${encodeURIComponent(oldPath)}`); } catch (e) {}
                     }
                 }
@@ -517,22 +509,21 @@ export const createStore = () => {
     /**
      * 删除节点
      */
-    const deleteItem = async ({ itemId, projectId = null, versionId = null }) => {
+    const deleteItem = async ({ itemId, projectId = null }) => {
         return safeExecuteAsync(async () => {
             if (!itemId) throw createError('缺少目标ID', ErrorTypes.VALIDATION, '删除');
             const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
             const { node, parent } = findNodeAndParentById(root, itemId);
             if (!node) throw createError('未找到目标节点', ErrorTypes.API, '删除');
             const project = projectId || selectedProject.value;
-            const version = versionId || selectedVersion.value;
             const prevFiles = Array.isArray(files.value) ? files.value.slice() : [];
             
             // 如果删除的是根节点：执行整棵树与对应文件集合的清理
             if (!parent) {
                 try {
                     // 删除远端树文档
-                    if (project && version) {
-                        const treeQueryUrl = `${window.API_URL}/mongodb/?cname=projectVersionTree&projectId=${encodeURIComponent(project)}&versionId=${encodeURIComponent(version)}`;
+                    if (project) {
+                        const treeQueryUrl = `${window.API_URL}/mongodb/?cname=projectTree&projectId=${encodeURIComponent(project)}`;
                         const treeResp = await getData(treeQueryUrl, {}, false);
                         const treeList = treeResp?.data?.list || [];
                         for (const doc of treeList) {
@@ -543,8 +534,8 @@ export const createStore = () => {
                         }
                     }
                     // 删除远端文件集合（含无key回退fileId删除）
-                    if (project && version) {
-                        const filesQueryUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(project)}&versionId=${encodeURIComponent(version)}`;
+                    if (project) {
+                        const filesQueryUrl = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(project)}`;
                         const filesResp = await getData(filesQueryUrl, {}, false);
                         const fileList = filesResp?.data?.list || [];
                         for (const f of fileList) {
@@ -559,9 +550,9 @@ export const createStore = () => {
                             }
                         }
                     }
-                    // 删除远端评论集合（该项目/版本）
-                    if (project && version) {
-                        const commentsQueryUrl = `${window.API_URL}/mongodb/?cname=comments&projectId=${encodeURIComponent(project)}&versionId=${encodeURIComponent(version)}`;
+                    // 删除远端评论集合（该项目）
+                    if (project) {
+                        const commentsQueryUrl = `${window.API_URL}/mongodb/?cname=comments&projectId=${encodeURIComponent(project)}`;
                         const commentsResp = await getData(commentsQueryUrl, {}, false);
                         const commentsList = commentsResp?.data?.list || [];
                         for (const c of commentsList) {
@@ -571,28 +562,16 @@ export const createStore = () => {
                             }
                         }
                     }
-                    // 从项目版本集合中移除该版本；如版本清空则删除该项目项
+                    // 从项目集合中删除该项目
                     {
-                        const pvUrl = `${window.API_URL}/mongodb/?cname=projectVersions`;
+                        const pvUrl = `${window.API_URL}/mongodb/?cname=projects`;
                         const pvResp = await getData(pvUrl, {}, false);
                         const pvList = pvResp?.data?.list || [];
                         const target = pvList.find(p => p?.id === project);
                         if (target) {
                             const key = target?.key || target?._id || target?.id;
-                            const rawVersions = Array.isArray(target?.versions) ? target.versions : [];
-                            const extractId = (v) => (typeof v === 'string' ? v : (v && (v.id || v.value)));
-                            const nextVersions = rawVersions
-                                .map(extractId)
-                                .filter(Boolean)
-                                .filter(v => v !== version);
-                            if (nextVersions.length > 0) {
-                                if (key) {
-                                    await updateData(pvUrl, { key, id: project, versions: nextVersions });
-                                }
-                            } else {
-                                if (key) {
-                                    await deleteData(`${pvUrl}&key=${key}`);
-                                }
+                            if (key) {
+                                await deleteData(`${pvUrl}&key=${key}`);
                             }
                         }
                     }
@@ -606,32 +585,16 @@ export const createStore = () => {
                 comments.value = [];
                 selectedFileId.value = null;
                 expandedFolders.value = new Set();
-                // 刷新项目/版本列表并对齐UI
+                // 刷新项目列表并对齐UI
                 try {
                     const refreshed = await loadProjects();
                     const list = Array.isArray(refreshed) ? refreshed : (projects?.value || []);
-                    const pj = list.find(p => p?.id === project);
-                    if (pj && Array.isArray(pj.versions) && pj.versions.length > 0) {
-                        const nextVersionId = (typeof pj.versions[0] === 'string') ? pj.versions[0] : (pj.versions[0]?.id || '');
-                        setSelectedProject(project);
-                        setSelectedVersion(nextVersionId);
+                    if (list.length > 0) {
+                        const first = list[0];
+                        setSelectedProject(first.id);
                         await refreshData();
                     } else {
-                        if (list.length > 0) {
-                            const first = list[0];
-                            setSelectedProject(first.id);
-                            const verArr = Array.isArray(first.versions) ? first.versions : [];
-                            const firstVer = verArr.length > 0 ? (typeof verArr[0] === 'string' ? verArr[0] : (verArr[0]?.id || '')) : '';
-                            if (firstVer) {
-                                setSelectedVersion(firstVer);
-                                await refreshData();
-                            } else {
-                                setSelectedVersion('');
-                            }
-                        } else {
-                            setSelectedProject('');
-                            setSelectedVersion('');
-                        }
+                        setSelectedProject('');
                     }
                 } catch (_) {}
                 return true;
@@ -651,11 +614,11 @@ export const createStore = () => {
                 });
             }
 
-            await persistFileTree(projectId, versionId);
+            await persistFileTree(projectId);
 
             // 远端删除受影响文件
             try {
-                const filesUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles`;
+                const filesUrl = `${window.API_URL}/mongodb/?cname=projectFiles`;
                 const affected = prevFiles.filter(f => {
                     const ids = [f.fileId, f.id, f.path].filter(Boolean);
                     return ids.some(v => String(v) === itemId || String(v).startsWith(itemId + '/'));
@@ -679,19 +642,18 @@ export const createStore = () => {
     /**
      * 异步加载代码文件数据
      */
-    const loadFiles = async (projectId = null, versionId = null) => {
+    const loadFiles = async (projectId = null) => {
         return safeExecuteAsync(async () => {
-            console.log('[loadFiles] 正在加载代码文件数据...', { projectId, versionId });
+            console.log('[loadFiles] 正在加载代码文件数据...', { projectId });
             
-            // 需要明确的项目与版本
+            // 需要明确的项目
             const project = projectId || selectedProject.value;
-            const version = versionId || selectedVersion.value;
-            if (!project || !version) {
-                console.warn('[loadFiles] 缺少项目/版本，跳过代码文件加载');
+            if (!project) {
+                console.warn('[loadFiles] 缺少项目，跳过代码文件加载');
                 files.value = [];
                 return [];
             }
-            const files_url = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${project}&versionId=${version}`;
+            const files_url = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${project}`;
             
             const response = await getData(files_url, {}, false);
             
@@ -830,19 +792,18 @@ export const createStore = () => {
     /**
      * 按需加载单个文件（当列表中缺少内容或未找到时使用）
      */
-    const loadFileById = async (projectId = null, versionId = null, targetFileId = null, fileKey = null) => {
+    const loadFileById = async (projectId = null, targetFileId = null, fileKey = null) => {
         return safeExecuteAsync(async () => {
             const project = projectId || selectedProject.value;
-            const version = versionId || selectedVersion.value;
             const fileId = targetFileId || selectedFileId.value;
-            if (!project || !version || !fileId) return null;
+            if (!project || !fileId) return null;
 
-            console.log('[loadFileById] 尝试加载文件:', fileId, '项目:', project, '版本:', version, '文件Key:', fileKey);
+            console.log('[loadFileById] 尝试加载文件:', fileId, '项目:', project, '文件Key:', fileKey);
             
             // 如果有文件Key，优先使用Key进行精确查询
             if (fileKey) {
                 console.log('[loadFileById] 使用文件Key进行精确查询:', fileKey);
-                const keyUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(project)}&versionId=${encodeURIComponent(version)}&key=${encodeURIComponent(fileKey)}`;
+                const keyUrl = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(project)}&key=${encodeURIComponent(fileKey)}`;
                 console.log('[loadFileById] Key查询URL:', keyUrl);
                 
                 try {
@@ -881,7 +842,7 @@ export const createStore = () => {
             }
             
             // 使用fileId进行查询（原有逻辑）
-            const url = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(project)}&versionId=${encodeURIComponent(version)}&fileId=${encodeURIComponent(fileId)}`;
+            const url = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(project)}&fileId=${encodeURIComponent(fileId)}`;
             console.log('[loadFileById] 请求URL:', url);
             const response = await getData(url, {}, false);
             let list = (response?.data?.list && Array.isArray(response.data.list)) ? response.data.list : (Array.isArray(response) ? response : []);
@@ -893,7 +854,7 @@ export const createStore = () => {
                 console.log('[loadFileById] 原始fileId:', fileId);
                 console.log('[loadFileById] 编码后的fileId:', encodeURIComponent(fileId));
                 try {
-                    await loadFiles(project, version);
+                    await loadFiles(project);
                     console.log('[loadFileById] 全量加载完成，文件总数:', files.value?.length || 0);
                     
                     // 优先使用Key进行精确匹配
@@ -1114,7 +1075,7 @@ export const createStore = () => {
     /**
      * 异步加载评论数据
      */
-    const loadComments = async (projectId = null, versionId = null) => {
+    const loadComments = async (projectId = null) => {
         return safeExecuteAsync(async () => {
             // 防止重复请求
             if (loading.value) {
@@ -1122,14 +1083,13 @@ export const createStore = () => {
                 return comments.value;
             }
             
-            console.log('[loadComments] 正在加载评论数据...', { projectId, versionId });
+            console.log('[loadComments] 正在加载评论数据...', { projectId });
             
-            // 检查是否有项目/版本信息
+            // 检查是否有项目信息
             const project = projectId || selectedProject.value;
-            const version = versionId || selectedVersion.value;
             
-            if (!project || !version) {
-                console.log('[loadComments] 项目/版本信息不完整，跳过评论加载');
+            if (!project) {
+                console.log('[loadComments] 项目信息不完整，跳过评论加载');
                 comments.value = [];
                 return [];
             }
@@ -1141,7 +1101,6 @@ export const createStore = () => {
                 // 调用MongoDB接口获取评论数据
                 let url = `${window.API_URL}/mongodb/?cname=comments`;
                 url += `&projectId=${project}`;
-                url += `&versionId=${version}`;
                 
                 // 如果有当前选中的文件，也添加到参数中
                 if (selectedFileId.value) {
@@ -1181,7 +1140,7 @@ export const createStore = () => {
     /**
      * 异步加载评论者数据
      */
-    const loadCommenters = async (projectId = null, versionId = null) => {
+    const loadCommenters = async (projectId = null) => {
         return safeExecuteAsync(async () => {
             // 防止重复加载
             if (commentersLoading.value) {
@@ -1192,24 +1151,22 @@ export const createStore = () => {
             commentersLoading.value = true;
             commentersError.value = '';
             
-            console.log('[loadCommenters] 正在加载评论者数据...', { projectId, versionId });
+            console.log('[loadCommenters] 正在加载评论者数据...', { projectId });
             
-            // 检查是否有项目/版本信息
+            // 检查是否有项目信息
             const project = projectId || selectedProject.value;
-            const version = versionId || selectedVersion.value;
             
-            if (!project || !version) {
-                console.log('[loadCommenters] 项目/版本信息不完整，跳过评论者加载');
+            if (!project) {
+                console.log('[loadCommenters] 项目信息不完整，跳过评论者加载');
                 commenters.value = [];
                 return [];
             }
             
-            console.log('[loadCommenters] 项目/版本信息完整，开始加载评论者');
+            console.log('[loadCommenters] 项目信息完整，开始加载评论者');
             
             try {
                 let url = `${window.API_URL}/mongodb/?cname=commenters`;
                 url += `&projectId=${project}`;
-                url += `&versionId=${version}`;
                 
                 console.log('[loadCommenters] 调用MongoDB接口:', url);
                 const response = await getData(url);
@@ -1239,16 +1196,15 @@ export const createStore = () => {
     /**
      * 添加评论者
      */
-    const addCommenter = async (commenterData, projectId = null, versionId = null) => {
+    const addCommenter = async (commenterData, projectId = null) => {
         return safeExecuteAsync(async () => {
-            console.log('[addCommenter] 正在添加评论者...', { commenterData, projectId, versionId });
+            console.log('[addCommenter] 正在添加评论者...', { commenterData, projectId });
             
-            // 检查是否有项目/版本信息
+            // 检查是否有项目信息
             const project = projectId || selectedProject.value;
-            const version = versionId || selectedVersion.value;
             
-            if (!project || !version) {
-                throw new Error('项目/版本信息不完整，无法添加评论者');
+            if (!project) {
+                throw new Error('项目信息不完整，无法添加评论者');
             }
             
             // 构建添加URL
@@ -1257,8 +1213,7 @@ export const createStore = () => {
             // 构建请求数据
             const requestData = {
                 ...commenterData,
-                projectId: project,
-                versionId: version
+                projectId: project
             };
             
             console.log('[addCommenter] 调用MongoDB接口:', url, requestData);
@@ -1285,7 +1240,7 @@ export const createStore = () => {
                 if (response && response.status === 200) {
                     console.log('[addCommenter] 评论者添加成功');
                     // 重新加载评论者列表
-                    await loadCommenters(project, version);
+                    await loadCommenters(project);
                     return response.data;
                 } else {
                     const errorMsg = response?.message || response?.error || '服务器返回错误';
@@ -1329,16 +1284,15 @@ export const createStore = () => {
     /**
      * 更新评论者
      */
-    const updateCommenter = async (commenterKey, commenterData, projectId = null, versionId = null) => {
+    const updateCommenter = async (commenterKey, commenterData, projectId = null) => {
         return safeExecuteAsync(async () => {
-            console.log('[updateCommenter] 正在更新评论者...', { commenterKey, commenterData, projectId, versionId });
+            console.log('[updateCommenter] 正在更新评论者...', { commenterKey, commenterData, projectId });
             
-            // 检查是否有项目/版本信息
+            // 检查是否有项目信息
             const project = projectId || selectedProject.value;
-            const version = versionId || selectedVersion.value;
             
-            if (!project || !version) {
-                throw new Error('项目/版本信息不完整，无法更新评论者');
+            if (!project) {
+                throw new Error('项目信息不完整，无法更新评论者');
             }
             
             // 构建更新URL
@@ -1351,8 +1305,7 @@ export const createStore = () => {
                 const response = await updateData(url, {
                   ...commenterData,
                   key: commenterKey,
-                  projectId: project,
-                  versionId: version
+                  projectId: project
                 });
                 
                 console.log('[updateCommenter] 更新响应:', response);
@@ -1360,7 +1313,7 @@ export const createStore = () => {
                 if (response && response.status === 200) {
                     console.log('[updateCommenter] 评论者更新成功');
                     // 重新加载评论者列表
-                    await loadCommenters(project, version);
+                    await loadCommenters(project);
                     return response.data;
                 } else {
                     throw new Error('更新评论者失败: ' + (response?.message || '未知错误'));
@@ -1377,21 +1330,20 @@ export const createStore = () => {
     /**
      * 删除评论者
      */
-    const deleteCommenter = async (commenterKey, projectId = null, versionId = null) => {
+    const deleteCommenter = async (commenterKey, projectId = null) => {
         return safeExecuteAsync(async () => {
-            console.log('[deleteCommenter] 正在删除评论者...', { commenterKey, projectId, versionId });
+            console.log('[deleteCommenter] 正在删除评论者...', { commenterKey, projectId });
             
             // 验证评论者key
             if (!commenterKey) {
                 throw new Error('评论者key不能为空');
             }
             
-            // 检查是否有项目/版本信息
+            // 检查是否有项目信息
             const project = projectId || selectedProject.value;
-            const version = versionId || selectedVersion.value;
             
-            if (!project || !version) {
-                throw new Error('项目/版本信息不完整，无法删除评论者');
+            if (!project) {
+                throw new Error('项目信息不完整，无法删除评论者');
             }
             
             // 构建删除URL
@@ -1408,7 +1360,7 @@ export const createStore = () => {
                 if (response && response.status === 200) {
                     console.log('[deleteCommenter] 评论者删除成功');
                     // 重新加载评论者列表
-                    await loadCommenters(project, version);
+                    await loadCommenters(project);
                     return response.data;
                 } else {
                     throw new Error('删除评论者失败: ' + (response?.message || '未知错误'));
@@ -1517,20 +1469,16 @@ export const createStore = () => {
         // 如果当前选中的项目不在新列表中，则清空
         if (!projects.value.find(p => p.id === selectedProject.value)) {
             selectedProject.value = '';
-            selectedVersion.value = '';
-            availableVersions.value = [];
-        } else {
-            availableVersions.value = getVersionsByProject(selectedProject.value);
         }
     };
 
     /**
-     * 加载项目列表（重构后包含版本信息）
+     * 加载项目列表
      */
     const loadProjects = async () => {
         return safeExecuteAsync(async () => {
             console.log('[loadProjects] 正在加载项目列表...');
-            let url = `${window.API_URL}/mongodb/?cname=projectVersions`;
+            let url = `${window.API_URL}/mongodb/?cname=projects`;
             const response = await getData(url, {}, false);   
             if (response && response.data && response.data.list) {
                 projects.value = response.data.list;
@@ -1546,38 +1494,10 @@ export const createStore = () => {
     };
 
     /**
-     * 根据项目ID获取版本列表（重构后的方法）
-     */
-    const getVersionsByProject = (projectId) => {
-        const project = projects.value.find(p => p.id === projectId);
-        // 统一输出为版本ID数组
-        const versions = project ? project.versions : [];
-        return Array.isArray(versions) ? versions.map(v => (typeof v === 'string' ? v : v.id)).filter(Boolean) : [];
-    };
-
-    /**
      * 设置选中的项目
      */
     const setSelectedProject = (projectId) => {
         selectedProject.value = projectId;
-        selectedVersion.value = ''; // 清空版本选择
-        
-        // 根据选中的项目更新可用版本列表
-        if (projectId) {
-            const versions = getVersionsByProject(projectId);
-            // 仅保留版本ID列表
-            availableVersions.value = (versions || []).map(v => (typeof v === 'string' ? v : v.id)).filter(Boolean);
-            console.log(`[setSelectedProject] 项目 ${projectId} 的版本列表(IDs):`, availableVersions.value);
-        } else {
-            availableVersions.value = [];
-        }
-    };
-
-    /**
-     * 设置选中的版本
-     */
-    const setSelectedVersion = (versionId) => {
-        selectedVersion.value = versionId;
     };
 
     /**
@@ -1593,22 +1513,21 @@ export const createStore = () => {
      * 刷新数据
      */
     const refreshData = async () => {
-        if (!selectedProject.value || !selectedVersion.value) {
-            console.warn('[refreshData] 请先选择项目和版本');
+        if (!selectedProject.value) {
+            console.warn('[refreshData] 请先选择项目');
             return;
         }
         
         console.log('[refreshData] 正在刷新数据...', { 
-            project: selectedProject.value, 
-            version: selectedVersion.value 
+            project: selectedProject.value
         });
         
         try {
             await Promise.all([
-                loadFileTree(selectedProject.value, selectedVersion.value),
-                loadFiles(selectedProject.value, selectedVersion.value),
-                loadComments(selectedProject.value, selectedVersion.value),
-                loadCommenters(selectedProject.value, selectedVersion.value)
+                loadFileTree(selectedProject.value),
+                loadFiles(selectedProject.value),
+                loadComments(selectedProject.value),
+                loadCommenters(selectedProject.value)
             ]);
             
             // 清空选中的文件
@@ -1643,19 +1562,15 @@ export const createStore = () => {
         sidebarCollapsed,
         commentsCollapsed,
         
-        // 重构后的项目/版本管理
+        // 项目管理
         projects,
         selectedProject,
-        selectedVersion,
-        availableVersions,
-        // UI：PV管理
+        // UI：项目管理
         showPvManager,
         pvProjects,
         pvSelectedProjectId,
         pvNewProjectId,
         pvNewProjectName,
-        pvNewVersionId,
-        pvNewVersionName,
         pvError,
         
         // 搜索相关状态
@@ -1691,9 +1606,7 @@ export const createStore = () => {
         toggleComments,
         loadProjects,
         setProjects,
-        getVersionsByProject, // 新增方法
         setSelectedProject,
-        setSelectedVersion,
         setNewComment,
         refreshData,
         clearError

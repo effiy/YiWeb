@@ -49,10 +49,6 @@ const createCodeView = async () => {
                 type: String,
                 default: ''
             },
-            versionId: {
-                type: String,
-                default: ''
-            },
             hideJumpButton: {
                 type: Boolean,
                 default: false
@@ -2077,34 +2073,30 @@ const createCodeView = async () => {
                 this.editSaving = true;
                 this.saveError = '';
                 try {
-                    // 获取项目/版本 - 优先使用 props，然后回退到其他方式
+                    // 获取项目 - 优先使用 props，然后回退到其他方式
                     const projectId = this.projectId || (window.aicrStore && window.aicrStore.selectedProject && window.aicrStore.selectedProject.value) || (document.getElementById('projectSelect')?.value) || '';
-                    const versionId = this.versionId || (window.aicrStore && window.aicrStore.selectedVersion && window.aicrStore.selectedVersion.value) || (document.getElementById('versionSelect')?.value) || '';
                     const fileId = this.file.fileId || this.file.id || this.file.path || this.file.name;
                     
                     console.log('[saveEditedFile] 保存参数:', {
                         projectId,
-                        versionId,
                         fileId,
                         propsProjectId: this.projectId,
-                        propsVersionId: this.versionId,
                         file: this.file
                     });
                     
-                    if (!projectId || !versionId || !fileId) {
-                        this.saveError = '缺少项目/版本/文件标识，无法保存';
-                        console.error('[saveEditedFile] 缺少必要参数:', { projectId, versionId, fileId });
+                    if (!projectId || !fileId) {
+                        this.saveError = '缺少项目/文件标识，无法保存';
+                        console.error('[saveEditedFile] 缺少必要参数:', { projectId, fileId });
                         return;
                     }
                     const { updateData, postData, getData } = await import('/apis/modules/crud.js');
-                    const url = `${window.API_URL}/mongodb/?cname=projectVersionFiles`;
+                    const url = `${window.API_URL}/mongodb/?cname=projectFiles`;
                     // 优先使用 key 更新
                     const key = this.file.key || this.file._id || this.file.idKey;
                     if (key) {
                         await updateData(url, {
                             key,
                             projectId,
-                            versionId,
                             fileId: fileId,
                             id: fileId,
                             path: fileId,
@@ -2114,7 +2106,7 @@ const createCodeView = async () => {
                     } else {
                         // 无 key：尝试查一次获取 key；失败则回退 POST 覆盖
                         try {
-                            const queryUrl = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}&fileId=${encodeURIComponent(fileId)}`;
+                            const queryUrl = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(projectId)}&fileId=${encodeURIComponent(fileId)}`;
                             const resp = await getData(queryUrl, {}, false);
                             const list = resp?.data?.list || [];
                             const found = list[0];
@@ -2123,7 +2115,6 @@ const createCodeView = async () => {
                                 await updateData(url, {
                                     key: foundKey,
                                     projectId,
-                                    versionId,
                                     fileId: fileId,
                                     id: fileId,
                                     path: fileId,
@@ -2134,7 +2125,6 @@ const createCodeView = async () => {
                             } else {
                                 await postData(url, {
                                     projectId,
-                                    versionId,
                                     fileId: fileId,
                                     id: fileId,
                                     path: fileId,

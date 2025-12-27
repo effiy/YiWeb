@@ -52,85 +52,64 @@
                 </div>
             </form>
             
-            <!-- 项目/版本选择器 -->
-            <nav class="category-filters" id="category-filters" role="toolbar" aria-label="项目版本过滤器">
+            <!-- 项目选择器 -->
+            <nav class="category-filters" id="category-filters" role="toolbar" aria-label="项目过滤器">
                 <ul class="filter-buttons">
-                    <!-- 级联选择器：项目 -> 版本 -->
-                    <li class="cascader-container">
-                        <div class="cascader">
-                            <label class="visually-hidden" for="projectSelect">项目选择器</label>
-                            <select 
-                                id="projectSelect"
-                                class="filter-btn project-select"
-                                v-model="selectedProject"
-                                @change="handleProjectChange($event.target.value)"
-                                :disabled="loading"
-                                :title="selectedProject ? `当前项目: ${selectedProject}` : '选择项目'"
-                                aria-label="项目选择器"
-                            >
-                                <option value="" disabled>选择项目</option>
-                                <option 
-                                    v-for="project in projects" 
-                                    :key="project.id" 
-                                    :value="project.id"
-                                    :title="`选择项目: ${project.id}`">
-                                    {{ project.id }}
-                                </option>
-                            </select>
-                            <label class="visually-hidden" for="versionSelect">版本选择器</label>
-                            <select 
-                                id="versionSelect"
-                                class="filter-btn version-select"
-                                v-model="selectedVersion"
-                                @change="handleVersionChange"
-                                :disabled="!selectedProject || loading"
-                                :title="selectedVersion ? `当前版本: ${selectedVersion}` : (selectedProject ? '选择版本' : '请先选择项目')"
-                                aria-label="版本选择器"
-                            >
-                                <option value="" disabled>{{ selectedProject ? '选择版本' : '请先选择项目' }}</option>
-                                <option 
-                                    v-for="v in (projects.find(p => p.id === selectedProject)?.versions || [])" 
-                                    :key="typeof v === 'string' ? v : v.id" 
-                                    :value="typeof v === 'string' ? v : v.id"
-                                    :title="`选择版本: ${typeof v === 'string' ? v : v.id}`">
-                                    {{ typeof v === 'string' ? v : v.id }}
-                                </option>
-                            </select>
-                        </div>
+                    <!-- 项目选择器 -->
+                    <li>
+                        <label class="visually-hidden" for="projectSelect">项目选择器</label>
+                        <select 
+                            id="projectSelect"
+                            class="filter-btn project-select"
+                            v-model="selectedProject"
+                            @change="handleProjectChange($event.target.value)"
+                            :disabled="loading"
+                            :title="selectedProject ? `当前项目: ${selectedProject}` : '选择项目'"
+                            aria-label="项目选择器"
+                        >
+                            <option value="" disabled>选择项目</option>
+                            <option 
+                                v-for="project in projects" 
+                                :key="project.id" 
+                                :value="project.id"
+                                :title="`选择项目: ${project.id}`">
+                                {{ project.id }}
+                            </option>
+                        </select>
                     </li>
                     
-                    <!-- 维护项目与版本按钮（独立项） -->
+                    <!-- 维护项目按钮 -->
                     <li>
                         <button 
                             type="button"
                             class="filter-btn manage-btn"
                             @click="openProjectVersionManager"
                             :disabled="loading"
-                            title="维护项目与版本">
+                            title="维护项目">
                             <i class="fas fa-wrench" aria-hidden="true"></i>
                             <span>维护</span>
                         </button>
                     </li>
-                    <!-- 下载当前项目版本 -->
+                    <!-- 下载当前项目 -->
                     <li>
                         <button 
                             type="button"
                             class="filter-btn"
                             @click="handleDownloadProjectVersion"
-                            :disabled="loading || !selectedProject || !selectedVersion"
-                            :title="selectedProject && selectedVersion ? `下载 ${selectedProject} / ${selectedVersion}` : '请选择项目与版本后下载'">
+                            :disabled="loading || !selectedProject"
+                            :title="selectedProject ? `下载 ${selectedProject}` : '请选择项目后下载'">
                             <i class="fas fa-download" aria-hidden="true"></i>
                             <span>下载</span>
                         </button>
                     </li>
-                     <!-- 上传当前项目版本（ZIP） -->
+                     <!-- 上传当前项目（ZIP） -->
                      <li>
                          <button 
                              type="button"
                              class="filter-btn"
                              @click="triggerUploadProjectVersion"
                              :disabled="loading"
-                             :title="selectedProject && selectedVersion ? `上传 ${selectedProject} / ${selectedVersion}` : '请选择项目与版本后上传'">
+                             :title="selectedProject ? `上传 ${selectedProject}` : '请选择项目后上传'">
                              <i class="fas fa-upload" aria-hidden="true"></i>
                              <span>上传</span>
                          </button>
@@ -141,7 +120,7 @@
                             accept=".zip"
                             @change="handleUploadProjectVersion"
                             style="display:none" 
-                            aria-label="上传项目版本ZIP">
+                            aria-label="上传项目ZIP">
                      </li>
                 </ul>
             </nav>
@@ -218,7 +197,7 @@
             </button>
         </main>
         
-        <!-- 项目与版本维护弹框 -->
+        <!-- 项目维护弹框 -->
         <section 
             v-if="showPvManager" 
             class="pv-manager-modal" 
@@ -230,7 +209,7 @@
             <div class="pv-manager-backdrop" @click="closeProjectVersionManager"></div>
             <div class="pv-manager-dialog" @click.stop>
                 <header class="pv-manager-header">
-                    <h3 id="pv-manager-title">维护项目与版本</h3>
+                    <h3 id="pv-manager-title">维护项目</h3>
                     <button class="pv-close-btn" @click="closeProjectVersionManager" aria-label="关闭">
                         <i class="fas fa-times"></i>
                     </button>
@@ -263,33 +242,6 @@
                                         <span class="name">{{ p.id }}</span>
                                     </button>
                                     <button class="pv-danger-btn" @click="pvDeleteProject(p.id)" title="删除项目">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="pv-right">
-                            <div class="pv-section-title">
-                                <i class="fas fa-code-branch"></i>
-                                <span>版本列表</span>
-                            </div>
-                            <div class="pv-add-row">
-                                <input type="text" v-model="pvNewVersionId" placeholder="版本ID" aria-label="版本ID" @keydown.enter.prevent="pvAddVersion" />
-                                <button class="pv-mini-btn" @click="pvAddVersion" :disabled="!pvSelectedProjectId">
-                                    <i class="fas fa-plus"></i>
-                                    <span>添加版本</span>
-                                </button>
-                            </div>
-                            <ul class="pv-version-list">
-                                <li v-if="!pvSelectedProjectId" class="pv-empty">请先在左侧选择项目</li>
-                                <li v-else 
-                                    v-for="v in (pvProjects.find(pp => pp.id === pvSelectedProjectId)?.versions || [])" 
-                                    :key="typeof v === 'string' ? v : v.id">
-                                    <div class="pv-version-item">
-                                        <i class="fas fa-tag"></i>
-                                        <span class="name">{{ typeof v === 'string' ? v : v.id }}</span>
-                                    </div>
-                                    <button class="pv-danger-btn" @click="pvDeleteVersion(typeof v === 'string' ? v : v.id)" title="删除版本">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </li>

@@ -96,19 +96,15 @@ const { computed } = Vue;
                 // 暴露store数据给模板
                 sidebarCollapsed: store.sidebarCollapsed,
                 commentsCollapsed: store.commentsCollapsed,
-                // 项目/版本管理
+                // 项目管理
                 projects: store.projects,
                 selectedProject: store.selectedProject,
-                selectedVersion: store.selectedVersion,
-                availableVersions: store.availableVersions,
-                // 项目/版本维护弹框相关（直接绑定store响应式字段）
+                // 项目维护弹框相关（直接绑定store响应式字段）
                 showPvManager: store.showPvManager,
                 pvProjects: store.pvProjects,
                 pvSelectedProjectId: store.pvSelectedProjectId,
                 pvNewProjectId: store.pvNewProjectId,
                 pvNewProjectName: store.pvNewProjectName,
-                pvNewVersionId: store.pvNewVersionId,
-                pvNewVersionName: store.pvNewVersionName,
                 pvError: store.pvError,
 
                 // 搜索相关状态
@@ -124,10 +120,9 @@ const { computed } = Vue;
                 if (store) {
                     // 首先加载项目列表
                     store.loadProjects().then(() => {
-                        // 支持通过URL参数指定 projectId 与 versionId
+                        // 支持通过URL参数指定 projectId
                         const params = new URLSearchParams(window.location.search);
                         const projectParam = params.get('projectId');
-                        const versionParam = params.get('versionId');
 
                         if (projectParam) {
                             const hasProject = Array.isArray(store.projects.value) && store.projects.value.some(p => p && p.id === projectParam);
@@ -143,25 +138,12 @@ const { computed } = Vue;
                             store.setSelectedProject(defaultProject.id);
                             logInfo('[代码审查页面] 设置默认项目:', defaultProject);
                         }
-                    }).then(() => {
-                        // 根据URL或默认设置版本
-                        const params = new URLSearchParams(window.location.search);
-                        const versionParam = params.get('versionId');
-                        const versions = store.availableVersions.value || [];
-                        if (versionParam && versions.includes(versionParam)) {
-                            store.setSelectedVersion(versionParam);
-                            logInfo('[代码审查页面] 通过URL设置版本:', versionParam);
-                        } else if (versions.length > 0) {
-                            const defaultVersionId = versions[0];
-                            store.setSelectedVersion(defaultVersionId);
-                            logInfo('[代码审查页面] 设置默认版本:', defaultVersionId);
-                        }
 
-                        if (store.selectedProject.value && store.selectedVersion.value) {
-                            // 加载文件树和文件数据（不包含评论，因为评论需要项目/版本信息）
+                        if (store.selectedProject.value) {
+                            // 加载文件树和文件数据（不包含评论，因为评论需要项目信息）
                             return Promise.all([
-                                store.loadFileTree(store.selectedProject.value, store.selectedVersion.value),
-                                store.loadFiles(store.selectedProject.value, store.selectedVersion.value)
+                                store.loadFileTree(store.selectedProject.value),
+                                store.loadFiles(store.selectedProject.value)
                             ]).then(() => {
                                 // 如果URL带了fileId，尝试预选并按需加载
                                 const params2 = new URLSearchParams(window.location.search);
@@ -186,7 +168,7 @@ const { computed } = Vue;
                                     const norm = String(fileParam).replace(/\\\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
                                     store.setSelectedFileId(norm);
                                     if (typeof store.loadFileById === 'function') {
-                                        store.loadFileById(store.selectedProject?.value, store.selectedVersion?.value, norm).then(() => {
+                                        store.loadFileById(store.selectedProject?.value, norm).then(() => {
                                             try {
                                                 const rangeInfo = window.__aicrPendingHighlightRangeInfo || pendingHighlightRange;
                                                 if (rangeInfo) {
@@ -214,12 +196,11 @@ const { computed } = Vue;
                                         if (currentId && typeof store.loadFileById === 'function') {
                                             const normalize3 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
                                             const idNorm = normalize3(currentId);
-                                            const pj = store.selectedProject ? store.selectedProject.value : null;
-                                            const ver = store.selectedVersion ? store.selectedVersion.value : null;
-                                            // 无论是否已有内容，项目/版本就绪后都按需加载一次，避免刷新后首次点击缺内容
-                                            if (pj && ver) {
-                                                store.loadFileById(pj, ver, idNorm).finally(() => { window.__aicrPendingFileId = null; });
-                                            }
+                                    const pj = store.selectedProject ? store.selectedProject.value : null;
+                                    // 无论是否已有内容，项目就绪后都按需加载一次，避免刷新后首次点击缺内容
+                                    if (pj) {
+                                        store.loadFileById(pj, idNorm).finally(() => { window.__aicrPendingFileId = null; });
+                                    }
                                         }
                                     } catch (e) {
                                         logWarn('[主页面] 初次加载后的懒加载检查异常:', e?.message || e);
@@ -237,10 +218,9 @@ const { computed } = Vue;
                         logInfo('[代码审查页面] 项目/版本信息设置完成，触发评论加载');
                         // 通过触发一个自定义事件来通知评论面板重新加载
                         setTimeout(() => {
-                            window.dispatchEvent(new CustomEvent('projectVersionReady', {
+                            window.dispatchEvent(new CustomEvent('projectReady', {
                                 detail: {
-                                    projectId: store.selectedProject.value,
-                                    versionId: store.selectedVersion.value
+                                    projectId: store.selectedProject.value
                                 }
                             }));
                             // 版本就绪后，如存在待加载文件或当前选中文件无内容，执行补载
@@ -252,13 +232,12 @@ const { computed } = Vue;
                                     const normalize4 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
                                     const idNorm = normalize4(currentId);
                                     const pj = store.selectedProject ? store.selectedProject.value : null;
-                                    const ver = store.selectedVersion ? store.selectedVersion.value : null;
-                                    // 版本就绪后，无论是否已有内容，确保按需加载一次
-                                    if (pj && ver) {
+                                    // 项目就绪后，无论是否已有内容，确保按需加载一次
+                                    if (pj) {
                                         // 如果有待处理的文件Key，优先使用它进行精确匹配
                                         if (pendingKey) {
-                                            logInfo('[主页面] 版本就绪后使用文件Key进行精确加载:', idNorm, 'Key:', pendingKey);
-                                            store.loadFileById(pj, ver, idNorm, pendingKey).finally(() => {
+                                            logInfo('[主页面] 项目就绪后使用文件Key进行精确加载:', idNorm, 'Key:', pendingKey);
+                                            store.loadFileById(pj, idNorm, pendingKey).finally(() => {
                                                 try {
                                                     const rangeInfo = window.__aicrPendingHighlightRangeInfo;
                                                     if (rangeInfo) {
@@ -315,7 +294,7 @@ const { computed } = Vue;
                                                 window.__aicrPendingFileKey = null;
                                             });
                                         } else {
-                                            store.loadFileById(pj, ver, idNorm).finally(() => {
+                                            store.loadFileById(pj, idNorm).finally(() => {
                                                 try {
                                                     const rangeInfo = window.__aicrPendingHighlightRangeInfo;
                                                     if (rangeInfo) {
@@ -420,14 +399,13 @@ const { computed } = Vue;
                             setTimeout(() => {
                                 logInfo('[代码审查页面] 触发评论面板刷新事件，恢复到显示所有评论');
                                 window.dispatchEvent(new CustomEvent('reloadComments', {
-                                    detail: { 
-                                        projectId: store.selectedProject ? store.selectedProject.value : null, 
-                                        versionId: store.selectedVersion ? store.selectedVersion.value : null,
-                                        fileId: null,
-                                        forceReload: true,
-                                        showAllComments: true, // 新增：标记显示所有评论
-                                        immediateReload: true // 新增：标记立即刷新，不使用防抖
-                                    }
+                                detail: { 
+                                    projectId: store.selectedProject ? store.selectedProject.value : null, 
+                                    fileId: null,
+                                    forceReload: true,
+                                    showAllComments: true, // 新增：标记显示所有评论
+                                    immediateReload: true // 新增：标记立即刷新，不使用防抖
+                                }
                                 }));
                             }, 100);
                         }
@@ -486,11 +464,6 @@ const { computed } = Vue;
                         const projectId = store.selectedProject ? store.selectedProject.value : null;
                         console.log('[主页面] 传递给评论面板的项目ID:', projectId);
                         return projectId; 
-                    },
-                    versionId: function() { 
-                        const versionId = store.selectedVersion ? store.selectedVersion.value : null;
-                        console.log('[主页面] 传递给评论面板的版本ID:', versionId);
-                        return versionId; 
                     },
                     collapsed: function() { return store.commentsCollapsed ? store.commentsCollapsed.value : false; },
                     // 传递评论者相关数据
@@ -603,8 +576,8 @@ const { computed } = Vue;
                     try {
                         const methods = useMethods(store);
                         await methods.handleCreateFolder(payload);
-                        if (store && store.selectedProject.value && store.selectedVersion.value) {
-                            await store.loadFileTree(store.selectedProject.value, store.selectedVersion.value);
+                        if (store && store.selectedProject.value) {
+                            await store.loadFileTree(store.selectedProject.value);
                         }
                     } catch (error) {
                         logError('[主页面] 新建文件夹失败:', error);
@@ -614,10 +587,10 @@ const { computed } = Vue;
                     try {
                         const methods = useMethods(store);
                         await methods.handleCreateFile(payload);
-                        if (store && store.selectedProject.value && store.selectedVersion.value) {
+                        if (store && store.selectedProject.value) {
                             await Promise.all([
-                                store.loadFileTree(store.selectedProject.value, store.selectedVersion.value),
-                                store.loadFiles(store.selectedProject.value, store.selectedVersion.value)
+                                store.loadFileTree(store.selectedProject.value),
+                                store.loadFiles(store.selectedProject.value)
                             ]);
                         }
                     } catch (error) {
@@ -628,10 +601,10 @@ const { computed } = Vue;
                     try {
                         const methods = useMethods(store);
                         await methods.handleRenameItem(payload);
-                        if (store && store.selectedProject.value && store.selectedVersion.value) {
+                        if (store && store.selectedProject.value) {
                             await Promise.all([
-                                store.loadFileTree(store.selectedProject.value, store.selectedVersion.value),
-                                store.loadFiles(store.selectedProject.value, store.selectedVersion.value)
+                                store.loadFileTree(store.selectedProject.value),
+                                store.loadFiles(store.selectedProject.value)
                             ]);
                         }
                     } catch (error) {
@@ -817,10 +790,6 @@ const { computed } = Vue;
                 pvAddVersion: function() {
                     const methods = useMethods(store);
                     methods.pvAddVersion();
-                },
-                pvDeleteVersion: function(versionId) {
-                    const methods = useMethods(store);
-                    methods.pvDeleteVersion(versionId);
                 },
             }
         });
