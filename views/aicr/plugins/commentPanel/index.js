@@ -30,43 +30,33 @@ async function fetchCommentsFromMongo(file) {
     try {
         // 优先从store获取项目/版本信息
         let projectId = null;
-        let versionId = null;
-        
         if (window.aicrStore) {
             projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
-            versionId = window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : null;
-            console.log('[CommentPanel] 从store获取项目ID:', projectId, '版本ID:', versionId);
+            console.log('[CommentPanel] 从store获取项目ID:', projectId);
         }
         
         // 如果store中没有，尝试从DOM元素获取
-        if (!projectId || !versionId) {
+        if (!projectId) {
             const projectSelect = document.getElementById('projectSelect');
-            const versionSelect = document.getElementById('versionSelect');
             
             if (projectSelect) {
                 projectId = projectSelect.value;
                 console.log('[CommentPanel] 从选择器获取项目ID:', projectId);
             }
-            
-            if (versionSelect) {
-                versionId = versionSelect.value;
-                console.log('[CommentPanel] 从选择器获取版本ID:', versionId);
-            }
         }
         
-        // 检查项目/版本信息是否完整
-        if (!projectId || !versionId) {
-            console.log('[CommentPanel] 项目/版本信息不完整，跳过MongoDB接口请求');
-            console.log('[CommentPanel] 项目ID:', projectId, '版本ID:', versionId);
+        // 检查项目信息是否完整
+        if (!projectId) {
+            console.log('[CommentPanel] 项目信息不完整，跳过MongoDB接口请求');
+            console.log('[CommentPanel] 项目ID:', projectId);
             return [];
         }
         
         // 构建API URL
         let url = `${window.API_URL}/mongodb/?cname=comments`;
         
-        // 添加项目/版本参数
+        // 添加项目参数
         url += `&projectId=${projectId}`;
-        url += `&versionId=${versionId}`;
         
         // 如果有文件信息，添加到URL中
         if (file) {
@@ -546,10 +536,8 @@ const createCommentPanel = async () => {
                         // 生成请求键，用于防止重复请求
                         const projectId = window.aicrStore?.selectedProject?.value || 
                                         document.getElementById('projectSelect')?.value;
-                        const versionId = window.aicrStore?.selectedVersion?.value || 
-                                        document.getElementById('versionSelect')?.value;
                         const fileId = this.file?.fileId || this.file?.id || this.file?.path || this.file?.key;
-                        const requestKey = `${projectId}_${versionId}_${fileId || 'all'}`;
+                        const requestKey = `${projectId}_${fileId || 'all'}`;
                         
                         // 检查是否与上次请求相同
                         if (this._lastRequestKey === requestKey && this._lastRequestTime && 
@@ -630,39 +618,36 @@ const createCommentPanel = async () => {
                             return;
                         }
                         
-                        // 获取当前项目/版本信息
+                        // 获取当前项目信息
                         const projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
-                        const versionId = window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : null;
                         
-                        console.log('[CommentPanel] 加载评论者数据，项目ID:', projectId, '版本ID:', versionId);
+                        console.log('[CommentPanel] 加载评论者数据，项目ID:', projectId);
                         
-                        // 如果项目/版本信息不完整，等待项目/版本信息设置完成
-                        if (!projectId || !versionId) {
-                            console.log('[CommentPanel] 项目/版本信息不完整，等待项目/版本信息设置完成');
-                            // 等待项目/版本信息设置完成
+                        // 如果项目信息不完整，等待项目信息设置完成
+                        if (!projectId) {
+                            console.log('[CommentPanel] 项目信息不完整，等待项目信息设置完成');
+                            // 等待项目信息设置完成
                             await new Promise(resolve => {
-                                const checkProjectVersion = () => {
+                                const checkProject = () => {
                                     const currentProjectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
-                                    const currentVersionId = window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : null;
                                     
-                                    if (currentProjectId && currentVersionId) {
-                                        console.log('[CommentPanel] 项目/版本信息已设置完成');
+                                    if (currentProjectId) {
+                                        console.log('[CommentPanel] 项目信息已设置完成');
                                         resolve();
                                     } else {
-                                        setTimeout(checkProjectVersion, 500);
+                                        setTimeout(checkProject, 500);
                                     }
                                 };
-                                checkProjectVersion();
+                                checkProject();
                             });
                         }
                         
-                        // 重新获取项目/版本信息
+                        // 重新获取项目信息
                         const finalProjectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
-                        const finalVersionId = window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : null;
                         
-                        console.log('[CommentPanel] 最终项目ID:', finalProjectId, '最终版本ID:', finalVersionId);
+                        console.log('[CommentPanel] 最终项目ID:', finalProjectId);
                         
-                        const commenters = await window.aicrStore.loadCommenters(finalProjectId, finalVersionId);
+                        const commenters = await window.aicrStore.loadCommenters(finalProjectId);
                         this.internalCommenters = commenters || [];
                         console.log('[CommentPanel] 从store加载评论者数据:', this.internalCommenters);
                         
@@ -788,7 +773,6 @@ const createCommentPanel = async () => {
                             rangeInfo: {},
                             fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
                             projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null)),
-                            versionId: (window.aicrStore && window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : (document.getElementById('versionSelect') ? document.getElementById('versionSelect').value : null)),
                             author: commenter.name || commenter.author || 'AI评论者',
                             status: 'pending',
                             createdTime: new Date().toISOString(),
@@ -809,7 +793,6 @@ const createCommentPanel = async () => {
                                 }
                                 commentObj.fileId = commentObj.fileId || fromUserObj.fileId;
                                 commentObj.projectId = commentObj.projectId || fromUserObj.projectId;
-                                commentObj.versionId = commentObj.versionId || fromUserObj.versionId;
                                 commentObj.author = commentObj.author || fromUserObj.author;
                                 commentObj.status = commentObj.status || 'pending';
                                 commentObj.createdTime = commentObj.createdTime || new Date().toISOString();
@@ -933,10 +916,8 @@ const createCommentPanel = async () => {
 
                     // 获取项目/版本信息（与面板其他接口保持一致）
                     let projectId = null;
-                    let versionId = null;
                     if (window.aicrStore) {
                         projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
-                        versionId = window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : null;
                     }
 
                     // 组装URL
@@ -949,7 +930,6 @@ const createCommentPanel = async () => {
                             key: this.editingComment.key,
                             author: newAuthor,
                             projectId: projectId,
-                            versionId: versionId,
                             content: newContent,
                             text: this.editingCommentText ? this.editingCommentText.trim() : null,
                             rangeInfo: this.editingRangeInfo,
@@ -1329,17 +1309,16 @@ const createCommentPanel = async () => {
                 try {
                     // 使用store中的API保存评论者
                     if (window.aicrStore) {
-                        // 获取当前项目/版本信息
+                        // 获取当前项目信息
                         const projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
-                        const versionId = window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : null;
                         
                         if (this.editingCommenter.key) {
                             // 更新现有评论者
-                            await window.aicrStore.updateCommenter(this.editingCommenter.key, this.editingCommenter, projectId, versionId);
+                            await window.aicrStore.updateCommenter(this.editingCommenter.key, this.editingCommenter, projectId);
                             console.log('[CommentPanel] 评论者已更新到数据库');
                         } else {
                             // 添加新评论者
-                            await window.aicrStore.addCommenter(this.editingCommenter, projectId, versionId);
+                            await window.aicrStore.addCommenter(this.editingCommenter, projectId);
                             console.log('[CommentPanel] 新评论者已添加到数据库');
                         }
                         
@@ -1406,12 +1385,11 @@ const createCommentPanel = async () => {
                 try {
                     // 使用store中的API删除评论者
                     if (window.aicrStore && commenter.key) {
-                        // 获取当前项目/版本信息
+                        // 获取当前项目信息
                         const projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
-                        const versionId = window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : null;
                         
-                        console.log('[CommentPanel] 调用store删除评论者:', commenter.key, projectId, versionId);
-                        await window.aicrStore.deleteCommenter(commenter.key, projectId, versionId);
+                        console.log('[CommentPanel] 调用store删除评论者:', commenter.key, projectId);
+                        await window.aicrStore.deleteCommenter(commenter.key, projectId);
                         console.log('[CommentPanel] 评论者已从数据库删除');
                         
                         // 重新加载评论者列表
@@ -1788,7 +1766,6 @@ const createCommentPanel = async () => {
                                  rangeInfo,
                                  fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
                                  projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null)),
-                                 versionId: (window.aicrStore && window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : (document.getElementById('versionSelect') ? document.getElementById('versionSelect').value : null)),
                                  author: commenter.name || commenter.author || 'AI评论者',
                                  status: "pending",
                                  createdTime: new Date().toISOString(),
@@ -1818,7 +1795,6 @@ const createCommentPanel = async () => {
                                 }
                                  commentObj.fileId = commentObj.fileId || fromUserObj.fileId;
                                  commentObj.projectId = commentObj.projectId || fromUserObj.projectId;
-                                 commentObj.versionId = commentObj.versionId || fromUserObj.versionId;
                                  commentObj.author = commentObj.author || fromUserObj.author;
                                  commentObj.status = commentObj.status || 'pending';
                                  commentObj.createdTime = commentObj.createdTime || new Date().toISOString();
@@ -1842,7 +1818,6 @@ const createCommentPanel = async () => {
                                  content: text,
                                  fileId: fromUserObj.fileId,
                                  projectId: fromUserObj.projectId,
-                                 versionId: fromUserObj.versionId,
                                  author: fromUserObj.author,
                                  status: 'pending',
                                  createdTime: new Date().toISOString(),
@@ -1857,8 +1832,7 @@ const createCommentPanel = async () => {
                          // 通知评论面板刷新
                          window.dispatchEvent(new CustomEvent('reloadComments', { 
                              detail: { 
-                                 projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null)), 
-                                 versionId: (window.aicrStore && window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : (document.getElementById('versionSelect') ? document.getElementById('versionSelect').value : null)) 
+                                 projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null))
                              } 
                         }));
                         this.commentsLoading = false;
@@ -1876,7 +1850,6 @@ const createCommentPanel = async () => {
                 // 防止重复触发
                 if (this._lastReloadEvent && 
                     this._lastReloadEvent.projectId === event.detail?.projectId &&
-                    this._lastReloadEvent.versionId === event.detail?.versionId &&
                     this._lastReloadEvent.fileId === event.detail?.fileId &&
                     Date.now() - this._lastReloadEvent.timestamp < 500) {
                     console.log('[CommentPanel] 检测到重复的reloadComments事件，跳过处理');
@@ -1886,12 +1859,11 @@ const createCommentPanel = async () => {
                 // 记录事件信息
                 this._lastReloadEvent = {
                     projectId: event.detail?.projectId,
-                    versionId: event.detail?.versionId,
                     fileId: event.detail?.fileId,
                     timestamp: Date.now()
                 };
                 
-                const { projectId, versionId, fileId, forceReload, showAllComments, immediateReload } = event.detail;
+                const { projectId, fileId, forceReload, showAllComments, immediateReload } = event.detail;
                 
                 if (forceReload) {
                     console.log('[CommentPanel] 强制重新加载评论数据');
@@ -1936,7 +1908,6 @@ const createCommentPanel = async () => {
                 // 防止重复触发
                 if (this._lastProjectVersionEvent && 
                     this._lastProjectVersionEvent.projectId === event.detail?.projectId &&
-                    this._lastProjectVersionEvent.versionId === event.detail?.versionId &&
                     Date.now() - this._lastProjectVersionEvent.timestamp < 1000) {
                     console.log('[CommentPanel] 检测到重复的projectVersionReady事件，跳过处理');
                     return;
@@ -1945,7 +1916,6 @@ const createCommentPanel = async () => {
                 // 记录事件信息
                 this._lastProjectVersionEvent = {
                     projectId: event.detail?.projectId,
-                    versionId: event.detail?.versionId,
                     timestamp: Date.now()
                 };
                 

@@ -128,16 +128,6 @@ export const useComputed = (store) => {
         }),
 
 
-        /**
-         * 选中的版本名称
-         */
-        selectedVersionName: computed(() => {
-            // 仅使用版本ID模式时，此处返回ID
-            if (!store.selectedVersion?.value) return '';
-            const id = store.selectedVersion.value;
-            // 若 future 再次支持对象，可在此兼容
-            return id;
-        }),
 
         /**
          * 选中的项目名称
@@ -196,12 +186,6 @@ export const useComputed = (store) => {
             return store.projects?.value && store.projects.value.length > 0;
         }),
 
-        /**
-         * 是否有版本数据
-         */
-        hasVersions: computed(() => {
-            return store.availableVersions?.value && store.availableVersions.value.length > 0;
-        }),
 
         /**
          * 是否已选择项目
@@ -210,12 +194,6 @@ export const useComputed = (store) => {
             return !!store.selectedProject?.value;
         }),
 
-        /**
-         * 是否已选择版本
-         */
-        isVersionSelected: computed(() => {
-            return !!store.selectedVersion?.value;
-        }),
 
         /**
          * 当前项目信息
@@ -225,13 +203,6 @@ export const useComputed = (store) => {
             return store.projects.value.find(p => p.id === store.selectedProject.value);
         }),
 
-        /**
-         * 当前版本信息
-         */
-        currentVersion: computed(() => {
-            if (!store.selectedVersion?.value || !store.availableVersions?.value) return null;
-            return store.availableVersions.value.find(v => v.id === store.selectedVersion.value);
-        }),
 
         /**
          * 搜索查询值 - 用于模板中的条件判断
@@ -249,12 +220,21 @@ export const useComputed = (store) => {
         }),
 
         /**
-         * 选中的版本名称
+         * 新评论对象 - 将字符串转换为对象格式，用于传递给CommentPanel组件
          */
-        selectedVersionName: computed(() => {
-            if (!store.selectedVersion?.value) return '';
-            return store.selectedVersion.value;
-        })
+        newComment: computed(() => {
+            // 将字符串转换为对象格式
+            const commentValue = store.newComment ? store.newComment.value : '';
+            return {
+                content: typeof commentValue === 'string' ? commentValue : '',
+                author: '',
+                text: '',
+                improvementText: '',
+                type: '',
+                status: 'pending'
+            };
+        }),
+
     };
 };
 

@@ -2012,8 +2012,7 @@ const createCodeView = async () => {
                     
                     console.log('[jumpToCodePage] 当前文件信息:', this.file);
                     console.log('[jumpToCodePage] 父组件信息:', {
-                        selectedProject: this.$parent?.selectedProject,
-                        selectedVersion: this.$parent?.selectedVersion
+                        selectedProject: this.$parent?.selectedProject
                     });
                     
                     // 构建跳转URL，传递文件信息
@@ -2021,8 +2020,7 @@ const createCodeView = async () => {
                         fileId: this.file.id || this.file.name,
                         fileName: this.file.name || this.file.path,
                         filePath: this.file.path || '',
-                        project: this.$parent?.selectedProject || '',
-                        version: this.$parent?.selectedVersion || ''
+                        project: this.$parent?.selectedProject || ''
                     });
                     
                     const jumpUrl = `/views/aicr/aicr-code.html?${params.toString()}`;
@@ -2135,7 +2133,6 @@ const createCodeView = async () => {
                         } catch (_) {
                             await postData(url, {
                                 projectId,
-                                versionId,
                                 fileId: fileId,
                                 id: fileId,
                                 path: fileId,
@@ -2192,8 +2189,7 @@ const createCodeView = async () => {
                         fileId: fileId,
                         content: content,
                         lastModified: new Date().toISOString(),
-                        projectId: projectId,
-                        versionId: versionId
+                        projectId: projectId
                     });
                     
                     // 显示保存成功消息
@@ -3565,17 +3561,12 @@ const createCodeView = async () => {
                     const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
                     showGlobalLoading('正在提交评论...');
 
-                    // 获取项目和版本信息
+                    // 获取项目信息
                     const projectSelect = document.getElementById('projectSelect');
-                    const versionSelect = document.getElementById('versionSelect');
                     let projectId = null;
-                    let versionId = null;
                     
                     if (projectSelect) {
                         projectId = projectSelect.value;
-                    }
-                    if (versionSelect) {
-                        versionId = versionSelect.value;
                     }
 
                     // 验证引用代码
@@ -3589,7 +3580,6 @@ const createCodeView = async () => {
                         rangeInfo: this.lastSelectionRange, // 用于评论定位（不在界面显示行数）
                         fileId: this.file ? (this.file.fileId || this.file.id || this.file.path || this.file.name) : undefined,
                         projectId,
-                        versionId,
                         author: '手动评论',
                         fromSystem: null, // 手动评论没有评论者系统
                         status: 'pending',
@@ -3883,11 +3873,9 @@ const createCodeView = async () => {
                     const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
                     showGlobalLoading('正在保存评论...');
                     
-                    // 获取项目和版本信息
+                    // 获取项目信息
                     const projectSelect = document.getElementById('projectSelect');
-                    const versionSelect = document.getElementById('versionSelect');
                     const projectId = projectSelect ? projectSelect.value : null;
-                    const versionId = versionSelect ? versionSelect.value : null;
                     
                     // 构建更新数据
                     const updateData = {
@@ -3904,7 +3892,6 @@ const createCodeView = async () => {
                         },
                         timestamp: new Date(this.editingCommentTimestamp).toISOString(),
                         projectId,
-                        versionId,
                         fileId: this.currentCommentDetail.fileId
                     };
                     
@@ -3930,8 +3917,7 @@ const createCodeView = async () => {
                     this.$emit('reload-comments', { 
                         forceReload: true, 
                         fileId: this.currentCommentDetail.fileId,
-                        projectId,
-                        versionId
+                        projectId
                     });
                     
                     hideGlobalLoading();
@@ -4024,18 +4010,15 @@ const createCodeView = async () => {
                     const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
                     showGlobalLoading('正在更新评论状态...');
                     
-                    // 获取项目和版本信息
+                    // 获取项目信息
                     const projectSelect = document.getElementById('projectSelect');
-                    const versionSelect = document.getElementById('versionSelect');
                     const projectId = projectSelect ? projectSelect.value : null;
-                    const versionId = versionSelect ? versionSelect.value : null;
                     
                     // 构建更新数据
                     const updateData = {
                         key: commentKey,
                         status: newStatus,
-                        projectId,
-                        versionId
+                        projectId
                     };
                     
                     // 调用API更新评论状态
@@ -4057,8 +4040,7 @@ const createCodeView = async () => {
                     this.$emit('reload-comments', { 
                         forceReload: true, 
                         fileId: this.file ? (this.file.fileId || this.file.id || this.file.path) : null,
-                        projectId,
-                        versionId
+                        projectId
                     });
                     
                     hideGlobalLoading();
@@ -4698,19 +4680,18 @@ const createCodeView = async () => {
                 if (window.aicrStore && typeof window.aicrStore.loadFileById === 'function') {
                     console.log('[CodeView] 使用全局store加载文件');
                     
-                    // 获取当前的项目和版本信息
+                    // 获取当前的项目信息
                     const projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
-                    const versionId = window.aicrStore.selectedVersion ? window.aicrStore.selectedVersion.value : null;
                     
-                    if (projectId && versionId) {
+                    if (projectId) {
                         // 使用文件的key进行精确加载
                         const fileKey = file.key || file._id;
                         const fileId = file.fileId || file.id || file.path;
                         
                         if (fileKey && fileId) {
-                            console.log('[CodeView] 通过store加载文件:', { projectId, versionId, fileId, fileKey });
+                            console.log('[CodeView] 通过store加载文件:', { projectId, fileId, fileKey });
                             
-                            window.aicrStore.loadFileById(projectId, versionId, fileId, fileKey)
+                            window.aicrStore.loadFileById(projectId, null, fileId, fileKey)
                                 .then((loadedFile) => {
                                     if (loadedFile && loadedFile.content) {
                                         console.log('[CodeView] 文件加载成功:', loadedFile.name, '内容长度:', loadedFile.content.length);
@@ -4742,7 +4723,7 @@ const createCodeView = async () => {
                             console.warn('[CodeView] 缺少文件标识信息:', { fileKey, fileId });
                         }
                     } else {
-                        console.warn('[CodeView] 缺少项目/版本信息:', { projectId, versionId });
+                        console.warn('[CodeView] 缺少项目信息:', { projectId });
                     }
                 } else {
                     console.warn('[CodeView] 全局store不可用，无法加载文件');

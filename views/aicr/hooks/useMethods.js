@@ -900,10 +900,9 @@ export const useMethods = (store) => {
             // 若项目就绪，尝试按需加载内容
             try {
                 const pj = selectedProject?.value;
-                const ver = selectedVersion?.value;
-                if (pj && ver && typeof loadFileById === 'function') {
-                    console.log('[文件选择] 开始按需加载文件内容:', { project: pj, version: ver, fileId: idNorm });
-                    await loadFileById(pj, ver, idNorm);
+                if (pj && typeof loadFileById === 'function') {
+                    console.log('[文件选择] 开始按需加载文件内容:', { project: pj, fileId: idNorm });
+                    await loadFileById(pj, null, idNorm);
                 }
             } catch (e) {
                 console.warn('[文件选择] 按需加载失败(忽略):', e?.message || e);
@@ -1378,9 +1377,9 @@ export const useMethods = (store) => {
                 }));
 
                 // 重新加载评论数据
-                if (selectedProject.value && selectedVersion.value) {
+                if (selectedProject.value) {
                     console.log('[评论删除] 重新加载评论数据');
-                    await loadComments(selectedProject.value, selectedVersion.value);
+                    await loadComments(selectedProject.value);
                     
                     // 触发评论面板重新加载mongoComments
                     console.log('[评论删除] 触发评论面板重新加载');
@@ -1388,8 +1387,7 @@ export const useMethods = (store) => {
                         console.log('[评论删除] 发送reloadComments事件');
                         window.dispatchEvent(new CustomEvent('reloadComments', {
                             detail: { 
-                                projectId: selectedProject.value, 
-                                versionId: selectedVersion.value,
+                                projectId: selectedProject.value,
                                 forceReload: true,
                                 immediateReload: true
                             }
@@ -1467,15 +1465,15 @@ export const useMethods = (store) => {
                 showSuccessMessage('评论已标记为已解决');
 
                 // 重新加载评论数据
-                if (selectedProject.value && selectedVersion.value) {
+                if (selectedProject.value) {
                     console.log('[评论解决] 重新加载评论数据');
-                    await loadComments(selectedProject.value, selectedVersion.value);
+                    await loadComments(selectedProject.value);
                     
                     // 触发评论面板重新加载mongoComments
                     console.log('[评论解决] 触发评论面板重新加载');
                     setTimeout(() => {
                         window.dispatchEvent(new CustomEvent('reloadComments', {
-                            detail: { projectId: selectedProject.value, versionId: selectedVersion.value }
+                            detail: { projectId: selectedProject.value }
                         }));
                     }, 200); // 增加延迟时间到200ms
                 }
@@ -1554,15 +1552,15 @@ export const useMethods = (store) => {
                 showSuccessMessage('评论已重新打开');
 
                 // 重新加载评论数据
-                if (selectedProject.value && selectedVersion.value) {
+                if (selectedProject.value) {
                     console.log('[评论重新打开] 重新加载评论数据');
-                    await loadComments(selectedProject.value, selectedVersion.value);
+                    await loadComments(selectedProject.value);
                     
                     // 触发评论面板重新加载mongoComments
                     console.log('[评论重新打开] 触发评论面板重新加载');
                     setTimeout(() => {
                         window.dispatchEvent(new CustomEvent('reloadComments', {
-                            detail: { projectId: selectedProject.value, versionId: selectedVersion.value }
+                            detail: { projectId: selectedProject.value }
                         }));
                     }, 200); // 增加延迟时间到200ms
                 }
@@ -1914,8 +1912,7 @@ export const useMethods = (store) => {
                 const newName = window.prompt('输入新名称：', oldName || '');
                 if (!newName) return;
                 const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
-                const versionId = selectedVersion?.value || (document.getElementById('versionSelect')?.value) || '';
-                await renameItem({ itemId, newName, projectId, versionId });
+                await renameItem({ itemId, newName, projectId });
                 showSuccessMessage('重命名成功');
             }, '重命名');
         },
@@ -1925,8 +1922,7 @@ export const useMethods = (store) => {
                 if (!itemId) return;
                 if (!confirm('确定删除该项及其子项？此操作不可撤销。')) return;
                 const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
-                const versionId = selectedVersion?.value || (document.getElementById('versionSelect')?.value) || '';
-                await deleteItem({ itemId, projectId, versionId });
+                await deleteItem({ itemId, projectId });
                 showSuccessMessage('删除成功');
                 // 若删除的是当前选中文件，则清空选择
                 if (selectedFileId?.value && (selectedFileId.value === itemId || selectedFileId.value.startsWith(itemId + '/'))) {
@@ -1954,10 +1950,9 @@ export const useMethods = (store) => {
                     }
 
                     const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
-                    const versionId = selectedVersion?.value || (document.getElementById('versionSelect')?.value) || '';
 
-                    if (!projectId || !versionId) {
-                        throw new Error('请先选择项目和版本');
+                    if (!projectId) {
+                        throw new Error('请先选择项目');
                     }
 
                     // 获取文件内容
@@ -1965,7 +1960,7 @@ export const useMethods = (store) => {
                     let fileData = null;
 
                     if (typeof loadFileById === 'function') {
-                        fileData = await loadFileById(projectId, versionId, fileId);
+                        fileData = await loadFileById(projectId, null, fileId);
                         if (fileData && fileData.content) {
                             fileContent = fileData.content;
                         }
@@ -2131,7 +2126,7 @@ export const useMethods = (store) => {
             try {
                 // 调用后端API创建项目
                 const { postData, getData } = await import('/apis/modules/crud.js');
-                const url = `${window.API_URL}/mongodb/?cname=projectVersions`;
+                const url = `${window.API_URL}/mongodb/?cname=projects`;
                 
                 // 检查项目是否已存在
                 const existingProject = await getData(`${url}&id=${id}`, {}, false);
@@ -2163,7 +2158,7 @@ export const useMethods = (store) => {
             try {
                 // 调用后端API删除项目
                 const { deleteData, getData } = await import('/apis/modules/crud.js');
-                const url = `${window.API_URL}/mongodb/?cname=projectVersions`;
+                const url = `${window.API_URL}/mongodb/?cname=projects`;
                 
                 // 获取项目信息
                 const existingProject = await getData(`${url}&id=${projectId}`, {}, false);

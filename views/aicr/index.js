@@ -457,6 +457,18 @@ const { computed } = Vue;
                         console.log('[主页面] 传递给评论面板的文件数据:', currentFile);
                         return currentFile; 
                     },
+                    newComment: function() {
+                        // 将字符串转换为对象格式
+                        const commentValue = store.newComment ? store.newComment.value : '';
+                        return {
+                            content: typeof commentValue === 'string' ? commentValue : '',
+                            author: '',
+                            text: '',
+                            improvementText: '',
+                            type: '',
+                            status: 'pending'
+                        };
+                    },
                     loading: function() { return store.loading; },
                     error: function() { return store.errorMessage; },
                     // 传递项目/版本信息
@@ -618,10 +630,10 @@ const { computed } = Vue;
                         showGlobalLoading('正在删除，请稍候...');
                         try {
                             await methods.handleDeleteItem(payload);
-                            if (store && store.selectedProject.value && store.selectedVersion.value) {
+                            if (store && store.selectedProject.value) {
                                 await Promise.all([
-                                    store.loadFileTree(store.selectedProject.value, store.selectedVersion.value),
-                                    store.loadFiles(store.selectedProject.value, store.selectedVersion.value)
+                                    store.loadFileTree(store.selectedProject.value),
+                                    store.loadFiles(store.selectedProject.value)
                                 ]);
                             }
                         } finally {
