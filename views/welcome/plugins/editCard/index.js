@@ -178,13 +178,14 @@ export async function openEditCardModal(card, store) {
     modalContent.setAttribute('aria-modal', 'true');
     modalContent.setAttribute('tabindex', '-1');
 
-    // 标题
+    // 标题（参考需求分析规范）
     const modalTitle = document.createElement('h3');
     modalTitle.innerHTML = `
-      <span>编辑卡片</span>
+      <span>编辑问题卡片</span>
       <span class="card-name">${card.title || ''}</span>
     `;
     modalTitle.style.cssText = ``;
+    modalTitle.setAttribute('title', '编辑问题卡片（价值需求分析）');
 
     // 关闭按钮（右上角）
     const closeButton = document.createElement('button');
@@ -370,6 +371,24 @@ export async function openEditCardModal(card, store) {
         } else if (typeof processed.output === 'object') {
           // 对象格式转换为字符串
           processed.output = Object.values(processed.output).join('\n');
+        }
+      }
+      
+      // 处理supplementRequirement字段（需求补充）
+      if (processed.supplementRequirement) {
+        if (Array.isArray(processed.supplementRequirement)) {
+          processed.supplementRequirement = processed.supplementRequirement.join('\n');
+        } else if (typeof processed.supplementRequirement === 'object') {
+          processed.supplementRequirement = Object.values(processed.supplementRequirement).join('\n');
+        }
+      }
+      
+      // 处理evaluateRequirement字段（需求评估）
+      if (processed.evaluateRequirement) {
+        if (Array.isArray(processed.evaluateRequirement)) {
+          processed.evaluateRequirement = processed.evaluateRequirement.join('\n');
+        } else if (typeof processed.evaluateRequirement === 'object') {
+          processed.evaluateRequirement = Object.values(processed.evaluateRequirement).join('\n');
         }
       }
       
@@ -780,7 +799,7 @@ export async function openEditCardModal(card, store) {
 
     // 时间属性已添加到基础字段容器的第一位
 
-    // 基础字段容器
+    // 基础字段容器（价值需求分析部分）
     const basicFieldsContainer = document.createElement('div');
     basicFieldsContainer.className = 'basic-fields-container';
     basicFieldsContainer.style.cssText = `
@@ -788,20 +807,82 @@ export async function openEditCardModal(card, store) {
       flex-direction: column;
       gap: 16px;
     `;
+    
+    // 添加需求分析说明（变更/优化型需求分析模板）
+    const requirementAnalysisNote = document.createElement('div');
+    requirementAnalysisNote.style.cssText = `
+      padding: 12px;
+      background: rgba(79, 70, 229, 0.1);
+      border-left: 3px solid #4f46e5;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #c7d2fe;
+      line-height: 1.6;
+    `;
+    requirementAnalysisNote.innerHTML = `
+      <strong>💡 变更/优化型需求分析</strong><br>
+      参考SOP日常需求分析：还原需求（Who+Why+How）→ 补充需求（三种方法）→ 评估需求（四个维度）
+    `;
 
-    // 将时间属性添加到基础字段容器的第一位
+    // 将时间属性和说明添加到基础字段容器
+    basicFieldsContainer.appendChild(requirementAnalysisNote);
     basicFieldsContainer.appendChild(timePropertiesContainer);
 
-    // 字段配置
+    // 字段配置（参考需求分析规范）
     const fields = [
-      { key: 'title', label: '标题', type: 'text', required: true },
-      { key: 'description', label: '描述', type: 'textarea', required: true },
-      { key: 'icon', label: '图标类名', type: 'text', required: false },
-      { key: 'badge', label: '徽章文本', type: 'text', required: false },
-      { key: 'hint', label: '提示文本', type: 'text', required: false },
-      { key: 'footerIcon', label: '底部图标', type: 'text', required: false },
-      { key: 'input', label: '输入要求', type: 'textarea', required: false },
-      { key: 'output', label: '输出要求', type: 'textarea', required: false }
+      { 
+        key: 'title', 
+        label: '问题/目标描述', 
+        type: 'text', 
+        required: true,
+        placeholder: '请描述要解决的问题或目标（问题级需求，而非方案级需求）',
+        hint: '提示：从用户视角描述问题，而非技术实现方案。例如："快速找到多间相邻的客房"而非"增加平面图功能"'
+      },
+      { 
+        key: 'description', 
+        label: '问题影响分析', 
+        type: 'textarea', 
+        required: true,
+        placeholder: '请分析该问题对业务的影响（指代清晰、视角匹配、推理合理）',
+        hint: '提示：描述问题的影响范围、影响程度、影响对象等'
+      },
+      { key: 'icon', label: '图标类名', type: 'text', required: false, placeholder: 'Font Awesome 图标类名，如：fas fa-star' },
+      { key: 'badge', label: '徽章文本', type: 'text', required: false, placeholder: '显示在卡片右上角的徽章文本' },
+      { key: 'hint', label: '提示文本', type: 'text', required: false, placeholder: '显示在卡片底部的提示信息' },
+      { key: 'footerIcon', label: '底部图标', type: 'text', required: false, placeholder: 'Font Awesome 图标类名' },
+      { 
+        key: 'input', 
+        label: '步骤1：还原需求（Who + Why）', 
+        type: 'textarea', 
+        required: false,
+        placeholder: '请描述需求还原：\n\nWho（谁的需求）：\n- 需求提出者：\n- 需求使用者：\n- 潜在影响者：\n\nWhy（解决什么问题）：\n- 问题级需求描述（使用"过去时"回答：谁遇到了什么问题）\n- 业务场景：需求发生的业务场景\n- 当前如何应对该问题（现状）\n- 使用频率和影响范围',
+        hint: '提示：参考SOP步骤1还原需求，从"方案级需求"还原到"问题级需求"，使用"过去时"回答'
+      },
+      { 
+        key: 'output', 
+        label: '步骤1：还原需求（How）', 
+        type: 'textarea', 
+        required: false,
+        placeholder: '请描述解决方案（How）：\n\n解决方案概述：\n- 成本合适的解决方案\n- 预期结果\n- 价值主张\n- 方案优点（站在用户立场）\n\n提示：参考SOP步骤1还原需求，提出成本合适的解决方案',
+        hint: '提示：参考SOP步骤1还原需求，站在用户立场说明方案优点'
+      },
+      { 
+        key: 'supplementRequirement', 
+        label: '步骤2：补充需求（三种方法）', 
+        type: 'textarea', 
+        required: false,
+        placeholder: '请描述需求补充：\n\n1. 同类问题横推法（提高广度）：\n- 问题类型：\n- 同类别的其他问题：\n\n2. 关联行为纵推法（提高深度）：\n- 前置关联行为：\n- 后置关联行为：\n- 本步骤可能发生的例外：\n\n3. 360度分析法（提高全面性）：\n- 潜在影响者：\n- 影响者关注问题：\n- 衍生需求：',
+        hint: '提示：参考SOP步骤2补充需求，使用三种方法提高需求完整性'
+      },
+      { 
+        key: 'evaluateRequirement', 
+        label: '步骤3：评估需求（四个维度）', 
+        type: 'textarea', 
+        required: false,
+        placeholder: '请描述需求评估：\n\n评估维度（根据产品阶段选择主维度）：\n- 业务维：与重要的业务关联的需求优先级更高\n- 用户维：能使越多的用户满意或满意度提升越大的需求优先级越高\n- 竞争维：对产品、系统的竞争力提升越大的需求优先级越高\n- 运营维：与产品运营价值、企业业绩提升越相关的需求优先级越高\n\n优先级等级：必须做（P0）/ 应该做（P1）/ 可以做（P2）/ 可不做（P3）',
+        hint: '提示：参考SOP步骤3评估需求，根据产品阶段选择主评估维度，确定优先级等级'
+      }
     ];
 
     fields.forEach(field => {
@@ -863,9 +944,9 @@ export async function openEditCardModal(card, store) {
         
         // 为input和output字段添加特殊属性
         if (isInputOutputField) {
-          input.placeholder = field.key === 'input' 
+          input.placeholder = field.placeholder || (field.key === 'input' 
             ? '请描述输入要求，每行一个要求...\n例如：\n- 用户ID\n- 数据格式\n- 参数说明'
-            : '请描述输出要求，每行一个要求...\n例如：\n- 返回数据格式\n- 状态码\n- 错误处理';
+            : '请描述输出要求，每行一个要求...\n例如：\n- 返回数据格式\n- 状态码\n- 错误处理');
           input.maxLength = 1000;
           
           // 添加字符计数
@@ -922,11 +1003,31 @@ export async function openEditCardModal(card, store) {
 
       input.value = formData[field.key] || '';
       input.required = field.required;
+      
+      // 设置占位符
+      if (field.placeholder && !isInputOutputField) {
+        input.placeholder = field.placeholder;
+      }
+      
       addPassiveEventListener(input, 'input', (e) => {
         formData[field.key] = e.target.value;
       });
 
       fieldContainer.appendChild(label);
+      
+      // 添加提示信息
+      if (field.hint) {
+        const hintElement = document.createElement('div');
+        hintElement.textContent = field.hint;
+        hintElement.style.cssText = `
+          font-size: 12px;
+          color: var(--text-secondary, #888);
+          margin-top: 4px;
+          font-style: italic;
+        `;
+        fieldContainer.appendChild(hintElement);
+      }
+      
       fieldContainer.appendChild(input);
       basicFieldsContainer.appendChild(fieldContainer);
     });
@@ -957,53 +1058,130 @@ export async function openEditCardModal(card, store) {
         }
       }
       
+      // 处理supplementRequirement字段 - 保持字符串格式（需求补充是文本描述）
+      if (processed.supplementRequirement && Array.isArray(processed.supplementRequirement)) {
+        processed.supplementRequirement = processed.supplementRequirement.join('\n');
+      }
+      
+      // 处理evaluateRequirement字段 - 保持字符串格式（需求评估是文本描述）
+      if (processed.evaluateRequirement && Array.isArray(processed.evaluateRequirement)) {
+        processed.evaluateRequirement = processed.evaluateRequirement.join('\n');
+      }
+      
       return processed;
     };
     
-    // 添加数据验证函数
+    // 添加数据验证函数（参考需求分析规范）
     const validateCardData = (data) => {
       const errors = [];
+      const warnings = [];
       
-      // 验证基本字段
+      // 验证基本字段（问题级需求）
       if (!data.title || typeof data.title !== 'string' || data.title.trim() === '') {
-        errors.push('卡片标题不能为空');
+        errors.push('问题/目标描述不能为空');
+      } else {
+        // 检查是否为方案级需求（常见的技术实现词汇）
+        const solutionKeywords = ['增加', '添加', '实现', '开发', '创建', '构建', '设计', '编写'];
+        const titleLower = data.title.toLowerCase();
+        const isSolutionLevel = solutionKeywords.some(keyword => titleLower.includes(keyword));
+        if (isSolutionLevel) {
+          warnings.push('提示：标题可能包含方案级需求，建议从用户视角描述问题而非技术实现方案');
+        }
       }
       
+      // 验证问题影响分析
       if (!data.description || typeof data.description !== 'string' || data.description.trim() === '') {
-        errors.push('卡片描述不能为空');
+        errors.push('问题影响分析不能为空');
+      } else {
+        // 检查影响分析的完整性（指代清晰、视角匹配、推理合理）
+        const description = data.description.trim();
+        if (description.length < 20) {
+          warnings.push('问题影响分析可能过于简短，建议详细描述影响范围、影响程度、影响对象');
+        }
       }
       
-      // 验证input字段
+      // 验证步骤1：还原需求（Who + Why）
       if (data.input) {
         if (Array.isArray(data.input)) {
           // 验证数组格式
           data.input.forEach((item, index) => {
             if (typeof item !== 'string') {
-              errors.push(`输入要求第${index + 1}项格式不正确`);
+              errors.push(`还原需求（Who + Why）第${index + 1}项格式不正确`);
             }
           });
         } else if (typeof data.input !== 'string') {
-          errors.push('输入要求格式不正确');
+          errors.push('还原需求（Who + Why）格式不正确');
+        } else {
+          // 检查是否包含 Who 和 Why 相关信息
+          const inputText = data.input.toLowerCase();
+          const hasWho = inputText.includes('谁') || inputText.includes('提出者') || inputText.includes('使用者') || inputText.includes('影响者');
+          const hasWhy = inputText.includes('为什么') || inputText.includes('问题') || inputText.includes('场景') || inputText.includes('现状');
+          if (!hasWho && !hasWhy) {
+            warnings.push('提示：还原需求建议明确 Who（谁的需求）和 Why（解决什么问题），使用"过去时"回答');
+          }
         }
       }
       
-      // 验证output字段
+      // 验证步骤1：还原需求（How）
       if (data.output) {
         if (Array.isArray(data.output)) {
           // 验证数组格式
           data.output.forEach((item, index) => {
             if (typeof item !== 'string') {
-              errors.push(`输出要求第${index + 1}项格式不正确`);
+              errors.push(`还原需求（How）第${index + 1}项格式不正确`);
             }
           });
         } else if (typeof data.output !== 'string') {
-          errors.push('输出要求格式不正确');
+          errors.push('还原需求（How）格式不正确');
+        } else {
+          // 检查是否包含解决方案相关信息
+          const outputText = data.output.toLowerCase();
+          const hasSolution = outputText.includes('方案') || outputText.includes('解决') || outputText.includes('实现') || outputText.includes('预期');
+          if (!hasSolution) {
+            warnings.push('提示：还原需求建议明确 How（成本合适的解决方案），站在用户立场说明方案优点');
+          }
+        }
+      }
+      
+      // 验证步骤2：补充需求（三种方法）
+      if (data.supplementRequirement) {
+        if (typeof data.supplementRequirement !== 'string') {
+          errors.push('补充需求格式不正确');
+        } else {
+          const supplementText = data.supplementRequirement.toLowerCase();
+          const hasHorizontal = supplementText.includes('同类') || supplementText.includes('横推');
+          const hasVertical = supplementText.includes('关联') || supplementText.includes('纵推');
+          const has360 = supplementText.includes('360') || supplementText.includes('全面');
+          if (!hasHorizontal && !hasVertical && !has360) {
+            warnings.push('提示：补充需求建议使用三种方法：同类问题横推法、关联行为纵推法、360度分析法');
+          }
+        }
+      }
+      
+      // 验证步骤3：评估需求（四个维度）
+      if (data.evaluateRequirement) {
+        if (typeof data.evaluateRequirement !== 'string') {
+          errors.push('评估需求格式不正确');
+        } else {
+          const evaluateText = data.evaluateRequirement.toLowerCase();
+          const hasBusiness = evaluateText.includes('业务');
+          const hasUser = evaluateText.includes('用户');
+          const hasCompetition = evaluateText.includes('竞争');
+          const hasOperation = evaluateText.includes('运营');
+          const hasPriority = evaluateText.includes('优先级') || evaluateText.includes('p0') || evaluateText.includes('p1') || evaluateText.includes('必须') || evaluateText.includes('应该');
+          if (!hasBusiness && !hasUser && !hasCompetition && !hasOperation) {
+            warnings.push('提示：评估需求建议明确评估维度（业务维/用户维/竞争维/运营维）和优先级等级');
+          }
+          if (!hasPriority) {
+            warnings.push('提示：评估需求建议明确优先级等级（必须做/应该做/可以做/可不做）');
+          }
         }
       }
       
       return {
         isValid: errors.length === 0,
-        errors: errors
+        errors: errors,
+        warnings: warnings
       };
     };
 
@@ -1022,7 +1200,7 @@ export async function openEditCardModal(card, store) {
     `;
 
     const featuresTitle = document.createElement('h4');
-    featuresTitle.textContent = '功能特性';
+    featuresTitle.textContent = '功能特性（业务场景）';
     featuresTitle.style.cssText = `
       margin: 0 0 16px 0;
       color: var(--text-primary, #fff);
@@ -1031,6 +1209,7 @@ export async function openEditCardModal(card, store) {
       border-bottom: 1px solid var(--border-secondary, #444);
       padding-bottom: 8px;
     `;
+    featuresTitle.setAttribute('title', '参考业务场景分析方法，识别业务支持、管理支持、维护支持');
 
     const featuresList = document.createElement('div');
     featuresList.style.cssText = `
@@ -1232,7 +1411,7 @@ export async function openEditCardModal(card, store) {
     `;
 
     const statsTitle = document.createElement('h4');
-    statsTitle.textContent = '统计数据';
+    statsTitle.textContent = '统计数据（需求分析指标）';
     statsTitle.style.cssText = `
       margin: 0 0 16px 0;
       color: var(--text-primary, #fff);
@@ -1241,6 +1420,7 @@ export async function openEditCardModal(card, store) {
       border-bottom: 1px solid var(--border-secondary, #444);
       padding-bottom: 8px;
     `;
+    statsTitle.setAttribute('title', '用于需求分析工作量统计、质量统计、效果统计');
 
     const statsList = document.createElement('div');
     statsList.style.cssText = `
@@ -1390,7 +1570,7 @@ export async function openEditCardModal(card, store) {
     `;
 
     const tagsTitle = document.createElement('h4');
-    tagsTitle.textContent = '项目标签';
+    tagsTitle.textContent = '项目标签（干系人/业务子系统）';
     tagsTitle.style.cssText = `
       margin: 0 0 16px 0;
       color: var(--text-primary, #fff);
@@ -1399,6 +1579,7 @@ export async function openEditCardModal(card, store) {
       border-bottom: 1px solid var(--border-secondary, #444);
       padding-bottom: 8px;
     `;
+    tagsTitle.setAttribute('title', '用于关联干系人、业务子系统等需求分析要素');
 
     const tagsList = document.createElement('div');
     tagsList.style.cssText = `
@@ -1636,9 +1817,26 @@ export async function openEditCardModal(card, store) {
 
     addPassiveEventListener(saveButton, 'click', async () => {
       try {
-        if (!formData.title || !formData.description) {
-          showError('标题和描述为必填字段');
+        // 使用需求分析规范的验证函数
+        const validation = validateCardData(formData);
+        
+        if (!validation.isValid) {
+          showError(validation.errors.join('；'));
           return;
+        }
+        
+        // 显示警告信息（如果有）
+        if (validation.warnings && validation.warnings.length > 0) {
+          console.warn('[需求分析检查]', validation.warnings);
+          // 可以选择是否阻止保存，这里仅提示
+          const shouldContinue = confirm(
+            '需求分析检查提示：\n' + 
+            validation.warnings.join('\n') + 
+            '\n\n是否继续保存？'
+          );
+          if (!shouldContinue) {
+            return;
+          }
         }
 
         if (navigator.vibrate) navigator.vibrate(30);
@@ -1649,14 +1847,6 @@ export async function openEditCardModal(card, store) {
 
         // 处理数组格式兼容性 - 将字符串格式转换为数组格式用于保存
         const processedFormData = processStringToArray(formData);
-        
-        // 验证数据格式
-        const validation = validateCardData(processedFormData);
-        if (!validation.isValid) {
-          console.error('[EditCardPlugin] 数据验证失败:', validation.errors);
-          showError(`数据格式错误: ${validation.errors.join(', ')}`);
-          return;
-        }
         
         // 更新本地对象
         Object.assign(card, processedFormData);
@@ -1670,8 +1860,13 @@ export async function openEditCardModal(card, store) {
               key: card.key,
               title: processedFormData.title,
               description: processedFormData.description,
+              // 步骤1：还原需求（Who + Why + How）
               input: processedFormData.input || [],
               output: processedFormData.output || [],
+              // 步骤2：补充需求（三种方法）
+              supplementRequirement: processedFormData.supplementRequirement || '',
+              // 步骤3：评估需求（四个维度）
+              evaluateRequirement: processedFormData.evaluateRequirement || '',
               icon: card.icon || '',
               badge: card.badge || '',
               hint: card.hint || '',
@@ -1798,6 +1993,7 @@ export async function openEditCardModal(card, store) {
     });
 
     buttonContainer.appendChild(cancelButton);
+    buttonContainer.appendChild(checklistButton);
     buttonContainer.appendChild(saveButton);
 
     // 组装 - 时间属性在基础字段容器内的第一位

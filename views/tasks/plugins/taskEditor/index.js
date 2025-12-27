@@ -19,30 +19,32 @@ const TaskEditor = {
                 
                 <div class="editor-content">
                     <form @submit.prevent="handleSubmit" class="task-form">
-                        <!-- 基本信息 -->
+                        <!-- 基本信息（参考需求分析规范） -->
                         <div class="form-section">
                             <h4>基本信息</h4>
                             
                             <div class="form-group">
-                                <label for="taskTitle">任务标题 *</label>
+                                <label for="taskTitle">业务场景/任务标题 *</label>
                                 <input 
                                     id="taskTitle"
                                     type="text" 
                                     required 
-                                    placeholder="请输入任务标题"
+                                    placeholder="请描述业务场景或任务标题（问题级需求描述）"
                                     class="form-input"
                                     :value="formData.title"
                                     @input="handleTitleInput">
+                                <small class="form-hint">提示：从用户视角描述业务场景，而非技术实现方案</small>
                             </div>
                             
                             <div class="form-group">
-                                <label for="taskDescription">任务描述</label>
+                                <label for="taskDescription">场景描述/问题分析</label>
                                 <textarea 
                                     id="taskDescription"
                                     v-model="formData.description" 
-                                    placeholder="请输入任务描述"
+                                    placeholder="请描述业务场景的详细情况：\n- 场景目的和参与者\n- 触发条件\n- 当前如何应对该问题（现状）\n- 问题的影响分析"
                                     class="form-textarea"
-                                    rows="3"></textarea>
+                                    rows="4"></textarea>
+                                <small class="form-hint">提示：参考业务场景分析方法，描述场景—挑战—方案</small>
                             </div>
                             
                             <div class="form-row">
@@ -94,19 +96,31 @@ const TaskEditor = {
                             </div>
                         </div>
                         
-                        <!-- 输入输出信息 -->
+                        <!-- 业务场景分析（参考SOP任务9：业务场景分析） -->
                         <div class="form-section input-output-section">
                             <h4>
                                 <i class="fas fa-exchange-alt"></i>
-                                输入输出
+                                业务场景分析（场景—挑战—方案）
                             </h4>
+                            
+                            <!-- 场景概述 -->
+                            <div class="form-group">
+                                <label for="scenarioOverview">场景概述</label>
+                                <textarea 
+                                    id="scenarioOverview"
+                                    v-model="formData.scenarioOverview" 
+                                    placeholder="请描述业务场景概述：&#10;&#10;1. 场景目的：&#10;2. 参与者：&#10;3. 触发条件：&#10;4. 当前如何应对该问题（现状）：&#10;5. 使用频率和影响范围："
+                                    class="form-textarea"
+                                    rows="5"></textarea>
+                                <small class="form-hint">提示：参考业务场景分析方法，清晰描述场景的目的、参与者、触发条件</small>
+                            </div>
                             
                             <div class="input-output-container">
                                 <div class="input-output-item input-item">
                                     <div class="input-output-header">
                                         <label for="taskInput" class="input-output-label">
                                             <i class="fas fa-arrow-down"></i>
-                                            输入要求
+                                            业务步骤（用户意图）
                                         </label>
                                         <div class="char-counter" v-if="formData.input">
                                             {{ formData.input.length }}/500
@@ -116,9 +130,9 @@ const TaskEditor = {
                                         <textarea 
                                             id="taskInput"
                                             v-model="formData.input" 
-                                            placeholder="请描述任务的输入要求，每行一个要求...&#10;例如：&#10;1. 用户ID&#10;2. 数据格式&#10;3. 参数说明&#10;&#10;提示：系统会自动为每行添加序号，支持数组格式存储"
+                                            placeholder="请描述业务步骤（重在人机交互、用户意图）：&#10;&#10;步骤1：用户意图描述&#10;步骤2：人机交互过程&#10;步骤3：系统响应&#10;步骤4：预期结果&#10;&#10;提示：重在人机交互而非人机界面，重在用户意图而非用户动作"
                                             class="form-textarea input-output-textarea"
-                                            rows="4"
+                                            rows="6"
                                             maxlength="500"
                                             @focus="handleInputFocus"
                                             @blur="handleInputBlur">
@@ -129,7 +143,7 @@ const TaskEditor = {
                                     </div>
                                     <div class="input-output-hint" v-if="!formData.input">
                                         <i class="fas fa-lightbulb"></i>
-                                        提示：每行一个输入要求，系统会自动添加序号并转换为数组格式存储
+                                        提示：重在人机交互而非人机界面，重在用户意图而非用户动作
                                     </div>
                                 </div>
                                 
@@ -141,7 +155,7 @@ const TaskEditor = {
                                     <div class="input-output-header">
                                         <label for="taskOutput" class="input-output-label">
                                             <i class="fas fa-arrow-up"></i>
-                                            输出要求
+                                            困难与功能（挑战—方案）
                                         </label>
                                         <div class="char-counter" v-if="formData.output">
                                             {{ formData.output.length }}/500
@@ -151,9 +165,9 @@ const TaskEditor = {
                                         <textarea 
                                             id="taskOutput"
                                             v-model="formData.output" 
-                                            placeholder="请描述任务的输出要求，每行一个要求...&#10;例如：&#10;1. 返回数据格式&#10;2. 状态码&#10;3. 错误处理&#10;&#10;提示：系统会自动为每行添加序号，支持数组格式存储"
+                                            placeholder="请描述困难分析与导出功能：&#10;&#10;遍历步骤分析困难：&#10;- 步骤1可能遇到的困难：&#10;- 步骤2可能遇到的困难：&#10;&#10;从困难中导出功能：&#10;- 功能1：解决困难1&#10;- 功能2：解决困难2&#10;&#10;提示：参考业务场景分析方法，遍历步骤分析困难，导出功能"
                                             class="form-textarea input-output-textarea"
-                                            rows="4"
+                                            rows="6"
                                             maxlength="500"
                                             @focus="handleOutputFocus"
                                             @blur="handleOutputBlur">
@@ -164,9 +178,21 @@ const TaskEditor = {
                                     </div>
                                     <div class="input-output-hint" v-if="!formData.output">
                                         <i class="fas fa-lightbulb"></i>
-                                        提示：每行一个输出要求，系统会自动添加序号并转换为数组格式存储
+                                        提示：遍历步骤分析困难，从困难中导出系统需要提供的功能
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <!-- 环境与规则 -->
+                            <div class="form-group">
+                                <label for="environmentAndRules">环境与规则</label>
+                                <textarea 
+                                    id="environmentAndRules"
+                                    v-model="formData.environmentAndRules" 
+                                    placeholder="请描述环境与规则：&#10;&#10;业务规则：&#10;- 规则1：&#10;- 规则2：&#10;&#10;环境约束：&#10;- 约束1：&#10;- 约束2："
+                                    class="form-textarea"
+                                    rows="4"></textarea>
+                                <small class="form-hint">提示：识别业务规则和环境约束</small>
                             </div>
                             
                             <!-- 快速模板 -->
@@ -209,13 +235,16 @@ const TaskEditor = {
                             </div>
                         </div>
                         
-                        <!-- 执行步骤 -->
+                        <!-- 执行步骤（参考业务场景分析：场景—挑战—方案） -->
                         <div class="form-section">
-                            <h4>执行步骤</h4>
+                            <h4>业务步骤（场景—挑战—方案）</h4>
+                            <small class="form-hint" style="display: block; margin-bottom: 12px; color: #888;">
+                                提示：参考业务场景分析方法，细化业务场景的业务步骤（重在人机交互、用户意图）
+                            </small>
                             <div class="steps-container">
                                 <div v-for="(step, index) in formData.steps" :key="index" class="step-item">
                                     <div class="step-header">
-                                        <span class="step-number">步骤 {{ index + 1 }}</span>
+                                        <span class="step-number">业务步骤 {{ index + 1 }}</span>
                                         <button 
                                             type="button" 
                                             @click="removeStep(index)" 
@@ -229,7 +258,7 @@ const TaskEditor = {
                                             <input 
                                                 type="text" 
                                                 v-model="step.text" 
-                                                :placeholder="'请输入步骤 ' + (index + 1) + ' 的内容'"
+                                                :placeholder="'请描述步骤 ' + (index + 1) + ' 的业务步骤（用户意图，非用户动作）'"
                                                 class="form-input step-text-input">
                                         </div>
                                         <label class="step-checkbox-label">
@@ -247,7 +276,7 @@ const TaskEditor = {
                                     @click="addStep" 
                                     class="add-step-btn">
                                     <i class="fas fa-plus"></i>
-                                    <span>添加步骤</span>
+                                    <span>添加业务步骤</span>
                                 </button>
                             </div>
                         </div>
@@ -291,8 +320,11 @@ const TaskEditor = {
                 status: 'todo',
                 type: 'task',
                 dueDate: '',
-                input: '',
-                output: '',
+                // 业务场景分析字段（参考SOP任务9）
+                scenarioOverview: '', // 场景概述
+                input: '', // 业务步骤（用户意图）
+                output: '', // 困难与功能（挑战—方案）
+                environmentAndRules: '', // 环境与规则
                 steps: [
                     { text: '', completed: false },
                     { text: '', completed: false }
@@ -333,8 +365,10 @@ const TaskEditor = {
                     status: processedTaskData.status || 'todo',
                     type: processedTaskData.type || 'task',
                     dueDate: processedTaskData.dueDate || '',
+                    scenarioOverview: processedTaskData.scenarioOverview || '',
                     input: processedTaskData.input || '',
                     output: processedTaskData.output || '',
+                    environmentAndRules: processedTaskData.environmentAndRules || '',
                     steps: this.parseSteps(processedTaskData.steps)
                 };
                 
@@ -353,8 +387,10 @@ const TaskEditor = {
                     status: 'todo',
                     type: 'task',
                     dueDate: '',
+                    scenarioOverview: '',
                     input: '',
                     output: '',
+                    environmentAndRules: '',
                     steps: [
                         { text: '', completed: false },
                         { text: '', completed: false }

@@ -153,6 +153,21 @@ label {
     color: #e2e8f0;
 }
 
+/* 表单提示信息 */
+.form-hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #94a3b8;
+    font-style: italic;
+    line-height: 1.5;
+}
+
+.form-hint::before {
+    content: '💡 ';
+    margin-right: 4px;
+}
+
 /* 输入框 */
 .form-input,
 .form-textarea,

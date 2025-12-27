@@ -530,16 +530,44 @@ export async function openCreateCardModal(store) {
     // 将时间属性添加到基础字段容器的第一位
     basicFieldsContainer.appendChild(timePropertiesContainer);
 
-    // 基础字段
+    // 基础字段（参考需求分析规范）
     const fields = [
-      { key: 'title', label: '标题', type: 'text', required: true },
-      { key: 'description', label: '描述', type: 'textarea', required: true },
-      { key: 'icon', label: '图标类名', type: 'text', required: false },
-      { key: 'badge', label: '徽章文本', type: 'text', required: false },
-      { key: 'hint', label: '提示文本', type: 'text', required: false },
-      { key: 'footerIcon', label: '底部图标', type: 'text', required: false },
-      { key: 'input', label: '输入要求', type: 'textarea', required: false },
-      { key: 'output', label: '输出要求', type: 'textarea', required: false }
+      { 
+        key: 'title', 
+        label: '问题/目标描述', 
+        type: 'text', 
+        required: true,
+        placeholder: '请描述要解决的问题或目标（问题级需求，而非方案级需求）',
+        hint: '提示：从用户视角描述问题，而非技术实现方案。例如："快速找到多间相邻的客房"而非"增加平面图功能"'
+      },
+      { 
+        key: 'description', 
+        label: '问题影响分析', 
+        type: 'textarea', 
+        required: true,
+        placeholder: '请分析该问题对业务的影响（指代清晰、视角匹配、推理合理）',
+        hint: '提示：描述问题的影响范围、影响程度、影响对象等'
+      },
+      { key: 'icon', label: '图标类名', type: 'text', required: false, placeholder: 'Font Awesome 图标类名，如：fas fa-star' },
+      { key: 'badge', label: '徽章文本', type: 'text', required: false, placeholder: '显示在卡片右上角的徽章文本' },
+      { key: 'hint', label: '提示文本', type: 'text', required: false, placeholder: '显示在卡片底部的提示信息' },
+      { key: 'footerIcon', label: '底部图标', type: 'text', required: false, placeholder: 'Font Awesome 图标类名' },
+      { 
+        key: 'input', 
+        label: '输入要求（Who + Why）', 
+        type: 'textarea', 
+        required: false,
+        placeholder: '请描述需求的输入要求：\n- Who：谁的需求（需求提出者、使用者、影响者）\n- Why：解决什么问题（问题级需求描述）\n- 业务场景：需求发生的业务场景\n- 使用频率和影响范围',
+        hint: '提示：参考需求还原方法，明确 Who（谁的需求）和 Why（解决什么问题）'
+      },
+      { 
+        key: 'output', 
+        label: '输出要求（How）', 
+        type: 'textarea', 
+        required: false,
+        placeholder: '请描述解决方案的输出要求：\n- 解决方案概述（How）\n- 预期结果\n- 价值主张\n- 成本合适的解决方案',
+        hint: '提示：参考需求还原方法，明确 How（成本合适的解决方案）'
+      }
     ];
 
     console.log('[CreateCardPlugin] 开始创建表单字段，字段数量:', fields.length);
@@ -605,9 +633,9 @@ export async function openCreateCardModal(store) {
         
         // 为input和output字段添加特殊属性
         if (isInputOutputField) {
-          input.placeholder = field.key === 'input' 
+          input.placeholder = field.placeholder || (field.key === 'input' 
             ? '请描述输入要求，每行一个要求...\n例如：\n- 用户ID\n- 数据格式\n- 参数说明'
-            : '请描述输出要求，每行一个要求...\n例如：\n- 返回数据格式\n- 状态码\n- 错误处理';
+            : '请描述输出要求，每行一个要求...\n例如：\n- 返回数据格式\n- 状态码\n- 错误处理');
           input.maxLength = 1000;
           
           // 添加字符计数
@@ -664,11 +692,31 @@ export async function openCreateCardModal(store) {
 
       input.value = formData[field.key] || '';
       input.required = field.required;
+      
+      // 设置占位符
+      if (field.placeholder && !isInputOutputField) {
+        input.placeholder = field.placeholder;
+      }
+      
       addPassiveEventListener(input, 'input', (e) => {
         formData[field.key] = e.target.value;
       });
 
       fieldContainer.appendChild(label);
+      
+      // 添加提示信息
+      if (field.hint) {
+        const hintElement = document.createElement('div');
+        hintElement.textContent = field.hint;
+        hintElement.style.cssText = `
+          font-size: 12px;
+          color: var(--text-secondary, #888);
+          margin-top: 4px;
+          font-style: italic;
+        `;
+        fieldContainer.appendChild(hintElement);
+      }
+      
       fieldContainer.appendChild(input);
       basicFieldsContainer.appendChild(fieldContainer);
       
