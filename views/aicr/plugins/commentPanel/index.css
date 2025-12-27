@@ -1522,7 +1522,7 @@
     gap: 4px;
 }
 
-.action-button:hover {
+.action-button:hover:not(:disabled) {
     color: var(--primary);
     border-color: var(--primary);
     background: rgba(79,70,229,0.04);
@@ -1541,7 +1541,9 @@
     border-color: #388E3C;
 }
 
-.resolve-button:hover {
+.resolve-button:hover:not(:disabled) {
+    color: #388E3C;
+    border-color: #388E3C;
     background: rgba(56,142,60,0.1);
 }
 
@@ -1550,25 +1552,21 @@
     border-color: #F57C00;
 }
 
-.reopen-button:hover {
+.reopen-button:hover:not(:disabled) {
+    color: #F57C00;
+    border-color: #F57C00;
     background: rgba(245,124,0,0.1);
 }
 
 .delete-button {
     color: #D32F2F;
     border-color: #D32F2F;
-    position: relative;
-    overflow: hidden;
 }
 
-.delete-button:hover {
+.delete-button:hover:not(:disabled) {
+    color: #D32F2F;
+    border-color: #D32F2F;
     background: rgba(211,47,47,0.1);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(211,47,47,0.2);
-}
-
-.delete-button:active {
-    transform: translateY(0);
 }
 
 .delete-button.deleting {

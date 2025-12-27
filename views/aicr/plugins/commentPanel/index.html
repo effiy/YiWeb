@@ -218,7 +218,7 @@
                         
                         <button 
                             @click="deleteComment(comment.key)"
-                            class="action-button delete-button"
+                            class="action-button resolve-button"
                             :class="{ 'deleting': deletingComments[comment.key] }"
                             :disabled="deletingComments[comment.key]"
                             title="删除评论"
