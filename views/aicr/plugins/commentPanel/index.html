@@ -219,10 +219,14 @@
                         <button 
                             @click="deleteComment(comment.key)"
                             class="action-button delete-button"
+                            :class="{ 'deleting': deletingComments[comment.key] }"
+                            :disabled="deletingComments[comment.key]"
                             title="删除评论"
+                            :aria-label="`删除评论 ${comment.author}`"
                         >
-                            <i class="fas fa-trash"></i>
-                            删除
+                            <i class="fas" :class="deletingComments[comment.key] ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
+                            <span v-if="!deletingComments[comment.key]">删除</span>
+                            <span v-else>删除中...</span>
                         </button>
                     </div>
                 </div>

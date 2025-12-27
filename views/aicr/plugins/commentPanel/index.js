@@ -224,7 +224,10 @@ const createCommentPanel = async () => {
                 },
                 
                 // 评论输入状态
-                newCommentText: ''
+                newCommentText: '',
+                
+                // 删除评论状态管理
+                deletingComments: {}
             };
         },
         computed: {
@@ -815,11 +818,107 @@ const createCommentPanel = async () => {
                 this.$emit('comment-input', event);
             },
 
-            // 删除评论
-            deleteComment(commentId) {
-                if (confirm('确定要删除这条评论吗？')) {
-                    this.$emit('comment-delete', commentId);
+            // 删除评论 - 优化版本
+            async deleteComment(commentId) {
+                // 防止重复删除
+                if (this.deletingComments[commentId]) {
+                    return;
                 }
+                
+                // 获取评论信息用于确认对话框
+                const comment = this.renderComments.find(c => c.key === commentId);
+                const commentAuthor = comment?.author || '这条评论';
+                
+                // 显示确认对话框
+                const confirmed = await this.showDeleteConfirmation(commentAuthor);
+                if (!confirmed) {
+                    return;
+                }
+                
+                // 设置删除状态（Vue 3 直接赋值即可）
+                this.deletingComments[commentId] = true;
+                
+                try {
+                    // 触发删除事件
+                    this.$emit('comment-delete', commentId);
+                    // 删除状态会通过watch renderComments自动清理
+                } catch (error) {
+                    console.error('[CommentPanel] 删除评论失败:', error);
+                    // 清除删除状态
+                    delete this.deletingComments[commentId];
+                }
+            },
+            
+            // 显示删除确认对话框
+            showDeleteConfirmation(commentAuthor) {
+                return new Promise((resolve) => {
+                    try {
+                        // 创建对话框HTML
+                        const dialogHTML = `
+                            <div class="delete-confirmation-dialog" role="dialog" aria-labelledby="delete-dialog-title" aria-modal="true">
+                                <div class="dialog-overlay"></div>
+                                <div class="dialog-content">
+                                    <div class="dialog-header">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <h3 id="delete-dialog-title">确认删除评论</h3>
+                                    </div>
+                                    <div class="dialog-body">
+                                        <p>确定要删除 <strong>${commentAuthor}</strong> 的评论吗？</p>
+                                        <p class="warning-text">此操作不可恢复，请谨慎操作。</p>
+                                    </div>
+                                    <div class="dialog-actions">
+                                        <button class="btn-cancel" aria-label="取消删除">取消</button>
+                                        <button class="btn-confirm" aria-label="确认删除">确认删除</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // 创建对话框元素
+                        const dialog = document.createElement('div');
+                        dialog.innerHTML = dialogHTML;
+                        const dialogElement = dialog.firstElementChild;
+                        document.body.appendChild(dialogElement);
+                        
+                        // 添加显示动画
+                        requestAnimationFrame(() => {
+                            dialogElement.classList.add('show');
+                        });
+                        
+                        // 绑定事件
+                        const cancelBtn = dialogElement.querySelector('.btn-cancel');
+                        const confirmBtn = dialogElement.querySelector('.btn-confirm');
+                        const overlay = dialogElement.querySelector('.dialog-overlay');
+                        
+                        const closeDialog = (result) => {
+                            dialogElement.classList.remove('show');
+                            setTimeout(() => {
+                                if (dialogElement && dialogElement.parentNode) {
+                                    dialogElement.remove();
+                                }
+                                resolve(result);
+                            }, 300);
+                        };
+                        
+                        cancelBtn.addEventListener('click', () => closeDialog(false));
+                        confirmBtn.addEventListener('click', () => closeDialog(true));
+                        overlay.addEventListener('click', () => closeDialog(false));
+                        
+                        // ESC键关闭
+                        const handleEsc = (e) => {
+                            if (e.key === 'Escape') {
+                                document.removeEventListener('keydown', handleEsc);
+                                closeDialog(false);
+                            }
+                        };
+                        document.addEventListener('keydown', handleEsc);
+                        
+                    } catch (error) {
+                        console.error('[CommentPanel] 显示确认对话框失败:', error);
+                        // 降级到原生confirm
+                        resolve(confirm(`确定要删除 ${commentAuthor} 的评论吗？此操作不可恢复。`));
+                    }
+                });
             },
 
 
@@ -1652,6 +1751,17 @@ const createCommentPanel = async () => {
                     this.mongoComments = [...(newComments || [])];
                 }
             });
+            
+            // 监听renderComments变化，清理已删除评论的状态
+            this.$watch('renderComments', (newComments) => {
+                const currentCommentKeys = new Set((newComments || []).map(c => c.key));
+                // 清理已删除评论的删除状态
+                Object.keys(this.deletingComments).forEach(commentId => {
+                    if (!currentCommentKeys.has(commentId)) {
+                        delete this.deletingComments[commentId];
+                    }
+                });
+            }, { deep: true });
 
             console.log('[CommentPanel] 组件挂载完成，评论者数据:', this.commenters);
             console.log('[CommentPanel] 选中的评论者:', this.selectedCommenterIds);
