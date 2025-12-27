@@ -1025,7 +1025,7 @@ export const useMethods = (store) => {
                 const content = String(commentData.content || commentData.text || '').trim();
                 
                 // 构建评论数据（保留评论特有字段，同时包含统一的消息字段）
-                const comment = {
+                let comment = {
                     ...commentData,
                     // 统一的消息字段
                     type: type,
@@ -1042,6 +1042,11 @@ export const useMethods = (store) => {
                     // author 字段保留（用于显示）
                     author: commentData.author || (type === 'pet' ? 'AI助手' : '用户')
                 };
+                
+                // 使用规范化函数确保字段一致性
+                if (store && store.normalizeComment) {
+                    comment = store.normalizeComment(comment);
+                }
 
                 // 处理fromSystem字段
                 if (commentData.fromSystem) {
@@ -1066,15 +1071,19 @@ export const useMethods = (store) => {
 
                 console.log('[评论提交] API调用成功:', result);
                 
-                // 同步评论到会话消息
+                // 同步评论到会话消息（确保使用规范化后的评论）
                 if (projectId && selectedFileId.value) {
                     try {
                         const { getSessionSyncService } = await import('/views/aicr/services/sessionSyncService.js');
                         const sessionSync = getSessionSyncService();
-                        const commentWithKey = {
+                        let commentWithKey = {
                             ...comment,
                             key: result?.data?.key || result?.key || comment.key || `comment_${Date.now()}`
                         };
+                        // 再次规范化，确保字段一致性
+                        if (store && store.normalizeComment) {
+                            commentWithKey = store.normalizeComment(commentWithKey);
+                        }
                         await sessionSync.syncCommentToMessage(commentWithKey, selectedFileId.value, projectId, false);
                         console.log('[评论提交] 评论已同步到会话消息');
                     } catch (syncError) {

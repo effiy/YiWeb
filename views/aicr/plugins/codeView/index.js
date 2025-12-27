@@ -3574,17 +3574,27 @@ const createCodeView = async () => {
                     console.log('[CodeView] 构建评论数据，引用范围:', this.lastSelectionRange);
                     
                     // 构建评论数据
-                    const comment = {
+                    let comment = {
                         content,
-                        text: this.lastSelectionText || '', // 引用的代码文本
+                        text: content, // 确保 text 与 content 保持一致（引用的代码文本存储在 rangeInfo 中）
                         rangeInfo: this.lastSelectionRange, // 用于评论定位（不在界面显示行数）
                         fileId: this.file ? (this.file.fileId || this.file.id || this.file.path || this.file.name) : undefined,
                         projectId,
                         author: '手动评论',
                         fromSystem: null, // 手动评论没有评论者系统
                         status: 'pending',
-                        timestamp: new Date().toISOString()
+                        timestamp: Date.now() // 使用毫秒数
                     };
+                    
+                    // 规范化评论数据，确保字段一致性
+                    if (window.aicrStore && window.aicrStore.normalizeComment) {
+                        comment = window.aicrStore.normalizeComment(comment);
+                    } else {
+                        // 如果没有规范化函数，手动设置字段
+                        comment.text = comment.content; // content 和 text 保持一致
+                        comment.createdTime = comment.timestamp; // 毫秒数
+                        comment.createdAt = comment.timestamp; // 毫秒数
+                    }
 
                     // 调用API提交评论
                     const { postData } = await import('/apis/modules/crud.js');
@@ -3878,11 +3888,12 @@ const createCodeView = async () => {
                     const projectId = projectSelect ? projectSelect.value : null;
                     
                     // 构建更新数据
-                    const updateData = {
+                    const processedContentValue = this.editingCommentContentIsJson ? JSON.parse(processedContent) : processedContent;
+                    let updateData = {
                         key: this.currentCommentDetail.key,
                         author: this.editingCommentAuthor.trim(),
-                        content: this.editingCommentContentIsJson ? JSON.parse(processedContent) : processedContent,
-                        text: this.editingCommentText.trim(),
+                        content: processedContentValue,
+                        text: processedContentValue, // 确保 text 与 content 保持一致
                         improvementText: this.editingImprovementText.trim(),
                         type: this.editingCommentType,
                         status: this.editingCommentStatus,
@@ -3890,10 +3901,15 @@ const createCodeView = async () => {
                             startLine: parseInt(this.editingRangeInfo.startLine) || 1,
                             endLine: parseInt(this.editingRangeInfo.endLine) || parseInt(this.editingRangeInfo.startLine) || 1
                         },
-                        timestamp: new Date(this.editingCommentTimestamp).toISOString(),
+                        timestamp: new Date(this.editingCommentTimestamp).getTime(), // 转换为毫秒数
                         projectId,
                         fileId: this.currentCommentDetail.fileId
                     };
+                    
+                    // 规范化评论数据，确保字段一致性
+                    if (window.aicrStore && window.aicrStore.normalizeComment) {
+                        updateData = window.aicrStore.normalizeComment(updateData);
+                    }
                     
                     console.log('[CodeView] 更新评论数据:', updateData);
                     

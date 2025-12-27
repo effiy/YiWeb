@@ -86,6 +86,11 @@ async function fetchCommentsFromMongo(file) {
             comments = response.data;
         }
         
+        // 规范化评论数据，确保字段一致性
+        if (window.aicrStore && window.aicrStore.normalizeComment) {
+            comments = comments.map(comment => window.aicrStore.normalizeComment(comment));
+        }
+        
         console.log('[CommentPanel] 最终评论数据:', comments);
         console.log('[CommentPanel] 评论数量:', comments.length);
         console.log('[CommentPanel] 是否包含文件过滤:', !!file);
@@ -789,7 +794,7 @@ const createCommentPanel = async () => {
                         });
                         if (Array.isArray(response?.data) && response.data.length > 0) {
                             for (const item of response.data) {
-                                const commentObj = (item && typeof item === 'object') ? { ...item } : { content: String(item || '') };
+                                let commentObj = (item && typeof item === 'object') ? { ...item } : { content: String(item || '') };
                                 if (!commentObj.content) {
                                     const alt = item && typeof item === 'object' ? (item.content || item.text || item.body || item.message || item.comment) : null;
                                     if (alt) commentObj.content = String(alt);
@@ -798,7 +803,20 @@ const createCommentPanel = async () => {
                                 commentObj.projectId = commentObj.projectId || fromUserObj.projectId;
                                 commentObj.author = commentObj.author || fromUserObj.author;
                                 commentObj.status = commentObj.status || 'pending';
-                                commentObj.createdTime = commentObj.createdTime || new Date().toISOString();
+                                
+                                // 规范化评论数据，确保字段一致性
+                                if (window.aicrStore && window.aicrStore.normalizeComment) {
+                                    commentObj = window.aicrStore.normalizeComment(commentObj);
+                                } else {
+                                    // 如果没有规范化函数，手动设置字段
+                                    const content = String(commentObj.content || '').trim();
+                                    const timestamp = Date.now();
+                                    commentObj.content = content;
+                                    commentObj.text = content; // content 和 text 保持一致
+                                    commentObj.timestamp = timestamp;
+                                    commentObj.createdTime = timestamp; // 毫秒数
+                                    commentObj.createdAt = timestamp; // 毫秒数
+                                }
                                 commentObj.updatedTime = new Date().toISOString();
 
                                 try { if (Array.isArray(this.comments)) this.comments.push(commentObj); } catch (_) {}
@@ -1025,12 +1043,13 @@ const createCommentPanel = async () => {
                     try {
                         const { updateData } = await import('/apis/modules/crud.js');
                         
-                        const payload = {
+                        // 构建更新数据
+                        let payload = {
                             key: this.editingComment.key,
                             author: newAuthor,
                             projectId: projectId,
                             content: newContent,
-                            text: this.editingCommentText ? this.editingCommentText.trim() : null,
+                            text: newContent, // 确保 text 与 content 保持一致
                             rangeInfo: this.editingRangeInfo,
                             improvementText: this.editingImprovementText ? this.editingImprovementText.trim() : null,
                             type: this.editingCommentType || null,
@@ -1038,22 +1057,33 @@ const createCommentPanel = async () => {
                             updatedAt: new Date().toISOString()
                         };
                         
+                        // 规范化评论数据，确保字段一致性
+                        if (window.aicrStore && window.aicrStore.normalizeComment) {
+                            payload = window.aicrStore.normalizeComment(payload);
+                        }
+                        
                         const result = await updateData(url, payload);
                         console.log('[CommentPanel] 评论更新成功:', result);
 
-                        // 本地同步更新，提升体验
+                        // 本地同步更新，提升体验（使用规范化后的数据）
                         const idx = this.mongoComments.findIndex(c => (c.key || c.id) === this.editingComment.key);
                         if (idx !== -1) {
-                            this.mongoComments[idx] = { 
-                                ...this.mongoComments[idx], 
-                                author: newAuthor,
-                                content: newContent,
-                                text: this.editingCommentText ? this.editingCommentText.trim() : null,
-                                rangeInfo: this.editingRangeInfo,
-                                improvementText: this.editingImprovementText ? this.editingImprovementText.trim() : null,
-                                type: this.editingCommentType || null,
-                                status: this.editingCommentStatus
-                            };
+                            const normalizedComment = window.aicrStore && window.aicrStore.normalizeComment 
+                                ? window.aicrStore.normalizeComment({ 
+                                    ...this.mongoComments[idx], 
+                                    ...payload 
+                                })
+                                : { 
+                                    ...this.mongoComments[idx], 
+                                    author: newAuthor,
+                                    content: newContent,
+                                    text: newContent, // 确保 text 与 content 保持一致
+                                    rangeInfo: this.editingRangeInfo,
+                                    improvementText: this.editingImprovementText ? this.editingImprovementText.trim() : null,
+                                    type: this.editingCommentType || null,
+                                    status: this.editingCommentStatus
+                                };
+                            this.mongoComments[idx] = normalizedComment;
                         }
 
                         // 同步更新会话消息
@@ -1062,11 +1092,17 @@ const createCommentPanel = async () => {
                             if (fileId && projectId) {
                                 const { getSessionSyncService } = await import('/views/aicr/services/sessionSyncService.js');
                                 const sessionSync = getSessionSyncService();
-                                const updatedComment = {
-                                    ...this.editingComment,
-                                    ...payload,
-                                    key: this.editingComment.key
-                                };
+                                const updatedComment = window.aicrStore && window.aicrStore.normalizeComment
+                                    ? window.aicrStore.normalizeComment({
+                                        ...this.editingComment,
+                                        ...payload,
+                                        key: this.editingComment.key
+                                    })
+                                    : {
+                                        ...this.editingComment,
+                                        ...payload,
+                                        key: this.editingComment.key
+                                    };
                                 await sessionSync.syncCommentToMessage(updatedComment, fileId, projectId, false);
                                 console.log('[CommentPanel] 会话消息已同步更新');
                             }
@@ -1233,11 +1269,29 @@ const createCommentPanel = async () => {
 
             // 立即添加新评论到本地数据
             addCommentToLocalData(commentData) {
-                const newComment = {
+                let newComment = {
                     ...commentData,
-                    key: commentData.key || commentData.id || `comment_${Date.now()}_${Math.random()}`,
-                    timestamp: commentData.timestamp || new Date().toISOString()
+                    key: commentData.key || commentData.id || `comment_${Date.now()}_${Math.random()}`
                 };
+                
+                // 规范化评论数据，确保字段一致性
+                if (window.aicrStore && window.aicrStore.normalizeComment) {
+                    newComment = window.aicrStore.normalizeComment(newComment);
+                } else {
+                    // 如果没有规范化函数，手动设置字段
+                    const content = String(newComment.content || newComment.text || '').trim();
+                    const timestamp = newComment.timestamp || newComment.createdTime || newComment.createdAt || Date.now();
+                    // 确保时间戳是毫秒数
+                    const normalizedTimestamp = typeof timestamp === 'string' 
+                        ? new Date(timestamp).getTime() 
+                        : (timestamp < 1e12 ? timestamp * 1000 : timestamp);
+                    
+                    newComment.content = content;
+                    newComment.text = content; // content 和 text 保持一致
+                    newComment.timestamp = normalizedTimestamp;
+                    newComment.createdTime = normalizedTimestamp; // 毫秒数
+                    newComment.createdAt = normalizedTimestamp; // 毫秒数
+                }
                 
                 this.mongoComments = [newComment, ...this.mongoComments];
             },
@@ -1907,7 +1961,20 @@ const createCommentPanel = async () => {
                                  commentObj.projectId = commentObj.projectId || fromUserObj.projectId;
                                  commentObj.author = commentObj.author || fromUserObj.author;
                                  commentObj.status = commentObj.status || 'pending';
-                                 commentObj.createdTime = commentObj.createdTime || new Date().toISOString();
+                                 
+                                 // 规范化评论数据，确保字段一致性
+                                 if (window.aicrStore && window.aicrStore.normalizeComment) {
+                                     commentObj = window.aicrStore.normalizeComment(commentObj);
+                                 } else {
+                                     // 如果没有规范化函数，手动设置字段
+                                     const content = String(commentObj.content || commentObj.text || '').trim();
+                                     const timestamp = Date.now();
+                                     commentObj.content = content;
+                                     commentObj.text = content; // content 和 text 保持一致
+                                     commentObj.timestamp = timestamp;
+                                     commentObj.createdTime = timestamp; // 毫秒数
+                                     commentObj.createdAt = timestamp; // 毫秒数
+                                 }
                                  commentObj.updatedTime = new Date().toISOString();
 
                                  // 1) 立即加入本地UI
@@ -1924,16 +1991,26 @@ const createCommentPanel = async () => {
                                }
                              }
                              if (!__added) {
-                               const fallback = {
+                               let fallback = {
                                  content: text,
                                  fileId: fromUserObj.fileId,
                                  projectId: fromUserObj.projectId,
                                  author: fromUserObj.author,
                                  status: 'pending',
-                                 createdTime: new Date().toISOString(),
-                                 updatedTime: new Date().toISOString(),
+                                 timestamp: Date.now(), // 使用毫秒数
                                  rangeInfo
                                };
+                               
+                               // 规范化评论数据，确保字段一致性
+                               if (window.aicrStore && window.aicrStore.normalizeComment) {
+                                   fallback = window.aicrStore.normalizeComment(fallback);
+                               } else {
+                                   fallback.text = fallback.content; // content 和 text 保持一致
+                                   fallback.createdTime = fallback.timestamp; // 毫秒数
+                                   fallback.createdAt = fallback.timestamp; // 毫秒数
+                               }
+                               fallback.updatedTime = new Date().toISOString();
+                               
                                try { this.addCommentToLocalData(fallback); } catch (_) {}
                                try { const { postData } = await import('/apis/modules/crud.js'); await postData(`${window.API_URL}/mongodb/?cname=comments`, fallback); } catch (e) {}
                              }

@@ -1131,6 +1131,73 @@ export const createStore = () => {
     };
 
     /**
+     * 规范化评论数据，确保与会话消息格式保持一致
+     * 统一字段：content/text, timestamp/createdTime/createdAt, type
+     * @param {Object} comment - 评论对象
+     * @returns {Object} 规范化后的评论对象
+     */
+    const normalizeComment = (comment) => {
+        if (!comment || typeof comment !== 'object') return comment;
+        
+        // 统一 content 字段（优先使用 content，如果没有则使用 text）
+        const content = String(comment.content || comment.text || '').trim();
+        
+        // 统一 timestamp 字段（转换为毫秒数）
+        let timestamp = Date.now();
+        if (comment.timestamp) {
+            if (typeof comment.timestamp === 'string') {
+                const date = new Date(comment.timestamp);
+                timestamp = isNaN(date.getTime()) ? Date.now() : date.getTime();
+            } else if (typeof comment.timestamp === 'number') {
+                // 如果是秒级时间戳，转换为毫秒
+                timestamp = comment.timestamp < 1e12 ? comment.timestamp * 1000 : comment.timestamp;
+            }
+        } else if (comment.createdTime) {
+            if (typeof comment.createdTime === 'string') {
+                const date = new Date(comment.createdTime);
+                timestamp = isNaN(date.getTime()) ? Date.now() : date.getTime();
+            } else if (typeof comment.createdTime === 'number') {
+                timestamp = comment.createdTime < 1e12 ? comment.createdTime * 1000 : comment.createdTime;
+            }
+        } else if (comment.createdAt) {
+            if (typeof comment.createdAt === 'string') {
+                const date = new Date(comment.createdAt);
+                timestamp = isNaN(date.getTime()) ? Date.now() : date.getTime();
+            } else if (typeof comment.createdAt === 'number') {
+                timestamp = comment.createdAt < 1e12 ? comment.createdAt * 1000 : comment.createdAt;
+            }
+        }
+        
+        // 统一 type 字段
+        let type = comment.type;
+        if (!type) {
+            if (comment.role) {
+                const role = String(comment.role).toLowerCase();
+                type = (role === 'user' || role === 'me') ? 'user' : 'pet';
+            } else {
+                // 根据 author 判断
+                const author = String(comment.author || '').toLowerCase();
+                type = (author.includes('ai') || author.includes('助手') || author.includes('assistant')) ? 'pet' : 'user';
+            }
+        }
+        
+        // 返回规范化后的评论，确保所有相关字段保持一致
+        return {
+            ...comment,
+            // 统一的消息字段
+            type: type,
+            content: content,
+            timestamp: timestamp,
+            // 兼容字段（保持与 content 和 timestamp 一致）
+            text: content, // content 和 text 保持一致
+            createdTime: timestamp, // 毫秒数
+            createdAt: timestamp, // 毫秒数
+            // 保留其他字段
+            imageDataUrl: comment.imageDataUrl || comment.image || undefined
+        };
+    };
+
+    /**
      * 异步加载评论数据
      */
     const loadComments = async (projectId = null) => {
@@ -1170,7 +1237,8 @@ export const createStore = () => {
                 const response = await getData(url, {}, false);
                 
                 if (response && response.data && response.data.list) {
-                    comments.value = response.data.list;
+                    // 规范化评论数据，确保字段一致性
+                    comments.value = response.data.list.map(comment => normalizeComment(comment));
                     console.log(`[loadComments] 成功加载 ${comments.value.length} 条评论`);
                     console.log('[loadComments] 评论数据详情:', comments.value);
                     
@@ -1189,10 +1257,11 @@ export const createStore = () => {
                                 }
                             }
                             
-                            // 为每个文件的评论同步到会话消息
+                            // 为每个文件的评论同步到会话消息（使用规范化后的评论）
                             for (const [fileId, fileComments] of commentsByFile.entries()) {
                                 for (const comment of fileComments) {
-                                    await sessionSync.syncCommentToMessage(comment, fileId, project, false);
+                                    const normalizedComment = normalizeComment(comment);
+                                    await sessionSync.syncCommentToMessage(normalizedComment, fileId, project, false);
                                 }
                             }
                             console.log(`[loadComments] 已同步 ${comments.value.length} 条评论到会话消息`);
@@ -1678,6 +1747,7 @@ export const createStore = () => {
         createFile,
         renameItem,
         deleteItem,
+        normalizeComment,
         loadComments,
         loadCommenters,
         addCommenter,

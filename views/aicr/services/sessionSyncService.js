@@ -666,7 +666,7 @@ class SessionSyncService {
                         const normalizedMessages = this.normalizeMessages(session.messages || []);
                         for (let i = 0; i < normalizedMessages.length; i++) {
                             const message = normalizedMessages[i];
-                            const comment = {
+                            let comment = {
                                 key: `comment_${sessionId}_${i}_${message.timestamp}`,
                                 id: `comment_${sessionId}_${i}_${message.timestamp}`,
                                 // 统一的消息字段
@@ -684,6 +684,10 @@ class SessionSyncService {
                                 createdTime: message.timestamp, // 毫秒数
                                 createdAt: message.timestamp // 毫秒数
                             };
+                            // 使用规范化函数确保字段一致性（如果可用）
+                            if (window.aicrStore && window.aicrStore.normalizeComment) {
+                                comment = window.aicrStore.normalizeComment(comment);
+                            }
                             comments.push(comment);
                         }
                     }
