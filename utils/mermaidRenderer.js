@@ -1450,7 +1450,7 @@ window.addMermaidFullscreenInteractions = function(containerId) {
         
         currentScale = newScale;
         svg.style.transform = `translate(${currentTranslateX}px, ${currentTranslateY}px) scale(${currentScale})`;
-    });
+    }, { passive: false });
 
     // 鼠标拖拽
     svg.addEventListener('mousedown', (e) => {
@@ -1511,7 +1511,7 @@ window.addMermaidFullscreenInteractions = function(containerId) {
             lastTouchCenterX = (touch1.clientX + touch2.clientX) / 2;
             lastTouchCenterY = (touch1.clientY + touch2.clientY) / 2;
         }
-    });
+    }, { passive: false });
 
     container.addEventListener('touchmove', (e) => {
         e.preventDefault();
@@ -1550,7 +1550,7 @@ window.addMermaidFullscreenInteractions = function(containerId) {
             
             lastTouchDistance = currentDistance;
         }
-    });
+    }, { passive: false });
 
     container.addEventListener('touchend', () => {
         isDragging = false;

@@ -537,7 +537,7 @@ export async function openCreateCardModal(store) {
         label: '问题/目标描述', 
         type: 'text', 
         required: true,
-        placeholder: '请描述要解决的问题或目标（问题级需求，而非方案级需求）',
+        placeholder: '请描述要解决的问题或目标',
         hint: '提示：从用户视角描述问题，而非技术实现方案。例如："快速找到多间相邻的客房"而非"增加平面图功能"'
       },
       { 
@@ -557,16 +557,16 @@ export async function openCreateCardModal(store) {
         label: '输入要求（Who + Why）', 
         type: 'textarea', 
         required: false,
-        placeholder: '请描述需求的输入要求：\n- Who：谁的需求（需求提出者、使用者、影响者）\n- Why：解决什么问题（问题级需求描述）\n- 业务场景：需求发生的业务场景\n- 使用频率和影响范围',
-        hint: '提示：参考需求还原方法，明确 Who（谁的需求）和 Why（解决什么问题）'
+        placeholder: '请描述需求的输入要求',
+        hint: '提示：描述需求的输入要求'
       },
       { 
         key: 'output', 
         label: '输出要求（How）', 
         type: 'textarea', 
         required: false,
-        placeholder: '请描述解决方案的输出要求：\n- 解决方案概述（How）\n- 预期结果\n- 价值主张\n- 成本合适的解决方案',
-        hint: '提示：参考需求还原方法，明确 How（成本合适的解决方案）'
+        placeholder: '请描述解决方案的输出要求',
+        hint: '提示：描述解决方案的输出要求'
       }
     ];
 

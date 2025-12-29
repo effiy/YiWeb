@@ -130,7 +130,7 @@ const TaskEditor = {
                                         <textarea 
                                             id="taskInput"
                                             v-model="formData.input" 
-                                            placeholder="请描述业务步骤（重在人机交互、用户意图）：&#10;&#10;步骤1：用户意图描述&#10;步骤2：人机交互过程&#10;步骤3：系统响应&#10;步骤4：预期结果&#10;&#10;提示：重在人机交互而非人机界面，重在用户意图而非用户动作"
+                                            placeholder="请描述业务步骤（重在人机交互、用户意图）：&#10;&#10;用户意图描述&#10;人机交互过程&#10;系统响应&#10;预期结果&#10;&#10;提示：重在人机交互而非人机界面，重在用户意图而非用户动作"
                                             class="form-textarea input-output-textarea"
                                             rows="6"
                                             maxlength="500"
