@@ -286,9 +286,201 @@ export const createStore = () => {
                 fromSystem.value = null;
             }
             
-            // 直接使用MongoDB数据
-            featureCards.value = validMongoData;
-            logInfo('[Store] 更新featureCards，数量:', validMongoData.length);
+            // 调用 session 接口获取统计数据并更新 stat-number
+            try {
+                logInfo('[Store] ========== 开始统计流程 ==========');
+                
+                // 先收集所有卡片的 stat-label，用于调试
+                const allStatLabels = new Set();
+                validMongoData.forEach(card => {
+                    if (card.stats && Array.isArray(card.stats)) {
+                        card.stats.forEach(stat => {
+                            if (stat.label) {
+                                allStatLabels.add(stat.label);
+                            }
+                        });
+                    }
+                });
+                logInfo('[Store] 所有需要统计的 stat-label:', Array.from(allStatLabels));
+                
+                logInfo('[Store] 开始调用 session 接口获取统计数据');
+                const sessionResponse = await getData('https://api.effiy.cn/session/', {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                logInfo('[Store] Session 接口原始返回数据:', JSON.stringify(sessionResponse, null, 2));
+                
+                // 处理 session 数据，统计 tags 中的 stat-label
+                let sessionList = [];
+                if (Array.isArray(sessionResponse)) {
+                    sessionList = sessionResponse;
+                } else if (sessionResponse?.data) {
+                    if (Array.isArray(sessionResponse.data)) {
+                        sessionList = sessionResponse.data;
+                    } else if (sessionResponse.data?.list && Array.isArray(sessionResponse.data.list)) {
+                        sessionList = sessionResponse.data.list;
+                    }
+                } else if (sessionResponse?.list && Array.isArray(sessionResponse.list)) {
+                    sessionList = sessionResponse.list;
+                }
+                
+                logInfo('[Store] Session 列表数量:', sessionList.length);
+                logInfo('[Store] Session 列表前3条示例:', sessionList.slice(0, 3));
+                
+                // 规范化标签名称（去除空格、转小写，用于匹配）
+                const normalizeTagName = (tagName) => {
+                    if (!tagName) return '';
+                    const str = String(tagName);
+                    return str.trim().toLowerCase();
+                };
+                
+                // 统计所有 stat-label 的出现次数（使用规范化后的键）
+                const statLabelCounts = {};
+                let totalTagsProcessed = 0;
+                
+                // 遍历所有 session 数据
+                sessionList.forEach((session, index) => {
+                    if (!session) return;
+                    
+                    // 支持多种 tags 格式
+                    let tagsArray = [];
+                    if (Array.isArray(session.tags)) {
+                        tagsArray = session.tags;
+                    } else if (typeof session.tags === 'string') {
+                        // 如果是字符串，尝试分割
+                        tagsArray = session.tags.split(',').map(t => t.trim()).filter(t => t);
+                    } else if (session.tags) {
+                        // 如果是其他类型，尝试转换
+                        logWarn(`[Store] Session ${index} tags 格式异常:`, typeof session.tags, session.tags);
+                        // 尝试将对象转换为数组
+                        if (typeof session.tags === 'object' && !Array.isArray(session.tags)) {
+                            tagsArray = [session.tags];
+                        }
+                    }
+                    
+                    if (tagsArray.length > 0) {
+                        logInfo(`[Store] Session ${index} 有 ${tagsArray.length} 个 tags:`, tagsArray);
+                    }
+                    
+                    tagsArray.forEach(tag => {
+                        // 如果 tag 是字符串，直接使用；如果是对象，使用 name 或 label 字段
+                        let tagName = '';
+                        if (typeof tag === 'string') {
+                            tagName = tag.trim();
+                        } else if (tag && typeof tag === 'object') {
+                            // 尝试多种可能的字段名
+                            tagName = tag.name || tag.label || tag.value || tag.tag || tag.text || tag.title;
+                            // 如果还是没有找到，尝试获取对象的第一个字符串值
+                            if (!tagName) {
+                                const values = Object.values(tag).filter(v => typeof v === 'string' && v.trim());
+                                if (values.length > 0) {
+                                    tagName = values[0].trim();
+                                } else {
+                                    tagName = String(tag);
+                                }
+                            }
+                        } else if (tag !== null && tag !== undefined) {
+                            tagName = String(tag).trim();
+                        }
+                        
+                        if (tagName) {
+                            // 使用规范化后的名称作为键进行统计
+                            const normalizedKey = normalizeTagName(tagName);
+                            if (normalizedKey) {
+                                statLabelCounts[normalizedKey] = (statLabelCounts[normalizedKey] || 0) + 1;
+                                totalTagsProcessed++;
+                                if (statLabelCounts[normalizedKey] <= 3) {
+                                    logInfo(`[Store] 统计标签 "${tagName}" (规范化: "${normalizedKey}")，当前计数: ${statLabelCounts[normalizedKey]}`);
+                                }
+                            } else {
+                                logWarn(`[Store] 标签名称规范化后为空: "${tagName}"`);
+                            }
+                        } else {
+                            logWarn(`[Store] Session ${index} 标签提取失败:`, tag);
+                        }
+                    });
+                });
+                
+                logInfo(`[Store] 总共处理了 ${totalTagsProcessed} 个标签`);
+                logInfo('[Store] 统计结果（规范化键）:', statLabelCounts);
+                logInfo('[Store] 统计结果键列表:', Object.keys(statLabelCounts));
+                
+                // 特别检查 rules 标签的统计情况
+                if (statLabelCounts['rules']) {
+                    logInfo(`[Store] ✓ 成功统计到 "rules" 标签，计数: ${statLabelCounts['rules']}`);
+                } else {
+                    logWarn(`[Store] ✗ 未统计到 "rules" 标签，当前所有标签键:`, Object.keys(statLabelCounts));
+                }
+                
+                // 更新每个卡片的 stat-number
+                let updateCount = 0;
+                validMongoData.forEach((card, cardIndex) => {
+                    if (card.stats && Array.isArray(card.stats)) {
+                        card.stats.forEach((stat, statIndex) => {
+                            if (stat.label) {
+                                // 规范化 stat.label 用于匹配
+                                const normalizedLabel = normalizeTagName(stat.label);
+                                
+                                // 根据规范化后的 stat-label 查找对应的统计数量
+                                const count = normalizedLabel ? (statLabelCounts[normalizedLabel] || 0) : 0;
+                                
+                                // 更新 stat-number
+                                const oldNumber = stat.number || '0';
+                                stat.number = count.toString();
+                                updateCount++;
+                                
+                                // 特别关注 rules 标签的匹配情况
+                                if (normalizedLabel === 'rules') {
+                                    if (count > 0) {
+                                        logInfo(`[Store] ✓ 成功匹配 "rules" 标签，卡片[${cardIndex}] "${card.title}" 统计项[${statIndex}]: ${oldNumber} -> ${count}`);
+                                    } else {
+                                        logWarn(`[Store] ✗ "rules" 标签匹配失败，卡片[${cardIndex}] "${card.title}" 统计项[${statIndex}]，可用键:`, Object.keys(statLabelCounts));
+                                    }
+                                }
+                                
+                                if (count > 0 || normalizedLabel) {
+                                    logInfo(`[Store] 卡片[${cardIndex}] "${card.title}" 统计项[${statIndex}] "${stat.label}" (规范化: "${normalizedLabel}"): ${oldNumber} -> ${count}`);
+                                }
+                                
+                                // 如果匹配失败，输出调试信息
+                                if (count === 0 && normalizedLabel) {
+                                    const matchingKeys = Object.keys(statLabelCounts).filter(k => k.includes(normalizedLabel) || normalizedLabel.includes(k));
+                                    if (matchingKeys.length > 0) {
+                                        logWarn(`[Store] 未找到精确匹配，但找到相似键:`, matchingKeys);
+                                    } else if (normalizedLabel !== 'rules') {
+                                        // 对于非 rules 标签，只在没有相似键时输出警告
+                                        logWarn(`[Store] 标签 "${stat.label}" (规范化: "${normalizedLabel}") 未找到匹配，统计键列表:`, Object.keys(statLabelCounts));
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                logInfo(`[Store] 共更新了 ${updateCount} 个统计项`);
+                logInfo('[Store] ========== 统计流程完成 ==========');
+            } catch (sessionErr) {
+                logError('[Store] 调用 session 接口失败，使用原始统计数据:', sessionErr);
+                logError('[Store] 错误堆栈:', sessionErr.stack);
+                // 如果 session 接口调用失败，不影响卡片数据的显示，只是不更新统计数据
+            }
+            
+            // 使用更新后的数据设置 featureCards（使用展开运算符确保响应式更新）
+            // 深拷贝确保 Vue 能检测到变化
+            const updatedCards = validMongoData.map(card => ({
+                ...card,
+                stats: card.stats ? card.stats.map(stat => ({
+                    ...stat,
+                    number: stat.number || '0'
+                })) : []
+            }));
+            
+            featureCards.value = updatedCards;
+            logInfo('[Store] 更新featureCards，数量:', updatedCards.length);
             
             logInfo('[Store] 最终数据:', validMongoData);
         } catch (err) {
