@@ -72,12 +72,37 @@ class SessionSyncService {
             projectId = 'default';
         }
         
+        // 提取文件扩展名
+        let pathWithoutExt = filePath;
+        let fileExt = '';
+        const lastDotIndex = filePath.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            pathWithoutExt = filePath.substring(0, lastDotIndex);
+            fileExt = filePath.substring(lastDotIndex + 1);
+        }
+        
+        // 如果文件路径以项目ID开头，去除项目ID前缀（避免重复）
+        // 例如：knowledge/constructing/test.md -> constructing/test.md
+        if (pathWithoutExt.startsWith(`${projectId}/`)) {
+            pathWithoutExt = pathWithoutExt.substring(projectId.length + 1);
+        } else if (pathWithoutExt.startsWith(projectId) && pathWithoutExt.length > projectId.length) {
+            const nextChar = pathWithoutExt[projectId.length];
+            if (nextChar === '/' || nextChar === '_') {
+                pathWithoutExt = pathWithoutExt.substring(projectId.length).replace(/^[\/_]+/, '');
+            }
+        }
+        
         // 规范化文件路径：替换特殊字符为下划线，但保留路径结构
-        const normalizedPath = String(filePath)
+        let normalizedPath = pathWithoutExt
             .replace(/[^a-zA-Z0-9\/]/g, '_')  // 替换特殊字符
             .replace(/\/+/g, '_')             // 将斜杠替换为下划线
             .replace(/^_+|_+$/g, '')          // 移除首尾下划线
             .replace(/_+/g, '_');             // 合并连续下划线
+        
+        // 如果有扩展名，添加到末尾（用下划线分隔）
+        if (fileExt) {
+            normalizedPath = `${normalizedPath}_${fileExt}`;
+        }
         
         return `aicr_${projectId}_${normalizedPath}`;
     }
@@ -94,9 +119,37 @@ class SessionSyncService {
         const prefix = `aicr_${projectId}_`;
         if (!sessionId.startsWith(prefix)) return null;
         
-        const pathPart = sessionId.substring(prefix.length);
+        let pathPart = sessionId.substring(prefix.length);
+        
+        // 处理扩展名（格式：path_md -> path.md）
+        let fileExt = '';
+        const lastUnderscoreIndex = pathPart.lastIndexOf('_');
+        if (lastUnderscoreIndex > 0) {
+            const possibleExt = pathPart.substring(lastUnderscoreIndex + 1);
+            // 检查最后一部分是否是扩展名（通常是 1-5 个字符的字母数字）
+            if (possibleExt.length <= 5 && /^[a-zA-Z0-9]+$/.test(possibleExt)) {
+                pathPart = pathPart.substring(0, lastUnderscoreIndex);
+                fileExt = possibleExt;
+            }
+        }
+        
         // 将下划线还原为斜杠
-        return pathPart.replace(/_/g, '/');
+        let filePath = pathPart.replace(/_/g, '/');
+        
+        // 添加扩展名
+        if (fileExt) {
+            filePath = `${filePath}.${fileExt}`;
+        } else if (!filePath.endsWith('.md')) {
+            // 如果没有扩展名，默认添加 .md
+            filePath = `${filePath}.md`;
+        }
+        
+        // 确保文件路径以项目ID开头
+        if (!filePath.startsWith(`${projectId}/`)) {
+            filePath = `${projectId}/${filePath}`;
+        }
+        
+        return filePath;
     }
 
     /**
