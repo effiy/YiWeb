@@ -133,8 +133,15 @@ class SessionSyncService {
             }
         }
         
-        // 将下划线还原为斜杠
-        let filePath = pathPart.replace(/_/g, '/');
+        // 注意：由于文件名中可能包含下划线，我们无法准确区分哪些下划线是路径分隔符
+        // 因此，我们保持下划线不变，将其作为文件名的一部分
+        // 这样，如果原始路径是 knowledge/constructing/codereview_test.md
+        // 解析后仍然是 knowledge/constructing/codereview_test.md（正确）
+        // 但如果原始路径是 knowledge/constructing/codereview/test.md
+        // 解析后会变成 knowledge/constructing/codereview_test.md（错误，但这是无法避免的）
+        
+        // 保持下划线不变，不转换为斜杠
+        let filePath = pathPart;
         
         // 添加扩展名
         if (fileExt) {
