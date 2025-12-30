@@ -57,14 +57,14 @@ class SessionSyncService {
 
     /**
      * 生成会话ID（基于文件路径）
-     * 格式：aicr_{projectId}_{filePath}（文件路径中的特殊字符替换为下划线）
+     * 格式：{projectId}_{filePath}（文件路径中的特殊字符替换为下划线）
      * @param {string} filePath - 文件路径
      * @param {string} projectId - 项目ID
      * @returns {string} 会话ID
      */
     generateSessionId(filePath, projectId) {
         if (!filePath) {
-            return `aicr_${projectId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            return `${projectId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         }
         
         if (!projectId) {
@@ -104,7 +104,7 @@ class SessionSyncService {
             normalizedPath = `${normalizedPath}_${fileExt}`;
         }
         
-        return `aicr_${projectId}_${normalizedPath}`;
+        return `${projectId}_${normalizedPath}`;
     }
 
     /**
@@ -116,7 +116,7 @@ class SessionSyncService {
     extractFilePathFromSessionId(sessionId, projectId) {
         if (!sessionId || !projectId) return null;
         
-        const prefix = `aicr_${projectId}_`;
+        const prefix = `${projectId}_`;
         if (!sessionId.startsWith(prefix)) return null;
         
         let pathPart = sessionId.substring(prefix.length);
@@ -692,10 +692,10 @@ class SessionSyncService {
                     sessions = response.data.list;
                 }
 
-                // 过滤出属于当前项目的会话（通过会话ID前缀匹配：aicr_{projectId}_）
+                // 过滤出属于当前项目的会话（通过会话ID前缀匹配：{projectId}_）
                 const projectSessions = sessions.filter(session => {
                     const sessionId = String(session.id || '');
-                    return sessionId.startsWith(`aicr_${projectId}_`);
+                    return sessionId.startsWith(`${projectId}_`);
                 });
 
                 console.log(`[SessionSync] 从会话系统加载到 ${projectSessions.length} 个会话`);

@@ -2061,7 +2061,7 @@ export const useMethods = (store) => {
                     }
 
                     // 生成会话 ID（使用 fileId 作为基础）
-                    const sessionId = `aicr_${Date.now()}_${fileId.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    const sessionId = `${Date.now()}_${fileId.replace(/[^a-zA-Z0-9]/g, '_')}`;
                     
                     // 获取当前时间戳
                     const now = Date.now();
