@@ -398,63 +398,24 @@ export const useMethods = (store) => {
                     return EXCLUDED_FILES.includes(name);
                 };
                 // 计算是否需要去掉打包时多出的根目录：
-                // - 忽略排除项后再判断统一前缀
-                // - 优先剥离 projectId（兼容旧格式 projectId/versionId，但只处理 projectId）
-                // - 否则剥离所有条目共有的单一（或多级）根目录（最多两级，避免过度剥离）
-                const normalizedAll = entries.map(e => normalizePathForFilter(e.path)).filter(Boolean);
-                const candidates = normalizedAll.filter(p => !hasExcludedSegment(p) && !isExcludedFile(p));
-                const basis = candidates.length > 0 ? candidates : normalizedAll;
-                const splitToSegs = (p) => p.split('/').filter(Boolean);
-                const listSegs = basis.map(splitToSegs);
-                
-                console.log('[路径剥离] 原始路径样本:', normalizedAll.slice(0, 5));
-                console.log('[路径剥离] 过滤后路径样本:', candidates.slice(0, 5));
-                console.log('[路径剥离] 路径段样本:', listSegs.slice(0, 5));
-                
-                const allStartsWith = (prefixSegs) => {
-                    if (!prefixSegs || prefixSegs.length === 0) return false;
-                    return listSegs.length > 0 && listSegs.every(segs => prefixSegs.every((s, i) => segs[i] === s));
-                };
-                let stripSegs = [];
-                // 优先匹配 projectId 前缀
-                if (projectId && allStartsWith([projectId])) {
-                    stripSegs = [projectId];
-                    console.log('[路径剥离] 匹配项目前缀:', stripSegs);
-                } else {
-                    // 退化策略：取所有条目的最长公共前缀（按段），但更保守
-                    if (listSegs.length > 0) {
-                        const first = listSegs[0].slice();
-                        let common = [];
-                        for (let i = 0; i < first.length; i++) {
-                            const candidate = first[i];
-                            const ok = listSegs.every(segs => segs[i] === candidate);
-                            if (ok) common.push(candidate); else break;
-                        }
-                        
-                        // 更保守的剥离策略：
-                        // 1. 如果公共前缀只有1个段，且是常见的项目根目录名，则不剥离
-                        // 2. 如果公共前缀是2个段，且第一个是项目名，则只剥离第一个
-                        // 3. 避免剥离 "src", "lib", "app" 等常见的源码目录
-                        const commonSrcDirs = ['src', 'lib', 'app', 'components', 'utils', 'views', 'pages'];
-                        
-                        if (common.length > 0) {
-                            // 如果公共前缀是常见的源码目录，不剥离
-                            if (common.length === 1 && commonSrcDirs.includes(common[0])) {
-                                stripSegs = [];
-                                console.log('[路径剥离] 跳过常见源码目录剥离:', common[0]);
-                            } else if (common.length === 2 && commonSrcDirs.includes(common[1])) {
-                                // 如果第二段是源码目录，只剥离第一段
-                                stripSegs = [common[0]];
-                                console.log('[路径剥离] 只剥离项目名，保留源码目录:', stripSegs);
-                            } else {
-                                // 其他情况，最多剥离两级
-                                stripSegs = common.slice(0, Math.min(2, common.length));
-                                console.log('[路径剥离] 使用公共前缀:', stripSegs);
-                            }
-                        }
+                // 只剥离 zip 文件名对应的项目目录（projectId）一层，确保只保留 zip 文件名的目录
+                let STRIP_PREFIX = '';
+                if (projectId) {
+                    // 检查所有文件路径是否都以 projectId 开头
+                    const normalizedAll = entries.map(e => normalizePathForFilter(e.path)).filter(Boolean);
+                    const allStartWithProjectId = normalizedAll.length > 0 && 
+                        normalizedAll.every(p => {
+                            const parts = p.split('/').filter(Boolean);
+                            return parts.length > 0 && parts[0] === projectId;
+                        });
+                    
+                    if (allStartWithProjectId) {
+                        STRIP_PREFIX = projectId + '/';
+                        console.log('[路径剥离] 匹配项目前缀，只剥离一层:', STRIP_PREFIX);
+                    } else {
+                        console.log('[路径剥离] 文件路径不以项目名开头，不剥离前缀');
                     }
                 }
-                const STRIP_PREFIX = stripSegs.length > 0 ? (stripSegs.join('/') + '/') : '';
                 console.log('[路径剥离] 最终剥离前缀:', STRIP_PREFIX);
                 let skippedExcluded = 0;
                 let skippedImages = 0;
@@ -479,21 +440,6 @@ export const useMethods = (store) => {
                         // 特别关注 MoreButton.vue 的路径剥离
                         if (path.includes('MoreButton.vue')) {
                             console.log(`[文件处理] MoreButton.vue 路径剥离: "${originalPath}" -> "${normPath}"`);
-                        }
-                    }
-                    
-                    // 额外处理：如果 normPath 仍然以 projectId 开头，继续剥离（处理重复的项目名）
-                    // 确保最终路径不包含 projectId，只保留相对路径
-                    if (projectId && normPath) {
-                        const pathParts = normPath.split('/').filter(Boolean);
-                        // 去除所有连续的重复 projectId 前缀
-                        while (pathParts.length > 0 && pathParts[0].toLowerCase() === projectId.toLowerCase()) {
-                            pathParts.shift();
-                        }
-                        // 如果所有部分都被移除了，说明路径就是 projectId，保留为空（将在根目录）
-                        normPath = pathParts.length > 0 ? pathParts.join('/') : '';
-                        if (originalPath !== normPath) {
-                            console.log(`[文件处理] 去除重复项目名前缀: "${originalPath}" -> "${normPath}"`);
                         }
                     }
                     
