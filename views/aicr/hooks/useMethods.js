@@ -482,6 +482,21 @@ export const useMethods = (store) => {
                         }
                     }
                     
+                    // 额外处理：如果 normPath 仍然以 projectId 开头，继续剥离（处理重复的项目名）
+                    // 确保最终路径不包含 projectId，只保留相对路径
+                    if (projectId && normPath) {
+                        const pathParts = normPath.split('/').filter(Boolean);
+                        // 去除所有连续的重复 projectId 前缀
+                        while (pathParts.length > 0 && pathParts[0].toLowerCase() === projectId.toLowerCase()) {
+                            pathParts.shift();
+                        }
+                        // 如果所有部分都被移除了，说明路径就是 projectId，保留为空（将在根目录）
+                        normPath = pathParts.length > 0 ? pathParts.join('/') : '';
+                        if (originalPath !== normPath) {
+                            console.log(`[文件处理] 去除重复项目名前缀: "${originalPath}" -> "${normPath}"`);
+                        }
+                    }
+                    
                     if (!normPath) {
                         console.log(`[文件处理] 跳过空路径文件: "${originalPath}"`);
                         if (path.includes('MoreButton.vue')) {
