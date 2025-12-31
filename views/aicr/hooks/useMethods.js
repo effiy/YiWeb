@@ -398,22 +398,64 @@ export const useMethods = (store) => {
                     return EXCLUDED_FILES.includes(name);
                 };
                 // 计算是否需要去掉打包时多出的根目录：
-                // 只剥离 zip 文件名对应的项目目录（projectId）一层，确保只保留 zip 文件名的目录
+                // 找出所有文件路径的最长公共前缀，如果第一层是 projectId，则剥离整个公共前缀
+                // 这样可以确保导入导出的目录结构保持一致
                 let STRIP_PREFIX = '';
-                if (projectId) {
-                    // 检查所有文件路径是否都以 projectId 开头
-                    const normalizedAll = entries.map(e => normalizePathForFilter(e.path)).filter(Boolean);
-                    const allStartWithProjectId = normalizedAll.length > 0 && 
-                        normalizedAll.every(p => {
-                            const parts = p.split('/').filter(Boolean);
-                            return parts.length > 0 && parts[0] === projectId;
-                        });
+                const normalizedAll = entries.map(e => normalizePathForFilter(e.path)).filter(Boolean);
+                
+                if (normalizedAll.length > 0) {
+                    // 找出所有路径的最长公共前缀
+                    const findCommonPrefix = (paths) => {
+                        if (paths.length === 0) return '';
+                        if (paths.length === 1) {
+                            const parts = paths[0].split('/').filter(Boolean);
+                            return parts.length > 0 ? parts[0] + '/' : '';
+                        }
+                        
+                        // 以第一个路径为基准
+                        const firstParts = paths[0].split('/').filter(Boolean);
+                        let commonParts = [];
+                        
+                        for (let i = 0; i < firstParts.length; i++) {
+                            const segment = firstParts[i];
+                            // 检查所有路径是否都有这个段
+                            const allHaveSegment = paths.every(p => {
+                                const parts = p.split('/').filter(Boolean);
+                                return parts.length > i && parts[i] === segment;
+                            });
+                            
+                            if (allHaveSegment) {
+                                commonParts.push(segment);
+                            } else {
+                                break;
+                            }
+                        }
+                        
+                        return commonParts.length > 0 ? commonParts.join('/') + '/' : '';
+                    };
                     
-                    if (allStartWithProjectId) {
-                        STRIP_PREFIX = projectId + '/';
-                        console.log('[路径剥离] 匹配项目前缀，只剥离一层:', STRIP_PREFIX);
-                    } else {
-                        console.log('[路径剥离] 文件路径不以项目名开头，不剥离前缀');
+                    const commonPrefix = findCommonPrefix(normalizedAll);
+                    console.log('[路径剥离] 找到公共前缀:', commonPrefix);
+                    
+                    // 如果所有文件都有公共前缀，且第一层是 projectId，则剥离整个公共前缀
+                    // 这样可以确保导入导出的目录结构保持一致
+                    // 例如：如果 zip 中有 projectName/extraDir/file.txt，公共前缀是 projectName/extraDir/
+                    // 剥离后得到 file.txt，与导出时的结构一致
+                    if (commonPrefix && projectId) {
+                        const prefixParts = commonPrefix.split('/').filter(Boolean);
+                        
+                        // 如果公共前缀的第一层是 projectId，则剥离整个公共前缀（包括所有层级）
+                        if (prefixParts.length > 0 && prefixParts[0] === projectId) {
+                            STRIP_PREFIX = commonPrefix;
+                            console.log('[路径剥离] 公共前缀以项目名开头，剥离整个公共前缀:', STRIP_PREFIX);
+                        } else {
+                            console.log('[路径剥离] 公共前缀不以项目名开头，不剥离');
+                        }
+                    } else if (commonPrefix) {
+                        // 如果没有 projectId，但所有文件都有公共前缀，也剥离它
+                        // 这可能是打包时多出的目录层级
+                        STRIP_PREFIX = commonPrefix;
+                        console.log('[路径剥离] 剥离公共前缀（无项目名）:', STRIP_PREFIX);
                     }
                 }
                 console.log('[路径剥离] 最终剥离前缀:', STRIP_PREFIX);
