@@ -18,6 +18,7 @@
 import { postData, getData, deleteData } from '/apis/index.js';
 import { getAuthHeaders } from '/apis/helper/authUtils.js';
 import { safeExecuteAsync, createError, ErrorTypes } from '/utils/error.js';
+import { normalizeFilePath, normalizeFileObject, extractFileName, extractDirPath } from '/views/aicr/utils/fileFieldNormalizer.js';
 
 class SessionSyncService {
     constructor() {
@@ -166,8 +167,15 @@ class SessionSyncService {
      * @returns {Object} 会话数据（符合 YiPet 格式）
      */
     fileToSession(file, projectId) {
-        const filePath = file.fileId || file.id || file.path || '';
-        const fileName = this.extractFileName(filePath);
+        // 使用统一的字段规范化工具
+        const normalizedFile = normalizeFileObject(file, projectId);
+        if (!normalizedFile) {
+            console.warn('[fileToSession] 无法规范化文件对象:', file);
+            return null;
+        }
+        
+        const filePath = normalizedFile.fileId || normalizedFile.path || '';
+        const fileName = extractFileName(filePath);
         let tags = this.extractTagsFromPath(filePath);
         const sessionId = this.generateSessionId(filePath, projectId);
         
@@ -191,7 +199,7 @@ class SessionSyncService {
             title: fileName,
             pageTitle: fileName,
             pageDescription: `文件：${filePath}`,
-            pageContent: String(file.content || ''),
+            pageContent: String(normalizedFile.content || ''),
             messages: [], // 消息将从评论中同步
             tags: tags,
             isFavorite: false,
@@ -311,6 +319,10 @@ class SessionSyncService {
             }
 
             const sessionData = this.fileToSession(file, projectId);
+            if (!sessionData) {
+                console.warn('[SessionSync] 无法创建会话数据，跳过同步');
+                return { error: '无法创建会话数据' };
+            }
             
             // 检查会话是否已存在
             const existingSession = await this.getSession(sessionData.id);

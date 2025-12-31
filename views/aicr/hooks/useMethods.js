@@ -7,6 +7,15 @@
  * @returns {Object} 方法集合
  */
 import { safeExecute, createError, ErrorTypes, showSuccessMessage } from '/utils/error.js';
+import { 
+    normalizeFilePath, 
+    normalizeFileObject, 
+    normalizeTreeNode,
+    extractFileName,
+    extractDirPath,
+    buildFullFilePath,
+    extractFileIdFromFullPath
+} from '/views/aicr/utils/fileFieldNormalizer.js';
 
 export const useMethods = (store) => {
     // 添加调试信息
@@ -529,15 +538,22 @@ export const useMethods = (store) => {
                             ? new TextEncoder().encode(content).length
                             : ((content || '').length));
 
-                    filesPayload.push({
-                        projectId,
+                    // 使用统一的字段规范化工具
+                    const normalizedFile = normalizeFileObject({
                         fileId: normPath,
                         id: normPath,
                         path: normPath,
-                        name: normPath.split('/').pop(),
+                        name: extractFileName(normPath),
                         content: content || '',
-                        size: payloadSize
-                    });
+                        size: payloadSize,
+                        type: 'file'
+                    }, projectId);
+                    
+                    if (normalizedFile) {
+                        // 确保 projectId 字段存在
+                        normalizedFile.projectId = projectId;
+                        filesPayload.push(normalizedFile);
+                    }
                     processed++;
                     
                     // 特别确认 MoreButton.vue 的处理结果
@@ -572,27 +588,11 @@ export const useMethods = (store) => {
                 const folderMap = new Map();
                 folderMap.set('', root);
                 
-                // 改进的路径规范化函数
-                const normalizePath = (path) => {
-                    if (!path || typeof path !== 'string') return '';
-                    return String(path)
-                        .replace(/\\/g, '/')           // 统一使用正斜杠
-                        .replace(/^\/+/, '')           // 移除开头的斜杠
-                        .replace(/\/+/g, '/')          // 合并多个连续斜杠
-                        .replace(/\/$/, '');           // 移除结尾的斜杠（除非是根路径）
-                };
+                // 使用统一的路径规范化函数
+                const normalizePath = (path) => normalizeFilePath(path, null);
                 
                 // 确保路径不包含 projectId（用于文件树节点的 id）
-                const removeProjectIdPrefix = (path) => {
-                    if (!path || !projectId) return path;
-                    const normalized = normalizePath(path);
-                    const parts = normalized.split('/').filter(Boolean);
-                    // 去除所有开头的 projectId
-                    while (parts.length > 0 && parts[0].toLowerCase() === projectId.toLowerCase()) {
-                        parts.shift();
-                    }
-                    return parts.length > 0 ? parts.join('/') : '';
-                };
+                const removeProjectIdPrefix = (path) => normalizeFilePath(path, projectId);
                 
                 // 改进的文件夹确保函数 - 修复递归创建逻辑
                 const ensureFolder = (folderPath) => {
@@ -623,15 +623,18 @@ export const useMethods = (store) => {
                         currentPath = currentPath ? `${currentPath}/${segment}` : segment;
                         
                         if (!folderMap.has(currentPath)) {
-                            const node = { 
-                                id: currentPath,  // 不包含 projectId
-                                name: segment, 
-                                type: 'folder', 
-                                children: [],
-                                path: currentPath  // 确保path字段存在
-                            };
-                            parent.children.push(node);
-                            folderMap.set(currentPath, node);
+                            // 使用统一的节点规范化工具创建文件夹节点
+                            const node = normalizeTreeNode({
+                                id: currentPath,
+                                name: segment,
+                                type: 'folder',
+                                children: []
+                            }, projectId);
+                            
+                            if (node) {
+                                parent.children.push(node);
+                                folderMap.set(currentPath, node);
+                            }
                             
                             // 特别关注深层次文件夹的创建
                             if (pathSegments.length > 3) {
@@ -679,15 +682,14 @@ export const useMethods = (store) => {
                     // 确保父目录存在
                     const parent = ensureFolder(dir);
                     
-                    // 创建文件节点（id 不包含 projectId）
-                    const fileNode = { 
-                        id: filePathWithoutProjectId,  // 不包含 projectId
-                        name: f.name, 
-                        type: 'file', 
-                        size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)), 
-                        modified: Date.now(),
-                        path: filePathWithoutProjectId  // 确保path字段存在，不包含 projectId
-                    };
+                    // 使用统一的节点规范化工具创建文件节点
+                    const fileNode = normalizeTreeNode({
+                        id: filePathWithoutProjectId,
+                        name: f.name,
+                        type: 'file',
+                        size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)),
+                        modified: Date.now()
+                    }, projectId);
                     
                     parent.children.push(fileNode);
                     
@@ -752,25 +754,9 @@ export const useMethods = (store) => {
                 const mergedFolderMap = new Map();
                 mergedFolderMap.set('', mergedRoot);
                 
-                // 使用相同的规范化函数
-                const normalizePathForTree = (path) => {
-                    if (!path || typeof path !== 'string') return '';
-                    return String(path)
-                        .replace(/\\/g, '/')
-                        .replace(/^\/+/, '')
-                        .replace(/\/+/g, '/')
-                        .replace(/\/$/, '');
-                };
-                
-                const removeProjectIdPrefixForTree = (path) => {
-                    if (!path || !projectId) return path;
-                    const normalized = normalizePathForTree(path);
-                    const parts = normalized.split('/').filter(Boolean);
-                    while (parts.length > 0 && parts[0].toLowerCase() === projectId.toLowerCase()) {
-                        parts.shift();
-                    }
-                    return parts.length > 0 ? parts.join('/') : '';
-                };
+                // 使用统一的规范化函数
+                const normalizePathForTree = (path) => normalizeFilePath(path, null);
+                const removeProjectIdPrefixForTree = (path) => normalizeFilePath(path, projectId);
                 
                 const ensureFolderForTree = (folderPath) => {
                     const norm = normalizePathForTree(folderPath);
@@ -790,15 +776,18 @@ export const useMethods = (store) => {
                         currentPath = currentPath ? `${currentPath}/${segment}` : segment;
                         
                         if (!mergedFolderMap.has(currentPath)) {
-                            const node = {
+                            // 使用统一的节点规范化工具创建文件夹节点
+                            const node = normalizeTreeNode({
                                 id: currentPath,
                                 name: segment,
                                 type: 'folder',
-                                children: [],
-                                path: currentPath
-                            };
-                            parent.children.push(node);
-                            mergedFolderMap.set(currentPath, node);
+                                children: []
+                            }, projectId);
+                            
+                            if (node) {
+                                parent.children.push(node);
+                                mergedFolderMap.set(currentPath, node);
+                            }
                         }
                         parent = mergedFolderMap.get(currentPath);
                     }
@@ -826,15 +815,18 @@ export const useMethods = (store) => {
                     );
                     
                     if (!existingFileNode) {
-                        const fileNode = {
+                        // 使用统一的节点规范化工具创建文件节点
+                        const fileNode = normalizeTreeNode({
                             id: filePathWithoutProjectId,
                             name: f.name,
                             type: 'file',
                             size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)),
-                            modified: Date.now(),
-                            path: filePathWithoutProjectId
-                        };
-                        parent.children.push(fileNode);
+                            modified: Date.now()
+                        }, projectId);
+                        
+                        if (fileNode) {
+                            parent.children.push(fileNode);
+                        }
                     } else {
                         // 更新现有文件节点的信息
                         existingFileNode.name = f.name;
@@ -932,19 +924,15 @@ export const useMethods = (store) => {
                             filesUploaded++;
                         }
                         
-                        // 同步文件到会话（与新建文件保持一致）
+                        // 同步文件到会话（与新建文件保持一致，使用规范化后的文件对象）
                         if (isFile && payload.projectId && fileId) {
                             try {
-                                const fileObj = {
-                                    fileId: payload.fileId,
-                                    id: payload.id,
-                                    path: payload.path,
-                                    name: payload.name,
-                                    content: payload.content || '',
-                                    size: payload.size
-                                };
-                                await sessionSync.syncFileToSession(fileObj, payload.projectId, false);
-                                console.log(`[数据库保存] 文件已同步到会话: ${fileId}`);
+                                // 使用统一的字段规范化工具确保字段一致性
+                                const normalizedFileObj = normalizeFileObject(payload, payload.projectId);
+                                if (normalizedFileObj) {
+                                    await sessionSync.syncFileToSession(normalizedFileObj, payload.projectId, false);
+                                    console.log(`[数据库保存] 文件已同步到会话: ${fileId}`);
+                                }
                             } catch (syncError) {
                                 console.warn(`[数据库保存] 同步文件到会话失败（已忽略）: ${fileId}`, syncError?.message);
                             }

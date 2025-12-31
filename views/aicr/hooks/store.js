@@ -6,6 +6,13 @@
 import { getData, postData, deleteData, updateData } from '/apis/index.js';
 import { safeExecuteAsync, createError, ErrorTypes } from '/utils/error.js';
 import { getSessionSyncService } from '/views/aicr/services/sessionSyncService.js';
+import { 
+    normalizeFilePath, 
+    normalizeFileObject, 
+    normalizeTreeNode,
+    extractFileName,
+    extractDirPath
+} from '/views/aicr/utils/fileFieldNormalizer.js';
 
 /**
  * 统一的文件删除服务
@@ -617,9 +624,24 @@ export const createStore = () => {
                 throw createError('同名文件或文件夹已存在', ErrorTypes.VALIDATION, '新建文件');
             }
 
-            const newId = (parentNode.id ? `${parentNode.id}/` : '') + name;
+            // 使用统一的路径规范化
+            const parentPath = normalizeFilePath(parentNode.id || '', projectId || selectedProject.value);
+            const newId = parentPath ? `${parentPath}/${name}` : name;
+            const normalizedNewId = normalizeFilePath(newId, projectId || selectedProject.value);
             const now = Date.now();
-            parentNode.children.push({ id: newId, name, type: 'file', size: content ? content.length : 0, modified: now });
+            
+            // 使用统一的节点规范化工具
+            const fileNode = normalizeTreeNode({
+                id: normalizedNewId,
+                name,
+                type: 'file',
+                size: content ? content.length : 0,
+                modified: now
+            }, projectId || selectedProject.value);
+            
+            if (fileNode) {
+                parentNode.children.push(fileNode);
+            }
             
             // 对父节点的子节点进行排序
             const sortFileTreeItems = (items) => {
@@ -649,42 +671,59 @@ export const createStore = () => {
             await persistFileTree(projectId);
 
             // 在文件集合中新增占位（远端与本地）
+            const project = projectId || selectedProject.value;
             let createdKey = null;
             try {
                 const filesUrl = `${window.API_URL}/mongodb/?cname=projectFiles`;
-                const createResult = await postData(filesUrl, {
-                    projectId: projectId || selectedProject.value,
-                    fileId: newId,
-                    id: newId,
-                    path: newId,
+                
+                // 使用统一的字段规范化工具
+                const normalizedFile = normalizeFileObject({
+                    fileId: normalizedNewId,
+                    id: normalizedNewId,
+                    path: normalizedNewId,
                     name,
-                    content: content || ''
-                });
-                // 记录后端返回的唯一标识，供后续首次保存使用
-                createdKey = createResult?.data?.key || createResult?.key || null;
+                    content: content || '',
+                    type: 'file'
+                }, project);
+                
+                if (normalizedFile) {
+                    normalizedFile.projectId = project;
+                    const createResult = await postData(filesUrl, normalizedFile);
+                    // 记录后端返回的唯一标识，供后续首次保存使用
+                    createdKey = createResult?.data?.key || createResult?.key || null;
+                    normalizedFile.key = createdKey;
+                }
             } catch (e) {
                 // 不中断主流程
                 console.warn('[createFile] 创建文件内容文档失败（已忽略）:', e?.message);
             }
 
             // 更新本地files列表，携带后端返回的key，确保首次保存可PUT更新
-            const newFile = { fileId: newId, id: newId, path: newId, name, content, key: createdKey };
-            if (Array.isArray(files.value)) {
+            const newFile = normalizeFileObject({
+                fileId: normalizedNewId,
+                id: normalizedNewId,
+                path: normalizedNewId,
+                name,
+                content,
+                key: createdKey,
+                type: 'file'
+            }, project);
+            
+            if (newFile && Array.isArray(files.value)) {
                 files.value.push(newFile);
             }
 
-            // 同步文件到会话
+            // 同步文件到会话（使用规范化后的文件对象）
             try {
-                const project = projectId || selectedProject.value;
-                if (project) {
+                if (project && newFile) {
                     await sessionSync.syncFileToSession(newFile, project, false);
-                    console.log('[createFile] 文件已同步到会话:', newId);
+                    console.log('[createFile] 文件已同步到会话:', normalizedNewId);
                 }
             } catch (syncError) {
                 console.warn('[createFile] 同步文件到会话失败（已忽略）:', syncError?.message);
             }
 
-            return newId;
+            return normalizedNewId;
         }, '创建文件');
     };
 
@@ -703,10 +742,11 @@ export const createStore = () => {
                 throw createError('同级存在同名项', ErrorTypes.VALIDATION, '重命名');
             }
 
-            // 计算新ID（基于父级路径）
-            const basePath = parent ? (parent.id ? `${parent.id}/` : '') : '';
-            const oldId = node.id;
-            const newId = basePath + newName;
+            // 使用统一的路径规范化计算新ID
+            const project = projectId || selectedProject.value;
+            const parentPath = parent ? normalizeFilePath(parent.id || '', project) : '';
+            const oldId = normalizeFilePath(node.id || '', project);
+            const newId = normalizeFilePath(parentPath ? `${parentPath}/${newName}` : newName, project);
             node.name = newName;
 
             // 记录变更前的文件列表用于远端同步
@@ -752,15 +792,23 @@ export const createStore = () => {
             // 保持全部展开
             expandAllFolders();
 
-            // 更新本地files列表（仅当是文件或其子层级文件）
+            // 更新本地files列表（仅当是文件或其子层级文件），使用统一的字段规范化
             if (Array.isArray(files.value)) {
                 files.value = files.value.map(f => {
-                    const ids = [f.fileId, f.id, f.path].filter(Boolean);
-                    const matched = ids.some(v => String(v) === oldId || String(v).startsWith(oldId + '/'));
+                    const normalizedOldId = normalizeFilePath(oldId, project);
+                    const ids = [f.fileId, f.id, f.path].filter(Boolean).map(id => normalizeFilePath(id, project));
+                    const matched = ids.some(v => v === normalizedOldId || v.startsWith(normalizedOldId + '/'));
                     if (matched) {
-                        const replacedPath = String(f.path || f.id || f.fileId).replace(oldId, newId);
-                        const newNameFromPath = replacedPath.split('/').pop();
-                        return { ...f, fileId: replacedPath, id: replacedPath, path: replacedPath, name: newNameFromPath };
+                        const oldPath = normalizeFilePath(f.path || f.id || f.fileId, project);
+                        const replacedPath = oldPath.replace(normalizedOldId, newId);
+                        // 使用统一的字段规范化工具
+                        const normalized = normalizeFileObject({
+                            ...f,
+                            fileId: replacedPath,
+                            id: replacedPath,
+                            path: replacedPath
+                        }, project);
+                        return normalized || f;
                     }
                     return f;
                 });
@@ -768,33 +816,36 @@ export const createStore = () => {
 
             await persistFileTree(projectId);
 
-            // 同步远端文件集合
-            const project = projectId || selectedProject.value;
+            // 同步远端文件集合，使用统一的字段规范化
             try {
                 const filesUrl = `${window.API_URL}/mongodb/?cname=projectFiles`;
+                const normalizedOldId = normalizeFilePath(oldId, project);
                 const affected = prevFiles.filter(f => {
-                    const ids = [f.fileId, f.id, f.path].filter(Boolean);
-                    return ids.some(v => String(v) === oldId || String(v).startsWith(oldId + '/'));
+                    const ids = [f.fileId, f.id, f.path].filter(Boolean).map(id => normalizeFilePath(id, project));
+                    return ids.some(v => v === normalizedOldId || v.startsWith(normalizedOldId + '/'));
                 });
                 // 使用统一的文件删除服务处理重命名时的删除
                 const fileDeleteService = getFileDeleteService();
                 
                 for (const f of affected) {
-                    const oldPath = String(f.path || f.id || f.fileId);
-                    const newPath = oldPath.replace(oldId, newId);
+                    const oldPath = normalizeFilePath(f.path || f.id || f.fileId, project);
+                    const newPath = oldPath.replace(normalizedOldId, newId);
                     const key = f.key || f._id || f.idKey;
                     
                     if (key) {
-                        // 有 key，直接更新
-                        await updateData(filesUrl, { 
-                            key, 
-                            projectId: project, 
-                            fileId: newPath, 
-                            id: newPath, 
-                            path: newPath, 
-                            name: newPath.split('/').pop(), 
-                            content: f.content || (f.data && f.data.content) || '' 
-                        });
+                        // 有 key，直接更新（使用统一的字段规范化）
+                        const normalizedUpdate = normalizeFileObject({
+                            ...f,
+                            fileId: newPath,
+                            id: newPath,
+                            path: newPath
+                        }, project);
+                        
+                        if (normalizedUpdate) {
+                            normalizedUpdate.key = key;
+                            normalizedUpdate.projectId = project;
+                            await updateData(filesUrl, normalizedUpdate);
+                        }
                     } else {
                         // 无 key 时，先查询获取 key，然后删除旧文档，再创建新文档
                         if (oldPath && project) {
@@ -1808,22 +1859,13 @@ export const createStore = () => {
     };
 
     /**
-     * 统一的文件ID规范化函数
+     * 统一的文件ID规范化函数（使用统一的规范化工具）
      * @param {string} fileId - 文件ID
+     * @param {string} projectId - 项目ID（可选）
      * @returns {string} 规范化后的文件ID
      */
-    const normalizeFileId = (fileId) => {
-        try {
-            if (fileId == null) return '';
-            let s = String(fileId);
-            s = s.replace(/\\\\/g, '/'); // Windows路径转正斜杠
-            s = s.replace(/^\.\//, '');   // 去掉开头的./
-            s = s.replace(/^\/+/, '');     // 去掉多余的起始/
-            s = s.replace(/\/\/+/g, '/');  // 合并重复的/
-            return s;
-        } catch (e) {
-            return String(fileId);
-        }
+    const normalizeFileId = (fileId, projectId = null) => {
+        return normalizeFilePath(fileId, projectId);
     };
 
     /**
