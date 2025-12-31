@@ -702,48 +702,110 @@ export const useMethods = (store) => {
                 console.log(`[文件树构建统计] 深层次文件添加到树中: ${deepFilesInTree}`);
                 console.log(`[文件树构建统计] MoreButton.vue 添加到树中: ${moreButtonInTree ? '是' : '否'}`);
 
-                // 覆盖远端：先删除当前 project 的树与文件，再写入新内容
+                // 覆盖导入：采用并集策略，已存在的文件覆盖，不存在的文件补充
                 // 提示：前面已导入 CRUD
-                // 删除树
+                
+                // 1. 获取现有的文件列表，用于判断是更新还是新增
+                const filesQuery = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(projectId)}`;
+                let existingFilesMap = new Map(); // fileId -> { key, ... }
+                try {
+                    const filesResp = await getData(filesQuery, {}, false);
+                    const existingFilesList = filesResp?.data?.list || [];
+                    for (const doc of existingFilesList) {
+                        const fileId = doc?.fileId || doc?.id || doc?.path;
+                        if (fileId) {
+                            existingFilesMap.set(fileId, {
+                                key: doc?.key || doc?._id || doc?.id,
+                                ...doc
+                            });
+                        }
+                    }
+                    console.log(`[覆盖导入] 找到 ${existingFilesMap.size} 个已存在的文件`);
+                } catch (e) {
+                    console.warn('[覆盖导入] 获取现有文件列表失败:', e);
+                }
+
+                // 2. 处理文件树：合并而不是替换
                 try {
                     const treeQuery = `${window.API_URL}/mongodb/?cname=projectTree&projectId=${encodeURIComponent(projectId)}`;
                     const treeResp = await getData(treeQuery, {}, false);
                     const treeList = treeResp?.data?.list || [];
-                    for (const doc of treeList) {
-                        const key = doc?.key || doc?._id || doc?.id;
-                        if (key) await deleteData(`${treeQuery}&key=${key}`);
+                    
+                    if (treeList.length > 0) {
+                        // 如果树已存在，更新它（使用新树覆盖）
+                        const existingTree = treeList[0];
+                        const key = existingTree?.key || existingTree?._id || existingTree?.id;
+                        if (key) {
+                            await updateData(treeQuery, {
+                                key,
+                                projectId,
+                                data: root
+                            });
+                            console.log('[覆盖导入] 更新文件树');
+                        } else {
+                            // 没有 key，创建新树
+                            await postData(`${window.API_URL}/mongodb/?cname=projectTree`, {
+                                projectId,
+                                data: root
+                            });
+                            console.log('[覆盖导入] 创建新文件树');
+                        }
+                    } else {
+                        // 树不存在，创建新树
+                        await postData(`${window.API_URL}/mongodb/?cname=projectTree`, {
+                            projectId,
+                            data: root
+                        });
+                        console.log('[覆盖导入] 创建新文件树');
                     }
-                } catch (e) {}
-
-                // 删除文件集合
-                try {
-                    const filesQuery = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(projectId)}`;
-                    const filesResp = await getData(filesQuery, {}, false);
-                    const list = filesResp?.data?.list || [];
-                    for (const doc of list) {
-                        const key = doc?.key || doc?._id || doc?.id;
-                        if (key) await deleteData(`${filesQuery}&key=${key}`);
+                } catch (e) {
+                    console.error('[覆盖导入] 处理文件树失败:', e);
+                    // 失败时尝试创建新树
+                    try {
+                        await postData(`${window.API_URL}/mongodb/?cname=projectTree`, {
+                            projectId,
+                            data: root
+                        });
+                    } catch (e2) {
+                        console.error('[覆盖导入] 创建文件树也失败:', e2);
                     }
-                } catch (e) {}
+                }
 
-                // 写入树
-                await postData(`${window.API_URL}/mongodb/?cname=projectTree`, {
-                    projectId,
-                    data: root
-                });
-
-                // 批量写入文件
-                console.log(`[数据库保存] 开始保存 ${filesPayload.length} 个文件到数据库`);
+                // 3. 批量处理文件：已存在的更新，不存在的创建
+                console.log(`[数据库保存] 开始保存 ${filesPayload.length} 个文件到数据库（并集策略）`);
                 let deepFilesSaved = 0;
                 let moreButtonSaved = false;
                 let filesUploaded = 0;
+                let filesUpdated = 0;
+                let filesCreated = 0;
                 let filesFailed = 0;
                 const failedFiles = [];
                 
                 for (const payload of filesPayload) {
                     try {
-                        await postData(`${window.API_URL}/mongodb/?cname=projectFiles`, payload);
-                        filesUploaded++;
+                        const fileId = payload.fileId || payload.id || payload.path;
+                        const existingFile = existingFilesMap.get(fileId);
+                        
+                        if (existingFile && existingFile.key) {
+                            // 文件已存在，更新它
+                            await updateData(filesQuery, {
+                                key: existingFile.key,
+                                projectId: payload.projectId,
+                                fileId: payload.fileId,
+                                id: payload.id,
+                                path: payload.path,
+                                name: payload.name,
+                                content: payload.content,
+                                size: payload.size
+                            });
+                            filesUpdated++;
+                            filesUploaded++;
+                        } else {
+                            // 文件不存在，创建它
+                            await postData(`${window.API_URL}/mongodb/?cname=projectFiles`, payload);
+                            filesCreated++;
+                            filesUploaded++;
+                        }
                         
                         // 统计深层次文件保存
                         if (payload.path && payload.path.includes('/') && payload.path.split('/').length > 3) {
@@ -753,7 +815,7 @@ export const useMethods = (store) => {
                         // 统计 MoreButton.vue 保存
                         if (payload.name === 'MoreButton.vue' || payload.path.includes('MoreButton.vue')) {
                             moreButtonSaved = true;
-                            console.log(`[数据库保存] 保存 MoreButton.vue: ${payload.path}`);
+                            console.log(`[数据库保存] ${existingFile ? '更新' : '创建'} MoreButton.vue: ${payload.path}`);
                         }
                     } catch (error) {
                         filesFailed++;
@@ -762,10 +824,10 @@ export const useMethods = (store) => {
                             name: payload.name,
                             error: error?.message || '未知错误'
                         });
-                        console.error(`[数据库保存] 文件上传失败: ${payload.path}`, error);
+                        console.error(`[数据库保存] 文件处理失败: ${payload.path}`, error);
                     }
                 }
-                console.log(`[数据库保存统计] 成功上传: ${filesUploaded} 个文件`);
+                console.log(`[数据库保存统计] 成功处理: ${filesUploaded} 个文件（更新: ${filesUpdated}，新增: ${filesCreated}）`);
                 console.log(`[数据库保存统计] 上传失败: ${filesFailed} 个文件`);
                 console.log(`[数据库保存统计] 深层次文件保存: ${deepFilesSaved}`);
                 console.log(`[数据库保存统计] MoreButton.vue 保存: ${moreButtonSaved ? '是' : '否'}`);
@@ -800,7 +862,14 @@ export const useMethods = (store) => {
                 } catch (_) {}
 
                 const { showSuccess, showWarning } = await import('/utils/message.js');
-                let msg = `上传完成：成功上传 ${filesUploaded} 个文件`;
+                let msg = `导入完成：成功处理 ${filesUploaded} 个文件`;
+                if (filesUpdated > 0 && filesCreated > 0) {
+                    msg += `（更新 ${filesUpdated} 个，新增 ${filesCreated} 个）`;
+                } else if (filesUpdated > 0) {
+                    msg += `（更新 ${filesUpdated} 个）`;
+                } else if (filesCreated > 0) {
+                    msg += `（新增 ${filesCreated} 个）`;
+                }
                 if (filesFailed > 0) {
                     msg += `，失败 ${filesFailed} 个文件`;
                 }
