@@ -573,13 +573,27 @@ export const createStore = () => {
                         const filesResp = await getData(filesQueryUrl, {}, false);
                         const fileList = filesResp?.data?.list || [];
                         for (const f of fileList) {
+                            const filePath = f?.fileId || f?.id || f?.path;
                             const fileKey = f?.key || f?._id || f?.id;
+                            
+                            // 删除 MongoDB 记录
                             if (fileKey) {
                                 await deleteData(`${filesQueryUrl}&key=${fileKey}`);
-                            } else {
-                                const path = String(f?.path || f?.id || f?.fileId || '');
-                                if (path) {
-                                    try { await deleteData(`${filesQueryUrl}&fileId=${encodeURIComponent(path)}`); } catch (_) {}
+                            } else if (filePath) {
+                                try { 
+                                    await deleteData(`${filesQueryUrl}&fileId=${encodeURIComponent(filePath)}`); 
+                                } catch (_) {}
+                            }
+                            
+                            // 删除对应的会话（如果是文件）
+                            if (filePath && project) {
+                                try {
+                                    const sessionId = sessionSync.generateSessionId(filePath, project);
+                                    console.log('[deleteItem] 准备删除会话（根节点删除）:', { filePath, project, sessionId });
+                                    await sessionSync.deleteSession(sessionId);
+                                    console.log('[deleteItem] ✓ 会话已删除（根节点删除）:', sessionId);
+                                } catch (syncError) {
+                                    console.warn('[deleteItem] ✗ 删除会话失败（已忽略）:', syncError?.message);
                                 }
                             }
                         }
@@ -658,23 +672,30 @@ export const createStore = () => {
                     return ids.some(v => String(v) === itemId || String(v).startsWith(itemId + '/'));
                 });
                 for (const f of affected) {
+                    const filePath = f.fileId || f.id || f.path;
+                    const isFile = f.type === 'file' || (!f.type && filePath && !filePath.endsWith('/'));
+                    
+                    // 删除 MongoDB 记录
                     if (f && (f.key || f._id)) {
                         const key = f.key || f._id;
                         await deleteData(`${filesUrl}&key=${key}`);
-                    } else {
-                        const path = String(f.path || f.id || f.fileId);
-                        try { await deleteData(`${filesUrl}&fileId=${encodeURIComponent(path)}`); } catch (e) {}
+                    } else if (filePath) {
+                        try { 
+                            await deleteData(`${filesUrl}&fileId=${encodeURIComponent(filePath)}`); 
+                        } catch (e) {
+                            console.warn('[deleteItem] 通过fileId删除失败:', filePath, e?.message);
+                        }
                     }
 
-                    // 删除对应的会话（如果是文件）
-                    if (node.type === 'file' && project) {
+                    // 删除对应的会话（如果是文件且找到了 projectId）
+                    if (isFile && project && filePath) {
                         try {
-                            const filePath = f.fileId || f.id || f.path || itemId;
                             const sessionId = sessionSync.generateSessionId(filePath, project);
+                            console.log('[deleteItem] 准备删除会话:', { filePath, project, sessionId });
                             await sessionSync.deleteSession(sessionId);
-                            console.log('[deleteItem] 会话已删除:', sessionId);
+                            console.log('[deleteItem] ✓ 会话已删除:', sessionId);
                         } catch (syncError) {
-                            console.warn('[deleteItem] 删除会话失败（已忽略）:', syncError?.message);
+                            console.warn('[deleteItem] ✗ 删除会话失败（已忽略）:', syncError?.message);
                         }
                     }
                 }
