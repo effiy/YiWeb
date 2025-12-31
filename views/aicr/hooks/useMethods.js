@@ -618,6 +618,7 @@ export const useMethods = (store) => {
                 }
 
                 // 构建树（基于路径）- 修复深层次文件丢失问题
+                // 根节点的 id 使用 projectId，但后续所有子节点的 id 都不包含 projectId
                 const root = { id: projectId, name: projectId, type: 'folder', children: [] };
                 const folderMap = new Map();
                 folderMap.set('', root);
@@ -632,6 +633,18 @@ export const useMethods = (store) => {
                         .replace(/\/$/, '');           // 移除结尾的斜杠（除非是根路径）
                 };
                 
+                // 确保路径不包含 projectId（用于文件树节点的 id）
+                const removeProjectIdPrefix = (path) => {
+                    if (!path || !projectId) return path;
+                    const normalized = normalizePath(path);
+                    const parts = normalized.split('/').filter(Boolean);
+                    // 去除所有开头的 projectId
+                    while (parts.length > 0 && parts[0].toLowerCase() === projectId.toLowerCase()) {
+                        parts.shift();
+                    }
+                    return parts.length > 0 ? parts.join('/') : '';
+                };
+                
                 // 改进的文件夹确保函数 - 修复递归创建逻辑
                 const ensureFolder = (folderPath) => {
                     const norm = normalizePath(folderPath);
@@ -639,17 +652,20 @@ export const useMethods = (store) => {
                     // 如果路径为空，返回根节点
                     if (!norm) return root;
                     
+                    // 去除 projectId 前缀，确保文件夹节点的 id 不包含 projectId
+                    const folderIdWithoutProjectId = removeProjectIdPrefix(norm);
+                    
                     // 如果已经存在，直接返回
-                    if (folderMap.has(norm)) return folderMap.get(norm);
+                    if (folderMap.has(folderIdWithoutProjectId)) return folderMap.get(folderIdWithoutProjectId);
                     
                     // 递归创建父目录
-                    const pathSegments = norm.split('/').filter(Boolean);
+                    const pathSegments = folderIdWithoutProjectId.split('/').filter(Boolean);
                     let currentPath = '';
                     let parent = root;
                     
                     // 特别关注深层次路径
                     if (pathSegments.length > 3) {
-                        console.log(`[ensureFolder] 创建深层次路径: ${norm} (${pathSegments.length} 层)`);
+                        console.log(`[ensureFolder] 创建深层次路径: ${folderIdWithoutProjectId} (${pathSegments.length} 层)`);
                     }
                     
                     // 逐级创建路径中的每个文件夹
@@ -659,7 +675,7 @@ export const useMethods = (store) => {
                         
                         if (!folderMap.has(currentPath)) {
                             const node = { 
-                                id: currentPath, 
+                                id: currentPath,  // 不包含 projectId
                                 name: segment, 
                                 type: 'folder', 
                                 children: [],
@@ -690,35 +706,38 @@ export const useMethods = (store) => {
                         continue;
                     }
                     
-                    // 获取文件的父目录路径
-                    const pathSegments = filePath.split('/').filter(Boolean);
+                    // 去除 projectId 前缀，确保文件节点的 id 不包含 projectId
+                    const filePathWithoutProjectId = removeProjectIdPrefix(filePath);
+                    
+                    // 获取文件的父目录路径（也不包含 projectId）
+                    const pathSegments = filePathWithoutProjectId.split('/').filter(Boolean);
                     const dir = pathSegments.length > 1 
                         ? pathSegments.slice(0, -1).join('/') 
                         : '';
                     
                     // 特别关注深层次文件
                     if (pathSegments.length > 3) {
-                        console.log(`[文件树构建] 处理深层次文件: ${filePath} (${pathSegments.length} 层), 父目录: ${dir || '根目录'}`);
+                        console.log(`[文件树构建] 处理深层次文件: ${filePathWithoutProjectId} (${pathSegments.length} 层), 父目录: ${dir || '根目录'}`);
                         deepFilesInTree++;
                     }
                     
                     // 特别关注 MoreButton.vue 文件
-                    if (f.name === 'MoreButton.vue' || filePath.includes('MoreButton.vue')) {
-                        console.log(`[文件树构建] 发现 MoreButton.vue 文件: ${filePath}, 父目录: ${dir || '根目录'}`);
+                    if (f.name === 'MoreButton.vue' || filePathWithoutProjectId.includes('MoreButton.vue')) {
+                        console.log(`[文件树构建] 发现 MoreButton.vue 文件: ${filePathWithoutProjectId}, 父目录: ${dir || '根目录'}`);
                         moreButtonInTree = true;
                     }
                     
                     // 确保父目录存在
                     const parent = ensureFolder(dir);
                     
-                    // 创建文件节点
+                    // 创建文件节点（id 不包含 projectId）
                     const fileNode = { 
-                        id: filePath, 
+                        id: filePathWithoutProjectId,  // 不包含 projectId
                         name: f.name, 
                         type: 'file', 
                         size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)), 
                         modified: Date.now(),
-                        path: filePath  // 确保path字段存在
+                        path: filePathWithoutProjectId  // 确保path字段存在，不包含 projectId
                     };
                     
                     parent.children.push(fileNode);
