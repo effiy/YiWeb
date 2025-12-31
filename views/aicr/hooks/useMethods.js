@@ -705,9 +705,10 @@ export const useMethods = (store) => {
                 // 覆盖导入：采用并集策略，已存在的文件覆盖，不存在的文件补充
                 // 提示：前面已导入 CRUD
                 
-                // 1. 获取现有的文件列表，用于判断是更新还是新增
+                // 1. 获取现有的文件列表，用于判断是更新还是新增，以及构建完整的文件树
                 const filesQuery = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(projectId)}`;
                 let existingFilesMap = new Map(); // fileId -> { key, ... }
+                let allFilesForTree = [...filesPayload]; // 包含所有文件（现有 + 新导入）用于构建文件树
                 try {
                     const filesResp = await getData(filesQuery, {}, false);
                     const existingFilesList = filesResp?.data?.list || [];
@@ -718,35 +719,154 @@ export const useMethods = (store) => {
                                 key: doc?.key || doc?._id || doc?.id,
                                 ...doc
                             });
+                            
+                            // 如果现有文件不在新导入的文件列表中，添加到文件树构建列表
+                            const isInNewFiles = filesPayload.some(f => {
+                                const newFileId = f.fileId || f.id || f.path;
+                                return newFileId === fileId;
+                            });
+                            
+                            if (!isInNewFiles) {
+                                // 现有文件不在新导入列表中，需要保留在文件树中
+                                allFilesForTree.push({
+                                    projectId: doc.projectId || projectId,
+                                    fileId: fileId,
+                                    id: fileId,
+                                    path: fileId,
+                                    name: doc.name || (typeof fileId === 'string' ? fileId.split('/').pop() : ''),
+                                    content: doc.content || '',
+                                    size: doc.size || (doc.content ? doc.content.length : 0)
+                                });
+                            }
                         }
                     }
                     console.log(`[覆盖导入] 找到 ${existingFilesMap.size} 个已存在的文件`);
+                    console.log(`[覆盖导入] 文件树将包含 ${allFilesForTree.length} 个文件（新导入: ${filesPayload.length}，现有保留: ${allFilesForTree.length - filesPayload.length}）`);
                 } catch (e) {
                     console.warn('[覆盖导入] 获取现有文件列表失败:', e);
                 }
 
-                // 2. 处理文件树：合并而不是替换
+                // 2. 基于所有文件（现有 + 新导入）重新构建完整的文件树
+                // 重新构建文件树，包含所有文件
+                const mergedRoot = { id: projectId, name: projectId, type: 'folder', children: [] };
+                const mergedFolderMap = new Map();
+                mergedFolderMap.set('', mergedRoot);
+                
+                // 使用相同的规范化函数
+                const normalizePathForTree = (path) => {
+                    if (!path || typeof path !== 'string') return '';
+                    return String(path)
+                        .replace(/\\/g, '/')
+                        .replace(/^\/+/, '')
+                        .replace(/\/+/g, '/')
+                        .replace(/\/$/, '');
+                };
+                
+                const removeProjectIdPrefixForTree = (path) => {
+                    if (!path || !projectId) return path;
+                    const normalized = normalizePathForTree(path);
+                    const parts = normalized.split('/').filter(Boolean);
+                    while (parts.length > 0 && parts[0].toLowerCase() === projectId.toLowerCase()) {
+                        parts.shift();
+                    }
+                    return parts.length > 0 ? parts.join('/') : '';
+                };
+                
+                const ensureFolderForTree = (folderPath) => {
+                    const norm = normalizePathForTree(folderPath);
+                    if (!norm) return mergedRoot;
+                    
+                    const folderIdWithoutProjectId = removeProjectIdPrefixForTree(norm);
+                    if (mergedFolderMap.has(folderIdWithoutProjectId)) {
+                        return mergedFolderMap.get(folderIdWithoutProjectId);
+                    }
+                    
+                    const pathSegments = folderIdWithoutProjectId.split('/').filter(Boolean);
+                    let currentPath = '';
+                    let parent = mergedRoot;
+                    
+                    for (let i = 0; i < pathSegments.length; i++) {
+                        const segment = pathSegments[i];
+                        currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+                        
+                        if (!mergedFolderMap.has(currentPath)) {
+                            const node = {
+                                id: currentPath,
+                                name: segment,
+                                type: 'folder',
+                                children: [],
+                                path: currentPath
+                            };
+                            parent.children.push(node);
+                            mergedFolderMap.set(currentPath, node);
+                        }
+                        parent = mergedFolderMap.get(currentPath);
+                    }
+                    
+                    return parent;
+                };
+                
+                // 处理所有文件（现有 + 新导入）构建完整的文件树
+                console.log(`[文件树合并] 开始处理 ${allFilesForTree.length} 个文件构建完整文件树`);
+                for (const f of allFilesForTree) {
+                    const filePath = normalizePathForTree(f.path);
+                    if (!filePath) continue;
+                    
+                    const filePathWithoutProjectId = removeProjectIdPrefixForTree(filePath);
+                    const pathSegments = filePathWithoutProjectId.split('/').filter(Boolean);
+                    const dir = pathSegments.length > 1 
+                        ? pathSegments.slice(0, -1).join('/') 
+                        : '';
+                    
+                    const parent = ensureFolderForTree(dir);
+                    
+                    // 检查文件节点是否已存在（避免重复）
+                    const existingFileNode = parent.children.find(child => 
+                        child.id === filePathWithoutProjectId && child.type === 'file'
+                    );
+                    
+                    if (!existingFileNode) {
+                        const fileNode = {
+                            id: filePathWithoutProjectId,
+                            name: f.name,
+                            type: 'file',
+                            size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)),
+                            modified: Date.now(),
+                            path: filePathWithoutProjectId
+                        };
+                        parent.children.push(fileNode);
+                    } else {
+                        // 更新现有文件节点的信息
+                        existingFileNode.name = f.name;
+                        existingFileNode.size = (Number.isFinite(f.size) ? f.size : ((f.content || '').length));
+                        existingFileNode.modified = Date.now();
+                    }
+                }
+                
+                console.log(`[文件树合并] 合并完成，共 ${mergedFolderMap.size} 个文件夹节点`);
+
+                // 3. 更新文件树到数据库
                 try {
                     const treeQuery = `${window.API_URL}/mongodb/?cname=projectTree&projectId=${encodeURIComponent(projectId)}`;
                     const treeResp = await getData(treeQuery, {}, false);
                     const treeList = treeResp?.data?.list || [];
                     
                     if (treeList.length > 0) {
-                        // 如果树已存在，更新它（使用新树覆盖）
+                        // 如果树已存在，更新它（使用合并后的完整树）
                         const existingTree = treeList[0];
                         const key = existingTree?.key || existingTree?._id || existingTree?.id;
                         if (key) {
                             await updateData(treeQuery, {
                                 key,
                                 projectId,
-                                data: root
+                                data: mergedRoot
                             });
-                            console.log('[覆盖导入] 更新文件树');
+                            console.log('[覆盖导入] 更新文件树（已合并现有文件）');
                         } else {
                             // 没有 key，创建新树
                             await postData(`${window.API_URL}/mongodb/?cname=projectTree`, {
                                 projectId,
-                                data: root
+                                data: mergedRoot
                             });
                             console.log('[覆盖导入] 创建新文件树');
                         }
@@ -754,7 +874,7 @@ export const useMethods = (store) => {
                         // 树不存在，创建新树
                         await postData(`${window.API_URL}/mongodb/?cname=projectTree`, {
                             projectId,
-                            data: root
+                            data: mergedRoot
                         });
                         console.log('[覆盖导入] 创建新文件树');
                     }
@@ -764,7 +884,7 @@ export const useMethods = (store) => {
                     try {
                         await postData(`${window.API_URL}/mongodb/?cname=projectTree`, {
                             projectId,
-                            data: root
+                            data: mergedRoot
                         });
                     } catch (e2) {
                         console.error('[覆盖导入] 创建文件树也失败:', e2);
