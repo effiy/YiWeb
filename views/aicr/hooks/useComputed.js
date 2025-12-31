@@ -52,7 +52,42 @@ export const useComputed = (store) => {
                 }
             };
             const target = normalize(fileId);
-            const currentFile = store.files.value.find(f => f.fileId === target);
+            
+            // 更灵活的匹配逻辑：检查多个可能的标识字段
+            const currentFile = store.files.value.find(f => {
+                if (!f) return false;
+                
+                // 检查多个可能的标识字段
+                const candidates = [
+                    f.fileId,
+                    f.id,
+                    f.path,
+                    f.name
+                ].filter(Boolean).map(normalize);
+                
+                // 检查是否与目标匹配
+                return candidates.some(c => {
+                    // 完全匹配
+                    if (c === target) return true;
+                    
+                    // 路径匹配：检查是否是父子路径关系
+                    if (c.endsWith('/' + target) && target && target.length > 0) return true;
+                    if (target.endsWith('/' + c) && c && c.length > 0) return true;
+                    
+                    // 文件名匹配：检查文件名是否相同
+                    const cName = c.split('/').pop();
+                    const targetName = target.split('/').pop();
+                    if (cName && targetName && cName === targetName) {
+                        // 检查路径部分是否一致（或都为空）
+                        const cPath = c.substring(0, c.lastIndexOf('/'));
+                        const targetPath = target.substring(0, target.lastIndexOf('/'));
+                        return cPath === targetPath || (!cPath && !targetPath);
+                    }
+                    
+                    return false;
+                });
+            });
+            
             return currentFile;
         }),
 

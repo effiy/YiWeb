@@ -1073,8 +1073,15 @@ export const useMethods = (store) => {
             try {
                 const pj = selectedProject?.value;
                 if (pj && typeof loadFileById === 'function') {
-                    console.log('[文件选择] 开始按需加载文件内容:', { project: pj, fileId: idNorm });
-                    await loadFileById(pj, null, idNorm);
+                    const fileKey = window.__aicrPendingFileKey || null;
+                    console.log('[文件选择] 开始按需加载文件内容:', { project: pj, fileId: idNorm, fileKey });
+                    // 正确传递参数：projectId, targetFileId, fileKey
+                    const loadedFile = await loadFileById(pj, idNorm, fileKey);
+                    if (loadedFile && loadedFile.content) {
+                        console.log('[文件选择] 文件内容加载成功，内容长度:', loadedFile.content.length);
+                    } else {
+                        console.warn('[文件选择] 文件内容为空或未加载');
+                    }
                 }
             } catch (e) {
                 console.warn('[文件选择] 按需加载失败(忽略):', e?.message || e);
