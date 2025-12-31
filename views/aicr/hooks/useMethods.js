@@ -2431,23 +2431,28 @@ export const useMethods = (store) => {
                         console.warn('[pvDeleteProject] 删除projectTree失败（已忽略）:', treeErr?.message);
                     }
                     
-                    // 2. 删除projectFiles数据
+                    // 2. 删除projectFiles数据（使用统一的删除服务）
                     try {
                         const filesQueryUrl = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(projectId)}`;
                         const filesResp = await getData(filesQueryUrl, {}, false);
                         const fileList = filesResp?.data?.list || [];
-                        for (const f of fileList) {
-                            const fileKey = f?.key || f?._id || f?.id;
-                            if (fileKey) {
-                                await deleteData(`${filesQueryUrl}&key=${fileKey}`);
-                            } else {
-                                const path = String(f?.path || f?.id || f?.fileId || '');
-                                if (path) {
-                                    try { await deleteData(`${filesQueryUrl}&fileId=${encodeURIComponent(path)}`); } catch (_) {}
-                                }
-                            }
-                        }
-                        console.log('[pvDeleteProject] projectFiles已删除:', { projectId, count: fileList.length });
+                        
+                        console.log('[pvDeleteProject] 开始删除项目所有文件，文件数:', fileList.length, '项目ID:', projectId);
+                        
+                        // 使用统一的文件删除服务
+                        // 注意：getFileDeleteService 是从 store.js 导出的，需要动态导入
+                        const storeModule = await import('/views/aicr/hooks/store.js');
+                        const fileDeleteService = storeModule.getFileDeleteService();
+                        const deleteResults = await fileDeleteService.deleteFiles(fileList, projectId);
+                        
+                        // 统计删除结果
+                        const mongoSuccessCount = deleteResults.filter(r => r.mongoSuccess).length;
+                        const sessionSuccessCount = deleteResults.filter(r => r.sessionSuccess).length;
+                        console.log('[pvDeleteProject] projectFiles已删除:', {
+                            总数: fileList.length,
+                            MongoDB成功: mongoSuccessCount,
+                            会话成功: sessionSuccessCount
+                        });
                     } catch (filesErr) {
                         console.warn('[pvDeleteProject] 删除projectFiles失败（已忽略）:', filesErr?.message);
                     }

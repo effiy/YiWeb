@@ -525,7 +525,7 @@ const createCommentPanel = async () => {
                 return 'test';
             },
 
-            // 加载MongoDB评论数据
+            // 加载MongoDB评论数据（优化：优先从 store 获取，避免重复调用接口）
             async loadMongoComments() {
                 return safeExecute(async () => {
                     // 防止重复请求
@@ -534,12 +534,33 @@ const createCommentPanel = async () => {
                         return;
                     }
                     
+                    // 优化：优先从 store 获取评论数据
+                    if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
+                        const storeComments = window.aicrStore.comments.value;
+                        const fileId = this.file?.fileId || this.file?.id || this.file?.path || this.file?.key;
+                        
+                        // 如果当前有选中的文件，过滤出该文件的评论；否则使用所有评论
+                        let filteredComments = storeComments;
+                        if (fileId) {
+                            filteredComments = storeComments.filter(c => {
+                                const commentFileId = c.fileId || (c.fileInfo && c.fileInfo.fileId);
+                                return commentFileId === fileId;
+                            });
+                        }
+                        
+                        if (filteredComments.length > 0 || !fileId) {
+                            console.log('[CommentPanel] 从 store 获取评论数据，数量:', filteredComments.length, '文件ID:', fileId || 'all');
+                            this.mongoComments = filteredComments;
+                            return;
+                        }
+                    }
+                    
                     this._isLoadingComments = true;
                     this.commentsLoading = true;
                     this.commentsError = '';
 
                     try {
-                        console.log('[CommentPanel] 开始加载评论数据，当前文件:', this.file);
+                        console.log('[CommentPanel] store中没有评论数据，开始从接口加载，当前文件:', this.file);
                         
                         // 生成请求键，用于防止重复请求
                         const projectId = window.aicrStore?.selectedProject?.value || 
@@ -551,6 +572,8 @@ const createCommentPanel = async () => {
                         if (this._lastRequestKey === requestKey && this._lastRequestTime && 
                             Date.now() - this._lastRequestTime < 1000) {
                             console.log('[CommentPanel] 请求键相同且时间间隔小于1秒，跳过重复请求');
+                            this._isLoadingComments = false;
+                            this.commentsLoading = false;
                             return;
                         }
                         
@@ -559,9 +582,7 @@ const createCommentPanel = async () => {
                         
                         console.log('[CommentPanel] 请求键:', requestKey);
                         
-                        // 即使没有选中文件，也尝试加载评论数据
-                        // 这样可以处理页面刷新时文件选择延迟的情况
-                        // 当没有文件时，会加载所有评论
+                        // 按需加载：只在有文件选中或需要显示所有评论时才加载
                         const mongoComments = await fetchCommentsFromMongo(this.file);
                         
                         // 确保评论数据有正确的key属性
@@ -1761,39 +1782,58 @@ const createCommentPanel = async () => {
                     await this.loadCommenters();
                 }
 
-                // 立即尝试加载评论数据
-                console.log('[CommentPanel] 开始加载评论数据');
-                await this.loadMongoComments();
-                
-                // 使用防抖机制延迟加载评论，避免多次请求
-                setTimeout(() => {
-                    console.log('[CommentPanel] 延迟加载评论，确保文件选择完成');
-                    this.debouncedLoadComments();
-                }, 1000);
-                
-                // 再次延迟加载，确保所有数据都已加载完成
-                setTimeout(() => {
-                    console.log('[CommentPanel] 最终加载评论，确保所有数据加载完成');
-                    this.debouncedLoadComments();
-                }, 2000);
+                // 优化：优先从 store 获取评论数据，避免重复调用接口
+                if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
+                    console.log('[CommentPanel] store中已有评论数据，直接使用，数量:', window.aicrStore.comments.value.length);
+                    this.mongoComments = [...window.aicrStore.comments.value];
+                } else {
+                    // 如果 store 中没有评论数据，且当前有选中的文件，才按需加载
+                    if (this.file) {
+                        console.log('[CommentPanel] store中没有评论数据，且已选中文件，按需加载评论');
+                        this.debouncedLoadComments();
+                    } else {
+                        console.log('[CommentPanel] store中没有评论数据，且未选中文件，等待文件选择后再加载');
+                    }
+                }
             } else {
                 console.warn('[CommentPanel] store初始化超时，使用默认数据');
             }
             
-            // 监听文件选择变化，重新加载评论
+            // 监听文件选择变化，重新加载评论（优化：优先从 store 获取）
             this.$watch('file', (newFile, oldFile) => {
                 console.log('[CommentPanel] 文件选择变化:', { newFile, oldFile });
                 
                 if (newFile && newFile !== oldFile) {
-                    console.log('[CommentPanel] 文件选择变化，使用防抖重新加载评论:', newFile);
+                    // 优化：优先从 store 获取该文件的评论
+                    if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
+                        const fileId = newFile?.fileId || newFile?.id || newFile?.path || newFile?.key;
+                        const filteredComments = window.aicrStore.comments.value.filter(c => {
+                            const commentFileId = c.fileId || (c.fileInfo && c.fileInfo.fileId);
+                            return commentFileId === fileId;
+                        });
+                        
+                        if (filteredComments.length > 0) {
+                            console.log('[CommentPanel] 从 store 获取文件评论，数量:', filteredComments.length);
+                            this.mongoComments = filteredComments;
+                            return;
+                        }
+                    }
+                    
+                    console.log('[CommentPanel] store中没有该文件的评论，使用防抖重新加载:', newFile);
                     this.debouncedLoadComments();
                 } else if (!newFile && oldFile) {
                     // 文件被取消选中（如按ESC键）
-                    console.log('[CommentPanel] 文件被取消选中，立即刷新评论列表');
-                    // 强制重置加载状态，确保能够重新请求
-                    this._isLoadingComments = false;
-                    // 立即刷新评论列表，显示所有评论
-                    this.immediateLoadComments();
+                    console.log('[CommentPanel] 文件被取消选中，显示所有评论');
+                    // 优化：优先从 store 获取所有评论
+                    if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
+                        console.log('[CommentPanel] 从 store 获取所有评论，数量:', window.aicrStore.comments.value.length);
+                        this.mongoComments = [...window.aicrStore.comments.value];
+                    } else {
+                        // 强制重置加载状态，确保能够重新请求
+                        this._isLoadingComments = false;
+                        // 立即刷新评论列表，显示所有评论
+                        this.immediateLoadComments();
+                    }
                 }
             });
             
@@ -2051,6 +2091,30 @@ const createCommentPanel = async () => {
                 };
                 
                 const { projectId, fileId, forceReload, showAllComments, immediateReload } = event.detail;
+                
+                // 优化：如果 store 中有评论数据，优先使用 store 的数据
+                if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0 && !forceReload) {
+                    const storeComments = window.aicrStore.comments.value;
+                    
+                    if (fileId === null || !fileId) {
+                        // 显示所有评论
+                        console.log('[CommentPanel] 从 store 获取所有评论，数量:', storeComments.length);
+                        this.mongoComments = [...storeComments];
+                        return;
+                    } else {
+                        // 过滤出该文件的评论
+                        const filteredComments = storeComments.filter(c => {
+                            const commentFileId = c.fileId || (c.fileInfo && c.fileInfo.fileId);
+                            return commentFileId === fileId;
+                        });
+                        
+                        if (filteredComments.length > 0) {
+                            console.log('[CommentPanel] 从 store 获取文件评论，数量:', filteredComments.length);
+                            this.mongoComments = filteredComments;
+                            return;
+                        }
+                    }
+                }
                 
                 if (forceReload) {
                     console.log('[CommentPanel] 强制重新加载评论数据');
