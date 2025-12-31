@@ -901,10 +901,15 @@ export const useMethods = (store) => {
                 let filesFailed = 0;
                 const failedFiles = [];
                 
+                // 导入会话同步服务（与新建文件保持一致）
+                const { getSessionSyncService } = await import('/views/aicr/services/sessionSyncService.js');
+                const sessionSync = getSessionSyncService();
+                
                 for (const payload of filesPayload) {
                     try {
                         const fileId = payload.fileId || payload.id || payload.path;
                         const existingFile = existingFilesMap.get(fileId);
+                        const isFile = payload.type === 'file' || (!payload.type && fileId && !fileId.endsWith('/'));
                         
                         if (existingFile && existingFile.key) {
                             // 文件已存在，更新它
@@ -925,6 +930,24 @@ export const useMethods = (store) => {
                             await postData(`${window.API_URL}/mongodb/?cname=projectFiles`, payload);
                             filesCreated++;
                             filesUploaded++;
+                        }
+                        
+                        // 同步文件到会话（与新建文件保持一致）
+                        if (isFile && payload.projectId && fileId) {
+                            try {
+                                const fileObj = {
+                                    fileId: payload.fileId,
+                                    id: payload.id,
+                                    path: payload.path,
+                                    name: payload.name,
+                                    content: payload.content || '',
+                                    size: payload.size
+                                };
+                                await sessionSync.syncFileToSession(fileObj, payload.projectId, false);
+                                console.log(`[数据库保存] 文件已同步到会话: ${fileId}`);
+                            } catch (syncError) {
+                                console.warn(`[数据库保存] 同步文件到会话失败（已忽略）: ${fileId}`, syncError?.message);
+                            }
                         }
                         
                         // 统计深层次文件保存

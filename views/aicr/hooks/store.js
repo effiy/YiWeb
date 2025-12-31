@@ -671,36 +671,79 @@ export const createStore = () => {
                     const ids = [f.fileId, f.id, f.path].filter(Boolean);
                     return ids.some(v => String(v) === itemId || String(v).startsWith(itemId + '/'));
                 });
+                
+                console.log('[deleteItem] 开始删除，受影响文件数:', affected.length, '项目ID:', project);
+                
                 for (const f of affected) {
-                    const filePath = f.fileId || f.id || f.path;
-                    const isFile = f.type === 'file' || (!f.type && filePath && !filePath.endsWith('/'));
+                    // 获取文件标识符（统一处理）
+                    const fileId = f.fileId || f.id || f.path;
+                    const fileKey = f.key || f._id;
+                    const isFile = f.type === 'file' || (!f.type && fileId && !fileId.endsWith('/'));
                     
-                    // 删除 MongoDB 记录
-                    if (f && (f.key || f._id)) {
-                        const key = f.key || f._id;
-                        await deleteData(`${filesUrl}&key=${key}`);
-                    } else if (filePath) {
-                        try { 
-                            await deleteData(`${filesUrl}&fileId=${encodeURIComponent(filePath)}`); 
+                    console.log('[deleteItem] 处理文件:', { 
+                        fileId, 
+                        fileKey,
+                        isFile, 
+                        type: f.type,
+                        project 
+                    });
+                    
+                    // 1. 删除 MongoDB 记录 - 必须调用
+                    if (fileKey) {
+                        const mongoDeleteUrl = `${filesUrl}&key=${fileKey}`;
+                        console.log('[deleteItem] 调用 MongoDB 删除接口:', mongoDeleteUrl);
+                        try {
+                            await deleteData(mongoDeleteUrl);
+                            console.log('[deleteItem] ✓ MongoDB 记录已删除: key=', fileKey);
                         } catch (e) {
-                            console.warn('[deleteItem] 通过fileId删除失败:', filePath, e?.message);
+                            console.error('[deleteItem] ✗ MongoDB 删除失败:', mongoDeleteUrl, e?.message);
+                            throw e; // 如果 MongoDB 删除失败，抛出错误
                         }
+                    } else if (fileId) {
+                        const mongoDeleteUrl = `${filesUrl}&fileId=${encodeURIComponent(fileId)}`;
+                        console.log('[deleteItem] 调用 MongoDB 删除接口（通过fileId）:', mongoDeleteUrl);
+                        try {
+                            await deleteData(mongoDeleteUrl);
+                            console.log('[deleteItem] ✓ MongoDB 记录已删除（通过fileId）: fileId=', fileId);
+                        } catch (e) {
+                            console.error('[deleteItem] ✗ MongoDB 删除失败（通过fileId）:', mongoDeleteUrl, e?.message);
+                            // 通过 fileId 删除失败时，不抛出错误（可能文件不存在）
+                        }
+                    } else {
+                        console.warn('[deleteItem] ✗ 无法获取文件标识符，跳过删除:', f);
+                        continue;
                     }
 
-                    // 删除对应的会话（如果是文件且找到了 projectId）
-                    if (isFile && project && filePath) {
+                    // 2. 删除对应的会话 - 必须调用（如果是文件且找到了 projectId）
+                    if (isFile && project && fileId) {
                         try {
-                            const sessionId = sessionSync.generateSessionId(filePath, project);
-                            console.log('[deleteItem] 准备删除会话:', { filePath, project, sessionId });
-                            await sessionSync.deleteSession(sessionId);
-                            console.log('[deleteItem] ✓ 会话已删除:', sessionId);
+                            // 使用与创建时完全相同的逻辑生成 sessionId
+                            const sessionId = sessionSync.generateSessionId(fileId, project);
+                            const sessionDeleteUrl = `${window.API_URL}/session/${encodeURIComponent(sessionId)}`;
+                            console.log('[deleteItem] 调用会话删除接口:', sessionDeleteUrl, { fileId, project, sessionId });
+                            
+                            // 直接调用会话删除接口
+                            await deleteData(sessionDeleteUrl);
+                            console.log('[deleteItem] ✓ 会话已删除: sessionId=', sessionId);
                         } catch (syncError) {
                             console.warn('[deleteItem] ✗ 删除会话失败（已忽略）:', syncError?.message);
+                            // 会话删除失败不影响主流程
+                        }
+                    } else {
+                        if (!isFile) {
+                            console.debug('[deleteItem] 跳过会话删除（不是文件）');
+                        } else if (!project) {
+                            console.warn('[deleteItem] 跳过会话删除（缺少 projectId）');
+                        } else if (!fileId) {
+                            console.warn('[deleteItem] 跳过会话删除（缺少 fileId）');
                         }
                     }
                 }
+                
+                console.log('[deleteItem] 删除完成，处理了', affected.length, '个文件');
             } catch (e) {
-                console.warn('[deleteItem] 远端文件删除失败（已忽略）:', e?.message);
+                console.error('[deleteItem] 远端文件删除失败:', e?.message, e?.stack);
+                throw e; // 重新抛出错误，让上层处理
             }
             return true;
         }, '删除节点');
