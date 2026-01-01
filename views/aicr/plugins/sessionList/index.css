@@ -142,13 +142,16 @@
 
 .tag-search-input {
     width: 100%;
-    padding: 6px 28px 6px 10px;
+    height: 36px;
+    padding: 8px 28px 8px 12px;
     border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.12));
     border-radius: 6px;
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-primary, #f8fafc);
-    font-size: 12px;
+    font-size: 14px;
     transition: all 0.2s;
+    box-sizing: border-box;
+    line-height: 1.5;
 }
 
 .tag-search-input:focus {

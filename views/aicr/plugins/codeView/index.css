@@ -4408,7 +4408,7 @@
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
     margin-right: 4px;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .comment-action-btn:hover i {
@@ -4420,7 +4420,7 @@
 .comment-action-btn .button-text {
     position: relative;
     z-index: 2;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
     letter-spacing: 0.2px;
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -4804,16 +4804,18 @@
 
 .form-input, .form-textarea {
     width: 100%;
+    min-height: 36px;
     background: rgba(51,65,85,0.6);
     border: 1px solid rgba(79,70,229,0.2);
     border-radius: 6px;
-    padding: 10px 12px;
+    padding: 8px 12px;
     font-size: 14px;
     color: var(--text-primary);
     transition: all 0.3s ease;
     -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    box-sizing: border-box;
+    line-height: 1.5;
 }
 
 .form-input:focus, .form-textarea:focus {
@@ -4849,7 +4851,8 @@
 /* 选择框样式 */
 .form-select {
     width: 100%;
-    padding: 10px 12px;
+    height: 36px;
+    padding: 8px 12px;
     border: 1px solid var(--border-primary);
     border-radius: 6px;
     background: var(--bg-primary);
@@ -4857,6 +4860,8 @@
     font-size: 14px;
     transition: all 0.2s ease;
     cursor: pointer;
+    box-sizing: border-box;
+    line-height: 1.5;
 }
 
 .form-select:focus {

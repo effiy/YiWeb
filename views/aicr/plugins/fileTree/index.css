@@ -88,14 +88,15 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    padding: 4px 8px;
-    font-size: 11px;
+    gap: 4px;
+    padding: 8px 12px;
+    height: 36px;
+    font-size: 14px;
     font-weight: 500;
     color: white;
     background: linear-gradient(135deg, #6366f1, #4f46e5);
     border: 1px solid #4f46e5;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
@@ -108,7 +109,8 @@
 .toolbar-group:first-child .toolbar-btn {
     width: auto;
     min-width: fit-content;
-    padding: 4px 10px;
+    padding: 8px 12px;
+    height: 36px;
 }
 
 .toolbar-group:last-child .toolbar-btn {
@@ -165,7 +167,7 @@
 }
 
 .toolbar-btn i {
-    font-size: 11px;
+    font-size: 14px;
     flex-shrink: 0;
 }
 
@@ -266,22 +268,25 @@
 
 .file-tree-search-icon {
     position: absolute;
-    left: 8px;
-    font-size: 11px;
+    left: 10px;
+    font-size: 14px;
     pointer-events: none;
     z-index: 1;
     opacity: 0.6;
     transition: opacity 0.2s ease;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 .file-tree-search-input {
     width: 100%;
+    height: 36px;
     font-weight: 400;
-    font-size: 11px;
+    font-size: 14px;
     color: var(--text-primary);
-    padding: 6px 6px 6px 24px;
+    padding: 8px 6px 8px 28px;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     background: transparent;
     outline: none;
     transition: all 0.2s ease;

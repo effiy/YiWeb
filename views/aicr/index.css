@@ -111,13 +111,14 @@
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-sm, 0.5rem);
-    padding: var(--spacing-2) var(--spacing-4);
+    padding: 8px 12px;
+    height: 36px;
     background: rgba(255,255,255,0.1);
     border: 1px solid rgba(255,255,255,0.2);
-    border-radius: var(--radius-md, 6px);
+    border-radius: 6px;
     color: var(--text-secondary);
     text-decoration: none;
-    font-size: var(--font-size-sm);
+    font-size: 14px;
     font-weight: var(--font-weight-medium);
     transition: all var(--duration-fast) var(--ease-smooth);
     cursor: pointer;
@@ -131,6 +132,7 @@
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     animation: filterButtonSlideIn 0.2s ease-out;
+    box-sizing: border-box;
 }
 
 .filter-btn:hover:not(:disabled) {
@@ -296,8 +298,22 @@
 /* 级联容器样式 */
 .cascader-container { position: relative; }
 .cascader { display: inline-flex; align-items: center; gap: 8px; }
-.project-select { min-width: 140px; }
-.version-select { min-width: 140px; }
+.project-select { 
+    min-width: 140px;
+    height: 36px;
+    padding: 8px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    border-radius: 6px;
+}
+.version-select { 
+    min-width: 140px;
+    height: 36px;
+    padding: 8px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    border-radius: 6px;
+}
 
 .project-btn {
     position: relative;
@@ -372,15 +388,16 @@
     align-items: center;
     gap: var(--spacing-sm, 0.5rem);
     min-width: 160px;
+    height: 36px;
     justify-content: space-between;
     transition: all var(--duration-fast) var(--ease-smooth);
     background: rgba(255,255,255,0.1);
     border: 1px solid rgba(255,255,255,0.2);
-    border-radius: var(--radius-md, 6px);
+    border-radius: 6px;
     color: var(--text-secondary);
-    font-size: var(--font-size-sm);
+    font-size: 14px;
     font-weight: var(--font-weight-medium);
-    padding: var(--spacing-2) var(--spacing-4);
+    padding: 8px 32px 8px 12px;
     cursor: pointer;
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -389,7 +406,7 @@
     background-repeat: no-repeat;
     background-position: right 8px center;
     background-size: 16px;
-    padding-right: 32px;
+    box-sizing: border-box;
 }
 
 .version-select.version-loading {
@@ -605,6 +622,26 @@
 .search-box {
     flex: 1;
     min-width: 0;
+}
+
+/* ========== 统一输入框和按钮标准尺寸 ========== */
+/* 标准输入框高度：36px */
+.search-input-wrapper textarea {
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    border-radius: 6px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.search-input-wrapper textarea:focus {
+    outline: none;
+    border-color: var(--primary, #4f46e5);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
 /* ========== 折叠按钮样式 ========== */
@@ -931,10 +968,11 @@
     display: inline-flex;
     align-items: center;
     gap: 0;
-    border-radius: var(--radius-md, 6px);
+    border-radius: 6px;
     overflow: hidden;
     border: 1px solid rgba(255,255,255,0.2);
     background: rgba(255,255,255,0.05);
+    height: 36px;
 }
 
 .view-mode-btn {
@@ -942,8 +980,14 @@
     border: none;
     border-right: 1px solid rgba(255,255,255,0.2);
     margin: 0;
-    padding: var(--spacing-2) var(--spacing-3);
+    padding: 8px 12px;
     min-width: auto;
+    height: 36px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
 }
 
 .view-mode-btn:last-child {
@@ -984,8 +1028,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 50%;
@@ -993,7 +1037,8 @@
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-smooth);
     pointer-events: auto;
-    font-size: 0.75rem;
+    font-size: 12px;
+    box-sizing: border-box;
 }
 
 .search-clear .clear-search-btn:hover {
@@ -1011,11 +1056,7 @@
     box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.3);
 }
 
-/* 搜索输入框高亮效果 */
-.search-input-wrapper textarea:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-}
+/* 搜索输入框高亮效果已在上面统一定义 */
 
 /* 搜索结果动画 */
 .feature-cards-grid {
