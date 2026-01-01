@@ -6,32 +6,44 @@
 /* ========== 文件树容器 ========== */
 .file-tree-container {
     position: relative;
-    height: 100%;
+    /* 使用 min-height 而不是 height，确保内容可以超出容器，这样 sticky 才能工作 */
+    min-height: 100%;
     display: flex;
     flex-direction: column;
+    width: 100%;
+    /* 确保可以正确计算 sticky 定位 */
+    align-items: stretch;
+    /* 确保容器不会阻止 sticky 定位 */
+    overflow: visible;
 }
 
 /* ========== 侧边栏标题容器 ========== */
 .file-tree-header-container {
     padding: var(--spacing-sm) var(--spacing-md);
-    background: var(--bg-secondary);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
+    /* sticky 定位，相对于 .aicr-sidebar 的滚动 */
+    position: -webkit-sticky; /* Safari 兼容 */
     position: sticky;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 100;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
     margin: 0;
+    /* 防止被压缩 */
     flex-shrink: 0;
     /* 确保背景不透明，避免滚动时内容透过 */
-    background-color: var(--bg-secondary);
+    background-color: var(--bg-secondary) !important;
     /* 添加底部边框，增强视觉分离 */
     border-bottom: 1px solid var(--border-primary);
     /* 添加阴影，增强置顶效果 */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    /* 确保在滚动时保持可见 */
+    will-change: transform;
 }
 
 /* ========== 工具栏 ========== */
@@ -373,6 +385,16 @@
     transform: translateY(-50%) scale(1.1);
 }
 
+/* ========== 文件树内容容器 ========== */
+.file-tree-content {
+    flex: 1;
+    min-height: 0;
+    /* 移除独立的滚动，让 .aicr-sidebar 处理滚动，这样 sticky 才能正确工作 */
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+}
+
 /* ========== 文件树 ========== */
 .file-tree {
     list-style: none;
@@ -380,8 +402,8 @@
     padding: var(--spacing-sm);
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
     background: var(--bg-secondary);
-    height: 100%;
-    overflow-y: auto;
+    /* 移除独立的滚动，由 .file-tree-content 处理 */
+    overflow: visible;
     flex: 1;
 }
 
@@ -937,8 +959,10 @@
 /* ========== 标签视图样式 ========== */
 .file-tags-view {
     padding: var(--spacing-md);
-    height: 100%;
-    overflow-y: auto;
+    /* 移除独立的滚动，由 .file-tree-content 处理 */
+    overflow: visible;
+    height: auto;
+    min-height: 100%;
 }
 
 .tags-container {
