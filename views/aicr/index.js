@@ -101,13 +101,6 @@ const { computed } = Vue;
                 // 项目管理
                 projects: store.projects,
                 selectedProject: store.selectedProject,
-                // 项目维护弹框相关（直接绑定store响应式字段）
-                showPvManager: store.showPvManager,
-                pvProjects: store.pvProjects,
-                pvSelectedProjectId: store.pvSelectedProjectId,
-                pvNewProjectId: store.pvNewProjectId,
-                pvNewProjectName: store.pvNewProjectName,
-                pvError: store.pvError,
 
                 // 搜索相关状态
                 searchQuery: store.searchQuery,
@@ -809,33 +802,6 @@ const { computed } = Vue;
                     } catch (error) {
                         logError('[主页面] 评论输入处理失败:', error);
                     }
-                }
-                ,
-                // =============== 项目与版本维护 ===============
-                // 代理到公共方法（store/useMethods）
-                openProjectVersionManager: function() {
-                    const methods = useMethods(store);
-                    methods.openProjectVersionManager();
-                },
-                closeProjectVersionManager: function() {
-                    const methods = useMethods(store);
-                    methods.closeProjectVersionManager();
-                },
-                pvSelectProject: function(projectId) {
-                    const methods = useMethods(store);
-                    methods.pvSelectProject(projectId);
-                },
-                pvAddProject: function() {
-                    const methods = useMethods(store);
-                    methods.pvAddProject();
-                },
-                pvDeleteProject: function(projectId) {
-                    const methods = useMethods(store);
-                    methods.pvDeleteProject(projectId);
-                },
-                pvAddVersion: function() {
-                    const methods = useMethods(store);
-                    methods.pvAddVersion();
                 },
                 // 设置视图模式（已移至 useMethods，这里保留作为备用）
                 setViewMode: function(mode) {

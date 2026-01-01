@@ -20,11 +20,18 @@
     gap: var(--spacing-sm);
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 100;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
     margin: 0;
+    flex-shrink: 0;
+    /* 确保背景不透明，避免滚动时内容透过 */
+    background-color: var(--bg-secondary);
+    /* 添加底部边框，增强视觉分离 */
+    border-bottom: 1px solid var(--border-primary);
+    /* 添加阴影，增强置顶效果 */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* ========== 工具栏 ========== */

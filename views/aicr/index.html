@@ -77,19 +77,6 @@
                             </option>
                         </select>
                     </li>
-                    
-                    <!-- 维护项目按钮 -->
-                    <li>
-                        <button 
-                            type="button"
-                            class="filter-btn manage-btn"
-                            @click="openProjectVersionManager"
-                            :disabled="loading"
-                            title="维护项目">
-                            <i class="fas fa-wrench" aria-hidden="true"></i>
-                            <span>维护</span>
-                        </button>
-                    </li>
                 </ul>
             </nav>
             
@@ -174,61 +161,6 @@
                 <i class="fas fa-chevron-left" aria-hidden="true"></i>
             </button>
         </main>
-        
-        <!-- 项目维护弹框 -->
-        <section 
-            v-if="showPvManager" 
-            class="pv-manager-modal" 
-            role="dialog" 
-            aria-modal="true" 
-            aria-labelledby="pv-manager-title"
-            tabindex="0"
-            @keydown.esc.stop.prevent="closeProjectVersionManager">
-            <div class="pv-manager-backdrop" @click="closeProjectVersionManager"></div>
-            <div class="pv-manager-dialog" @click.stop>
-                <header class="pv-manager-header">
-                    <h3 id="pv-manager-title">维护项目</h3>
-                    <button class="pv-close-btn" @click="closeProjectVersionManager" aria-label="关闭">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </header>
-                <div class="pv-manager-body">
-                    <div class="pv-alert" v-if="pvError">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>{{ pvError }}</span>
-                    </div>
-                    <div class="pv-columns">
-                        <div class="pv-left">
-                            <div class="pv-section-title">
-                                <i class="fas fa-folder"></i>
-                                <span>项目列表</span>
-                            </div>
-                            <div class="pv-add-row">
-                                <input type="text" v-model="pvNewProjectId" placeholder="项目ID" aria-label="项目ID" @keydown.enter.prevent="pvAddProject" />
-                                <button class="pv-mini-btn" @click="pvAddProject">
-                                    <i class="fas fa-plus"></i>
-                                    <span>添加项目</span>
-                                </button>
-                            </div>
-                            <ul class="pv-project-list">
-                                <li 
-                                    v-for="p in pvProjects" 
-                                    :key="p.id" 
-                                    :class="{ active: pvSelectedProjectId === p.id }">
-                                    <button class="pv-project-item" @click="pvSelectProject(p.id)" :title="`选择项目: ${p.id}`">
-                                        <i class="fas fa-folder"></i>
-                                        <span class="name">{{ p.id }}</span>
-                                    </button>
-                                    <button class="pv-danger-btn" @click="pvDeleteProject(p.id)" title="删除项目">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
     </div>
 
     <!-- 全局加载指示器 -->

@@ -325,14 +325,6 @@ export const createStore = () => {
     const projects = vueRef([]); // 存储项目列表
     const selectedProject = vueRef('');
     
-    // UI：项目维护弹框与表单
-    const showPvManager = vueRef(false);
-    const pvProjects = vueRef([]);
-    const pvSelectedProjectId = vueRef('');
-    const pvNewProjectId = vueRef('');
-    const pvNewProjectName = vueRef('');
-    const pvError = vueRef('');
-    
     // 搜索相关状态
     const searchQuery = vueRef('');
     // 新增评论内容
@@ -2099,13 +2091,6 @@ export const createStore = () => {
         // 项目管理
         projects,
         selectedProject,
-        // UI：项目管理
-        showPvManager,
-        pvProjects,
-        pvSelectedProjectId,
-        pvNewProjectId,
-        pvNewProjectName,
-        pvError,
         
         // 搜索相关状态
         searchQuery,
