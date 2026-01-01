@@ -51,7 +51,8 @@ const SessionListComponent = {
         }
     },
     emits: ['session-select', 'session-delete', 'session-create', 'tag-select', 'tag-clear', 'search-change', 'toggle-collapse', 
-            'tag-filter-reverse', 'tag-filter-no-tags', 'tag-filter-expand', 'tag-filter-search', 'tag-order-updated'],
+            'tag-filter-reverse', 'tag-filter-no-tags', 'tag-filter-expand', 'tag-filter-search', 'tag-order-updated',
+            'session-favorite', 'session-edit', 'session-tag', 'session-duplicate', 'session-context', 'session-open-url'],
     setup(props, { emit }) {
         const selectedSessionId = ref(null);
         
@@ -638,6 +639,36 @@ const SessionListComponent = {
             emit('session-select', session);
         };
         
+        // 处理收藏按钮点击
+        const handleFavoriteClick = (session) => {
+            emit('session-favorite', session.id);
+        };
+        
+        // 处理编辑按钮点击
+        const handleEditClick = (session) => {
+            emit('session-edit', session.id);
+        };
+        
+        // 处理标签管理按钮点击
+        const handleTagClick = (session) => {
+            emit('session-tag', session.id);
+        };
+        
+        // 处理副本按钮点击
+        const handleDuplicateClick = (session) => {
+            emit('session-duplicate', session.id);
+        };
+        
+        // 处理页面上下文按钮点击
+        const handleContextClick = (session) => {
+            emit('session-context', session.id);
+        };
+        
+        // 处理打开URL按钮点击
+        const handleOpenUrlClick = (session) => {
+            emit('session-open-url', session.id);
+        };
+        
         // 判断会话来源（通过URL判断）
         const getSessionSource = (session) => {
             if (!session || !session.url) {
@@ -703,6 +734,12 @@ const SessionListComponent = {
             startLongPress,
             cancelLongPress,
             handleSessionClick,
+            handleFavoriteClick,
+            handleEditClick,
+            handleTagClick,
+            handleDuplicateClick,
+            handleContextClick,
+            handleOpenUrlClick,
             getSessionSource,
             getSessionSourceIcon,
             getSessionFirstChar

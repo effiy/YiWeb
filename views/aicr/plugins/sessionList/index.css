@@ -414,14 +414,21 @@
     gap: 6px;
     flex: 1;
     min-width: 0;
+    width: 100%;
 }
 
-.favorite-icon {
-    color: var(--warning, #f59e0b);
+.session-title-text {
+    flex: 1;
+    min-width: 0;
     font-size: 14px;
-    flex-shrink: 0;
-    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
+    font-weight: 500;
+    color: var(--text-primary, #f8fafc);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
+
+/* 移除旧的 favorite-icon 样式，因为现在使用按钮 */
 
 .session-first-char-icon {
     width: 24px;
@@ -457,15 +464,6 @@
     filter: drop-shadow(0 0 3px rgba(16, 185, 129, 0.5));
 }
 
-.session-title-text {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-primary, #f8fafc);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .session-item-actions {
     display: flex;
     align-items: center;
@@ -473,37 +471,101 @@
     flex-shrink: 0;
 }
 
-.session-delete-btn {
+/* 收藏按钮样式（与 YiPet 保持一致） */
+.session-favorite-btn {
+    background: none !important;
+    border: none !important;
+    cursor: pointer !important;
+    padding: 2px 4px !important;
+    font-size: 14px !important;
+    opacity: 0.6 !important;
+    transition: opacity 0.2s ease, transform 0.2s ease !important;
+    line-height: 1 !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important; /* 固定在右侧 */
+}
+
+.session-favorite-btn:hover {
+    opacity: 1 !important;
+    transform: scale(1.1) !important;
+}
+
+.session-favorite-btn.active {
+    opacity: 1 !important;
+}
+
+/* 操作按钮通用样式 */
+.session-action-btn {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 24px;
     height: 24px;
+    padding: 0;
     border: none;
     background: transparent;
     border-radius: 4px;
     cursor: pointer;
     color: var(--text-muted, #94a3b8);
-    transition: all 0.2s;
-    opacity: 0;
-}
-
-.session-item:hover .session-delete-btn {
+    transition: all 0.2s ease;
+    font-size: 12px;
+    flex-shrink: 0;
     opacity: 1;
 }
 
-.session-delete-btn:hover {
-    background: rgba(239, 68, 68, 0.15);
-    color: var(--error, #ef4444);
+.session-action-btn:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+}
+
+.session-action-btn:active {
+    transform: scale(0.95);
+}
+
+/* 编辑按钮 */
+.session-edit-btn:hover {
+    color: var(--info, #3b82f6);
+    background: rgba(59, 130, 246, 0.15);
+}
+
+/* 标签管理按钮 */
+.session-tag-btn:hover {
+    color: var(--primary, #6366f1);
+    background: rgba(99, 102, 241, 0.15);
+}
+
+/* 副本按钮 */
+.session-duplicate-btn:hover {
+    color: var(--success, #10b981);
+    background: rgba(16, 185, 129, 0.15);
+}
+
+/* 页面上下文按钮 */
+.session-context-btn:hover {
+    color: var(--info, #3b82f6);
+    background: rgba(59, 130, 246, 0.15);
+}
+
+/* 打开URL按钮 */
+.session-open-url-btn:hover {
+    color: var(--primary, #6366f1);
+    background: rgba(99, 102, 241, 0.15);
 }
 
 .session-item-meta {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     gap: 8px;
     font-size: 12px;
     color: var(--text-muted, #94a3b8);
+}
+
+.session-item-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
 
 .session-item-tags {

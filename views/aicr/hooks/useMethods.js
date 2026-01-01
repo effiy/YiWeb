@@ -2408,6 +2408,261 @@ export const useMethods = (store) => {
             }, '会话搜索变化');
         },
         
+        // 切换会话收藏状态
+        handleSessionToggleFavorite: async (sessionId) => {
+            return safeExecute(async () => {
+                console.log('[handleSessionToggleFavorite] 切换收藏状态:', sessionId);
+                try {
+                    // 找到会话
+                    const sessions = store.sessions?.value || [];
+                    const session = sessions.find(s => s && s.id === sessionId);
+                    if (!session) {
+                        throw new Error('会话不存在');
+                    }
+                    
+                    // 切换收藏状态
+                    const newFavoriteState = !(session.isFavorite || false);
+                    session.isFavorite = newFavoriteState;
+                    
+                    // 更新后端
+                    const { postData } = await import('/apis/index.js');
+                    const updateData = {
+                        id: sessionId,
+                        isFavorite: newFavoriteState
+                    };
+                    await postData(`${window.API_URL}/session/save`, updateData);
+                    
+                    // 更新本地状态
+                    if (store.sessions && store.sessions.value) {
+                        store.sessions.value = [...store.sessions.value];
+                    }
+                    
+                    if (window.showSuccess) {
+                        window.showSuccess(newFavoriteState ? '已收藏' : '已取消收藏');
+                    }
+                } catch (error) {
+                    console.error('[handleSessionToggleFavorite] 切换收藏状态失败:', error);
+                    if (window.showError) {
+                        window.showError(`操作失败：${error.message || '未知错误'}`);
+                    }
+                }
+            }, '切换收藏状态');
+        },
+        
+        // 编辑会话标题
+        handleSessionEdit: async (sessionId) => {
+            return safeExecute(async () => {
+                console.log('[handleSessionEdit] 编辑会话:', sessionId);
+                try {
+                    const sessions = store.sessions?.value || [];
+                    const session = sessions.find(s => s && s.id === sessionId);
+                    if (!session) {
+                        throw new Error('会话不存在');
+                    }
+                    
+                    const currentTitle = session.pageTitle || session.title || '';
+                    const currentDescription = session.pageDescription || '';
+                    
+                    // 使用 prompt 获取新标题
+                    const newTitle = prompt('请输入新标题:', currentTitle);
+                    if (newTitle === null) {
+                        return; // 用户取消
+                    }
+                    
+                    if (newTitle.trim() === '') {
+                        throw new Error('标题不能为空');
+                    }
+                    
+                    // 更新会话
+                    session.pageTitle = newTitle.trim();
+                    session.title = newTitle.trim();
+                    
+                    // 更新后端
+                    const { postData } = await import('/apis/index.js');
+                    const updateData = {
+                        id: sessionId,
+                        pageTitle: newTitle.trim(),
+                        title: newTitle.trim()
+                    };
+                    await postData(`${window.API_URL}/session/save`, updateData);
+                    
+                    // 更新本地状态
+                    if (store.sessions && store.sessions.value) {
+                        store.sessions.value = [...store.sessions.value];
+                    }
+                    
+                    if (window.showSuccess) {
+                        window.showSuccess('标题已更新');
+                    }
+                } catch (error) {
+                    console.error('[handleSessionEdit] 编辑会话失败:', error);
+                    if (window.showError) {
+                        window.showError(`编辑失败：${error.message || '未知错误'}`);
+                    }
+                }
+            }, '编辑会话');
+        },
+        
+        // 管理会话标签
+        handleSessionManageTags: async (sessionId) => {
+            return safeExecute(async () => {
+                console.log('[handleSessionManageTags] 管理标签:', sessionId);
+                try {
+                    const sessions = store.sessions?.value || [];
+                    const session = sessions.find(s => s && s.id === sessionId);
+                    if (!session) {
+                        throw new Error('会话不存在');
+                    }
+                    
+                    const currentTags = (session.tags || []).join(', ');
+                    const newTagsStr = prompt('请输入标签（用逗号分隔）:', currentTags);
+                    if (newTagsStr === null) {
+                        return; // 用户取消
+                    }
+                    
+                    // 解析标签
+                    const newTags = newTagsStr.split(',')
+                        .map(tag => tag.trim())
+                        .filter(tag => tag.length > 0);
+                    
+                    // 更新会话
+                    session.tags = newTags;
+                    
+                    // 更新后端
+                    const { postData } = await import('/apis/index.js');
+                    const updateData = {
+                        id: sessionId,
+                        tags: newTags
+                    };
+                    await postData(`${window.API_URL}/session/save`, updateData);
+                    
+                    // 更新本地状态
+                    if (store.sessions && store.sessions.value) {
+                        store.sessions.value = [...store.sessions.value];
+                    }
+                    
+                    if (window.showSuccess) {
+                        window.showSuccess('标签已更新');
+                    }
+                } catch (error) {
+                    console.error('[handleSessionManageTags] 管理标签失败:', error);
+                    if (window.showError) {
+                        window.showError(`操作失败：${error.message || '未知错误'}`);
+                    }
+                }
+            }, '管理标签');
+        },
+        
+        // 创建会话副本
+        handleSessionDuplicate: async (sessionId) => {
+            return safeExecute(async () => {
+                console.log('[handleSessionDuplicate] 创建副本:', sessionId);
+                try {
+                    const sessions = store.sessions?.value || [];
+                    const sourceSession = sessions.find(s => s && s.id === sessionId);
+                    if (!sourceSession) {
+                        throw new Error('会话不存在');
+                    }
+                    
+                    // 生成新会话ID
+                    const newSessionId = `${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+                    const now = Date.now();
+                    
+                    // 创建副本
+                    const duplicatedSession = {
+                        id: newSessionId,
+                        url: sourceSession.url || '',
+                        pageTitle: sourceSession.pageTitle ? `${sourceSession.pageTitle} (副本)` : '新会话 (副本)',
+                        title: sourceSession.pageTitle ? `${sourceSession.pageTitle} (副本)` : '新会话 (副本)',
+                        pageDescription: sourceSession.pageDescription || '',
+                        pageContent: sourceSession.pageContent || '',
+                        messages: sourceSession.messages ? JSON.parse(JSON.stringify(sourceSession.messages)) : [],
+                        tags: sourceSession.tags ? [...sourceSession.tags] : [],
+                        isFavorite: false, // 副本默认不收藏
+                        createdAt: now,
+                        updatedAt: now,
+                        lastAccessTime: now
+                    };
+                    
+                    // 保存到后端
+                    const { postData } = await import('/apis/index.js');
+                    await postData(`${window.API_URL}/session/save`, duplicatedSession);
+                    
+                    // 添加到本地列表
+                    if (store.sessions && store.sessions.value) {
+                        store.sessions.value = [duplicatedSession, ...store.sessions.value];
+                    }
+                    
+                    // 重新加载会话列表
+                    if (store.loadSessions && typeof store.loadSessions === 'function') {
+                        await store.loadSessions(true);
+                    }
+                    
+                    if (window.showSuccess) {
+                        window.showSuccess('会话副本已创建');
+                    }
+                } catch (error) {
+                    console.error('[handleSessionDuplicate] 创建副本失败:', error);
+                    if (window.showError) {
+                        window.showError(`创建副本失败：${error.message || '未知错误'}`);
+                    }
+                }
+            }, '创建副本');
+        },
+        
+        // 打开页面上下文（对于 aicr 会话，可以显示文件内容）
+        handleSessionContext: async (sessionId) => {
+            return safeExecute(async () => {
+                console.log('[handleSessionContext] 打开页面上下文:', sessionId);
+                try {
+                    const sessions = store.sessions?.value || [];
+                    const session = sessions.find(s => s && s.id === sessionId);
+                    if (!session) {
+                        throw new Error('会话不存在');
+                    }
+                    
+                    // 对于 aicr 会话，如果 URL 包含文件信息，可以尝试打开文件
+                    if (session.url && session.url.startsWith('aicr-session://')) {
+                        // 尝试从会话的 pageContent 或其他字段获取文件信息
+                        // 这里可以根据实际需求实现
+                        if (window.showInfo) {
+                            window.showInfo('页面上下文功能待实现');
+                        }
+                    } else {
+                        if (window.showInfo) {
+                            window.showInfo('此会话类型不支持页面上下文');
+                        }
+                    }
+                } catch (error) {
+                    console.error('[handleSessionContext] 打开页面上下文失败:', error);
+                    if (window.showError) {
+                        window.showError(`操作失败：${error.message || '未知错误'}`);
+                    }
+                }
+            }, '打开页面上下文');
+        },
+        
+        // 打开会话URL（如果URL以https://开头）
+        handleSessionOpenUrl: async (sessionId) => {
+            return safeExecute(async () => {
+                console.log('[handleSessionOpenUrl] 打开URL:', sessionId);
+                try {
+                    const sessions = store.sessions?.value || [];
+                    const session = sessions.find(s => s && s.id === sessionId);
+                    if (!session || !session.url || !session.url.startsWith('https://')) {
+                        return;
+                    }
+                    
+                    window.open(session.url, '_blank');
+                } catch (error) {
+                    console.error('[handleSessionOpenUrl] 打开URL失败:', error);
+                    if (window.showError) {
+                        window.showError(`打开URL失败：${error.message || '未知错误'}`);
+                    }
+                }
+            }, '打开URL');
+        },
+        
         handleCreateSession: async (payload) => {
             console.log('[handleCreateSession] 收到创建会话请求:', payload);
             return safeExecute(async () => {

@@ -918,6 +918,66 @@ const { computed } = Vue;
                     }
                 },
                 
+                handleSessionFavorite: async function(sessionId) {
+                    logInfo('[主页面] 收到会话收藏事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionToggleFavorite(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话收藏处理失败:', error);
+                    }
+                },
+                
+                handleSessionEdit: async function(sessionId) {
+                    logInfo('[主页面] 收到会话编辑事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionEdit(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话编辑处理失败:', error);
+                    }
+                },
+                
+                handleSessionTag: async function(sessionId) {
+                    logInfo('[主页面] 收到会话标签管理事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionManageTags(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话标签管理处理失败:', error);
+                    }
+                },
+                
+                handleSessionDuplicate: async function(sessionId) {
+                    logInfo('[主页面] 收到会话副本事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionDuplicate(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话副本处理失败:', error);
+                    }
+                },
+                
+                handleSessionContext: async function(sessionId) {
+                    logInfo('[主页面] 收到会话上下文事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionContext(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话上下文处理失败:', error);
+                    }
+                },
+                
+                handleSessionOpenUrl: async function(sessionId) {
+                    logInfo('[主页面] 收到会话打开URL事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionOpenUrl(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话打开URL处理失败:', error);
+                    }
+                },
+                
                 handleTagSelect: function(tags) {
                     logInfo('[主页面] 收到标签选择事件:', tags);
                     try {
