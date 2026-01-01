@@ -427,17 +427,11 @@
                                     <i class="fas fa-quote-left"></i>
                                 </div>
                                 <span class="header-text">引用代码</span>
-                                <button class="highlight-code-btn" @click="highlightCode(currentCommentDetail)" title="在代码中高亮显示">
-                                    <i class="fas fa-external-link-alt"></i>
-                                </button>
                             </div>
                             <div class="quote-code-container">
-                                <pre class="quote-code modern" @click="highlightCode(currentCommentDetail)">
+                                <pre class="quote-code modern">
                                     <code>{{ currentCommentDetailTextDisplay }}</code>
                                 </pre>
-                                <div class="code-overlay">
-                                    <span class="click-hint">点击查看代码位置</span>
-                                </div>
                             </div>
                         </div>
                         

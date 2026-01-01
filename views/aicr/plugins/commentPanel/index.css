@@ -1286,37 +1286,7 @@
     position: relative;
 }
 
-.quote-code:hover {
-    background: rgba(51,65,85,0.8);
-    border-color: rgba(79,70,229,0.4);
-    box-shadow: 0 2px 8px rgba(79,70,229,0.2);
-    transform: translateY(-1px);
-}
-
-.quote-code:active {
-    transform: translateY(0);
-    transition: all 0.1s ease;
-}
-
-.quote-code::before {
-    content: '点击高亮';
-    position: absolute;
-    top: -20px;
-    right: 0;
-    background: rgba(15, 23, 42, 0.9);
-    color: #e2e8f0;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 10px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    z-index: 10;
-}
-
-.quote-code:hover::before {
-    opacity: 1;
-}
+/* 移除点击效果 */
 
 .comment-content {
     color: var(--text-secondary);

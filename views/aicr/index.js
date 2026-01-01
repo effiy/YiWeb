@@ -416,17 +416,27 @@ const { computed } = Vue;
                     
                     if (fileId) {
                         // 如果当前没有选中该文件，先选中文件
-                        if (store && store.selectedFileId.value !== fileId) {
+                        const needSwitchFile = store && store.selectedFileId.value !== fileId;
+                        if (needSwitchFile) {
                             logInfo('[代码审查页面] 切换到文件:', fileId);
                             store.setSelectedFileId(fileId);
                         }
                         
                         // 发送高亮事件给代码视图组件
+                        // 如果切换了文件，需要等待更长时间让文件加载和渲染完成
+                        const delay = needSwitchFile ? 500 : 100;
                         setTimeout(() => {
                             window.dispatchEvent(new CustomEvent('highlightCodeLines', { 
                                 detail: { rangeInfo, comment } 
                             }));
-                        }, 100); // 给文件切换一点时间
+                        }, delay);
+                    } else {
+                        // 如果没有文件ID，直接发送事件（可能是当前文件）
+                        setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('highlightCodeLines', { 
+                                detail: { rangeInfo, comment } 
+                            }));
+                        }, 100);
                     }
                 });
             },

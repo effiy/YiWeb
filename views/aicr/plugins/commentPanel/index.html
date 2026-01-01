@@ -169,7 +169,7 @@
                             <i class="fas fa-quote-left"></i>
                             <span>引用代码</span>
                         </div>
-                        <pre class="quote-code" @click="highlightCode(comment)">{{ comment.text }}</pre>
+                        <pre class="quote-code">{{ comment.text }}</pre>
                     </div>
                     <!-- 评论内容展示 -->
                     <div class="comment-content md-preview-body" v-html="renderMarkdown(comment.content)"></div>

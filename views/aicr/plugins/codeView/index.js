@@ -2468,21 +2468,48 @@ const createCodeView = async () => {
                     const range = detail && detail.rangeInfo ? detail.rangeInfo : null;
                     const comment = detail && detail.comment ? detail.comment : null;
                     
-                    if (!range) return;
+                    if (!range) {
+                        console.warn('[CodeView] 高亮事件缺少rangeInfo:', detail);
+                        return;
+                    }
                     
                     const start = Number(range.startLine) || 1;
                     const end = Number(range.endLine) || start;
                     
-                    console.log('[CodeView] 处理高亮事件:', { range, comment, start, end });
+                    console.log('[CodeView] 处理高亮事件:', { range, comment, start, end, codeLinesCount: this.codeLines?.length });
                     
                     // 更新高亮行
                     this.highlightedLines = [];
                     for (let i = start; i <= end; i++) this.highlightedLines.push(i);
                     
-                    // 延迟执行滚动和评论打开，确保DOM已更新
-                    setTimeout(() => {
-                        this.scrollToCommentPosition(start, comment);
-                    }, 100);
+                    // 等待代码行渲染完成后再滚动
+                    // 使用智能等待机制：检查代码行是否已加载
+                    const waitForCodeLines = (retryCount = 0) => {
+                        const maxRetries = 10; // 最多等待1秒（10次 * 100ms）
+                        const hasCodeLines = this.codeLines && this.codeLines.length > 0;
+                        const targetLineExists = this.$el && this.$el.querySelector(`[data-line="${start}"]`);
+                        
+                        if (hasCodeLines && (targetLineExists || retryCount >= maxRetries)) {
+                            // 代码行已加载，可以尝试滚动
+                            setTimeout(() => {
+                                this.scrollToCommentPosition(start, comment);
+                            }, 50); // 再等待一点时间确保DOM完全渲染
+                        } else if (retryCount < maxRetries) {
+                            // 继续等待
+                            setTimeout(() => {
+                                waitForCodeLines(retryCount + 1);
+                            }, 100);
+                        } else {
+                            // 超时，直接尝试滚动（可能文件内容为空或行号超出范围）
+                            console.warn('[CodeView] 等待代码行加载超时，直接尝试滚动');
+                            setTimeout(() => {
+                                this.scrollToCommentPosition(start, comment);
+                            }, 50);
+                        }
+                    };
+                    
+                    // 开始等待
+                    waitForCodeLines();
                     
                 }, '处理代码高亮事件');
             },
@@ -2564,16 +2591,25 @@ const createCodeView = async () => {
                             return true; // 成功
                         } else {
                             // 如果找不到目标元素且重试次数未达上限，继续重试
-                            // 只在第一次尝试时重试（可能是DOM还未渲染完成）
-                            if (retryCount < 1) {
-                                console.log(`[CodeView] 未找到${targetType || '目标'}元素，第${retryCount + 1}次重试...`);
+                            // 增加重试次数，给文件加载更多时间
+                            if (retryCount < 3) {
+                                console.log(`[CodeView] 未找到${targetType || '目标'}元素，第${retryCount + 1}次重试...`, {
+                                    codeLinesCount: this.codeLines?.length,
+                                    hasFile: !!this.file,
+                                    fileLoading: this.loading
+                                });
                                 setTimeout(() => {
                                     attemptScroll(retryCount + 1);
-                                }, 200); // 等待DOM渲染
+                                }, 300); // 增加等待时间到300ms
                             } else {
                                 // 提供更友好的错误信息和替代方案
                                 const errorMsg = this.generateScrollErrorMessage(startLine, comment, targetType);
-                                console.warn('[CodeView] 达到最大重试次数，停止尝试滚动:', errorMsg);
+                                console.warn('[CodeView] 达到最大重试次数，停止尝试滚动:', errorMsg, {
+                                    codeLinesCount: this.codeLines?.length,
+                                    hasFile: !!this.file,
+                                    fileLoading: this.loading,
+                                    startLine
+                                });
                                 
                                 // 清除滚动状态
                                 this.isScrolling = false;
@@ -2620,9 +2656,12 @@ const createCodeView = async () => {
             // 处理滚动失败的情况
             handleScrollFailure(startLine, comment, errorMsg) {
                 try {
-                    // 如果只是找不到评论标记但找到了代码行，这是正常情况，不需要显示错误
-                    if (comment && comment.key && startLine) {
-                        // 尝试滚动到对应的代码行（如果存在）
+                    // 检查代码行是否真的存在
+                    const codeLinesCount = this.codeLines ? this.codeLines.length : 0;
+                    const hasValidLine = startLine && startLine > 0 && startLine <= codeLinesCount;
+                    
+                    // 如果行号有效但找不到元素，可能是DOM还未完全渲染，尝试最后一次查找
+                    if (hasValidLine) {
                         const codeLine = this.$el ? this.$el.querySelector(`[data-line="${startLine}"]`) : null;
                         if (codeLine) {
                             codeLine.scrollIntoView({ 
@@ -2632,8 +2671,23 @@ const createCodeView = async () => {
                             });
                             // 高亮代码行
                             this.highlightedLines = [Number(startLine)];
-                            console.log('[CodeView] 评论标记不存在，已滚动到代码行:', startLine);
+                            console.log('[CodeView] 最终找到代码行，已滚动到:', startLine);
                             return; // 成功回退，不需要显示错误
+                        }
+                    }
+                    
+                    // 如果行号超出范围，尝试滚动到文件末尾
+                    if (startLine && codeLinesCount > 0 && startLine > codeLinesCount) {
+                        const lastLine = this.$el ? this.$el.querySelector(`[data-line="${codeLinesCount}"]`) : null;
+                        if (lastLine) {
+                            lastLine.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'end',
+                                inline: 'nearest'
+                            });
+                            this.highlightedLines = [codeLinesCount];
+                            console.log('[CodeView] 行号超出范围，已滚动到文件末尾:', codeLinesCount);
+                            return;
                         }
                     }
                     
@@ -2648,10 +2702,12 @@ const createCodeView = async () => {
                         console.log('[CodeView] 已滚动到文件顶部作为替代方案');
                     }
                     
-                    // 只在完全无法找到目标时才显示警告（不显示在控制台，避免噪音）
-                    // 评论标记不存在是正常情况，不需要警告
-                    if (!comment || !comment.key || !startLine) {
-                        console.info('[CodeView] 无法定位到目标位置，已滚动到文件顶部');
+                    // 只在完全无法找到目标时才显示信息（不显示警告，避免噪音）
+                    // 评论标记不存在或文件内容已更改是正常情况
+                    if (hasValidLine) {
+                        console.info('[CodeView] 无法定位到目标位置（可能文件内容已更改），已滚动到文件顶部');
+                    } else if (startLine) {
+                        console.info('[CodeView] 行号超出范围或文件为空，已滚动到文件顶部');
                     }
                 } catch (error) {
                     console.warn('[CodeView] 处理滚动失败时出错:', error);
