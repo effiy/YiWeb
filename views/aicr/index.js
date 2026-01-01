@@ -109,11 +109,6 @@ const { computed } = Vue;
 
                 // 搜索相关状态
                 searchQuery: store.searchQuery,
-                // 评论者相关状态
-                commenters: store.commenters,
-                selectedCommenterIds: store.selectedCommenterIds,
-                commentersLoading: store.commentersLoading,
-                commentersError: store.commentersError,
             },
             onMounted: (mountedApp) => {
                 logInfo('[代码审查页面] 应用已挂载');
@@ -484,28 +479,7 @@ const { computed } = Vue;
                         console.log('[主页面] 传递给评论面板的项目ID:', projectId);
                         return projectId; 
                     },
-                    collapsed: function() { return store.commentsCollapsed ? store.commentsCollapsed.value : false; },
-                    // 传递评论者相关数据
-                    commenters: function() { 
-                        const commenters = store.commenters ? store.commenters.value : [];
-                        console.log('[主页面] 传递给评论面板的评论者数据:', commenters);
-                        return commenters; 
-                    },
-                    selectedCommenterIds: function() { 
-                        const selectedIds = store.selectedCommenterIds ? store.selectedCommenterIds.value : [];
-                        console.log('[主页面] 传递给评论面板的选中评论者ID:', selectedIds);
-                        return selectedIds; 
-                    },
-                    commentersLoading: function() { 
-                        const loading = store.commentersLoading ? store.commentersLoading.value : false;
-                        console.log('[主页面] 传递给评论面板的评论者加载状态:', loading);
-                        return loading; 
-                    },
-                    commentersError: function() { 
-                        const error = store.commentersError ? store.commentersError.value : '';
-                        console.log('[主页面] 传递给评论面板的评论者错误:', error);
-                        return error; 
-                    }
+                    collapsed: function() { return store.commentsCollapsed ? store.commentsCollapsed.value : false; }
                 }
             },
             methods: {
@@ -569,16 +543,6 @@ const { computed } = Vue;
                     }
                 },
                 
-                // 添加评论者选择事件处理
-                handleCommenterSelect: function(commenters) {
-                    logInfo('[主页面] 收到评论者选择事件:', commenters);
-                    try {
-                        const methods = useMethods(store);
-                        methods.handleCommenterSelect(commenters);
-                    } catch (error) {
-                        logError('[主页面] 评论者选择处理失败:', error);
-                    }
-                },
                 
                 // 添加文件夹切换事件处理
                 handleFolderToggle: function(folderId) {
