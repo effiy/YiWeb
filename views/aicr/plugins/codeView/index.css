@@ -14,12 +14,10 @@
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 12px;
     line-height: 1.4;
-    overflow-y: auto;
-    overflow-x: auto;
+    overflow: visible;
     position: relative;
     min-height: 120px;
     box-shadow: var(--shadow-sm);
-    max-height: 100vh;
 }
 
 /* ========== Markdown预览容器 ========== */
@@ -3977,25 +3975,6 @@
 }
 
 /* ========== 滚动条样式 ========== */
-.code-content::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-.code-content::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-    border-radius: 4px;
-}
-
-.code-content::-webkit-scrollbar-thumb {
-    background: var(--border-primary);
-    border-radius: 4px;
-    transition: background 0.2s ease;
-}
-
-.code-content::-webkit-scrollbar-thumb:hover {
-    background: var(--border-hover);
-}
 
 /* ========== 评论操作容器 - 重构优化版本 ========== */
 #comment-action-container {
