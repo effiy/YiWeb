@@ -1065,9 +1065,12 @@ const createCommentPanel = async () => {
                         const { updateData } = await import('/apis/modules/crud.js');
                         
                         // 构建更新数据
+                        // 如果是手动评论，保持author为"手动评论"
+                        const originalAuthor = this.editingComment.author;
+                        const finalAuthor = originalAuthor === '手动评论' ? '手动评论' : newAuthor;
                         let payload = {
                             key: this.editingComment.key,
-                            author: newAuthor,
+                            author: finalAuthor,
                             projectId: projectId,
                             content: newContent,
                             text: newContent, // 确保 text 与 content 保持一致

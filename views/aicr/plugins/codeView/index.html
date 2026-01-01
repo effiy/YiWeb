@@ -488,8 +488,9 @@
                             </button>
 
                             <button 
+                                v-if="currentCommentDetail.author === '手动评论'"
                                 @click="startEditCommentDetail(currentCommentDetail)"
-                                class="action-button edit-button primary"
+                                class="action-button resolve-button primary"
                                 title="编辑评论内容"
                             >
                                 <i class="fas fa-edit"></i>

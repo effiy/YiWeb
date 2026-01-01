@@ -111,6 +111,16 @@
                         </button>
                         
                         <button 
+                            v-if="comment.author === '手动评论'"
+                            @click="openCommentEditor(comment)"
+                            class="action-button resolve-button"
+                            title="编辑评论"
+                        >
+                            <i class="fas fa-edit"></i>
+                            编辑
+                        </button>
+                        
+                        <button 
                             @click="deleteComment(comment.key)"
                             class="action-button resolve-button"
                             :class="{ 'deleting': deletingComments[comment.key] }"

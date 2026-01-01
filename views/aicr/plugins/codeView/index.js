@@ -3739,9 +3739,12 @@ const createCodeView = async () => {
                     
                     // 构建更新数据
                     const processedContentValue = this.editingCommentContentIsJson ? JSON.parse(processedContent) : processedContent;
+                    // 如果是手动评论，保持author为"手动评论"
+                    const originalAuthor = this.currentCommentDetail.author;
+                    const finalAuthor = originalAuthor === '手动评论' ? '手动评论' : this.editingCommentAuthor.trim();
                     let updateData = {
                         key: this.currentCommentDetail.key,
-                        author: this.editingCommentAuthor.trim(),
+                        author: finalAuthor,
                         content: processedContentValue,
                         text: processedContentValue, // 确保 text 与 content 保持一致
                         improvementText: this.editingImprovementText.trim(),
