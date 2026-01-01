@@ -334,6 +334,10 @@ export const createStore = () => {
     // 新增评论内容
     const newComment = vueRef('');
     
+    // 批量选择相关状态
+    const batchMode = vueRef(false);
+    const selectedFileIds = vueRef(new Set());
+    
     // 评论者相关状态
     const commenters = vueRef([]);
     const selectedCommenterIds = vueRef([]);
@@ -2047,6 +2051,10 @@ export const createStore = () => {
         // 搜索相关状态
         searchQuery,
         newComment,
+        
+        // 批量选择相关状态
+        batchMode,
+        selectedFileIds,
         
         // 评论者相关状态
         commenters,

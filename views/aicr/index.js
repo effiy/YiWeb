@@ -109,6 +109,9 @@ const { computed } = Vue;
 
                 // 搜索相关状态
                 searchQuery: store.searchQuery,
+                // 批量选择相关状态
+                batchMode: store.batchMode,
+                selectedFileIds: store.selectedFileIds,
             },
             onMounted: (mountedApp) => {
                 logInfo('[代码审查页面] 应用已挂载');
@@ -705,6 +708,28 @@ const { computed } = Vue;
                         alert('上传失败：' + (error?.message || '未知错误'));
                     } finally {
                         try { e.target.value = ''; } catch (_) {}
+                    }
+                },
+                
+                // 切换批量选择模式
+                toggleBatchMode: function() {
+                    logInfo('[主页面] 收到批量模式切换事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.toggleBatchMode();
+                    } catch (error) {
+                        logError('[主页面] 批量模式切换失败:', error);
+                    }
+                },
+                
+                // 切换文件选中状态（批量选择）
+                toggleFileSelection: function(fileId) {
+                    logInfo('[主页面] 收到文件选择切换事件:', fileId);
+                    try {
+                        const methods = useMethods(store);
+                        methods.toggleFileSelection(fileId);
+                    } catch (error) {
+                        logError('[主页面] 文件选择切换失败:', error);
                     }
                 },
                 

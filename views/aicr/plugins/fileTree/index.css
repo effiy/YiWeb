@@ -11,14 +11,109 @@
     flex-direction: column;
 }
 
-/* ========== 搜索输入框 ========== */
-.file-tree-search-container {
+/* ========== 侧边栏标题容器 ========== */
+.file-tree-header-container {
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
     position: sticky;
     top: 0;
     z-index: 10;
+}
+
+/* ========== 工具栏 ========== */
+.file-tree-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    border: 1px solid #4f46e5;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.toolbar-btn:hover {
+    background: linear-gradient(135deg, #4f46e5, #4338ca);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.toolbar-btn:active {
+    transform: translateY(0);
+}
+
+.toolbar-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.toolbar-btn.active {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: #059669;
+}
+
+.toolbar-btn.active:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* 下载按钮样式 */
+.toolbar-btn:has(.fa-download) {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    border-color: #1976D2;
+}
+
+.toolbar-btn:has(.fa-download):hover {
+    background: linear-gradient(135deg, #1976D2, #1565C0);
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+/* 上传按钮样式 */
+.toolbar-btn:has(.fa-upload) {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    border-color: #45a049;
+}
+
+.toolbar-btn:has(.fa-upload):hover {
+    background: linear-gradient(135deg, #45a049, #3d8b40);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.toolbar-btn i {
+    font-size: 12px;
+}
+
+/* ========== 搜索输入框 ========== */
+.file-tree-search-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
 }
 
 .file-tree-search-wrapper {
@@ -254,6 +349,17 @@
 }
 
 .file-tree-item.selected::before {
+    opacity: 1;
+}
+
+/* ========== 批量选择状态 ========== */
+.file-tree-item.batch-selected {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+}
+
+.file-tree-item.batch-selected::before {
+    background: #10b981;
     opacity: 1;
 }
 

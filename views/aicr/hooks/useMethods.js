@@ -2133,6 +2133,53 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 切换批量选择模式
+     */
+    const toggleBatchMode = () => {
+        return safeExecute(() => {
+            const { batchMode, selectedFileIds } = store;
+            if (batchMode && typeof batchMode.value !== 'undefined') {
+                batchMode.value = !batchMode.value;
+                // 退出批量模式时清空选中项
+                if (!batchMode.value && selectedFileIds && selectedFileIds.value) {
+                    selectedFileIds.value.clear();
+                }
+                console.log('[批量选择] 批量模式:', batchMode.value ? '开启' : '关闭');
+            }
+        }, '批量模式切换');
+    };
+
+    /**
+     * 切换文件选中状态（批量选择模式下）
+     */
+    const toggleFileSelection = (fileId) => {
+        return safeExecute(() => {
+            const { batchMode, selectedFileIds } = store;
+            if (!batchMode || !batchMode.value) {
+                console.warn('[批量选择] 未开启批量模式');
+                return;
+            }
+            
+            if (!selectedFileIds || !selectedFileIds.value) {
+                console.warn('[批量选择] selectedFileIds 未初始化');
+                return;
+            }
+
+            const normalizedFileId = normalizeFileId ? normalizeFileId(fileId) : String(fileId || '');
+            
+            if (selectedFileIds.value.has(normalizedFileId)) {
+                selectedFileIds.value.delete(normalizedFileId);
+                console.log('[批量选择] 取消选中文件:', normalizedFileId);
+            } else {
+                selectedFileIds.value.add(normalizedFileId);
+                console.log('[批量选择] 选中文件:', normalizedFileId);
+            }
+            
+            console.log('[批量选择] 当前选中文件数:', selectedFileIds.value.size);
+        }, '文件选择切换');
+    };
+
+    /**
      * 版本选择器已改为select元素，不再需要切换方法
      */
 
@@ -2350,6 +2397,8 @@ export const useMethods = (store) => {
         handleDownloadProjectVersion,
         handleUploadProjectVersion,
         triggerUploadProjectVersion,
+        toggleBatchMode: toggleBatchMode,
+        toggleFileSelection: toggleFileSelection,
         // =============== 项目与版本维护 ===============
         openProjectVersionManager: () => {
             try {

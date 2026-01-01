@@ -96,6 +96,14 @@ const createFileTreeNode = () => {
             comments: {
                 type: Array,
                 default: () => []
+            },
+            batchMode: {
+                type: Boolean,
+                default: false
+            },
+            selectedFileIds: {
+                type: [Set, Array],
+                default: () => new Set()
             }
         },
         data() {
@@ -110,7 +118,7 @@ const createFileTreeNode = () => {
                 return this.tree.map(item => sortFileTreeRecursively(item));
             }
         },
-        emits: ['file-select', 'folder-toggle', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session'],
+        emits: ['file-select', 'folder-toggle', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'batch-select-file'],
         methods: {
             // 排序函数，供模板使用
             sortFileTreeItems(items) {
@@ -204,6 +212,12 @@ const createFileTreeNode = () => {
                     }
                     const idStr = String(fileId);
                     
+                    // 批量选择模式：切换选中状态
+                    if (this.batchMode) {
+                        this.$emit('batch-select-file', idStr);
+                        return;
+                    }
+                    
                     // 添加防抖机制，避免快速连续点击
                     if (this._lastClickTime && Date.now() - this._lastClickTime < 300) {
                         console.log('[FileTreeNode] 点击间隔过短，跳过重复选择:', idStr);
@@ -242,6 +256,27 @@ const createFileTreeNode = () => {
             // 检查文件是否被选中
             isFileSelected(fileId) {
                 return safeExecute(() => {
+                    // 批量选择模式：检查是否在选中列表中
+                    if (this.batchMode && this.selectedFileIds) {
+                        const normalize = (v) => {
+                            if (!v) return '';
+                            let s = String(v).replace(/\\/g, '/');
+                            s = s.replace(/^\.\//, '');
+                            s = s.replace(/^\/+/, '');
+                            s = s.replace(/\/\/+/g, '/');
+                            return s;
+                        };
+                        const normalizedFileId = normalize(fileId);
+                        // 检查 Set 中是否包含该文件ID
+                        for (const selectedId of this.selectedFileIds) {
+                            if (normalize(selectedId) === normalizedFileId) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+                    
+                    // 普通模式：检查是否与当前选中文件匹配
                     if (!fileId || !this.selectedFileId) return false;
                     
                     // 规范化文件ID进行比较
@@ -417,7 +452,8 @@ const createFileTreeNode = () => {
                 <div 
                     v-else
                     :class="['file-tree-item', 'file-item', { 
-                        selected: isFileSelected(item.id)
+                        selected: isFileSelected(item.id),
+                        'batch-selected': batchMode && isFileSelected(item.id)
                     }]"
                     @click="selectFile(item.id)"
                     :title="\`文件: \${item.name}\`"
@@ -447,6 +483,8 @@ const createFileTreeNode = () => {
                             :selected-file-id="selectedFileId"
                             :expanded-folders="expandedFolders"
                             :comments="comments"
+                            :batch-mode="batchMode"
+                            :selected-file-ids="selectedFileIds"
                             @file-select="$emit('file-select', $event)"
                              @folder-toggle="$emit('folder-toggle', $event)"
                              @create-folder="$emit('create-folder', $event)"
@@ -454,6 +492,7 @@ const createFileTreeNode = () => {
                              @rename-item="$emit('rename-item', $event)"
                              @delete-item="$emit('delete-item', $event)"
                              @create-session="$emit('create-session', $event)"
+                             @batch-select-file="$emit('batch-select-file', $event)"
                         ></file-tree-node>
                     </template>
                 </ul>
@@ -503,6 +542,18 @@ const createFileTree = async () => {
             searchQuery: {
                 type: String,
                 default: ''
+            },
+            batchMode: {
+                type: Boolean,
+                default: false
+            },
+            selectedFileIds: {
+                type: [Set, Array],
+                default: () => new Set()
+            },
+            selectedProject: {
+                type: String,
+                default: ''
             }
         },
         computed: {
@@ -519,7 +570,7 @@ const createFileTree = async () => {
                 return sorted;
             }
         },
-        emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change'],
+        emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project'],
         data() {
             return {
                 searchDebounceTimer: null
@@ -582,6 +633,36 @@ const createFileTree = async () => {
                         input.focus();
                     }
                 });
+            },
+            
+            // 切换批量选择模式
+            toggleBatchMode() {
+                this.$emit('toggle-batch-mode');
+            },
+            
+            // 处理下载
+            handleDownload() {
+                this.$emit('download-project');
+            },
+            
+            // 触发上传
+            triggerUpload() {
+                const input = this.$refs.uploadInput;
+                if (input) {
+                    input.click();
+                }
+            },
+            
+            // 处理上传
+            handleUpload(event) {
+                const file = event.target.files?.[0];
+                if (file) {
+                    this.$emit('upload-project', file);
+                }
+                // 清除文件输入，允许重复选择同一文件
+                if (event.target) {
+                    event.target.value = '';
+                }
             },
             // 排序函数，供模板使用
             sortFileTreeItems(items) {
