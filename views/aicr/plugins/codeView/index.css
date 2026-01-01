@@ -131,58 +131,6 @@
     display: flex;
 }
 
-/* 行号容器 */
-.markdown-line-numbers {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 50px;
-    padding: 32px 8px 32px 16px;
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border-primary);
-    user-select: none;
-    flex-shrink: 0;
-    z-index: 2;
-    overflow-y: visible;
-    overflow-x: hidden;
-    text-align: right;
-    font-size: 13px;
-    line-height: 1.7;
-    color: var(--text-muted);
-    pointer-events: none;
-    box-sizing: border-box;
-    /* 确保行号容器的高度可以动态调整 */
-    min-height: 100%;
-}
-
-/* 隐藏行号容器的滚动条 */
-.markdown-line-numbers::-webkit-scrollbar {
-    display: none;
-}
-
-.markdown-line-numbers {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-
-/* 行号项 - 确保与内容行高精确匹配 */
-.markdown-line-number {
-    display: block;
-    height: 1.7em;
-    line-height: 1.7em;
-    padding: 0;
-    margin: 0;
-    color: var(--text-muted);
-    transition: color 0.2s;
-    box-sizing: border-box;
-    white-space: nowrap;
-    /* 确保行号不会因为内容变化而错位 */
-    position: relative;
-}
-
-.markdown-line-number:hover {
-    color: var(--primary);
-}
 
 /* 整体Markdown内容容器 */
 .markdown-full-content {
@@ -697,28 +645,6 @@
     position: relative;
 }
 
-/* 行号样式 */
-.line-numbers {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 50px;
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border-primary);
-    padding: 20px 8px;
-    font-size: 0.85em;
-    color: var(--text-muted);
-    user-select: none;
-    line-height: 1.6;
-    text-align: right;
-}
-
-.line-number {
-    display: block;
-    height: 1.6em;
-    line-height: 1.6em;
-}
 
 /* 代码块折叠状态 */
 .md-code-block.collapsed {
@@ -1329,10 +1255,9 @@
     line-height: 1.1;
 }
 
-/* ========== 行号和代码行 ========== */
+/* ========== 代码行 ========== */
 .code-line {
-    display: flex;
-    align-items: flex-start;
+    display: block;
     padding: 4px 0;
     margin: 0;
     border: none;
@@ -1343,25 +1268,7 @@
     position: relative;
 }
 
-.line-number {
-    color: var(--text-muted);
-    min-width: 32px;
-    text-align: right;
-    margin-right: 12px;
-    -webkit-user-select: none;
-    user-select: none;
-    font-size: 11px;
-    opacity: 0.7;
-    font-family: inherit;
-}
-
-.line-number:hover {
-    color: var(--primary);
-    opacity: 1;
-}
-
 .line-content {
-    flex: 1;
     white-space: pre;
     font-family: inherit;
 }
@@ -3932,11 +3839,6 @@
         line-height: 1.6;
     }
     
-    .line-number {
-        min-width: 30px;
-        margin-right: var(--spacing-xs);
-        font-size: 10px;
-    }
     
     /* 旧样式已被modern-dialog替代 */
     
@@ -3994,10 +3896,6 @@
         font-size: 11px;
     }
     
-    .line-number {
-        min-width: 25px;
-        font-size: 9px;
-    }
     
     .comment-markers {
         margin-left: 4px;
@@ -6148,11 +6046,6 @@
         font-size: 0.85em;
     }
     
-    .line-numbers {
-        width: 40px;
-        padding: 16px 6px;
-        font-size: 0.8em;
-    }
     
     /* 移动端表格优化 */
     .markdown-preview-content table,
@@ -6247,11 +6140,6 @@
         font-size: 0.8em;
     }
     
-    .line-numbers {
-        width: 35px;
-        padding: 12px 4px;
-        font-size: 0.75em;
-    }
     
     .markdown-preview-content th,
     .markdown-preview-content td,

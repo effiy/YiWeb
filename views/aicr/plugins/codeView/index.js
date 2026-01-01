@@ -210,12 +210,6 @@ const createCodeView = async () => {
                             // 强制更新视图
                             this.$nextTick(() => {
                                 this.$forceUpdate();
-                                // 如果是 Markdown 预览模式，更新行号
-                                if (this.shouldShowMarkdownPreview) {
-                                    setTimeout(() => {
-                                        this.updateMarkdownLineNumbers();
-                                    }, 100);
-                                }
                             });
                         }
                     }
@@ -471,13 +465,9 @@ const createCodeView = async () => {
                 }
                 const html = this.renderMarkdown(this.file.content);
                 
-                // 在下一个tick中添加交互功能和行号
+                // 在下一个tick中添加交互功能
                 this.$nextTick(() => {
                     this.addMarkdownInteractions();
-                    // 延迟更新行号，确保 DOM 完全渲染
-                    setTimeout(() => {
-                        this.updateMarkdownLineNumbers();
-                    }, 50);
                 });
                 
                 return html;
@@ -519,12 +509,6 @@ const createCodeView = async () => {
                             wrapper?.classList.add('collapsed');
                         }
                         
-                        // 更新行号高度
-                        if (this.syncLineNumbersHeight) {
-                            this.$nextTick(() => {
-                                this.syncLineNumbersHeight();
-                            });
-                        }
                     }
                 };
                 
@@ -533,8 +517,6 @@ const createCodeView = async () => {
                     this.toggleContentCollapse(elementId);
                 };
                 
-                // 添加行号
-                this.addLineNumbers();
             },
             
             // 显示复制成功提示
@@ -564,18 +546,6 @@ const createCodeView = async () => {
                     console.error('复制失败:', err);
                 }
                 document.body.removeChild(textArea);
-            },
-            
-            // 添加行号
-            addLineNumbers() {
-                const codeBlocks = this.$el.querySelectorAll('.md-code-block code');
-                codeBlocks.forEach(block => {
-                    const lines = block.textContent.split('\n');
-                    if (lines.length > 1) {
-                        const lineNumbers = lines.map((_, index) => `<span class="line-number">${index + 1}</span>`).join('\n');
-                        block.innerHTML = `<span class="line-numbers">${lineNumbers}</span>\n${block.innerHTML}`;
-                    }
-                });
             },
             
             // 添加目录导航
@@ -1831,9 +1801,6 @@ const createCodeView = async () => {
                 
                 this.$nextTick(() => {
                     try {
-                    // 添加行号
-                    this.updateMarkdownLineNumbers();
-                    
                     // 添加代码块复制功能
                     const codeBlocks = this.$el?.querySelectorAll('.md-code-block-copy');
                     codeBlocks?.forEach(button => {
@@ -1876,158 +1843,6 @@ const createCodeView = async () => {
                 });
             },
             
-            // 清理 Markdown 行号相关的监听器
-            cleanupMarkdownLineNumbers() {
-                const previewContainer = this.$el?.querySelector('.markdown-preview-content');
-                
-                // 清理滚动监听器
-                if (this._markdownScrollHandler && previewContainer) {
-                    previewContainer.removeEventListener('scroll', this._markdownScrollHandler);
-                    this._markdownScrollHandler = null;
-                }
-                
-                // 清理 ResizeObserver
-                if (this._markdownResizeObserver) {
-                    this._markdownResizeObserver.disconnect();
-                    this._markdownResizeObserver = null;
-                }
-                
-                // 清理定时器
-                if (this._markdownResizeTimer) {
-                    clearTimeout(this._markdownResizeTimer);
-                    this._markdownResizeTimer = null;
-                }
-            },
-            
-            // 计算并更新 Markdown 预览的行号（内部方法，不创建新的观察器）
-            calculateAndUpdateLineNumbers() {
-                const lineNumbersContainer = this.$refs?.markdownLineNumbers;
-                const contentContainer = this.$refs?.markdownFullContent;
-                const previewContainer = this.$el?.querySelector('.markdown-preview-content');
-                
-                if (!lineNumbersContainer || !contentContainer || !previewContainer) return;
-                
-                // 获取内容容器的实际渲染高度和样式
-                const contentHeight = contentContainer.scrollHeight;
-                const contentComputedStyle = getComputedStyle(contentContainer);
-                const previewComputedStyle = getComputedStyle(previewContainer);
-                
-                // 获取渲染后的行高（与 markdown-preview-content 一致）
-                // 默认值：1.7 * 15px = 25.5px
-                const lineHeight = parseFloat(previewComputedStyle.lineHeight) || 
-                                 parseFloat(contentComputedStyle.lineHeight) || 25.5;
-                
-                // 获取内容容器的 padding（markdown-preview-content 的 padding 是 32px 0）
-                const contentPaddingTop = parseFloat(previewComputedStyle.paddingTop) || 32;
-                const contentPaddingBottom = parseFloat(previewComputedStyle.paddingBottom) || 32;
-                
-                // 计算渲染后的实际行数
-                // 实际内容高度 = 总高度 - padding
-                const actualContentHeight = contentHeight - contentPaddingTop - contentPaddingBottom;
-                // 渲染后的行数 = 实际内容高度 / 行高
-                const renderedLineCount = Math.max(1, Math.ceil(actualContentHeight / lineHeight));
-                
-                // 生成行号 HTML - 基于渲染后的实际行数
-                // 同时设置行号的行高，确保与内容容器完全一致
-                let lineNumbersHtml = '';
-                for (let i = 1; i <= renderedLineCount; i++) {
-                    lineNumbersHtml += `<div class="markdown-line-number" data-line="${i}" style="height: ${lineHeight}px; line-height: ${lineHeight}px;">${i}</div>`;
-                }
-                
-                lineNumbersContainer.innerHTML = lineNumbersHtml;
-                
-                // 调整行号容器高度，使其与内容容器高度精确匹配
-                this.syncLineNumbersHeight();
-            },
-            
-            // 更新 Markdown 预览的行号
-            updateMarkdownLineNumbers() {
-                if (!this.file || !this.file.content) {
-                    this.cleanupMarkdownLineNumbers();
-                    return;
-                }
-                
-                const lineNumbersContainer = this.$refs?.markdownLineNumbers;
-                const contentContainer = this.$refs?.markdownFullContent;
-                const previewContainer = this.$el?.querySelector('.markdown-preview-content');
-                
-                if (!lineNumbersContainer || !contentContainer || !previewContainer) return;
-                
-                // 清理之前的监听器
-                this.cleanupMarkdownLineNumbers();
-                
-                // 等待 DOM 渲染完成
-                this.$nextTick(() => {
-                    // 延迟执行，确保所有内容（包括代码块）都已渲染
-                    setTimeout(() => {
-                        // 计算并更新行号
-                        this.calculateAndUpdateLineNumbers();
-                        
-                    // 由于移除了滚动条，不再需要滚动同步
-                    // 但保留代码以便将来需要时使用
-                    // const syncScroll = () => {
-                    //     if (lineNumbersContainer && previewContainer) {
-                    //         lineNumbersContainer.scrollTop = previewContainer.scrollTop;
-                    //     }
-                    // };
-                    // this._markdownScrollHandler = syncScroll;
-                    // previewContainer.addEventListener('scroll', syncScroll, { passive: true });
-                        
-                        // 监听内容变化，重新计算行号和同步高度
-                        const resizeObserver = new ResizeObserver(() => {
-                            // 延迟更新，避免频繁计算
-                            if (this._markdownResizeTimer) {
-                                clearTimeout(this._markdownResizeTimer);
-                            }
-                            this._markdownResizeTimer = setTimeout(() => {
-                                // 重新计算行号数量（因为内容可能变化，如代码块展开/折叠）
-                                this.calculateAndUpdateLineNumbers();
-                            }, 100);
-                        });
-                        
-                        if (contentContainer) {
-                            resizeObserver.observe(contentContainer);
-                            // 保存 observer 以便后续清理
-                            this._markdownResizeObserver = resizeObserver;
-                        }
-                        
-                        // 由于移除了滚动条，不再需要初始滚动同步
-                    }, 150);
-                });
-            },
-            
-            // 同步行号容器高度与内容容器高度
-            syncLineNumbersHeight() {
-                const lineNumbersContainer = this.$refs?.markdownLineNumbers;
-                const contentContainer = this.$refs?.markdownFullContent;
-                const previewContainer = this.$el?.querySelector('.markdown-preview-content');
-                
-                if (!lineNumbersContainer || !contentContainer || !previewContainer) return;
-                
-                // 获取内容容器的实际渲染高度（包括所有内容，考虑折叠/展开状态）
-                const contentScrollHeight = contentContainer.scrollHeight;
-                
-                // 获取行号容器的行数和行高
-                const lineNumberItems = lineNumbersContainer.querySelectorAll('.markdown-line-number');
-                
-                if (lineNumberItems.length > 0) {
-                    // 计算单行高度（包括 line-height）
-                    const firstLineNumber = lineNumberItems[0];
-                    const lineHeight = parseFloat(getComputedStyle(firstLineNumber).lineHeight) || 25.5; // 1.7 * 15px
-                    
-                    // 获取行号容器的 padding
-                    const lineNumbersPaddingTop = 32; // 与 CSS 中的 padding-top 一致
-                    const lineNumbersPaddingBottom = 32; // 与 CSS 中的 padding-bottom 一致
-                    
-                    // 计算行号容器的理论高度（基于行数和行高）
-                    const lineNumbersTheoreticalHeight = lineNumberItems.length * lineHeight + lineNumbersPaddingTop + lineNumbersPaddingBottom;
-                    
-                    // 使用内容容器的实际 scrollHeight，确保行号容器能够覆盖整个内容区域
-                    // 考虑折叠/展开状态，动态调整高度
-                    const finalHeight = Math.max(contentScrollHeight, lineNumbersTheoreticalHeight);
-                    lineNumbersContainer.style.height = `${finalHeight}px`;
-                }
-            },
             
             // 复制代码块内容
             copyCodeBlock(codeId) {
@@ -2102,10 +1917,6 @@ const createCodeView = async () => {
                         }
                     }
                     
-                    // 更新行号高度
-                    this.$nextTick(() => {
-                        this.syncLineNumbersHeight();
-                    });
                 }
             },
             
@@ -2113,10 +1924,6 @@ const createCodeView = async () => {
             toggleContentCollapse(element) {
                 if (element) {
                     element.classList.toggle('collapsed');
-                    // 更新行号高度
-                    this.$nextTick(() => {
-                        this.syncLineNumbersHeight();
-                    });
                 }
             },
             // 渲染单行Markdown内容
@@ -2730,10 +2537,6 @@ const createCodeView = async () => {
                                 element.classList.add('collapsed');
                                 toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i> 展开';
                             }
-                            // 更新行号高度
-                            this.$nextTick(() => {
-                                this.syncLineNumbersHeight();
-                            });
                         });
                     }
                 });
@@ -2760,10 +2563,6 @@ const createCodeView = async () => {
                                 wrapper.classList.add('collapsed');
                                 toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i> 展开表格';
                             }
-                            // 更新行号高度
-                            this.$nextTick(() => {
-                                this.syncLineNumbersHeight();
-                            });
                         });
                     }
                 });
@@ -2785,10 +2584,6 @@ const createCodeView = async () => {
                         const btn = element.querySelector('.collapse-toggle');
                         if (btn) btn.innerHTML = '<i class="fas fa-chevron-down"></i> 展开';
                     }
-                    // 更新行号高度
-                    this.$nextTick(() => {
-                        this.syncLineNumbersHeight();
-                    });
                 }
             },
             
@@ -5353,8 +5148,6 @@ const createCodeView = async () => {
                 this._unhandledRejectionHandler = null;
             }
             
-            // 清理 Markdown 行号相关的监听器
-            this.cleanupMarkdownLineNumbers();
             
             // 清理窗口大小变化监听器
             if (this._resizeHandler) {

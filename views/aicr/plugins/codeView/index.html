@@ -55,8 +55,6 @@
         <div v-else-if="shouldShowMarkdownPreview" class="markdown-preview-container" @dblclick="handlePreviewDoubleClick" title="双击切换到源码模式">
             <div class="markdown-preview-wrapper">
                 <div class="markdown-preview-content md-preview-body">
-                    <!-- 行号容器 -->
-                    <div class="markdown-line-numbers" ref="markdownLineNumbers"></div>
                     <!-- 整体Markdown预览内容 -->
                     <div class="markdown-full-content" v-html="markdownPreviewHtml" ref="markdownFullContent"></div>
                 </div>
@@ -70,7 +68,6 @@
                 :class="['code-line', highlightedLines.includes(index + 1) ? 'highlight' : '']"
                 :data-line="index + 1"
             >
-                <span class="line-number">{{ index + 1 }}</span>
                 <span class="line-content" v-html="escapeHtml(line)"></span>
                 
                 <!-- 评论标记 -->
