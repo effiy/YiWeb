@@ -15,7 +15,6 @@
 .file-tree-header-container {
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-primary);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
@@ -113,6 +112,7 @@
 .file-tree-search-container {
     display: flex;
     align-items: center;
+    gap: var(--spacing-xs);
     width: 100%;
 }
 
@@ -120,15 +120,26 @@
     position: relative;
     display: flex;
     align-items: center;
+    flex: 1;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    padding-right: 4px;
+}
+
+.file-tree-search-wrapper:focus-within {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
 }
 
 .file-tree-search-icon {
     position: absolute;
-    left: 10px;
-    font-size: 14px;
+    left: 12px;
+    font-size: 13px;
     pointer-events: none;
     z-index: 1;
-    opacity: 0.5;
+    opacity: 0.6;
     transition: opacity 0.2s ease;
 }
 
@@ -137,13 +148,15 @@
     font-weight: 400;
     font-size: 13px;
     color: var(--text-primary);
-    padding: 8px 32px 8px 32px;
-    border: 1.5px solid var(--border-primary);
+    padding: 10px 8px 10px 32px;
+    border: none;
     border-radius: 8px;
-    background: var(--bg-primary);
+    background: transparent;
     outline: none;
     transition: all 0.2s ease;
     box-sizing: border-box;
+    flex: 1;
+    min-width: 0;
 }
 
 .file-tree-search-input::placeholder {
@@ -151,37 +164,35 @@
     opacity: 1;
 }
 
-.file-tree-search-input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-}
-
-.file-tree-search-input:focus ~ .file-tree-search-icon {
+.file-tree-search-wrapper:focus-within .file-tree-search-icon {
     opacity: 0.7;
 }
 
 .file-tree-search-clear {
     position: absolute;
-    right: 6px;
-    width: 20px;
-    height: 20px;
+    right: 70px;
+    width: 18px;
+    height: 18px;
     border: none;
-    background: var(--border-primary);
+    background: transparent;
     color: var(--text-secondary);
     border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 11px;
     padding: 0;
     transition: all 0.2s ease;
     z-index: 2;
     line-height: 1;
+    opacity: 0.5;
 }
 
 .file-tree-search-clear:hover {
-    background: var(--border-secondary);
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    opacity: 1;
     transform: scale(1.1);
 }
 
@@ -270,8 +281,7 @@
 
 .file-tree-children {
     padding-left: var(--spacing-sm);
-    margin-left: 16px; /* 优化缩进宽度，使其更紧凑 */
-    border-left: 1px solid var(--border-primary);
+    margin-left: 20px; /* 优化缩进宽度 */
     position: relative;
 }
 
@@ -279,7 +289,6 @@
 .file-tree-header {
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-primary);
     font-weight: 600;
     font-size: 14px;
     color: var(--text-primary);
@@ -299,68 +308,36 @@
 /* ========== 文件树项目 ========== */
 .file-tree-item {
     cursor: pointer;
-    padding: var(--spacing-xs) var(--spacing-sm);
+    padding: 6px var(--spacing-sm);
     border-radius: 6px;
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
     -webkit-user-select: none;
     user-select: none;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.15s ease;
     font-size: 13px;
-    line-height: 1.4;
-    margin: 1px 0;
+    line-height: 1.5;
+    margin: 2px 0;
     position: relative;
-    border: 1px solid transparent;
     min-width: 0; /* 允许子项正确收缩，配合省略号 */
 }
 
-.file-tree-item::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--primary);
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    border-radius: 0 2px 2px 0;
-}
-
 .file-tree-item:hover {
-    background: var(--bg-glass);
+    background: rgba(255, 255, 255, 0.08);
     color: var(--text-primary);
-    border-color: var(--border-primary);
-    transform: translateX(2px);
-}
-
-.file-tree-item:hover::before {
-    opacity: 0.3;
 }
 
 /* ========== 选中状态 ========== */
 .file-tree-item.selected {
     background: rgba(79, 70, 229, 0.15);
     color: var(--text-primary);
-    font-weight: 600;
-    border-color: var(--primary);
-    box-shadow: var(--shadow-sm);
-}
-
-.file-tree-item.selected::before {
-    opacity: 1;
+    font-weight: 500;
 }
 
 /* ========== 批量选择状态 ========== */
 .file-tree-item.batch-selected {
     background: rgba(16, 185, 129, 0.15);
-    border-color: #10b981;
-}
-
-.file-tree-item.batch-selected::before {
-    background: #10b981;
-    opacity: 1;
 }
 
 /* ========== 文件夹样式 ========== */
@@ -451,18 +428,7 @@
 .file-tree .file-tree {
     padding-left: var(--spacing-sm);
     margin-left: var(--spacing-xs);
-    border-left: 1px solid var(--border-primary);
     position: relative;
-}
-
-.file-tree .file-tree::before {
-    content: '';
-    position: absolute;
-    left: -1px;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: linear-gradient(to bottom, var(--border-primary) 0%, transparent 100%);
 }
 
 /* ========== 展开/折叠动画 ========== */
@@ -771,11 +737,193 @@
     color: var(--secondary);
 }
 
+/* ========== 视图切换按钮样式（集成在搜索框内） ========== */
+.view-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    height: 28px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 2px;
+}
+
+.view-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    opacity: 0.7;
+}
+
+.view-mode-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    opacity: 1;
+}
+
+.view-mode-btn.active {
+    background: rgba(79, 70, 229, 0.2);
+    color: var(--primary);
+    opacity: 1;
+}
+
+.view-mode-btn.active:hover {
+    background: rgba(79, 70, 229, 0.25);
+}
+
+.view-mode-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.view-mode-btn i {
+    font-size: 11px;
+}
+
 /* 响应式设计 */
 @media (max-width: 640px) {
     .comment-count {
         font-size: 10px;
         padding: 1px 4px;
+    }
+    
+    .view-mode-btn {
+        width: 26px;
+        height: 26px;
+    }
+    
+    .view-mode-btn i {
+        font-size: 11px;
+    }
+    
+    .file-tree-search-clear {
+        right: 56px;
+    }
+}
+
+/* ========== 标签视图样式 ========== */
+.file-tags-view {
+    padding: var(--spacing-md);
+    height: 100%;
+    overflow-y: auto;
+}
+
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    align-items: flex-start;
+}
+
+.file-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: 13px;
+    color: var(--text-secondary);
+    user-select: none;
+    position: relative;
+}
+
+.file-tag:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.file-tag.selected {
+    background: rgba(79, 70, 229, 0.15);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.file-tag.batch-selected {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+}
+
+.tag-icon {
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.tag-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+.tag-comment-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    background: var(--primary);
+    color: white;
+    border-radius: 9px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    margin-left: var(--spacing-xs);
+}
+
+.file-tag.selected .tag-comment-count {
+    background: white;
+    color: var(--primary);
+}
+
+.file-tag.batch-selected .tag-comment-count {
+    background: #10b981;
+    color: white;
+}
+
+/* 响应式设计 */
+@media (max-width: 950px) {
+    .tags-container {
+        gap: var(--spacing-xs);
+    }
+    
+    .file-tag {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+    
+    .tag-name {
+        max-width: 150px;
+    }
+}
+
+@media (max-width: 640px) {
+    .file-tag {
+        font-size: 11px;
+        padding: 3px 6px;
+    }
+    
+    .tag-name {
+        max-width: 120px;
+    }
+    
+    .tag-icon {
+        font-size: 12px;
     }
 }
 

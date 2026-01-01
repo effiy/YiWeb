@@ -338,6 +338,9 @@ export const createStore = () => {
     const batchMode = vueRef(false);
     const selectedFileIds = vueRef(new Set());
     
+    // 视图模式：'tree' 树形视图，'tags' 标签视图
+    const viewMode = vueRef('tree');
+    
     // 评论者相关状态
     const commenters = vueRef([]);
     const selectedCommenterIds = vueRef([]);
@@ -2055,6 +2058,9 @@ export const createStore = () => {
         // 批量选择相关状态
         batchMode,
         selectedFileIds,
+        
+        // 视图模式
+        viewMode,
         
         // 评论者相关状态
         commenters,

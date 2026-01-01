@@ -109,6 +109,7 @@
                     :batch-mode="batchMode"
                     :selected-file-ids="selectedFileIds"
                     :selected-project="selectedProject"
+                    :view-mode="viewMode"
                     @file-select="handleFileSelect" 
                     @folder-toggle="handleFolderToggle"
                     @create-folder="handleCreateFolder"
@@ -122,6 +123,7 @@
                     @batch-select-file="toggleFileSelection"
                     @download-project="handleDownloadProjectVersion"
                     @upload-project="handleUploadProjectVersion"
+                    @view-mode-change="setViewMode"
                 ></file-tree>
             </aside>
             

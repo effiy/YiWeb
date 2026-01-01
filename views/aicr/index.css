@@ -998,6 +998,47 @@
     }
 }
 
+/* ========== 视图切换按钮样式 ========== */
+.view-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    border-radius: var(--radius-md, 6px);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.05);
+}
+
+.view-mode-btn {
+    border-radius: 0;
+    border: none;
+    border-right: 1px solid rgba(255,255,255,0.2);
+    margin: 0;
+    padding: var(--spacing-2) var(--spacing-3);
+    min-width: auto;
+}
+
+.view-mode-btn:last-child {
+    border-right: none;
+}
+
+.view-mode-btn.active {
+    background: var(--primary-blue);
+    border-color: var(--primary-blue);
+    color: #fff;
+}
+
+.view-mode-btn.active:hover {
+    background: var(--primary-cyan);
+    border-color: var(--primary-cyan);
+}
+
+.view-mode-btn:not(.active):hover {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.3);
+    color: var(--text-primary);
+}
+
 /* ========== 搜索清除按钮样式 ========== */
 .search-clear {
     position: absolute;

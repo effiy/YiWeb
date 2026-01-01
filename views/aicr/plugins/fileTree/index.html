@@ -7,7 +7,7 @@
     
     <!-- 侧边栏标题容器（搜索框和工具栏） -->
     <div v-if="!collapsed" class="file-tree-header-container">
-        <!-- 第一行：搜索输入框 -->
+        <!-- 第一行：搜索输入框和视图切换 -->
         <div class="file-tree-search-container">
             <div class="file-tree-search-wrapper">
                 <span class="file-tree-search-icon">🔍</span>
@@ -31,6 +31,29 @@
                 >
                     ✕
                 </button>
+                <!-- 视图切换按钮（集成在搜索框内） -->
+                <div class="view-mode-toggle">
+                    <button 
+                        type="button"
+                        class="view-mode-btn"
+                        :class="{ 'active': viewMode === 'tree' }"
+                        @click="handleViewModeChange('tree')"
+                        :disabled="loading"
+                        title="树形视图"
+                        aria-label="切换到树形视图">
+                        <i class="fas fa-sitemap" aria-hidden="true"></i>
+                    </button>
+                    <button 
+                        type="button"
+                        class="view-mode-btn"
+                        :class="{ 'active': viewMode === 'tags' }"
+                        @click="handleViewModeChange('tags')"
+                        :disabled="loading"
+                        title="标签视图"
+                        aria-label="切换到标签视图">
+                        <i class="fas fa-tags" aria-hidden="true"></i>
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -103,7 +126,8 @@
 
     <!-- 文件树内容 -->
     <div v-else-if="tree.length > 0" class="file-tree-content">
-        <ul class="file-tree" role="tree">
+        <!-- 树形视图 -->
+        <ul v-if="viewMode === 'tree'" class="file-tree" role="tree">
             <template v-for="item in sortedTree" :key="item.id">
                 <!-- 递归组件：文件树节点 -->
                 <file-tree-node 
@@ -124,6 +148,28 @@
                 ></file-tree-node>
             </template>
         </ul>
+        
+        <!-- 标签视图 -->
+        <div v-else-if="viewMode === 'tags'" class="file-tags-view">
+            <div class="tags-container">
+                <div 
+                    v-for="file in flattenedFiles" 
+                    :key="file.id"
+                    :class="['file-tag', { 
+                        'selected': !batchMode && isFileSelected(file.id),
+                        'batch-selected': batchMode && isFileSelected(file.id)
+                    }]"
+                    @click="handleTagClick(file.id)"
+                    :title="`文件: ${file.name}`"
+                >
+                    <span class="tag-icon">{{ getFileIcon(file) }}</span>
+                    <span class="tag-name">{{ file.name }}</span>
+                    <span v-if="getCommentCount(file.id) > 0" class="tag-comment-count">
+                        {{ getCommentCount(file.id) }}
+                    </span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 空状态 -->

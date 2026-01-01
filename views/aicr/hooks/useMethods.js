@@ -52,7 +52,9 @@ export const useMethods = (store) => {
         searchQuery,
         // 加载状态
         loading,
-        files
+        files,
+        // 视图模式
+        viewMode
     } = store;
 
     // 搜索相关状态
@@ -2399,6 +2401,13 @@ export const useMethods = (store) => {
         triggerUploadProjectVersion,
         toggleBatchMode: toggleBatchMode,
         toggleFileSelection: toggleFileSelection,
+        // 视图模式切换
+        setViewMode: (mode) => {
+            if (viewMode && (mode === 'tree' || mode === 'tags')) {
+                viewMode.value = mode;
+                console.log('[useMethods] 视图模式已切换:', mode);
+            }
+        },
         // =============== 项目与版本维护 ===============
         openProjectVersionManager: () => {
             try {

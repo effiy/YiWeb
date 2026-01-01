@@ -112,6 +112,8 @@ const { computed } = Vue;
                 // 批量选择相关状态
                 batchMode: store.batchMode,
                 selectedFileIds: store.selectedFileIds,
+                // 视图模式
+                viewMode: store.viewMode,
             },
             onMounted: (mountedApp) => {
                 logInfo('[代码审查页面] 应用已挂载');
@@ -447,7 +449,13 @@ const { computed } = Vue;
                     expandedFolders: function() { return store.expandedFolders; },
                     loading: function() { return store.loading; },
                     error: function() { return store.errorMessage; },
-                    comments: function() { return store.comments; }
+                    comments: function() { return store.comments; },
+                    collapsed: function() { return store.sidebarCollapsed ? store.sidebarCollapsed.value : false; },
+                    searchQuery: function() { return store.searchQuery ? store.searchQuery.value : ''; },
+                    batchMode: function() { return store.batchMode ? store.batchMode.value : false; },
+                    selectedFileIds: function() { return store.selectedFileIds ? store.selectedFileIds.value : new Set(); },
+                    selectedProject: function() { return store.selectedProject ? store.selectedProject.value : ''; },
+                    viewMode: function() { return store.viewMode ? store.viewMode.value : 'tree'; }
                 },
                 'comment-panel': {
                     comments: function() { 
@@ -808,6 +816,50 @@ const { computed } = Vue;
                 pvAddVersion: function() {
                     const methods = useMethods(store);
                     methods.pvAddVersion();
+                },
+                // 设置视图模式（已移至 useMethods，这里保留作为备用）
+                setViewMode: function(mode) {
+                    const methods = useMethods(store);
+                    if (methods.setViewMode) {
+                        methods.setViewMode(mode);
+                        logInfo('[主页面] 视图模式已切换:', mode);
+                    } else if (store && store.viewMode) {
+                        store.viewMode.value = mode;
+                        logInfo('[主页面] 视图模式已切换（备用方法）:', mode);
+                    }
+                },
+                
+                // 处理项目切换
+                handleProjectChange: function(projectId) {
+                    logInfo('[主页面] 收到项目切换事件:', projectId);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleProjectChange(projectId);
+                    } catch (error) {
+                        logError('[主页面] 项目切换处理失败:', error);
+                    }
+                },
+                
+                // 处理文件选择
+                handleFileSelect: function(payload) {
+                    logInfo('[主页面] 收到文件选择事件:', payload);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleFileSelect(payload);
+                    } catch (error) {
+                        logError('[主页面] 文件选择处理失败:', error);
+                    }
+                },
+                
+                // 处理创建会话
+                handleCreateSession: function(payload) {
+                    logInfo('[主页面] 收到创建会话事件:', payload);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleCreateSession(payload);
+                    } catch (error) {
+                        logError('[主页面] 创建会话处理失败:', error);
+                    }
                 },
             }
         });

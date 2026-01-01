@@ -554,6 +554,11 @@ const createFileTree = async () => {
             selectedProject: {
                 type: String,
                 default: ''
+            },
+            viewMode: {
+                type: String,
+                default: 'tree',
+                validator: (value) => ['tree', 'tags'].includes(value)
             }
         },
         computed: {
@@ -568,9 +573,39 @@ const createFileTree = async () => {
                 }
                 
                 return sorted;
+            },
+            // 标签视图：扁平化所有文件
+            flattenedFiles() {
+                if (!Array.isArray(this.tree)) return [];
+                
+                const files = [];
+                const flatten = (items) => {
+                    if (!Array.isArray(items)) return;
+                    items.forEach(item => {
+                        if (item.type === 'file') {
+                            files.push(item);
+                        } else if (item.type === 'folder' && Array.isArray(item.children)) {
+                            flatten(item.children);
+                        }
+                    });
+                };
+                
+                flatten(this.sortedTree);
+                
+                // 如果有搜索关键词，进行过滤
+                if (this.searchQuery && this.searchQuery.trim()) {
+                    const query = this.searchQuery.trim().toLowerCase();
+                    return files.filter(file => {
+                        const name = (file.name || '').toLowerCase();
+                        const path = (file.path || file.id || '').toLowerCase();
+                        return name.includes(query) || path.includes(query);
+                    });
+                }
+                
+                return files;
             }
         },
-        emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project'],
+        emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change'],
         data() {
             return {
                 searchDebounceTimer: null
@@ -663,6 +698,15 @@ const createFileTree = async () => {
                 if (event.target) {
                     event.target.value = '';
                 }
+            },
+            
+            // 处理视图模式切换
+            handleViewModeChange(mode) {
+                return safeExecute(() => {
+                    if (mode === 'tree' || mode === 'tags') {
+                        this.$emit('view-mode-change', mode);
+                    }
+                }, '视图模式切换处理');
             },
             // 排序函数，供模板使用
             sortFileTreeItems(items) {
@@ -828,6 +872,25 @@ const createFileTree = async () => {
                     
                     return count;
                 }, '文件评论数量计算');
+            },
+            
+            // 处理标签点击（支持批量选择模式）
+            handleTagClick(fileId) {
+                return safeExecute(() => {
+                    if (fileId == null) {
+                        throw createError('文件ID无效', ErrorTypes.VALIDATION, '标签点击');
+                    }
+                    const idStr = String(fileId);
+                    
+                    // 批量选择模式：切换选中状态
+                    if (this.batchMode) {
+                        this.$emit('batch-select-file', idStr);
+                        return;
+                    }
+                    
+                    // 普通模式：选择文件
+                    this.selectFile(idStr);
+                }, '标签点击处理');
             },
             
             // 获取文件夹的评论数量（递归计算所有子文件的评论）
