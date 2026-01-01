@@ -123,17 +123,79 @@
     color: var(--text-primary);
     max-width: none;
     flex: 1;
-    padding: 32px 40px;
+    padding: 32px 0;
     overflow-x: auto;
     background: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.01) 100%);
     position: relative;
-    overflow-y: auto;
+    overflow-y: visible;
+    display: flex;
+}
+
+/* 行号容器 */
+.markdown-line-numbers {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 50px;
+    padding: 32px 8px 32px 16px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-primary);
+    user-select: none;
+    flex-shrink: 0;
+    z-index: 2;
+    overflow-y: visible;
+    overflow-x: hidden;
+    text-align: right;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    pointer-events: none;
+    box-sizing: border-box;
+    /* 确保行号容器的高度可以动态调整 */
+    min-height: 100%;
+}
+
+/* 隐藏行号容器的滚动条 */
+.markdown-line-numbers::-webkit-scrollbar {
+    display: none;
+}
+
+.markdown-line-numbers {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* 行号项 - 确保与内容行高精确匹配 */
+.markdown-line-number {
+    display: block;
+    height: 1.7em;
+    line-height: 1.7em;
+    padding: 0;
+    margin: 0;
+    color: var(--text-muted);
+    transition: color 0.2s;
+    box-sizing: border-box;
+    white-space: nowrap;
+    /* 确保行号不会因为内容变化而错位 */
+    position: relative;
+}
+
+.markdown-line-number:hover {
+    color: var(--primary);
 }
 
 /* 整体Markdown内容容器 */
 .markdown-full-content {
     position: relative;
     z-index: 1;
+    flex: 1;
+    padding: 0 40px;
+    box-sizing: border-box;
+    /* 确保内容容器的 padding-top 与行号容器的 padding-top 一致 */
+    padding-top: 0;
+    margin-top: 0;
+    /* 确保内容容器的高度计算包括所有内容（即使有滚动条） */
+    min-height: 100%;
 }
 
 /* 预览模式下不显示评论标记相关样式 */
@@ -597,7 +659,7 @@
     transform: translateY(0);
 }
 
-/* 代码块主体 */
+/* 代码块主体 - 默认展开 */
 .markdown-preview-content .md-code-block {
     background: var(--bg-tertiary);
     border: none;
@@ -607,8 +669,15 @@
     margin: 0;
     position: relative;
     box-shadow: none;
-    max-height: 500px;
+    max-height: none;
     transition: max-height 0.3s ease;
+    overflow-y: visible;
+}
+
+/* 代码块展开状态 */
+.markdown-preview-content .md-code-block.expanded {
+    max-height: none;
+    overflow-y: visible;
 }
 
 .markdown-preview-content .md-code-block code {
@@ -666,6 +735,69 @@
     right: 0;
     height: 40px;
     background: linear-gradient(transparent, var(--bg-tertiary));
+    pointer-events: none;
+}
+
+/* 长段落折叠功能 */
+.markdown-preview-content .long-content {
+    position: relative;
+}
+
+.markdown-preview-content .long-content.collapsed {
+    max-height: 200px;
+    overflow: hidden;
+}
+
+.markdown-preview-content .long-content.collapsed::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(transparent, var(--bg-primary));
+    pointer-events: none;
+}
+
+.markdown-preview-content .collapse-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    padding: 4px 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+}
+
+.markdown-preview-content .collapse-toggle:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* 表格折叠功能 */
+.markdown-preview-content .md-table-wrapper {
+    position: relative;
+}
+
+.markdown-preview-content .md-table-wrapper.collapsed {
+    max-height: 300px;
+    overflow: hidden;
+}
+
+.markdown-preview-content .md-table-wrapper.collapsed::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(transparent, var(--bg-primary));
     pointer-events: none;
 }
 

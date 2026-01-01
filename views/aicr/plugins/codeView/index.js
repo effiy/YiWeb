@@ -210,6 +210,12 @@ const createCodeView = async () => {
                             // 强制更新视图
                             this.$nextTick(() => {
                                 this.$forceUpdate();
+                                // 如果是 Markdown 预览模式，更新行号
+                                if (this.shouldShowMarkdownPreview) {
+                                    setTimeout(() => {
+                                        this.updateMarkdownLineNumbers();
+                                    }, 100);
+                                }
                             });
                         }
                     }
@@ -465,9 +471,13 @@ const createCodeView = async () => {
                 }
                 const html = this.renderMarkdown(this.file.content);
                 
-                // 在下一个tick中添加交互功能
+                // 在下一个tick中添加交互功能和行号
                 this.$nextTick(() => {
                     this.addMarkdownInteractions();
+                    // 延迟更新行号，确保 DOM 完全渲染
+                    setTimeout(() => {
+                        this.updateMarkdownLineNumbers();
+                    }, 50);
                 });
                 
                 return html;
@@ -495,18 +505,32 @@ const createCodeView = async () => {
                     const codeBlock = document.getElementById(codeId);
                     if (codeBlock) {
                         const wrapper = codeBlock.closest('.md-code-block-wrapper');
-                        const expandBtn = wrapper.querySelector('.md-code-block-expand i');
+                        const expandBtn = wrapper?.querySelector('.md-code-block-expand i');
                         
                         if (codeBlock.classList.contains('collapsed')) {
                             codeBlock.classList.remove('collapsed');
+                            codeBlock.classList.add('expanded');
                             expandBtn.className = 'fas fa-compress-alt';
-                            wrapper.classList.remove('collapsed');
+                            wrapper?.classList.remove('collapsed');
                         } else {
                             codeBlock.classList.add('collapsed');
+                            codeBlock.classList.remove('expanded');
                             expandBtn.className = 'fas fa-expand-alt';
-                            wrapper.classList.add('collapsed');
+                            wrapper?.classList.add('collapsed');
+                        }
+                        
+                        // 更新行号高度
+                        if (this.syncLineNumbersHeight) {
+                            this.$nextTick(() => {
+                                this.syncLineNumbersHeight();
+                            });
                         }
                     }
+                };
+                
+                // 注册全局函数：切换内容折叠
+                window.toggleContentCollapse = (elementId) => {
+                    this.toggleContentCollapse(elementId);
                 };
                 
                 // 添加行号
@@ -1807,6 +1831,9 @@ const createCodeView = async () => {
                 
                 this.$nextTick(() => {
                     try {
+                    // 添加行号
+                    this.updateMarkdownLineNumbers();
+                    
                     // 添加代码块复制功能
                     const codeBlocks = this.$el?.querySelectorAll('.md-code-block-copy');
                     codeBlocks?.forEach(button => {
@@ -1834,6 +1861,12 @@ const createCodeView = async () => {
                         });
                     });
                     
+                    // 为长内容添加折叠功能
+                    this.addCollapseToLongContent();
+                    
+                    // 为表格添加折叠功能
+                    this.addCollapseToTables();
+                    
                     // 重新初始化 Mermaid 图表（修复切换模式后丢失的问题）
                     this.initializeMermaidDiagrams();
                     
@@ -1841,6 +1874,159 @@ const createCodeView = async () => {
                         console.error('[CodeView] addMarkdownInteractions 执行出错:', error);
                     }
                 });
+            },
+            
+            // 清理 Markdown 行号相关的监听器
+            cleanupMarkdownLineNumbers() {
+                const previewContainer = this.$el?.querySelector('.markdown-preview-content');
+                
+                // 清理滚动监听器
+                if (this._markdownScrollHandler && previewContainer) {
+                    previewContainer.removeEventListener('scroll', this._markdownScrollHandler);
+                    this._markdownScrollHandler = null;
+                }
+                
+                // 清理 ResizeObserver
+                if (this._markdownResizeObserver) {
+                    this._markdownResizeObserver.disconnect();
+                    this._markdownResizeObserver = null;
+                }
+                
+                // 清理定时器
+                if (this._markdownResizeTimer) {
+                    clearTimeout(this._markdownResizeTimer);
+                    this._markdownResizeTimer = null;
+                }
+            },
+            
+            // 计算并更新 Markdown 预览的行号（内部方法，不创建新的观察器）
+            calculateAndUpdateLineNumbers() {
+                const lineNumbersContainer = this.$refs?.markdownLineNumbers;
+                const contentContainer = this.$refs?.markdownFullContent;
+                const previewContainer = this.$el?.querySelector('.markdown-preview-content');
+                
+                if (!lineNumbersContainer || !contentContainer || !previewContainer) return;
+                
+                // 获取内容容器的实际渲染高度和样式
+                const contentHeight = contentContainer.scrollHeight;
+                const contentComputedStyle = getComputedStyle(contentContainer);
+                const previewComputedStyle = getComputedStyle(previewContainer);
+                
+                // 获取渲染后的行高（与 markdown-preview-content 一致）
+                // 默认值：1.7 * 15px = 25.5px
+                const lineHeight = parseFloat(previewComputedStyle.lineHeight) || 
+                                 parseFloat(contentComputedStyle.lineHeight) || 25.5;
+                
+                // 获取内容容器的 padding（markdown-preview-content 的 padding 是 32px 0）
+                const contentPaddingTop = parseFloat(previewComputedStyle.paddingTop) || 32;
+                const contentPaddingBottom = parseFloat(previewComputedStyle.paddingBottom) || 32;
+                
+                // 计算渲染后的实际行数
+                // 实际内容高度 = 总高度 - padding
+                const actualContentHeight = contentHeight - contentPaddingTop - contentPaddingBottom;
+                // 渲染后的行数 = 实际内容高度 / 行高
+                const renderedLineCount = Math.max(1, Math.ceil(actualContentHeight / lineHeight));
+                
+                // 生成行号 HTML - 基于渲染后的实际行数
+                // 同时设置行号的行高，确保与内容容器完全一致
+                let lineNumbersHtml = '';
+                for (let i = 1; i <= renderedLineCount; i++) {
+                    lineNumbersHtml += `<div class="markdown-line-number" data-line="${i}" style="height: ${lineHeight}px; line-height: ${lineHeight}px;">${i}</div>`;
+                }
+                
+                lineNumbersContainer.innerHTML = lineNumbersHtml;
+                
+                // 调整行号容器高度，使其与内容容器高度精确匹配
+                this.syncLineNumbersHeight();
+            },
+            
+            // 更新 Markdown 预览的行号
+            updateMarkdownLineNumbers() {
+                if (!this.file || !this.file.content) {
+                    this.cleanupMarkdownLineNumbers();
+                    return;
+                }
+                
+                const lineNumbersContainer = this.$refs?.markdownLineNumbers;
+                const contentContainer = this.$refs?.markdownFullContent;
+                const previewContainer = this.$el?.querySelector('.markdown-preview-content');
+                
+                if (!lineNumbersContainer || !contentContainer || !previewContainer) return;
+                
+                // 清理之前的监听器
+                this.cleanupMarkdownLineNumbers();
+                
+                // 等待 DOM 渲染完成
+                this.$nextTick(() => {
+                    // 延迟执行，确保所有内容（包括代码块）都已渲染
+                    setTimeout(() => {
+                        // 计算并更新行号
+                        this.calculateAndUpdateLineNumbers();
+                        
+                    // 由于移除了滚动条，不再需要滚动同步
+                    // 但保留代码以便将来需要时使用
+                    // const syncScroll = () => {
+                    //     if (lineNumbersContainer && previewContainer) {
+                    //         lineNumbersContainer.scrollTop = previewContainer.scrollTop;
+                    //     }
+                    // };
+                    // this._markdownScrollHandler = syncScroll;
+                    // previewContainer.addEventListener('scroll', syncScroll, { passive: true });
+                        
+                        // 监听内容变化，重新计算行号和同步高度
+                        const resizeObserver = new ResizeObserver(() => {
+                            // 延迟更新，避免频繁计算
+                            if (this._markdownResizeTimer) {
+                                clearTimeout(this._markdownResizeTimer);
+                            }
+                            this._markdownResizeTimer = setTimeout(() => {
+                                // 重新计算行号数量（因为内容可能变化，如代码块展开/折叠）
+                                this.calculateAndUpdateLineNumbers();
+                            }, 100);
+                        });
+                        
+                        if (contentContainer) {
+                            resizeObserver.observe(contentContainer);
+                            // 保存 observer 以便后续清理
+                            this._markdownResizeObserver = resizeObserver;
+                        }
+                        
+                        // 由于移除了滚动条，不再需要初始滚动同步
+                    }, 150);
+                });
+            },
+            
+            // 同步行号容器高度与内容容器高度
+            syncLineNumbersHeight() {
+                const lineNumbersContainer = this.$refs?.markdownLineNumbers;
+                const contentContainer = this.$refs?.markdownFullContent;
+                const previewContainer = this.$el?.querySelector('.markdown-preview-content');
+                
+                if (!lineNumbersContainer || !contentContainer || !previewContainer) return;
+                
+                // 获取内容容器的实际渲染高度（包括所有内容，考虑折叠/展开状态）
+                const contentScrollHeight = contentContainer.scrollHeight;
+                
+                // 获取行号容器的行数和行高
+                const lineNumberItems = lineNumbersContainer.querySelectorAll('.markdown-line-number');
+                
+                if (lineNumberItems.length > 0) {
+                    // 计算单行高度（包括 line-height）
+                    const firstLineNumber = lineNumberItems[0];
+                    const lineHeight = parseFloat(getComputedStyle(firstLineNumber).lineHeight) || 25.5; // 1.7 * 15px
+                    
+                    // 获取行号容器的 padding
+                    const lineNumbersPaddingTop = 32; // 与 CSS 中的 padding-top 一致
+                    const lineNumbersPaddingBottom = 32; // 与 CSS 中的 padding-bottom 一致
+                    
+                    // 计算行号容器的理论高度（基于行数和行高）
+                    const lineNumbersTheoreticalHeight = lineNumberItems.length * lineHeight + lineNumbersPaddingTop + lineNumbersPaddingBottom;
+                    
+                    // 使用内容容器的实际 scrollHeight，确保行号容器能够覆盖整个内容区域
+                    // 考虑折叠/展开状态，动态调整高度
+                    const finalHeight = Math.max(contentScrollHeight, lineNumbersTheoreticalHeight);
+                    lineNumbersContainer.style.height = `${finalHeight}px`;
+                }
             },
             
             // 复制代码块内容
@@ -1890,18 +2076,47 @@ const createCodeView = async () => {
                 }
             },
             
-            // 切换代码块展开/折叠状态
+            // 切换代码块展开/折叠状态 - 默认展开
             toggleCodeBlock(codeId) {
                 const codeElement = document.getElementById(codeId);
                 if (codeElement) {
-                    const isCollapsed = codeElement.style.display === 'none';
-                    codeElement.style.display = isCollapsed ? 'block' : 'none';
+                    const wrapper = codeElement.closest('.md-code-block-wrapper');
+                    const expandBtn = wrapper?.querySelector('.md-code-block-expand i');
                     
-                    // 更新按钮图标
-                    const button = codeElement.parentElement?.querySelector('.md-code-block-expand i');
-                    if (button) {
-                        button.className = isCollapsed ? 'fas fa-compress-alt' : 'fas fa-expand-alt';
+                    // 默认是展开状态，所以先检查是否已折叠
+                    if (codeElement.classList.contains('collapsed')) {
+                        // 展开
+                        codeElement.classList.remove('collapsed');
+                        codeElement.classList.add('expanded');
+                        wrapper?.classList.remove('collapsed');
+                        if (expandBtn) {
+                            expandBtn.className = 'fas fa-compress-alt';
+                        }
+                    } else {
+                        // 折叠
+                        codeElement.classList.add('collapsed');
+                        codeElement.classList.remove('expanded');
+                        wrapper?.classList.add('collapsed');
+                        if (expandBtn) {
+                            expandBtn.className = 'fas fa-expand-alt';
+                        }
                     }
+                    
+                    // 更新行号高度
+                    this.$nextTick(() => {
+                        this.syncLineNumbersHeight();
+                    });
+                }
+            },
+            
+            // 切换内容折叠/展开
+            toggleContentCollapse(element) {
+                if (element) {
+                    element.classList.toggle('collapsed');
+                    // 更新行号高度
+                    this.$nextTick(() => {
+                        this.syncLineNumbersHeight();
+                    });
                 }
             },
             // 渲染单行Markdown内容
@@ -2369,8 +2584,8 @@ const createCodeView = async () => {
                                     <button class="md-code-block-copy" onclick="copyCodeBlock('${codeId}')" title="复制代码">
                                         <i class="fas fa-copy"></i>
                                     </button>
-                                    <button class="md-code-block-expand" onclick="toggleCodeBlock('${codeId}')" title="展开/折叠">
-                                        <i class="fas fa-expand-alt"></i>
+                                    <button class="md-code-block-expand" onclick="toggleCodeBlock('${codeId}')" title="折叠/展开">
+                                        <i class="fas fa-compress-alt"></i>
                                     </button>
                                 </div>
                             </div>
@@ -2476,7 +2691,105 @@ const createCodeView = async () => {
                     return `<h${level} id="${id}" class="md-heading">${content}</h${level}>`;
                 });
                 
+                // 为长段落添加折叠功能（超过 10 行的段落）- 默认展开
+                html = html.replace(/<p>(.+?)<\/p>/gs, (match, content) => {
+                    // 检查内容长度，如果超过一定长度则添加折叠功能
+                    const lines = content.split(/<br\s*\/?>|<\/p>|<p>/gi).filter(l => l.trim()).length;
+                    if (lines > 10 || content.length > 500) {
+                        const uniqueId = `long-content-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                        return `<div class="long-content" id="${uniqueId}"><p>${content}</p><button class="collapse-toggle" onclick="window.toggleContentCollapse('${uniqueId}')"><i class="fas fa-chevron-up"></i> 折叠</button></div>`;
+                    }
+                    return match;
+                });
+                
+                // 为表格添加折叠功能 - 默认展开
+                html = html.replace(/<table>/g, '<div class="md-table-wrapper"><table>');
+                html = html.replace(/<\/table>/g, '</table><button class="collapse-toggle" onclick="this.parentElement.classList.toggle(\'collapsed\')"><i class="fas fa-chevron-up"></i> 折叠表格</button></div>');
+                
                 return html;
+            },
+            
+            // 为长内容添加折叠功能 - 默认展开
+            addCollapseToLongContent() {
+                const longContents = this.$el?.querySelectorAll('.long-content');
+                longContents?.forEach(element => {
+                    const toggleBtn = element.querySelector('.collapse-toggle');
+                    if (toggleBtn) {
+                        // 确保初始状态是展开的（没有 collapsed 类）
+                        if (!element.classList.contains('collapsed')) {
+                            toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 折叠';
+                        }
+                        
+                        toggleBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const isCollapsed = element.classList.contains('collapsed');
+                            if (isCollapsed) {
+                                element.classList.remove('collapsed');
+                                toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 折叠';
+                            } else {
+                                element.classList.add('collapsed');
+                                toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i> 展开';
+                            }
+                            // 更新行号高度
+                            this.$nextTick(() => {
+                                this.syncLineNumbersHeight();
+                            });
+                        });
+                    }
+                });
+            },
+            
+            // 为表格添加折叠功能 - 默认展开
+            addCollapseToTables() {
+                const tableWrappers = this.$el?.querySelectorAll('.md-table-wrapper');
+                tableWrappers?.forEach(wrapper => {
+                    const toggleBtn = wrapper.querySelector('.collapse-toggle');
+                    if (toggleBtn) {
+                        // 确保初始状态是展开的（没有 collapsed 类）
+                        if (!wrapper.classList.contains('collapsed')) {
+                            toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 折叠表格';
+                        }
+                        
+                        toggleBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const isCollapsed = wrapper.classList.contains('collapsed');
+                            if (isCollapsed) {
+                                wrapper.classList.remove('collapsed');
+                                toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 折叠表格';
+                            } else {
+                                wrapper.classList.add('collapsed');
+                                toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i> 展开表格';
+                            }
+                            // 更新行号高度
+                            this.$nextTick(() => {
+                                this.syncLineNumbersHeight();
+                            });
+                        });
+                    }
+                });
+            },
+            
+            // 全局函数：切换内容折叠 - 默认展开
+            toggleContentCollapse(elementId) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    const isCollapsed = element.classList.contains('collapsed');
+                    if (isCollapsed) {
+                        // 展开
+                        element.classList.remove('collapsed');
+                        const btn = element.querySelector('.collapse-toggle');
+                        if (btn) btn.innerHTML = '<i class="fas fa-chevron-up"></i> 折叠';
+                    } else {
+                        // 折叠
+                        element.classList.add('collapsed');
+                        const btn = element.querySelector('.collapse-toggle');
+                        if (btn) btn.innerHTML = '<i class="fas fa-chevron-down"></i> 展开';
+                    }
+                    // 更新行号高度
+                    this.$nextTick(() => {
+                        this.syncLineNumbersHeight();
+                    });
+                }
             },
             
             // 备用Markdown渲染方法（当marked.js不可用时）
@@ -5039,6 +5352,9 @@ const createCodeView = async () => {
                 window.removeEventListener('unhandledrejection', this._unhandledRejectionHandler);
                 this._unhandledRejectionHandler = null;
             }
+            
+            // 清理 Markdown 行号相关的监听器
+            this.cleanupMarkdownLineNumbers();
             
             // 清理窗口大小变化监听器
             if (this._resizeHandler) {
