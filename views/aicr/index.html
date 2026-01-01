@@ -96,7 +96,7 @@
         </section>
         </header>
         <main class="aicr-main">
-            <aside class="aicr-sidebar" aria-label="文件目录树" v-show="!sidebarCollapsed">
+            <aside class="aicr-sidebar" aria-label="文件目录树" v-show="!sidebarCollapsed" :style="{ width: sidebarWidth + 'px' }">
                 <file-tree 
                     :tree="fileTree" 
                     :selected-file-id="selectedFileId" 
@@ -148,7 +148,7 @@
                     @reload-comments="handleReloadComments"
                 ></code-view>
             </section>
-            <aside class="aicr-comments" aria-label="评论区" v-show="!commentsCollapsed">
+            <aside class="aicr-comments" aria-label="评论区" v-show="!commentsCollapsed" :style="{ width: commentsWidth + 'px' }">
                 <comment-panel 
                     :comments="currentComments" 
                     :file="currentFile"

@@ -96,6 +96,8 @@ const { computed } = Vue;
                 // 暴露store数据给模板
                 sidebarCollapsed: store.sidebarCollapsed,
                 commentsCollapsed: store.commentsCollapsed,
+                sidebarWidth: store.sidebarWidth,
+                commentsWidth: store.commentsWidth,
                 // 项目管理
                 projects: store.projects,
                 selectedProject: store.selectedProject,
@@ -117,6 +119,24 @@ const { computed } = Vue;
             },
             onMounted: (mountedApp) => {
                 logInfo('[代码审查页面] 应用已挂载');
+                
+                // 加载侧边栏宽度
+                if (store && store.loadSidebarWidths) {
+                    store.loadSidebarWidths();
+                }
+                
+                // 创建侧边栏拖拽条
+                setTimeout(() => {
+                    createSidebarResizers(store);
+                    // 监听侧边栏折叠状态，隐藏/显示拖拽条
+                    if (store.sidebarCollapsed) {
+                        store.sidebarCollapsed.value = store.sidebarCollapsed.value; // 触发响应式更新
+                    }
+                    if (store.commentsCollapsed) {
+                        store.commentsCollapsed.value = store.commentsCollapsed.value; // 触发响应式更新
+                    }
+                }, 500);
+                
                 if (store) {
                     // 首先加载项目列表
                     store.loadProjects().then(() => {
@@ -917,6 +937,178 @@ const { computed } = Vue;
         logError('[代码审查页面] 应用初始化失败:', error);
     }
 })();
+
+/**
+ * 创建侧边栏拖拽条
+ * 参考 YiPet 项目的实现
+ */
+function createSidebarResizers(store) {
+    if (!store) return;
+    
+    // 创建文件树侧边栏拖拽条
+    const sidebar = document.querySelector('.aicr-sidebar');
+    if (sidebar) {
+        createResizer(sidebar, store, 'sidebar', {
+            minWidth: 240,
+            maxWidth: 400,
+            defaultWidth: 320,
+            storageKey: 'aicrSidebarWidth',
+            saveWidth: store.saveSidebarWidth
+        });
+        
+        // 应用保存的宽度
+        if (store.sidebarWidth && store.sidebarWidth.value) {
+            sidebar.style.width = `${store.sidebarWidth.value}px`;
+        }
+    }
+    
+    // 创建评论区侧边栏拖拽条
+    const comments = document.querySelector('.aicr-comments');
+    if (comments) {
+        createResizer(comments, store, 'comments', {
+            minWidth: 320,
+            maxWidth: 550,
+            defaultWidth: 450,
+            storageKey: 'aicrCommentsWidth',
+            saveWidth: store.saveCommentsWidth,
+            position: 'left' // 评论区在右侧，拖拽条在左侧
+        });
+        
+        // 应用保存的宽度
+        if (store.commentsWidth && store.commentsWidth.value) {
+            comments.style.width = `${store.commentsWidth.value}px`;
+        }
+    }
+}
+
+/**
+ * 创建单个拖拽条
+ */
+function createResizer(sidebarElement, store, type, options) {
+    const {
+        minWidth = 240,
+        maxWidth = 400,
+        defaultWidth = 320,
+        storageKey,
+        saveWidth,
+        position = 'right' // 'right' 或 'left'
+    } = options;
+    
+    // 检查是否已存在拖拽条
+    const existingResizer = sidebarElement.querySelector('.sidebar-resizer');
+    if (existingResizer) {
+        return existingResizer;
+    }
+    
+    const resizer = document.createElement('div');
+    resizer.className = 'sidebar-resizer';
+    resizer.setAttribute('data-type', type);
+    
+    // 设置样式
+    resizer.style.cssText = `
+        position: absolute !important;
+        top: 0 !important;
+        ${position === 'right' ? 'right: -4px' : 'left: -4px'} !important;
+        width: 8px !important;
+        height: 100% !important;
+        cursor: col-resize !important;
+        z-index: 10 !important;
+        background: transparent !important;
+        transition: background 0.2s ease !important;
+    `;
+    
+    let isResizing = false;
+    
+    // 鼠标悬停效果
+    resizer.addEventListener('mouseenter', () => {
+        if (!isResizing) {
+            resizer.style.setProperty('background', 'rgba(59, 130, 246, 0.3)', 'important');
+        }
+    });
+    
+    resizer.addEventListener('mouseleave', () => {
+        if (!isResizing) {
+            resizer.style.setProperty('background', 'transparent', 'important');
+        }
+    });
+    
+        // 拖拽开始
+        resizer.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            isResizing = true;
+            resizer.style.setProperty('background', 'rgba(59, 130, 246, 0.5)', 'important');
+            resizer.style.setProperty('cursor', 'col-resize', 'important');
+            
+            // 记录初始位置和宽度
+            const startX = e.clientX;
+            const currentWidth = sidebarElement.offsetWidth;
+            const startWidth = currentWidth || defaultWidth;
+            
+            // 禁用过渡效果，确保拖拽流畅
+            sidebarElement.style.transition = 'none';
+            
+            // 添加全局样式，禁用文本选择
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'col-resize';
+        
+        // 拖拽中
+        const handleMouseMove = (e) => {
+            if (!isResizing) return;
+            
+            const diffX = position === 'right' 
+                ? e.clientX - startX 
+                : startX - e.clientX;
+            let newWidth = startWidth + diffX;
+            
+            // 只限制最小宽度，避免宽度为负或过小
+            newWidth = Math.max(50, newWidth);
+            
+            // 更新宽度
+            sidebarElement.style.width = `${newWidth}px`;
+            
+            // 更新 store 中的宽度值
+            if (type === 'sidebar' && store.sidebarWidth) {
+                store.sidebarWidth.value = newWidth;
+            } else if (type === 'comments' && store.commentsWidth) {
+                store.commentsWidth.value = newWidth;
+            }
+        };
+        
+        // 拖拽结束
+        const handleMouseUp = () => {
+            isResizing = false;
+            resizer.style.setProperty('background', 'transparent', 'important');
+            resizer.style.setProperty('cursor', 'col-resize', 'important');
+            
+            // 恢复过渡效果
+            sidebarElement.style.transition = '';
+            
+            // 恢复全局样式
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+            
+            // 保存宽度
+            const finalWidth = sidebarElement.offsetWidth;
+            if (saveWidth && typeof saveWidth === 'function') {
+                saveWidth(finalWidth);
+            }
+            
+            // 移除事件监听器
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+        
+        // 添加全局事件监听器
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    });
+    
+    sidebarElement.appendChild(resizer);
+    
+    return resizer;
+}
 
 
 

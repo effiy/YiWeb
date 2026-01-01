@@ -316,6 +316,10 @@ export const createStore = () => {
     const sidebarCollapsed = vueRef(false);
     // 评论区收缩状态
     const commentsCollapsed = vueRef(false);
+    // 侧边栏宽度（文件树）
+    const sidebarWidth = vueRef(320);
+    // 评论区宽度
+    const commentsWidth = vueRef(450);
     
     // 项目管理 - 简化后只管理项目，不再有版本概念
     const projects = vueRef([]); // 存储项目列表
@@ -2025,6 +2029,56 @@ export const createStore = () => {
         errorMessage.value = '';
     };
 
+    /**
+     * 加载侧边栏宽度
+     */
+    const loadSidebarWidths = () => {
+        try {
+            const savedSidebarWidth = localStorage.getItem('aicrSidebarWidth');
+            const savedCommentsWidth = localStorage.getItem('aicrCommentsWidth');
+            
+            if (savedSidebarWidth) {
+                const width = Math.max(50, parseInt(savedSidebarWidth, 10));
+                if (!isNaN(width)) {
+                    sidebarWidth.value = width;
+                }
+            }
+            
+            if (savedCommentsWidth) {
+                const width = Math.max(50, parseInt(savedCommentsWidth, 10));
+                if (!isNaN(width)) {
+                    commentsWidth.value = width;
+                }
+            }
+        } catch (error) {
+            console.warn('[loadSidebarWidths] 加载侧边栏宽度失败:', error);
+        }
+    };
+
+    /**
+     * 保存侧边栏宽度
+     */
+    const saveSidebarWidth = (width) => {
+        try {
+            sidebarWidth.value = width;
+            localStorage.setItem('aicrSidebarWidth', width.toString());
+        } catch (error) {
+            console.warn('[saveSidebarWidth] 保存侧边栏宽度失败:', error);
+        }
+    };
+
+    /**
+     * 保存评论区宽度
+     */
+    const saveCommentsWidth = (width) => {
+        try {
+            commentsWidth.value = width;
+            localStorage.setItem('aicrCommentsWidth', width.toString());
+        } catch (error) {
+            console.warn('[saveCommentsWidth] 保存评论区宽度失败:', error);
+        }
+    };
+
     // 返回状态和方法
     return {
         // 响应式数据
@@ -2039,6 +2093,8 @@ export const createStore = () => {
         expandedFolders,
         sidebarCollapsed,
         commentsCollapsed,
+        sidebarWidth,
+        commentsWidth,
         
         // 项目管理
         projects,
@@ -2095,7 +2151,10 @@ export const createStore = () => {
         setSelectedProject,
         setNewComment,
         refreshData,
-        clearError
+        clearError,
+        loadSidebarWidths,
+        saveSidebarWidth,
+        saveCommentsWidth
     };
 };
 
