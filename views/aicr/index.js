@@ -116,6 +116,12 @@ const { computed } = Vue;
                 sessionError: store.sessionError,
                 selectedSessionTags: store.selectedSessionTags,
                 sessionSearchQuery: store.sessionSearchQuery,
+                // 标签过滤相关状态
+                tagFilterReverse: store.tagFilterReverse,
+                tagFilterNoTags: store.tagFilterNoTags,
+                tagFilterExpanded: store.tagFilterExpanded,
+                tagFilterVisibleCount: store.tagFilterVisibleCount,
+                tagFilterSearchKeyword: store.tagFilterSearchKeyword,
                 // 会话批量选择相关状态
                 sessionBatchMode: store.sessionBatchMode,
                 selectedSessionIds: store.selectedSessionIds,

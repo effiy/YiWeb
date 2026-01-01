@@ -356,6 +356,14 @@ export const createStore = () => {
     const sessionSearchQuery = vueRef('');
     const sessionSidebarWidth = vueRef(320);
     
+    // 标签过滤相关状态（参考 YiPet 项目）
+    const tagFilterReverse = vueRef(false); // 是否反向过滤会话
+    const tagFilterNoTags = vueRef(false); // 是否筛选无标签的会话
+    const tagFilterExpanded = vueRef(false); // 标签列表是否展开
+    const tagFilterVisibleCount = vueRef(8); // 折叠时显示的标签数量
+    const tagFilterSearchKeyword = vueRef(''); // 标签搜索关键词
+    const tagOrder = vueRef(null); // 标签顺序（从localStorage加载）
+    
     // 确保 sessions 始终是数组
     if (!sessions.value || !Array.isArray(sessions.value)) {
         sessions.value = [];
@@ -2230,6 +2238,14 @@ export const createStore = () => {
         selectedSessionTags,
         sessionSearchQuery,
         sessionSidebarWidth,
+        
+        // 标签过滤相关状态
+        tagFilterReverse,
+        tagFilterNoTags,
+        tagFilterExpanded,
+        tagFilterVisibleCount,
+        tagFilterSearchKeyword,
+        tagOrder,
         
         // 方法
         loadFileTree,

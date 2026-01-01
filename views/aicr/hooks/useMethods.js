@@ -2368,6 +2368,38 @@ export const useMethods = (store) => {
             }, '清除标签');
         },
         
+        handleTagFilterReverse: (reverse) => {
+            return safeExecute(() => {
+                if (store.tagFilterReverse) {
+                    store.tagFilterReverse.value = reverse;
+                }
+            }, '切换反向过滤');
+        },
+        
+        handleTagFilterNoTags: (noTags) => {
+            return safeExecute(() => {
+                if (store.tagFilterNoTags) {
+                    store.tagFilterNoTags.value = noTags;
+                }
+            }, '切换无标签筛选');
+        },
+        
+        handleTagFilterExpand: (expanded) => {
+            return safeExecute(() => {
+                if (store.tagFilterExpanded) {
+                    store.tagFilterExpanded.value = expanded;
+                }
+            }, '切换标签展开/折叠');
+        },
+        
+        handleTagFilterSearch: (keyword) => {
+            return safeExecute(() => {
+                if (store.tagFilterSearchKeyword) {
+                    store.tagFilterSearchKeyword.value = keyword || '';
+                }
+            }, '标签搜索');
+        },
+        
         handleSessionSearchChange: (query) => {
             return safeExecute(() => {
                 if (store.sessionSearchQuery) {
@@ -2597,6 +2629,23 @@ export const useMethods = (store) => {
                     console.log('[useMethods] 会话批量选择模式:', sessionBatchMode.value);
                 }
             }, '切换会话批量选择模式');
+        },
+        
+        // 处理会话导入（触发文件选择对话框）
+        handleSessionImport: () => {
+            return safeExecute(() => {
+                // 直接查找文件输入框并触发点击
+                const importInput = document.querySelector('input[type="file"][accept=".json,.zip"]');
+                if (importInput) {
+                    importInput.click();
+                } else {
+                    console.warn('[useMethods] 未找到导入文件输入框');
+                    // 尝试通过 ref 查找
+                    if (window.aicrApp && window.aicrApp.$refs && window.aicrApp.$refs.sessionImportInput) {
+                        window.aicrApp.$refs.sessionImportInput.click();
+                    }
+                }
+            }, '触发会话导入');
         },
         
         // 处理会话导入文件
