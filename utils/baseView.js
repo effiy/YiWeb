@@ -82,8 +82,12 @@ async function registerComponents(app, componentNames) {
     
     componentNames.forEach(name => {
         if (typeof window[name] !== 'undefined') {
+            // 注册 PascalCase 名称
             app.component(name, window[name]);
-            try { window.logInfo(`[组件注册] 已注册组件: ${name}`); } catch (_) { /* 兼容性静默 */ }
+            // 同时注册 kebab-case 名称（Vue 3 自动转换，但显式注册更安全）
+            const kebabName = name.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
+            app.component(kebabName, window[name]);
+            try { window.logInfo(`[组件注册] 已注册组件: ${name} (${kebabName})`); } catch (_) { /* 兼容性静默 */ }
         } else {
             try { window.logWarn(`[组件注册] 组件未找到: ${name}`); } catch (_) { /* 兼容性静默 */ }
         }

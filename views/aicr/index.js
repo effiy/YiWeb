@@ -88,7 +88,8 @@ const { computed } = Vue;
             components: [
                 'FileTree',
                 'CodeView',
-                'CommentPanel'
+                'CommentPanel',
+                'SessionList'
             ],
             data: {
                 // 新增：本地评论和高亮状态
@@ -109,6 +110,12 @@ const { computed } = Vue;
                 selectedFileIds: store.selectedFileIds,
                 // 视图模式
                 viewMode: store.viewMode,
+                // 会话列表相关状态
+                sessions: store.sessions,
+                sessionLoading: store.sessionLoading,
+                sessionError: store.sessionError,
+                selectedSessionTags: store.selectedSessionTags,
+                sessionSearchQuery: store.sessionSearchQuery,
             },
             onMounted: (mountedApp) => {
                 logInfo('[代码审查页面] 应用已挂载');
@@ -117,6 +124,19 @@ const { computed } = Vue;
                 if (store && store.loadSidebarWidths) {
                     store.loadSidebarWidths();
                 }
+                
+                // 加载会话侧边栏宽度
+                if (store && store.loadSessionSidebarWidth) {
+                    store.loadSessionSidebarWidth();
+                }
+                
+                // 调试：检查会话相关状态
+                logInfo('[代码审查页面] 会话相关状态检查:', {
+                    hasSessions: !!store.sessions,
+                    sessionsValue: store.sessions?.value,
+                    hasLoadSessions: typeof store.loadSessions === 'function',
+                    viewMode: store.viewMode?.value
+                });
                 
                 // 创建侧边栏拖拽条
                 setTimeout(() => {
@@ -847,10 +867,101 @@ const { computed } = Vue;
                         logError('[主页面] 创建会话处理失败:', error);
                     }
                 },
+                
+                // 会话列表相关方法
+                toggleSessionList: async function() {
+                    logInfo('[主页面] 切换会话列表');
+                    try {
+                        const methods = useMethods(store);
+                        await methods.toggleSessionList();
+                    } catch (error) {
+                        logError('[主页面] 切换会话列表失败:', error);
+                    }
+                },
+                
+                handleSessionSelect: async function(session) {
+                    logInfo('[主页面] 收到会话选择事件:', session);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionSelect(session);
+                    } catch (error) {
+                        logError('[主页面] 会话选择处理失败:', error);
+                    }
+                },
+                
+                handleSessionDelete: async function(sessionId) {
+                    logInfo('[主页面] 收到会话删除事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionDelete(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话删除处理失败:', error);
+                    }
+                },
+                
+                handleSessionCreate: async function() {
+                    logInfo('[主页面] 收到创建会话事件');
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionCreate();
+                    } catch (error) {
+                        logError('[主页面] 创建会话处理失败:', error);
+                    }
+                },
+                
+                handleTagSelect: function(tags) {
+                    logInfo('[主页面] 收到标签选择事件:', tags);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleTagSelect(tags);
+                    } catch (error) {
+                        logError('[主页面] 标签选择处理失败:', error);
+                    }
+                },
+                
+                handleTagClear: function() {
+                    logInfo('[主页面] 收到清除标签事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleTagClear();
+                    } catch (error) {
+                        logError('[主页面] 清除标签处理失败:', error);
+                    }
+                },
+                
+                handleSessionSearchChange: function(query) {
+                    logInfo('[主页面] 收到会话搜索变化事件:', query);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleSessionSearchChange(query);
+                    } catch (error) {
+                        logError('[主页面] 会话搜索变化处理失败:', error);
+                    }
+                },
+                
+                // 从会话视图返回文件树视图
+                handleSessionViewBack: function() {
+                    logInfo('[主页面] 从会话视图返回文件树视图');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleSessionViewBack();
+                    } catch (error) {
+                        logError('[主页面] 返回文件树视图失败:', error);
+                    }
+                },
             }
         });
         window.aicrApp = app;
         window.aicrStore = store;
+        
+        // 调试：检查 store 中的 loadSessions
+        console.log('[aicr/index] store.loadSessions 类型:', typeof store?.loadSessions);
+        console.log('[aicr/index] store 对象键:', Object.keys(store || {}));
+        if (store && store.loadSessions) {
+            console.log('[aicr/index] ✓ loadSessions 方法存在');
+        } else {
+            console.error('[aicr/index] ✗ loadSessions 方法不存在');
+        }
         
         // 全局错误处理
         window.addEventListener('error', (event) => {

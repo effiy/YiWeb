@@ -20,6 +20,8 @@ import {
 export const useMethods = (store) => {
     // 添加调试信息
     console.log('[useMethods] store对象:', store);
+    console.log('[useMethods] store.loadSessions 类型:', typeof store?.loadSessions);
+    console.log('[useMethods] store 对象键:', store ? Object.keys(store).slice(0, 20) : 'store is null');
     console.log('[useMethods] searchQuery状态:', store.searchQuery);
     
     const { 
@@ -47,6 +49,8 @@ export const useMethods = (store) => {
         deleteItem,
          // 本地持久化
          setProjects,
+        // 会话相关方法
+        loadSessions,
 
         // 搜索相关状态
         searchQuery,
@@ -2236,6 +2240,138 @@ export const useMethods = (store) => {
                 }
             }, '删除');
         },
+        // 会话列表相关方法（已废弃，使用 setViewMode 代替）
+        toggleSessionList: async () => {
+            return safeExecute(async () => {
+                console.log('[toggleSessionList] 切换会话列表（已废弃，使用 setViewMode 代替）');
+                // 如果当前是树形视图，切换到标签视图；否则切换回树形视图
+                if (viewMode && viewMode.value === 'tree') {
+                    // 直接设置视图模式，会触发 setViewMode 的逻辑
+                    viewMode.value = 'tags';
+                    // 加载会话数据
+                    if (loadSessions && typeof loadSessions === 'function') {
+                        try {
+                            await loadSessions(true);
+                        } catch (error) {
+                            console.error('[toggleSessionList] 加载会话数据失败:', error);
+                        }
+                    } else if (store.loadSessions && typeof store.loadSessions === 'function') {
+                        try {
+                            await store.loadSessions(true);
+                        } catch (error) {
+                            console.error('[toggleSessionList] 加载会话数据失败:', error);
+                        }
+                    }
+                } else {
+                    viewMode.value = 'tree';
+                }
+            }, '切换会话列表');
+        },
+        
+        handleSessionSelect: async (session) => {
+            return safeExecute(async () => {
+                console.log('[handleSessionSelect] 选择会话:', session);
+                
+                if (!session || !session.id) {
+                    console.warn('[handleSessionSelect] 无效的会话数据');
+                    if (window.showError) {
+                        window.showError('无效的会话数据');
+                    }
+                    return;
+                }
+                
+                // 获取会话的完整数据（如果需要）
+                let targetSession = session;
+                
+                // 如果会话有 URL，尝试打开该 URL
+                if (session.url && !session.url.startsWith('blank-session://') && !session.url.startsWith('aicr-session://')) {
+                    // 普通 URL，直接打开
+                    try {
+                        // 尝试使用扩展 API 打开（如果可用）
+                        if (window.chrome && window.chrome.tabs && window.chrome.tabs.create) {
+                            window.chrome.tabs.create({ url: session.url });
+                        } else {
+                            // 降级方案：使用 window.open
+                            window.open(session.url, '_blank');
+                        }
+                        if (window.showSuccess) {
+                            window.showSuccess(`已打开会话：${session.pageTitle || session.title || '未命名会话'}`);
+                        }
+                    } catch (error) {
+                        console.error('[handleSessionSelect] 打开会话 URL 失败:', error);
+                        if (window.showError) {
+                            window.showError(`打开会话失败：${error.message || '未知错误'}`);
+                        }
+                    }
+                } else {
+                    // 对于空白会话或 aicr 会话，显示提示信息
+                    if (window.showSuccess) {
+                        window.showSuccess(`已选择会话：${session.pageTitle || session.title || '未命名会话'}`);
+                    }
+                }
+            }, '选择会话');
+        },
+        
+        handleSessionDelete: async (sessionId) => {
+            return safeExecute(async () => {
+                console.log('[handleSessionDelete] 删除会话:', sessionId);
+                try {
+                    const { deleteData } = await import('/apis/index.js');
+                    const url = `${window.API_URL}/session/${encodeURIComponent(sessionId)}`;
+                    await deleteData(url);
+                    
+                    // 从列表中移除
+                    if (store.sessions && store.sessions.value && Array.isArray(store.sessions.value)) {
+                        store.sessions.value = store.sessions.value.filter(s => s && s.id !== sessionId);
+                    }
+                    
+                    if (window.showSuccess) {
+                        window.showSuccess('会话已删除');
+                    }
+                } catch (error) {
+                    console.error('[handleSessionDelete] 删除会话失败:', error);
+                    if (window.showError) {
+                        window.showError(`删除会话失败：${error.message || '未知错误'}`);
+                    }
+                }
+            }, '删除会话');
+        },
+        
+        handleSessionCreate: async () => {
+            return safeExecute(async () => {
+                console.log('[handleSessionCreate] 创建新会话');
+                // 可以在这里实现创建新会话的逻辑
+                // 例如：打开创建会话的对话框
+                if (window.showSuccess) {
+                    window.showSuccess('新会话创建功能待实现');
+                }
+            }, '创建会话');
+        },
+        
+        handleTagSelect: (tags) => {
+            return safeExecute(() => {
+                if (store.selectedSessionTags) {
+                    store.selectedSessionTags.value = tags;
+                }
+            }, '选择标签');
+        },
+        
+        handleTagClear: () => {
+            return safeExecute(() => {
+                if (store.selectedSessionTags) {
+                    store.selectedSessionTags.value = [];
+                }
+            }, '清除标签');
+        },
+        
+        handleSessionSearchChange: (query) => {
+            return safeExecute(() => {
+                if (store.sessionSearchQuery) {
+                    store.sessionSearchQuery.value = query || '';
+                }
+            }, '会话搜索变化');
+        },
+        
         handleCreateSession: async (payload) => {
             console.log('[handleCreateSession] 收到创建会话请求:', payload);
             return safeExecute(async () => {
@@ -2402,12 +2538,50 @@ export const useMethods = (store) => {
         toggleBatchMode: toggleBatchMode,
         toggleFileSelection: toggleFileSelection,
         // 视图模式切换
-        setViewMode: (mode) => {
-            if (viewMode && (mode === 'tree' || mode === 'tags')) {
-                viewMode.value = mode;
-                console.log('[useMethods] 视图模式已切换:', mode);
-            }
+        setViewMode: async (mode) => {
+            return safeExecute(async () => {
+                if (viewMode && (mode === 'tree' || mode === 'tags')) {
+                    const previousMode = viewMode.value;
+                    viewMode.value = mode;
+                    console.log('[useMethods] 视图模式已切换:', previousMode, '->', mode);
+                    
+                    // 如果切换到标签视图，自动加载会话数据
+                    if (mode === 'tags') {
+                        console.log('[useMethods] 切换到标签视图，自动加载会话数据');
+                        
+                        // 加载会话数据
+                        if (loadSessions && typeof loadSessions === 'function') {
+                            try {
+                                console.log('[useMethods] 开始加载会话数据...');
+                                await loadSessions(true);
+                                console.log('[useMethods] 会话数据加载完成');
+                            } catch (error) {
+                                console.error('[useMethods] 加载会话数据失败:', error);
+                            }
+                        } else if (store.loadSessions && typeof store.loadSessions === 'function') {
+                            try {
+                                console.log('[useMethods] 从 store 加载会话数据...');
+                                await store.loadSessions(true);
+                                console.log('[useMethods] 会话数据加载完成');
+                            } catch (error) {
+                                console.error('[useMethods] 加载会话数据失败:', error);
+                            }
+                        }
+                    }
+                }
+            }, '视图模式切换');
+        },
+        
+        // 从会话视图返回文件树视图
+        handleSessionViewBack: () => {
+            return safeExecute(() => {
+                console.log('[useMethods] 从会话视图返回文件树视图');
+                if (viewMode) {
+                    viewMode.value = 'tree';
+                }
+            }, '返回文件树视图');
         }
+        // 注意：会话列表相关方法（toggleSessionList, handleSessionSelect 等）已在上面定义，不需要重复引用
     };
 };
 

@@ -76,6 +76,26 @@
     transition: width 0.2s ease, box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     -webkit-backdrop-filter: blur(10px);
+}
+
+/* ========== 会话列表侧边栏 ========== */
+.aicr-session-sidebar {
+    width: 320px;
+    min-width: 50px;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-sm);
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: width 0.2s ease, box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    position: relative;
+}
+
+.aicr-session-sidebar:hover {
+    box-shadow: var(--shadow-md);
+    border-left-color: var(--border-secondary);
+}
     backdrop-filter: blur(10px);
 }
 
@@ -509,19 +529,22 @@
 /* ========== 滚动条样式 ========== */
 .aicr-sidebar::-webkit-scrollbar,
 .aicr-comments::-webkit-scrollbar,
-.aicr-code::-webkit-scrollbar {
+.aicr-code::-webkit-scrollbar,
+.aicr-session-sidebar::-webkit-scrollbar {
     width: 6px;
 }
 
 .aicr-sidebar::-webkit-scrollbar-track,
 .aicr-comments::-webkit-scrollbar-track,
-.aicr-code::-webkit-scrollbar-track {
+.aicr-code::-webkit-scrollbar-track,
+.aicr-session-sidebar::-webkit-scrollbar-track {
     background: transparent;
 }
 
 .aicr-sidebar::-webkit-scrollbar-thumb,
 .aicr-comments::-webkit-scrollbar-thumb,
-.aicr-code::-webkit-scrollbar-thumb {
+.aicr-code::-webkit-scrollbar-thumb,
+.aicr-session-sidebar::-webkit-scrollbar-thumb {
     background: var(--border-primary);
     border-radius: 3px;
     transition: background 0.2s ease;
@@ -529,7 +552,8 @@
 
 .aicr-sidebar::-webkit-scrollbar-thumb:hover,
 .aicr-comments::-webkit-scrollbar-thumb:hover,
-.aicr-code::-webkit-scrollbar-thumb:hover {
+.aicr-code::-webkit-scrollbar-thumb:hover,
+.aicr-session-sidebar::-webkit-scrollbar-thumb:hover {
     background: var(--border-secondary);
 }
 

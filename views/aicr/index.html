@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YiWeb - 代码审查</title>
     <link rel="stylesheet" href="/views/aicr/index.css">
+    <link rel="stylesheet" href="/views/aicr/plugins/sessionList/index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Marked.js for Markdown rendering -->
@@ -83,8 +84,10 @@
         </section>
         </header>
         <main class="aicr-main">
-            <aside class="aicr-sidebar" aria-label="文件目录树" v-show="!sidebarCollapsed" :style="{ width: sidebarWidth + 'px' }">
+            <aside class="aicr-sidebar" aria-label="侧边栏" v-show="!sidebarCollapsed" :style="{ width: sidebarWidth + 'px' }">
+                <!-- 树形视图：显示文件树 -->
                 <file-tree 
+                    v-if="viewMode === 'tree'"
                     :tree="fileTree" 
                     :selected-file-id="selectedFileId" 
                     :expanded-folders="expandedFolders" 
@@ -112,6 +115,23 @@
                     @upload-project="handleUploadProjectVersion"
                     @view-mode-change="setViewMode"
                 ></file-tree>
+                
+                <!-- 标签视图：显示会话列表 -->
+                <session-list 
+                    v-else-if="viewMode === 'tags'"
+                    :sessions="(sessions && Array.isArray(sessions)) ? sessions : []"
+                    :loading="sessionLoading || false"
+                    :error="sessionError || null"
+                    :selected-tags="(selectedSessionTags && Array.isArray(selectedSessionTags)) ? selectedSessionTags : []"
+                    :search-query="sessionSearchQuery || ''"
+                    @session-select="handleSessionSelect"
+                    @session-delete="handleSessionDelete"
+                    @session-create="handleSessionCreate"
+                    @tag-select="handleTagSelect"
+                    @tag-clear="handleTagClear"
+                    @search-change="handleSessionSearchChange"
+                    @toggle-collapse="handleSessionViewBack"
+                ></session-list>
             </aside>
             
             <!-- 侧边栏收起后的展开把手 -->
@@ -160,6 +180,7 @@
                 title="展开评论区">
                 <i class="fas fa-chevron-left" aria-hidden="true"></i>
             </button>
+            
         </main>
     </div>
 
@@ -187,6 +208,7 @@
     <script type="module" src="/views/aicr/plugins/fileTree/index.js"></script>
     <script type="module" src="/views/aicr/plugins/codeView/index.js"></script>
     <script type="module" src="/views/aicr/plugins/commentPanel/index.js"></script>
+    <script type="module" src="/views/aicr/plugins/sessionList/index.js"></script>
     
     <!-- 主应用入口 -->
     <script type="module" src="/views/aicr/index.js"></script>

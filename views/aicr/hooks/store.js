@@ -343,6 +343,20 @@ export const createStore = () => {
     const commentersLoading = vueRef(false);
     const commentersError = vueRef('');
 
+    // 会话列表相关状态
+    const sessions = vueRef([]);
+    const sessionLoading = vueRef(false);
+    const sessionError = vueRef(null);
+    const sessionListVisible = vueRef(false);
+    const selectedSessionTags = vueRef([]);
+    const sessionSearchQuery = vueRef('');
+    const sessionSidebarWidth = vueRef(320);
+    
+    // 确保 sessions 始终是数组
+    if (!sessions.value || !Array.isArray(sessions.value)) {
+        sessions.value = [];
+    }
+
     // 会话同步服务
     const sessionSync = getSessionSyncService();
 
@@ -2071,6 +2085,97 @@ export const createStore = () => {
         }
     };
 
+    /**
+     * 加载会话列表
+     */
+    const loadSessions = async (forceRefresh = false) => {
+        return safeExecuteAsync(async () => {
+            console.log('[loadSessions] 开始加载会话列表, forceRefresh:', forceRefresh);
+            sessionLoading.value = true;
+            sessionError.value = null;
+            
+            try {
+                const url = `${window.API_URL}/session/`;
+                console.log('[loadSessions] 请求URL:', url);
+                const response = await getData(url, {}, false);
+                console.log('[loadSessions] API响应:', response);
+                
+                let sessionList = [];
+                // 兼容不同的返回格式（与 YiPet 保持一致）
+                if (Array.isArray(response)) {
+                    sessionList = response;
+                } else if (response && Array.isArray(response.sessions)) {
+                    sessionList = response.sessions;
+                } else if (response && Array.isArray(response.data)) {
+                    sessionList = response.data;
+                } else if (response && response.data && Array.isArray(response.data.sessions)) {
+                    sessionList = response.data.sessions;
+                } else if (response && response.data && response.data.list && Array.isArray(response.data.list)) {
+                    sessionList = response.data.list;
+                }
+                
+                // 确保 sessionList 是数组并过滤无效项
+                if (!Array.isArray(sessionList)) {
+                    console.warn('[loadSessions] 返回数据不是数组格式:', sessionList);
+                    sessionList = [];
+                }
+                sessionList = sessionList.filter(s => s && s.id); // 过滤无效会话
+                
+                // 排序：收藏的优先，然后按更新时间倒序（与 YiPet 保持一致）
+                sessionList.sort((a, b) => {
+                    const aFavorite = a.isFavorite || false;
+                    const bFavorite = b.isFavorite || false;
+                    
+                    if (aFavorite !== bFavorite) {
+                        return bFavorite ? 1 : -1;
+                    }
+                    
+                    const aTime = a.updatedAt || a.createdAt || 0;
+                    const bTime = b.updatedAt || b.createdAt || 0;
+                    return bTime - aTime;
+                });
+                
+                sessions.value = sessionList;
+                console.log('[loadSessions] 会话列表加载成功，共', sessionList.length, '个会话');
+            } catch (error) {
+                console.error('[loadSessions] 加载会话列表失败:', error);
+                sessionError.value = error?.message || '加载会话列表失败';
+                sessions.value = [];
+            } finally {
+                sessionLoading.value = false;
+            }
+        }, '加载会话列表');
+    };
+
+    /**
+     * 保存会话侧边栏宽度
+     */
+    const saveSessionSidebarWidth = (width) => {
+        try {
+            sessionSidebarWidth.value = width;
+            localStorage.setItem('aicrSessionSidebarWidth', width.toString());
+        } catch (error) {
+            console.warn('[saveSessionSidebarWidth] 保存会话侧边栏宽度失败:', error);
+        }
+    };
+
+    /**
+     * 加载会话侧边栏宽度
+     */
+    const loadSessionSidebarWidth = () => {
+        try {
+            const savedWidth = localStorage.getItem('aicrSessionSidebarWidth');
+            if (savedWidth) {
+                const width = Math.max(50, parseInt(savedWidth, 10));
+                if (!isNaN(width)) {
+                    sessionSidebarWidth.value = width;
+                }
+            }
+        } catch (error) {
+            console.warn('[loadSessionSidebarWidth] 加载会话侧边栏宽度失败:', error);
+        }
+    };
+
     // 返回状态和方法
     return {
         // 响应式数据
@@ -2109,6 +2214,15 @@ export const createStore = () => {
         commentersLoading,
         commentersError,
         
+        // 会话列表相关状态
+        sessions,
+        sessionLoading,
+        sessionError,
+        sessionListVisible,
+        selectedSessionTags,
+        sessionSearchQuery,
+        sessionSidebarWidth,
+        
         // 方法
         loadFileTree,
         loadFiles,
@@ -2139,7 +2253,10 @@ export const createStore = () => {
         clearError,
         loadSidebarWidths,
         saveSidebarWidth,
-        saveCommentsWidth
+        saveCommentsWidth,
+        loadSessions,
+        saveSessionSidebarWidth,
+        loadSessionSidebarWidth
     };
 };
 
