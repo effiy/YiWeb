@@ -1527,6 +1527,10 @@ export const createStore = () => {
         }
         
         // 返回规范化后的评论，确保所有相关字段保持一致
+        // 如果存在 rangeInfo，说明 text 字段存储的是引用代码，应该保留原有的 text 值
+        // 否则，text 和 content 保持一致
+        const textValue = (comment.rangeInfo && comment.text) ? comment.text : content;
+        
         return {
             ...comment,
             // 统一的消息字段
@@ -1534,7 +1538,8 @@ export const createStore = () => {
             content: content,
             timestamp: timestamp,
             // 兼容字段（保持与 content 和 timestamp 一致）
-            text: content, // content 和 text 保持一致
+            // 如果有 rangeInfo，保留原有的 text（引用代码），否则使用 content
+            text: textValue,
             createdTime: timestamp, // 毫秒数
             createdAt: timestamp, // 毫秒数
             // 保留其他字段

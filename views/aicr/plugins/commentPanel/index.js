@@ -2001,6 +2001,13 @@ const createCommentPanel = async () => {
                                  commentObj.projectId = commentObj.projectId || fromUserObj.projectId;
                                  commentObj.author = commentObj.author || fromUserObj.author;
                                  commentObj.status = commentObj.status || 'pending';
+                                 // 保留引用代码信息（如果有）
+                                 if (fromUserObj.text) {
+                                     commentObj.text = fromUserObj.text;
+                                 }
+                                 if (fromUserObj.rangeInfo) {
+                                     commentObj.rangeInfo = fromUserObj.rangeInfo;
+                                 }
                                  
                                  // 规范化评论数据，确保字段一致性
                                  if (window.aicrStore && window.aicrStore.normalizeComment) {
@@ -2010,7 +2017,10 @@ const createCommentPanel = async () => {
                                      const content = String(commentObj.content || commentObj.text || '').trim();
                                      const timestamp = Date.now();
                                      commentObj.content = content;
-                                     commentObj.text = content; // content 和 text 保持一致
+                                     // 如果有 rangeInfo，保留原有的 text（引用代码），否则使用 content
+                                     if (!commentObj.rangeInfo) {
+                                         commentObj.text = content; // content 和 text 保持一致
+                                     }
                                      commentObj.timestamp = timestamp;
                                      commentObj.createdTime = timestamp; // 毫秒数
                                      commentObj.createdAt = timestamp; // 毫秒数
@@ -2045,7 +2055,10 @@ const createCommentPanel = async () => {
                                if (window.aicrStore && window.aicrStore.normalizeComment) {
                                    fallback = window.aicrStore.normalizeComment(fallback);
                                } else {
-                                   fallback.text = fallback.content; // content 和 text 保持一致
+                                   // 如果有 rangeInfo，保留原有的 text（引用代码），否则使用 content
+                                   if (!fallback.rangeInfo) {
+                                       fallback.text = fallback.content; // content 和 text 保持一致
+                                   }
                                    fallback.createdTime = fallback.timestamp; // 毫秒数
                                    fallback.createdAt = fallback.timestamp; // 毫秒数
                                }

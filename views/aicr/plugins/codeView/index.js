@@ -2500,6 +2500,7 @@ const createCodeView = async () => {
                         // 优先尝试滚动到评论标记位置
                         let targetElement = null;
                         let targetType = '';
+                        let triedCommentMarker = false;
                         
                         if (comment && comment.key) {
                             // 先尝试找到具体的评论标记
@@ -2512,13 +2513,18 @@ const createCodeView = async () => {
                                     break;
                                 }
                             }
+                            triedCommentMarker = true;
                         }
                         
-                        // 如果没找到评论标记，则滚动到代码行
+                        // 如果没找到评论标记，立即回退到代码行（不重试评论标记）
                         if (!targetElement && startLine) {
                             targetElement = this.$el ? this.$el.querySelector(`[data-line="${startLine}"]`) : null;
                             targetType = '代码行';
-                            console.log('[CodeView] 尝试滚动到代码行:', startLine);
+                            if (triedCommentMarker) {
+                                console.log('[CodeView] 未找到评论标记，回退到代码行:', startLine);
+                            } else {
+                                console.log('[CodeView] 尝试滚动到代码行:', startLine);
+                            }
                         }
                         
                         // 执行滚动
@@ -2558,11 +2564,12 @@ const createCodeView = async () => {
                             return true; // 成功
                         } else {
                             // 如果找不到目标元素且重试次数未达上限，继续重试
-                            if (retryCount < 2) { // 进一步减少重试次数到2次
+                            // 只在第一次尝试时重试（可能是DOM还未渲染完成）
+                            if (retryCount < 1) {
                                 console.log(`[CodeView] 未找到${targetType || '目标'}元素，第${retryCount + 1}次重试...`);
                                 setTimeout(() => {
                                     attemptScroll(retryCount + 1);
-                                }, 100); // 进一步减少重试间隔到100ms
+                                }, 200); // 等待DOM渲染
                             } else {
                                 // 提供更友好的错误信息和替代方案
                                 const errorMsg = this.generateScrollErrorMessage(startLine, comment, targetType);
@@ -2597,8 +2604,12 @@ const createCodeView = async () => {
             
             // 生成滚动错误消息
             generateScrollErrorMessage(startLine, comment, targetType) {
-                if (comment && comment.key) {
-                    return `无法找到评论标记 "${comment.key}"，可能评论已被删除或文件内容已更改`;
+                // 如果尝试过找评论标记但没找到，说明评论可能已被删除
+                if (comment && comment.key && targetType === '评论标记') {
+                    return `无法找到评论标记 "${comment.key}"，已回退到代码行 ${startLine || '未知'}`;
+                } else if (comment && comment.key) {
+                    // 如果连代码行也找不到
+                    return `无法找到评论标记 "${comment.key}" 和对应的代码行，可能评论已被删除或文件内容已更改`;
                 } else if (startLine) {
                     return `无法找到第 ${startLine} 行，可能文件内容已更改或行号超出范围`;
                 } else {
@@ -2609,7 +2620,24 @@ const createCodeView = async () => {
             // 处理滚动失败的情况
             handleScrollFailure(startLine, comment, errorMsg) {
                 try {
-                    // 尝试滚动到文件顶部作为替代方案
+                    // 如果只是找不到评论标记但找到了代码行，这是正常情况，不需要显示错误
+                    if (comment && comment.key && startLine) {
+                        // 尝试滚动到对应的代码行（如果存在）
+                        const codeLine = this.$el ? this.$el.querySelector(`[data-line="${startLine}"]`) : null;
+                        if (codeLine) {
+                            codeLine.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'center',
+                                inline: 'nearest'
+                            });
+                            // 高亮代码行
+                            this.highlightedLines = [Number(startLine)];
+                            console.log('[CodeView] 评论标记不存在，已滚动到代码行:', startLine);
+                            return; // 成功回退，不需要显示错误
+                        }
+                    }
+                    
+                    // 如果完全找不到目标，尝试滚动到文件顶部作为替代方案
                     const codeBlock = this.$el ? this.$el.querySelector('.code-block') : null;
                     if (codeBlock) {
                         codeBlock.scrollIntoView({ 
@@ -2620,12 +2648,10 @@ const createCodeView = async () => {
                         console.log('[CodeView] 已滚动到文件顶部作为替代方案');
                     }
                     
-                    // 显示用户友好的提示（如果有消息系统）
-                    if (this.$message && typeof this.$message.warning === 'function') {
-                        this.$message.warning(`滚动失败: ${errorMsg}`);
-                    } else {
-                        // 备用提示方式
-                        console.info('[CodeView] 提示: 请手动滚动到目标位置');
+                    // 只在完全无法找到目标时才显示警告（不显示在控制台，避免噪音）
+                    // 评论标记不存在是正常情况，不需要警告
+                    if (!comment || !comment.key || !startLine) {
+                        console.info('[CodeView] 无法定位到目标位置，已滚动到文件顶部');
                     }
                 } catch (error) {
                     console.warn('[CodeView] 处理滚动失败时出错:', error);
@@ -3341,9 +3367,10 @@ const createCodeView = async () => {
                     console.log('[CodeView] 构建评论数据，引用范围:', this.lastSelectionRange);
                     
                     // 构建评论数据
+                    // text 字段存储引用的代码内容，content 字段存储评论内容
                     let comment = {
                         content,
-                        text: content, // 确保 text 与 content 保持一致（引用的代码文本存储在 rangeInfo 中）
+                        text: this.lastSelectionText || '', // 引用的代码文本存储在 text 中
                         rangeInfo: this.lastSelectionRange, // 用于评论定位（不在界面显示行数）
                         fileId: this.file ? (this.file.fileId || this.file.id || this.file.path || this.file.name) : undefined,
                         projectId,
@@ -3358,7 +3385,7 @@ const createCodeView = async () => {
                         comment = window.aicrStore.normalizeComment(comment);
                     } else {
                         // 如果没有规范化函数，手动设置字段
-                        comment.text = comment.content; // content 和 text 保持一致
+                        // 保留 text 字段（引用代码），不要覆盖为 content
                         comment.createdTime = comment.timestamp; // 毫秒数
                         comment.createdAt = comment.timestamp; // 毫秒数
                     }

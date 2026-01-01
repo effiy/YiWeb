@@ -1215,6 +1215,9 @@ export const useMethods = (store) => {
                 const content = String(commentData.content || commentData.text || '').trim();
                 
                 // 构建评论数据（保留评论特有字段，同时包含统一的消息字段）
+                // 如果有 rangeInfo，说明 text 字段存储的是引用代码，应该保留原有的 text 值
+                const textValue = (commentData.rangeInfo && commentData.text) ? commentData.text : content;
+                
                 let comment = {
                     ...commentData,
                     // 统一的消息字段
@@ -1226,7 +1229,8 @@ export const useMethods = (store) => {
                     projectId: projectId,
                     versionId: versionId,
                     // 兼容字段（保留原有字段以兼容旧代码）
-                    text: content, // content 和 text 保持一致
+                    // 如果有 rangeInfo，保留原有的 text（引用代码），否则使用 content
+                    text: textValue,
                     createdTime: timestamp, // 毫秒数
                     createdAt: timestamp, // 毫秒数
                     // author 字段保留（用于显示）
