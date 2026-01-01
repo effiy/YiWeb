@@ -423,6 +423,24 @@
     filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
 }
 
+.session-source-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+}
+
+.session-source-icon-news {
+    color: var(--info, #3b82f6);
+    filter: drop-shadow(0 0 3px rgba(59, 130, 246, 0.5));
+}
+
+.session-source-icon-file {
+    color: var(--success, #10b981);
+    filter: drop-shadow(0 0 3px rgba(16, 185, 129, 0.5));
+}
+
 .session-title-text {
     font-size: 14px;
     font-weight: 500;

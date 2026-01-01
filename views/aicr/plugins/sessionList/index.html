@@ -141,6 +141,7 @@
                 <div class="session-item-header">
                     <div class="session-item-title">
                         <i v-if="session.isFavorite" class="fas fa-star favorite-icon"></i>
+                        <i v-if="getSessionSourceIcon(session)" :class="[getSessionSourceIcon(session), 'session-source-icon', { 'session-source-icon-news': getSessionSource(session) === 'news', 'session-source-icon-file': getSessionSource(session) === 'file-tree' }]"></i>
                         <span class="session-title-text">{{ session.pageTitle || session.title || '未命名会话' }}</span>
                     </div>
                 </div>

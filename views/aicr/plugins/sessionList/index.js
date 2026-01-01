@@ -638,6 +638,31 @@ const SessionListComponent = {
             emit('session-select', session);
         };
         
+        // 判断会话来源（通过URL判断）
+        const getSessionSource = (session) => {
+            if (!session || !session.url) {
+                return null;
+            }
+            const url = String(session.url);
+            if (url.startsWith('news-session://')) {
+                return 'news';
+            } else if (url.startsWith('aicr-session://')) {
+                return 'file-tree';
+            }
+            return null;
+        };
+        
+        // 获取会话来源图标类名
+        const getSessionSourceIcon = (session) => {
+            const source = getSessionSource(session);
+            if (source === 'news') {
+                return 'fas fa-newspaper';
+            } else if (source === 'file-tree') {
+                return 'fas fa-folder-open';
+            }
+            return null;
+        };
+        
         // 组件挂载时加载标签顺序
         onMounted(() => {
             loadTagOrder();
@@ -666,7 +691,9 @@ const SessionListComponent = {
             handleDrop,
             startLongPress,
             cancelLongPress,
-            handleSessionClick
+            handleSessionClick,
+            getSessionSource,
+            getSessionSourceIcon
         };
     },
     template: await fetch('/views/aicr/plugins/sessionList/index.html').then(r => r.text())
