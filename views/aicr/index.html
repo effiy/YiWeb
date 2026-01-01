@@ -137,6 +137,7 @@
                     :error="errorMessage" 
                     :comments="comments"
                     :collapsed="sidebarCollapsed"
+                    :search-query="searchQuery"
                     @file-select="handleFileSelect" 
                     @folder-toggle="handleFolderToggle"
                     @create-folder="handleCreateFolder"
@@ -145,6 +146,7 @@
                     @delete-item="handleDeleteItem"
                     @create-session="handleCreateSession"
                     @toggle-collapse="toggleSidebar"
+                    @search-change="handleSearchChange"
                 ></file-tree>
             </aside>
             

@@ -626,6 +626,16 @@ const { computed } = Vue;
                     }
                 },
                 
+                handleSearchChange: function(query) {
+                    logInfo('[主页面] 收到文件树搜索变化事件:', query);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleSearchChange(query);
+                    } catch (error) {
+                        logError('[主页面] 文件树搜索变化处理失败:', error);
+                    }
+                },
+                
                 clearSearch: function() {
                     logInfo('[主页面] 收到清除搜索事件');
                     try {

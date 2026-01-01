@@ -499,17 +499,90 @@ const createFileTree = async () => {
             collapsed: {
                 type: Boolean,
                 default: false
+            },
+            searchQuery: {
+                type: String,
+                default: ''
             }
         },
         computed: {
-            // 排序后的文件树数据
+            // 排序后的文件树数据（应用过滤）
             sortedTree() {
                 if (!Array.isArray(this.tree)) return [];
-                return this.tree.map(item => sortFileTreeRecursively(item));
+                const sorted = this.tree.map(item => sortFileTreeRecursively(item));
+                
+                // 如果有搜索关键词，进行过滤
+                if (this.searchQuery && this.searchQuery.trim()) {
+                    return this.filterTree(sorted, this.searchQuery.trim().toLowerCase());
+                }
+                
+                return sorted;
             }
         },
-        emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session'],
+        emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change'],
+        data() {
+            return {
+                searchDebounceTimer: null
+            };
+        },
         methods: {
+            // 过滤文件树
+            filterTree(items, query) {
+                if (!query) return items;
+                
+                const filtered = [];
+                for (const item of items) {
+                    const itemName = (item.name || '').toLowerCase();
+                    const itemPath = (item.path || item.id || '').toLowerCase();
+                    const matches = itemName.includes(query) || itemPath.includes(query);
+                    
+                    if (item.type === 'folder' && item.children) {
+                        // 递归过滤子节点
+                        const filteredChildren = this.filterTree(item.children, query);
+                        // 如果文件夹名称匹配或有匹配的子节点，则包含该文件夹
+                        if (matches || filteredChildren.length > 0) {
+                            filtered.push({
+                                ...item,
+                                children: filteredChildren
+                            });
+                        }
+                    } else if (matches) {
+                        // 文件匹配，直接添加
+                        filtered.push(item);
+                    }
+                }
+                return filtered;
+            },
+            
+            // 处理搜索输入
+            handleSearchInput(event) {
+                const value = event.target.value;
+                
+                // 清除之前的防抖定时器
+                if (this.searchDebounceTimer) {
+                    clearTimeout(this.searchDebounceTimer);
+                }
+                
+                // 防抖处理：300ms后执行搜索
+                this.searchDebounceTimer = setTimeout(() => {
+                    this.$emit('search-change', value);
+                }, 300);
+            },
+            
+            // 清除搜索
+            handleSearchClear() {
+                const input = this.$refs.searchInput;
+                if (input) {
+                    input.value = '';
+                }
+                this.$emit('search-change', '');
+                // 使用 nextTick 确保清除按钮状态更新
+                this.$nextTick(() => {
+                    if (input) {
+                        input.focus();
+                    }
+                });
+            },
             // 排序函数，供模板使用
             sortFileTreeItems(items) {
                 return sortFileTreeItems(items);

@@ -127,6 +127,21 @@ export const useMethods = (store) => {
             // 实现文件树搜索逻辑
         }, '文件树搜索');
     };
+    
+    /**
+     * 处理文件树搜索变化
+     * @param {string} query - 搜索关键词
+     */
+    const handleSearchChange = (query) => {
+        return safeExecute(() => {
+            if (searchQuery && typeof searchQuery.value !== 'undefined') {
+                searchQuery.value = query || '';
+                console.log('[文件树搜索] 搜索关键词已更新:', query);
+            } else {
+                console.warn('[文件树搜索] searchQuery未定义或无效');
+            }
+        }, '文件树搜索变化处理');
+    };
 
     /**
      * 在评论中搜索
@@ -2327,6 +2342,7 @@ export const useMethods = (store) => {
         refreshData: handleRefreshData,
         // 搜索相关方法
         handleSearchInput,
+        handleSearchChange,
         clearSearch,
         handleMessageInput,
         handleCompositionStart,
