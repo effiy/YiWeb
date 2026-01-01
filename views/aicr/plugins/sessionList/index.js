@@ -58,6 +58,13 @@ const SessionListComponent = {
         // 标签顺序（响应式）
         const tagOrder = ref(null);
         
+        // 长按删除相关状态
+        const longPressTimer = ref(null);
+        const longPressStartTime = ref(null);
+        const longPressStartPosition = ref(null);
+        const isDeleting = ref(false);
+        const longPressCompleted = ref(false);
+        
         // 加载标签顺序
         const loadTagOrder = () => {
             if (tagOrder.value !== null) {
@@ -502,6 +509,135 @@ const SessionListComponent = {
             // Vue会自动检测到变化并重新计算computed属性
         };
         
+        // 开始长按计时
+        const startLongPress = (session, event) => {
+            try {
+                // 阻止事件冒泡，避免触发其他点击事件
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                // 检查是否正在删除中
+                if (isDeleting.value) {
+                    console.log('[长按删除] 正在删除中，忽略新的长按');
+                    return;
+                }
+                
+                // 检查是否点击在可交互元素上
+                const target = event.target;
+                const isInteractiveElement = target.closest('button, a, [role="button"], .session-tag');
+                
+                if (isInteractiveElement) {
+                    console.log('[长按删除] 点击在交互元素上，跳过长按:', target.tagName, target.className);
+                    return;
+                }
+                
+                // 检查session是否存在
+                if (!session || !session.id) {
+                    console.warn('[长按删除] session参数为空');
+                    return;
+                }
+                
+                // 记录长按开始时间和位置
+                longPressStartTime.value = Date.now();
+                longPressStartPosition.value = {
+                    x: event.clientX || event.touches?.[0]?.clientX || 0,
+                    y: event.clientY || event.touches?.[0]?.clientY || 0
+                };
+                
+                // 设置长按定时器（800ms）
+                longPressTimer.value = setTimeout(() => {
+                    handleLongPressComplete(session, event);
+                }, 800);
+            } catch (error) {
+                console.error('[长按删除] 开始长按计时失败:', error);
+            }
+        };
+        
+        // 取消长按
+        const cancelLongPress = () => {
+            if (longPressTimer.value) {
+                clearTimeout(longPressTimer.value);
+                longPressTimer.value = null;
+            }
+            // 如果长按已完成，标记为已完成，防止触发点击事件
+            if (longPressStartTime.value && Date.now() - longPressStartTime.value > 800) {
+                longPressCompleted.value = true;
+                // 延迟重置，确保点击事件不会触发
+                setTimeout(() => {
+                    longPressCompleted.value = false;
+                }, 100);
+            }
+            longPressStartTime.value = null;
+            longPressStartPosition.value = null;
+        };
+        
+        // 长按完成处理
+        const handleLongPressComplete = (session, event) => {
+            try {
+                // 标记长按已完成
+                longPressCompleted.value = true;
+                
+                // 清除定时器
+                if (longPressTimer.value) {
+                    clearTimeout(longPressTimer.value);
+                    longPressTimer.value = null;
+                }
+                
+                // 检查是否正在删除中
+                if (isDeleting.value) {
+                    console.log('[长按删除] 正在删除中，忽略长按完成');
+                    longPressCompleted.value = false;
+                    return;
+                }
+                
+                // 检查移动距离（如果移动超过10px，取消删除）
+                if (event && longPressStartPosition.value) {
+                    const currentX = event.clientX || event.changedTouches?.[0]?.clientX || 0;
+                    const currentY = event.clientY || event.changedTouches?.[0]?.clientY || 0;
+                    const deltaX = Math.abs(currentX - longPressStartPosition.value.x);
+                    const deltaY = Math.abs(currentY - longPressStartPosition.value.y);
+                    
+                    if (deltaX > 10 || deltaY > 10) {
+                        console.log('[长按删除] 移动距离过大，取消删除');
+                        longPressCompleted.value = false;
+                        return;
+                    }
+                }
+                
+                // 显示确认对话框
+                const sessionName = session.pageTitle || session.title || '未命名会话';
+                if (confirm(`确定删除会话 "${sessionName}" 吗？此操作不可撤销。`)) {
+                    isDeleting.value = true;
+                    emit('session-delete', session.id);
+                    // 延迟重置删除状态
+                    setTimeout(() => {
+                        isDeleting.value = false;
+                        longPressCompleted.value = false;
+                    }, 1000);
+                } else {
+                    // 用户取消删除，重置标志
+                    setTimeout(() => {
+                        longPressCompleted.value = false;
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('[长按删除] 长按完成处理失败:', error);
+                longPressCompleted.value = false;
+            }
+        };
+        
+        // 处理会话点击事件
+        const handleSessionClick = (session, event) => {
+            // 如果长按已完成，不触发点击事件
+            if (longPressCompleted.value) {
+                console.log('[SessionList] 长按已完成，跳过点击事件');
+                return;
+            }
+            emit('session-select', session);
+        };
+        
         // 组件挂载时加载标签顺序
         onMounted(() => {
             loadTagOrder();
@@ -527,7 +663,10 @@ const SessionListComponent = {
             handleDragEnd,
             handleDragOver,
             handleDragLeave,
-            handleDrop
+            handleDrop,
+            startLongPress,
+            cancelLongPress,
+            handleSessionClick
         };
     },
     template: await fetch('/views/aicr/plugins/sessionList/index.html').then(r => r.text())

@@ -108,7 +108,12 @@ const createFileTreeNode = () => {
         },
         data() {
             return {
-                _lastClickTime: null
+                _lastClickTime: null,
+                longPressTimer: null,
+                longPressStartTime: null,
+                longPressStartPosition: null,
+                isDeleting: false,
+                longPressCompleted: false
             };
         },
         computed: {
@@ -127,6 +132,12 @@ const createFileTreeNode = () => {
             // 切换文件夹展开状态
             toggleFolder(folderId) {
                 return safeExecute(() => {
+                    // 如果长按已完成，不触发点击事件
+                    if (this.longPressCompleted) {
+                        console.log('[FileTreeNode] 长按已完成，跳过文件夹切换');
+                        return;
+                    }
+                    
                     if (!folderId || typeof folderId !== 'string') {
                         throw createError('文件夹ID无效', ErrorTypes.VALIDATION, '文件夹切换');
                     }
@@ -177,6 +188,121 @@ const createFileTreeNode = () => {
                 }, '删除');
             },
             
+            // 开始长按计时
+            startLongPress(item, event) {
+                return safeExecute(() => {
+                    // 阻止事件冒泡，避免触发其他点击事件
+                    if (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    
+                    // 检查是否正在删除中
+                    if (this.isDeleting) {
+                        console.log('[长按删除] 正在删除中，忽略新的长按');
+                        return;
+                    }
+                    
+                    // 检查是否点击在可交互元素上
+                    const target = event.target;
+                    const isInteractiveElement = target.closest('button, a, [role="button"]');
+                    
+                    if (isInteractiveElement) {
+                        console.log('[长按删除] 点击在交互元素上，跳过长按:', target.tagName, target.className);
+                        return;
+                    }
+                    
+                    // 检查item是否存在
+                    if (!item || !item.id) {
+                        console.warn('[长按删除] item参数为空');
+                        return;
+                    }
+                    
+                    // 记录长按开始时间和位置
+                    this.longPressStartTime = Date.now();
+                    this.longPressStartPosition = {
+                        x: event.clientX || event.touches?.[0]?.clientX || 0,
+                        y: event.clientY || event.touches?.[0]?.clientY || 0
+                    };
+                    
+                    // 设置长按定时器（800ms）
+                    this.longPressTimer = setTimeout(() => {
+                        this.handleLongPressComplete(item, event);
+                    }, 800);
+                }, '开始长按计时');
+            },
+            
+            // 取消长按
+            cancelLongPress() {
+                if (this.longPressTimer) {
+                    clearTimeout(this.longPressTimer);
+                    this.longPressTimer = null;
+                }
+                // 如果长按已完成，标记为已完成，防止触发点击事件
+                if (this.longPressStartTime && Date.now() - this.longPressStartTime > 800) {
+                    this.longPressCompleted = true;
+                    // 延迟重置，确保点击事件不会触发
+                    setTimeout(() => {
+                        this.longPressCompleted = false;
+                    }, 100);
+                }
+                this.longPressStartTime = null;
+                this.longPressStartPosition = null;
+            },
+            
+            // 长按完成处理
+            handleLongPressComplete(item, event) {
+                return safeExecute(() => {
+                    // 标记长按已完成
+                    this.longPressCompleted = true;
+                    
+                    // 清除定时器
+                    if (this.longPressTimer) {
+                        clearTimeout(this.longPressTimer);
+                        this.longPressTimer = null;
+                    }
+                    
+                    // 检查是否正在删除中
+                    if (this.isDeleting) {
+                        console.log('[长按删除] 正在删除中，忽略长按完成');
+                        this.longPressCompleted = false;
+                        return;
+                    }
+                    
+                    // 检查移动距离（如果移动超过10px，取消删除）
+                    if (event && this.longPressStartPosition) {
+                        const currentX = event.clientX || event.changedTouches?.[0]?.clientX || 0;
+                        const currentY = event.clientY || event.changedTouches?.[0]?.clientY || 0;
+                        const deltaX = Math.abs(currentX - this.longPressStartPosition.x);
+                        const deltaY = Math.abs(currentY - this.longPressStartPosition.y);
+                        
+                        if (deltaX > 10 || deltaY > 10) {
+                            console.log('[长按删除] 移动距离过大，取消删除');
+                            this.longPressCompleted = false;
+                            return;
+                        }
+                    }
+                    
+                    // 显示确认对话框
+                    const itemName = item.name || item.id;
+                    const itemType = item.type === 'folder' ? '文件夹' : '文件';
+                    if (confirm(`确定删除${itemType} "${itemName}" 及其子项？此操作不可撤销。`)) {
+                        this.isDeleting = true;
+                        this.deleteItem(event, item.id);
+                        // 延迟重置删除状态
+                        setTimeout(() => {
+                            this.isDeleting = false;
+                            this.longPressCompleted = false;
+                        }, 1000);
+                    } else {
+                        // 用户取消删除，重置标志
+                        setTimeout(() => {
+                            this.longPressCompleted = false;
+                        }, 100);
+                    }
+                }, '长按完成处理');
+            },
+            
             // 创建会话
             createSession(event, item) {
                 return safeExecute(() => {
@@ -207,6 +333,12 @@ const createFileTreeNode = () => {
             // 选择文件
             selectFile(fileId) {
                 return safeExecute(() => {
+                    // 如果长按已完成，不触发点击事件
+                    if (this.longPressCompleted) {
+                        console.log('[FileTreeNode] 长按已完成，跳过点击事件');
+                        return;
+                    }
+                    
                     if (fileId == null) {
                         throw createError('文件ID无效', ErrorTypes.VALIDATION, '文件选择');
                     }
@@ -429,6 +561,12 @@ const createFileTreeNode = () => {
                         expanded: isFolderExpanded(item.id)
                     }]"
                     @click="toggleFolder(item.id)"
+                    @mousedown="startLongPress(item, $event)"
+                    @mouseup="cancelLongPress"
+                    @mouseleave="cancelLongPress"
+                    @touchstart="startLongPress(item, $event)"
+                    @touchend="cancelLongPress"
+                    @touchcancel="cancelLongPress"
                     :title="\`文件夹: \${item.name}\`"
                     tabindex="0"
                     @keydown.enter="toggleFolder(item.id)"
@@ -444,7 +582,6 @@ const createFileTreeNode = () => {
                         <button :title="'在 ' + item.name + ' 下新建文件夹'" @click="createSubFolder($event, item.id)"><i class="fas fa-folder-plus"></i></button>
                         <button :title="'在 ' + item.name + ' 下新建文件'" @click="createSubFile($event, item.id)"><i class="fas fa-file"></i></button>
                         <button :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
-                        <button :title="'删除 ' + item.name" @click="deleteItem($event, item.id)"><i class="fas fa-trash"></i></button>
                     </span>
                 </div>
                 
@@ -456,6 +593,12 @@ const createFileTreeNode = () => {
                         'batch-selected': batchMode && isFileSelected(item.id)
                     }]"
                     @click="selectFile(item.id)"
+                    @mousedown="startLongPress(item, $event)"
+                    @mouseup="cancelLongPress"
+                    @mouseleave="cancelLongPress"
+                    @touchstart="startLongPress(item, $event)"
+                    @touchend="cancelLongPress"
+                    @touchcancel="cancelLongPress"
                     :title="\`文件: \${item.name}\`"
                     tabindex="0"
                     @keydown.enter="selectFile(item.id)"
@@ -467,7 +610,6 @@ const createFileTreeNode = () => {
                     <span v-if="getFileSizeDisplay(item)" class="file-size">{{ getFileSizeDisplay(item) }}</span>
                     <span class="file-actions" @click.stop>
                         <button :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
-                        <button :title="'删除 ' + item.name" @click="deleteItem($event, item.id)"><i class="fas fa-trash"></i></button>
                     </span>
                 </div>
                 

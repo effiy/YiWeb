@@ -131,20 +131,17 @@
                 :key="session.id"
                 class="session-item"
                 :class="{ active: selectedSessionId === session.id }"
-                @click="$emit('session-select', session)">
+                @click="handleSessionClick(session, $event)"
+                @mousedown="startLongPress(session, $event)"
+                @mouseup="cancelLongPress"
+                @mouseleave="cancelLongPress"
+                @touchstart="startLongPress(session, $event)"
+                @touchend="cancelLongPress"
+                @touchcancel="cancelLongPress">
                 <div class="session-item-header">
                     <div class="session-item-title">
                         <i v-if="session.isFavorite" class="fas fa-star favorite-icon"></i>
                         <span class="session-title-text">{{ session.pageTitle || session.title || '未命名会话' }}</span>
-                    </div>
-                    <div class="session-item-actions">
-                        <button 
-                            class="session-delete-btn"
-                            @click.stop="$emit('session-delete', session.id)"
-                            title="删除会话"
-                            aria-label="删除会话">
-                            <i class="fas fa-trash"></i>
-                        </button>
                     </div>
                 </div>
                 <div class="session-item-meta">
