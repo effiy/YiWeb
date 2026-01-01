@@ -663,6 +663,17 @@ const SessionListComponent = {
             return null;
         };
         
+        // 获取会话第一个字符（用于来自news的会话）
+        const getSessionFirstChar = (session) => {
+            const source = getSessionSource(session);
+            if (source === 'news') {
+                const title = session.pageTitle || session.title || '未命名会话';
+                const firstChar = title.trim().charAt(0) || 'N';
+                return firstChar.toUpperCase();
+            }
+            return null;
+        };
+        
         // 组件挂载时加载标签顺序
         onMounted(() => {
             loadTagOrder();
@@ -693,7 +704,8 @@ const SessionListComponent = {
             cancelLongPress,
             handleSessionClick,
             getSessionSource,
-            getSessionSourceIcon
+            getSessionSourceIcon,
+            getSessionFirstChar
         };
     },
     template: await fetch('/views/aicr/plugins/sessionList/index.html').then(r => r.text())

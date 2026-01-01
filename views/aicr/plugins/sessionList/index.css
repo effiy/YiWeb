@@ -423,6 +423,22 @@
     filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
 }
 
+.session-first-char-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    line-height: 1;
+}
+
 .session-source-icon {
     font-size: 14px;
     flex-shrink: 0;

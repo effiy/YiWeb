@@ -141,6 +141,10 @@
                 <div class="session-item-header">
                     <div class="session-item-title">
                         <i v-if="session.isFavorite" class="fas fa-star favorite-icon"></i>
+                        <!-- 来自news的会话显示第一个字符图标 -->
+                        <div v-if="getSessionFirstChar(session)" class="session-first-char-icon" :title="'来自news'">
+                            {{ getSessionFirstChar(session) }}
+                        </div>
                         <i v-if="getSessionSourceIcon(session)" :class="[getSessionSourceIcon(session), 'session-source-icon', { 'session-source-icon-news': getSessionSource(session) === 'news', 'session-source-icon-file': getSessionSource(session) === 'file-tree' }]"></i>
                         <span class="session-title-text">{{ session.pageTitle || session.title || '未命名会话' }}</span>
                     </div>

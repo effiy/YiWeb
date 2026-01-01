@@ -89,14 +89,15 @@
     align-items: center;
     justify-content: center;
     gap: 4px;
-    padding: 6px 10px;
-    height: 32px;
-    font-size: 13px;
+    padding: 2px 6px;
+    height: auto;
+    min-height: 20px;
+    font-size: 11px;
     font-weight: 500;
     color: white;
     background: linear-gradient(135deg, #6366f1, #4f46e5);
     border: 1px solid #4f46e5;
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
@@ -109,8 +110,9 @@
 .toolbar-group:first-child .toolbar-btn {
     width: auto;
     min-width: fit-content;
-    padding: 6px 10px;
-    height: 32px;
+    padding: 2px 6px;
+    height: auto;
+    min-height: 20px;
 }
 
 .toolbar-group:last-child .toolbar-btn {
@@ -167,7 +169,7 @@
 }
 
 .toolbar-btn i {
-    font-size: 12px;
+    font-size: 11px;
     flex-shrink: 0;
 }
 
@@ -190,12 +192,12 @@
     }
     
     .toolbar-btn {
-        padding: 4px 6px;
-        min-width: 28px;
+        padding: 2px 6px;
+        min-width: 20px;
     }
     
     .toolbar-group:first-child .toolbar-btn {
-        padding: 4px 8px;
+        padding: 2px 6px;
     }
 }
 
