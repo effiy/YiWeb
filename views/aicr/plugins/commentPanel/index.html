@@ -162,17 +162,6 @@
                     </div>
                 </div>
 
-                <!-- 代码位置信息 -->
-                <div v-if="comment.rangeInfo" class="code-location">
-                    <div class="location-header">
-                        <i class="fas fa-code"></i>
-                        <span class="location-text">
-                            第 {{ comment.rangeInfo.startLine }}{{ comment.rangeInfo.endLine !== comment.rangeInfo.startLine ? `-${comment.rangeInfo.endLine}` : '' }} 行
-                        </span>
-                    </div>
-                    
-                </div>
-
                 <!-- 评论内容 -->
                 <div class="comment-body">
                     <div v-if="comment.text" class="comment-quote">

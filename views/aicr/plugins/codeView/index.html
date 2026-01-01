@@ -52,7 +52,7 @@
             </div>
         </div>
         <!-- Markdown预览模式 -->
-        <div v-else-if="shouldShowMarkdownPreview" class="markdown-preview-container" @dblclick="handlePreviewDoubleClick" title="双击切换到源码模式">
+        <div v-else-if="shouldShowMarkdownPreview" class="markdown-preview-container">
             <div class="markdown-preview-wrapper">
                 <div class="markdown-preview-content md-preview-body">
                     <!-- 整体Markdown预览内容 -->
@@ -200,11 +200,6 @@
                                     <i class="fas fa-clock"></i>
                                     {{ formatTime(currentCommentDetail.timestamp) }}
                                 </time>
-                                <!-- 代码位置信息 -->
-                                <div v-if="currentCommentDetail.rangeInfo" class="location-info compact">
-                                    <i class="fas fa-code"></i>
-                                    第 {{ currentCommentDetail.rangeInfo.startLine }}{{ currentCommentDetail.rangeInfo.endLine !== currentCommentDetail.rangeInfo.startLine ? "-" + currentCommentDetail.rangeInfo.endLine : "" }} 行
-                                </div>
                             </div>
                         </div>
                     </div>

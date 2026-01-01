@@ -14,7 +14,8 @@
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 12px;
     line-height: 1.4;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: auto;
     position: relative;
     min-height: 120px;
     box-shadow: var(--shadow-sm);
