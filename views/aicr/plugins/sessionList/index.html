@@ -1,40 +1,4 @@
 <div class="session-list-container">
-    <!-- 会话列表头部 -->
-    <div class="session-list-header">
-        <div class="session-list-title">
-            <i class="fas fa-comments"></i>
-            <span>会话列表</span>
-        </div>
-        <button 
-            class="session-list-close-btn"
-            @click="$emit('toggle-collapse')"
-            aria-label="返回文件树视图"
-            title="返回文件树视图">
-            <i class="fas fa-arrow-left"></i>
-        </button>
-    </div>
-    
-    <!-- 搜索框 -->
-    <div class="session-list-search">
-        <div class="search-input-wrapper">
-            <i class="fas fa-search search-icon"></i>
-            <input 
-                type="text"
-                class="session-search-input"
-                placeholder="搜索会话..."
-                :value="searchQuery"
-                @input="$emit('search-change', $event.target.value)"
-            />
-            <button 
-                v-if="searchQuery"
-                class="search-clear-btn"
-                @click="$emit('search-change', '')"
-                aria-label="清除搜索">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    </div>
-    
     <!-- 标签过滤器 -->
     <div class="session-list-tags" v-if="allTags.length > 0">
         <div class="tags-header">
@@ -108,17 +72,6 @@
                 </div>
             </div>
         </div>
-    </div>
-    
-    <!-- 新建会话按钮 -->
-    <div class="session-list-footer">
-        <button 
-            class="session-create-btn"
-            @click="$emit('session-create')"
-            title="新建会话">
-            <i class="fas fa-plus"></i>
-            <span>新建会话</span>
-        </button>
     </div>
 </div>
 

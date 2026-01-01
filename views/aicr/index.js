@@ -116,6 +116,9 @@ const { computed } = Vue;
                 sessionError: store.sessionError,
                 selectedSessionTags: store.selectedSessionTags,
                 sessionSearchQuery: store.sessionSearchQuery,
+                // 会话批量选择相关状态
+                sessionBatchMode: store.sessionBatchMode,
+                selectedSessionIds: store.selectedSessionIds,
             },
             onMounted: (mountedApp) => {
                 logInfo('[代码审查页面] 应用已挂载');
@@ -947,6 +950,62 @@ const { computed } = Vue;
                         methods.handleSessionViewBack();
                     } catch (error) {
                         logError('[主页面] 返回文件树视图失败:', error);
+                    }
+                },
+                
+                // 切换会话批量选择模式
+                toggleSessionBatchMode: function() {
+                    logInfo('[主页面] 切换会话批量选择模式');
+                    try {
+                        const methods = useMethods(store);
+                        methods.toggleSessionBatchMode();
+                    } catch (error) {
+                        logError('[主页面] 切换会话批量选择模式失败:', error);
+                    }
+                },
+                
+                // 处理会话导入
+                handleSessionImport: function() {
+                    logInfo('[主页面] 触发会话导入');
+                    try {
+                        // 使用 nextTick 确保 ref 已绑定
+                        this.$nextTick(() => {
+                            const importInput = document.querySelector('input[type="file"][accept=".json,.zip"]');
+                            if (importInput) {
+                                importInput.click();
+                            } else {
+                                logWarn('[主页面] 未找到导入文件输入框');
+                            }
+                        });
+                    } catch (error) {
+                        logError('[主页面] 触发会话导入失败:', error);
+                    }
+                },
+                
+                // 处理会话导入文件
+                handleSessionImportFile: async function(event) {
+                    logInfo('[主页面] 处理会话导入文件');
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionImportFile(event);
+                    } catch (error) {
+                        logError('[主页面] 处理会话导入文件失败:', error);
+                    } finally {
+                        // 清空文件输入，允许重复选择同一文件
+                        if (event.target) {
+                            event.target.value = '';
+                        }
+                    }
+                },
+                
+                // 处理会话导出
+                handleSessionExport: async function() {
+                    logInfo('[主页面] 处理会话导出');
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionExport();
+                    } catch (error) {
+                        logError('[主页面] 处理会话导出失败:', error);
                     }
                 },
             }

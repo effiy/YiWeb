@@ -334,6 +334,10 @@ export const createStore = () => {
     const batchMode = vueRef(false);
     const selectedFileIds = vueRef(new Set());
     
+    // 会话批量选择相关状态
+    const sessionBatchMode = vueRef(false);
+    const selectedSessionIds = vueRef(new Set());
+    
     // 视图模式：'tree' 树形视图，'tags' 标签视图
     const viewMode = vueRef('tree');
     
@@ -2204,6 +2208,10 @@ export const createStore = () => {
         // 批量选择相关状态
         batchMode,
         selectedFileIds,
+        
+        // 会话批量选择相关状态
+        sessionBatchMode,
+        selectedSessionIds,
         
         // 视图模式
         viewMode,

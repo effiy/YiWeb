@@ -564,6 +564,13 @@
     opacity: 1;
 }
 
+/* ========== 视图切换 ========== */
+/* 文件树和会话列表的直接切换，无复杂动画 */
+.aicr-sidebar file-tree,
+.aicr-sidebar session-list {
+    display: block;
+}
+
 @media (max-width: 950px) {
     .aicr-sidebar.collapsed {
         transform: translateY(-100%);

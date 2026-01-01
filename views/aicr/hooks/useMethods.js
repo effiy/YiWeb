@@ -58,7 +58,11 @@ export const useMethods = (store) => {
         loading,
         files,
         // 视图模式
-        viewMode
+        viewMode,
+        
+        // 会话批量选择相关状态
+        sessionBatchMode,
+        selectedSessionIds
     } = store;
 
     // 搜索相关状态
@@ -2580,6 +2584,167 @@ export const useMethods = (store) => {
                     viewMode.value = 'tree';
                 }
             }, '返回文件树视图');
+        },
+        
+        // 切换会话批量选择模式
+        toggleSessionBatchMode: () => {
+            return safeExecute(() => {
+                if (sessionBatchMode) {
+                    sessionBatchMode.value = !sessionBatchMode.value;
+                    if (!sessionBatchMode.value && selectedSessionIds) {
+                        selectedSessionIds.value.clear();
+                    }
+                    console.log('[useMethods] 会话批量选择模式:', sessionBatchMode.value);
+                }
+            }, '切换会话批量选择模式');
+        },
+        
+        // 处理会话导入文件
+        handleSessionImportFile: async (event) => {
+            return safeExecuteAsync(async () => {
+                const file = event.target?.files?.[0];
+                if (!file) {
+                    console.warn('[useMethods] 未选择文件');
+                    return;
+                }
+                
+                console.log('[useMethods] 导入会话文件:', file.name);
+                
+                const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
+                showGlobalLoading('正在导入会话...');
+                
+                try {
+                    const fileContent = await file.text();
+                    let sessionsData = [];
+                    
+                    // 解析文件内容
+                    if (file.name.endsWith('.json')) {
+                        sessionsData = JSON.parse(fileContent);
+                        if (!Array.isArray(sessionsData)) {
+                            sessionsData = [sessionsData];
+                        }
+                    } else if (file.name.endsWith('.zip')) {
+                        // 处理 ZIP 文件
+                        const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip;
+                        const zip = await JSZip.loadAsync(file);
+                        const fileNames = Object.keys(zip.files);
+                        
+                        for (const fileName of fileNames) {
+                            if (fileName.endsWith('.json')) {
+                                const content = await zip.files[fileName].async('string');
+                                const data = JSON.parse(content);
+                                if (Array.isArray(data)) {
+                                    sessionsData.push(...data);
+                                } else {
+                                    sessionsData.push(data);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 导入会话到服务器
+                    const { postData } = await import('/apis/index.js');
+                    let successCount = 0;
+                    let failCount = 0;
+                    
+                    for (const session of sessionsData) {
+                        try {
+                            await postData(`${window.API_URL}/session/save`, session);
+                            successCount++;
+                        } catch (error) {
+                            console.error('[useMethods] 导入会话失败:', session.id, error);
+                            failCount++;
+                        }
+                    }
+                    
+                    // 刷新会话列表
+                    if (loadSessions && typeof loadSessions === 'function') {
+                        await loadSessions(true);
+                    }
+                    
+                    hideGlobalLoading();
+                    
+                    if (window.showSuccess) {
+                        window.showSuccess(`导入完成：成功 ${successCount} 个，失败 ${failCount} 个`);
+                    }
+                } catch (error) {
+                    hideGlobalLoading();
+                    console.error('[useMethods] 导入会话文件失败:', error);
+                    if (window.showError) {
+                        window.showError(`导入失败：${error.message || '未知错误'}`);
+                    }
+                }
+            }, '处理会话导入文件');
+        },
+        
+        // 处理会话导出
+        handleSessionExport: async () => {
+            return safeExecuteAsync(async () => {
+                if (!sessions || !sessions.value || sessions.value.length === 0) {
+                    console.warn('[useMethods] 没有可导出的会话');
+                    if (window.showError) {
+                        window.showError('没有可导出的会话');
+                    }
+                    return;
+                }
+                
+                console.log('[useMethods] 导出会话，数量:', sessions.value.length);
+                
+                const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
+                showGlobalLoading('正在导出会话...');
+                
+                try {
+                    // 确定要导出的会话
+                    let sessionsToExport = [];
+                    if (sessionBatchMode && sessionBatchMode.value && selectedSessionIds && selectedSessionIds.value.size > 0) {
+                        // 批量导出选中的会话
+                        sessionsToExport = sessions.value.filter(s => selectedSessionIds.value.has(s.id));
+                    } else {
+                        // 导出所有会话
+                        sessionsToExport = sessions.value;
+                    }
+                    
+                    if (sessionsToExport.length === 0) {
+                        hideGlobalLoading();
+                        if (window.showError) {
+                            window.showError('请先选择要导出的会话');
+                        }
+                        return;
+                    }
+                    
+                    // 生成导出数据
+                    const exportData = {
+                        version: '1.0',
+                        exportTime: new Date().toISOString(),
+                        count: sessionsToExport.length,
+                        sessions: sessionsToExport
+                    };
+                    
+                    // 创建 JSON 文件并下载
+                    const jsonStr = JSON.stringify(exportData, null, 2);
+                    const blob = new Blob([jsonStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `sessions_export_${new Date().toISOString().slice(0, 10)}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    hideGlobalLoading();
+                    
+                    if (window.showSuccess) {
+                        window.showSuccess(`成功导出 ${sessionsToExport.length} 个会话`);
+                    }
+                } catch (error) {
+                    hideGlobalLoading();
+                    console.error('[useMethods] 导出会话失败:', error);
+                    if (window.showError) {
+                        window.showError(`导出失败：${error.message || '未知错误'}`);
+                    }
+                }
+            }, '处理会话导出');
         }
         // 注意：会话列表相关方法（toggleSessionList, handleSessionSelect 等）已在上面定义，不需要重复引用
     };

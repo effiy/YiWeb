@@ -76,6 +76,12 @@
     width: 100%;
 }
 
+/* 当只有一个工具栏组时（如标签视图的新建会话按钮） */
+.file-tree-toolbar > .toolbar-group:only-child {
+    grid-template-columns: 1fr;
+    width: 100%;
+}
+
 .toolbar-btn {
     display: inline-flex;
     align-items: center;
