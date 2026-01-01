@@ -264,15 +264,24 @@
     
     
     <!-- 脚本标签移到Vue应用容器外部 -->
+    <!-- 基础配置和工具 -->
     <script type="module" src="/config.js"></script>
     <script type="module" src="/utils/chartViewer.js"></script>
+    
+    <!-- Mermaid 相关脚本（按依赖顺序加载） -->
     <script type="module" src="/utils/mermaid.js"></script>
     <script type="module" src="/utils/mermaidDebug.js"></script>
     <script type="module" src="/utils/mermaidRenderer.js"></script>
+    
+    <!-- 插件组件 -->
     <script type="module" src="/views/aicr/plugins/fileTree/index.js"></script>
     <script type="module" src="/views/aicr/plugins/codeView/index.js"></script>
     <script type="module" src="/views/aicr/plugins/commentPanel/index.js"></script>
+    
+    <!-- 主应用入口 -->
     <script type="module" src="/views/aicr/index.js"></script>
+    
+    <!-- 性能监控（最后加载） -->
     <script type="module" src="/utils/performance.js"></script>
 </body>
 </html> 
