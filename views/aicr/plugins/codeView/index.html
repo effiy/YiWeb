@@ -344,28 +344,6 @@
                                 </div>
                             </div>
 
-                            <div v-if="currentCommentDetail && currentCommentDetail.rangeInfo" class="form-row">
-                                <div class="form-group half-width">
-                                    <label class="form-label compact">开始行</label>
-                                    <input 
-                                        v-model.number="editingRangeInfo.startLine"
-                                        type="number" 
-                                        min="1"
-                                        class="form-input"
-                                        placeholder="开始行号"
-                                    />
-                                </div>
-                                <div class="form-group half-width">
-                                    <label class="form-label compact">结束行</label>
-                                    <input 
-                                        v-model.number="editingRangeInfo.endLine"
-                                        type="number" 
-                                        min="1"
-                                        class="form-input"
-                                        placeholder="结束行号"
-                                    />
-                                </div>
-                            </div>
                         </div>
 
                         <!-- 高级选项切换 -->

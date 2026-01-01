@@ -1038,16 +1038,6 @@ const createCommentPanel = async () => {
                         return;
                     }
 
-                    // 验证位置信息
-                    if (this.editingRangeInfo.startLine < 1 || this.editingRangeInfo.endLine < 1) {
-                        alert('行号必须大于0');
-                        return;
-                    }
-                    if (this.editingRangeInfo.startLine > this.editingRangeInfo.endLine) {
-                        alert('开始行号不能大于结束行号');
-                        return;
-                    }
-
                     // 防重复
                     if (this.editingSaving) return;
                     this.editingSaving = true;
@@ -1068,13 +1058,15 @@ const createCommentPanel = async () => {
                         // 如果是手动评论，保持author为"手动评论"
                         const originalAuthor = this.editingComment.author;
                         const finalAuthor = originalAuthor === '手动评论' ? '手动评论' : newAuthor;
+                        // 保留原始的 rangeInfo，因为用户不再可以编辑行号
+                        const originalRangeInfo = this.editingComment.rangeInfo || { startLine: 1, endLine: 1 };
                         let payload = {
                             key: this.editingComment.key,
                             author: finalAuthor,
                             projectId: projectId,
                             content: newContent,
                             text: newContent, // 确保 text 与 content 保持一致
-                            rangeInfo: this.editingRangeInfo,
+                            rangeInfo: originalRangeInfo,
                             improvementText: this.editingImprovementText ? this.editingImprovementText.trim() : null,
                             type: this.editingCommentType || null,
                             status: this.editingCommentStatus,

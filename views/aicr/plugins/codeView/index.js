@@ -3742,6 +3742,8 @@ const createCodeView = async () => {
                     // 如果是手动评论，保持author为"手动评论"
                     const originalAuthor = this.currentCommentDetail.author;
                     const finalAuthor = originalAuthor === '手动评论' ? '手动评论' : this.editingCommentAuthor.trim();
+                    // 保留原始的 rangeInfo，因为用户不再可以编辑行号
+                    const originalRangeInfo = this.currentCommentDetail.rangeInfo || { startLine: 1, endLine: 1 };
                     let updateData = {
                         key: this.currentCommentDetail.key,
                         author: finalAuthor,
@@ -3750,10 +3752,7 @@ const createCodeView = async () => {
                         improvementText: this.editingImprovementText.trim(),
                         type: this.editingCommentType,
                         status: this.editingCommentStatus,
-                        rangeInfo: {
-                            startLine: parseInt(this.editingRangeInfo.startLine) || 1,
-                            endLine: parseInt(this.editingRangeInfo.endLine) || parseInt(this.editingRangeInfo.startLine) || 1
-                        },
+                        rangeInfo: originalRangeInfo,
                         timestamp: new Date(this.editingCommentTimestamp).getTime(), // 转换为毫秒数
                         projectId,
                         fileId: this.currentCommentDetail.fileId
