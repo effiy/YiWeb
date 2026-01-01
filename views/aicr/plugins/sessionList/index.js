@@ -3,7 +3,7 @@
  * 参考 YiPet 项目的会话列表实现
  */
 
-const { createApp, computed, ref } = Vue;
+const { createApp, computed, ref, onMounted } = Vue;
 
 const SessionListComponent = {
     name: 'SessionList',
@@ -51,9 +51,39 @@ const SessionListComponent = {
         }
     },
     emits: ['session-select', 'session-delete', 'session-create', 'tag-select', 'tag-clear', 'search-change', 'toggle-collapse', 
-            'tag-filter-reverse', 'tag-filter-no-tags', 'tag-filter-expand', 'tag-filter-search'],
+            'tag-filter-reverse', 'tag-filter-no-tags', 'tag-filter-expand', 'tag-filter-search', 'tag-order-updated'],
     setup(props, { emit }) {
         const selectedSessionId = ref(null);
+        
+        // 标签顺序（响应式）
+        const tagOrder = ref(null);
+        
+        // 加载标签顺序
+        const loadTagOrder = () => {
+            if (tagOrder.value !== null) {
+                return tagOrder.value;
+            }
+            try {
+                const saved = localStorage.getItem('aicr_tag_order');
+                const order = saved ? JSON.parse(saved) : null;
+                tagOrder.value = order;
+                return order;
+            } catch (e) {
+                console.warn('[SessionList] 加载标签顺序失败:', e);
+                tagOrder.value = null;
+                return null;
+            }
+        };
+        
+        // 保存标签顺序
+        const saveTagOrder = (order) => {
+            try {
+                localStorage.setItem('aicr_tag_order', JSON.stringify(order));
+                tagOrder.value = order;
+            } catch (e) {
+                console.warn('[SessionList] 保存标签顺序失败:', e);
+            }
+        };
         
         // 提取所有标签（参考 YiPet 的 getAllTags 逻辑）
         const allTags = computed(() => {
@@ -95,7 +125,19 @@ const SessionListComponent = {
             });
             
             // 合并：优先标签在前，其他标签在后
-            return [...priorityTagList, ...otherTags];
+            const defaultOrder = [...priorityTagList, ...otherTags];
+            
+            // 应用保存的标签顺序
+            const savedOrder = loadTagOrder();
+            if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+                // 使用保存的顺序，但只包含当前存在的标签
+                const orderedTags = savedOrder.filter(tag => tagSet.has(tag));
+                // 添加新标签（不在保存顺序中的）到末尾，按字母顺序
+                const newTags = defaultOrder.filter(tag => !savedOrder.includes(tag));
+                return [...orderedTags, ...newTags];
+            }
+            
+            return defaultOrder;
         });
         
         // 根据搜索关键词过滤标签
@@ -335,6 +377,136 @@ const SessionListComponent = {
             }
         };
         
+        // 拖拽开始
+        const handleDragStart = (e, tag) => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', tag);
+            e.currentTarget.classList.add('dragging');
+            
+            // 设置自定义拖拽图像
+            const dragImage = e.currentTarget.cloneNode(true);
+            dragImage.style.opacity = '0.8';
+            dragImage.style.transform = 'rotate(3deg)';
+            dragImage.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.2)';
+            dragImage.style.position = 'absolute';
+            dragImage.style.top = '-1000px';
+            document.body.appendChild(dragImage);
+            e.dataTransfer.setDragImage(dragImage, e.offsetX, e.offsetY);
+            
+            setTimeout(() => {
+                if (dragImage.parentNode) {
+                    dragImage.parentNode.removeChild(dragImage);
+                }
+            }, 0);
+        };
+        
+        // 拖拽结束
+        const handleDragEnd = (e) => {
+            e.currentTarget.classList.remove('dragging');
+            
+            // 移除所有拖拽相关的样式
+            document.querySelectorAll('.tag-item').forEach(item => {
+                item.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+            });
+        };
+        
+        // 拖拽经过
+        const handleDragOver = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'move';
+            
+            if (e.currentTarget.classList.contains('dragging')) {
+                return;
+            }
+            
+            const rect = e.currentTarget.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            
+            // 移除所有拖拽指示样式
+            document.querySelectorAll('.tag-item').forEach(item => {
+                if (!item.classList.contains('dragging')) {
+                    item.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+                }
+            });
+            
+            // 根据鼠标位置显示插入位置指示
+            if (e.clientY < midY) {
+                e.currentTarget.classList.add('drag-over-top');
+                e.currentTarget.classList.remove('drag-over-bottom');
+            } else {
+                e.currentTarget.classList.add('drag-over-bottom');
+                e.currentTarget.classList.remove('drag-over-top');
+            }
+            
+            e.currentTarget.classList.add('drag-hover');
+        };
+        
+        // 拖拽离开
+        const handleDragLeave = (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX;
+            const y = e.clientY;
+            
+            if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+                e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+            }
+        };
+        
+        // 放置
+        const handleDrop = (e, targetTag) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const draggedTag = e.dataTransfer.getData('text/plain');
+            
+            if (draggedTag === targetTag) {
+                return;
+            }
+            
+            const currentOrder = allTags.value;
+            const draggedIndex = currentOrder.indexOf(draggedTag);
+            const targetIndex = currentOrder.indexOf(targetTag);
+            
+            if (draggedIndex === -1 || targetIndex === -1) {
+                return;
+            }
+            
+            // 计算新的插入位置
+            const rect = e.currentTarget.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            let insertIndex = targetIndex;
+            if (e.clientY < midY) {
+                insertIndex = targetIndex;
+            } else {
+                insertIndex = targetIndex + 1;
+            }
+            
+            // 调整插入位置（如果拖拽的元素在目标位置之前，需要减1）
+            if (draggedIndex < insertIndex) {
+                insertIndex -= 1;
+            }
+            
+            // 重新排序标签数组
+            const newOrder = [...currentOrder];
+            newOrder.splice(draggedIndex, 1);
+            newOrder.splice(insertIndex, 0, draggedTag);
+            
+            // 保存新的顺序
+            saveTagOrder(newOrder);
+            
+            // 触发更新（通过emit通知父组件重新计算）
+            emit('tag-order-updated', newOrder);
+            
+            // 强制重新计算allTags（通过更新tagOrder的引用）
+            // Vue会自动检测到变化并重新计算computed属性
+        };
+        
+        // 组件挂载时加载标签顺序
+        onMounted(() => {
+            loadTagOrder();
+        });
+        
         return {
             selectedSessionId,
             allTags,
@@ -350,7 +522,12 @@ const SessionListComponent = {
             toggleExpand,
             updateTagSearch,
             clearAllFilters,
-            formatTime
+            formatTime,
+            handleDragStart,
+            handleDragEnd,
+            handleDragOver,
+            handleDragLeave,
+            handleDrop
         };
     },
     template: await fetch('/views/aicr/plugins/sessionList/index.html').then(r => r.text())

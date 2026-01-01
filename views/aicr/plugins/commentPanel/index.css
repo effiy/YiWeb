@@ -1842,10 +1842,10 @@
     background: none;
     border: 1px solid var(--border-primary);
     color: var(--text-muted);
-    font-size: 14px;
+    font-size: 13px;
     border-radius: 6px;
-    padding: 8px 12px;
-    height: 36px;
+    padding: 6px 12px;
+    height: 32px;
     cursor: pointer;
     transition: border 0.2s, color 0.2s, background 0.2s;
     box-shadow: none;
@@ -1881,11 +1881,11 @@
 
 .comment-input {
     width: 100%;
-    min-height: 36px;
+    min-height: 32px;
     border: 1px solid var(--border-primary);
     border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 14px;
+    padding: 6px 12px;
+    font-size: 13px;
     background: transparent;
     color: var(--text-primary);
     resize: vertical;
@@ -2854,12 +2854,12 @@
 
 .form-input, .form-textarea {
     width: 100%;
-    min-height: 36px;
+    min-height: 32px;
     background: rgba(51,65,85,0.6);
     border: 1px solid rgba(79,70,229,0.2);
     border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 14px;
+    padding: 6px 12px;
+    font-size: 13px;
     color: var(--text-primary);
     transition: all 0.3s ease;
     backdrop-filter: blur(4px);
@@ -2896,10 +2896,10 @@
 }
 
 .save-btn, .cancel-btn {
-    padding: 8px 16px;
-    height: 36px;
+    padding: 6px 14px;
+    height: 32px;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -3056,9 +3056,9 @@
 }
 
 .param-input {
-    height: 36px;
-    font-size: 14px;
-    padding: 8px 12px;
+    height: 32px;
+    font-size: 13px;
+    padding: 6px 12px;
     border: 1px solid rgba(79,70,229,0.2);
     border-radius: 6px;
     background: rgba(51,65,85,0.6);
@@ -3263,13 +3263,13 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 8px 16px;
-    height: 36px;
+    padding: 6px 14px;
+    height: 32px;
     background: var(--primary);
     color: #fff;
     border: none;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;

@@ -89,9 +89,9 @@
     align-items: center;
     justify-content: center;
     gap: 4px;
-    padding: 8px 12px;
-    height: 36px;
-    font-size: 14px;
+    padding: 6px 10px;
+    height: 32px;
+    font-size: 13px;
     font-weight: 500;
     color: white;
     background: linear-gradient(135deg, #6366f1, #4f46e5);
@@ -109,8 +109,8 @@
 .toolbar-group:first-child .toolbar-btn {
     width: auto;
     min-width: fit-content;
-    padding: 8px 12px;
-    height: 36px;
+    padding: 6px 10px;
+    height: 32px;
 }
 
 .toolbar-group:last-child .toolbar-btn {
@@ -167,7 +167,7 @@
 }
 
 .toolbar-btn i {
-    font-size: 14px;
+    font-size: 12px;
     flex-shrink: 0;
 }
 
@@ -269,7 +269,7 @@
 .file-tree-search-icon {
     position: absolute;
     left: 10px;
-    font-size: 14px;
+    font-size: 12px;
     pointer-events: none;
     z-index: 1;
     opacity: 0.6;
@@ -280,11 +280,11 @@
 
 .file-tree-search-input {
     width: 100%;
-    height: 36px;
+    height: 32px;
     font-weight: 400;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--text-primary);
-    padding: 8px 6px 8px 28px;
+    padding: 6px 6px 6px 28px;
     border: none;
     border-radius: 6px;
     background: transparent;
@@ -989,16 +989,17 @@
 .file-tag {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 6px;
+    gap: 4px;
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
     cursor: pointer;
     transition: all 0.15s ease;
-    font-size: 13px;
+    font-size: 11px;
     color: var(--text-secondary);
     user-select: none;
     position: relative;
+    border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.12));
 }
 
 .file-tag:hover {
@@ -1019,7 +1020,7 @@
 }
 
 .tag-icon {
-    font-size: 14px;
+    font-size: 11px;
     opacity: 0.8;
 }
 
@@ -1035,16 +1036,16 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 18px;
-    height: 18px;
+    min-width: 16px;
+    height: 16px;
     padding: 0 4px;
     background: var(--primary);
     color: white;
-    border-radius: 9px;
-    font-size: 10px;
+    border-radius: 8px;
+    font-size: 9px;
     font-weight: 600;
     line-height: 1;
-    margin-left: var(--spacing-xs);
+    margin-left: 2px;
 }
 
 .file-tag.selected .tag-comment-count {
@@ -1064,8 +1065,8 @@
     }
     
     .file-tag {
-        font-size: 12px;
-        padding: 4px 8px;
+        font-size: 11px;
+        padding: 2px 6px;
     }
     
     .tag-name {
