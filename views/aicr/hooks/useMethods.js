@@ -928,7 +928,9 @@ export const useMethods = (store) => {
                         const existingFile = existingFilesMap.get(fileId);
                         const isFile = payload.type === 'file' || (!payload.type && fileId && !fileId.endsWith('/'));
                         
-                        if (existingFile && existingFile.key) {
+                        const isExistingFile = existingFile && existingFile.key;
+                        
+                        if (isExistingFile) {
                             // 文件已存在，更新它
                             await updateData(filesQuery, {
                                 key: existingFile.key,
@@ -942,24 +944,26 @@ export const useMethods = (store) => {
                             });
                             filesUpdated++;
                             filesUploaded++;
+                            // 覆盖文件时不生成新会话
+                            console.log(`[数据库保存] 文件已更新（跳过会话同步）: ${fileId}`);
                         } else {
                             // 文件不存在，创建它
                             await postData(`${window.API_URL}/mongodb/?cname=projectFiles`, payload);
                             filesCreated++;
                             filesUploaded++;
-                        }
-                        
-                        // 同步文件到会话（与新建文件保持一致，使用规范化后的文件对象）
-                        if (isFile && payload.projectId && fileId) {
-                            try {
-                                // 使用统一的字段规范化工具确保字段一致性
-                                const normalizedFileObj = normalizeFileObject(payload, payload.projectId);
-                                if (normalizedFileObj) {
-                                    await sessionSync.syncFileToSession(normalizedFileObj, payload.projectId, false);
-                                    console.log(`[数据库保存] 文件已同步到会话: ${fileId}`);
+                            
+                            // 只有新创建的文件才同步到会话（与新建文件保持一致，使用规范化后的文件对象）
+                            if (isFile && payload.projectId && fileId) {
+                                try {
+                                    // 使用统一的字段规范化工具确保字段一致性
+                                    const normalizedFileObj = normalizeFileObject(payload, payload.projectId);
+                                    if (normalizedFileObj) {
+                                        await sessionSync.syncFileToSession(normalizedFileObj, payload.projectId, false);
+                                        console.log(`[数据库保存] 文件已同步到会话: ${fileId}`);
+                                    }
+                                } catch (syncError) {
+                                    console.warn(`[数据库保存] 同步文件到会话失败（已忽略）: ${fileId}`, syncError?.message);
                                 }
-                            } catch (syncError) {
-                                console.warn(`[数据库保存] 同步文件到会话失败（已忽略）: ${fileId}`, syncError?.message);
                             }
                         }
                         
@@ -2877,97 +2881,162 @@ export const useMethods = (store) => {
                         return true;
                     };
                     
-                    // 将消息内容转成文件
-                    // 将消息按类型分组，user 和 pet 的消息分别保存
-                    const userMessages = [];
-                    const petMessages = [];
+                    // 构建统一的文件内容（合并所有信息到一个文件）
+                    const contentParts = [];
                     
-                    messages.forEach((msg, index) => {
-                        if (msg.type === 'user' || msg.type === 'me') {
-                            userMessages.push({
-                                index: index + 1,
-                                content: msg.content || '',
-                                timestamp: msg.timestamp || Date.now()
-                            });
-                        } else if (msg.type === 'pet' || msg.type === 'assistant') {
-                            petMessages.push({
-                                index: index + 1,
-                                content: msg.content || '',
-                                timestamp: msg.timestamp || Date.now()
-                            });
-                        }
-                    });
-                    
-                    let fileCount = 0;
-                    
-                    // 创建用户消息文件
-                    if (userMessages.length > 0) {
-                        const userContent = userMessages.map(msg => 
-                            `[${new Date(msg.timestamp).toLocaleString('zh-CN')}] 用户消息 #${msg.index}\n${msg.content}`
-                        ).join('\n\n---\n\n');
-                        
-                        const fileName = `用户消息_${pageTitle}`;
-                        if (await createFileWithCheck(fileName, userContent, targetParentId)) {
-                            fileCount++;
-                        }
-                    }
-                    
-                    // 创建助手消息文件
-                    if (petMessages.length > 0) {
-                        const petContent = petMessages.map(msg => 
-                            `[${new Date(msg.timestamp).toLocaleString('zh-CN')}] 助手消息 #${msg.index}\n${msg.content}`
-                        ).join('\n\n---\n\n');
-                        
-                        const fileName = `助手消息_${pageTitle}`;
-                        if (await createFileWithCheck(fileName, petContent, targetParentId)) {
-                            fileCount++;
-                        }
-                    }
-                    
-                    // 创建完整对话文件（包含所有消息，仅在消息存在时创建）
-                    if (messages.length > 0) {
-                        const allContent = messages.map((msg, index) => {
-                            const role = msg.type === 'user' || msg.type === 'me' ? '用户' : '助手';
-                            return `[${new Date(msg.timestamp || Date.now()).toLocaleString('zh-CN')}] ${role} #${index + 1}\n${msg.content || ''}`;
-                        }).join('\n\n---\n\n');
-                        
-                        const fullFileName = `完整对话_${pageTitle}`;
-                        if (await createFileWithCheck(fullFileName, allContent, targetParentId)) {
-                            fileCount++;
-                        }
-                    }
-                    
-                    // 如果有页面内容，也保存
-                    if (pageContent) {
-                        const pageContentFileName = `页面内容_${pageTitle}`;
-                        if (await createFileWithCheck(pageContentFileName, pageContent, targetParentId)) {
-                            fileCount++;
-                        }
-                    }
-                    
-                    // 如果有页面描述，也保存
+                    // 1. 会话基本信息
+                    contentParts.push(`# ${pageTitle}\n`);
                     if (pageDescription) {
-                        const pageDescriptionFileName = `页面描述_${pageTitle}`;
-                        if (await createFileWithCheck(pageDescriptionFileName, pageDescription, targetParentId)) {
-                            fileCount++;
-                        }
+                        contentParts.push(`## 描述\n\n${pageDescription}\n\n`);
+                    }
+                    if (tags.length > 0) {
+                        contentParts.push(`## 标签\n\n${tags.join(', ')}\n\n`);
+                    }
+                    if (fullSession.url || session.url) {
+                        contentParts.push(`## 来源\n\n${fullSession.url || session.url}\n\n`);
                     }
                     
-                    // 创建会话信息文件（包含标题、URL等元信息）
-                    const sessionInfo = {
-                        title: pageTitle,
-                        description: pageDescription,
-                        url: fullSession.url || session.url || '',
-                        tags: tags,
+                    // 2. 页面内容（如果有）
+                    if (pageContent) {
+                        contentParts.push(`---\n\n## 页面内容\n\n${pageContent}\n\n`);
+                    }
+                    
+                    // 3. 对话消息（如果有）
+                    if (messages.length > 0) {
+                        contentParts.push(`---\n\n## 对话记录\n\n`);
+                        messages.forEach((msg, index) => {
+                            const role = msg.type === 'user' || msg.type === 'me' ? '用户' : '助手';
+                            const timestamp = new Date(msg.timestamp || Date.now()).toLocaleString('zh-CN');
+                            contentParts.push(`### ${role} #${index + 1} [${timestamp}]\n\n${msg.content || ''}\n\n`);
+                        });
+                    }
+                    
+                    // 4. 会话元信息（作为注释）
+                    const sessionMeta = {
+                        sessionId: fullSession.id || session.id,
                         createdAt: fullSession.createdAt || session.createdAt || '',
                         updatedAt: fullSession.updatedAt || session.updatedAt || '',
                         messageCount: messages.length
                     };
+                    contentParts.push(`---\n\n<!-- 会话元信息: ${JSON.stringify(sessionMeta)} -->\n`);
                     
-                    // JSON 文件保持 .json 后缀
-                    const sessionInfoFileName = `会话信息_${pageTitle}.json`;
-                    if (await createFileWithCheck(sessionInfoFileName, JSON.stringify(sessionInfo, null, 2), targetParentId)) {
-                        fileCount++;
+                    // 合并所有内容
+                    const unifiedContent = contentParts.join('');
+                    
+                    // 使用统一的文件名（直接使用 pageTitle）
+                    const fileName = pageTitle;
+                    
+                    // 检查文件是否已存在，如果存在则询问是否覆盖
+                    const finalFileName = ensureFileExtension(fileName);
+                    const parentNode = targetParentId 
+                        ? (findNodeById(root, targetParentId) || root)
+                        : root;
+                    
+                    let shouldCreate = true;
+                    if (checkFileExists(parentNode, finalFileName)) {
+                        const confirmMessage = `文件 "${finalFileName}" 已存在，是否覆盖？`;
+                        if (!confirm(confirmMessage)) {
+                            console.log(`[handleSessionTree] 用户取消覆盖文件: ${finalFileName}`);
+                            shouldCreate = false;
+                        } else {
+                            // 用户确认覆盖，先删除旧文件
+                            const existingFile = parentNode.children.find(
+                                child => child.name === finalFileName && child.type === 'file'
+                            );
+                            if (existingFile && existingFile.id) {
+                                try {
+                                    await deleteItem({ itemId: existingFile.id, projectId });
+                                    console.log(`[handleSessionTree] 已删除旧文件: ${existingFile.id}`);
+                                } catch (error) {
+                                    console.error(`[handleSessionTree] 删除旧文件失败:`, error);
+                                }
+                            }
+                        }
+                    }
+                    
+                    let fileCount = 0;
+                    if (shouldCreate) {
+                        // 计算文件ID
+                        const fileId = targetParentId 
+                            ? normalizeFilePath(`${targetParentId}/${finalFileName}`, projectId)
+                            : normalizeFilePath(finalFileName, projectId);
+                        
+                        // 计算 createFile 会自动生成的会话ID（用于后续删除）
+                        const autoSessionId = sessionSync.generateSessionId(fileId, projectId);
+                        
+                        // 先删除可能存在的会话（避免重复）
+                        // 1. 删除可能存在的文件会话（使用文件ID）
+                        try {
+                            const existingFileSession = await sessionSync.getSession(fileId);
+                            if (existingFileSession) {
+                                await sessionSync.deleteSession(fileId);
+                                console.log(`[handleSessionTree] 已删除已存在的文件会话: ${fileId}`);
+                            }
+                        } catch (error) {
+                            console.warn(`[handleSessionTree] 检查/删除文件会话失败:`, error);
+                        }
+                        
+                        // 2. 删除可能存在的自动生成的会话（使用 generateSessionId）
+                        try {
+                            const existingAutoSession = await sessionSync.getSession(autoSessionId);
+                            if (existingAutoSession) {
+                                await sessionSync.deleteSession(autoSessionId);
+                                console.log(`[handleSessionTree] 已删除已存在的自动会话: ${autoSessionId}`);
+                            }
+                        } catch (error) {
+                            console.warn(`[handleSessionTree] 检查/删除自动会话失败:`, error);
+                        }
+                        
+                        // 创建文件（createFile 会自动创建会话，但我们会立即删除并替换它）
+                        await createFile({
+                            parentId: targetParentId,
+                            name: finalFileName,
+                            content: unifiedContent,
+                            projectId
+                        });
+                        fileCount = 1;
+                        
+                        // 等待一小段时间，确保 createFile 的异步会话同步完成
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        
+                        // 删除 createFile 自动创建的会话
+                        try {
+                            const autoSession = await sessionSync.getSession(autoSessionId);
+                            if (autoSession) {
+                                await sessionSync.deleteSession(autoSessionId);
+                                console.log(`[handleSessionTree] 已删除自动创建的会话: ${autoSessionId}`);
+                            }
+                        } catch (error) {
+                            console.warn(`[handleSessionTree] 删除自动创建的会话失败:`, error);
+                        }
+                        
+                        // 创建我们自己的会话（使用文件ID作为会话ID，确保只有一个会话）
+                        const now = Date.now();
+                        const sessionData = {
+                            id: fileId,
+                            url: `aicr-session://${now}-${Math.random().toString(36).substring(2, 11)}`,
+                            title: pageTitle,
+                            pageTitle: pageTitle,
+                            pageDescription: pageDescription,
+                            pageContent: unifiedContent,
+                            messages: messages,
+                            tags: tags,
+                            createdAt: now,
+                            updatedAt: now
+                        };
+                        await sessionSync.saveSession(sessionData);
+                        console.log(`[handleSessionTree] 已创建文件会话: ${fileId}`);
+                        
+                        // 删除原始会话
+                        const originalSessionId = fullSession.id || session.id;
+                        if (originalSessionId && originalSessionId !== fileId && originalSessionId !== autoSessionId) {
+                            try {
+                                await sessionSync.deleteSession(originalSessionId);
+                                console.log(`[handleSessionTree] 已删除原始会话: ${originalSessionId}`);
+                            } catch (error) {
+                                console.warn(`[handleSessionTree] 删除原始会话失败:`, error);
+                            }
+                        }
                     }
                     
                     // 持久化文件树（通过 createFile 已经自动持久化，这里确保刷新）
@@ -2977,12 +3046,18 @@ export const useMethods = (store) => {
                         await loadFileTree(projectId);
                     }
                     
+                    // 刷新会话列表
+                    if (typeof store.loadSessions === 'function') {
+                        await store.loadSessions(true);
+                    }
+                    
                     if (window.hideGlobalLoading) {
                         window.hideGlobalLoading();
                     }
                     
                     if (window.showSuccess) {
-                        window.showSuccess(`已成功将会话转成树形文件，共创建 ${tagFolders.length} 个目录和 ${fileCount} 个文件`);
+                        const folderMsg = tagFolders.length > 0 ? `，创建了 ${tagFolders.length} 个目录` : '';
+                        window.showSuccess(`已成功将会话转成树形文件${folderMsg}，生成 1 个文件`);
                     }
                 } catch (error) {
                     if (window.hideGlobalLoading) {
