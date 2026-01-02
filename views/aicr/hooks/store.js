@@ -167,18 +167,28 @@ class FileDeleteService {
             const sessionSync = getSessionSyncService();
             // 使用与创建时完全相同的逻辑生成 sessionId
             const sessionId = sessionSync.generateSessionId(fileId, projectId);
-            const sessionDeleteUrl = `${this.apiUrl}/session/${encodeURIComponent(sessionId)}`;
-            console.log('[FileDeleteService] [2/2] 调用会话删除接口:', sessionDeleteUrl, { 
-                fileId, 
-                projectId, 
-                sessionId 
+            
+            // 确保正确编码会话ID，处理包含 "/" 等特殊字符的情况
+            const encodedSessionId = encodeURIComponent(sessionId);
+            const sessionDeleteUrl = `${this.apiUrl}/session/${encodedSessionId}`;
+            
+            console.log('[FileDeleteService] [2/2] 调用会话删除接口:', {
+                fileId,
+                projectId,
+                sessionId,
+                encodedSessionId,
+                url: sessionDeleteUrl
             });
             
             await deleteData(sessionDeleteUrl);
             console.log('[FileDeleteService] ✓ [2/2] 会话已删除: sessionId=', sessionId);
             return true;
         } catch (syncError) {
-            console.warn('[FileDeleteService] ✗ [2/2] 删除会话失败（已忽略）:', syncError?.message);
+            console.warn('[FileDeleteService] ✗ [2/2] 删除会话失败（已忽略）:', {
+                fileId,
+                projectId,
+                error: syncError?.message || syncError
+            });
             return false;
         }
     }

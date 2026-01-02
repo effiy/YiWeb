@@ -510,7 +510,15 @@ class SessionSyncService {
     async getSession(sessionId) {
         return safeExecuteAsync(async () => {
             try {
-                const url = `${this.apiUrl}/session/${encodeURIComponent(sessionId)}`;
+                if (!sessionId || typeof sessionId !== 'string') {
+                    console.warn('[SessionSync] 会话ID无效:', sessionId);
+                    return null;
+                }
+                
+                // 确保正确编码会话ID，处理包含 "/" 等特殊字符的情况
+                const encodedSessionId = encodeURIComponent(sessionId);
+                const url = `${this.apiUrl}/session/${encodedSessionId}`;
+                
                 const response = await getData(url, {}, false);
                 
                 if (response && response.success && response.data) {
@@ -523,7 +531,10 @@ class SessionSyncService {
                 }
                 return null;
             } catch (error) {
-                console.warn('[SessionSync] 获取会话失败:', error);
+                console.warn('[SessionSync] 获取会话失败:', {
+                    sessionId,
+                    error: error?.message || error
+                });
                 return null;
             }
         }, '获取会话');
@@ -578,7 +589,20 @@ class SessionSyncService {
     async deleteSession(sessionId) {
         return safeExecuteAsync(async () => {
             try {
-                const url = `${this.apiUrl}/session/${encodeURIComponent(sessionId)}`;
+                if (!sessionId || typeof sessionId !== 'string') {
+                    throw new Error('会话ID无效');
+                }
+                
+                // 确保正确编码会话ID，处理包含 "/" 等特殊字符的情况
+                const encodedSessionId = encodeURIComponent(sessionId);
+                const url = `${this.apiUrl}/session/${encodedSessionId}`;
+                
+                console.log('[SessionSync] 删除会话请求:', { 
+                    originalId: sessionId, 
+                    encodedId: encodedSessionId, 
+                    url 
+                });
+                
                 const response = await deleteData(url);
                 
                 if (response && response.success !== false) {
@@ -588,7 +612,11 @@ class SessionSyncService {
                     throw new Error(response?.message || '删除会话失败');
                 }
             } catch (error) {
-                console.error('[SessionSync] 删除会话失败:', error);
+                console.error('[SessionSync] 删除会话失败:', {
+                    sessionId,
+                    error: error?.message || error,
+                    stack: error?.stack
+                });
                 throw error;
             }
         }, '删除会话');
