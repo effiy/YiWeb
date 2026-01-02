@@ -2913,6 +2913,12 @@ export const useMethods = (store) => {
             return safeExecute(async () => {
                 console.log('[handleSessionTree] 转成树形文件:', session);
                 
+                // 优化说明：
+                // 1. 所有文件树操作（创建文件夹、删除旧文件、创建新文件）都在本地内存中进行
+                // 2. 只在最后通过 createFile 统一持久化整个文件树，确保操作的原子性
+                // 3. 这样可以避免在操作过程中多次持久化导致的数据丢失问题
+                // 4. 如果创建失败，会尝试回滚本地文件树的修改
+                
                 // 辅助函数：显示/隐藏加载状态
                 const showLoading = (message) => {
                     if (window.showGlobalLoading) {
@@ -3083,57 +3089,51 @@ export const useMethods = (store) => {
                     };
                     
                     // 11. 处理文件覆盖
-                    const handleFileOverwrite = async (parentNode, fileName) => {
+                    // 优化：只删除本地文件树节点，不立即持久化，避免数据丢失
+                    // 持久化将在 createFile 时统一进行，确保操作的原子性
+                    const handleFileOverwrite = (parentNode, fileName) => {
                         if (!checkFileExists(parentNode, fileName)) {
-                            return true; // 文件不存在，可以创建
+                            return { canCreate: true, existingFileId: null, existingFile: null }; // 文件不存在，可以创建
                         }
                         
                         const confirmMessage = `文件 "${fileName}" 已存在，是否覆盖？`;
                         if (!confirm(confirmMessage)) {
                             console.log(`[handleSessionTree] 用户取消覆盖文件: ${fileName}`);
-                            return false;
+                            return { canCreate: false, existingFileId: null, existingFile: null };
                         }
                         
-                        // 用户确认覆盖，直接从文件树中删除旧文件节点（不调用 deleteItem，避免触发 projectFiles 接口）
+                        // 用户确认覆盖，从本地文件树中删除旧文件节点
+                        // 注意：不立即持久化，避免在文件创建前就更新后端，导致数据不一致
                         const existingFile = parentNode.children.find(
                             child => child.name === fileName && child.type === 'file'
                         );
                         
                         if (existingFile) {
-                            try {
-                                // 保存文件ID用于从本地 files 列表中删除
-                                const existingFileId = existingFile.id;
-                                
-                                // 从文件树中删除节点
-                                parentNode.children = parentNode.children.filter(
-                                    child => !(child.name === fileName && child.type === 'file')
-                                );
-                                
-                                // 从本地 files 列表中删除（如果存在）
-                                if (Array.isArray(files.value) && existingFileId) {
-                                    files.value = files.value.filter(f => {
-                                        const ids = [f.fileId, f.id, f.path].filter(Boolean);
-                                        return !ids.some(v => String(v) === existingFileId);
-                                    });
-                                }
-                                
-                                // 持久化文件树（这会更新 projectTree，旧文件节点已从树中移除）
-                                // 注意：不调用 deleteItem，因为：
-                                // 1. deleteItem 会调用 projectFiles 接口，但我们不需要
-                                // 2. persistFileTree 已经会将更新后的文件树持久化到 projectTree
-                                // 3. 旧文件节点已从树中移除，持久化后会自动从 projectTree 中移除
-                                if (store && typeof store.persistFileTree === 'function') {
-                                    await store.persistFileTree(projectId);
-                                }
-                                
-                                console.log(`[handleSessionTree] 已从文件树中删除旧文件: ${fileName}`);
-                            } catch (error) {
-                                console.error(`[handleSessionTree] 删除旧文件失败:`, error);
-                                throw new Error(`删除旧文件失败: ${error.message}`);
+                            // 保存文件ID和文件节点的深拷贝用于后续清理和回滚
+                            const existingFileId = existingFile.id;
+                            // 创建文件节点的深拷贝，用于可能的回滚操作
+                            const existingFileCopy = JSON.parse(JSON.stringify(existingFile));
+                            
+                            // 从文件树中删除节点（仅本地操作，不持久化）
+                            parentNode.children = parentNode.children.filter(
+                                child => !(child.name === fileName && child.type === 'file')
+                            );
+                            
+                            // 从本地 files 列表中删除（如果存在）
+                            if (Array.isArray(files.value) && existingFileId) {
+                                files.value = files.value.filter(f => {
+                                    const ids = [f.fileId, f.id, f.path].filter(Boolean);
+                                    return !ids.some(v => String(v) === existingFileId);
+                                });
                             }
+                            
+                            console.log(`[handleSessionTree] 已从本地文件树中删除旧文件节点: ${fileName} (fileId: ${existingFileId})`);
+                            console.log(`[handleSessionTree] 将在创建新文件时统一持久化文件树，确保数据一致性`);
+                            
+                            return { canCreate: true, existingFileId, existingFile: existingFileCopy };
                         }
                         
-                        return true;
+                        return { canCreate: true, existingFileId: null, existingFile: null };
                     };
                     
                     // 12. 构建文件内容
@@ -3182,28 +3182,64 @@ export const useMethods = (store) => {
                         return parts.join('');
                     };
                     
-                    // 13. 创建文件
+                    // 13. 处理文件覆盖并创建文件
                     const finalFileName = ensureFileExtension(pageTitle);
                     const parentNode = targetParentId 
                         ? (findNodeById(root, targetParentId) || root)
                         : root;
                     
-                    const canCreate = await handleFileOverwrite(parentNode, finalFileName);
-                    if (!canCreate) {
+                    // 处理文件覆盖（仅本地操作，不持久化）
+                    const overwriteResult = handleFileOverwrite(parentNode, finalFileName);
+                    if (!overwriteResult.canCreate) {
                         hideLoading();
                         return; // 用户取消
                     }
                     
                     const fileContent = buildFileContent(fullSession);
                     
-                    // 创建文件（跳过 projectFiles 接口调用，因为 persistFileTree 已经将文件节点持久化到 projectTree 中）
-                    await createFile({
-                        parentId: targetParentId,
-                        name: finalFileName,
-                        content: fileContent,
-                        projectId,
-                        skipProjectFiles: true  // 跳过 projectFiles 接口，避免重复调用
-                    });
+                    // 创建文件
+                    // 优化说明：
+                    // 1. createFile 会先调用 persistFileTree 持久化整个文件树（包括删除的旧文件和新增的文件）
+                    // 2. 然后调用 projectFiles 接口同步文件内容到 Session 和 static 目录
+                    // 3. 这样确保了操作的原子性，避免了数据丢失
+                    // 4. 如果旧文件存在，它已经在本地文件树中被删除，persistFileTree 会将其从后端移除
+                    let fileId;
+                    try {
+                        fileId = await createFile({
+                            parentId: targetParentId,
+                            name: finalFileName,
+                            content: fileContent,
+                            projectId,
+                            skipProjectFiles: false  // 不跳过 projectFiles 接口，确保文件内容被正确保存和同步
+                        });
+                        
+                        console.log(`[handleSessionTree] 文件已创建并持久化: ${fileId}`);
+                        
+                        // 如果覆盖了旧文件，记录日志
+                        if (overwriteResult.existingFileId) {
+                            console.log(`[handleSessionTree] 已覆盖旧文件: ${overwriteResult.existingFileId} -> ${fileId}`);
+                        }
+                    } catch (createError) {
+                        // 如果创建失败，尝试恢复文件树（回滚）
+                        console.error(`[handleSessionTree] 创建文件失败，尝试回滚:`, createError);
+                        if (overwriteResult.existingFileId && overwriteResult.existingFile) {
+                            // 恢复旧文件节点（如果之前被删除）
+                            const existingFileNode = findNodeById(root, overwriteResult.existingFileId);
+                            if (!existingFileNode) {
+                                // 如果旧文件节点不在树中，尝试恢复它
+                                parentNode.children.push(overwriteResult.existingFile);
+                                parentNode.children.sort((a, b) => {
+                                    if (a.type === 'folder' && b.type !== 'folder') return -1;
+                                    if (a.type !== 'folder' && b.type === 'folder') return 1;
+                                    return (a.name || '').localeCompare(b.name || '', 'zh-CN');
+                                });
+                                console.log(`[handleSessionTree] 已回滚：恢复旧文件节点 ${overwriteResult.existingFileId}`);
+                            }
+                        }
+                        throw createError; // 重新抛出错误
+                    }
+                    
+                    // 文件已创建并持久化（createFile 已经处理了持久化）
                     
                     // 14. 删除原始会话（转成树文件后，原始会话不再需要）
                     const originalSessionId = fullSession.id || session.id;

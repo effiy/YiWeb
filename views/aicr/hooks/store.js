@@ -758,7 +758,8 @@ export const createStore = () => {
                 name,
                 type: 'file',
                 size: content ? content.length : 0,
-                modified: now
+                modified: now,
+                content: content || ''  // 确保 content 字段被设置到文件节点中
             }, projectId || selectedProject.value);
             
             if (fileNode) {
@@ -789,13 +790,14 @@ export const createStore = () => {
             // 保持全部展开
             expandAllFolders();
 
-            // 先持久化树（这会更新 projectTree，文件节点已包含在其中）
+            // 先持久化树（这会更新 projectTree，文件节点已包含在其中，包括 content 字段）
+            // 注意：即使 skipProjectFiles=true，文件内容也会通过 persistFileTree 保存到 projectTree
             await persistFileTree(projectId);
 
             const project = projectId || selectedProject.value;
             let createdKey = null;
             
-            // 只有在不跳过 projectFiles 接口时才调用（用于向后兼容和首次保存时的 key 获取）
+            // 只有在不跳过 projectFiles 接口时才调用（用于向后兼容和首次保存时的 key 获取，以及同步到 Session 和 static 目录）
             if (!skipProjectFiles) {
                 try {
                     const filesUrl = `${window.API_URL}/mongodb/?cname=projectFiles`;
@@ -813,17 +815,25 @@ export const createStore = () => {
                     if (normalizedFile) {
                         normalizedFile.projectId = project;
                         // 后端会将此操作转换为在 projectTree 中创建/更新文件节点
+                        // 同时会同步文件内容到 Session 和 static 目录
                         const createResult = await postData(filesUrl, normalizedFile);
                         // 记录后端返回的唯一标识，供后续首次保存使用
                         createdKey = createResult?.data?.key || createResult?.key || null;
                         normalizedFile.key = createdKey;
+                        
+                        // 更新文件节点中的 key（如果后端返回了 key）
+                        if (createdKey && fileNode) {
+                            fileNode.key = createdKey;
+                        }
                     }
                 } catch (e) {
                     // 不中断主流程
                     console.warn('[createFile] 在 projectTree 中创建文件节点失败（已忽略）:', e?.message);
                 }
             } else {
-                console.log('[createFile] 跳过 projectFiles 接口调用（已通过 persistFileTree 持久化）');
+                console.log('[createFile] 跳过 projectFiles 接口调用（已通过 persistFileTree 持久化，文件内容已保存到 projectTree）');
+                // 注意：即使跳过 projectFiles 接口，文件内容也已经通过 persistFileTree 保存到 projectTree
+                // 但不会同步到 Session 和 static 目录，这可能需要后续处理
             }
 
             // 更新本地files列表，携带后端返回的key，确保首次保存可PUT更新
