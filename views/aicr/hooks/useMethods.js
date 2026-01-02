@@ -432,28 +432,45 @@ export const useMethods = (store) => {
                     return EXCLUDED_FILES.includes(name);
                 };
                 // 计算是否需要去掉打包时多出的根目录：
-                // 只剥离第一层 projectId 目录，确保导入导出的目录结构保持一致
+                // 智能检测并剥离ZIP文件内部的共同根目录，确保导入导出的目录结构保持一致
                 // 导出时：文件路径是 path/to/file.txt（不包含 projectId）
-                // 导入时：如果 zip 中有 projectId/path/to/file.txt，剥离 projectId/ 后得到 path/to/file.txt
+                // 导入时：如果 zip 中有 rootDir/path/to/file.txt，剥离 rootDir/ 后得到 path/to/file.txt
                 let STRIP_PREFIX = '';
                 const normalizedAll = entries.map(e => normalizePathForFilter(e.path)).filter(Boolean);
                 
-                if (normalizedAll.length > 0 && projectId) {
-                    // 检查所有文件路径是否都以 projectId 开头（第一层）
-                    const allStartWithProjectId = normalizedAll.every(p => {
+                if (normalizedAll.length > 0) {
+                    // 检测所有文件路径是否都在一个共同的根目录下
+                    const firstLevelDirs = new Set();
+                    normalizedAll.forEach(p => {
                         const parts = p.split('/').filter(Boolean);
-                        return parts.length > 0 && parts[0] === projectId;
+                        if (parts.length > 0) {
+                            firstLevelDirs.add(parts[0]);
+                        }
                     });
                     
-                    if (allStartWithProjectId) {
-                        // 只剥离第一层 projectId，而不是整个公共前缀
-                        STRIP_PREFIX = projectId + '/';
-                        console.log('[路径剥离] 所有文件都以项目名开头，只剥离第一层:', STRIP_PREFIX);
+                    // 如果所有文件都在同一个根目录下，剥离这个根目录
+                    // 这样可以处理：1) 项目名作为根目录 2) 其他名称作为根目录的情况
+                    if (firstLevelDirs.size === 1) {
+                        const commonRootDir = Array.from(firstLevelDirs)[0];
+                        STRIP_PREFIX = commonRootDir + '/';
+                        console.log('[路径剥离] 检测到共同根目录，将剥离:', STRIP_PREFIX);
+                    } else if (firstLevelDirs.size > 1) {
+                        // 多个根目录，检查是否所有文件都以 projectId 开头（兼容旧逻辑）
+                        if (projectId && normalizedAll.every(p => {
+                            const parts = p.split('/').filter(Boolean);
+                            return parts.length > 0 && parts[0] === projectId;
+                        })) {
+                            STRIP_PREFIX = projectId + '/';
+                            console.log('[路径剥离] 多个根目录但都包含项目名，剥离项目名:', STRIP_PREFIX);
+                        } else {
+                            console.log('[路径剥离] 检测到多个根目录，不剥离前缀（保持原有结构）');
+                        }
                     } else {
-                        console.log('[路径剥离] 文件路径不以项目名开头，不剥离前缀');
+                        // 没有根目录（文件直接在根路径下）
+                        console.log('[路径剥离] 文件直接在根路径下，无需剥离');
                     }
                 }
-                console.log('[路径剥离] 最终剥离前缀:', STRIP_PREFIX);
+                console.log('[路径剥离] 最终剥离前缀:', STRIP_PREFIX || '(无)');
                 let skippedExcluded = 0;
                 let skippedImages = 0;
                 let skippedLarge = 0;
@@ -619,6 +636,9 @@ export const useMethods = (store) => {
                 // 确保路径不包含 projectId（用于文件树节点的 id）
                 const removeProjectIdPrefix = (path) => normalizeFilePath(path, projectId);
                 
+                // 用于跟踪所有文件路径，避免创建与文件同名的文件夹
+                const filePathsSet = new Set();
+                
                 // 改进的文件夹确保函数 - 修复递归创建逻辑
                 const ensureFolder = (folderPath) => {
                     const norm = normalizePath(folderPath);
@@ -631,6 +651,14 @@ export const useMethods = (store) => {
                     
                     // 如果已经存在，直接返回
                     if (folderMap.has(folderIdWithoutProjectId)) return folderMap.get(folderIdWithoutProjectId);
+                    
+                    // 检查是否与文件路径冲突（避免创建与文件同名的文件夹）
+                    if (filePathsSet.has(folderIdWithoutProjectId)) {
+                        console.warn(`[ensureFolder] 跳过创建文件夹 "${folderIdWithoutProjectId}"，因为已存在同名文件`);
+                        // 返回父级目录
+                        const parentPath = folderIdWithoutProjectId.split('/').slice(0, -1).join('/');
+                        return ensureFolder(parentPath);
+                    }
                     
                     // 递归创建父目录
                     const pathSegments = folderIdWithoutProjectId.split('/').filter(Boolean);
@@ -646,6 +674,20 @@ export const useMethods = (store) => {
                     for (let i = 0; i < pathSegments.length; i++) {
                         const segment = pathSegments[i];
                         currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+                        
+                        // 检查当前路径是否与文件路径冲突
+                        if (filePathsSet.has(currentPath)) {
+                            console.warn(`[ensureFolder] 跳过创建文件夹 "${currentPath}"，因为已存在同名文件`);
+                            // 如果冲突，尝试使用父级目录
+                            if (i > 0) {
+                                const parentPath = pathSegments.slice(0, i).join('/');
+                                parent = ensureFolder(parentPath);
+                                break;
+                            } else {
+                                parent = root;
+                                break;
+                            }
+                        }
                         
                         if (!folderMap.has(currentPath)) {
                             // 使用统一的节点规范化工具创建文件夹节点
@@ -674,6 +716,20 @@ export const useMethods = (store) => {
                 
                 // 处理所有文件，确保其父目录存在
                 console.log(`[文件树构建] 开始处理 ${filesPayload.length} 个文件`);
+                
+                // 首先收集所有文件路径，用于检查文件夹与文件同名冲突
+                for (const f of filesPayload) {
+                    const filePath = normalizePath(f.path);
+                    if (!filePath) {
+                        continue;
+                    }
+                    const filePathWithoutProjectId = removeProjectIdPrefix(filePath);
+                    if (filePathWithoutProjectId) {
+                        filePathsSet.add(filePathWithoutProjectId);
+                    }
+                }
+                console.log(`[文件树构建] 已收集 ${filePathsSet.size} 个文件路径用于冲突检查`);
+                
                 let deepFilesInTree = 0;
                 let moreButtonInTree = false;
                 for (const f of filesPayload) {
@@ -707,6 +763,29 @@ export const useMethods = (store) => {
                     // 确保父目录存在
                     const parent = ensureFolder(dir);
                     
+                    // 检查父目录中是否已存在同名文件或文件夹
+                    const existingFileItem = parent.children.find(child => 
+                        (child.name === f.name || child.id === filePathWithoutProjectId) && child.type === 'file'
+                    );
+                    
+                    const existingFolderItem = parent.children.find(child => 
+                        (child.name === f.name || child.id === filePathWithoutProjectId) && child.type === 'folder'
+                    );
+                    
+                    if (existingFileItem) {
+                        console.warn(`[文件树构建] 跳过重复文件: ${filePathWithoutProjectId}`);
+                        continue;
+                    }
+                    
+                    if (existingFolderItem) {
+                        // 如果存在同名文件夹，说明文件路径结构错误
+                        // 不应该将文件添加到同名文件夹中，而应该跳过或报错
+                        console.error(`[文件树构建] 发现同名文件夹，无法创建文件节点: ${filePathWithoutProjectId}`);
+                        console.error(`[文件树构建] 文件路径结构错误，已存在文件夹节点: ${existingFolderItem.id}`);
+                        // 跳过该文件，避免创建冲突
+                        continue;
+                    }
+                    
                     // 使用统一的节点规范化工具创建文件节点
                     const fileNode = normalizeTreeNode({
                         id: filePathWithoutProjectId,
@@ -716,7 +795,9 @@ export const useMethods = (store) => {
                         modified: Date.now()
                     }, projectId);
                     
-                    parent.children.push(fileNode);
+                    if (fileNode) {
+                        parent.children.push(fileNode);
+                    }
                     
                     // 特别关注深层次文件的添加过程
                     if (pathSegments.length > 3) {
@@ -780,6 +861,9 @@ export const useMethods = (store) => {
                 const mergedFolderMap = new Map();
                 mergedFolderMap.set('', mergedRoot);
                 
+                // 用于跟踪所有文件路径，避免创建与文件同名的文件夹（用于最终文件树构建）
+                const mergedFilePathsSet = new Set();
+                
                 // 使用统一的规范化函数
                 const normalizePathForTree = (path) => normalizeFilePath(path, null);
                 const removeProjectIdPrefixForTree = (path) => normalizeFilePath(path, projectId);
@@ -793,6 +877,14 @@ export const useMethods = (store) => {
                         return mergedFolderMap.get(folderIdWithoutProjectId);
                     }
                     
+                    // 检查是否与文件路径冲突（避免创建与文件同名的文件夹）
+                    if (mergedFilePathsSet.has(folderIdWithoutProjectId)) {
+                        console.warn(`[ensureFolderForTree] 跳过创建文件夹 "${folderIdWithoutProjectId}"，因为已存在同名文件`);
+                        // 返回父级目录
+                        const parentPath = folderIdWithoutProjectId.split('/').slice(0, -1).join('/');
+                        return ensureFolderForTree(parentPath);
+                    }
+                    
                     const pathSegments = folderIdWithoutProjectId.split('/').filter(Boolean);
                     let currentPath = '';
                     let parent = mergedRoot;
@@ -800,6 +892,20 @@ export const useMethods = (store) => {
                     for (let i = 0; i < pathSegments.length; i++) {
                         const segment = pathSegments[i];
                         currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+                        
+                        // 检查当前路径是否与文件路径冲突
+                        if (mergedFilePathsSet.has(currentPath)) {
+                            console.warn(`[ensureFolderForTree] 跳过创建文件夹 "${currentPath}"，因为已存在同名文件`);
+                            // 如果冲突，尝试使用父级目录
+                            if (i > 0) {
+                                const parentPath = pathSegments.slice(0, i).join('/');
+                                parent = ensureFolderForTree(parentPath);
+                                break;
+                            } else {
+                                parent = mergedRoot;
+                                break;
+                            }
+                        }
                         
                         if (!mergedFolderMap.has(currentPath)) {
                             // 使用统一的节点规范化工具创建文件夹节点
@@ -821,6 +927,17 @@ export const useMethods = (store) => {
                     return parent;
                 };
                 
+                // 首先收集所有文件路径，用于检查文件夹与文件同名冲突（用于最终文件树构建）
+                for (const f of allFilesForTree) {
+                    const filePath = normalizePathForTree(f.path);
+                    if (!filePath) continue;
+                    const filePathWithoutProjectId = removeProjectIdPrefixForTree(filePath);
+                    if (filePathWithoutProjectId) {
+                        mergedFilePathsSet.add(filePathWithoutProjectId);
+                    }
+                }
+                console.log(`[文件树合并] 已收集 ${mergedFilePathsSet.size} 个文件路径用于冲突检查`);
+                
                 // 处理所有文件（现有 + 新导入）构建完整的文件树
                 console.log(`[文件树合并] 开始处理 ${allFilesForTree.length} 个文件构建完整文件树`);
                 for (const f of allFilesForTree) {
@@ -839,6 +956,20 @@ export const useMethods = (store) => {
                     const existingFileNode = parent.children.find(child => 
                         child.id === filePathWithoutProjectId && child.type === 'file'
                     );
+                    
+                    // 检查父目录中是否已存在同名文件夹（避免文件与文件夹同名冲突）
+                    const existingFolderNode = parent.children.find(child => 
+                        child.id === filePathWithoutProjectId && child.type === 'folder'
+                    );
+                    
+                    if (existingFolderNode) {
+                        // 如果存在同名文件夹，说明文件路径结构错误
+                        // 不应该将文件添加到同名文件夹中，而应该跳过或报错
+                        console.error(`[文件树合并] 发现同名文件夹，无法创建文件节点: ${filePathWithoutProjectId}`);
+                        console.error(`[文件树合并] 文件路径结构错误，已存在文件夹节点: ${existingFolderNode.id}`);
+                        // 跳过该文件，避免创建冲突
+                        continue;
+                    }
                     
                     if (!existingFileNode) {
                         // 使用统一的节点规范化工具创建文件节点
