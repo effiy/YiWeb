@@ -3615,6 +3615,9 @@ export const useMethods = (store) => {
                         }
                     }
                     
+                    // 获取当前选中的项目ID
+                    const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value || '');
+                    
                     // 导入会话到服务器
                     const { postData } = await import('/apis/index.js');
                     let successCount = 0;
@@ -3622,6 +3625,18 @@ export const useMethods = (store) => {
                     
                     for (const session of sessionsData) {
                         try {
+                            // 为导入的会话添加 projectId 标签
+                            if (projectId) {
+                                // 确保 tags 字段存在且为数组
+                                if (!session.tags || !Array.isArray(session.tags)) {
+                                    session.tags = [];
+                                }
+                                // 如果 projectId 不在 tags 中，则添加
+                                if (!session.tags.includes(projectId)) {
+                                    session.tags.push(projectId);
+                                }
+                            }
+                            
                             await postData(`${window.API_URL}/session/save`, session);
                             successCount++;
                         } catch (error) {
