@@ -3615,29 +3615,96 @@ export const useMethods = (store) => {
                         }
                     }
                     
-                    // 获取当前选中的项目ID
-                    const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value || '');
+                    // 获取当前选中的项目ID（从多个来源尝试获取）
+                    let projectId = '';
+                    if (selectedProject?.value) {
+                        projectId = selectedProject.value;
+                    } else if (window.aicrStore?.selectedProject?.value) {
+                        projectId = window.aicrStore.selectedProject.value;
+                    } else {
+                        const projectSelectEl = document.getElementById('projectSelect');
+                        if (projectSelectEl?.value) {
+                            projectId = projectSelectEl.value;
+                        }
+                    }
+                    
+                    // 如果没有 projectId，提示用户
+                    if (!projectId) {
+                        hideGlobalLoading();
+                        if (window.showError) {
+                            window.showError('请先选择项目后再导入会话');
+                        }
+                        return;
+                    }
+                    
+                    console.log('[useMethods] 导入会话，使用项目ID:', projectId);
                     
                     // 导入会话到服务器
                     const { postData } = await import('/apis/index.js');
                     let successCount = 0;
                     let failCount = 0;
                     
+                    // 从文件路径提取标签的辅助函数（与 sessionSyncService 保持一致）
+                    const extractTagsFromPath = (filePath) => {
+                        if (!filePath) return [];
+                        const parts = filePath.split('/').filter(p => p && p.trim());
+                        if (parts.length <= 1) return [];
+                        // 移除文件名，只保留目录路径作为标签
+                        const dirs = parts.slice(0, -1);
+                        return dirs;
+                    };
+                    
                     for (const session of sessionsData) {
                         try {
-                            // 为导入的会话添加 projectId 标签
-                            if (projectId) {
-                                // 确保 tags 字段存在且为数组
-                                if (!session.tags || !Array.isArray(session.tags)) {
-                                    session.tags = [];
-                                }
-                                // 如果 projectId 不在 tags 中，则添加
-                                if (!session.tags.includes(projectId)) {
-                                    session.tags.push(projectId);
-                                }
+                            // 确保 tags 字段存在且为数组
+                            if (!session.tags || !Array.isArray(session.tags)) {
+                                session.tags = [];
                             }
                             
-                            await postData(`${window.API_URL}/session/save`, session);
+                            // 规范化标签：去除空值和无效值，trim处理
+                            session.tags = session.tags
+                                .map(tag => (typeof tag === 'string' ? tag.trim() : String(tag || '').trim()))
+                                .filter(tag => tag.length > 0);
+                            
+                            // 如果标签为空，尝试从 pageDescription 中提取路径并生成标签
+                            if (session.tags.length === 0 && session.pageDescription) {
+                                const pathMatch = session.pageDescription.match(/文件[：:]\s*(.+)/);
+                                if (pathMatch && pathMatch[1]) {
+                                    const filePath = pathMatch[1].trim();
+                                    const extractedTags = extractTagsFromPath(filePath);
+                                    
+                                    // 如果从路径提取到标签，使用这些标签
+                                    if (extractedTags.length > 0) {
+                                        session.tags = extractedTags;
+                                        console.log('[useMethods] 从 pageDescription 提取标签:', session.id, extractedTags);
+                                    }
+                                    // 如果文件在根目录，标签保持为空（不添加 projectId）
+                                }
+                                // 无法从 pageDescription 提取路径，标签保持为空
+                            }
+                            
+                            // 确保 "knowledge" 标签是第一个标签
+                            const knowledgeTag = 'knowledge';
+                            // 移除所有已存在的 knowledge 标签（无论位置）
+                            session.tags = session.tags.filter(tag => tag !== knowledgeTag);
+                            // 在开头添加 knowledge 标签
+                            session.tags.unshift(knowledgeTag);
+                            
+                            // 确保 tags 数组被正确设置（防止被覆盖）
+                            if (!Array.isArray(session.tags) || session.tags.length === 0 || session.tags[0] !== knowledgeTag) {
+                                console.warn('[useMethods] 标签数组异常，重新设置:', session.id, session.tags);
+                                session.tags = [knowledgeTag, ...session.tags.filter(tag => tag !== knowledgeTag)];
+                            }
+                            
+                            console.log('[useMethods] 确保 knowledge 标签在第一个位置:', session.id, session.tags);
+                            
+                            // 确保保存时包含完整的 tags 数组
+                            const sessionToSave = {
+                                ...session,
+                                tags: session.tags // 明确设置 tags 字段
+                            };
+                            
+                            await postData(`${window.API_URL}/session/save`, sessionToSave);
                             successCount++;
                         } catch (error) {
                             console.error('[useMethods] 导入会话失败:', session.id, error);

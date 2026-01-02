@@ -1690,17 +1690,36 @@ const createCodeView = async () => {
                     if (!this.file) return;
                     
                     console.log('[jumpToCodePage] 当前文件信息:', this.file);
+                    
+                    // 获取项目ID（从多个来源尝试获取）
+                    let projectId = '';
+                    if (this.$parent?.selectedProject) {
+                        projectId = this.$parent.selectedProject;
+                    } else if (window.aicrStore?.selectedProject?.value) {
+                        projectId = window.aicrStore.selectedProject.value;
+                    } else {
+                        const projectSelectEl = document.getElementById('projectSelect');
+                        if (projectSelectEl?.value) {
+                            projectId = projectSelectEl.value;
+                        }
+                    }
+                    
                     console.log('[jumpToCodePage] 父组件信息:', {
-                        selectedProject: this.$parent?.selectedProject
+                        selectedProject: projectId
                     });
                     
                     // 构建跳转URL，传递文件信息
                     const params = new URLSearchParams({
-                        fileId: this.file.id || this.file.name,
-                        fileName: this.file.name || this.file.path,
-                        filePath: this.file.path || '',
-                        project: this.$parent?.selectedProject || ''
+                        fileId: this.file.id || this.file.fileId || this.file.name || this.file.path,
+                        fileName: this.file.name || this.file.path || '',
+                        filePath: this.file.path || this.file.name || '',
+                        project: projectId || ''
                     });
+                    
+                    // 如果文件有 key 信息，也传递过去（用于精确查找）
+                    if (this.file.key || this.file._id) {
+                        params.set('fileKey', this.file.key || this.file._id);
+                    }
                     
                     const jumpUrl = `/views/aicr/aicr-code.html?${params.toString()}`;
                     console.log('[jumpToCodePage] 跳转URL:', jumpUrl);

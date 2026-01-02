@@ -44,7 +44,8 @@ async function createApp() {
                     fileName: '',
                     filePath: '',
                     project: '',
-                    version: ''
+                    version: '',
+                    fileKey: ''
                 },
                 
                 // 当前文件
@@ -118,7 +119,8 @@ async function createApp() {
                 fileName: urlParams.get('fileName') || '',
                 filePath: urlParams.get('filePath') || '',
                 project: urlParams.get('project') || '',
-                version: urlParams.get('version') || ''
+                version: urlParams.get('version') || '',
+                fileKey: urlParams.get('fileKey') || ''
             };
             
             console.log('[parseUrlParams] 解析到的文件信息:', this.fileInfo);
@@ -141,8 +143,41 @@ async function createApp() {
             this.error = '';
             
             try {
-                // 使用与原始 aicr 页面相同的 API 调用方式
-                const url = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(this.fileInfo.project)}&versionId=${encodeURIComponent(this.fileInfo.version)}&fileId=${encodeURIComponent(this.fileInfo.fileId)}`;
+                // 优先尝试使用全局 store 的 loadFileById 方法加载文件
+                if (window.aicrStore && typeof window.aicrStore.loadFileById === 'function') {
+                    const projectId = this.fileInfo.project || (window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null);
+                    if (projectId) {
+                        console.log('[loadFileContent] 使用 store 加载文件:', { projectId, fileId: this.fileInfo.fileId, fileKey: this.fileInfo.fileKey });
+                        try {
+                            // 如果提供了 fileKey，使用它进行精确查找
+                            const loadedFile = await window.aicrStore.loadFileById(projectId, this.fileInfo.fileId, this.fileInfo.fileKey);
+                            if (loadedFile && loadedFile.content) {
+                                this.currentFile = {
+                                    id: loadedFile.id || loadedFile.fileId || this.fileInfo.fileId,
+                                    name: loadedFile.name || this.fileInfo.fileName,
+                                    path: loadedFile.path || this.fileInfo.filePath,
+                                    content: loadedFile.content,
+                                    type: loadedFile.type || 'text',
+                                    size: loadedFile.size || 0,
+                                    lastModified: loadedFile.lastModified || new Date().toISOString(),
+                                    key: loadedFile.key || loadedFile._id || this.fileInfo.fileKey
+                                };
+                                console.log('[loadFileContent] 通过 store 加载文件成功:', this.currentFile.name);
+                                return;
+                            }
+                        } catch (storeError) {
+                            console.warn('[loadFileContent] store 加载失败，尝试 API 方式:', storeError);
+                        }
+                    }
+                }
+                
+                // 如果 store 方法不可用或失败，使用 API 方式
+                // 构建 API URL，version 参数可以为空（系统已简化，不再有版本概念）
+                let url = `${window.API_URL}/mongodb/?cname=projectVersionFiles&projectId=${encodeURIComponent(this.fileInfo.project || '')}`;
+                if (this.fileInfo.version) {
+                    url += `&versionId=${encodeURIComponent(this.fileInfo.version)}`;
+                }
+                url += `&fileId=${encodeURIComponent(this.fileInfo.fileId)}`;
                 console.log('[loadFileContent] 请求URL:', url);
                 
                 const response = await fetch(url);
@@ -158,17 +193,30 @@ async function createApp() {
                     const item = list[0];
                     const itemData = (item && typeof item === 'object' && item.data && typeof item.data === 'object') ? item.data : {};
                     
+                    // 尝试从多个位置获取文件内容
+                    let content = '';
+                    if (itemData.content) {
+                        content = itemData.content;
+                    } else if (item.content) {
+                        content = item.content;
+                    } else if (itemData.data && typeof itemData.data === 'string') {
+                        content = itemData.data;
+                    } else if (item.data && typeof item.data === 'string') {
+                        content = item.data;
+                    }
+                    
                     this.currentFile = {
                         id: item.fileId || item.id || this.fileInfo.fileId,
                         name: item.name || itemData.name || this.fileInfo.fileName,
                         path: item.path || itemData.path || this.fileInfo.filePath,
-                        content: itemData.content || item.content || '',
+                        content: content,
                         type: itemData.type || item.type || 'text',
                         size: itemData.size || item.size || 0,
-                        lastModified: itemData.lastModified || item.lastModified || new Date().toISOString()
+                        lastModified: itemData.lastModified || item.lastModified || new Date().toISOString(),
+                        key: item.key || item._id
                     };
                     
-                    console.log('[loadFileContent] 文件加载成功:', this.currentFile.name);
+                    console.log('[loadFileContent] 文件加载成功:', this.currentFile.name, '内容长度:', content.length);
                 } else {
                     throw new Error('未找到指定的文件');
                 }
