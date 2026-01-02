@@ -1016,6 +1016,13 @@ export const useMethods = (store) => {
                 // 可选：同步评论者数据
                 try { if (typeof store.loadCommenters === 'function') { await store.loadCommenters(projectId); } } catch (_) {}
 
+                // 刷新会话列表（转换成树文件后需要刷新）
+                try {
+                    if (typeof store.loadSessions === 'function') {
+                        await store.loadSessions(true);
+                    }
+                } catch (_) {}
+
                 // 广播项目就绪事件
                 try {
                     window.dispatchEvent(new CustomEvent('projectReady', { detail: { projectId } }));
@@ -2324,6 +2331,31 @@ export const useMethods = (store) => {
             return safeExecute(async () => {
                 console.log('[handleSessionDelete] 删除会话:', sessionId);
                 try {
+                    // 检查会话是否为树文件类型（在会话视图下不允许删除树文件类型的会话）
+                    let session = null;
+                    if (store.sessions && store.sessions.value && Array.isArray(store.sessions.value)) {
+                        session = store.sessions.value.find(s => s && s.id === sessionId);
+                    }
+                    
+                    // 如果从列表中找不到，尝试获取完整会话信息
+                    if (!session) {
+                        try {
+                            const { getSessionSyncService } = await import('/views/aicr/services/sessionSyncService.js');
+                            const sessionSync = getSessionSyncService();
+                            session = await sessionSync.getSession(sessionId);
+                        } catch (e) {
+                            console.warn('[handleSessionDelete] 获取会话信息失败:', e);
+                        }
+                    }
+                    
+                    // 判断是否为树文件类型的会话（通过URL判断）
+                    if (session && session.url && String(session.url).startsWith('aicr-session://')) {
+                        if (window.showError) {
+                            window.showError('不允许在会话视图删除树文件类型的会话');
+                        }
+                        return; // 阻止删除
+                    }
+                    
                     const { deleteData } = await import('/apis/index.js');
                     const url = `${window.API_URL}/session/${encodeURIComponent(sessionId)}`;
                     await deleteData(url);
@@ -3506,22 +3538,71 @@ export const useMethods = (store) => {
                     return;
                 }
                 
-                const count = selectedSessionIds.value.size;
+                // 检查并过滤掉树文件类型的会话
+                const sessionIds = Array.from(selectedSessionIds.value);
+                const treeFileSessionIds = [];
+                const allowedSessionIds = [];
+                
+                // 从会话列表中检查每个会话
+                if (store.sessions && store.sessions.value && Array.isArray(store.sessions.value)) {
+                    for (const sessionId of sessionIds) {
+                        const session = store.sessions.value.find(s => s && s.id === sessionId);
+                        if (session && session.url && String(session.url).startsWith('aicr-session://')) {
+                            treeFileSessionIds.push(sessionId);
+                        } else {
+                            allowedSessionIds.push(sessionId);
+                        }
+                    }
+                } else {
+                    // 如果无法从列表获取，尝试获取完整会话信息
+                    const { getSessionSyncService } = await import('/views/aicr/services/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    for (const sessionId of sessionIds) {
+                        try {
+                            const session = await sessionSync.getSession(sessionId);
+                            if (session && session.url && String(session.url).startsWith('aicr-session://')) {
+                                treeFileSessionIds.push(sessionId);
+                            } else {
+                                allowedSessionIds.push(sessionId);
+                            }
+                        } catch (e) {
+                            // 获取失败，允许删除（可能是其他类型的会话）
+                            allowedSessionIds.push(sessionId);
+                        }
+                    }
+                }
+                
+                // 如果有树文件类型的会话，提示用户
+                if (treeFileSessionIds.length > 0) {
+                    if (window.showError) {
+                        window.showError(`不允许在会话视图删除树文件类型的会话（已过滤 ${treeFileSessionIds.length} 个）`);
+                    }
+                    // 从选中列表中移除树文件类型的会话
+                    for (const treeSessionId of treeFileSessionIds) {
+                        if (selectedSessionIds && selectedSessionIds.value) {
+                            selectedSessionIds.value.delete(treeSessionId);
+                        }
+                    }
+                    // 如果没有可删除的会话，直接返回
+                    if (allowedSessionIds.length === 0) {
+                        return;
+                    }
+                }
+                
+                const count = allowedSessionIds.length;
                 const confirmMessage = `确定要删除选中的 ${count} 个会话吗？此操作不可撤销。`;
                 if (!confirm(confirmMessage)) {
                     return;
                 }
                 
-                const sessionIds = Array.from(selectedSessionIds.value);
-                
                 const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
                 showGlobalLoading(`正在删除 ${count} 个会话...`);
                 
                 try {
-                    // 调用批量删除接口
+                    // 调用批量删除接口（只删除允许删除的会话）
                     const { postData } = await import('/apis/index.js');
                     const result = await postData(`${window.API_URL}/session/batch/delete`, {
-                        session_ids: sessionIds
+                        session_ids: allowedSessionIds
                     });
                     
                     if (result && result.success !== false) {
@@ -3545,7 +3626,11 @@ export const useMethods = (store) => {
                         hideGlobalLoading();
                         
                         if (window.showSuccess) {
-                            window.showSuccess(`已成功删除 ${count} 个会话`);
+                            let successMessage = `已成功删除 ${count} 个会话`;
+                            if (treeFileSessionIds.length > 0) {
+                                successMessage += `（已跳过 ${treeFileSessionIds.length} 个树文件类型的会话）`;
+                            }
+                            window.showSuccess(successMessage);
                         }
                     } else {
                         throw new Error(result?.message || '批量删除失败');
