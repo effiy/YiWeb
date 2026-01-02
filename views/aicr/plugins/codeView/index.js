@@ -1363,7 +1363,7 @@ const createCodeView = async () => {
                             marker.classList.add('touching');
                             marker.style.transform = 'translateY(-50%) scale(0.95)';
                             marker.style.transition = 'all 0.1s ease';
-                        }, { passive: false });
+                        }, { passive: true });
                         
                         marker.addEventListener('touchend', (e) => {
                             const touchDuration = Date.now() - touchStartTime;
@@ -4863,8 +4863,8 @@ const createCodeView = async () => {
                     this.hideSelectionButton();
                 }
             };
-            window.addEventListener('scroll', this._scrollListener, true);
-            window.addEventListener('resize', this._scrollListener);
+            window.addEventListener('scroll', this._scrollListener, { passive: true, capture: true });
+            window.addEventListener('resize', this._scrollListener, { passive: true });
             
             // 确保组件内有容器
             this.$nextTick(() => {
