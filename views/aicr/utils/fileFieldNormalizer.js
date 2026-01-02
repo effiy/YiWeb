@@ -165,10 +165,10 @@ export function normalizeFileObject(file, projectId) {
 /**
  * 规范化文件树节点
  * 统一字段规则：
- * - id: 节点路径（不包含 projectId）
+ * - id: 节点路径（包含 projectId）
  * - name: 节点名称
  * - type: 'file' 或 'folder'
- * - path: 与 id 相同
+ * - path: 与 id 相同（包含 projectId）
  * - children: 子节点数组（仅文件夹有）
  * 
  * @param {Object} node - 文件树节点
@@ -183,18 +183,30 @@ export function normalizeTreeNode(node, projectId) {
     // 提取原始路径
     const rawPath = node.id || node.path || node.fileId || '';
     
-    // 规范化路径
+    // 规范化路径（移除 projectId 前缀，以便后续统一添加）
     const normalizedPath = normalizeFilePath(rawPath, projectId);
     
-    // 提取名称
-    const nodeName = node.name || extractFileName(normalizedPath) || normalizedPath;
+    // 构建包含 projectId 的完整路径
+    let fullPath = normalizedPath;
+    if (projectId) {
+        if (!normalizedPath || normalizedPath.trim() === '') {
+            // 如果路径为空，使用 projectId 作为根节点
+            fullPath = projectId;
+        } else {
+            // 规范化后的路径不包含 projectId，统一添加 projectId 前缀
+            fullPath = `${projectId}/${normalizedPath}`;
+        }
+    }
+    
+    // 提取名称（使用规范化后的路径，不包含 projectId）
+    const nodeName = node.name || extractFileName(normalizedPath) || (normalizedPath === projectId || !normalizedPath ? projectId : normalizedPath);
     
     // 规范化节点
     const normalized = {
-        id: normalizedPath,
+        id: fullPath,
         name: nodeName,
         type: node.type || (normalizedPath.endsWith('/') ? 'folder' : 'file'),
-        path: normalizedPath
+        path: fullPath
     };
     
     // 如果是文件夹，处理子节点

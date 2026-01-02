@@ -494,24 +494,8 @@ export const createStore = () => {
 
             // 只取第一个文件树对象，确保格式正确
             const treeDoc = response.data.list[0];
-            // 在内存中为每个节点补充 path 字段，避免后端缺失
-            const rootNode = treeDoc.data;
-            const ensureName = (node) => node && (node.name || (typeof node.id === 'string' ? node.id.split('/').pop() : ''));
-            const addPaths = (node, parentPath = '') => {
-                if (!node || typeof node !== 'object') return;
-                const name = ensureName(node) || '';
-                const currentPath = parentPath ? `${parentPath}/${name}` : name;
-                if (!node.path || typeof node.path !== 'string') {
-                    node.path = currentPath;
-                }
-                if (!node.id || typeof node.id !== 'string' || node.id.trim() === '') {
-                    node.id = currentPath;
-                }
-                if (node.type === 'folder' && Array.isArray(node.children)) {
-                    node.children.forEach(child => addPaths(child, currentPath));
-                }
-            };
-            addPaths(rootNode, '');
+            // 使用 normalizeTreeNode 规范化整个树，确保所有节点的 id 和 path 都包含 projectId
+            const rootNode = normalizeTreeNode(treeDoc.data, project);
             
             // 对文件树进行排序
             const sortFileTreeItems = (items) => {
@@ -683,7 +667,16 @@ export const createStore = () => {
             if (exists) throw createError('同名文件或文件夹已存在', ErrorTypes.VALIDATION, '新建文件夹');
 
             const newId = (parentNode.id ? `${parentNode.id}/` : '') + name;
-            parentNode.children.push({ id: newId, name, type: 'folder', children: [] });
+            // 使用 normalizeTreeNode 确保 id 和 path 都包含 projectId
+            const folderNode = normalizeTreeNode({
+                id: newId,
+                name,
+                type: 'folder',
+                children: []
+            }, projectId || selectedProject.value);
+            if (folderNode) {
+                parentNode.children.push(folderNode);
+            }
             
             // 对父节点的子节点进行排序
             const sortFileTreeItems = (items) => {
@@ -882,9 +875,15 @@ export const createStore = () => {
 
             // 使用统一的路径规范化计算新ID
             const project = projectId || selectedProject.value;
-            const parentPath = parent ? normalizeFilePath(parent.id || '', project) : '';
-            const oldId = normalizeFilePath(node.id || '', project);
-            const newId = normalizeFilePath(parentPath ? `${parentPath}/${newName}` : newName, project);
+            // 获取父节点的规范化路径（不包含 projectId）
+            const parentPathWithoutProjectId = parent ? normalizeFilePath(parent.id || '', project) : '';
+            // 获取旧ID的规范化路径（不包含 projectId）
+            const oldIdWithoutProjectId = normalizeFilePath(node.id || '', project);
+            // 计算新ID的规范化路径（不包含 projectId）
+            const newIdWithoutProjectId = normalizeFilePath(parentPathWithoutProjectId ? `${parentPathWithoutProjectId}/${newName}` : newName, project);
+            // 构建包含 projectId 的完整路径
+            const oldId = oldIdWithoutProjectId ? `${project}/${oldIdWithoutProjectId}` : project;
+            const newId = newIdWithoutProjectId ? `${project}/${newIdWithoutProjectId}` : project;
             node.name = newName;
 
             // 记录变更前的文件列表用于远端同步
@@ -892,10 +891,22 @@ export const createStore = () => {
 
             const updateIdsRecursively = (n, fromPrefix, toPrefix) => {
                 if (n.id && typeof n.id === 'string') {
-                    if (n.id === oldId) {
-                        n.id = newId;
+                    // 比较完整路径（包含 projectId）
+                    if (n.id === fromPrefix) {
+                        // 完全匹配，直接替换
+                        n.id = toPrefix;
+                        n.path = toPrefix;
                     } else if (n.id.startsWith(fromPrefix + '/')) {
-                        n.id = n.id.replace(fromPrefix + '/', toPrefix + '/');
+                        // 是子节点，替换前缀
+                        const suffix = n.id.substring(fromPrefix.length);
+                        const newChildId = toPrefix + suffix;
+                        n.id = newChildId;
+                        n.path = newChildId;
+                    }
+                } else {
+                    // 如果没有 id，确保设置 path
+                    if (!n.path) {
+                        n.path = n.id || '';
                     }
                 }
                 if (n.type === 'folder' && Array.isArray(n.children)) {

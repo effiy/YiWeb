@@ -625,8 +625,8 @@ export const useMethods = (store) => {
                 }
 
                 // 构建树（基于路径）- 修复深层次文件丢失问题
-                // 根节点的 id 使用 projectId，但后续所有子节点的 id 都不包含 projectId
-                const root = { id: projectId, name: projectId, type: 'folder', children: [] };
+                // 根节点的 id 和 path 都使用 projectId
+                const root = { id: projectId, name: projectId, type: 'folder', path: projectId, children: [] };
                 const folderMap = new Map();
                 folderMap.set('', root);
                 
@@ -897,7 +897,7 @@ export const useMethods = (store) => {
 
                 // 2. 基于所有文件（现有 + 新导入）重新构建完整的文件树
                 // 重新构建文件树，包含所有文件
-                const mergedRoot = { id: projectId, name: projectId, type: 'folder', children: [] };
+                const mergedRoot = { id: projectId, name: projectId, type: 'folder', path: projectId, children: [] };
                 const mergedFolderMap = new Map();
                 mergedFolderMap.set('', mergedRoot);
                 
