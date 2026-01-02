@@ -58,7 +58,8 @@ class FileDeleteService {
     }
 
     /**
-     * 通过 fileId 和 projectId 查询获取文件的 key
+     * 通过 fileId 和 projectId 从 projectTree 中查询获取文件的 key
+     * 现在从 projectTree 中提取文件数据，不再调用 projectFiles 接口
      * @param {string} fileId - 文件的 fileId
      * @param {string} projectId - 项目的 projectId
      * @returns {Promise<string|null>} 文件的 key，如果未找到则返回 null
@@ -69,8 +70,9 @@ class FileDeleteService {
         }
 
         try {
+            // 从 projectTree 中查询文件（后端会将 projectFiles 查询转换为从 projectTree 提取）
             const filesQueryUrl = `${this.apiUrl}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(projectId)}&fileId=${encodeURIComponent(fileId)}`;
-            console.log('[FileDeleteService] 查询文件 key:', filesQueryUrl);
+            console.log('[FileDeleteService] 从 projectTree 查询文件 key:', filesQueryUrl);
             
             const { getData } = await import('/apis/index.js');
             const response = await getData(filesQueryUrl, {}, false);
@@ -86,22 +88,23 @@ class FileDeleteService {
                 const fileDoc = fileList[0];
                 const key = fileDoc?.key || fileDoc?._id || fileDoc?.id || null;
                 if (key) {
-                    console.log('[FileDeleteService] ✓ 成功查询到文件 key:', key, 'fileId:', fileId);
+                    console.log('[FileDeleteService] ✓ 成功从 projectTree 查询到文件 key:', key, 'fileId:', fileId);
                     return key;
                 }
             }
 
-            console.warn('[FileDeleteService] ✗ 未找到文件的 key, fileId:', fileId, 'projectId:', projectId);
+            console.warn('[FileDeleteService] ✗ 未在 projectTree 中找到文件的 key, fileId:', fileId, 'projectId:', projectId);
             return null;
         } catch (e) {
-            console.error('[FileDeleteService] ✗ 查询文件 key 失败:', e?.message);
+            console.error('[FileDeleteService] ✗ 从 projectTree 查询文件 key 失败:', e?.message);
             return null;
         }
     }
 
     /**
-     * 删除单个文件的 MongoDB projectFiles 记录
+     * 删除单个文件（从 projectTree 中删除文件节点）
      * 优先使用 key 参数，如果 key 不存在或删除失败，则使用 fileId 和 projectId
+     * 后端会将 projectFiles 删除操作转换为从 projectTree 中删除文件节点
      * @param {string} fileKey - 文件的 key
      * @param {string} fileId - 文件的 fileId
      * @param {string} projectId - 项目的 projectId（用于查询 key 或直接删除）
@@ -110,16 +113,16 @@ class FileDeleteService {
     async deleteMongoDBRecord(fileKey, fileId, projectId = null) {
         const filesUrl = `${this.apiUrl}/mongodb/?cname=projectFiles`;
         
-        // 如果已有 key，优先使用 key 删除
+        // 如果已有 key，优先使用 key 删除（后端会从 projectTree 中删除）
         if (fileKey) {
             const mongoDeleteUrl = `${filesUrl}&key=${encodeURIComponent(fileKey)}`;
-            console.log('[FileDeleteService] [1/2] 调用 MongoDB projectFiles 删除接口（通过key）:', mongoDeleteUrl);
+            console.log('[FileDeleteService] [1/2] 从 projectTree 删除文件节点（通过key）:', mongoDeleteUrl);
             try {
                 await deleteData(mongoDeleteUrl);
-                console.log('[FileDeleteService] ✓ [1/2] MongoDB projectFiles 记录已删除: key=', fileKey);
+                console.log('[FileDeleteService] ✓ [1/2] projectTree 文件节点已删除: key=', fileKey);
                 return true;
             } catch (e) {
-                console.warn('[FileDeleteService] ✗ [1/2] MongoDB 删除失败（通过key），将尝试使用 fileId 删除:', mongoDeleteUrl, e?.message);
+                console.warn('[FileDeleteService] ✗ [1/2] 删除失败（通过key），将尝试使用 fileId 删除:', mongoDeleteUrl, e?.message);
                 // 如果通过 key 删除失败，继续尝试使用 fileId 删除
             }
         }
@@ -128,38 +131,38 @@ class FileDeleteService {
         if (fileId && projectId) {
             // 先尝试查询获取 key（如果之前没有 key）
             if (!fileKey) {
-                console.log('[FileDeleteService] 文件缺少 key，尝试从 MongoDB 查询获取 key...');
+                console.log('[FileDeleteService] 文件缺少 key，尝试从 projectTree 查询获取 key...');
                 const fetchedKey = await this.fetchFileKeyFromMongoDB(fileId, projectId);
                 
                 if (fetchedKey) {
                     // 使用查询到的 key 删除
                     const mongoDeleteUrl = `${filesUrl}&key=${encodeURIComponent(fetchedKey)}`;
-                    console.log('[FileDeleteService] [1/2] 调用 MongoDB projectFiles 删除接口（通过查询到的key）:', mongoDeleteUrl);
+                    console.log('[FileDeleteService] [1/2] 从 projectTree 删除文件节点（通过查询到的key）:', mongoDeleteUrl);
                     try {
                         await deleteData(mongoDeleteUrl);
-                        console.log('[FileDeleteService] ✓ [1/2] MongoDB projectFiles 记录已删除（通过查询到的key）: key=', fetchedKey);
+                        console.log('[FileDeleteService] ✓ [1/2] projectTree 文件节点已删除（通过查询到的key）: key=', fetchedKey);
                         return true;
                     } catch (e) {
-                        console.warn('[FileDeleteService] ✗ [1/2] MongoDB 删除失败（通过查询到的key），将尝试使用 fileId 删除:', mongoDeleteUrl, e?.message);
+                        console.warn('[FileDeleteService] ✗ [1/2] 删除失败（通过查询到的key），将尝试使用 fileId 删除:', mongoDeleteUrl, e?.message);
                         // 如果通过查询到的 key 删除失败，继续尝试使用 fileId 删除
                     }
                 }
             }
             
-            // 直接使用 fileId 和 projectId 删除（后端支持此方式）
+            // 直接使用 fileId 和 projectId 删除（后端会从 projectTree 中删除）
             const mongoDeleteUrl = `${filesUrl}&fileId=${encodeURIComponent(fileId)}&projectId=${encodeURIComponent(projectId)}`;
-            console.log('[FileDeleteService] [1/2] 调用 MongoDB projectFiles 删除接口（通过fileId）:', mongoDeleteUrl);
+            console.log('[FileDeleteService] [1/2] 从 projectTree 删除文件节点（通过fileId）:', mongoDeleteUrl);
             try {
                 await deleteData(mongoDeleteUrl);
-                console.log('[FileDeleteService] ✓ [1/2] MongoDB projectFiles 记录已删除（通过fileId）: fileId=', fileId);
+                console.log('[FileDeleteService] ✓ [1/2] projectTree 文件节点已删除（通过fileId）: fileId=', fileId);
                 return true;
             } catch (e) {
-                console.error('[FileDeleteService] ✗ [1/2] MongoDB 删除失败（通过fileId）:', mongoDeleteUrl, e?.message);
+                console.error('[FileDeleteService] ✗ [1/2] 删除失败（通过fileId）:', mongoDeleteUrl, e?.message);
                 return false;
             }
         }
 
-        console.warn('[FileDeleteService] ✗ [1/2] 无法删除 MongoDB projectFiles 记录，缺少必要参数:', { fileKey, fileId, projectId });
+        console.warn('[FileDeleteService] ✗ [1/2] 无法删除 projectTree 文件节点，缺少必要参数:', { fileKey, fileId, projectId });
         return false;
     }
 
@@ -756,7 +759,7 @@ export const createStore = () => {
             // 先持久化树
             await persistFileTree(projectId);
 
-            // 在文件集合中新增占位（远端与本地）
+            // 在 projectTree 中新增文件节点（后端会将 projectFiles 创建转换为更新 projectTree）
             const project = projectId || selectedProject.value;
             let createdKey = null;
             try {
@@ -774,6 +777,7 @@ export const createStore = () => {
                 
                 if (normalizedFile) {
                     normalizedFile.projectId = project;
+                    // 后端会将此操作转换为在 projectTree 中创建/更新文件节点
                     const createResult = await postData(filesUrl, normalizedFile);
                     // 记录后端返回的唯一标识，供后续首次保存使用
                     createdKey = createResult?.data?.key || createResult?.key || null;
@@ -781,7 +785,7 @@ export const createStore = () => {
                 }
             } catch (e) {
                 // 不中断主流程
-                console.warn('[createFile] 创建文件内容文档失败（已忽略）:', e?.message);
+                console.warn('[createFile] 在 projectTree 中创建文件节点失败（已忽略）:', e?.message);
             }
 
             // 更新本地files列表，携带后端返回的key，确保首次保存可PUT更新
@@ -902,7 +906,8 @@ export const createStore = () => {
 
             await persistFileTree(projectId);
 
-            // 同步远端文件集合，使用统一的字段规范化
+            // 同步 projectTree 中的文件节点，使用统一的字段规范化
+            // 后端会将 projectFiles 操作转换为更新 projectTree 中的文件节点
             try {
                 const filesUrl = `${window.API_URL}/mongodb/?cname=projectFiles`;
                 const normalizedOldId = normalizeFilePath(oldId, project);
@@ -919,7 +924,7 @@ export const createStore = () => {
                     const key = f.key || f._id || f.idKey;
                     
                     if (key) {
-                        // 有 key，直接更新（使用统一的字段规范化）
+                        // 有 key，直接更新 projectTree 中的文件节点（使用统一的字段规范化）
                         const normalizedUpdate = normalizeFileObject({
                             ...f,
                             fileId: newPath,
@@ -930,17 +935,18 @@ export const createStore = () => {
                         if (normalizedUpdate) {
                             normalizedUpdate.key = key;
                             normalizedUpdate.projectId = project;
+                            // 后端会将此操作转换为更新 projectTree 中的文件节点
                             await updateData(filesUrl, normalizedUpdate);
                         }
                     } else {
-                        // 无 key 时，先查询获取 key，然后删除旧文档，再创建新文档
+                        // 无 key 时，先查询获取 key，然后删除旧节点，再创建新节点
                         if (oldPath && project) {
-                            // 使用统一的删除服务删除旧文档（会查询 key）
+                            // 使用统一的删除服务删除旧节点（会查询 key）
                             const oldFile = { ...f, fileId: oldPath, id: oldPath, path: oldPath };
                             await fileDeleteService.deleteFile(oldFile, project);
                         }
                         
-                        // 创建新文档
+                        // 在 projectTree 中创建新节点
                         await postData(filesUrl, { 
                             projectId: project, 
                             fileId: newPath, 
@@ -1001,7 +1007,8 @@ export const createStore = () => {
                             }
                         }
                     }
-                    // 删除远端文件集合（使用统一的删除服务）
+                    // 从 projectTree 中删除所有文件节点（使用统一的删除服务）
+                    // 后端会将 projectFiles 查询转换为从 projectTree 提取文件列表
                     if (project) {
                         const filesQueryUrl = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(project)}`;
                         const filesResp = await getData(filesQueryUrl, {}, false);
@@ -1013,23 +1020,23 @@ export const createStore = () => {
                             return f;
                         });
                         
-                        console.log('[deleteItem - root] 开始删除项目所有文件，文件数:', fileList.length, '项目ID:', project);
+                        console.log('[deleteItem - root] 开始从 projectTree 删除项目所有文件节点，文件数:', fileList.length, '项目ID:', project);
                         console.log('[deleteItem - root] 文件详情:', fileList.map(f => ({
                             fileId: f.fileId || f.id || f.path,
                             key: f.key || f._id,
                             projectId: f.projectId || project
                         })));
                         
-                        // 使用统一的文件删除服务
+                        // 使用统一的文件删除服务（会从 projectTree 中删除文件节点）
                         const fileDeleteService = getFileDeleteService();
                         const deleteResults = await fileDeleteService.deleteFiles(fileList, project);
                         
                         // 统计删除结果
                         const mongoSuccessCount = deleteResults.filter(r => r.mongoSuccess).length;
                         const sessionSuccessCount = deleteResults.filter(r => r.sessionSuccess).length;
-                        console.log('[deleteItem - root] 项目文件删除完成:', {
+                        console.log('[deleteItem - root] projectTree 文件节点删除完成:', {
                             总数: fileList.length,
-                            MongoDB成功: mongoSuccessCount,
+                            projectTree成功: mongoSuccessCount,
                             会话成功: sessionSuccessCount
                         });
                     }

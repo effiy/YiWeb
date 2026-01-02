@@ -732,7 +732,8 @@ export const useMethods = (store) => {
                 // 覆盖导入：采用并集策略，已存在的文件覆盖，不存在的文件补充
                 // 提示：前面已导入 CRUD
                 
-                // 1. 获取现有的文件列表，用于判断是更新还是新增，以及构建完整的文件树
+                // 1. 从 projectTree 获取现有的文件列表，用于判断是更新还是新增，以及构建完整的文件树
+                // 后端会将 projectFiles 查询转换为从 projectTree 提取文件列表
                 const filesQuery = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(projectId)}`;
                 let existingFilesMap = new Map(); // fileId -> { key, ... }
                 let allFilesForTree = [...filesPayload]; // 包含所有文件（现有 + 新导入）用于构建文件树
@@ -947,7 +948,8 @@ export const useMethods = (store) => {
                             // 覆盖文件时不生成新会话
                             console.log(`[数据库保存] 文件已更新（跳过会话同步）: ${fileId}`);
                         } else {
-                            // 文件不存在，创建它
+                            // 文件不存在，在 projectTree 中创建文件节点
+                            // 后端会将此操作转换为在 projectTree 中创建/更新文件节点
                             await postData(`${window.API_URL}/mongodb/?cname=projectFiles`, payload);
                             filesCreated++;
                             filesUploaded++;
@@ -1894,7 +1896,8 @@ export const useMethods = (store) => {
                 
                 console.log('[初始化根目录] 项目根目录结构创建成功');
                 
-                // 只创建 README.md 文件
+                // 在 projectTree 中创建 README.md 文件节点
+                // 后端会将此操作转换为在 projectTree 中创建/更新文件节点
                 const filesUrl = `${window.API_URL}/mongodb/?cname=projectFiles`;
                 const basicFiles = [
                     {
@@ -1907,13 +1910,13 @@ export const useMethods = (store) => {
                     }
                 ];
                 
-                // 批量创建文件
+                // 批量在 projectTree 中创建文件节点
                 for (const file of basicFiles) {
                     try {
                         await postData(filesUrl, file);
-                        console.log('[初始化根目录] 创建文件:', file.name);
+                        console.log('[初始化根目录] 在 projectTree 中创建文件节点:', file.name);
                     } catch (error) {
-                        console.warn('[初始化根目录] 创建文件失败:', file.name, error);
+                        console.warn('[初始化根目录] 在 projectTree 中创建文件节点失败:', file.name, error);
                     }
                 }
                 

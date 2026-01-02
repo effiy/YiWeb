@@ -1767,10 +1767,12 @@ const createCodeView = async () => {
                         return;
                     }
                     const { updateData, postData, getData } = await import('/apis/modules/crud.js');
+                    // 更新 projectTree 中的文件节点（后端会将 projectFiles 操作转换为更新 projectTree）
                     const url = `${window.API_URL}/mongodb/?cname=projectFiles`;
                     // 优先使用 key 更新
                     const key = this.file.key || this.file._id || this.file.idKey;
                     if (key) {
+                        // 后端会将此操作转换为更新 projectTree 中的文件节点
                         await updateData(url, {
                             key,
                             projectId,
@@ -1781,8 +1783,9 @@ const createCodeView = async () => {
                             content
                         });
                     } else {
-                        // 无 key：尝试查一次获取 key；失败则回退 POST 覆盖
+                        // 无 key：从 projectTree 查询获取 key；失败则回退 POST 创建
                         try {
+                            // 后端会将此查询转换为从 projectTree 提取文件
                             const queryUrl = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(projectId)}&fileId=${encodeURIComponent(fileId)}`;
                             const resp = await getData(queryUrl, {}, false);
                             const list = resp?.data?.list || [];
