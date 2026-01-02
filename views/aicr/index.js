@@ -1074,6 +1074,39 @@ const { computed } = Vue;
                         logError('[主页面] 处理会话导出失败:', error);
                     }
                 },
+                
+                // 批量删除会话
+                handleBatchDeleteSessions: async function() {
+                    logInfo('[主页面] 批量删除会话');
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleBatchDeleteSessions();
+                    } catch (error) {
+                        logError('[主页面] 批量删除会话失败:', error);
+                    }
+                },
+                
+                // 处理会话批量选择
+                handleSessionBatchSelect: function(sessionId) {
+                    logInfo('[主页面] 切换会话选择状态:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        if (methods.toggleSessionSelection) {
+                            methods.toggleSessionSelection(sessionId);
+                        } else {
+                            // 备用方法：直接操作 store
+                            if (store && store.selectedSessionIds && store.selectedSessionIds.value) {
+                                if (store.selectedSessionIds.value.has(sessionId)) {
+                                    store.selectedSessionIds.value.delete(sessionId);
+                                } else {
+                                    store.selectedSessionIds.value.add(sessionId);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        logError('[主页面] 切换会话选择状态失败:', error);
+                    }
+                },
             }
         });
         window.aicrApp = app;

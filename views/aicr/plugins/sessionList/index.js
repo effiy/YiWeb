@@ -48,11 +48,21 @@ const SessionListComponent = {
         tagFilterSearchKeyword: {
             type: String,
             default: ''
+        },
+        // 批量选择相关属性
+        sessionBatchMode: {
+            type: Boolean,
+            default: false
+        },
+        selectedSessionIds: {
+            type: Set,
+            default: () => new Set()
         }
     },
     emits: ['session-select', 'session-delete', 'session-create', 'tag-select', 'tag-clear', 'search-change', 'toggle-collapse', 
             'tag-filter-reverse', 'tag-filter-no-tags', 'tag-filter-expand', 'tag-filter-search', 'tag-order-updated',
-            'session-favorite', 'session-edit', 'session-tag', 'session-duplicate', 'session-context', 'session-open-url'],
+            'session-favorite', 'session-edit', 'session-tag', 'session-duplicate', 'session-context', 'session-open-url',
+            'session-batch-select'],
     setup(props, { emit }) {
         const selectedSessionId = ref(null);
         
@@ -669,6 +679,19 @@ const SessionListComponent = {
             emit('session-open-url', session.id);
         };
         
+        // 处理批量选择切换
+        const handleBatchSelect = (sessionId, event) => {
+            if (event) {
+                event.stopPropagation();
+            }
+            emit('session-batch-select', sessionId);
+        };
+        
+        // 检查会话是否被选中
+        const isSessionSelected = (sessionId) => {
+            return props.selectedSessionIds && props.selectedSessionIds.has && props.selectedSessionIds.has(sessionId);
+        };
+        
         // 判断会话来源（通过URL判断）
         const getSessionSource = (session) => {
             if (!session || !session.url) {
@@ -742,7 +765,9 @@ const SessionListComponent = {
             handleOpenUrlClick,
             getSessionSource,
             getSessionSourceIcon,
-            getSessionFirstChar
+            getSessionFirstChar,
+            handleBatchSelect,
+            isSessionSelected
         };
     },
     template: await fetch('/views/aicr/plugins/sessionList/index.html').then(r => r.text())

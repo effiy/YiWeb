@@ -146,6 +146,22 @@
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
+/* 批量删除按钮样式 */
+.toolbar-btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    border-color: #dc2626 !important;
+}
+
+.toolbar-btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+}
+
+.toolbar-btn-danger:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
 /* 下载按钮样式 */
 .toolbar-btn:has(.fa-download) {
     background: linear-gradient(135deg, #2196F3, #1976D2);

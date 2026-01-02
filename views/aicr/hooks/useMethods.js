@@ -2921,6 +2921,23 @@ export const useMethods = (store) => {
             }, '切换会话批量选择模式');
         },
         
+        // 切换会话选择状态（批量选择）
+        toggleSessionSelection: (sessionId) => {
+            return safeExecute(() => {
+                if (!selectedSessionIds || !selectedSessionIds.value) {
+                    console.warn('[useMethods] selectedSessionIds 未初始化');
+                    return;
+                }
+                
+                if (selectedSessionIds.value.has(sessionId)) {
+                    selectedSessionIds.value.delete(sessionId);
+                } else {
+                    selectedSessionIds.value.add(sessionId);
+                }
+                console.log('[useMethods] 会话选择状态已切换:', sessionId, '选中数量:', selectedSessionIds.value.size);
+            }, '切换会话选择状态');
+        },
+        
         // 处理会话导入（触发文件选择对话框）
         handleSessionImport: () => {
             return safeExecute(() => {
@@ -3084,6 +3101,70 @@ export const useMethods = (store) => {
                     }
                 }
             }, '处理会话导出');
+        },
+        
+        // 批量删除会话（参考 YiPet 的实现）
+        handleBatchDeleteSessions: async () => {
+            return safeExecuteAsync(async () => {
+                if (!selectedSessionIds || !selectedSessionIds.value || selectedSessionIds.value.size === 0) {
+                    if (window.showError) {
+                        window.showError('请先选择要删除的会话');
+                    }
+                    return;
+                }
+                
+                const count = selectedSessionIds.value.size;
+                const confirmMessage = `确定要删除选中的 ${count} 个会话吗？此操作不可撤销。`;
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
+                
+                const sessionIds = Array.from(selectedSessionIds.value);
+                
+                const { showGlobalLoading, hideGlobalLoading } = await import('/utils/loading.js');
+                showGlobalLoading(`正在删除 ${count} 个会话...`);
+                
+                try {
+                    // 调用批量删除接口
+                    const { postData } = await import('/apis/index.js');
+                    const result = await postData(`${window.API_URL}/session/batch/delete`, {
+                        session_ids: sessionIds
+                    });
+                    
+                    if (result && result.success !== false) {
+                        // 清空选中状态
+                        if (selectedSessionIds) {
+                            selectedSessionIds.value.clear();
+                        }
+                        
+                        // 退出批量模式
+                        if (sessionBatchMode) {
+                            sessionBatchMode.value = false;
+                        }
+                        
+                        // 刷新会话列表
+                        if (loadSessions && typeof loadSessions === 'function') {
+                            await loadSessions(true);
+                        } else if (store && store.loadSessions && typeof store.loadSessions === 'function') {
+                            await store.loadSessions(true);
+                        }
+                        
+                        hideGlobalLoading();
+                        
+                        if (window.showSuccess) {
+                            window.showSuccess(`已成功删除 ${count} 个会话`);
+                        }
+                    } else {
+                        throw new Error(result?.message || '批量删除失败');
+                    }
+                } catch (error) {
+                    hideGlobalLoading();
+                    console.error('[useMethods] 批量删除会话失败:', error);
+                    if (window.showError) {
+                        window.showError(`批量删除失败：${error.message || '未知错误'}`);
+                    }
+                }
+            }, '批量删除会话');
         }
         // 注意：会话列表相关方法（toggleSessionList, handleSessionSelect 等）已在上面定义，不需要重复引用
     };

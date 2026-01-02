@@ -130,7 +130,10 @@
                 v-for="session in filteredSessions"
                 :key="session.id"
                 class="session-item"
-                :class="{ active: selectedSessionId === session.id }"
+                :class="{ 
+                    active: selectedSessionId === session.id,
+                    'batch-selected': sessionBatchMode && isSessionSelected(session.id)
+                }"
                 @click="handleSessionClick(session, $event)"
                 @mousedown="startLongPress(session, $event)"
                 @mouseup="cancelLongPress"
@@ -140,6 +143,16 @@
                 @touchcancel="cancelLongPress">
                 <div class="session-item-header">
                     <div class="session-item-title">
+                        <!-- 批量选择复选框（仅在批量模式下显示） -->
+                        <input
+                            v-if="sessionBatchMode"
+                            type="checkbox"
+                            class="session-batch-checkbox"
+                            :checked="isSessionSelected(session.id)"
+                            @click.stop="handleBatchSelect(session.id, $event)"
+                            :title="isSessionSelected(session.id) ? '取消选择' : '选择'"
+                            aria-label="批量选择"
+                        />
                         <!-- 来自news的会话显示第一个字符图标 -->
                         <div v-if="getSessionFirstChar(session)" class="session-first-char-icon" :title="'来自news'">
                             {{ getSessionFirstChar(session) }}
