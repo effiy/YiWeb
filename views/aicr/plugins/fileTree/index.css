@@ -162,6 +162,35 @@
     cursor: not-allowed !important;
 }
 
+/* 已选择数量显示 */
+.toolbar-selected-count {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.toolbar-selected-count.has-selection {
+    color: #4338ca;
+    font-weight: 600;
+}
+
+/* 全选按钮样式 */
+.toolbar-btn-select-all {
+    background: #ffffff !important;
+    color: #374151 !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+.toolbar-btn-select-all:hover {
+    background: #f9fafb !important;
+    border-color: #d1d5db !important;
+}
+
 /* 下载按钮样式 */
 .toolbar-btn:has(.fa-download) {
     background: linear-gradient(135deg, #2196F3, #1976D2);

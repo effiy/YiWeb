@@ -2938,6 +2938,43 @@ export const useMethods = (store) => {
             }, '切换会话选择状态');
         },
         
+        // 全选/取消全选会话（参考 YiPet 的实现）
+        toggleSelectAllSessions: () => {
+            return safeExecute(() => {
+                if (!sessions || !sessions.value || !Array.isArray(sessions.value)) {
+                    console.warn('[useMethods] 会话列表为空');
+                    return;
+                }
+                
+                if (!selectedSessionIds || !selectedSessionIds.value) {
+                    console.warn('[useMethods] selectedSessionIds 未初始化');
+                    return;
+                }
+                
+                // 获取过滤后的会话列表（需要考虑搜索和标签过滤）
+                // 这里简化处理，使用所有可见的会话
+                const visibleSessions = sessions.value;
+                
+                // 检查是否全部已选中
+                const allSelected = visibleSessions.length > 0 && 
+                    visibleSessions.every(session => selectedSessionIds.value.has(session.id));
+                
+                if (allSelected) {
+                    // 取消全选：只取消当前显示的会话
+                    visibleSessions.forEach(session => {
+                        selectedSessionIds.value.delete(session.id);
+                    });
+                    console.log('[useMethods] 已取消全选，取消数量:', visibleSessions.length);
+                } else {
+                    // 全选：选中所有当前显示的会话
+                    visibleSessions.forEach(session => {
+                        selectedSessionIds.value.add(session.id);
+                    });
+                    console.log('[useMethods] 已全选，选中数量:', visibleSessions.length);
+                }
+            }, '全选/取消全选会话');
+        },
+        
         // 处理会话导入（触发文件选择对话框）
         handleSessionImport: () => {
             return safeExecute(() => {

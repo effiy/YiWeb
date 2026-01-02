@@ -200,18 +200,6 @@
                                     <i class="fas" :class="sessionBatchMode ? 'fa-check-square' : 'fa-square'" aria-hidden="true"></i>
                                     <span>批量</span>
                                 </button>
-                                <!-- 批量删除按钮（仅在批量模式下显示） -->
-                                <button 
-                                    v-if="sessionBatchMode"
-                                    type="button"
-                                    class="toolbar-btn toolbar-btn-danger"
-                                    @click="handleBatchDeleteSessions"
-                                    :disabled="loading || !selectedSessionIds || selectedSessionIds.size === 0"
-                                    :title="selectedSessionIds && selectedSessionIds.size > 0 ? `删除选中的 ${selectedSessionIds.size} 个会话` : '请先选择要删除的会话'"
-                                    aria-label="批量删除会话">
-                                    <i class="fas fa-trash" aria-hidden="true"></i>
-                                    <span>删除</span>
-                                </button>
                             </div>
                             <div class="toolbar-group">
                                 <!-- 新建会话按钮 -->
@@ -305,6 +293,7 @@
                     :tag-filter-search-keyword="tagFilterSearchKeyword || ''"
                     :session-batch-mode="sessionBatchMode || false"
                     :selected-session-ids="selectedSessionIds || new Set()"
+                    :is-all-sessions-selected="isAllSessionsSelected"
                     @session-select="handleSessionSelect"
                     @session-delete="handleSessionDelete"
                     @session-create="handleSessionCreate"
@@ -315,6 +304,9 @@
                     @session-context="handleSessionContext"
                     @session-open-url="handleSessionOpenUrl"
                     @session-batch-select="handleSessionBatchSelect"
+                    @session-batch-select-all="handleToggleSelectAllSessions"
+                    @session-batch-delete="handleBatchDeleteSessions"
+                    @session-batch-cancel="toggleSessionBatchMode"
                     @tag-select="handleTagSelect"
                     @tag-clear="handleTagClear"
                     @search-change="handleSessionSearchChange"

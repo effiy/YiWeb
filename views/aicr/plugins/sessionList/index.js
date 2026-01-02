@@ -57,12 +57,16 @@ const SessionListComponent = {
         selectedSessionIds: {
             type: Set,
             default: () => new Set()
+        },
+        isAllSessionsSelected: {
+            type: Boolean,
+            default: false
         }
     },
     emits: ['session-select', 'session-delete', 'session-create', 'tag-select', 'tag-clear', 'search-change', 'toggle-collapse', 
             'tag-filter-reverse', 'tag-filter-no-tags', 'tag-filter-expand', 'tag-filter-search', 'tag-order-updated',
             'session-favorite', 'session-edit', 'session-tag', 'session-duplicate', 'session-context', 'session-open-url',
-            'session-batch-select'],
+            'session-batch-select', 'session-batch-select-all', 'session-batch-delete', 'session-batch-cancel'],
     setup(props, { emit }) {
         const selectedSessionId = ref(null);
         
@@ -646,6 +650,20 @@ const SessionListComponent = {
                 console.log('[SessionList] 长按已完成，跳过点击事件');
                 return;
             }
+            
+            // 批量模式下，点击会话项应该切换选择状态，而不是打开会话
+            if (props.sessionBatchMode) {
+                // 阻止默认行为
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                // 切换选择状态
+                handleBatchSelect(session.id, event);
+                return;
+            }
+            
+            // 非批量模式下，正常打开会话
             emit('session-select', session);
         };
         
@@ -681,8 +699,10 @@ const SessionListComponent = {
         
         // 处理批量选择切换
         const handleBatchSelect = (sessionId, event) => {
+            // 阻止事件冒泡，避免触发会话项的点击事件
             if (event) {
                 event.stopPropagation();
+                event.preventDefault();
             }
             emit('session-batch-select', sessionId);
         };

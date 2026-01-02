@@ -1107,6 +1107,35 @@ const { computed } = Vue;
                         logError('[主页面] 切换会话选择状态失败:', error);
                     }
                 },
+                
+                // 全选/取消全选会话
+                handleToggleSelectAllSessions: function() {
+                    logInfo('[主页面] 全选/取消全选会话');
+                    try {
+                        const methods = useMethods(store);
+                        if (methods.toggleSelectAllSessions) {
+                            methods.toggleSelectAllSessions();
+                        }
+                    } catch (error) {
+                        logError('[主页面] 全选/取消全选会话失败:', error);
+                    }
+                },
+            },
+            computed: {
+                // 计算是否所有会话都已选中
+                isAllSessionsSelected: function() {
+                    if (!store || !store.sessions || !store.sessions.value || !Array.isArray(store.sessions.value)) {
+                        return false;
+                    }
+                    if (!store.selectedSessionIds || !store.selectedSessionIds.value) {
+                        return false;
+                    }
+                    const visibleSessions = store.sessions.value;
+                    if (visibleSessions.length === 0) {
+                        return false;
+                    }
+                    return visibleSessions.every(session => store.selectedSessionIds.value.has(session.id));
+                }
             }
         });
         window.aicrApp = app;

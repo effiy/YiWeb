@@ -270,6 +270,23 @@ export const useComputed = (store) => {
             };
         }),
 
+        /**
+         * 是否所有会话都已选中（用于全选/取消全选按钮）
+         */
+        isAllSessionsSelected: computed(() => {
+            if (!store || !store.sessions || !store.sessions.value || !Array.isArray(store.sessions.value)) {
+                return false;
+            }
+            if (!store.selectedSessionIds || !store.selectedSessionIds.value) {
+                return false;
+            }
+            const visibleSessions = store.sessions.value;
+            if (visibleSessions.length === 0) {
+                return false;
+            }
+            return visibleSessions.every(session => store.selectedSessionIds.value.has(session.id));
+        }),
+
     };
 };
 
