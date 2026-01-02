@@ -3200,8 +3200,8 @@ export const useMethods = (store) => {
                     // 创建文件
                     // 优化说明：
                     // 1. createFile 会先调用 persistFileTree 持久化整个文件树（包括删除的旧文件和新增的文件）
-                    // 2. 然后调用 projectFiles 接口同步文件内容到 Session 和 static 目录
-                    // 3. 这样确保了操作的原子性，避免了数据丢失
+                    // 2. 文件内容已经通过 persistFileTree 保存到 projectTree 中，不需要再调用 projectFiles 接口
+                    // 3. 跳过 projectFiles 接口可以避免不必要的网络请求，并防止页面刷新后文件树丢失
                     // 4. 如果旧文件存在，它已经在本地文件树中被删除，persistFileTree 会将其从后端移除
                     let fileId;
                     try {
@@ -3210,7 +3210,7 @@ export const useMethods = (store) => {
                             name: finalFileName,
                             content: fileContent,
                             projectId,
-                            skipProjectFiles: false  // 不跳过 projectFiles 接口，确保文件内容被正确保存和同步
+                            skipProjectFiles: true  // 跳过 projectFiles 接口，文件内容已通过 persistFileTree 保存到 projectTree
                         });
                         
                         console.log(`[handleSessionTree] 文件已创建并持久化: ${fileId}`);
