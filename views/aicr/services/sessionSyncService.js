@@ -198,10 +198,10 @@ class SessionSyncService {
             url: uniqueUrl,
             title: fileName,
             pageTitle: fileName,
-            pageDescription: `文件：${filePath}`,
+            pageDescription: `文件：${projectId/filePath}`,
             pageContent: String(normalizedFile.content || ''),
             messages: [], // 消息将从评论中同步
-            tags: tags,
+            tags: [projectId].concat(tags),
             isFavorite: false,
             createdAt: createdAt,
             updatedAt: updatedAt,
