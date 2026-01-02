@@ -111,40 +111,6 @@
         </div>
     </div>
     
-    <!-- 批量操作工具栏（仅在批量模式下显示） -->
-    <div v-if="sessionBatchMode" class="session-batch-toolbar">
-        <span class="batch-toolbar-selected-count" :class="{ 'has-selection': selectedSessionIds && selectedSessionIds.size > 0 }">
-            已选择 {{ selectedSessionIds ? selectedSessionIds.size : 0 }} 个
-        </span>
-        <button 
-            type="button"
-            class="batch-toolbar-btn batch-toolbar-select-all"
-            @click="$emit('session-batch-select-all')"
-            :title="isAllSessionsSelected ? '取消全选' : '全选'"
-            aria-label="全选/取消全选">
-            {{ isAllSessionsSelected ? '取消全选' : '全选' }}
-        </button>
-        <button 
-            type="button"
-            class="batch-toolbar-btn batch-toolbar-delete"
-            @click="$emit('session-batch-delete')"
-            :disabled="!selectedSessionIds || selectedSessionIds.size === 0"
-            :title="selectedSessionIds && selectedSessionIds.size > 0 ? `删除选中的 ${selectedSessionIds.size} 个会话` : '请先选择要删除的会话'"
-            aria-label="批量删除会话">
-            <i class="fas fa-trash" aria-hidden="true"></i>
-            <span>删除</span>
-        </button>
-        <button 
-            type="button"
-            class="batch-toolbar-btn batch-toolbar-cancel"
-            @click="$emit('session-batch-cancel')"
-            title="退出批量选择模式"
-            aria-label="退出批量选择">
-            <i class="fas fa-times" aria-hidden="true"></i>
-            <span>取消</span>
-        </button>
-    </div>
-    
     <!-- 会话列表 -->
     <div class="session-list-content">
         <div v-if="loading" class="session-list-loading">

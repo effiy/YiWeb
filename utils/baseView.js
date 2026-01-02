@@ -189,7 +189,12 @@ async function createBaseView(config = {}) {
         components = ViewConfig.DEFAULT_COMPONENTS,
         plugins = ViewConfig.DEFAULT_PLUGINS,
         onMounted = null,
-        selector = '#app'
+        selector = '#app',
+        // 支持传入额外的 methods、data 和 computed（用于兼容 Options API 风格）
+        methods: extraMethods = {},
+        data: extraData = {},
+        computed: extraComputed = {},
+        props: extraProps = {}
     } = config;
 
     // 验证必需函数
@@ -214,11 +219,63 @@ async function createBaseView(config = {}) {
         // 3. 组合常用方法
         const methods = useMethods(store);
 
-        // 4. 返回所有需要暴露给模板的数据和方法
+        // 4. 处理额外的 data（转换为响应式）
+        const reactiveExtraData = {};
+        if (extraData && typeof extraData === 'object') {
+            Object.keys(extraData).forEach(key => {
+                const value = extraData[key];
+                // 如果已经是 ref，直接使用；否则创建 ref
+                if (value && typeof value === 'object' && 'value' in value) {
+                    reactiveExtraData[key] = value;
+                } else {
+                    reactiveExtraData[key] = Vue.ref(value);
+                }
+            });
+        }
+
+        // 5. 处理额外的 computed（转换为计算属性）
+        const reactiveExtraComputed = {};
+        if (extraComputed && typeof extraComputed === 'object') {
+            Object.keys(extraComputed).forEach(key => {
+                const getter = extraComputed[key];
+                if (typeof getter === 'function') {
+                    // 创建一个上下文对象，包含 store 和其他数据，供 computed 函数使用
+                    // 注意：computed 函数中可能直接使用 store，所以需要确保 store 在闭包中可用
+                    reactiveExtraComputed[key] = Vue.computed(() => {
+                        // 创建一个上下文，包含所有可用的数据和方法
+                        const context = {
+                            store,
+                            ...store,
+                            ...computedProps,
+                            ...methods,
+                            ...reactiveExtraData
+                        };
+                        return getter.call(context);
+                    });
+                }
+            });
+        }
+
+        // 6. 处理额外的 methods（直接添加，因为这些方法通常不依赖 this）
+        const boundExtraMethods = {};
+        if (extraMethods && typeof extraMethods === 'object') {
+            Object.keys(extraMethods).forEach(key => {
+                const method = extraMethods[key];
+                if (typeof method === 'function') {
+                    // 直接使用原函数，因为它们在内部通过 useMethods(store) 获取依赖
+                    boundExtraMethods[key] = method;
+                }
+            });
+        }
+
+        // 7. 返回所有需要暴露给模板的数据和方法
         const result = {
-            ...store,         // 响应式数据
-            ...computedProps, // 计算属性
-            ...methods        // 方法
+            ...store,                // 响应式数据
+            ...computedProps,        // 计算属性
+            ...methods,              // 方法
+            ...reactiveExtraData,    // 额外的响应式数据
+            ...reactiveExtraComputed, // 额外的计算属性
+            ...boundExtraMethods     // 额外的方法
         };
         
         // 避免使用Object.keys枚举组件实例属性
