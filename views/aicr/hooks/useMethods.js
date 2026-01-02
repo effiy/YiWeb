@@ -2698,6 +2698,267 @@ export const useMethods = (store) => {
             }, '打开URL');
         },
         
+        handleSessionTree: async (session) => {
+            return safeExecute(async () => {
+                console.log('[handleSessionTree] 转成树形文件:', session);
+                try {
+                    if (!session || !session.id) {
+                        throw new Error('会话数据无效');
+                    }
+                    
+                    const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value || '');
+                    if (!projectId) {
+                        throw new Error('请先选择项目');
+                    }
+                    
+                    // 显示加载状态
+                    if (window.showGlobalLoading) {
+                        window.showGlobalLoading('正在获取会话数据并生成树形文件...');
+                    }
+                    
+                    // 获取会话的完整数据
+                    const { getSessionSyncService } = await import('/views/aicr/services/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    const fullSession = await sessionSync.getSession(session.id);
+                    
+                    if (!fullSession) {
+                        throw new Error('无法获取会话数据');
+                    }
+                    
+                    // 获取会话的标签
+                    const tags = fullSession.tags || session.tags || [];
+                    const messages = fullSession.messages || [];
+                    const pageContent = fullSession.pageContent || '';
+                    const pageTitle = fullSession.pageTitle || session.pageTitle || session.title || '会话';
+                    const pageDescription = fullSession.pageDescription || session.pageDescription || '';
+                    
+                    // 检查是否有任何可保存的内容
+                    if (messages.length === 0 && !pageContent && !pageTitle) {
+                        throw new Error('会话中没有可保存的内容');
+                    }
+                    
+                    // 根据标签创建目录结构
+                    // 第一个标签对应第一个目录，第二个标签对应第二个目录，以此类推
+                    let currentParentId = null;
+                    const tagFolders = [];
+                    
+                    // 递归查找或创建目录
+                    const findOrCreateFolder = (parentNode, folderName, projectId) => {
+                        if (!parentNode.children) {
+                            parentNode.children = [];
+                        }
+                        
+                        // 检查目录是否已存在
+                        let folderNode = parentNode.children.find(
+                            child => child.name === folderName && child.type === 'folder'
+                        );
+                        
+                        if (!folderNode) {
+                            // 创建新目录
+                            const folderId = parentNode.id 
+                                ? normalizeFilePath(`${parentNode.id}/${folderName}`, projectId)
+                                : normalizeFilePath(folderName, projectId);
+                            
+                            folderNode = normalizeTreeNode({
+                                id: folderId,
+                                name: folderName,
+                                type: 'folder',
+                                children: []
+                            }, projectId);
+                            
+                            if (folderNode) {
+                                parentNode.children.push(folderNode);
+                                // 排序子节点
+                                parentNode.children.sort((a, b) => {
+                                    if (a.type === 'folder' && b.type !== 'folder') return -1;
+                                    if (a.type !== 'folder' && b.type === 'folder') return 1;
+                                    return (a.name || '').localeCompare(b.name || '', 'zh-CN');
+                                });
+                            }
+                        }
+                        
+                        return folderNode;
+                    };
+                    
+                    const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
+                    if (!root) {
+                        throw new Error('文件树未加载');
+                    }
+                    
+                    // 根据标签创建目录层级
+                    // 递归查找节点的辅助函数
+                    const findNodeById = (node, targetId) => {
+                        if (node.id === targetId) return node;
+                        if (node.children && Array.isArray(node.children)) {
+                            for (const child of node.children) {
+                                const found = findNodeById(child, targetId);
+                                if (found) return found;
+                            }
+                        }
+                        return null;
+                    };
+                    
+                    for (let i = 0; i < tags.length; i++) {
+                        const tag = tags[i];
+                        if (!tag || !tag.trim()) continue;
+                        
+                        const folderName = tag.trim();
+                        const parentNode = currentParentId 
+                            ? (findNodeById(root, currentParentId) || root)
+                            : root;
+                        
+                        const folderNode = findOrCreateFolder(parentNode, folderName, projectId);
+                        if (folderNode) {
+                            currentParentId = folderNode.id;
+                            tagFolders.push({ id: folderNode.id, name: folderName });
+                        }
+                    }
+                    
+                    // 如果没有标签，则在根目录创建文件
+                    const targetParentId = currentParentId || null;
+                    
+                    // 将消息内容转成文件
+                    // 将消息按类型分组，user 和 pet 的消息分别保存
+                    const userMessages = [];
+                    const petMessages = [];
+                    
+                    messages.forEach((msg, index) => {
+                        if (msg.type === 'user' || msg.type === 'me') {
+                            userMessages.push({
+                                index: index + 1,
+                                content: msg.content || '',
+                                timestamp: msg.timestamp || Date.now()
+                            });
+                        } else if (msg.type === 'pet' || msg.type === 'assistant') {
+                            petMessages.push({
+                                index: index + 1,
+                                content: msg.content || '',
+                                timestamp: msg.timestamp || Date.now()
+                            });
+                        }
+                    });
+                    
+                    let fileCount = 0;
+                    
+                    // 创建用户消息文件
+                    if (userMessages.length > 0) {
+                        const userContent = userMessages.map(msg => 
+                            `[${new Date(msg.timestamp).toLocaleString('zh-CN')}] 用户消息 #${msg.index}\n${msg.content}`
+                        ).join('\n\n---\n\n');
+                        
+                        const fileName = `用户消息_${pageTitle}.txt`;
+                        await createFile({
+                            parentId: targetParentId,
+                            name: fileName,
+                            content: userContent,
+                            projectId
+                        });
+                        fileCount++;
+                    }
+                    
+                    // 创建助手消息文件
+                    if (petMessages.length > 0) {
+                        const petContent = petMessages.map(msg => 
+                            `[${new Date(msg.timestamp).toLocaleString('zh-CN')}] 助手消息 #${msg.index}\n${msg.content}`
+                        ).join('\n\n---\n\n');
+                        
+                        const fileName = `助手消息_${pageTitle}.txt`;
+                        await createFile({
+                            parentId: targetParentId,
+                            name: fileName,
+                            content: petContent,
+                            projectId
+                        });
+                        fileCount++;
+                    }
+                    
+                    // 创建完整对话文件（包含所有消息，仅在消息存在时创建）
+                    if (messages.length > 0) {
+                        const allContent = messages.map((msg, index) => {
+                            const role = msg.type === 'user' || msg.type === 'me' ? '用户' : '助手';
+                            return `[${new Date(msg.timestamp || Date.now()).toLocaleString('zh-CN')}] ${role} #${index + 1}\n${msg.content || ''}`;
+                        }).join('\n\n---\n\n');
+                        
+                        const fullFileName = `完整对话_${pageTitle}.txt`;
+                        await createFile({
+                            parentId: targetParentId,
+                            name: fullFileName,
+                            content: allContent,
+                            projectId
+                        });
+                        fileCount++;
+                    }
+                    
+                    // 如果有页面内容，也保存
+                    if (pageContent) {
+                        const pageContentFileName = `页面内容_${pageTitle}.txt`;
+                        await createFile({
+                            parentId: targetParentId,
+                            name: pageContentFileName,
+                            content: pageContent,
+                            projectId
+                        });
+                        fileCount++;
+                    }
+                    
+                    // 如果有页面描述，也保存
+                    if (pageDescription) {
+                        const pageDescriptionFileName = `页面描述_${pageTitle}.txt`;
+                        await createFile({
+                            parentId: targetParentId,
+                            name: pageDescriptionFileName,
+                            content: pageDescription,
+                            projectId
+                        });
+                        fileCount++;
+                    }
+                    
+                    // 创建会话信息文件（包含标题、URL等元信息）
+                    const sessionInfo = {
+                        title: pageTitle,
+                        description: pageDescription,
+                        url: fullSession.url || session.url || '',
+                        tags: tags,
+                        createdAt: fullSession.createdAt || session.createdAt || '',
+                        updatedAt: fullSession.updatedAt || session.updatedAt || '',
+                        messageCount: messages.length
+                    };
+                    
+                    const sessionInfoFileName = `会话信息_${pageTitle}.json`;
+                    await createFile({
+                        parentId: targetParentId,
+                        name: sessionInfoFileName,
+                        content: JSON.stringify(sessionInfo, null, 2),
+                        projectId
+                    });
+                    fileCount++;
+                    
+                    // 持久化文件树（通过 createFile 已经自动持久化，这里确保刷新）
+                    
+                    // 刷新文件树
+                    if (typeof loadFileTree === 'function') {
+                        await loadFileTree(projectId);
+                    }
+                    
+                    if (window.hideGlobalLoading) {
+                        window.hideGlobalLoading();
+                    }
+                    
+                    if (window.showSuccess) {
+                        window.showSuccess(`已成功将会话转成树形文件，共创建 ${tagFolders.length} 个目录和 ${fileCount} 个文件`);
+                    }
+                } catch (error) {
+                    if (window.hideGlobalLoading) {
+                        window.hideGlobalLoading();
+                    }
+                    console.error('[handleSessionTree] 转成树形文件失败:', error);
+                    if (window.showError) {
+                        window.showError(`转成树形文件失败：${error.message || '未知错误'}`);
+                    }
+                }
+            }, '转成树形文件');
+        },
+        
         handleCreateSession: async (payload) => {
             console.log('[handleCreateSession] 收到创建会话请求:', payload);
             return safeExecute(async () => {
