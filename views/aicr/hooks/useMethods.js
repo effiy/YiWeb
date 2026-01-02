@@ -1066,7 +1066,13 @@ export const useMethods = (store) => {
             const input = document.getElementById('aicrUploadZipInput');
             if (input) {
                 try { input.value = ''; } catch (_) {}
-                if (typeof input.click === 'function') input.click();
+                if (typeof input.click === 'function') {
+                    input.click();
+                } else {
+                    console.warn('[triggerUploadProjectVersion] input.click 不是函数');
+                }
+            } else {
+                console.warn('[triggerUploadProjectVersion] 未找到上传输入框元素 #aicrUploadZipInput');
             }
         }, '触发上传选择');
     };
