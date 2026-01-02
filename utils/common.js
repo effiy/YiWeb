@@ -321,7 +321,7 @@ export function formatFileSize(bytes, decimals = 2) {
  * 构建新闻会话的标签数组
  * 标签顺序固定为：
  * 1. knowledge（第一位）
- * 2. news（第二位）
+ * 2. news（第二位，确保在新闻自带的标签前面）
  * 3. 新闻自带的标签（第三位及之后）
  * @param {Array<string>} newsTags - 新闻的原始标签数组
  * @returns {Array<string>} 构建后的标签数组，顺序为 [knowledge, news, ...新闻原有标签]
@@ -335,7 +335,7 @@ export function buildNewsSessionTags(newsTags = []) {
         .map(tag => String(tag || "").trim())
         .filter(tag => tag && tag !== "knowledge" && tag !== "news");
     
-    // 按固定顺序构建标签数组：第一位 knowledge，第二位 news，第三位及之后是新闻原有标签
+    // 按固定顺序构建标签数组：第一位 knowledge，第二位 news（在新闻自带标签前面），第三位及之后是新闻原有标签
     return ["knowledge", "news", ...filteredTags];
 }
 
