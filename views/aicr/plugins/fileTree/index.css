@@ -88,16 +88,16 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 2px 6px;
+    gap: 6px;
+    padding: 6px 10px;
     height: auto;
-    min-height: 20px;
-    font-size: 11px;
+    min-height: 32px;
+    font-size: 13px;
     font-weight: 500;
     color: white;
     background: linear-gradient(135deg, #6366f1, #4f46e5);
     border: 1px solid #4f46e5;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
@@ -110,9 +110,9 @@
 .toolbar-group:first-child .toolbar-btn {
     width: auto;
     min-width: fit-content;
-    padding: 2px 6px;
+    padding: 6px 10px;
     height: auto;
-    min-height: 20px;
+    min-height: 32px;
 }
 
 .toolbar-group:last-child .toolbar-btn {
@@ -169,7 +169,7 @@
 }
 
 .toolbar-btn i {
-    font-size: 11px;
+    font-size: 13px;
     flex-shrink: 0;
 }
 
@@ -192,12 +192,15 @@
     }
     
     .toolbar-btn {
-        padding: 2px 6px;
-        min-width: 20px;
+        padding: 4px 8px;
+        min-width: 28px;
+        min-height: 28px;
+        font-size: 12px;
     }
     
     .toolbar-group:first-child .toolbar-btn {
-        padding: 2px 6px;
+        padding: 4px 8px;
+        min-height: 28px;
     }
 }
 
@@ -214,8 +217,10 @@
     }
     
     .toolbar-btn {
-        padding: 4px 5px;
-        min-width: 24px;
+        padding: 5px 6px;
+        min-width: 30px;
+        min-height: 30px;
+        font-size: 11px;
     }
     
     .toolbar-group {
@@ -238,8 +243,9 @@
     }
     
     .toolbar-btn {
-        padding: 3px 5px;
-        font-size: 10px;
+        padding: 4px 6px;
+        font-size: 11px;
+        min-height: 28px;
     }
 }
 
@@ -704,8 +710,9 @@
     }
     
     .toolbar-btn {
-        padding: 4px 6px;
-        font-size: 10px;
+        padding: 5px 8px;
+        font-size: 12px;
+        min-height: 30px;
     }
     
     .file-tree {
@@ -903,26 +910,26 @@
     display: inline-flex;
     align-items: center;
     gap: 0;
-    height: 22px;
+    height: 28px;
     flex-shrink: 0;
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 4px;
-    padding: 2px;
+    border-radius: 5px;
+    padding: 3px;
 }
 
 .view-mode-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: none;
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s ease;
-    border-radius: 3px;
+    border-radius: 4px;
     opacity: 0.7;
 }
 
@@ -948,7 +955,7 @@
 }
 
 .view-mode-btn i {
-    font-size: 11px;
+    font-size: 13px;
 }
 
 /* 响应式设计 */
@@ -959,12 +966,12 @@
     }
     
     .view-mode-btn {
-        width: 22px;
-        height: 22px;
+        width: 26px;
+        height: 26px;
     }
     
     .view-mode-btn i {
-        font-size: 10px;
+        font-size: 12px;
     }
     
     .file-tree-search-clear {
