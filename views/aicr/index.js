@@ -183,8 +183,9 @@ const { computed } = Vue;
 
                         if (store.selectedProject.value) {
                             // 加载文件树和文件数据（不包含评论，因为评论需要项目信息）
+                            // 初始加载时使用 forceClear: true，因为初始时没有数据
                             return Promise.all([
-                                store.loadFileTree(store.selectedProject.value),
+                                store.loadFileTree(store.selectedProject.value, true),
                                 store.loadFiles(store.selectedProject.value)
                             ]).then(() => {
                                 // 如果URL带了fileId，尝试预选并按需加载

@@ -434,21 +434,31 @@ export const createStore = () => {
 
     /**
      * 异步加载文件树数据
+     * @param {string|null} projectId - 项目ID
+     * @param {boolean} forceClear - 是否在数据为空时强制清空（默认 false，保留现有数据以避免清空问题）
      */
-    const loadFileTree = async (projectId = null) => {
+    const loadFileTree = async (projectId = null, forceClear = false) => {
+        // 保存 forceClear 值供错误处理使用
+        const shouldForceClear = forceClear;
+        // 保存加载前的文件树状态，用于判断是否应该保留数据
+        const hasExistingData = fileTree.value && fileTree.value.length > 0;
+        
         return safeExecuteAsync(async () => {
             loading.value = true;
             error.value = null;
             errorMessage.value = '';
             
-            console.log('[loadFileTree] 正在加载文件树数据...', { projectId });
+            console.log('[loadFileTree] 正在加载文件树数据...', { projectId, forceClear, hasExistingData });
             
             // 需要明确的项目
             const project = projectId || selectedProject.value;
             if (!project) {
                 console.warn('[loadFileTree] 缺少项目，跳过文件树加载');
-                fileTree.value = [];
-                fileTreeDocKey.value = '';
+                // 只有在强制清空时才清空，否则保留现有数据
+                if (shouldForceClear) {
+                    fileTree.value = [];
+                    fileTreeDocKey.value = '';
+                }
                 return [];
             }
             const tree_url = `${window.API_URL}/mongodb/?cname=projectTree&projectId=${project}`;
@@ -458,16 +468,27 @@ export const createStore = () => {
             // 检查响应结构和数据有效性
             if (!response || typeof response !== 'object') {
                 console.warn('[loadFileTree] API响应格式错误:', response);
-                fileTree.value = [];
-                fileTreeDocKey.value = '';
+                // 只有在强制清空时才清空，否则保留现有数据（可能是后端临时问题）
+                if (shouldForceClear) {
+                    fileTree.value = [];
+                    fileTreeDocKey.value = '';
+                } else {
+                    console.log('[loadFileTree] 保留现有文件树数据，避免清空问题');
+                }
                 return [];
             }
 
             // 检查是否有数据
             if (!response.data || !Array.isArray(response.data.list) || response.data.list.length === 0) {
-                console.warn('[loadFileTree] 文件树数据为空，项目可能不存在:', { project });
-                fileTree.value = [];
-                fileTreeDocKey.value = '';
+                console.warn('[loadFileTree] 文件树数据为空，项目可能不存在或后端还未完成更新:', { project });
+                // 只有在强制清空时才清空，否则保留现有数据（避免后端更新延迟导致的数据丢失）
+                // 这可以防止在 handleSessionTree 后立即调用 loadFileTree 时清空刚创建的文件
+                if (shouldForceClear) {
+                    fileTree.value = [];
+                    fileTreeDocKey.value = '';
+                } else {
+                    console.log('[loadFileTree] 保留现有文件树数据，避免清空问题');
+                }
                 return [];
             }
 
@@ -559,8 +580,14 @@ export const createStore = () => {
         }, '文件树数据加载', (errorInfo) => {
             error.value = errorInfo.message;
             errorMessage.value = errorInfo.message;
-            fileTree.value = [];
-            fileTreeDocKey.value = '';
+            // 错误处理时也考虑是否强制清空，避免网络错误等临时问题导致数据丢失
+            // 如果强制清空或没有现有数据，则清空；如果有现有数据且不强制清空，则保留（可能是临时错误）
+            if (shouldForceClear || !hasExistingData) {
+                fileTree.value = [];
+                fileTreeDocKey.value = '';
+            } else {
+                console.warn('[loadFileTree] 加载失败但保留现有文件树数据，避免清空问题');
+            }
         }).finally(() => {
             loading.value = false;
         });
@@ -689,8 +716,14 @@ export const createStore = () => {
 
     /**
      * 创建文件
+     * @param {Object} options - 创建文件选项
+     * @param {string} options.parentId - 父节点ID
+     * @param {string} options.name - 文件名
+     * @param {string} options.content - 文件内容
+     * @param {string} options.projectId - 项目ID
+     * @param {boolean} options.skipProjectFiles - 是否跳过 projectFiles 接口调用（当通过 persistFileTree 已持久化时使用）
      */
-    const createFile = async ({ parentId, name, content = '', projectId = null }) => {
+    const createFile = async ({ parentId, name, content = '', projectId = null, skipProjectFiles = false }) => {
         return safeExecuteAsync(async () => {
             if (!name || !name.trim()) {
                 throw createError('文件名称不能为空', ErrorTypes.VALIDATION, '新建文件');
@@ -756,36 +789,41 @@ export const createStore = () => {
             // 保持全部展开
             expandAllFolders();
 
-            // 先持久化树
+            // 先持久化树（这会更新 projectTree，文件节点已包含在其中）
             await persistFileTree(projectId);
 
-            // 在 projectTree 中新增文件节点（后端会将 projectFiles 创建转换为更新 projectTree）
             const project = projectId || selectedProject.value;
             let createdKey = null;
-            try {
-                const filesUrl = `${window.API_URL}/mongodb/?cname=projectFiles`;
-                
-                // 使用统一的字段规范化工具
-                const normalizedFile = normalizeFileObject({
-                    fileId: normalizedNewId,
-                    id: normalizedNewId,
-                    path: normalizedNewId,
-                    name,
-                    content: content || '',
-                    type: 'file'
-                }, project);
-                
-                if (normalizedFile) {
-                    normalizedFile.projectId = project;
-                    // 后端会将此操作转换为在 projectTree 中创建/更新文件节点
-                    const createResult = await postData(filesUrl, normalizedFile);
-                    // 记录后端返回的唯一标识，供后续首次保存使用
-                    createdKey = createResult?.data?.key || createResult?.key || null;
-                    normalizedFile.key = createdKey;
+            
+            // 只有在不跳过 projectFiles 接口时才调用（用于向后兼容和首次保存时的 key 获取）
+            if (!skipProjectFiles) {
+                try {
+                    const filesUrl = `${window.API_URL}/mongodb/?cname=projectFiles`;
+                    
+                    // 使用统一的字段规范化工具
+                    const normalizedFile = normalizeFileObject({
+                        fileId: normalizedNewId,
+                        id: normalizedNewId,
+                        path: normalizedNewId,
+                        name,
+                        content: content || '',
+                        type: 'file'
+                    }, project);
+                    
+                    if (normalizedFile) {
+                        normalizedFile.projectId = project;
+                        // 后端会将此操作转换为在 projectTree 中创建/更新文件节点
+                        const createResult = await postData(filesUrl, normalizedFile);
+                        // 记录后端返回的唯一标识，供后续首次保存使用
+                        createdKey = createResult?.data?.key || createResult?.key || null;
+                        normalizedFile.key = createdKey;
+                    }
+                } catch (e) {
+                    // 不中断主流程
+                    console.warn('[createFile] 在 projectTree 中创建文件节点失败（已忽略）:', e?.message);
                 }
-            } catch (e) {
-                // 不中断主流程
-                console.warn('[createFile] 在 projectTree 中创建文件节点失败（已忽略）:', e?.message);
+            } else {
+                console.log('[createFile] 跳过 projectFiles 接口调用（已通过 persistFileTree 持久化）');
             }
 
             // 更新本地files列表，携带后端返回的key，确保首次保存可PUT更新

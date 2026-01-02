@@ -813,14 +813,54 @@ export const useMethods = (store) => {
                 // 覆盖导入：采用并集策略，已存在的文件覆盖，不存在的文件补充
                 // 提示：前面已导入 CRUD
                 
-                // 1. 从 projectTree 获取现有的文件列表，用于判断是更新还是新增，以及构建完整的文件树
-                // 后端会将 projectFiles 查询转换为从 projectTree 提取文件列表
-                const filesQuery = `${window.API_URL}/mongodb/?cname=projectFiles&projectId=${encodeURIComponent(projectId)}`;
+                // 1. 从 fileTree 中提取现有的文件列表，用于判断是更新还是新增，以及构建完整的文件树
+                // 不再调用 projectFiles 接口，直接从内存中的文件树提取
                 let existingFilesMap = new Map(); // fileId -> { key, ... }
                 let allFilesForTree = [...filesPayload]; // 包含所有文件（现有 + 新导入）用于构建文件树
+                
                 try {
-                    const filesResp = await getData(filesQuery, {}, false);
-                    const existingFilesList = filesResp?.data?.list || [];
+                    // 从 fileTree 中提取所有文件节点
+                    const extractFilesFromTree = (nodes) => {
+                        const fileList = [];
+                        const traverse = (node) => {
+                            if (!node || typeof node !== 'object') return;
+                            
+                            // 如果是文件节点，添加到列表
+                            if (node.type === 'file' || (node.type !== 'folder' && !node.children)) {
+                                const fileId = node.id || node.fileId || node.path || '';
+                                if (fileId) {
+                                    fileList.push({
+                                        fileId: fileId,
+                                        id: fileId,
+                                        path: fileId,
+                                        name: node.name || (fileId ? fileId.split('/').pop() : ''),
+                                        content: node.content || '',
+                                        size: node.size || (node.content ? node.content.length : 0),
+                                        key: node.key || node._id,
+                                        projectId: node.projectId || projectId
+                                    });
+                                }
+                            }
+                            
+                            // 递归处理子节点
+                            if (node.children && Array.isArray(node.children)) {
+                                node.children.forEach(child => traverse(child));
+                            }
+                        };
+                        
+                        if (Array.isArray(nodes)) {
+                            nodes.forEach(node => traverse(node));
+                        } else if (nodes) {
+                            traverse(nodes);
+                        }
+                        
+                        return fileList;
+                    };
+                    
+                    // 从当前文件树中提取现有文件
+                    const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
+                    const existingFilesList = root ? extractFilesFromTree(root) : [];
+                    
                     for (const doc of existingFilesList) {
                         const fileId = doc?.fileId || doc?.id || doc?.path;
                         if (fileId) {
@@ -849,10 +889,10 @@ export const useMethods = (store) => {
                             }
                         }
                     }
-                    console.log(`[覆盖导入] 找到 ${existingFilesMap.size} 个已存在的文件`);
+                    console.log(`[覆盖导入] 从文件树中找到 ${existingFilesMap.size} 个已存在的文件`);
                     console.log(`[覆盖导入] 文件树将包含 ${allFilesForTree.length} 个文件（新导入: ${filesPayload.length}，现有保留: ${allFilesForTree.length - filesPayload.length}）`);
                 } catch (e) {
-                    console.warn('[覆盖导入] 获取现有文件列表失败:', e);
+                    console.warn('[覆盖导入] 从文件树提取现有文件列表失败:', e);
                 }
 
                 // 2. 基于所有文件（现有 + 新导入）重新构建完整的文件树
@@ -1062,26 +1102,21 @@ export const useMethods = (store) => {
                         
                         const isExistingFile = existingFile && existingFile.key;
                         
+                        // 注意：不再调用 projectFiles 接口，因为：
+                        // 1. 文件树已经通过 persistFileTree 持久化到 projectTree
+                        // 2. 文件节点已经包含在文件树中，不需要单独调用 projectFiles 接口
+                        // 3. 这样可以避免重复调用，提高性能
+                        
                         if (isExistingFile) {
-                            // 文件已存在，更新它
-                            await updateData(filesQuery, {
-                                key: existingFile.key,
-                                projectId: payload.projectId,
-                                fileId: payload.fileId,
-                                id: payload.id,
-                                path: payload.path,
-                                name: payload.name,
-                                content: payload.content,
-                                size: payload.size
-                            });
+                            // 文件已存在（在文件树中），标记为已更新
+                            // 文件内容已通过文件树更新，不需要单独调用 projectFiles 接口
                             filesUpdated++;
                             filesUploaded++;
                             // 覆盖文件时不生成新会话
-                            console.log(`[数据库保存] 文件已更新（跳过会话同步）: ${fileId}`);
+                            console.log(`[数据库保存] 文件已更新（通过文件树）: ${fileId}`);
                         } else {
-                            // 文件不存在，在 projectTree 中创建文件节点
-                            // 后端会将此操作转换为在 projectTree 中创建/更新文件节点
-                            await postData(`${window.API_URL}/mongodb/?cname=projectFiles`, payload);
+                            // 文件不存在（新文件），标记为已创建
+                            // 文件节点已通过文件树创建，不需要单独调用 projectFiles 接口
                             filesCreated++;
                             filesUploaded++;
                             
@@ -1139,9 +1174,9 @@ export const useMethods = (store) => {
                 // 更新选择到刚上传的项目
                 try { setSelectedProject(projectId); } catch (_) {}
 
-                // 加载界面所需数据
+                // 加载界面所需数据（上传项目后需要重新加载，使用 forceClear: true）
                 await Promise.all([
-                    loadFileTree(projectId),
+                    loadFileTree(projectId, true),  // forceClear: true，上传后需要重新加载
                     loadFiles(projectId),
                     (async () => { try { await loadComments(projectId); } catch (_) {} })()
                 ]);
@@ -2240,10 +2275,10 @@ export const useMethods = (store) => {
                         console.log('[项目切换] 评论者数据已清空');
                     }
 
-                    // 加载文件树和文件数据
+                    // 加载文件树和文件数据（项目切换时需要强制清空旧数据）
                     console.log('[项目切换] 开始加载文件树和文件数据...');
                     await Promise.all([
-                        loadFileTree(projectId),
+                        loadFileTree(projectId, true),  // forceClear: true，切换项目时需要清空旧数据
                         loadFiles(projectId)
                     ]);
                     console.log('[项目切换] 文件树和文件数据加载完成');
@@ -2938,10 +2973,20 @@ export const useMethods = (store) => {
                         throw new Error('会话中没有可保存的内容');
                     }
                     
-                    // 5. 获取文件树根节点
-                    const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
+                    // 5. 获取文件树根节点并验证 fileTreeDocKey
+                    let root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
                     if (!root) {
-                        throw new Error('文件树未加载');
+                        throw new Error('文件树未加载，请先加载项目文件树');
+                    }
+                    
+                    // 验证 fileTreeDocKey 是否存在（持久化需要）
+                    // fileTreeDocKey 在 loadFileTree 时设置，如果为空说明文件树可能未正确加载
+                    // 注意：不要重新加载文件树，因为：
+                    // 1. 重新加载可能导致后端还未完成更新，返回空数据，从而清空文件树
+                    // 2. 如果 fileTreeDocKey 为空，说明文件树可能未正确初始化，应该提示用户刷新页面
+                    if (store.fileTreeDocKey && !store.fileTreeDocKey.value) {
+                        console.warn('[handleSessionTree] fileTreeDocKey 为空，文件树可能未正确初始化');
+                        throw new Error('文件树文档key缺失，无法持久化数据。请刷新页面后重试。');
                     }
                     
                     // 6. 递归查找节点
@@ -3049,15 +3094,39 @@ export const useMethods = (store) => {
                             return false;
                         }
                         
-                        // 用户确认覆盖，删除旧文件
+                        // 用户确认覆盖，直接从文件树中删除旧文件节点（不调用 deleteItem，避免触发 projectFiles 接口）
                         const existingFile = parentNode.children.find(
                             child => child.name === fileName && child.type === 'file'
                         );
                         
-                        if (existingFile?.id) {
+                        if (existingFile) {
                             try {
-                                await deleteItem({ itemId: existingFile.id, projectId });
-                                console.log(`[handleSessionTree] 已删除旧文件: ${existingFile.id}`);
+                                // 保存文件ID用于从本地 files 列表中删除
+                                const existingFileId = existingFile.id;
+                                
+                                // 从文件树中删除节点
+                                parentNode.children = parentNode.children.filter(
+                                    child => !(child.name === fileName && child.type === 'file')
+                                );
+                                
+                                // 从本地 files 列表中删除（如果存在）
+                                if (Array.isArray(files.value) && existingFileId) {
+                                    files.value = files.value.filter(f => {
+                                        const ids = [f.fileId, f.id, f.path].filter(Boolean);
+                                        return !ids.some(v => String(v) === existingFileId);
+                                    });
+                                }
+                                
+                                // 持久化文件树（这会更新 projectTree，旧文件节点已从树中移除）
+                                // 注意：不调用 deleteItem，因为：
+                                // 1. deleteItem 会调用 projectFiles 接口，但我们不需要
+                                // 2. persistFileTree 已经会将更新后的文件树持久化到 projectTree
+                                // 3. 旧文件节点已从树中移除，持久化后会自动从 projectTree 中移除
+                                if (store && typeof store.persistFileTree === 'function') {
+                                    await store.persistFileTree(projectId);
+                                }
+                                
+                                console.log(`[handleSessionTree] 已从文件树中删除旧文件: ${fileName}`);
                             } catch (error) {
                                 console.error(`[handleSessionTree] 删除旧文件失败:`, error);
                                 throw new Error(`删除旧文件失败: ${error.message}`);
@@ -3127,12 +3196,13 @@ export const useMethods = (store) => {
                     
                     const fileContent = buildFileContent(fullSession);
                     
-                    // 创建文件（createFile 会自动创建对应的会话）
+                    // 创建文件（跳过 projectFiles 接口调用，因为 persistFileTree 已经将文件节点持久化到 projectTree 中）
                     await createFile({
                         parentId: targetParentId,
                         name: finalFileName,
                         content: fileContent,
-                        projectId
+                        projectId,
+                        skipProjectFiles: true  // 跳过 projectFiles 接口，避免重复调用
                     });
                     
                     // 14. 删除原始会话（转成树文件后，原始会话不再需要）
