@@ -2817,6 +2817,66 @@ export const useMethods = (store) => {
                     // 如果没有标签，则在根目录创建文件
                     const targetParentId = currentParentId || null;
                     
+                    // 辅助函数：确保文件名有后缀，如果没有则添加 .md
+                    const ensureFileExtension = (fileName) => {
+                        if (!fileName || typeof fileName !== 'string') return fileName;
+                        const lastDot = fileName.lastIndexOf('.');
+                        const lastSlash = fileName.lastIndexOf('/');
+                        // 如果最后一个点不在最后一个斜杠之后，或者没有点，则添加 .md
+                        if (lastDot === -1 || (lastSlash !== -1 && lastDot < lastSlash)) {
+                            return fileName + '.md';
+                        }
+                        return fileName;
+                    };
+                    
+                    // 辅助函数：检查文件是否已存在
+                    const checkFileExists = (parentNode, fileName) => {
+                        if (!parentNode || !parentNode.children || !Array.isArray(parentNode.children)) {
+                            return false;
+                        }
+                        return parentNode.children.some(
+                            child => child.name === fileName && child.type === 'file'
+                        );
+                    };
+                    
+                    // 辅助函数：创建文件（带覆盖检查）
+                    const createFileWithCheck = async (fileName, content, parentId) => {
+                        const finalFileName = ensureFileExtension(fileName);
+                        const parentNode = parentId 
+                            ? (findNodeById(root, parentId) || root)
+                            : root;
+                        
+                        if (checkFileExists(parentNode, finalFileName)) {
+                            const confirmMessage = `文件 "${finalFileName}" 已存在，是否覆盖？`;
+                            if (!confirm(confirmMessage)) {
+                                console.log(`[handleSessionTree] 用户取消覆盖文件: ${finalFileName}`);
+                                return false;
+                            }
+                            
+                            // 用户确认覆盖，先删除旧文件
+                            const existingFile = parentNode.children.find(
+                                child => child.name === finalFileName && child.type === 'file'
+                            );
+                            if (existingFile && existingFile.id) {
+                                try {
+                                    await deleteItem({ itemId: existingFile.id, projectId });
+                                    console.log(`[handleSessionTree] 已删除旧文件: ${existingFile.id}`);
+                                } catch (error) {
+                                    console.error(`[handleSessionTree] 删除旧文件失败:`, error);
+                                    // 继续尝试创建新文件
+                                }
+                            }
+                        }
+                        
+                        await createFile({
+                            parentId: parentId,
+                            name: finalFileName,
+                            content: content,
+                            projectId
+                        });
+                        return true;
+                    };
+                    
                     // 将消息内容转成文件
                     // 将消息按类型分组，user 和 pet 的消息分别保存
                     const userMessages = [];
@@ -2846,14 +2906,10 @@ export const useMethods = (store) => {
                             `[${new Date(msg.timestamp).toLocaleString('zh-CN')}] 用户消息 #${msg.index}\n${msg.content}`
                         ).join('\n\n---\n\n');
                         
-                        const fileName = `用户消息_${pageTitle}.txt`;
-                        await createFile({
-                            parentId: targetParentId,
-                            name: fileName,
-                            content: userContent,
-                            projectId
-                        });
-                        fileCount++;
+                        const fileName = `用户消息_${pageTitle}`;
+                        if (await createFileWithCheck(fileName, userContent, targetParentId)) {
+                            fileCount++;
+                        }
                     }
                     
                     // 创建助手消息文件
@@ -2862,14 +2918,10 @@ export const useMethods = (store) => {
                             `[${new Date(msg.timestamp).toLocaleString('zh-CN')}] 助手消息 #${msg.index}\n${msg.content}`
                         ).join('\n\n---\n\n');
                         
-                        const fileName = `助手消息_${pageTitle}.txt`;
-                        await createFile({
-                            parentId: targetParentId,
-                            name: fileName,
-                            content: petContent,
-                            projectId
-                        });
-                        fileCount++;
+                        const fileName = `助手消息_${pageTitle}`;
+                        if (await createFileWithCheck(fileName, petContent, targetParentId)) {
+                            fileCount++;
+                        }
                     }
                     
                     // 创建完整对话文件（包含所有消息，仅在消息存在时创建）
@@ -2879,38 +2931,26 @@ export const useMethods = (store) => {
                             return `[${new Date(msg.timestamp || Date.now()).toLocaleString('zh-CN')}] ${role} #${index + 1}\n${msg.content || ''}`;
                         }).join('\n\n---\n\n');
                         
-                        const fullFileName = `完整对话_${pageTitle}.txt`;
-                        await createFile({
-                            parentId: targetParentId,
-                            name: fullFileName,
-                            content: allContent,
-                            projectId
-                        });
-                        fileCount++;
+                        const fullFileName = `完整对话_${pageTitle}`;
+                        if (await createFileWithCheck(fullFileName, allContent, targetParentId)) {
+                            fileCount++;
+                        }
                     }
                     
                     // 如果有页面内容，也保存
                     if (pageContent) {
-                        const pageContentFileName = `页面内容_${pageTitle}.txt`;
-                        await createFile({
-                            parentId: targetParentId,
-                            name: pageContentFileName,
-                            content: pageContent,
-                            projectId
-                        });
-                        fileCount++;
+                        const pageContentFileName = `页面内容_${pageTitle}`;
+                        if (await createFileWithCheck(pageContentFileName, pageContent, targetParentId)) {
+                            fileCount++;
+                        }
                     }
                     
                     // 如果有页面描述，也保存
                     if (pageDescription) {
-                        const pageDescriptionFileName = `页面描述_${pageTitle}.txt`;
-                        await createFile({
-                            parentId: targetParentId,
-                            name: pageDescriptionFileName,
-                            content: pageDescription,
-                            projectId
-                        });
-                        fileCount++;
+                        const pageDescriptionFileName = `页面描述_${pageTitle}`;
+                        if (await createFileWithCheck(pageDescriptionFileName, pageDescription, targetParentId)) {
+                            fileCount++;
+                        }
                     }
                     
                     // 创建会话信息文件（包含标题、URL等元信息）
@@ -2924,14 +2964,11 @@ export const useMethods = (store) => {
                         messageCount: messages.length
                     };
                     
+                    // JSON 文件保持 .json 后缀
                     const sessionInfoFileName = `会话信息_${pageTitle}.json`;
-                    await createFile({
-                        parentId: targetParentId,
-                        name: sessionInfoFileName,
-                        content: JSON.stringify(sessionInfo, null, 2),
-                        projectId
-                    });
-                    fileCount++;
+                    if (await createFileWithCheck(sessionInfoFileName, JSON.stringify(sessionInfo, null, 2), targetParentId)) {
+                        fileCount++;
+                    }
                     
                     // 持久化文件树（通过 createFile 已经自动持久化，这里确保刷新）
                     
