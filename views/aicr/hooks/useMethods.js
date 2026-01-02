@@ -3189,7 +3189,8 @@ function ensureTagManagerUi() {
         left: 0 !important;
         right: 0 !important;
         bottom: 0 !important;
-        background: rgba(0, 0, 0, 0.5) !important;
+        background: rgba(15, 23, 42, 0.6) !important;
+        backdrop-filter: blur(4px) !important;
         display: none !important;
         align-items: center !important;
         justify-content: center !important;
@@ -3209,14 +3210,15 @@ function ensureTagManagerUi() {
 
     const panel = document.createElement('div');
     panel.style.cssText = `
-        background: white !important;
-        border-radius: 12px !important;
-        padding: 24px !important;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+        border-radius: 16px !important;
+        padding: 28px !important;
         width: 90% !important;
         max-width: 800px !important;
         max-height: 80vh !important;
         overflow-y: auto !important;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+        border: 1px solid rgba(226, 232, 240, 0.8) !important;
     `;
 
     // 标题
@@ -3232,36 +3234,39 @@ function ensureTagManagerUi() {
     title.textContent = '管理标签';
     title.style.cssText = `
         margin: 0 !important;
-        font-size: 18px !important;
-        font-weight: 600 !important;
-        color: #333 !important;
+        font-size: 20px !important;
+        font-weight: 700 !important;
+        color: #1e293b !important;
+        letter-spacing: -0.02em !important;
     `;
 
     const closeBtn = document.createElement('button');
     closeBtn.className = 'tag-manager-close';
     closeBtn.innerHTML = '✕';
     closeBtn.style.cssText = `
-        background: none !important;
+        background: rgba(241, 245, 249, 0.8) !important;
         border: none !important;
-        font-size: 24px !important;
+        font-size: 20px !important;
         cursor: pointer !important;
-        color: #999 !important;
+        color: #64748b !important;
         padding: 0 !important;
-        width: 30px !important;
-        height: 30px !important;
+        width: 32px !important;
+        height: 32px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        border-radius: 4px !important;
+        border-radius: 8px !important;
         transition: all 0.2s ease !important;
     `;
     closeBtn.addEventListener('mouseenter', () => {
-        closeBtn.style.background = '#f0f0f0';
-        closeBtn.style.color = '#333';
+        closeBtn.style.background = '#f1f5f9';
+        closeBtn.style.color = '#1e293b';
+        closeBtn.style.transform = 'scale(1.05)';
     });
     closeBtn.addEventListener('mouseleave', () => {
-        closeBtn.style.background = 'none';
-        closeBtn.style.color = '#999';
+        closeBtn.style.background = 'rgba(241, 245, 249, 0.8)';
+        closeBtn.style.color = '#64748b';
+        closeBtn.style.transform = 'scale(1)';
     });
 
     header.appendChild(title);
@@ -3282,12 +3287,15 @@ function ensureTagManagerUi() {
     tagInput.placeholder = '输入标签名称，按回车添加';
     tagInput.style.cssText = `
         flex: 1 !important;
-        padding: 10px 12px !important;
-        border: 2px solid #e0e0e0 !important;
-        border-radius: 6px !important;
+        padding: 12px 16px !important;
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 10px !important;
         font-size: 14px !important;
         outline: none !important;
-        transition: border-color 0.2s ease !important;
+        background: #ffffff !important;
+        color: #1e293b !important;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
     `;
     
     tagInput._isComposing = false;
@@ -3299,30 +3307,37 @@ function ensureTagManagerUi() {
     });
     
     tagInput.addEventListener('focus', () => {
-        tagInput.style.borderColor = '#4CAF50';
+        tagInput.style.borderColor = '#6366f1';
+        tagInput.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
     });
     tagInput.addEventListener('blur', () => {
-        tagInput.style.borderColor = '#e0e0e0';
+        tagInput.style.borderColor = '#e2e8f0';
+        tagInput.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
     });
 
     const addBtn = document.createElement('button');
     addBtn.textContent = '添加';
     addBtn.style.cssText = `
-        padding: 10px 20px !important;
-        background: #4CAF50 !important;
+        padding: 12px 24px !important;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
         color: white !important;
         border: none !important;
-        border-radius: 6px !important;
+        border-radius: 10px !important;
         cursor: pointer !important;
         font-size: 14px !important;
-        font-weight: 500 !important;
-        transition: background 0.2s ease !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3) !important;
     `;
     addBtn.addEventListener('mouseenter', () => {
-        addBtn.style.background = '#45a049';
+        addBtn.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+        addBtn.style.boxShadow = '0 6px 12px rgba(16, 185, 129, 0.4)';
+        addBtn.style.transform = 'translateY(-1px)';
     });
     addBtn.addEventListener('mouseleave', () => {
-        addBtn.style.background = '#4CAF50';
+        addBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+        addBtn.style.boxShadow = '0 4px 6px rgba(16, 185, 129, 0.3)';
+        addBtn.style.transform = 'translateY(0)';
     });
     addBtn.addEventListener('click', () => {
         const sessionId = modal.dataset.sessionId;
@@ -3337,25 +3352,30 @@ function ensureTagManagerUi() {
     smartGenerateBtn.className = 'tag-manager-smart-generate';
     smartGenerateBtn.textContent = '✨ 智能生成';
     smartGenerateBtn.style.cssText = `
-        padding: 10px 20px !important;
-        background: #9C27B0 !important;
+        padding: 12px 24px !important;
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
         color: white !important;
         border: none !important;
-        border-radius: 6px !important;
+        border-radius: 10px !important;
         cursor: pointer !important;
         font-size: 14px !important;
-        font-weight: 500 !important;
-        transition: background 0.2s ease !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease !important;
         white-space: nowrap !important;
+        box-shadow: 0 4px 6px rgba(139, 92, 246, 0.3) !important;
     `;
     smartGenerateBtn.addEventListener('mouseenter', () => {
         if (!smartGenerateBtn.disabled) {
-            smartGenerateBtn.style.background = '#7B1FA2';
+            smartGenerateBtn.style.background = 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)';
+            smartGenerateBtn.style.boxShadow = '0 6px 12px rgba(139, 92, 246, 0.4)';
+            smartGenerateBtn.style.transform = 'translateY(-1px)';
         }
     });
     smartGenerateBtn.addEventListener('mouseleave', () => {
         if (!smartGenerateBtn.disabled) {
-            smartGenerateBtn.style.background = '#9C27B0';
+            smartGenerateBtn.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)';
+            smartGenerateBtn.style.boxShadow = '0 4px 6px rgba(139, 92, 246, 0.3)';
+            smartGenerateBtn.style.transform = 'translateY(0)';
         }
     });
     smartGenerateBtn.addEventListener('click', () => {
@@ -3380,48 +3400,140 @@ function ensureTagManagerUi() {
         margin-bottom: 20px !important;
     `;
 
-    // 快捷标签列表
-    const quickTags = ['工具', '开源项目', '家庭', '工作', '娱乐', '文档', 'news', '日记'];
+    // 获取所有标签（与标签筛选模块保持一致）
+    const getAllTags = () => {
+        const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+        const sessions = store?.sessions?.value || [];
+        
+        // 提取所有标签
+        const tagSet = new Set();
+        sessions.forEach(session => {
+            if (session && session.tags && Array.isArray(session.tags)) {
+                session.tags.forEach(tag => {
+                    if (tag && tag.trim()) {
+                        tagSet.add(tag.trim());
+                    }
+                });
+            }
+        });
+        
+        // 按字母顺序排序
+        const allTagsArray = Array.from(tagSet);
+        allTagsArray.sort();
+        
+        // 优先标签列表（与标签筛选模块保持一致）
+        const priorityTags = ['网文', '文档', '工具', '工作', '家庭', '娱乐', '日记', '开源项目'];
+        const priorityTagSet = new Set(priorityTags);
+        const priorityTagList = [];
+        const otherTags = [];
+        
+        // 先添加存在的优先标签（按顺序）
+        priorityTags.forEach(tag => {
+            if (allTagsArray.includes(tag)) {
+                priorityTagList.push(tag);
+            }
+        });
+        
+        // 添加其他标签（按字母顺序）
+        allTagsArray.forEach(tag => {
+            if (!priorityTagSet.has(tag)) {
+                otherTags.push(tag);
+            }
+        });
+        
+        // 合并：优先标签在前，其他标签在后
+        const defaultOrder = [...priorityTagList, ...otherTags];
+        
+        // 应用保存的标签顺序（从 localStorage）
+        try {
+            const saved = localStorage.getItem('aicr_tag_order');
+            const savedOrder = saved ? JSON.parse(saved) : null;
+            if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+                // 使用保存的顺序，但只包含当前存在的标签
+                const orderedTags = savedOrder.filter(tag => tagSet.has(tag));
+                // 添加新标签（不在保存顺序中的）到末尾，按字母顺序
+                const newTags = defaultOrder.filter(tag => !savedOrder.includes(tag));
+                return [...orderedTags, ...newTags];
+            }
+        } catch (e) {
+            console.warn('[标签管理] 加载标签顺序失败:', e);
+        }
+        
+        return defaultOrder;
+    };
     
-    quickTags.forEach(tagName => {
-        const quickTagBtn = document.createElement('button');
-        quickTagBtn.textContent = tagName;
-        quickTagBtn.className = 'tag-manager-quick-tag-btn';
-        quickTagBtn.dataset.tagName = tagName;
-        quickTagBtn.style.cssText = `
-            padding: 6px 12px !important;
-            background: #f0f0f0 !important;
-            color: #333 !important;
-            border: 1px solid #d0d0d0 !important;
-            border-radius: 4px !important;
-            cursor: pointer !important;
+    // 获取所有标签
+    const quickTags = getAllTags();
+    
+    // 如果没有标签，显示提示
+    if (quickTags.length === 0) {
+        const emptyHint = document.createElement('div');
+        emptyHint.textContent = '暂无可用标签';
+        emptyHint.style.cssText = `
+            width: 100% !important;
+            text-align: center !important;
+            color: #94a3b8 !important;
+            padding: 12px !important;
             font-size: 13px !important;
-            transition: all 0.2s ease !important;
+            font-weight: 500 !important;
         `;
-        quickTagBtn.addEventListener('mouseenter', () => {
-            if (quickTagBtn.style.background !== 'rgb(76, 175, 80)') {
-                quickTagBtn.style.background = '#e0e0e0';
-                quickTagBtn.style.borderColor = '#4CAF50';
+        quickTagsContainer.appendChild(emptyHint);
+    } else {
+        // 获取当前会话的标签（用于判断快捷标签是否已添加）
+        const sessionId = modal.dataset.sessionId;
+        const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+        const sessions = store?.sessions?.value || [];
+        const session = sessions.find(s => s && s.id === sessionId);
+        const currentTags = session?.tags || [];
+        
+        quickTags.forEach(tagName => {
+            const isAdded = currentTags && currentTags.includes(tagName);
+            const quickTagBtn = document.createElement('button');
+            quickTagBtn.textContent = tagName;
+            quickTagBtn.className = 'tag-manager-quick-tag-btn';
+            quickTagBtn.dataset.tagName = tagName;
+            quickTagBtn.style.cssText = `
+                padding: 8px 16px !important;
+                background: ${isAdded ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#f1f5f9'} !important;
+                color: ${isAdded ? 'white' : '#475569'} !important;
+                border: 1.5px solid ${isAdded ? '#10b981' : '#e2e8f0'} !important;
+                border-radius: 8px !important;
+                cursor: ${isAdded ? 'not-allowed' : 'pointer'} !important;
+                font-size: 13px !important;
+                font-weight: 500 !important;
+                transition: all 0.2s ease !important;
+                opacity: ${isAdded ? '0.8' : '1'} !important;
+                box-shadow: ${isAdded ? '0 2px 4px rgba(16, 185, 129, 0.2)' : 'none'} !important;
+            `;
+            
+            if (!isAdded) {
+                quickTagBtn.addEventListener('mouseenter', () => {
+                    quickTagBtn.style.background = '#e2e8f0';
+                    quickTagBtn.style.borderColor = '#6366f1';
+                    quickTagBtn.style.color = '#6366f1';
+                    quickTagBtn.style.transform = 'translateY(-1px)';
+                });
+                quickTagBtn.addEventListener('mouseleave', () => {
+                    quickTagBtn.style.background = '#f1f5f9';
+                    quickTagBtn.style.borderColor = '#e2e8f0';
+                    quickTagBtn.style.color = '#475569';
+                    quickTagBtn.style.transform = 'translateY(0)';
+                });
             }
+            
+            quickTagBtn.addEventListener('click', () => {
+                if (isAdded || quickTagBtn.style.cursor === 'not-allowed') {
+                    return;
+                }
+                const sessionId = modal.dataset.sessionId;
+                if (sessionId) {
+                    const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+                    addQuickTag(sessionId, tagName, modal, store);
+                }
+            });
+            quickTagsContainer.appendChild(quickTagBtn);
         });
-        quickTagBtn.addEventListener('mouseleave', () => {
-            if (quickTagBtn.style.background !== 'rgb(76, 175, 80)') {
-                quickTagBtn.style.background = '#f0f0f0';
-                quickTagBtn.style.borderColor = '#d0d0d0';
-            }
-        });
-        quickTagBtn.addEventListener('click', () => {
-            if (quickTagBtn.style.cursor === 'not-allowed') {
-                return;
-            }
-            const sessionId = modal.dataset.sessionId;
-            if (sessionId) {
-                const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
-                addQuickTag(sessionId, tagName, modal, store);
-            }
-        });
-        quickTagsContainer.appendChild(quickTagBtn);
-    });
+    }
 
     // 标签列表
     const tagsContainer = document.createElement('div');
@@ -3431,9 +3543,10 @@ function ensureTagManagerUi() {
         max-height: 300px !important;
         overflow-y: auto !important;
         margin-bottom: 20px !important;
-        padding: 12px !important;
-        background: #f8f9fa !important;
-        border-radius: 6px !important;
+        padding: 16px !important;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+        border-radius: 12px !important;
+        border: 1px solid #e2e8f0 !important;
     `;
 
     // 底部按钮
@@ -3447,20 +3560,25 @@ function ensureTagManagerUi() {
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = '取消';
     cancelBtn.style.cssText = `
-        padding: 10px 20px !important;
-        background: #f0f0f0 !important;
-        color: #333 !important;
-        border: none !important;
-        border-radius: 6px !important;
+        padding: 12px 24px !important;
+        background: #f1f5f9 !important;
+        color: #475569 !important;
+        border: 1.5px solid #e2e8f0 !important;
+        border-radius: 10px !important;
         cursor: pointer !important;
         font-size: 14px !important;
-        transition: background 0.2s ease !important;
+        font-weight: 500 !important;
+        transition: all 0.2s ease !important;
     `;
     cancelBtn.addEventListener('mouseenter', () => {
-        cancelBtn.style.background = '#e0e0e0';
+        cancelBtn.style.background = '#e2e8f0';
+        cancelBtn.style.borderColor = '#cbd5e1';
+        cancelBtn.style.color = '#334155';
     });
     cancelBtn.addEventListener('mouseleave', () => {
-        cancelBtn.style.background = '#f0f0f0';
+        cancelBtn.style.background = '#f1f5f9';
+        cancelBtn.style.borderColor = '#e2e8f0';
+        cancelBtn.style.color = '#475569';
     });
     cancelBtn.addEventListener('click', () => {
         const sessionId = modal.dataset.sessionId;
@@ -3474,21 +3592,26 @@ function ensureTagManagerUi() {
     saveBtn.className = 'tag-manager-save';
     saveBtn.textContent = '保存';
     saveBtn.style.cssText = `
-        padding: 10px 20px !important;
-        background: #2196F3 !important;
+        padding: 12px 24px !important;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
         color: white !important;
         border: none !important;
-        border-radius: 6px !important;
+        border-radius: 10px !important;
         cursor: pointer !important;
         font-size: 14px !important;
-        font-weight: 500 !important;
-        transition: background 0.2s ease !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3) !important;
     `;
     saveBtn.addEventListener('mouseenter', () => {
-        saveBtn.style.background = '#1976D2';
+        saveBtn.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
+        saveBtn.style.boxShadow = '0 6px 12px rgba(59, 130, 246, 0.4)';
+        saveBtn.style.transform = 'translateY(-1px)';
     });
     saveBtn.addEventListener('mouseleave', () => {
-        saveBtn.style.background = '#2196F3';
+        saveBtn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+        saveBtn.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.3)';
+        saveBtn.style.transform = 'translateY(0)';
     });
 
     footer.appendChild(cancelBtn);
@@ -3501,6 +3624,48 @@ function ensureTagManagerUi() {
     panel.appendChild(footer);
     modal.appendChild(panel);
     document.body.appendChild(modal);
+    
+    // 添加拖拽样式（通过 style 标签注入）
+    if (!document.getElementById('tag-manager-drag-styles')) {
+        const style = document.createElement('style');
+        style.id = 'tag-manager-drag-styles';
+        style.textContent = `
+            .tag-manager-tag-item.tag-dragging {
+                opacity: 0.5 !important;
+                transform: scale(0.95) !important;
+            }
+            .tag-manager-tag-item.tag-drag-over-top::before {
+                content: '' !important;
+                position: absolute !important;
+                top: -2px !important;
+                left: 0 !important;
+                right: 0 !important;
+                height: 3px !important;
+                background: #6366f1 !important;
+                border-radius: 2px !important;
+                z-index: 10 !important;
+            }
+            .tag-manager-tag-item.tag-drag-over-bottom::after {
+                content: '' !important;
+                position: absolute !important;
+                bottom: -2px !important;
+                left: 0 !important;
+                right: 0 !important;
+                height: 3px !important;
+                background: #6366f1 !important;
+                border-radius: 2px !important;
+                z-index: 10 !important;
+            }
+            .tag-manager-tag-item.tag-drag-hover {
+                transform: scale(1.05) !important;
+                box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3) !important;
+            }
+            .tag-manager-tag-item {
+                position: relative !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
 }
 
 // 加载标签到管理器
@@ -3520,26 +3685,49 @@ function loadTagsIntoManager(sessionId, tags, modal) {
         emptyMsg.textContent = '暂无标签';
         emptyMsg.style.cssText = `
             text-align: center !important;
-            color: #999 !important;
+            color: #94a3b8 !important;
             padding: 20px !important;
             font-size: 14px !important;
+            font-weight: 500 !important;
         `;
         tagsContainer.appendChild(emptyMsg);
         return;
     }
 
+    // 标签颜色方案（更丰富的配色）
+    const tagColors = [
+        { bg: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', text: 'white' },
+        { bg: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', text: 'white' },
+        { bg: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', text: 'white' },
+        { bg: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', text: 'white' },
+        { bg: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', text: 'white' },
+        { bg: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)', text: 'white' },
+        { bg: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)', text: 'white' },
+        { bg: 'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)', text: 'white' }
+    ];
+    
     tags.forEach((tag, index) => {
+        const colorScheme = tagColors[index % tagColors.length];
         const tagItem = document.createElement('div');
+        tagItem.className = 'tag-manager-tag-item';
+        tagItem.dataset.tagName = tag;
+        tagItem.dataset.tagIndex = index;
+        tagItem.draggable = true;
         tagItem.style.cssText = `
             display: inline-flex !important;
             align-items: center !important;
             gap: 8px !important;
-            background: #4CAF50 !important;
-            color: white !important;
-            padding: 6px 12px !important;
+            background: ${colorScheme.bg} !important;
+            color: ${colorScheme.text} !important;
+            padding: 8px 14px !important;
             border-radius: 20px !important;
             margin: 4px !important;
             font-size: 13px !important;
+            font-weight: 500 !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+            transition: all 0.2s ease !important;
+            cursor: move !important;
+            user-select: none !important;
         `;
 
         const tagText = document.createElement('span');
@@ -3548,33 +3736,173 @@ function loadTagsIntoManager(sessionId, tags, modal) {
         const removeBtn = document.createElement('button');
         removeBtn.innerHTML = '✕';
         removeBtn.style.cssText = `
-            background: rgba(255, 255, 255, 0.3) !important;
+            background: rgba(255, 255, 255, 0.25) !important;
             border: none !important;
             color: white !important;
-            width: 18px !important;
-            height: 18px !important;
+            width: 20px !important;
+            height: 20px !important;
             border-radius: 50% !important;
             cursor: pointer !important;
-            font-size: 12px !important;
+            font-size: 13px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             padding: 0 !important;
-            transition: background 0.2s ease !important;
+            transition: all 0.2s ease !important;
+            font-weight: 600 !important;
+            flex-shrink: 0 !important;
         `;
         removeBtn.addEventListener('mouseenter', () => {
-            removeBtn.style.background = 'rgba(255, 255, 255, 0.5)';
+            removeBtn.style.background = 'rgba(255, 255, 255, 0.4)';
+            removeBtn.style.transform = 'scale(1.1)';
         });
         removeBtn.addEventListener('mouseleave', () => {
-            removeBtn.style.background = 'rgba(255, 255, 255, 0.3)';
+            removeBtn.style.background = 'rgba(255, 255, 255, 0.25)';
+            removeBtn.style.transform = 'scale(1)';
         });
         removeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            e.preventDefault(); // 防止触发拖拽
             const sessionId = modal.dataset.sessionId;
             if (sessionId) {
                 const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
                 removeTag(sessionId, index, modal, store);
             }
+        });
+        
+        // 防止删除按钮触发拖拽
+        removeBtn.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+        });
+
+        // 拖拽开始
+        tagItem.addEventListener('dragstart', (e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', tag);
+            e.dataTransfer.setData('application/tag-index', index.toString());
+            tagItem.classList.add('tag-dragging');
+            
+            // 设置自定义拖拽图像
+            const dragImage = tagItem.cloneNode(true);
+            dragImage.style.opacity = '0.8';
+            dragImage.style.transform = 'rotate(3deg)';
+            dragImage.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.3)';
+            dragImage.style.position = 'absolute';
+            dragImage.style.top = '-1000px';
+            document.body.appendChild(dragImage);
+            e.dataTransfer.setDragImage(dragImage, e.offsetX, e.offsetY);
+            
+            setTimeout(() => {
+                if (dragImage.parentNode) {
+                    dragImage.parentNode.removeChild(dragImage);
+                }
+            }, 0);
+        });
+
+        // 拖拽结束
+        tagItem.addEventListener('dragend', (e) => {
+            tagItem.classList.remove('tag-dragging');
+            
+            // 移除所有拖拽相关的样式
+            const allTagItems = tagsContainer.querySelectorAll('.tag-manager-tag-item');
+            allTagItems.forEach(item => {
+                item.classList.remove('tag-drag-over-top', 'tag-drag-over-bottom', 'tag-drag-hover');
+            });
+        });
+
+        // 拖拽经过
+        tagItem.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'move';
+            
+            if (tagItem.classList.contains('tag-dragging')) {
+                return;
+            }
+            
+            const rect = tagItem.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            
+            // 移除所有拖拽指示样式
+            const allTagItems = tagsContainer.querySelectorAll('.tag-manager-tag-item');
+            allTagItems.forEach(item => {
+                if (!item.classList.contains('tag-dragging')) {
+                    item.classList.remove('tag-drag-over-top', 'tag-drag-over-bottom', 'tag-drag-hover');
+                }
+            });
+            
+            // 根据鼠标位置显示插入位置指示
+            if (e.clientY < midY) {
+                tagItem.classList.add('tag-drag-over-top');
+                tagItem.classList.remove('tag-drag-over-bottom');
+            } else {
+                tagItem.classList.add('tag-drag-over-bottom');
+                tagItem.classList.remove('tag-drag-over-top');
+            }
+            
+            tagItem.classList.add('tag-drag-hover');
+        });
+
+        // 拖拽离开
+        tagItem.addEventListener('dragleave', (e) => {
+            const rect = tagItem.getBoundingClientRect();
+            const x = e.clientX;
+            const y = e.clientY;
+            
+            if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+                tagItem.classList.remove('tag-drag-over-top', 'tag-drag-over-bottom', 'tag-drag-hover');
+            }
+        });
+
+        // 放置
+        tagItem.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const draggedTag = e.dataTransfer.getData('text/plain');
+            const draggedIndex = parseInt(e.dataTransfer.getData('application/tag-index') || '0', 10);
+            const targetIndex = parseInt(tagItem.dataset.tagIndex || '0', 10);
+            
+            if (draggedTag === tag || draggedIndex === targetIndex) {
+                return;
+            }
+            
+            const sessionId = modal.dataset.sessionId;
+            if (!sessionId) return;
+            
+            const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+            const sessions = store?.sessions?.value || [];
+            const session = sessions.find(s => s && s.id === sessionId);
+            if (!session || !session.tags) return;
+            
+            // 计算新的插入位置
+            const rect = tagItem.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            let insertIndex = targetIndex;
+            if (e.clientY < midY) {
+                insertIndex = targetIndex;
+            } else {
+                insertIndex = targetIndex + 1;
+            }
+            
+            // 调整插入位置（如果拖拽的元素在目标位置之前，需要减1）
+            if (draggedIndex < insertIndex) {
+                insertIndex -= 1;
+            }
+            
+            // 重新排序标签数组
+            const newTags = [...session.tags];
+            newTags.splice(draggedIndex, 1);
+            newTags.splice(insertIndex, 0, draggedTag);
+            
+            // 更新会话标签
+            session.tags = newTags;
+            
+            // 重新加载标签列表
+            loadTagsIntoManager(sessionId, session.tags, modal);
+            
+            // 更新快捷标签按钮状态
+            updateQuickTagButtons(modal, session.tags);
         });
 
         tagItem.appendChild(tagText);
@@ -3583,23 +3911,182 @@ function loadTagsIntoManager(sessionId, tags, modal) {
     });
 
     // 更新快捷标签按钮状态
+    updateQuickTagButtons(modal, tags);
+}
+
+// 更新快捷标签按钮状态
+function updateQuickTagButtons(modal, currentTags) {
+    if (!modal) return;
+    
     const quickTagButtons = modal.querySelectorAll('.tag-manager-quick-tag-btn');
     quickTagButtons.forEach(btn => {
         const tagName = btn.dataset.tagName;
-        const isAdded = tags && tags.includes(tagName);
+        const isAdded = currentTags && currentTags.includes(tagName);
+        
         if (isAdded) {
-            btn.style.background = '#4CAF50';
+            btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
             btn.style.color = 'white';
-            btn.style.borderColor = '#4CAF50';
-            btn.style.opacity = '0.7';
+            btn.style.borderColor = '#10b981';
+            btn.style.opacity = '0.8';
             btn.style.cursor = 'not-allowed';
+            btn.style.boxShadow = '0 2px 4px rgba(16, 185, 129, 0.2)';
         } else {
-            btn.style.background = '#f0f0f0';
-            btn.style.color = '#333';
-            btn.style.borderColor = '#d0d0d0';
+            btn.style.background = '#f1f5f9';
+            btn.style.color = '#475569';
+            btn.style.borderColor = '#e2e8f0';
             btn.style.opacity = '1';
             btn.style.cursor = 'pointer';
+            btn.style.boxShadow = 'none';
         }
+    });
+}
+
+// 刷新快捷标签列表（当标签变化时）
+function refreshQuickTags(modal) {
+    if (!modal) return;
+    
+    const quickTagsContainer = modal.querySelector('.tag-manager-quick-tags');
+    if (!quickTagsContainer) return;
+    
+    // 获取所有标签（与标签筛选模块保持一致）
+    const getAllTags = () => {
+        const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+        const sessions = store?.sessions?.value || [];
+        
+        // 提取所有标签
+        const tagSet = new Set();
+        sessions.forEach(session => {
+            if (session && session.tags && Array.isArray(session.tags)) {
+                session.tags.forEach(tag => {
+                    if (tag && tag.trim()) {
+                        tagSet.add(tag.trim());
+                    }
+                });
+            }
+        });
+        
+        // 按字母顺序排序
+        const allTagsArray = Array.from(tagSet);
+        allTagsArray.sort();
+        
+        // 优先标签列表（与标签筛选模块保持一致）
+        const priorityTags = ['网文', '文档', '工具', '工作', '家庭', '娱乐', '日记', '开源项目'];
+        const priorityTagSet = new Set(priorityTags);
+        const priorityTagList = [];
+        const otherTags = [];
+        
+        // 先添加存在的优先标签（按顺序）
+        priorityTags.forEach(tag => {
+            if (allTagsArray.includes(tag)) {
+                priorityTagList.push(tag);
+            }
+        });
+        
+        // 添加其他标签（按字母顺序）
+        allTagsArray.forEach(tag => {
+            if (!priorityTagSet.has(tag)) {
+                otherTags.push(tag);
+            }
+        });
+        
+        // 合并：优先标签在前，其他标签在后
+        const defaultOrder = [...priorityTagList, ...otherTags];
+        
+        // 应用保存的标签顺序（从 localStorage）
+        try {
+            const saved = localStorage.getItem('aicr_tag_order');
+            const savedOrder = saved ? JSON.parse(saved) : null;
+            if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+                // 使用保存的顺序，但只包含当前存在的标签
+                const orderedTags = savedOrder.filter(tag => tagSet.has(tag));
+                // 添加新标签（不在保存顺序中的）到末尾，按字母顺序
+                const newTags = defaultOrder.filter(tag => !savedOrder.includes(tag));
+                return [...orderedTags, ...newTags];
+            }
+        } catch (e) {
+            console.warn('[标签管理] 加载标签顺序失败:', e);
+        }
+        
+        return defaultOrder;
+    };
+    
+    // 获取所有标签
+    const quickTags = getAllTags();
+    
+    // 清空现有按钮
+    quickTagsContainer.innerHTML = '';
+    
+    // 如果没有标签，显示提示
+    if (quickTags.length === 0) {
+        const emptyHint = document.createElement('div');
+        emptyHint.textContent = '暂无可用标签';
+        emptyHint.style.cssText = `
+            width: 100% !important;
+            text-align: center !important;
+            color: #94a3b8 !important;
+            padding: 12px !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+        `;
+        quickTagsContainer.appendChild(emptyHint);
+        return;
+    }
+    
+    // 获取当前会话的标签
+    const sessionId = modal.dataset.sessionId;
+    const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+    const sessions = store?.sessions?.value || [];
+    const session = sessions.find(s => s && s.id === sessionId);
+    const currentTags = session?.tags || [];
+    
+    // 创建快捷标签按钮
+    quickTags.forEach(tagName => {
+        const isAdded = currentTags && currentTags.includes(tagName);
+        const quickTagBtn = document.createElement('button');
+        quickTagBtn.textContent = tagName;
+        quickTagBtn.className = 'tag-manager-quick-tag-btn';
+        quickTagBtn.dataset.tagName = tagName;
+        quickTagBtn.style.cssText = `
+            padding: 8px 16px !important;
+            background: ${isAdded ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#f1f5f9'} !important;
+            color: ${isAdded ? 'white' : '#475569'} !important;
+            border: 1.5px solid ${isAdded ? '#10b981' : '#e2e8f0'} !important;
+            border-radius: 8px !important;
+            cursor: ${isAdded ? 'not-allowed' : 'pointer'} !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            transition: all 0.2s ease !important;
+            opacity: ${isAdded ? '0.8' : '1'} !important;
+            box-shadow: ${isAdded ? '0 2px 4px rgba(16, 185, 129, 0.2)' : 'none'} !important;
+        `;
+        
+        if (!isAdded) {
+            quickTagBtn.addEventListener('mouseenter', () => {
+                quickTagBtn.style.background = '#e2e8f0';
+                quickTagBtn.style.borderColor = '#6366f1';
+                quickTagBtn.style.color = '#6366f1';
+                quickTagBtn.style.transform = 'translateY(-1px)';
+            });
+            quickTagBtn.addEventListener('mouseleave', () => {
+                quickTagBtn.style.background = '#f1f5f9';
+                quickTagBtn.style.borderColor = '#e2e8f0';
+                quickTagBtn.style.color = '#475569';
+                quickTagBtn.style.transform = 'translateY(0)';
+            });
+        }
+        
+        quickTagBtn.addEventListener('click', () => {
+            if (isAdded || quickTagBtn.style.cursor === 'not-allowed') {
+                return;
+            }
+            const sessionId = modal.dataset.sessionId;
+            if (sessionId) {
+                const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+                addQuickTag(sessionId, tagName, modal, store);
+            }
+        });
+        
+        quickTagsContainer.appendChild(quickTagBtn);
     });
 }
 
@@ -3638,6 +4125,14 @@ function addTagFromInput(sessionId, modal, store) {
 
     // 重新加载标签列表
     loadTagsIntoManager(sessionId, session.tags, modal);
+    
+    // 更新快捷标签按钮状态
+    updateQuickTagButtons(modal, session.tags);
+    
+    // 如果添加了新标签，刷新快捷标签列表
+    setTimeout(() => {
+        refreshQuickTags(modal);
+    }, 100);
 }
 
 // 添加快捷标签
@@ -3665,6 +4160,9 @@ function addQuickTag(sessionId, tagName, modal, store) {
 
     // 重新加载标签列表
     loadTagsIntoManager(sessionId, session.tags, modal);
+    
+    // 更新快捷标签按钮状态
+    updateQuickTagButtons(modal, session.tags);
 }
 
 // 删除标签
@@ -3675,6 +4173,14 @@ function removeTag(sessionId, index, modal, store) {
 
     session.tags.splice(index, 1);
     loadTagsIntoManager(sessionId, session.tags, modal);
+    
+    // 更新快捷标签按钮状态
+    updateQuickTagButtons(modal, session.tags);
+    
+    // 如果删除的标签不再被任何会话使用，刷新快捷标签列表
+    setTimeout(() => {
+        refreshQuickTags(modal);
+    }, 100);
 }
 
 // 智能生成标签
@@ -3700,13 +4206,14 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
         return;
     }
 
-    // 禁用按钮，显示加载状态
-    if (buttonElement) {
-        buttonElement.disabled = true;
-        buttonElement.style.background = '#ccc';
-        buttonElement.style.cursor = 'not-allowed';
-        const originalText = buttonElement.textContent;
-        buttonElement.textContent = '生成中...';
+        // 禁用按钮，显示加载状态
+        if (buttonElement) {
+            buttonElement.disabled = true;
+            buttonElement.style.background = 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)';
+            buttonElement.style.cursor = 'not-allowed';
+            buttonElement.style.boxShadow = '0 2px 4px rgba(148, 163, 184, 0.2)';
+            const originalText = buttonElement.textContent;
+            buttonElement.textContent = '生成中...';
         
         try {
             // 收集页面上下文信息
@@ -3815,6 +4322,13 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
             if (addedCount > 0) {
                 // 重新加载标签列表
                 loadTagsIntoManager(sessionId, session.tags, modal);
+                
+                // 更新快捷标签按钮状态和列表
+                updateQuickTagButtons(modal, session.tags);
+                setTimeout(() => {
+                    refreshQuickTags(modal);
+                }, 100);
+                
                 console.log(`成功生成并添加 ${addedCount} 个标签:`, generatedTags.filter(tag => session.tags.includes(tag.trim())));
             } else {
                 console.log('生成的标签都已存在，未添加新标签');
@@ -3837,13 +4351,15 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
                 : `生成标签失败：${errorMessage}`;
             errorDiv.textContent = errorText;
             errorDiv.style.cssText = `
-                padding: 10px 15px !important;
+                padding: 12px 16px !important;
                 margin: 10px 0 !important;
-                background: #ffebee !important;
-                color: #c62828 !important;
-                border: 1px solid #ef5350 !important;
-                border-radius: 6px !important;
+                background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+                color: #dc2626 !important;
+                border: 1.5px solid #fca5a5 !important;
+                border-radius: 10px !important;
                 font-size: 13px !important;
+                font-weight: 500 !important;
+                box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1) !important;
                 animation: fadeIn 0.3s ease !important;
             `;
             
@@ -3873,8 +4389,9 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
             // 恢复按钮状态
             if (buttonElement) {
                 buttonElement.disabled = false;
-                buttonElement.style.background = '#9C27B0';
+                buttonElement.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)';
                 buttonElement.style.cursor = 'pointer';
+                buttonElement.style.boxShadow = '0 4px 6px rgba(139, 92, 246, 0.3)';
                 buttonElement.textContent = '✨ 智能生成';
             }
         }
