@@ -3010,26 +3010,9 @@ export const useMethods = (store) => {
                             console.warn(`[handleSessionTree] 删除自动创建的会话失败:`, error);
                         }
                         
-                        // 创建我们自己的会话（使用文件ID作为会话ID，确保只有一个会话）
-                        const now = Date.now();
-                        const sessionData = {
-                            id: fileId,
-                            url: `aicr-session://${now}-${Math.random().toString(36).substring(2, 11)}`,
-                            title: pageTitle,
-                            pageTitle: pageTitle,
-                            pageDescription: pageDescription,
-                            pageContent: unifiedContent,
-                            messages: messages,
-                            tags: tags,
-                            createdAt: now,
-                            updatedAt: now
-                        };
-                        await sessionSync.saveSession(sessionData);
-                        console.log(`[handleSessionTree] 已创建文件会话: ${fileId}`);
-                        
-                        // 删除原始会话
+                        // 删除原始会话（转成树文件时只保留新生成的 md，不创建新会话）
                         const originalSessionId = fullSession.id || session.id;
-                        if (originalSessionId && originalSessionId !== fileId && originalSessionId !== autoSessionId) {
+                        if (originalSessionId) {
                             try {
                                 await sessionSync.deleteSession(originalSessionId);
                                 console.log(`[handleSessionTree] 已删除原始会话: ${originalSessionId}`);
