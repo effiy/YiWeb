@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YiWeb - 代码审查</title>
+    <link rel="stylesheet" href="../../views/aicr/index.css">
+    <link rel="stylesheet" href="../../views/aicr/components/sessionList/index.css">
+    <link rel="stylesheet" href="../../libs/font-awesome/css/all.min.css">
+    <script src="../../libs/vue/vue.global.js"></script>
+    <!-- Marked.js for Markdown rendering -->
+    <script src="../../libs/marked/marked.min.js"></script>
+    <!-- Mermaid.js for diagram rendering -->
+    <script src="../../libs/mermaid/mermaid.min.js"></script>
+</head>
+<body>
+    <div id="app">
+      <!-- 顶部搜索与分类区域 -->
+      <header class="header-row" role="banner">
+        <section class="search-row">
+            <form class="search-box" role="search" aria-label="代码审查搜索">
+                <span class="search-logo" aria-hidden="true" @click="openLink('/index.html')">
+                    <i class="fas fa-globe" aria-label="代码审查图标"></i>
+                </span>
+                <div class="search-input-wrapper">
+                    <label for="messageInput" class="visually-hidden">搜索输入框</label>
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="搜索网站、标签或描述..." 
+                        rows="1" 
+                        maxlength="2000"
+                        aria-label="搜索输入框"
+                        aria-describedby="category-filters"
+                        autocomplete="off"
+                        spellcheck="false"
+                        @keydown="handleMessageInput"
+                        @compositionstart="handleCompositionStart"
+                        @compositionend="handleCompositionEnd"
+                        @input="handleSearchInput"></textarea>
+                    
+                    <!-- 清除搜索按钮 -->
+                    <div class="search-clear" v-if="searchQueryValue">
+                        <button 
+                            type="button"
+                            @click.prevent="clearSearch"
+                            class="clear-search-btn"
+                            title="清除搜索"
+                            aria-label="清除搜索内容"
+                        >
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- 项目选择器 -->
+            <nav class="category-filters" id="category-filters" role="toolbar" aria-label="项目过滤器">
+                <ul class="filter-buttons">
+                    <!-- 项目选择器 -->
+                    <li>
+                        <label class="visually-hidden" for="projectSelect">项目选择器</label>
+                        <select 
+                            id="projectSelect"
+                            class="filter-btn project-select"
+                            v-model="selectedProject"
+                            @change="handleProjectChange($event.target.value)"
+                            :disabled="loading"
+                            :title="selectedProject ? `当前项目: ${selectedProject}` : '选择项目'"
+                            aria-label="项目选择器"
+                        >
+                            <option value="" disabled>选择项目</option>
+                            <option 
+                                v-for="project in projects" 
+                                :key="project.id" 
+                                :value="project.id"
+                                :title="`选择项目: ${project.id}`">
+                                {{ project.id }}
+                            </option>
+                        </select>
+                    </li>
+                </ul>
+            </nav>
+            
+        </section>
+        </header>
+        <main class="aicr-main">
+            <aside class="aicr-sidebar" aria-label="侧边栏" v-show="!sidebarCollapsed" :style="{ width: sidebarWidth + 'px' }">
+                <!-- 共享搜索容器（两种视图模式共用） -->
+                <div v-if="!sidebarCollapsed" class="file-tree-header-container">
+                    <!-- 会话批量操作工具栏（仅在标签视图的批量模式下显示） -->
+                    <div v-if="viewMode === 'tags' && sessionBatchMode" class="session-batch-toolbar">
+                        <span class="batch-toolbar-selected-count" :class="{ 'has-selection': selectedSessionIds && selectedSessionIds.size > 0 }">
+                            已选择 {{ selectedSessionIds ? selectedSessionIds.size : 0 }} 个
+                        </span>
+                        <button 
+                            type="button"
+                            class="batch-toolbar-btn batch-toolbar-select-all"
+                            @click="handleToggleSelectAllSessions"
+                            :title="isAllSessionsSelected ? '取消全选' : '全选'"
+                            aria-label="全选/取消全选">
+                            {{ isAllSessionsSelected ? '取消全选' : '全选' }}
+                        </button>
+                        <button 
+                            type="button"
+                            class="batch-toolbar-btn batch-toolbar-delete"
+                            @click="handleBatchDeleteSessions"
+                            :disabled="!selectedSessionIds || selectedSessionIds.size === 0"
+                            :title="selectedSessionIds && selectedSessionIds.size > 0 ? `删除选中的 ${selectedSessionIds.size} 个会话` : '请先选择要删除的会话'"
+                            aria-label="批量删除会话">
+                            <i class="fas fa-trash" aria-hidden="true"></i>
+                            <span>删除</span>
+                        </button>
+                        <button 
+                            type="button"
+                            class="batch-toolbar-btn batch-toolbar-cancel"
+                            @click="toggleSessionBatchMode"
+                            title="退出批量选择模式"
+                            aria-label="退出批量选择">
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                            <span>取消</span>
+                        </button>
+                    </div>
+                    
+                    <!-- 搜索输入框和视图切换 -->
+                    <div class="file-tree-search-container">
+                        <div class="file-tree-search-wrapper">
+                            <span class="file-tree-search-icon">🔍</span>
+                            <input
+                                type="text"
+                                class="file-tree-search-input"
+                                :value="viewMode === 'tree' ? (searchQuery || '') : (sessionSearchQuery || '')"
+                                @input="viewMode === 'tree' ? handleSearchInput($event) : handleSessionSearchChange($event.target.value)"
+                                @keydown.esc="viewMode === 'tree' ? clearSearch() : handleSessionSearchChange('')"
+                                :placeholder="viewMode === 'tree' ? '搜索文件...' : '搜索会话...'"
+                                aria-label="搜索"
+                            />
+                            <button
+                                v-if="(viewMode === 'tree' && searchQuery) || (viewMode === 'tags' && sessionSearchQuery)"
+                                class="file-tree-search-clear"
+                                @click="viewMode === 'tree' ? clearSearch() : handleSessionSearchChange('')"
+                                type="button"
+                                aria-label="清除搜索"
+                                title="清除搜索 (ESC)"
+                            >
+                                ✕
+                            </button>
+                            <!-- 视图切换按钮（集成在搜索框内） -->
+                            <div class="view-mode-toggle">
+                                <button 
+                                    type="button"
+                                    class="view-mode-btn"
+                                    :class="{ 'active': viewMode === 'tree' }"
+                                    @click="setViewMode('tree')"
+                                    :disabled="loading"
+                                    title="树形视图"
+                                    aria-label="切换到树形视图">
+                                    <i class="fas fa-sitemap" aria-hidden="true"></i>
+                                </button>
+                                <button 
+                                    type="button"
+                                    class="view-mode-btn"
+                                    :class="{ 'active': viewMode === 'tags' }"
+                                    @click="setViewMode('tags')"
+                                    :disabled="loading"
+                                    title="标签视图"
+                                    aria-label="切换到标签视图">
+                                    <i class="fas fa-tags" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 工具栏（两种视图模式都显示） -->
+                    <div class="file-tree-toolbar">
+                        <!-- 树形视图工具栏 -->
+                        <template v-if="viewMode === 'tree'">
+                            <div class="toolbar-group">
+                                <!-- 批量选择按钮 -->
+                                <button 
+                                    type="button"
+                                    class="toolbar-btn"
+                                    :class="{ 'active': batchMode }"
+                                    @click="toggleBatchMode"
+                                    :title="batchMode ? '退出批量选择' : '批量选择'"
+                                    aria-label="批量选择">
+                                    <i class="fas" :class="batchMode ? 'fa-check-square' : 'fa-square'" aria-hidden="true"></i>
+                                    <span>批量</span>
+                                </button>
+                            </div>
+                            <div class="toolbar-group">
+                                <!-- 下载按钮 -->
+                                <button 
+                                    type="button"
+                                    class="toolbar-btn"
+                                    @click="handleDownloadProjectVersion"
+                                    :disabled="loading || !selectedProject"
+                                    :title="selectedProject ? `下载 ${selectedProject}` : '请选择项目后下载'"
+                                    aria-label="下载项目">
+                                    <i class="fas fa-download" aria-hidden="true"></i>
+                                    <span>下载</span>
+                                </button>
+                                <!-- 上传按钮 -->
+                                <button 
+                                    type="button"
+                                    class="toolbar-btn"
+                                    @click="triggerUploadProjectVersion"
+                                    :disabled="loading"
+                                    :title="selectedProject ? `上传 ${selectedProject}` : '请选择项目后上传'"
+                                    aria-label="上传项目">
+                                    <i class="fas fa-upload" aria-hidden="true"></i>
+                                    <span>上传</span>
+                                </button>
+                                <input
+                                    id="aicrUploadZipInput"
+                                    ref="uploadInput"
+                                    type="file" 
+                                    accept=".zip"
+                                    @change="handleUploadProjectVersion"
+                                    style="display:none" 
+                                    aria-label="上传项目ZIP">
+                            </div>
+                        </template>
+                        
+                        <!-- 标签视图工具栏 -->
+                        <template v-else-if="viewMode === 'tags'">
+                            <div class="toolbar-group">
+                                <!-- 批量选择按钮 -->
+                                <button 
+                                    type="button"
+                                    class="toolbar-btn"
+                                    :class="{ 'active': sessionBatchMode }"
+                                    @click="toggleSessionBatchMode"
+                                    :title="sessionBatchMode ? '退出批量选择' : '批量选择'"
+                                    aria-label="批量选择">
+                                    <i class="fas" :class="sessionBatchMode ? 'fa-check-square' : 'fa-square'" aria-hidden="true"></i>
+                                    <span>批量</span>
+                                </button>
+                            </div>
+                            <div class="toolbar-group">
+                                <!-- 新建会话按钮 -->
+                                <button 
+                                    type="button"
+                                    class="toolbar-btn"
+                                    @click="handleSessionCreate"
+                                    :disabled="loading"
+                                    title="新建会话"
+                                    aria-label="新建会话">
+                                    <i class="fas fa-plus" aria-hidden="true"></i>
+                                    <span>新建</span>
+                                </button>
+                                <!-- 导入按钮 -->
+                                <button 
+                                    type="button"
+                                    class="toolbar-btn"
+                                    @click="handleSessionImport"
+                                    :disabled="loading"
+                                    title="导入会话"
+                                    aria-label="导入会话">
+                                    <i class="fas fa-file-import" aria-hidden="true"></i>
+                                    <span>导入</span>
+                                </button>
+                                <!-- 导出按钮 -->
+                                <button 
+                                    type="button"
+                                    class="toolbar-btn"
+                                    @click="handleSessionExport"
+                                    :disabled="loading || !sessions || sessions.length === 0"
+                                    title="导出会话"
+                                    aria-label="导出会话">
+                                    <i class="fas fa-file-export" aria-hidden="true"></i>
+                                    <span>导出</span>
+                                </button>
+                                <input
+                                    ref="sessionImportInput"
+                                    type="file" 
+                                    accept=".json,.zip"
+                                    @change="handleSessionImportFile"
+                                    class="hidden-input"
+                                    aria-label="导入会话文件">
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                
+                <!-- 树形视图：显示文件树 -->
+                <file-tree 
+                    v-show="viewMode === 'tree'"
+                    :tree="fileTree" 
+                    :selected-file-id="selectedFileId" 
+                    :expanded-folders="expandedFolders" 
+                    :loading="loading" 
+                    :error="errorMessage" 
+                    :comments="comments"
+                    :collapsed="sidebarCollapsed"
+                    :search-query="searchQuery"
+                    :batch-mode="batchMode"
+                    :selected-file-ids="selectedFileIds"
+                    :selected-project="selectedProject"
+                    :view-mode="viewMode"
+                    @file-select="handleFileSelect" 
+                    @folder-toggle="handleFolderToggle"
+                    @create-folder="handleCreateFolder"
+                    @create-file="handleCreateFile"
+                    @rename-item="handleRenameItem"
+                    @delete-item="handleDeleteItem"
+                    @create-session="handleCreateSession"
+                    @toggle-collapse="toggleSidebar"
+                    @search-change="handleSearchChange"
+                    @toggle-batch-mode="toggleBatchMode"
+                    @batch-select-file="toggleFileSelection"
+                    @download-project="handleDownloadProjectVersion"
+                    @upload-project="handleUploadProjectVersion"
+                    @view-mode-change="setViewMode"
+                ></file-tree>
+                
+                <!-- 标签视图：显示会话列表 -->
+                <session-list 
+                    v-show="viewMode === 'tags'"
+                    :sessions="(sessions && Array.isArray(sessions)) ? sessions : []"
+                    :loading="sessionLoading || false"
+                    :error="sessionError || null"
+                    :selected-tags="(selectedSessionTags && Array.isArray(selectedSessionTags)) ? selectedSessionTags : []"
+                    :search-query="sessionSearchQuery || ''"
+                    :tag-filter-reverse="tagFilterReverse || false"
+                    :tag-filter-no-tags="tagFilterNoTags || false"
+                    :tag-filter-expanded="tagFilterExpanded || false"
+                    :tag-filter-visible-count="tagFilterVisibleCount || 8"
+                    :tag-filter-search-keyword="tagFilterSearchKeyword || ''"
+                    :session-batch-mode="sessionBatchMode || false"
+                    :selected-session-ids="selectedSessionIds || new Set()"
+                    :is-all-sessions-selected="isAllSessionsSelected"
+                    @session-select="handleSessionSelect"
+                    @session-delete="handleSessionDelete"
+                    @session-create="handleSessionCreate"
+                    @session-favorite="handleSessionFavorite"
+                    @session-edit="handleSessionEdit"
+                    @session-tag="handleSessionTag"
+                    @session-duplicate="handleSessionDuplicate"
+                    @session-context="handleSessionContext"
+                    @session-open-url="handleSessionOpenUrl"
+                    @session-tree="handleSessionTree"
+                    @session-batch-select="handleSessionBatchSelect"
+                    @session-batch-select-all="handleToggleSelectAllSessions"
+                    @session-batch-delete="handleBatchDeleteSessions"
+                    @session-batch-cancel="toggleSessionBatchMode"
+                    @tag-select="handleTagSelect"
+                    @tag-clear="handleTagClear"
+                    @search-change="handleSessionSearchChange"
+                    @tag-filter-reverse="handleTagFilterReverse"
+                    @tag-filter-no-tags="handleTagFilterNoTags"
+                    @tag-filter-expand="handleTagFilterExpand"
+                    @tag-filter-search="handleTagFilterSearch"
+                    @toggle-collapse="handleSessionViewBack"
+                ></session-list>
+            </aside>
+            
+            <!-- 侧边栏收起后的展开把手 -->
+            <button 
+                type="button"
+                class="sidebar-expand-handle" 
+                v-show="sidebarCollapsed"
+                @click="toggleSidebar"
+                aria-label="展开文件目录树"
+                title="展开文件目录树">
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </button>
+            <section class="aicr-code" :class="{ 'with-sidebar-collapsed': sidebarCollapsed, 'with-comments-collapsed': commentsCollapsed }" aria-label="代码区">
+                <code-view 
+                    :file="currentFile" 
+                    :loading="loading" 
+                    :error="errorMessage"
+                    :comments="currentComments"
+                    @comment-delete="handleCommentDelete"
+                    @comment-resolve="handleCommentResolve"
+                    @comment-reopen="handleCommentReopen"
+                    @reload-comments="handleReloadComments"
+                ></code-view>
+            </section>
+            <aside class="aicr-comments" aria-label="评论区" v-show="!commentsCollapsed" :style="{ width: commentsWidth + 'px' }">
+                <comment-panel 
+                    :comments="currentComments" 
+                    :file="currentFile"
+                    :new-comment="newComment" 
+                    :loading="loading" 
+                    :error="errorMessage" 
+                    :collapsed="commentsCollapsed"
+                    @comment-submit="handleCommentSubmit" 
+                    @comment-input="handleCommentInput"
+                    @comment-delete="handleCommentDelete"
+                    @comment-resolve="handleCommentResolve"
+                    @comment-reopen="handleCommentReopen"
+                    @toggle-collapse="toggleComments"
+                ></comment-panel>
+            </aside>
+            <!-- 评论区收起后的展开把手 -->
+            <button 
+                type="button"
+                class="comments-expand-handle" 
+                v-show="commentsCollapsed"
+                @click="toggleComments"
+                aria-label="展开评论区"
+                title="展开评论区">
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+            </button>
+            
+        </main>
+    </div>
+
+    <!-- 全局加载指示器 -->
+    <section id="global-loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="全局加载中">
+      <div class="loading-content">
+          <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+          <p class="loading-text" id="loading-text">正在加载...</p>
+      </div>
+    </section>
+
+    
+    
+    <!-- 脚本标签移到Vue应用容器外部 -->
+    <!-- 基础配置和工具 -->
+    <script type="module" src="../../config.js"></script>
+    <script type="module" src="../../utils/chartViewer.js"></script>
+    
+    <!-- Mermaid 相关脚本（按依赖顺序加载） -->
+    <script type="module" src="../../utils/mermaid.js"></script>
+    <script type="module" src="../../utils/mermaidDebug.js"></script>
+    <script type="module" src="../../utils/mermaidRenderer.js"></script>
+    
+    <!-- 插件组件 -->
+    <script type="module" src="../../views/aicr/components/fileTree/index.js"></script>
+    <script type="module" src="../../views/aicr/components/codeView/index.js"></script>
+    <script type="module" src="../../views/aicr/components/commentPanel/index.js"></script>
+    <script type="module" src="../../views/aicr/components/sessionList/index.js"></script>
+    
+    <!-- 主应用入口 -->
+    <script type="module" src="../../views/aicr/index.js"></script>
+    
+    <!-- 性能监控（最后加载） -->
+    <script type="module" src="../../utils/performance.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+

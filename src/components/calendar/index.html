@@ -1,0 +1,94 @@
+<nav class="date-navigation" :class="{ collapsed: sidebarCollapsed }" aria-label="日期导航">
+    <button 
+        type="button"
+        @click="$emit('go-to-previous-day')"
+        class="date-nav-btn prev-day"
+        title="查看上一天的新闻"
+        aria-label="查看上一天的新闻"
+    >
+        <i class="fas fa-chevron-left"></i>
+        <span v-show="!sidebarCollapsed">上一天</span>
+    </button>
+    
+    <div class="current-date-display" @click="$emit('go-to-today')" :title="isToday ? '当前已是今天' : '点击回到今天'">
+        <div class="date-main">{{ currentDateDisplay }}</div>
+        <div class="date-subtitle" v-show="!sidebarCollapsed">{{ currentDateSubtitle }}</div>
+        <div v-if="!isToday" class="date-today-hint">
+            <i class="fas fa-home"></i>
+        </div>
+    </div>
+    
+    <button 
+        type="button"
+        @click="$emit('go-to-next-day')"
+        class="date-nav-btn next-day"
+        :disabled="isFutureDate"
+        :title="isFutureDate ? '无法查看未来日期' : '查看下一天的新闻'"
+        aria-label="查看下一天的新闻"
+    >
+        <span v-show="!sidebarCollapsed">下一天</span>
+        <i class="fas fa-chevron-right"></i>
+    </button>
+</nav>
+
+<!-- 小日历模块 -->
+<div class="mini-calendar" v-show="!sidebarCollapsed" role="region" aria-label="日历导航">
+    <div class="calendar-header">
+        <button 
+            type="button"
+            @click="$emit('previous-month')"
+            class="calendar-nav-btn"
+            title="上个月"
+            aria-label="上个月"
+            :aria-disabled="false"
+        >
+            <i class="fas fa-chevron-left" aria-hidden="true"></i>
+        </button>
+        <div class="calendar-title" role="heading" aria-level="3">{{ calendarTitle }}</div>
+        <button 
+            type="button"
+            @click="$emit('next-month')"
+            class="calendar-nav-btn"
+            :disabled="isCurrentMonth"
+            :title="isCurrentMonth ? '当前已是本月' : '下个月'"
+            :aria-label="isCurrentMonth ? '当前已是本月' : '下个月'"
+            :aria-disabled="isCurrentMonth"
+        >
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        </button>
+    </div>
+    
+    <div class="calendar-weekdays" role="rowgroup">
+        <div class="weekday" v-for="day in weekdays" :key="day" role="columnheader">{{ day }}</div>
+    </div>
+    
+    <div class="calendar-days" role="grid" :aria-label="`${calendarTitle}日历`">
+        <div 
+            v-for="day in calendarDays" 
+            :key="day.key"
+            @click="$emit('select-date', day.date)"
+            @keydown.enter="$emit('select-date', day.date)"
+            @keydown.space="$emit('select-date', day.date)"
+            :class="[
+                'calendar-day',
+                {
+                    'other-month': !day.isCurrentMonth,
+                    'today': day.isToday,
+                    'selected': day.isSelected,
+                    'has-news': day.hasNews,
+                    'clickable': day.isClickable
+                }
+            ]"
+            :title="day.tooltip"
+            :aria-label="day.ariaLabel"
+            :data-date="getDateString(day.date)"
+            :tabindex="day.isClickable ? 0 : -1"
+            role="gridcell"
+            :aria-selected="day.isSelected"
+            :aria-current="day.isToday ? 'date' : undefined"
+        >
+            <span class="day-number">{{ day.dayNumber }}</span>
+        </div>
+    </div>
+</div> 
+

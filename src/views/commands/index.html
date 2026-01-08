@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Linux命令大全，为您提供便捷的Linux命令查询和分类管理服务">
+    <meta name="keywords" content="Linux命令, 命令行, 系统管理, 文件操作, 网络工具">
+
+    <title>YiWeb - Linux命令大全</title>
+
+    <!-- 页面样式 -->
+    <link rel="stylesheet" href="../../views/commands/index.css">
+
+    <!-- 图标库 -->
+    <link rel="stylesheet" href="../../libs/font-awesome/css/all.min.css" crossorigin="anonymous">
+
+    <!-- Vue3 CDN -->
+    <script src="../../libs/vue/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部搜索与分类区域 -->
+        <header class="header-row" role="banner">
+            <section class="search-row">
+                <form class="search-box" role="search" aria-label="Linux命令搜索">
+                    <span class="search-logo" aria-hidden="true" @click="openLink('/index.html')">
+                        <i class="fas fa-terminal" aria-label="Linux命令图标"></i>
+                    </span>
+                    <div class="search-input-wrapper">
+                        <label for="messageInput" class="visually-hidden">搜索输入框</label>
+                        <textarea 
+                            id="messageInput" 
+                            placeholder="搜索命令、功能或描述..." 
+                            rows="1" 
+                            maxlength="2000"
+                            aria-label="搜索输入框"
+                            aria-describedby="category-filters"
+                            autocomplete="off"
+                            spellcheck="false"
+                            :value="searchKeyword"
+                            @input="handleSearchInput"
+                            @keydown="handleSearchKeydown"></textarea>
+                        <!-- 搜索状态指示器 -->
+                        <div v-if="hasSearchKeyword" class="search-indicator">
+                            <button 
+                                type="button"
+                                class="clear-search-btn" 
+                                @click="clearSearch"
+                                aria-label="清空搜索">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                <nav class="category-filters" id="category-filters" role="toolbar" aria-label="命令分类过滤器">
+                    <ul class="filter-buttons">
+                        <li v-for="btn in filterBtns" :key="btn.id">
+                            <button 
+                                type="button"
+                                class="filter-btn" 
+                                :class="{ active: btn.active }"
+                                :data-category="btn.id"
+                                @click="switchCategory(btn.id)">
+                                <i :class="btn.icon"></i>
+                                {{ btn.name }}
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </section>
+        </header>
+        
+        <main class="main-content" role="main">
+            <!-- Linux命令管理区域 -->
+            <section class="container">
+                <!-- 加载状态 -->
+                <div v-if="loading" class="loading-indicator">
+                    <div class="loading-spinner"></div>
+                </div>
+                
+                <!-- 错误状态 -->
+                <div v-if="error" class="error-message">
+                    {{ error }}
+                </div>
+                
+                <!-- 搜索结果显示 -->
+                <div v-if="hasSearchKeyword && !loading && !error" class="search-results">
+                    <div class="search-results-header">
+                        <div class="results-info">
+                            <i class="fas fa-search"></i>
+                            <span>搜索结果</span>
+                        </div>
+                        <div class="search-query">{{ searchKeyword }}</div>
+                        <div class="search-results-count">
+                            找到 {{ filteredCommands.length }} 个命令
+                        </div>
+                        <button type="button" class="clear-search" @click="clearSearch">
+                            <i class="fas fa-times"></i>
+                            清空搜索
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 命令网格 -->
+                <div v-if="!loading && !error" class="commands-grid">
+                    <div 
+                        v-for="command in filteredCommands" 
+                        :key="command.id"
+                        class="command-card" 
+                        :data-category="command.category">
+                        <div class="command-header">
+                            <div class="command-info">
+                                <h3 class="command-name">{{ command.name }}</h3>
+                                <p class="command-description">{{ command.description }}</p>
+                                <p class="command-syntax">{{ command.syntax }}</p>
+                            </div>
+                        </div>
+                        <div class="command-content">
+                            
+                            <!-- 命令示例 -->
+                            <div v-if="command.examples && command.examples.length > 0" class="command-examples">
+                                <h4 class="examples-title">
+                                    <i class="fas fa-code"></i>
+                                    使用示例
+                                </h4>
+                                <div class="examples-list">
+                                    <div 
+                                        v-for="(example, index) in command.examples" 
+                                        :key="index"
+                                        class="example-item">
+                                        <div class="example-header">
+                                            <span class="example-number">#{{ index + 1 }}</span>
+                                            <p class="example-description">{{ example.description }}</p>
+                                            <button 
+                                                type="button"
+                                                class="copy-example-btn" 
+                                                @click="copyCommand(example.command)"
+                                                title="复制示例">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
+                                        <div class="example-content">
+                                            <code class="example-code">{{ example.command }}</code>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="command-tags">
+                                <span 
+                                    v-for="tag in command.tags" 
+                                    :key="tag"
+                                    class="tag"
+                                    :class="{ active: selectedTags.includes(tag) }"
+                                    @click="toggleTag(tag)">
+                                    {{ tag }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="command-footer">
+                            <span class="command-category">{{ command.category }}</span>
+                            <span class="command-difficulty" :class="'difficulty-' + command.difficulty">
+                                {{ getDifficultyText(command.difficulty) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 空状态 -->
+                <div v-if="!loading && !error && filteredCommands.length === 0" class="empty-state">
+                    <i class="fas fa-terminal"></i>
+                    <p>暂无命令数据</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 全局加载指示器 -->
+    <section id="global-loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="全局加载中">
+        <div class="loading-content">
+            <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+            <p class="loading-text" id="loading-text">正在加载...</p>
+        </div>
+    </section>
+
+    <!-- 错误提示 -->
+    <section id="error-message" class="error-message" role="alert" aria-live="assertive" hidden></section>
+
+    <!-- 通知容器 -->
+    <section id="notifications" class="notifications-container" role="region" aria-label="通知区域"></section>
+
+    <!-- 主功能脚本 -->
+    <script type="module" src="../../views/commands/index.js" defer></script>
+    <!-- 性能监控脚本 -->
+    <script type="module" src="../../utils/performance.js"></script>
+    <!-- 全局加载管理工具 -->
+    <script type="module" src="../../utils/loading.js"></script>
+</body>
+</html> 
+
+

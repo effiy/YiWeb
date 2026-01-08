@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI智能助手，为您提供问答、数据分析和代码编写等服务">
+    <meta name="keywords" content="AI, 智能助手, 数据分析, 代码编写, 生图创造">
+
+    
+    
+    <title>YiAi - 快捷键大全</title>
+
+    <!-- 页面样式 -->
+    <link rel="stylesheet" href="../../views/shortcuts/index.css">
+
+    <!-- 图标库 -->
+    <link rel="stylesheet" href="../../libs/font-awesome/css/all.min.css" crossorigin="anonymous">
+
+    <!-- Vue3 CDN -->
+    <script src="../../libs/vue/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部搜索与分类区域 -->
+        <header class="header-row" role="banner">
+            <section class="search-row">
+                <form class="search-box" role="search" aria-label="智能助手搜索">
+                    <span class="search-logo" aria-hidden="true" @click="openLink('/index.html')">
+                        <i class="fas fa-brain" aria-label="AI大脑图标"></i>
+                    </span>
+                    <div class="search-input-wrapper">
+                        <label for="messageInput" class="visually-hidden">消息输入框</label>
+                        <textarea 
+                            id="messageInput" 
+                            placeholder="我可以帮助您分析数据、编写代码、生图创造..." 
+                            rows="1" 
+                            maxlength="2000"
+                            aria-label="消息输入框"
+                            aria-describedby="category-filters"
+                            autocomplete="off"
+                            spellcheck="false"
+                            :value="searchKeyword"
+                            @input="handleSearchInput"
+                            @keydown="handleSearchKeydown"></textarea>
+                        <!-- 搜索状态指示器 -->
+                        <div v-if="hasSearchKeyword" class="search-indicator">
+                            <button 
+                                type="button"
+                                class="clear-search-btn" 
+                                @click="clearSearch"
+                                aria-label="清空搜索">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- 编辑器切换器 -->
+                <nav class="editor-switcher" role="toolbar" aria-label="编辑器切换器">
+                    <div class="editor-tabs">
+                        <button 
+                            v-for="editor in editors" 
+                            :key="editor.id"
+                            type="button"
+                            class="editor-tab" 
+                            :class="{ active: editor.active }"
+                            :data-editor="editor.id"
+                            @click="switchEditor(editor.id)"
+                            :title="editor.description"
+                            :aria-label="editor.description">
+                            <i :class="editor.icon"></i>
+                        </button>
+                    </div>
+                </nav>
+                
+                <nav class="category-filters" id="category-filters" role="toolbar" aria-label="功能分类过滤器">
+                    <ul class="filter-buttons">
+                        <li v-for="btn in currentEditorFilterBtns" :key="btn.id">
+                            <button 
+                                type="button"
+                                class="filter-btn" 
+                                :class="{ active: btn.active }"
+                                :data-category="btn.id"
+                                @click="switchCategory(btn.id)">
+                                <i :class="btn.icon"></i>
+                                {{ btn.name }}
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </section>
+        </header>
+        
+        <main class="main-content" role="main">
+            <!-- 快捷键区域 -->
+            <section class="container">
+                <!-- 加载状态 -->
+                <div v-if="loading" class="loading-indicator">
+                    <div class="loading-spinner"></div>
+                </div>
+                
+                <!-- 错误状态 -->
+                <div v-if="error" class="error-message">
+                    {{ error }}
+                </div>
+                
+                <!-- 搜索结果显示 -->
+                <div v-if="hasSearchKeyword && !loading && !error" class="search-results">
+                    <div class="search-results-header">
+                        <div class="results-info">
+                            <i class="fas fa-search"></i>
+                            <span>搜索结果</span>
+                        </div>
+                        <div class="search-query">{{ searchKeyword }}</div>
+                        <div class="search-results-count">
+                            找到 {{ filteredShortcuts.length }} 个分类
+                        </div>
+                        <button type="button" class="clear-search" @click="clearSearch">
+                        <i class="fas fa-times"></i>
+                        清空搜索
+                    </button>
+                    </div>
+                </div>
+                
+                <!-- 快捷键网格 -->
+                <div v-if="!loading && !error" class="shortcuts-grid">
+                    <div 
+                        v-for="category in filteredShortcuts" 
+                        :key="category.name"
+                        class="shortcut-category" 
+                        :data-category="category.category">
+                        <div class="category-header">
+                            <i :class="category.icon"></i>
+                            <h3>{{ category.name }}</h3>
+                        </div>
+                        <div class="shortcut-list">
+                            <div 
+                                v-for="shortcut in category.shortcuts" 
+                                :key="shortcut.key"
+                                class="shortcut-item"
+                                :class="{ 
+                                    'important': shortcut.type === 'important',
+                                    'danger': shortcut.type === 'danger'
+                                }"
+                                :data-type="shortcut.type"
+                                @click="copyShortcut(shortcut.key)">
+                                <div class="shortcut-key">{{ shortcut.key }}</div>
+                                <div class="shortcut-desc">{{ shortcut.desc }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 空状态 -->
+                <div v-if="!loading && !error && filteredShortcuts.length === 0" class="empty-state">
+                    <p>当前分类暂无快捷键数据</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    
+
+    <!-- 错误提示 -->
+    <section id="error-message" class="error-message" role="alert" aria-live="assertive" hidden></section>
+
+    <!-- 通知容器 -->
+    <section id="notifications" class="notifications-container" role="region" aria-label="通知区域"></section>
+
+    <!-- 主功能脚本 -->
+    <script type="module" src="../../views/shortcuts/index.js" defer></script>
+    <!-- 性能监控脚本 -->
+    <script type="module" src="../../utils/performance.js"></script>
+</body>
+</html> 
+

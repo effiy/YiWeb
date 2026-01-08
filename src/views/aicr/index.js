@@ -1,0 +1,1396 @@
+/**
+ * 代码审查页面主入口
+ * author: liangliang
+ */
+import { createStore } from '/src/views/aicr/hooks/store.js';
+import { useComputed } from '/src/views/aicr/hooks/useComputed.js';
+import { useMethods } from '/src/views/aicr/hooks/useMethods.js';
+import { createBaseView } from '/src/utils/baseView.js';
+import { logInfo, logWarn, logError } from '/src/utils/log.js';
+
+// 获取Vue的computed函数
+const { computed } = Vue;
+
+// 创建代码审查页面应用
+(async function initAicrApp() {
+    try {
+        // 在外部创建 store，以便在 onMounted 中访问
+        const store = createStore();
+
+        // 新增：本地评论和高亮状态
+        const localState = {
+            codeComments: [] // {id, fileId, text, comment, rangeInfo}
+        };
+
+        // 监听划词评论事件
+        window.addEventListener('addCodeComment', (e) => {
+            const detail = e.detail;
+            // 生成唯一key
+            const key = 'cmt_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+            // 假设当前文件id为store.selectedFileId
+            const fileId = store.selectedFileId || (store.state && store.state.selectedFileId);
+            // 记录range的起止行号和字符索引
+            let startLine = 0, endLine = 0, startChar = 0, endChar = 0;
+            if (detail.range) {
+                const range = detail.range;
+                // 通过closest('.code-line') 获取准确行号（author: liangliang）
+                const getLineNumberFromNode = (node) => {
+                    const el = node && node.nodeType === 3 ? node.parentElement : node;
+                    if (!el) return 0;
+                    const codeLineEl = el.classList && el.classList.contains('code-line')
+                        ? el
+                        : (el.closest ? el.closest('.code-line') : null);
+                    if (!codeLineEl) return 0;
+                    const num = parseInt(codeLineEl.getAttribute('data-line'));
+                    return Number.isFinite(num) ? num : 0;
+                };
+
+                startLine = getLineNumberFromNode(range.startContainer);
+                endLine = getLineNumberFromNode(range.endContainer);
+
+                // 获取字符级索引
+                if (range.startContainer && range.startContainer.nodeType === 3) {
+                    startChar = range.startOffset;
+                }
+                if (range.endContainer && range.endContainer.nodeType === 3) {
+                    endChar = range.endOffset;
+                }
+
+                // 规范化与排序
+                if (!startLine && endLine) startLine = endLine;
+                if (!endLine && startLine) endLine = startLine;
+                if (!startLine) startLine = 1;
+                if (!endLine) endLine = startLine;
+                if (startLine > endLine) {
+                    const tmp = startLine; startLine = endLine; endLine = tmp;
+                    const tmpChar = startChar; startChar = endChar; endChar = tmpChar;
+                }
+            }
+            // 兼容性处理
+            if (!startLine || !endLine) {
+                startLine = endLine = 0;
+            }
+            localState.codeComments.push({
+                key,
+                fileId,
+                text: detail.text,
+                comment: detail.comment,
+                rangeInfo: { startLine, startChar, endLine, endChar }
+            });
+            // 触发视图刷新（如用Vue可用响应式，这里简单reload）
+            if (window.aicrApp && window.aicrApp.reload) window.aicrApp.reload();
+        });
+
+        const app = await createBaseView({
+            createStore: () => store,
+            useComputed,
+            useMethods,
+            components: [
+                'FileTree',
+                'CodeView',
+                'CommentPanel',
+                'SessionList'
+            ],
+            data: {
+                // 新增：本地评论和高亮状态
+                codeComments: localState.codeComments,
+                // 暴露store数据给模板
+                sidebarCollapsed: store.sidebarCollapsed,
+                commentsCollapsed: store.commentsCollapsed,
+                sidebarWidth: store.sidebarWidth,
+                commentsWidth: store.commentsWidth,
+                // 项目管理
+                projects: store.projects,
+                selectedProject: store.selectedProject,
+
+                // 搜索相关状态
+                searchQuery: store.searchQuery,
+                // 批量选择相关状态
+                batchMode: store.batchMode,
+                selectedFileIds: store.selectedFileIds,
+                // 视图模式
+                viewMode: store.viewMode,
+                // 会话列表相关状态
+                sessions: store.sessions,
+                sessionLoading: store.sessionLoading,
+                sessionError: store.sessionError,
+                selectedSessionTags: store.selectedSessionTags,
+                sessionSearchQuery: store.sessionSearchQuery,
+                // 标签过滤相关状态
+                tagFilterReverse: store.tagFilterReverse,
+                tagFilterNoTags: store.tagFilterNoTags,
+                tagFilterExpanded: store.tagFilterExpanded,
+                tagFilterVisibleCount: store.tagFilterVisibleCount,
+                tagFilterSearchKeyword: store.tagFilterSearchKeyword,
+                // 会话批量选择相关状态
+                sessionBatchMode: store.sessionBatchMode,
+                selectedSessionIds: store.selectedSessionIds,
+            },
+            onMounted: (mountedApp) => {
+                logInfo('[代码审查页面] 应用已挂载');
+                
+                // 加载侧边栏宽度
+                if (store && store.loadSidebarWidths) {
+                    store.loadSidebarWidths();
+                }
+                
+                // 加载会话侧边栏宽度
+                if (store && store.loadSessionSidebarWidth) {
+                    store.loadSessionSidebarWidth();
+                }
+                
+                // 调试：检查会话相关状态
+                logInfo('[代码审查页面] 会话相关状态检查:', {
+                    hasSessions: !!store.sessions,
+                    sessionsValue: store.sessions?.value,
+                    hasLoadSessions: typeof store.loadSessions === 'function',
+                    viewMode: store.viewMode?.value
+                });
+                
+                // 创建侧边栏拖拽条
+                setTimeout(() => {
+                    createSidebarResizers(store);
+                    // 监听侧边栏折叠状态，隐藏/显示拖拽条
+                    if (store.sidebarCollapsed) {
+                        store.sidebarCollapsed.value = store.sidebarCollapsed.value; // 触发响应式更新
+                    }
+                    if (store.commentsCollapsed) {
+                        store.commentsCollapsed.value = store.commentsCollapsed.value; // 触发响应式更新
+                    }
+                }, 500);
+                
+                if (store) {
+                    // 首先加载项目列表
+                    store.loadProjects().then(() => {
+                        // 支持通过URL参数指定 projectId
+                        const params = new URLSearchParams(window.location.search);
+                        const projectParam = params.get('projectId');
+
+                        if (projectParam) {
+                            const hasProject = Array.isArray(store.projects.value) && store.projects.value.some(p => p && p.id === projectParam);
+                            if (hasProject) {
+                                store.setSelectedProject(projectParam);
+                                logInfo('[代码审查页面] 通过URL设置项目:', projectParam);
+                            }
+                        }
+
+                        // 如果URL未提供或无效，则使用第一个项目作为默认
+                        if (!store.selectedProject.value && store.projects.value.length > 0) {
+                            const defaultProject = store.projects.value[0];
+                            store.setSelectedProject(defaultProject.id);
+                            logInfo('[代码审查页面] 设置默认项目:', defaultProject);
+                        }
+
+                        if (store.selectedProject.value) {
+                            // 加载文件树和文件数据（不包含评论，因为评论需要项目信息）
+                            // 初始加载时使用 forceClear: true，因为初始时没有数据
+                            return Promise.all([
+                                store.loadFileTree(store.selectedProject.value, true),
+                                store.loadFiles(store.selectedProject.value)
+                            ]).then(() => {
+                                // 如果URL带了fileId，尝试预选并按需加载
+                                const params2 = new URLSearchParams(window.location.search);
+                                const fileParam = params2.get('fileId');
+                                // 读取高亮范围（兼容旧参数）与评论Key
+                                const startLineParam = parseInt(params2.get('startLine'), 10);
+                                const endLineParamRaw = params2.get('endLine');
+                                const endLineParam = endLineParamRaw !== null ? parseInt(endLineParamRaw, 10) : NaN;
+                                const commentKeyParam = params2.get('commentKey');
+                                let pendingHighlightRange = null;
+                                if (Number.isFinite(startLineParam)) {
+                                    pendingHighlightRange = {
+                                        startLine: startLineParam,
+                                        endLine: Number.isFinite(endLineParam) ? endLineParam : startLineParam
+                                    };
+                                    window.__aicrPendingHighlightRangeInfo = pendingHighlightRange;
+                                }
+                                if (commentKeyParam) {
+                                    window.__aicrPendingCommentKey = commentKeyParam;
+                                }
+                                if (fileParam) {
+                                    const norm = String(fileParam).replace(/\\\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                                    store.setSelectedFileId(norm);
+                                    if (typeof store.loadFileById === 'function') {
+                                        store.loadFileById(store.selectedProject?.value, norm).then(() => {
+                                            try {
+                                                const rangeInfo = window.__aicrPendingHighlightRangeInfo || pendingHighlightRange;
+                                                if (rangeInfo) {
+                                                    setTimeout(() => {
+                                                        try {
+                                                            window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                                                detail: {
+                                                                    fileId: norm,
+                                                                    rangeInfo
+                                                                }
+                                                            }));
+                                                            logInfo('[代码審查] URL触发高亮事件', rangeInfo);
+                                                        } catch (e) { logWarn('[代码審查] 触发高亮事件失败', e); }
+                                                    }, 300);
+                                                }
+                                            } catch (e) { logWarn('[代码審查] URL高亮处理失败', e); }
+                                        }).catch(() => {});
+                                    }
+                                }
+                                // 初次加载后若存在挂起文件或当前选中文件无内容，尝试一次补载
+                                setTimeout(() => {
+                                    try {
+                                        const pending = window.__aicrPendingFileId;
+                                        const currentId = pending || (store.selectedFileId ? store.selectedFileId.value : null);
+                                        if (currentId && typeof store.loadFileById === 'function') {
+                                            const normalize3 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                                            const idNorm = normalize3(currentId);
+                                    const pj = store.selectedProject ? store.selectedProject.value : null;
+                                    // 无论是否已有内容，项目就绪后都按需加载一次，避免刷新后首次点击缺内容
+                                    if (pj) {
+                                        store.loadFileById(pj, idNorm).finally(() => { window.__aicrPendingFileId = null; });
+                                    }
+                                        }
+                                    } catch (e) {
+                                        logWarn('[主页面] 初次加载后的懒加载检查异常:', e?.message || e);
+                                    }
+                                }, 300);
+                            });
+                        }
+                    }).then(() => {
+                        // 项目/版本信息设置完成，触发评论面板按需加载
+                        logInfo('[代码审查页面] 项目/版本信息设置完成，评论将按需加载');
+                        // 注意：不再在初始化时加载所有评论，改为按需加载（当用户查看评论时才加载）
+                        // 这样可以减少初始化时的接口调用，提升页面加载性能
+                        // 通过触发一个自定义事件来通知评论面板可以开始加载
+                        setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('projectReady', {
+                                detail: {
+                                    projectId: store.selectedProject.value
+                                }
+                            }));
+                            // 版本就绪后，如存在待加载文件或当前选中文件无内容，执行补载
+                            try {
+                                const pending = window.__aicrPendingFileId;
+                                const pendingKey = window.__aicrPendingFileKey;
+                                const currentId = pending || (store.selectedFileId ? store.selectedFileId.value : null);
+                                if (currentId && typeof store.loadFileById === 'function') {
+                                    const normalize4 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                                    const idNorm = normalize4(currentId);
+                                    const pj = store.selectedProject ? store.selectedProject.value : null;
+                                    // 项目就绪后，无论是否已有内容，确保按需加载一次
+                                    if (pj) {
+                                        // 如果有待处理的文件Key，优先使用它进行精确匹配
+                                        if (pendingKey) {
+                                            logInfo('[主页面] 项目就绪后使用文件Key进行精确加载:', idNorm, 'Key:', pendingKey);
+                                            store.loadFileById(pj, idNorm, pendingKey).finally(() => {
+                                                try {
+                                                    const rangeInfo = window.__aicrPendingHighlightRangeInfo;
+                                                    if (rangeInfo) {
+                                                        setTimeout(() => {
+                                                            try {
+                                                                window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                                                    detail: {
+                                                                        fileId: idNorm,
+                                                                        rangeInfo
+                                                                    }
+                                                                }));
+                                                                logInfo('[代码審查] 版本就绪后触发高亮事件', rangeInfo);
+                                                            } catch (e) { logWarn('[代码審查] 触发高亮事件失败', e); }
+                                                        }, 300);
+                                                    }
+                                                } catch (e) { logWarn('[代码審查] 版本就绪高亮处理失败', e); }
+                                                // 新增：按 commentKey 触发高亮
+                                                try {
+                                                    const pendingCommentKey = window.__aicrPendingCommentKey;
+                                                    if (pendingCommentKey && Array.isArray(store.comments?.value)) {
+                                                        const all = store.comments.value;
+                                                        const target = all.find(c => (c.key || c.id) === pendingCommentKey);
+                                                        if (target && target.rangeInfo) {
+                                                            const wantedRaw = target.fileId || (target.fileInfo && target.fileInfo.fileId) || idNorm;
+                                                            const normalize4b = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/, '/');
+                                                            const wantedId = normalize4b(wantedRaw);
+                                                            if (wantedId && store.selectedFileId && store.selectedFileId.value !== wantedId) {
+                                                                store.setSelectedFileId(wantedId);
+                                                            }
+                                                            const r = target.rangeInfo;
+                                                            const normalizedRange = {
+                                                                startLine: Number(r.startLine) >= 1 ? Number(r.startLine) : 1,
+                                                                endLine: Number(r.endLine) >= 1 ? Number(r.endLine) : (Number(r.startLine) || 1),
+                                                                startChar: r.startChar,
+                                                                endChar: r.endChar
+                                                            };
+                                                            setTimeout(() => {
+                                                                try {
+                                                                    window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                                                        detail: {
+                                                                            fileId: wantedId,
+                                                                            rangeInfo: normalizedRange,
+                                                                            comment: target
+                                                                        }
+                                                                    }));
+                                                                    logInfo('[代码審查] 版本就绪后按commentKey触发高亮', { key: pendingCommentKey, range: normalizedRange });
+                                                                } catch (e) { logWarn('[代码審查] 按commentKey触发高亮失败', e); }
+                                                            }, 500);
+                                                            window.__aicrPendingCommentKey = null;
+                                                        }
+                                                    }
+                                                } catch (e) { logWarn('[代码審查] commentKey高亮处理失败', e); }
+                                                window.__aicrPendingFileId = null;
+                                                window.__aicrPendingFileKey = null;
+                                            });
+                                        } else {
+                                            store.loadFileById(pj, idNorm).finally(() => {
+                                                try {
+                                                    const rangeInfo = window.__aicrPendingHighlightRangeInfo;
+                                                    if (rangeInfo) {
+                                                        setTimeout(() => {
+                                                            try {
+                                                                window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                                                    detail: {
+                                                                        fileId: idNorm,
+                                                                        rangeInfo
+                                                                    }
+                                                                }));
+                                                                logInfo('[代码審查] 版本就绪后触发高亮事件', rangeInfo);
+                                                            } catch (e) { logWarn('[代码審查] 触发高亮事件失败', e); }
+                                                        }, 300);
+                                                    }
+                                                } catch (e) { logWarn('[代码審查] 版本就绪高亮处理失败', e); }
+                                                // 新增：按 commentKey 触发高亮
+                                                try {
+                                                    const pendingCommentKey = window.__aicrPendingCommentKey;
+                                                    if (pendingCommentKey && Array.isArray(store.comments?.value)) {
+                                                        const all = store.comments.value;
+                                                        const target = all.find(c => (c.key || c.id) === pendingCommentKey);
+                                                        if (target && target.rangeInfo) {
+                                                            const wantedRaw = target.fileId || (target.fileInfo && target.fileInfo.fileId) || idNorm;
+                                                            const normalize4b = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/, '/');
+                                                            const wantedId = normalize4b(wantedRaw);
+                                                            if (wantedId && store.selectedFileId && store.selectedFileId.value !== wantedId) {
+                                                                store.setSelectedFileId(wantedId);
+                                                            }
+                                                            const r = target.rangeInfo;
+                                                            const normalizedRange = {
+                                                                startLine: Number(r.startLine) >= 1 ? Number(r.startLine) : 1,
+                                                                endLine: Number(r.endLine) >= 1 ? Number(r.endLine) : (Number(r.startLine) || 1),
+                                                                startChar: r.startChar,
+                                                                endChar: r.endChar
+                                                            };
+                                                            setTimeout(() => {
+                                                                try {
+                                                                    window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                                                        detail: {
+                                                                            fileId: wantedId,
+                                                                            rangeInfo: normalizedRange,
+                                                                            comment: target
+                                                                        }
+                                                                    }));
+                                                                    logInfo('[代码審查] 版本就绪后按commentKey触发高亮', { key: pendingCommentKey, range: normalizedRange });
+                                                                } catch (e) { logWarn('[代码審查] 按commentKey触发高亮失败', e); }
+                                                            }, 500);
+                                                            window.__aicrPendingCommentKey = null;
+                                                        }
+                                                    }
+                                                } catch (e) { logWarn('[代码審查] commentKey高亮处理失败', e); }
+                                                window.__aicrPendingFileId = null;
+                                            });
+                                        }
+                                    }
+                                }
+                            } catch (e) {
+                                logWarn('[主页面] 版本就绪懒加载检查异常:', e?.message || e);
+                            }
+                        }, 500);
+                    }).then(() => {
+                        logInfo('[代码审查页面] 数据加载完成');
+                    }).catch(error => {
+                        logError('[代码审查页面] 数据加载失败:', error);
+                    });
+                }
+                // 取消聚焦（如点击空白处）
+                window.addEventListener('click', (e) => {
+                    if (!e.target.closest('.comment-item')) {
+                        if (window.aicrApp && window.aicrApp.reload) window.aicrApp.reload();
+                    }
+                });
+                
+                // 添加ESC快捷键监听，取消文件选中
+                // 监听模态框的ESC事件，如果模态框已处理则跳过
+                window.addEventListener('modalEscPressed', (e) => {
+                    logInfo('[代码审查页面] 检测到模态框ESC事件，跳过文件选中取消');
+                });
+                
+                window.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        // 检查是否有模态框打开，如果有则跳过处理
+                        if (document.querySelector('.modal, .modal-backdrop')) {
+                            logInfo('[代码审查页面] 模态框已打开，跳过ESC处理');
+                            return;
+                        }
+                        
+                        logInfo('[代码审查页面] ESC键被按下，取消文件选中');
+                        if (store && store.selectedFileId.value) {
+                            const previousFileId = store.selectedFileId.value;
+                            store.setSelectedFileId(null);
+                            logInfo('[代码审查页面] 已取消文件选中，之前文件ID:', previousFileId);
+                            
+                            // 发送清除高亮事件，通知代码视图组件清除高亮
+                            setTimeout(() => {
+                                logInfo('[代码审查页面] 发送清除高亮事件');
+                                window.dispatchEvent(new CustomEvent('clearCodeHighlight'));
+                            }, 50);
+                            
+                            // 触发评论面板刷新事件，恢复到显示所有评论的状态
+                            setTimeout(() => {
+                                logInfo('[代码审查页面] 触发评论面板刷新事件，恢复到显示所有评论');
+                                window.dispatchEvent(new CustomEvent('reloadComments', {
+                                detail: { 
+                                    projectId: store.selectedProject ? store.selectedProject.value : null, 
+                                    fileId: null,
+                                    forceReload: true,
+                                    showAllComments: true, // 新增：标记显示所有评论
+                                    immediateReload: true // 新增：标记立即刷新，不使用防抖
+                                }
+                                }));
+                            }, 100);
+                        }
+                    }
+                });
+                
+                // 监听评论区的代码高亮事件
+                window.addEventListener('highlightCodeLines', (e) => {
+                    const { fileId, rangeInfo, comment } = e.detail;
+                    logInfo('[代码审查页面] 收到代码高亮事件:', { fileId, rangeInfo, comment });
+                    
+                    if (fileId) {
+                        // 如果当前没有选中该文件，先选中文件
+                        const needSwitchFile = store && store.selectedFileId.value !== fileId;
+                        if (needSwitchFile) {
+                            logInfo('[代码审查页面] 切换到文件:', fileId);
+                            store.setSelectedFileId(fileId);
+                        }
+                        
+                        // 发送高亮事件给代码视图组件
+                        // 如果切换了文件，需要等待更长时间让文件加载和渲染完成
+                        const delay = needSwitchFile ? 500 : 100;
+                        setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('highlightCodeLines', { 
+                                detail: { rangeInfo, comment } 
+                            }));
+                        }, delay);
+                    } else {
+                        // 如果没有文件ID，直接发送事件（可能是当前文件）
+                        setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('highlightCodeLines', { 
+                                detail: { rangeInfo, comment } 
+                            }));
+                        }, 100);
+                    }
+                });
+            },
+            // 传递props给子组件
+            props: {
+                'code-view': {},
+                'file-tree': {
+                    tree: function() { return store.fileTree; },
+                    selectedFileId: function() { return store.selectedFileId.value; },
+                    expandedFolders: function() { return store.expandedFolders; },
+                    loading: function() { return store.loading; },
+                    error: function() { return store.errorMessage; },
+                    comments: function() { return store.comments; },
+                    collapsed: function() { return store.sidebarCollapsed ? store.sidebarCollapsed.value : false; },
+                    searchQuery: function() { return store.searchQuery ? store.searchQuery.value : ''; },
+                    batchMode: function() { return store.batchMode ? store.batchMode.value : false; },
+                    selectedFileIds: function() { return store.selectedFileIds ? store.selectedFileIds.value : new Set(); },
+                    selectedProject: function() { return store.selectedProject ? store.selectedProject.value : ''; },
+                    viewMode: function() { return store.viewMode ? store.viewMode.value : 'tree'; }
+                },
+                'comment-panel': {
+                    comments: function() { 
+                        // 使用计算属性中的currentComments
+                        const comments = this.currentComments || [];
+                        console.log('[主页面] 传递给评论面板的评论数据:', comments);
+                        return comments; 
+                    },
+                    file: function() { 
+                        // 使用计算属性中的currentFile
+                        const currentFile = this.currentFile;
+                        console.log('[主页面] 传递给评论面板的文件数据:', currentFile);
+                        return currentFile; 
+                    },
+                    newComment: function() {
+                        // 将字符串转换为对象格式
+                        const commentValue = store.newComment ? store.newComment.value : '';
+                        return {
+                            content: typeof commentValue === 'string' ? commentValue : '',
+                            author: '',
+                            text: '',
+                            improvementText: '',
+                            type: '',
+                            status: 'pending'
+                        };
+                    },
+                    loading: function() { return store.loading; },
+                    error: function() { return store.errorMessage; },
+                    // 传递项目/版本信息
+                    projectId: function() { 
+                        const projectId = store.selectedProject ? store.selectedProject.value : null;
+                        console.log('[主页面] 传递给评论面板的项目ID:', projectId);
+                        return projectId; 
+                    },
+                    collapsed: function() { return store.commentsCollapsed ? store.commentsCollapsed.value : false; }
+                }
+            },
+            methods: {
+                // 添加评论提交事件处理
+                handleCommentSubmit: async function(commentData) {
+                    logInfo('[主页面] 收到评论提交事件:', commentData);
+                    try {
+                        // 从useMethods中获取handleCommentSubmit方法
+                        const methods = useMethods(store);
+                        await methods.handleCommentSubmit(commentData);
+                    } catch (error) {
+                        logError('[主页面] 评论提交失败:', error);
+                    }
+                },
+                
+                // 添加评论删除事件处理
+                handleCommentDelete: async function(commentId) {
+                    logInfo('[主页面] 收到评论删除事件:', commentId);
+                    try {
+                        // 从useMethods中获取handleCommentDelete方法
+                        const methods = useMethods(store);
+                        await methods.handleCommentDelete(commentId);
+                    } catch (error) {
+                        logError('[主页面] 评论删除失败:', error);
+                    }
+                },
+                
+                // 添加评论解决事件处理
+                handleCommentResolve: async function(commentId) {
+                    logInfo('[主页面] 收到评论解决事件:', commentId);
+                    try {
+                        // 从useMethods中获取handleCommentResolve方法
+                        const methods = useMethods(store);
+                        await methods.handleCommentResolve(commentId);
+                    } catch (error) {
+                        logError('[主页面] 评论解决失败:', error);
+                    }
+                },
+                
+                // 添加评论重新打开事件处理
+                handleCommentReopen: async function(commentId) {
+                    logInfo('[主页面] 收到评论重新打开事件:', commentId);
+                    try {
+                        // 从useMethods中获取handleCommentReopen方法
+                        const methods = useMethods(store);
+                        await methods.handleCommentReopen(commentId);
+                    } catch (error) {
+                        logError('[主页面] 评论重新打开失败:', error);
+                    }
+                },
+                
+                // 添加评论重新加载事件处理
+                handleReloadComments: async function(detail) {
+                    logInfo('[主页面] 收到评论重新加载事件:', detail);
+                    try {
+                        // 从useMethods中获取handleReloadComments方法
+                        const methods = useMethods(store);
+                        await methods.handleReloadComments(detail);
+                    } catch (error) {
+                        logError('[主页面] 评论重新加载失败:', error);
+                    }
+                },
+                
+                
+                // 添加文件夹切换事件处理
+                handleFolderToggle: function(folderId) {
+                    logInfo('[主页面] 收到文件夹切换事件:', folderId);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleFolderToggle(folderId);
+                    } catch (error) {
+                        logError('[主页面] 文件夹切换处理失败:', error);
+                    }
+                },
+                // =============== 文件树 CRUD ===============
+                handleCreateFolder: async function(payload) {
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleCreateFolder(payload);
+                        if (store && store.selectedProject.value) {
+                            await store.loadFileTree(store.selectedProject.value);
+                        }
+                    } catch (error) {
+                        logError('[主页面] 新建文件夹失败:', error);
+                    }
+                },
+                handleCreateFile: async function(payload) {
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleCreateFile(payload);
+                        if (store && store.selectedProject.value) {
+                            await Promise.all([
+                                store.loadFileTree(store.selectedProject.value),
+                                store.loadFiles(store.selectedProject.value)
+                            ]);
+                        }
+                    } catch (error) {
+                        logError('[主页面] 新建文件失败:', error);
+                    }
+                },
+                handleRenameItem: async function(payload) {
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleRenameItem(payload);
+                        if (store && store.selectedProject.value) {
+                            await Promise.all([
+                                store.loadFileTree(store.selectedProject.value),
+                                store.loadFiles(store.selectedProject.value)
+                            ]);
+                        }
+                    } catch (error) {
+                        logError('[主页面] 重命名失败:', error);
+                    }
+                },
+                handleDeleteItem: async function(payload) {
+                    try {
+                        const methods = useMethods(store);
+                        const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
+                        showGlobalLoading('正在删除，请稍候...');
+                        try {
+                            await methods.handleDeleteItem(payload);
+                            if (store && store.selectedProject.value) {
+                                await Promise.all([
+                                    store.loadFileTree(store.selectedProject.value),
+                                    store.loadFiles(store.selectedProject.value)
+                                ]);
+                            }
+                        } finally {
+                            try { hideGlobalLoading(); } catch (_) {}
+                        }
+                    } catch (error) {
+                        logError('[主页面] 删除失败:', error);
+                    }
+                },
+                
+                // 搜索相关方法
+                handleSearchInput: function(event) {
+                    logInfo('[主页面] 收到搜索输入事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleSearchInput(event);
+                    } catch (error) {
+                        logError('[主页面] 搜索输入处理失败:', error);
+                    }
+                },
+                
+                handleSearchChange: function(query) {
+                    logInfo('[主页面] 收到文件树搜索变化事件:', query);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleSearchChange(query);
+                    } catch (error) {
+                        logError('[主页面] 文件树搜索变化处理失败:', error);
+                    }
+                },
+                
+                clearSearch: function() {
+                    logInfo('[主页面] 收到清除搜索事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.clearSearch();
+                    } catch (error) {
+                        logError('[主页面] 清除搜索失败:', error);
+                    }
+                },
+                
+                handleMessageInput: function(event) {
+                    logInfo('[主页面] 收到消息输入事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleMessageInput(event);
+                    } catch (error) {
+                        logError('[主页面] 消息输入处理失败:', error);
+                    }
+                },
+                
+                handleCompositionStart: function(event) {
+                    logInfo('[主页面] 收到输入法开始事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleCompositionStart(event);
+                    } catch (error) {
+                        logError('[主页面] 输入法开始处理失败:', error);
+                    }
+                },
+                
+                handleCompositionEnd: function(event) {
+                    logInfo('[主页面] 收到输入法结束事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleCompositionEnd(event);
+                    } catch (error) {
+                        logError('[主页面] 输入法结束处理失败:', error);
+                    }
+                },
+                // 下载当前项目版本（打包为ZIP）
+                handleDownloadProjectVersion: async function() {
+                    logInfo('[主页面] 触发项目版本下载');
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleDownloadProjectVersion();
+                    } catch (error) {
+                        logError('[主页面] 项目版本下载失败:', error);
+                        alert('下载失败：' + (error?.message || '未知错误'));
+                    }
+                },
+                // 触发选择ZIP
+                triggerUploadProjectVersion: function() {
+                    try {
+                        const methods = useMethods(store);
+                        methods.triggerUploadProjectVersion();
+                    } catch (e) {
+                        logError('[主页面] 触发上传选择失败:', e);
+                    }
+                },
+                // 处理上传ZIP
+                handleUploadProjectVersion: async function(e) {
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleUploadProjectVersion(e);
+                    } catch (error) {
+                        logError('[主页面] 项目版本上传失败:', error);
+                        alert('上传失败：' + (error?.message || '未知错误'));
+                    } finally {
+                        try { e.target.value = ''; } catch (_) {}
+                    }
+                },
+                
+                // 切换批量选择模式
+                toggleBatchMode: function() {
+                    logInfo('[主页面] 收到批量模式切换事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.toggleBatchMode();
+                    } catch (error) {
+                        logError('[主页面] 批量模式切换失败:', error);
+                    }
+                },
+                
+                // 切换文件选中状态（批量选择）
+                toggleFileSelection: function(fileId) {
+                    logInfo('[主页面] 收到文件选择切换事件:', fileId);
+                    try {
+                        const methods = useMethods(store);
+                        methods.toggleFileSelection(fileId);
+                    } catch (error) {
+                        logError('[主页面] 文件选择切换失败:', error);
+                    }
+                },
+                
+
+                
+
+                
+                refreshData: function() {
+                    logInfo('[主页面] 收到刷新数据事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.refreshData();
+                    } catch (error) {
+                        logError('[主页面] 刷新数据处理失败:', error);
+                    }
+                },
+                
+                // 侧边栏和评论区切换
+                toggleSidebar: function() {
+                    logInfo('[主页面] 收到侧边栏切换事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.toggleSidebar();
+                    } catch (error) {
+                        logError('[主页面] 侧边栏切换处理失败:', error);
+                    }
+                },
+                
+                toggleComments: function() {
+                    logInfo('[主页面] 收到评论区切换事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.toggleComments();
+                    } catch (error) {
+                        logError('[主页面] 评论区切换处理失败:', error);
+                    }
+                },
+                
+                // 处理评论输入
+                handleCommentInput: function(event) {
+                    logInfo('[主页面] 收到评论输入事件');
+                    try {
+                        // 更新newComment数据
+                        if (store.newComment) {
+                            store.newComment.value = event.target.value;
+                        }
+                        const methods = useMethods(store);
+                        methods.handleCommentInput(event);
+                    } catch (error) {
+                        logError('[主页面] 评论输入处理失败:', error);
+                    }
+                },
+                // 设置视图模式（已移至 useMethods，这里保留作为备用）
+                setViewMode: function(mode) {
+                    const methods = useMethods(store);
+                    if (methods.setViewMode) {
+                        methods.setViewMode(mode);
+                        logInfo('[主页面] 视图模式已切换:', mode);
+                    } else if (store && store.viewMode) {
+                        store.viewMode.value = mode;
+                        logInfo('[主页面] 视图模式已切换（备用方法）:', mode);
+                    }
+                },
+                
+                // 处理项目切换
+                handleProjectChange: function(projectId) {
+                    logInfo('[主页面] 收到项目切换事件:', projectId);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleProjectChange(projectId);
+                    } catch (error) {
+                        logError('[主页面] 项目切换处理失败:', error);
+                    }
+                },
+                
+                // 处理文件选择
+                handleFileSelect: function(payload) {
+                    logInfo('[主页面] 收到文件选择事件:', payload);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleFileSelect(payload);
+                    } catch (error) {
+                        logError('[主页面] 文件选择处理失败:', error);
+                    }
+                },
+                
+                // 处理创建会话
+                handleCreateSession: function(payload) {
+                    logInfo('[主页面] 收到创建会话事件:', payload);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleCreateSession(payload);
+                    } catch (error) {
+                        logError('[主页面] 创建会话处理失败:', error);
+                    }
+                },
+                
+                // 会话列表相关方法
+                toggleSessionList: async function() {
+                    logInfo('[主页面] 切换会话列表');
+                    try {
+                        const methods = useMethods(store);
+                        await methods.toggleSessionList();
+                    } catch (error) {
+                        logError('[主页面] 切换会话列表失败:', error);
+                    }
+                },
+                
+                handleSessionSelect: async function(session) {
+                    logInfo('[主页面] 收到会话选择事件:', session);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionSelect(session);
+                    } catch (error) {
+                        logError('[主页面] 会话选择处理失败:', error);
+                    }
+                },
+                
+                handleSessionDelete: async function(sessionId) {
+                    logInfo('[主页面] 收到会话删除事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionDelete(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话删除处理失败:', error);
+                    }
+                },
+                
+                handleSessionCreate: async function() {
+                    logInfo('[主页面] 收到创建会话事件');
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionCreate();
+                    } catch (error) {
+                        logError('[主页面] 创建会话处理失败:', error);
+                    }
+                },
+                
+                handleSessionFavorite: async function(sessionId) {
+                    logInfo('[主页面] 收到会话收藏事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionToggleFavorite(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话收藏处理失败:', error);
+                    }
+                },
+                
+                handleSessionEdit: async function(sessionId) {
+                    logInfo('[主页面] 收到会话编辑事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionEdit(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话编辑处理失败:', error);
+                    }
+                },
+                
+                handleSessionTag: async function(sessionId) {
+                    logInfo('[主页面] 收到会话标签管理事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionManageTags(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话标签管理处理失败:', error);
+                    }
+                },
+                
+                handleSessionDuplicate: async function(sessionId) {
+                    logInfo('[主页面] 收到会话副本事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionDuplicate(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话副本处理失败:', error);
+                    }
+                },
+                
+                handleSessionContext: async function(sessionId) {
+                    logInfo('[主页面] 收到会话上下文事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionContext(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话上下文处理失败:', error);
+                    }
+                },
+                
+                handleSessionOpenUrl: async function(sessionId) {
+                    logInfo('[主页面] 收到会话打开URL事件:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionOpenUrl(sessionId);
+                    } catch (error) {
+                        logError('[主页面] 会话打开URL处理失败:', error);
+                    }
+                },
+                
+                handleSessionTree: async function(session) {
+                    logInfo('[主页面] 收到会话转树形文件事件:', session);
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionTree(session);
+                    } catch (error) {
+                        logError('[主页面] 会话转树形文件处理失败:', error);
+                    }
+                },
+                
+                handleTagSelect: function(tags) {
+                    logInfo('[主页面] 收到标签选择事件:', tags);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleTagSelect(tags);
+                    } catch (error) {
+                        logError('[主页面] 标签选择处理失败:', error);
+                    }
+                },
+                
+                handleTagClear: function() {
+                    logInfo('[主页面] 收到清除标签事件');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleTagClear();
+                    } catch (error) {
+                        logError('[主页面] 清除标签处理失败:', error);
+                    }
+                },
+                
+                handleSessionSearchChange: function(query) {
+                    logInfo('[主页面] 收到会话搜索变化事件:', query);
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleSessionSearchChange(query);
+                    } catch (error) {
+                        logError('[主页面] 会话搜索变化处理失败:', error);
+                    }
+                },
+                
+                // 从会话视图返回文件树视图
+                handleSessionViewBack: function() {
+                    logInfo('[主页面] 从会话视图返回文件树视图');
+                    try {
+                        const methods = useMethods(store);
+                        methods.handleSessionViewBack();
+                    } catch (error) {
+                        logError('[主页面] 返回文件树视图失败:', error);
+                    }
+                },
+                
+                // 切换会话批量选择模式
+                toggleSessionBatchMode: function() {
+                    logInfo('[主页面] 切换会话批量选择模式');
+                    try {
+                        const methods = useMethods(store);
+                        methods.toggleSessionBatchMode();
+                    } catch (error) {
+                        logError('[主页面] 切换会话批量选择模式失败:', error);
+                    }
+                },
+                
+                // 处理会话导入
+                handleSessionImport: function() {
+                    logInfo('[主页面] 触发会话导入');
+                    try {
+                        // 使用 nextTick 确保 ref 已绑定
+                        this.$nextTick(() => {
+                            const importInput = document.querySelector('input[type="file"][accept=".json,.zip"]');
+                            if (importInput) {
+                                importInput.click();
+                            } else {
+                                logWarn('[主页面] 未找到导入文件输入框');
+                            }
+                        });
+                    } catch (error) {
+                        logError('[主页面] 触发会话导入失败:', error);
+                    }
+                },
+                
+                // 处理会话导入文件
+                handleSessionImportFile: async function(event) {
+                    logInfo('[主页面] 处理会话导入文件');
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionImportFile(event);
+                    } catch (error) {
+                        logError('[主页面] 处理会话导入文件失败:', error);
+                    } finally {
+                        // 清空文件输入，允许重复选择同一文件
+                        if (event.target) {
+                            event.target.value = '';
+                        }
+                    }
+                },
+                
+                // 处理会话导出
+                handleSessionExport: async function() {
+                    logInfo('[主页面] 处理会话导出');
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleSessionExport();
+                    } catch (error) {
+                        logError('[主页面] 处理会话导出失败:', error);
+                    }
+                },
+                
+                // 批量删除会话
+                handleBatchDeleteSessions: async function() {
+                    logInfo('[主页面] 批量删除会话');
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleBatchDeleteSessions();
+                    } catch (error) {
+                        logError('[主页面] 批量删除会话失败:', error);
+                    }
+                },
+                
+                // 处理会话批量选择
+                handleSessionBatchSelect: function(sessionId) {
+                    logInfo('[主页面] 切换会话选择状态:', sessionId);
+                    try {
+                        const methods = useMethods(store);
+                        if (methods.toggleSessionSelection) {
+                            methods.toggleSessionSelection(sessionId);
+                        } else {
+                            // 备用方法：直接操作 store
+                            if (store && store.selectedSessionIds && store.selectedSessionIds.value) {
+                                if (store.selectedSessionIds.value.has(sessionId)) {
+                                    store.selectedSessionIds.value.delete(sessionId);
+                                } else {
+                                    store.selectedSessionIds.value.add(sessionId);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        logError('[主页面] 切换会话选择状态失败:', error);
+                    }
+                },
+                
+                // 全选/取消全选会话
+                handleToggleSelectAllSessions: function() {
+                    logInfo('[主页面] 全选/取消全选会话');
+                    try {
+                        const methods = useMethods(store);
+                        if (methods.toggleSelectAllSessions) {
+                            methods.toggleSelectAllSessions();
+                        }
+                    } catch (error) {
+                        logError('[主页面] 全选/取消全选会话失败:', error);
+                    }
+                },
+            },
+            computed: {
+                // 计算是否所有会话都已选中
+                isAllSessionsSelected: function() {
+                    if (!store || !store.sessions || !store.sessions.value || !Array.isArray(store.sessions.value)) {
+                        return false;
+                    }
+                    if (!store.selectedSessionIds || !store.selectedSessionIds.value) {
+                        return false;
+                    }
+                    const visibleSessions = store.sessions.value;
+                    if (visibleSessions.length === 0) {
+                        return false;
+                    }
+                    return visibleSessions.every(session => store.selectedSessionIds.value.has(session.id));
+                }
+            }
+        });
+        window.aicrApp = app;
+        window.aicrStore = store;
+        
+        // 调试：检查 store 中的 loadSessions
+        console.log('[aicr/index] store.loadSessions 类型:', typeof store?.loadSessions);
+        console.log('[aicr/index] store 对象键:', Object.keys(store || {}));
+        if (store && store.loadSessions) {
+            console.log('[aicr/index] ✓ loadSessions 方法存在');
+        } else {
+            console.error('[aicr/index] ✗ loadSessions 方法不存在');
+        }
+        
+        // 全局错误处理
+        window.addEventListener('error', (event) => {
+            console.error('[aicr] 全局错误:', event.error);
+            
+            // 使用新的浏览器扩展错误处理函数
+            if (window.handleBrowserExtensionError && window.handleBrowserExtensionError(event.error, 'aicr', event.filename)) {
+                return; // 已处理，忽略
+            }
+            
+            // 如果不是扩展错误，记录到错误日志
+            if (window.errorLogger && event.error) {
+                window.errorLogger.log(event.error, 'aicr', window.ErrorLevels?.ERROR || 'error');
+            }
+        });
+
+        // 全局Promise错误处理
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('[aicr] 未处理的Promise错误:', event.reason);
+            
+            // 使用新的浏览器扩展错误处理函数
+            if (window.handleBrowserExtensionError && window.handleBrowserExtensionError(event.reason, 'aicr', '', event.reason?.stack)) {
+                event.preventDefault(); // 阻止默认的错误处理
+                return; // 已处理，忽略
+            }
+            
+            // 如果不是扩展错误，记录到错误日志
+            if (window.errorLogger && event.reason) {
+                window.errorLogger.log(event.reason, 'aicr', window.ErrorLevels?.ERROR || 'error');
+            }
+        });
+        
+        // 确保store中的评论者方法可用
+        logInfo('[代码审查页面] store已暴露到全局，评论者方法:', {
+            loadCommenters: !!store.loadCommenters,
+            addCommenter: !!store.addCommenter,
+            updateCommenter: !!store.updateCommenter,
+            deleteCommenter: !!store.deleteCommenter,
+            setSelectedCommenterIds: !!store.setSelectedCommenterIds
+        });
+        
+        if (window.aicrApp && window.aicrApp.reload) {
+            const oldReload = window.aicrApp.reload;
+            window.aicrApp.reload = function() {
+                logInfo('[AICR主页面] reload 被调用');
+                oldReload.apply(this, arguments);
+            };
+        }
+    } catch (error) {
+        logError('[代码审查页面] 应用初始化失败:', error);
+    }
+})();
+
+/**
+ * 创建侧边栏拖拽条
+ * 参考 YiPet 项目的实现
+ */
+function createSidebarResizers(store) {
+    if (!store) return;
+    
+    // 创建文件树侧边栏拖拽条
+    const sidebar = document.querySelector('.aicr-sidebar');
+    if (sidebar) {
+        createResizer(sidebar, store, 'sidebar', {
+            minWidth: 240,
+            maxWidth: 400,
+            defaultWidth: 320,
+            storageKey: 'aicrSidebarWidth',
+            saveWidth: store.saveSidebarWidth
+        });
+        
+        // 应用保存的宽度
+        if (store.sidebarWidth && store.sidebarWidth.value) {
+            sidebar.style.width = `${store.sidebarWidth.value}px`;
+        }
+    }
+    
+    // 创建评论区侧边栏拖拽条
+    const comments = document.querySelector('.aicr-comments');
+    if (comments) {
+        createResizer(comments, store, 'comments', {
+            minWidth: 320,
+            maxWidth: 550,
+            defaultWidth: 450,
+            storageKey: 'aicrCommentsWidth',
+            saveWidth: store.saveCommentsWidth,
+            position: 'left' // 评论区在右侧，拖拽条在左侧
+        });
+        
+        // 应用保存的宽度
+        if (store.commentsWidth && store.commentsWidth.value) {
+            comments.style.width = `${store.commentsWidth.value}px`;
+        }
+    }
+}
+
+/**
+ * 创建单个拖拽条
+ */
+function createResizer(sidebarElement, store, type, options) {
+    const {
+        minWidth = 240,
+        maxWidth = 400,
+        defaultWidth = 320,
+        storageKey,
+        saveWidth,
+        position = 'right' // 'right' 或 'left'
+    } = options;
+    
+    // 检查是否已存在拖拽条
+    const existingResizer = sidebarElement.querySelector('.sidebar-resizer');
+    if (existingResizer) {
+        return existingResizer;
+    }
+    
+    const resizer = document.createElement('div');
+    resizer.className = 'sidebar-resizer';
+    resizer.setAttribute('data-type', type);
+    
+    // 设置样式
+    resizer.style.cssText = `
+        position: absolute !important;
+        top: 0 !important;
+        ${position === 'right' ? 'right: -4px' : 'left: -4px'} !important;
+        width: 8px !important;
+        height: 100% !important;
+        cursor: col-resize !important;
+        z-index: 10 !important;
+        background: transparent !important;
+        transition: background 0.2s ease !important;
+    `;
+    
+    let isResizing = false;
+    
+    // 鼠标悬停效果
+    resizer.addEventListener('mouseenter', () => {
+        if (!isResizing) {
+            resizer.style.setProperty('background', 'rgba(59, 130, 246, 0.3)', 'important');
+        }
+    });
+    
+    resizer.addEventListener('mouseleave', () => {
+        if (!isResizing) {
+            resizer.style.setProperty('background', 'transparent', 'important');
+        }
+    });
+    
+        // 拖拽开始
+        resizer.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            isResizing = true;
+            resizer.style.setProperty('background', 'rgba(59, 130, 246, 0.5)', 'important');
+            resizer.style.setProperty('cursor', 'col-resize', 'important');
+            
+            // 记录初始位置和宽度
+            const startX = e.clientX;
+            const currentWidth = sidebarElement.offsetWidth;
+            const startWidth = currentWidth || defaultWidth;
+            
+            // 禁用过渡效果，确保拖拽流畅
+            sidebarElement.style.transition = 'none';
+            
+            // 添加全局样式，禁用文本选择
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'col-resize';
+        
+        // 拖拽中
+        const handleMouseMove = (e) => {
+            if (!isResizing) return;
+            
+            const diffX = position === 'right' 
+                ? e.clientX - startX 
+                : startX - e.clientX;
+            let newWidth = startWidth + diffX;
+            
+            // 只限制最小宽度，避免宽度为负或过小
+            newWidth = Math.max(50, newWidth);
+            
+            // 更新宽度
+            sidebarElement.style.width = `${newWidth}px`;
+            
+            // 更新 store 中的宽度值
+            if (type === 'sidebar' && store.sidebarWidth) {
+                store.sidebarWidth.value = newWidth;
+            } else if (type === 'comments' && store.commentsWidth) {
+                store.commentsWidth.value = newWidth;
+            }
+        };
+        
+        // 拖拽结束
+        const handleMouseUp = () => {
+            isResizing = false;
+            resizer.style.setProperty('background', 'transparent', 'important');
+            resizer.style.setProperty('cursor', 'col-resize', 'important');
+            
+            // 恢复过渡效果
+            sidebarElement.style.transition = '';
+            
+            // 恢复全局样式
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+            
+            // 保存宽度
+            const finalWidth = sidebarElement.offsetWidth;
+            if (saveWidth && typeof saveWidth === 'function') {
+                saveWidth(finalWidth);
+            }
+            
+            // 移除事件监听器
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+        
+        // 添加全局事件监听器
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    });
+    
+    sidebarElement.appendChild(resizer);
+    
+    return resizer;
+}
+
+
+
+
+
+
+
+
+
+

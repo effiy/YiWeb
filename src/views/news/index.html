@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI智能助手，为您提供问答、数据分析、代码编写等多种智能服务">
+    <meta name="keywords" content="AI, 智能助手, 数据分析, 代码编写, 生图创造, YiWeb">
+    <meta name="author" content="liangliang">
+
+    <title>YiWeb - 智能新闻助手</title>
+    
+    <!-- 页面样式 -->
+    <link rel="stylesheet" href="../../views/news/index.css">
+    <!-- 图标库 -->
+    <link rel="stylesheet" href="../../libs/font-awesome/css/all.min.css" crossorigin="anonymous">
+
+    <!-- Vue3 CDN -->
+    <script src="../../libs/vue/vue.global.js"></script>
+    <!-- Marked.js for Markdown rendering -->
+    <script src="../../libs/marked/marked.min.js"></script>
+    <!-- Mermaid.js for diagram rendering -->
+    <script src="../../libs/mermaid/mermaid.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部搜索与分类区域 -->
+        <search-header
+            v-model:search-query="searchQuery"
+            :categories="categories"
+            :selected-categories="selectedCategories"
+            :active-category="activeCategory"
+            :sidebar-collapsed="sidebarCollapsed"
+            :original-data="originalData"
+            :available-views="categories"
+            :current-view="activeCategory"
+            @search-keydown="handleSearchKeydown"
+            @clear-search="handleClearSearch"
+            @toggle-category="handleToggleCategory"
+            @toggle-sidebar="handleToggleSidebar"
+            @set-current-view="handleToggleCategory"
+            @export-all-data="exportAllData"
+        ></search-header>
+        
+        <main class="main-content" role="main">
+            <!-- 功能卡片区域 -->
+            <section class="container">
+                <div class="content-wrapper">
+                    <!-- 主要内容区域 -->
+                    <div class="main-column">
+                        <!-- 每日清单 -->
+                        <daily-checklist 
+                            v-show="activeCategory === 'all' || activeCategory === 'dailyChecklist'"
+                            :active-category="activeCategory"
+                            :current-date-display="currentDateDisplay"
+                            :current-date-subtitle="currentDateSubtitle"
+                        ></daily-checklist>
+                        
+                        <!-- 项目文件列表 -->
+                        <project-files-list 
+                            v-show="activeCategory === 'all' || activeCategory === 'projectFiles'"
+                            :project-files="projectFilesData"
+                            :filtered-project-files="filteredProjectFilesData"
+                            :loading="loading"
+                            :error="error"
+                            :search-query="searchQuery"
+                            :current-date-display="currentDateDisplay"
+                            :clicked-items="clickedItems"
+                            :read-items="readItems"
+                            :favorite-items="favoriteItems"
+                            :has-project-files-data="hasProjectFilesData"
+                            @project-file-click="handleProjectFileClick"
+                            @toggle-favorite="handleToggleFavorite"
+                            @load-project-files-data="handleLoadProjectFilesData"
+                        ></project-files-list>
+                        <!-- 评论列表（与 AICR 风格一致） -->
+                        <comments-list v-show="activeCategory === 'all' || activeCategory === 'comments'" :date-str="currentDateSubtitle"></comments-list>
+                        <!-- 新闻列表组件模板 -->
+                        <news-list
+                            v-show="activeCategory === 'all' || activeCategory === 'news'"
+                            :loading="loading"
+                            :error="error"
+                            :current-date-display="currentDateDisplay"
+                            :search-query="searchQuery"
+                            :search-results="filteredNewsData"
+                            :display-categories="displayCategories"
+                            :selected-categories="selectedCategories"
+                            :clicked-items="clickedItems"
+                            :read-items="readItems"
+                            :favorite-items="favoriteItems"
+                            :has-news-data="hasNewsData"
+                            @load-news-data="handleLoadNewsData"
+                            @news-click="handleNewsClick"
+                            @toggle-favorite="handleToggleFavorite"
+                        ></news-list>
+                    </div>
+                    
+                    <!-- 侧边栏区域 -->
+                    <aside class="sidebar-navigation" :class="{ collapsed: sidebarCollapsed }" role="complementary" aria-label="日期导航">
+                    <calendar
+                        :current-date="currentDate"
+                        :current-date-display="currentDateDisplay"
+                        :current-date-subtitle="currentDateSubtitle"
+                        :is-today="isToday"
+                        :is-future-date="isFutureDate"
+                        :sidebar-collapsed="sidebarCollapsed"
+                        :calendar-date="calendarMonth"
+                        :calendar-title="calendarTitle"
+                        :is-current-month="isCurrentMonth"
+                        :calendar-days="calendarDays"
+                        :selected-date="selectedDate"
+                        @go-to-previous-day="goToPreviousDay"
+                        @go-to-next-day="goToNextDay"
+                        @go-to-today="goToToday"
+                        @previous-month="previousMonth"
+                        @next-month="nextMonth"
+                        @select-date="selectDate"
+                    >                    </calendar>
+                    </aside>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    
+
+    <!-- 错误提示 -->
+    <section id="error-message" class="error-message" role="alert" aria-live="assertive" hidden></section>
+
+    <!-- 通知容器 -->
+    <section id="notifications" class="notifications-container" role="region" aria-label="通知区域"></section>
+
+    <script type="module" src="../../config.js"></script>
+
+    <!-- JSZip 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    
+    <!-- 导出工具 -->
+    <script type="module" src="../../utils/exportUtils.js"></script>
+    
+    <!-- Mermaid 工具函数 -->
+    <script type="module" src="../../utils/mermaid.js"></script>
+    <script type="module" src="../../utils/mermaidDebug.js"></script>
+    <script type="module" src="../../utils/mermaidRenderer.js"></script>
+    <!-- 主功能脚本 -->
+    <script type="module" src="../../components/common/searchHeader/index.js"></script>
+    <script type="module" src="../../components/calendar/index.js"></script>
+    <script type="module" src="../../components/business/dailyChecklist/index.js"></script>
+    <script type="module" src="../../components/business/newsList/index.js"></script>
+    <script type="module" src="../../components/business/commentsList/index.js"></script>
+    <script type="module" src="../../components/common/projectFilesList/index.js"></script>
+    <script type="module" src="../../views/news/index.js"></script>
+    <!-- 性能监控脚本 -->
+    <script type="module" src="../../utils/performance.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+

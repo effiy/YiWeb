@@ -1,0 +1,25 @@
+/**
+ * 全局样式入口文件
+ * author: liangliang
+ * 说明：按功能模块分组导入，便于维护和扩展
+ */
+
+/* 基础重置和主题 */
+@import "./base/reset.css";
+@import "./base/theme.css";
+@import "./base/animations.css";
+
+/* 通用工具类 */
+@import "./utils/spacing.css";
+@import "./utils/display.css";
+@import "./utils/typography.css";
+
+/* 布局相关 */
+@import "./layout/layout.css";
+
+/* 组件样式 */
+@import "./components/input.css";
+@import "./components/button.css";
+@import "./components/loading.css";
+@import "./components/message.css";
+@import "./components/edit-card.css";

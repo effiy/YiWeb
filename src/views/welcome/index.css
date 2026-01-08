@@ -1,0 +1,873 @@
+/* author: liangliang */
+/* ========== 全局样式导入 ========== */
+@import url('/src/styles/index.css');
+@import url('/src/components/common/searchHeader/index.css');
+
+@import url('/src/views/welcome/components/featureCard/index.css');
+
+
+/* ========== 按钮通用样式 ========== */
+.filter-btn {
+    min-width: 80px;
+    width: 80px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ========== 新建卡片按钮样式 ========== */
+.create-card-item {
+    margin-left: auto; /* 将按钮推到右侧 */
+    display: flex;
+    align-items: center;
+}
+
+.create-card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    white-space: nowrap;
+    height: 40px; /* 与搜索框高度保持一致 */
+}
+
+.create-card-btn:hover {
+    background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(40, 167, 69, 0.4);
+}
+
+.create-card-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.create-card-btn i {
+    font-size: 16px;
+}
+
+/* ========== API 鉴权按钮样式 ========== */
+.auth-btn-item {
+    display: flex;
+    align-items: center;
+    margin-left: 8px;
+}
+
+.auth-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #495057;
+    padding: 0;
+}
+
+.auth-btn:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+    color: #212529;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.auth-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.auth-icon {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+/* ========== 时间选择器按钮样式 ========== */
+.year-select,
+.quarter-select,
+.month-select {
+    min-width: 120px;
+    width: 120px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ========== 全部按钮样式 ========== */
+.all-select {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    border: 1px solid #495057;
+    color: white;
+    transition: all 0.3s ease;
+    min-width: 80px;
+    width: 80px;
+}
+
+.all-select:hover:not(:disabled) {
+    background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+    border-color: #343a40;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.all-select.active {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-color: #28a745;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.3);
+}
+
+.all-select.active:hover:not(:disabled) {
+    background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+    border-color: #20c997;
+}
+
+.all-select.reverse {
+    background: linear-gradient(135deg, #fd7e14 0%, #e83e8c 100%);
+    border-color: #fd7e14;
+    animation: pulse 2s infinite;
+}
+
+.all-select.reverse:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e83e8c 0%, #dc3545 100%);
+    border-color: #e83e8c;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(253, 126, 20, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(253, 126, 20, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(253, 126, 20, 0); }
+}
+
+/* ========== 响应式设计 ========== */
+@media (max-width: 768px) {
+    .filter-btn {
+        min-width: 70px;
+        width: 70px;
+        font-size: 13px;
+    }
+    
+    .year-select,
+    .quarter-select,
+    .month-select {
+        min-width: 100px;
+        width: 100px;
+        font-size: 13px;
+    }
+    
+    /* 平板设备上的周、日选择器 */
+    .week-select {
+        min-width: 140px;
+        width: 140px;
+        font-size: 12px;
+        padding-right: 24px !important;
+    }
+    
+    .day-select {
+        min-width: 115px;
+        width: 115px;
+        font-size: 12px;
+        padding-right: 24px !important;
+    }
+    
+    .all-select {
+        min-width: 70px;
+        width: 70px;
+        font-size: 13px;
+    }
+    
+    .create-card-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+        height: 36px;
+    }
+    
+    .create-card-btn span {
+        display: none; /* 在小屏幕上隐藏文字，只显示图标 */
+    }
+}
+
+@media (max-width: 480px) {
+    .filter-btn {
+        min-width: 60px;
+        width: 60px;
+        font-size: 12px;
+    }
+    
+    .year-select,
+    .quarter-select,
+    .month-select {
+        min-width: 85px;
+        width: 85px;
+        font-size: 12px;
+    }
+    
+    /* 移动设备上的周、日选择器 */
+    .week-select {
+        min-width: 120px;
+        width: 120px;
+        font-size: 11px;
+        padding-right: 24px !important;
+    }
+    
+    .day-select {
+        min-width: 100px;
+        width: 100px;
+        font-size: 11px;
+        padding-right: 24px !important;
+    }
+    
+    .all-select {
+        min-width: 60px;
+        width: 60px;
+        font-size: 12px;
+    }
+    
+    .create-card-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        height: 32px;
+    }
+    
+    .create-card-btn span {
+        display: none;
+    }
+}
+
+/* ========== 状态样式 ========== */
+.loading-container,
+.error-container,
+.empty-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    min-height: 300px;
+}
+
+.loading-container .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-container p,
+.error-container p,
+.empty-container p {
+    color: #666;
+    font-size: 16px;
+    margin: 0;
+}
+
+.error-container {
+    color: #e74c3c;
+}
+
+.retry-btn {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.retry-btn:hover {
+    background: #2980b9;
+}
+
+.retry-btn:active {
+    transform: translateY(1px);
+}
+
+/* ========== 时间选择器样式 ========== */
+/* 级联容器样式 */
+.cascader-container { 
+    position: relative; 
+    margin-right: 16px; /* 添加右边距 */
+}
+
+.cascader { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 8px; /* 选择器之间的间隔 */
+}
+
+/* 时间选择器组样式 */
+.time-selector-group {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 选择器与清空按钮容器 */
+.select-with-clear {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* 清空按钮样式 */
+.clear-btn {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 10px;
+    padding: 0;
+    z-index: 10;
+    opacity: 0;
+    visibility: hidden;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+/* 选择器悬停时显示清空按钮 */
+.select-with-clear:hover .clear-btn {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) scale(1);
+}
+
+/* 清空按钮悬停效果 */
+.clear-btn:hover {
+    background: rgba(255, 99, 99, 0.25);
+    border-color: rgba(255, 99, 99, 0.5);
+    color: #ff6b6b;
+    transform: translateY(-50%) scale(1.15);
+    box-shadow: 0 2px 8px rgba(255, 99, 99, 0.3);
+}
+
+/* 清空按钮点击效果 */
+.clear-btn:active {
+    transform: translateY(-50%) scale(0.9);
+    background: rgba(255, 99, 99, 0.4);
+    box-shadow: 0 1px 4px rgba(255, 99, 99, 0.4);
+}
+
+/* 清空按钮禁用状态 */
+.clear-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: translateY(-50%) scale(1);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.clear-btn:disabled:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-50%) scale(1);
+    box-shadow: none;
+}
+
+/* 清空按钮图标 */
+.clear-btn i {
+    font-size: 8px;
+    line-height: 1;
+    font-weight: 600;
+}
+
+/* 选择器有值时始终显示清空按钮 */
+.select-with-clear.has-value .clear-btn {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 选择器右侧留出清空按钮空间 */
+.filter-btn {
+    padding-right: 30px !important;
+}
+
+/* 清空按钮动画效果 */
+@keyframes clearBtnFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
+}
+
+@keyframes clearBtnPulse {
+    0%, 100% {
+        transform: translateY(-50%) scale(1);
+    }
+    50% {
+        transform: translateY(-50%) scale(1.1);
+    }
+}
+
+/* 清空按钮出现动画 */
+.select-with-clear:hover .clear-btn,
+.select-with-clear.has-value .clear-btn {
+    animation: clearBtnFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 清空按钮脉冲效果（用于吸引注意力） */
+.clear-btn.attention {
+    animation: clearBtnPulse 1s ease-in-out infinite;
+}
+
+/* 清空按钮成功反馈 */
+.clear-btn.success {
+    background: rgba(40, 167, 69, 0.25);
+    border-color: rgba(40, 167, 69, 0.5);
+    color: #28a745;
+    transform: translateY(-50%) scale(1.2);
+}
+
+/* 清空按钮错误反馈 */
+.clear-btn.error {
+    background: rgba(220, 53, 69, 0.25);
+    border-color: rgba(220, 53, 69, 0.5);
+    color: #dc3545;
+    transform: translateY(-50%) scale(1.2);
+}
+
+/* 暗色模式适配 */
+@media (prefers-color-scheme: dark) {
+    .clear-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .clear-btn:hover {
+        background: rgba(255, 99, 99, 0.3);
+        border-color: rgba(255, 99, 99, 0.6);
+        color: #ff6b6b;
+    }
+}
+
+/* 减少动画选项 */
+@media (prefers-reduced-motion: reduce) {
+    .clear-btn {
+        transition: none !important;
+        animation: none !important;
+    }
+    
+    .select-with-clear:hover .clear-btn,
+    .select-with-clear.has-value .clear-btn {
+        animation: none !important;
+    }
+}
+
+.year-select, 
+.quarter-select, 
+.month-select { 
+    min-width: 100px; 
+}
+
+/* 周选择器样式 - 需要更宽的空间显示"第X周 (X-X日)" */
+.week-select {
+    min-width: 160px;
+    width: 160px;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 13px;
+    padding-right: 30px !important; /* 为清空按钮留出空间 */
+}
+
+/* 日选择器样式 - 需要适中的空间显示"X日 (周X)" */
+.day-select {
+    min-width: 130px;
+    width: 130px;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 13px;
+    padding-right: 30px !important; /* 为清空按钮留出空间 */
+}
+
+/* 按钮间隔样式 */
+.filter-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* 按钮之间的间隔 */
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.filter-buttons li {
+    display: flex;
+    align-items: center;
+}
+
+/* ========== 搜索相关样式 ========== */
+.search-no-results,
+.search-results-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    background: #f8f9fa;
+    border-radius: 12px;
+    margin: 20px 0;
+    border: 1px solid #e9ecef;
+}
+
+.search-no-results p,
+.search-results-info p {
+    color: #666;
+    font-size: 16px;
+    margin: 0 0 15px 0;
+    font-weight: 500;
+}
+
+.search-no-results {
+    color: #e74c3c;
+    background: #fdf2f2;
+    border-color: #f5c6cb;
+}
+
+.search-no-results p {
+    color: #721c24;
+}
+
+.clear-search-btn {
+    padding: 8px 16px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+    font-weight: 500;
+}
+
+.clear-search-btn:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+.clear-search-btn:active {
+    transform: translateY(0);
+}
+
+/* 搜索输入框高亮效果 */
+.search-input-wrapper textarea:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+/* 搜索结果动画 */
+.feature-cards-grid {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========== 导航按钮样式 ========== */
+.filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    padding: var(--spacing-2) var(--spacing-4);
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: var(--radius-md, 6px);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    transition: all var(--duration-fast) var(--ease-smooth);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    animation: filterButtonSlideIn 0.2s ease-out;
+}
+
+.filter-btn:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.3);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.filter-btn.active {
+    background: var(--primary-blue);
+    border-color: var(--primary-blue);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+}
+
+.filter-btn.active:hover {
+    background: var(--primary-cyan);
+    border-color: var(--primary-cyan);
+}
+
+.filter-btn i {
+    font-size: var(--font-size-sm);
+    transition: color var(--duration-fast) var(--ease-smooth);
+}
+
+.filter-btn:hover i {
+    color: var(--text-primary);
+}
+
+.filter-btn.active i {
+    color: #fff;
+}
+
+.filter-btn:active {
+    transform: scale(0.98);
+    transition: transform var(--duration-fast) var(--ease-smooth);
+}
+
+.filter-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(79,172,254,0.3);
+}
+
+/* 筛选按钮容器 */
+.filter-buttons {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: var(--spacing-sm);
+    overflow-x: auto;
+    -ms-overflow-style: none;
+    flex: 1;
+    padding: var(--spacing-xs);
+    position: relative;
+}
+
+.filter-buttons::-webkit-scrollbar {
+    display: none;
+}
+
+/* 筛选按钮动画 */
+@keyframes filterButtonSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 暗色模式适配 */
+@media (prefers-color-scheme: dark) {
+    .filter-btn {
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(255,255,255,0.1);
+    }
+    .filter-btn:hover {
+        background: rgba(255,255,255,0.1);
+        border-color: rgba(255,255,255,0.2);
+    }
+}
+
+/* 减少动画选项 */
+@media (prefers-reduced-motion: reduce) {
+    .filter-btn {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* 搜索清除按钮样式 */
+.search-clear {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+}
+
+.search-clear .clear-search-btn {
+    padding: 6px 8px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+    opacity: 0.8;
+}
+
+.search-clear .clear-search-btn:hover {
+    background: #5a6268;
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .filter-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.85rem;
+        gap: var(--spacing-xs);
+    }
+    
+    .filter-btn i {
+        font-size: 0.9rem;
+    }
+    
+    .filter-buttons {
+        gap: var(--spacing-xs);
+    }
+    
+    /* 清空按钮响应式样式 */
+    .clear-btn {
+        width: 16px;
+        height: 16px;
+        right: 4px;
+        font-size: 9px;
+    }
+    
+    .clear-btn i {
+        font-size: 7px;
+    }
+    
+    .time-selector-group {
+        gap: 4px;
+    }
+    
+    /* 移动设备上选择器右侧空间调整 */
+    .filter-btn {
+        padding-right: 24px !important;
+    }
+}
+
+/* ========== 新卡片高亮效果样式 ========== */
+.new-card-highlight {
+    animation: newCardPulse 2s ease-in-out;
+    box-shadow: 0 0 20px rgba(40, 167, 69, 0.6);
+    border: 2px solid #28a745;
+    transform: scale(1.02);
+    transition: all 0.3s ease;
+}
+
+.new-card-highlight .card-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.new-card-highlight .card-title {
+    color: white;
+}
+
+.new-card-highlight .card-description {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+@keyframes newCardPulse {
+    0% {
+        box-shadow: 0 0 20px rgba(40, 167, 69, 0.6);
+        transform: scale(1.02);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(40, 167, 69, 0.8);
+        transform: scale(1.05);
+    }
+    100% {
+        box-shadow: 0 0 20px rgba(40, 167, 69, 0.6);
+        transform: scale(1.02);
+    }
+}
+
+/* 新卡片进入动画 */
+.feature-card {
+    transition: all 0.3s ease;
+}
+
+.feature-card.new-card-highlight {
+    position: relative;
+    z-index: 10;
+}
+
+/* 暗色模式下的新卡片高亮 */
+@media (prefers-color-scheme: dark) {
+    .new-card-highlight {
+        box-shadow: 0 0 25px rgba(40, 167, 69, 0.8);
+        border-color: #20c997;
+    }
+    
+    .new-card-highlight .card-header {
+        background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+    }
+}
+
+/* 减少动画选项时的样式 */
+@media (prefers-reduced-motion: reduce) {
+    .new-card-highlight {
+        animation: none;
+        box-shadow: 0 0 15px rgba(40, 167, 69, 0.8);
+        border: 2px solid #28a745;
+    }
+}
+
+
+
+
