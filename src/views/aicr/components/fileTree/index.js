@@ -67,7 +67,7 @@ const createFileTreeNode = () => {
                 type: Object,
                 required: true
             },
-            selectedFileId: {
+            selectedKey: {
                 type: [String, null],
                 default: null
             },
@@ -83,7 +83,7 @@ const createFileTreeNode = () => {
                 type: Boolean,
                 default: false
             },
-            selectedFileIds: {
+            selectedKeys: {
                 type: [Set, Array],
                 default: () => new Set()
             }
@@ -112,7 +112,7 @@ const createFileTreeNode = () => {
                 return sortFileTreeItems(items);
             },
             // 切换文件夹展开状态
-            toggleFolder(folderId) {
+            toggleFolder(key) {
                 return safeExecute(() => {
                     // 如果长按已完成，不触发点击事件
                     if (this.longPressCompleted) {
@@ -120,53 +120,53 @@ const createFileTreeNode = () => {
                         return;
                     }
                     
-                    if (!folderId || typeof folderId !== 'string') {
-                        throw createError('文件夹ID无效', ErrorTypes.VALIDATION, '文件夹切换');
+                    if (!key || typeof key !== 'string') {
+                        throw createError('文件夹Key无效', ErrorTypes.VALIDATION, '文件夹切换');
                     }
                     
-                    this.$emit('folder-toggle', folderId);
+                    this.$emit('folder-toggle', key);
                 }, '文件夹切换处理');
             },
             // 新建子文件夹
-            createSubFolder(event, parentId) {
+            createSubFolder(event, parentKey) {
                 return safeExecute(() => {
                     event && event.stopPropagation && event.stopPropagation();
-                    if (!parentId || typeof parentId !== 'string') {
-                        throw createError('父级目录ID无效', ErrorTypes.VALIDATION, '新建文件夹');
+                    if (!parentKey || typeof parentKey !== 'string') {
+                        throw createError('父级目录Key无效', ErrorTypes.VALIDATION, '新建文件夹');
                     }
-                    this.$emit('create-folder', { parentId });
+                    this.$emit('create-folder', { parentKey });
                 }, '新建子文件夹');
             },
             // 新建子文件
-            createSubFile(event, parentId) {
+            createSubFile(event, parentKey) {
                 return safeExecute(() => {
                     event && event.stopPropagation && event.stopPropagation();
-                    if (!parentId || typeof parentId !== 'string') {
-                        throw createError('父级目录ID无效', ErrorTypes.VALIDATION, '新建文件');
+                    if (!parentKey || typeof parentKey !== 'string') {
+                        throw createError('父级目录Key无效', ErrorTypes.VALIDATION, '新建文件');
                     }
-                    this.$emit('create-file', { parentId });
+                    this.$emit('create-file', { parentKey });
                 }, '新建子文件');
             },
             // 重命名
             renameItem(event, item) {
                 return safeExecute(() => {
                     event && event.stopPropagation && event.stopPropagation();
-                    const itemId = item && item.id;
+                    const key = item && item.key;
                     const name = item && item.name;
-                    if (!itemId || typeof itemId !== 'string') {
-                        throw createError('目标ID无效', ErrorTypes.VALIDATION, '重命名');
+                    if (!key || typeof key !== 'string') {
+                        throw createError('目标Key无效', ErrorTypes.VALIDATION, '重命名');
                     }
-                    this.$emit('rename-item', { itemId, name });
+                    this.$emit('rename-item', { key, name });
                 }, '重命名');
             },
             // 删除
-            deleteItem(event, itemId) {
+            deleteItem(event, key) {
                 return safeExecute(() => {
                     event && event.stopPropagation && event.stopPropagation();
-                    if (!itemId || typeof itemId !== 'string') {
-                        throw createError('目标ID无效', ErrorTypes.VALIDATION, '删除');
+                    if (!key || typeof key !== 'string') {
+                        throw createError('目标Key无效', ErrorTypes.VALIDATION, '删除');
                     }
-                    this.$emit('delete-item', { itemId });
+                    this.$emit('delete-item', { key });
                 }, '删除');
             },
             
@@ -195,8 +195,8 @@ const createFileTreeNode = () => {
                     }
                     
                     // 检查item是否存在
-                    if (!item || !item.id) {
-                        console.warn('[长按删除] item参数为空');
+                    if (!item || !item.key) {
+                        console.warn('[长按删除] item参数为空或缺少key');
                         return;
                     }
                     
@@ -266,11 +266,11 @@ const createFileTreeNode = () => {
                     }
                     
                     // 显示确认对话框
-                    const itemName = item.name || item.id;
+                    const itemName = item.name || item.key;
                     const itemType = item.type === 'folder' ? '文件夹' : '文件';
                     if (confirm(`确定删除${itemType} "${itemName}" 及其子项？此操作不可撤销。`)) {
                         this.isDeleting = true;
-                        this.deleteItem(event, item.id);
+                        this.deleteItem(event, item.key);
                         // 延迟重置删除状态
                         setTimeout(() => {
                             this.isDeleting = false;
@@ -290,12 +290,11 @@ const createFileTreeNode = () => {
                 return safeExecute(() => {
                     console.log('[FileTreeNode] 创建会话按钮被点击:', item);
                     event && event.stopPropagation && event.stopPropagation();
-                    if (!item || !item.id) {
+                    if (!item || !item.key) {
                         throw createError('文件信息无效', ErrorTypes.VALIDATION, '创建会话');
                     }
                     const payload = { 
-                        fileId: item.fileId || item.id,
-                        id: item.id,
+                        key: item.key,
                         name: item.name,
                         path: item.path,
                         originalItem: item
@@ -306,14 +305,14 @@ const createFileTreeNode = () => {
             },
             
             // 检查文件夹是否展开
-            isFolderExpanded(folderId) {
+            isFolderExpanded(key) {
                 return safeExecute(() => {
-                    return this.expandedFolders && this.expandedFolders.has(folderId);
+                    return this.expandedFolders && this.expandedFolders.has(key);
                 }, '文件夹展开状态检查');
             },
             
             // 选择文件
-            selectFile(fileId) {
+            selectFile(key) {
                 return safeExecute(() => {
                     // 如果长按已完成，不触发点击事件
                     if (this.longPressCompleted) {
@@ -321,39 +320,34 @@ const createFileTreeNode = () => {
                         return;
                     }
                     
-                    if (fileId == null) {
-                        throw createError('文件ID无效', ErrorTypes.VALIDATION, '文件选择');
+                    if (key == null) {
+                        throw createError('文件Key无效', ErrorTypes.VALIDATION, '文件选择');
                     }
-                    const idStr = String(fileId);
+                    const keyStr = String(key);
                     
                     // 批量选择模式：切换选中状态
                     if (this.batchMode) {
-                        this.$emit('batch-select-file', idStr);
+                        this.$emit('batch-select-file', keyStr);
                         return;
                     }
                     
                     // 添加防抖机制，避免快速连续点击
                     if (this._lastClickTime && Date.now() - this._lastClickTime < 300) {
-                        console.log('[FileTreeNode] 点击间隔过短，跳过重复选择:', idStr);
+                        console.log('[FileTreeNode] 点击间隔过短，跳过重复选择:', keyStr);
                         return;
                     }
                     
                     this._lastClickTime = Date.now();
-                    console.log('[FileTreeNode] 选择文件:', idStr);
+                    console.log('[FileTreeNode] 选择文件:', keyStr);
                     console.log('[FileTreeNode] 文件对象:', this.item);
-                    console.log('[FileTreeNode] 文件路径深度:', idStr.split('/').length);
                     
                     // 构建统一的文件标识符payload，确保与后端数据结构一致
                     const payload = { 
-                        // 主要标识符：优先使用fileId，然后是id，最后是name
-                        fileId: (this.item && this.item.fileId) || (this.item && this.item.id) || idStr,
-                        // 兼容性标识符
-                        id: (this.item && this.item.id) || idStr,
-                        path: (this.item && this.item.path) || idStr,
-                        name: (this.item && this.item.name) || (idStr.split('/').pop()),
-                        // 唯一标识符：优先使用key，然后是_id，最后是id
-                        key: this.item?.key || this.item?._id || this.item?.id || idStr,
-                        // 保留原始item对象，包含所有可能的标识字段
+                        // 唯一标识符
+                        key: keyStr,
+                        path: (this.item && this.item.path) || keyStr,
+                        name: (this.item && this.item.name) || (keyStr.split('/').pop()),
+                        // 保留原始item对象
                         originalItem: this.item,
                         // 文件类型
                         type: this.item?.type || 'file',
@@ -368,10 +362,10 @@ const createFileTreeNode = () => {
             },
             
             // 检查文件是否被选中
-            isFileSelected(fileId) {
+            isFileSelected(key) {
                 return safeExecute(() => {
                     // 批量选择模式：检查是否在选中列表中
-                    if (this.batchMode && this.selectedFileIds) {
+                    if (this.batchMode && this.selectedKeys) {
                         const normalize = (v) => {
                             if (!v) return '';
                             let s = String(v).replace(/\\/g, '/');
@@ -380,10 +374,10 @@ const createFileTreeNode = () => {
                             s = s.replace(/\/\/+/g, '/');
                             return s;
                         };
-                        const normalizedFileId = normalize(fileId);
-                        // 检查 Set 中是否包含该文件ID
-                        for (const selectedId of this.selectedFileIds) {
-                            if (normalize(selectedId) === normalizedFileId) {
+                        const normalizedKey = normalize(key);
+                        // 检查 Set 中是否包含该文件Key
+                        for (const sk of this.selectedKeys) {
+                            if (normalize(sk) === normalizedKey) {
                                 return true;
                             }
                         }
@@ -391,9 +385,9 @@ const createFileTreeNode = () => {
                     }
                     
                     // 普通模式：检查是否与当前选中文件匹配
-                    if (!fileId || !this.selectedFileId) return false;
+                    if (!key || !this.selectedKey) return false;
                     
-                    // 规范化文件ID进行比较
+                    // 规范化文件Key进行比较
                     const normalize = (v) => {
                         if (!v) return '';
                         let s = String(v).replace(/\\/g, '/');
@@ -403,11 +397,10 @@ const createFileTreeNode = () => {
                         return s;
                     };
                     
-                    const normalizedFileId = normalize(fileId);
-                    const normalizedSelectedId = normalize(this.selectedFileId);
-                    const result = normalizedFileId === normalizedSelectedId;
+                    const normalizedKey = normalize(key);
+                    const normalizedSelectedKey = normalize(this.selectedKey);
+                    const result = normalizedKey === normalizedSelectedKey;
                     
-                    console.log('[FileTree] isFileSelected - fileId:', fileId, 'selectedFileId:', this.selectedFileId, 'normalized:', { fileId: normalizedFileId, selectedId: normalizedSelectedId }, 'result:', result);
                     return result;
                 }, '文件选中状态检查');
             },
@@ -416,20 +409,20 @@ const createFileTreeNode = () => {
             getFileIcon(item) {
                 return safeExecute(() => {
                     if (item.type === 'folder') {
-                        return this.isFolderExpanded(item.id) ? '📂' : '📁';
+                        return this.isFolderExpanded(item.key) ? '📂' : '📁';
                     }
                     
-					// 根据文件扩展名返回不同图标（兼容缺失 name 的情况）
-					const fileNameSource = (item && typeof item.name === 'string' && item.name)
-						? item.name
-						: (typeof item.path === 'string' && item.path
-							? item.path.split('/').pop()
-							: (typeof item.id === 'string'
-								? item.id.split('/').pop()
-								: ''));
-					const ext = fileNameSource && fileNameSource.includes('.')
-						? fileNameSource.split('.').pop().toLowerCase()
-						: '';
+                    // 根据文件扩展名返回不同图标（兼容缺失 name 的情况）
+                    const fileNameSource = (item && typeof item.name === 'string' && item.name)
+                        ? item.name
+                        : (typeof item.path === 'string' && item.path
+                            ? item.path.split('/').pop()
+                            : (typeof item.key === 'string'
+                                ? item.key.split('/').pop()
+                                : ''));
+                    const ext = fileNameSource && fileNameSource.includes('.')
+                        ? fileNameSource.split('.').pop().toLowerCase()
+                        : '';
                     const iconMap = {
                         'js': '📄',
                         'ts': '📘',
@@ -471,9 +464,9 @@ const createFileTreeNode = () => {
             },
             
             // 获取文件的评论数量
-            getCommentCount(fileId) {
+            getCommentCount(key) {
                 return safeExecute(() => {
-                    if (!this.comments || !fileId) return 0;
+                    if (!this.comments || !key) return 0;
                     
                     // 使用统一的文件标识符匹配逻辑
                     const normalize = (v) => {
@@ -485,13 +478,13 @@ const createFileTreeNode = () => {
                         return s;
                     };
                     
-                    const target = normalize(fileId);
+                    const target = normalize(key);
                     
                     const count = this.comments.filter(comment => {
-                        // 兼容不同的文件标识方式
-                        const commentFileId = comment.fileId || (comment.fileInfo && comment.fileInfo.fileId);
-                        const normalizedCommentFileId = normalize(commentFileId);
-                        return normalizedCommentFileId === target;
+                        // 兼容不同的文件标识方式，优先使用 key
+                        const commentKey = comment.key || comment.fileId || (comment.fileInfo && (comment.fileInfo.key || comment.fileInfo.fileId));
+                        const normalizedCommentKey = normalize(commentKey);
+                        return normalizedCommentKey === target;
                     }).length;
                     
                     return count;
@@ -509,7 +502,7 @@ const createFileTreeNode = () => {
                         if (!Array.isArray(items)) {
                             // 如果是单个节点，直接处理
                             if (items.type === 'file') {
-                                totalCount += this.getCommentCount(items.id);
+                                totalCount += this.getCommentCount(items.key);
                             } else if (items.type === 'folder' && items.children) {
                                 calculateCount(items.children);
                             }
@@ -518,7 +511,7 @@ const createFileTreeNode = () => {
                         
                         items.forEach(item => {
                             if (item.type === 'file') {
-                                totalCount += this.getCommentCount(item.id);
+                                totalCount += this.getCommentCount(item.key);
                             } else if (item.type === 'folder' && item.children) {
                                 calculateCount(item.children);
                             }
@@ -534,15 +527,15 @@ const createFileTreeNode = () => {
             <li 
                 class="file-tree-node"
                 role="treeitem"
-                :aria-expanded="item.type === 'folder' ? isFolderExpanded(item.id) : undefined"
+                :aria-expanded="item.type === 'folder' ? isFolderExpanded(item.key) : undefined"
             >
                 <!-- 文件夹 -->
                 <div 
                     v-if="item.type === 'folder'"
                     :class="['file-tree-item', 'folder-item', { 
-                        expanded: isFolderExpanded(item.id)
+                        expanded: isFolderExpanded(item.key)
                     }]"
-                    @click="toggleFolder(item.id)"
+                    @click="toggleFolder(item.key)"
                     @mousedown="startLongPress(item, $event)"
                     @mouseup="cancelLongPress"
                     @mouseleave="cancelLongPress"
@@ -551,18 +544,18 @@ const createFileTreeNode = () => {
                     @touchcancel="cancelLongPress"
                     :title="\`文件夹: \${item.name}\`"
                     tabindex="0"
-                    @keydown.enter="toggleFolder(item.id)"
-                    @keydown.space="toggleFolder(item.id)"
+                    @keydown.enter="toggleFolder(item.key)"
+                    @keydown.space="toggleFolder(item.key)"
                 >
-                    <span class="folder-toggle" aria-hidden="true" @click.stop="toggleFolder(item.id)">
-                        <i :class="['fas', isFolderExpanded(item.id) ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
+                    <span class="folder-toggle" aria-hidden="true" @click.stop="toggleFolder(item.key)">
+                        <i :class="['fas', isFolderExpanded(item.key) ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
                     </span>
-                    <span class="file-icon" aria-hidden="true" @click.stop="toggleFolder(item.id)">{{ getFileIcon(item) }}</span>
+                    <span class="file-icon" aria-hidden="true" @click.stop="toggleFolder(item.key)">{{ getFileIcon(item) }}</span>
                     <span class="file-name">{{ item.name }}</span>
                     <span v-if="item.children" class="folder-count">({{ item.children.length }})</span>
                     <span class="file-actions" @click.stop>
-                        <button :title="'在 ' + item.name + ' 下新建文件夹'" @click="createSubFolder($event, item.id)"><i class="fas fa-folder-plus"></i></button>
-                        <button :title="'在 ' + item.name + ' 下新建文件'" @click="createSubFile($event, item.id)"><i class="fas fa-file"></i></button>
+                        <button :title="'在 ' + item.name + ' 下新建文件夹'" @click="createSubFolder($event, item.key)"><i class="fas fa-folder-plus"></i></button>
+                        <button :title="'在 ' + item.name + ' 下新建文件'" @click="createSubFile($event, item.key)"><i class="fas fa-file"></i></button>
                         <button :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
                     </span>
                 </div>
@@ -571,10 +564,10 @@ const createFileTreeNode = () => {
                 <div 
                     v-else
                     :class="['file-tree-item', 'file-item', { 
-                        selected: isFileSelected(item.id),
-                        'batch-selected': batchMode && isFileSelected(item.id)
+                        selected: isFileSelected(item.key),
+                        'batch-selected': batchMode && isFileSelected(item.key)
                     }]"
-                    @click="selectFile(item.id)"
+                    @click="selectFile(item.key)"
                     @mousedown="startLongPress(item, $event)"
                     @mouseup="cancelLongPress"
                     @mouseleave="cancelLongPress"
@@ -583,11 +576,11 @@ const createFileTreeNode = () => {
                     @touchcancel="cancelLongPress"
                     :title="\`文件: \${item.name}\`"
                     tabindex="0"
-                    @keydown.enter="selectFile(item.id)"
-                    @keydown.space="selectFile(item.id)"
+                    @keydown.enter="selectFile(item.key)"
+                    @keydown.space="selectFile(item.key)"
                 >
                     <span class="folder-toggle file-toggle-placeholder" aria-hidden="true"></span>
-                    <span class="file-icon" aria-hidden="true" @click.stop="selectFile(item.id)">{{ getFileIcon(item) }}</span>
+                    <span class="file-icon" aria-hidden="true" @click.stop="selectFile(item.key)">{{ getFileIcon(item) }}</span>
                     <span class="file-name">{{ item.name }}</span>
                     <span v-if="getFileSizeDisplay(item)" class="file-size">{{ getFileSizeDisplay(item) }}</span>
                     <span class="file-actions" @click.stop>
@@ -597,18 +590,18 @@ const createFileTreeNode = () => {
                 
                 <!-- 递归渲染子节点 -->
                 <ul 
-                    v-if="item.type === 'folder' && item.children && isFolderExpanded(item.id)"
+                    v-if="item.type === 'folder' && item.children && isFolderExpanded(item.key)"
                     class="file-tree-children"
                     role="group"
                 >
-                    <template v-for="child in sortFileTreeItems(item.children)" :key="child.id">
+                    <template v-for="child in sortFileTreeItems(item.children)" :key="child.key">
                         <file-tree-node 
                             :item="child"
-                            :selected-file-id="selectedFileId"
+                            :selected-key="selectedKey"
                             :expanded-folders="expandedFolders"
                             :comments="comments"
                             :batch-mode="batchMode"
-                            :selected-file-ids="selectedFileIds"
+                            :selected-keys="selectedKeys"
                             @file-select="$emit('file-select', $event)"
                              @folder-toggle="$emit('folder-toggle', $event)"
                              @create-folder="$emit('create-folder', $event)"
@@ -638,7 +631,7 @@ const componentOptions = {
                 type: Array,
                 default: () => []
             },
-            selectedFileId: {
+            selectedKey: {
                 type: [String, null],
                 default: null
             },
@@ -670,7 +663,7 @@ const componentOptions = {
                 type: Boolean,
                 default: false
             },
-            selectedFileIds: {
+            selectedKeys: {
                 type: [Set, Array],
                 default: () => new Set()
             },
@@ -844,42 +837,39 @@ const componentOptions = {
             },
             
             // 切换文件夹展开状态
-            toggleFolder(folderId) {
+            toggleFolder(key) {
                 return safeExecute(() => {
-                    if (!folderId || typeof folderId !== 'string') {
-                        throw createError('文件夹ID无效', ErrorTypes.VALIDATION, '文件夹切换');
+                    if (!key || typeof key !== 'string') {
+                        throw createError('文件夹Key无效', ErrorTypes.VALIDATION, '文件夹切换');
                     }
                     
-                    this.$emit('folder-toggle', folderId);
+                    this.$emit('folder-toggle', key);
                 }, '文件夹切换处理');
             },
             
             // 检查文件夹是否展开
-            isFolderExpanded(folderId) {
+            isFolderExpanded(key) {
                 return safeExecute(() => {
-                    return this.expandedFolders && this.expandedFolders.has(folderId);
+                    return this.expandedFolders && this.expandedFolders.has(key);
                 }, '文件夹展开状态检查');
             },
             
             // 选择文件
-            selectFile(fileId) {
+            selectFile(key) {
                 return safeExecute(() => {
-                    if (fileId == null) {
-                        throw createError('文件ID无效', ErrorTypes.VALIDATION, '文件选择');
+                    if (key == null) {
+                        throw createError('文件Key无效', ErrorTypes.VALIDATION, '文件选择');
                     }
-                    const idStr = String(fileId);
-                    console.log('[FileTree] 选择文件:', idStr);
+                    const keyStr = String(key);
+                    console.log('[FileTree] 选择文件:', keyStr);
                     
                     // 构建统一的文件标识符payload，与FileTreeNode组件保持一致
                     const payload = { 
-                        // 主要标识符：优先使用fileId，然后是id，最后是name
-                        fileId: idStr,
+                        // 主要标识符：使用key
+                        key: keyStr,
                         // 兼容性标识符
-                        id: idStr,
-                        path: idStr,
-                        name: idStr.split('/').pop(),
-                        // 唯一标识符
-                        key: idStr,
+                        path: keyStr,
+                        name: keyStr.split('/').pop(),
                         // 文件类型
                         type: 'file'
                     };
@@ -890,10 +880,10 @@ const componentOptions = {
             },
             
             // 检查文件是否被选中
-            isFileSelected(fileId) {
+            isFileSelected(key) {
                 return safeExecute(() => {
-                    if (!fileId || !this.selectedFileId) return false;                    
-                    // 规范化文件ID进行比较
+                    if (!key || !this.selectedKey) return false;                    
+                    // 规范化文件Key进行比较
                     const normalize = (v) => {
                         if (!v) return '';
                         let s = String(v).replace(/\\/g, '/');
@@ -903,11 +893,11 @@ const componentOptions = {
                         return s;
                     };
                     
-                    const normalizedFileId = normalize(fileId);
-                    const normalizedSelectedId = normalize(this.selectedFileId);
-                    const result = normalizedFileId === normalizedSelectedId;
+                    const normalizedKey = normalize(key);
+                    const normalizedSelectedKey = normalize(this.selectedKey);
+                    const result = normalizedKey === normalizedSelectedKey;
                     
-                    console.log('[FileTree] isFileSelected - fileId:', fileId, 'selectedFileId:', this.selectedFileId, 'normalized:', { fileId: normalizedFileId, selectedId: normalizedSelectedId }, 'result:', result);
+                    console.log('[FileTree] isFileSelected - key:', key, 'selectedKey:', this.selectedKey, 'normalized:', { key: normalizedKey, selectedKey: normalizedSelectedKey }, 'result:', result);
                     return result;
                 }, '文件选中状态检查');
             },
@@ -916,20 +906,20 @@ const componentOptions = {
             getFileIcon(item) {
                 return safeExecute(() => {
                     if (item.type === 'folder') {
-                        return this.isFolderExpanded(item.id) ? '📂' : '📁';
+                        return this.isFolderExpanded(item.key) ? '📂' : '📁';
                     }
                     
-					// 根据文件扩展名返回不同图标（兼容缺失 name 的情况）
-					const fileNameSource = (item && typeof item.name === 'string' && item.name)
-						? item.name
-						: (typeof item.path === 'string' && item.path
-							? item.path.split('/').pop()
-							: (typeof item.id === 'string'
-								? item.id.split('/').pop()
-								: ''));
-					const ext = fileNameSource && fileNameSource.includes('.')
-						? fileNameSource.split('.').pop().toLowerCase()
-						: '';
+                    // 根据文件扩展名返回不同图标（兼容缺失 name 的情况）
+                    const fileNameSource = (item && typeof item.name === 'string' && item.name)
+                        ? item.name
+                        : (typeof item.path === 'string' && item.path
+                            ? item.path.split('/').pop()
+                            : (typeof item.key === 'string'
+                                ? item.key.split('/').pop()
+                                : ''));
+                    const ext = fileNameSource && fileNameSource.includes('.')
+                        ? fileNameSource.split('.').pop().toLowerCase()
+                        : '';
                     const iconMap = {
                         'js': '📄',
                         'ts': '📘',
@@ -970,9 +960,9 @@ const componentOptions = {
             },
             
             // 获取文件的评论数量
-            getCommentCount(fileId) {
+            getCommentCount(key) {
                 return safeExecute(() => {
-                    if (!this.comments || !fileId) return 0;
+                    if (!this.comments || !key) return 0;
                     
                     // 使用统一的文件标识符匹配逻辑
                     const normalize = (v) => {
@@ -984,13 +974,13 @@ const componentOptions = {
                         return s;
                     };
                     
-                    const target = normalize(fileId);
+                    const target = normalize(key);
                     
                     const count = this.comments.filter(comment => {
                         // 兼容不同的文件标识方式
-                        const commentFileId = comment.fileId || (comment.fileInfo && comment.fileInfo.fileId);
-                        const normalizedCommentFileId = normalize(commentFileId);
-                        return normalizedCommentFileId === target;
+                        const commentKey = comment.key || (comment.fileInfo && comment.fileInfo.key);
+                        const normalizedCommentKey = normalize(commentKey);
+                        return normalizedCommentKey === target;
                     }).length;
                     
                     return count;
@@ -998,21 +988,21 @@ const componentOptions = {
             },
             
             // 处理标签点击（支持批量选择模式）
-            handleTagClick(fileId) {
+            handleTagClick(key) {
                 return safeExecute(() => {
-                    if (fileId == null) {
-                        throw createError('文件ID无效', ErrorTypes.VALIDATION, '标签点击');
+                    if (key == null) {
+                        throw createError('文件Key无效', ErrorTypes.VALIDATION, '标签点击');
                     }
-                    const idStr = String(fileId);
+                    const keyStr = String(key);
                     
                     // 批量选择模式：切换选中状态
                     if (this.batchMode) {
-                        this.$emit('batch-select-file', idStr);
+                        this.$emit('batch-select-file', keyStr);
                         return;
                     }
                     
                     // 普通模式：选择文件
-                    this.selectFile(idStr);
+                    this.selectFile(keyStr);
                 }, '标签点击处理');
             },
             
@@ -1027,7 +1017,7 @@ const componentOptions = {
                         if (!Array.isArray(items)) {
                             // 如果是单个节点，直接处理
                             if (items.type === 'file') {
-                                totalCount += this.getCommentCount(items.id);
+                                totalCount += this.getCommentCount(items.key);
                             } else if (items.type === 'folder' && items.children) {
                                 calculateCount(items.children);
                             }
@@ -1036,7 +1026,7 @@ const componentOptions = {
                         
                         items.forEach(item => {
                             if (item.type === 'file') {
-                                totalCount += this.getCommentCount(item.id);
+                                totalCount += this.getCommentCount(item.key);
                             } else if (item.type === 'folder' && item.children) {
                                 calculateCount(item.children);
                             }

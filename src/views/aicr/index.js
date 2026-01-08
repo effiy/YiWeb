@@ -19,16 +19,16 @@ const { computed } = Vue;
 
         // 新增：本地评论和高亮状态
         const localState = {
-            codeComments: [] // {id, fileId, text, comment, rangeInfo}
+            codeComments: [] // {key, fileKey, text, comment, rangeInfo}
         };
 
         // 监听划词评论事件
         window.addEventListener('addCodeComment', (e) => {
             const detail = e.detail;
             // 生成唯一key
-            const key = 'cmt_' + Date.now() + '_' + Math.floor(Math.random()*10000);
-            // 假设当前文件id为store.selectedFileId
-            const fileId = store.selectedFileId || (store.state && store.state.selectedFileId);
+            const commentKey = 'cmt_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+            // 假设当前文件key为store.selectedKey
+            const fileKey = (store.selectedKey && store.selectedKey.value) || (store.state && store.state.selectedKey);
             // 记录range的起止行号和字符索引
             let startLine = 0, endLine = 0, startChar = 0, endChar = 0;
             if (detail.range) {
@@ -71,8 +71,8 @@ const { computed } = Vue;
                 startLine = endLine = 0;
             }
             localState.codeComments.push({
-                key,
-                fileId,
+                key: commentKey,
+                fileKey,
                 text: detail.text,
                 comment: detail.comment,
                 rangeInfo: { startLine, startChar, endLine, endChar }
@@ -99,15 +99,15 @@ const { computed } = Vue;
                 commentsCollapsed: store.commentsCollapsed,
                 sidebarWidth: store.sidebarWidth,
                 commentsWidth: store.commentsWidth,
-                // 项目管理
-                projects: store.projects,
-                selectedProject: store.selectedProject,
+                // 项目管理 - Removed
+                // projects: store.projects,
+                // selectedProject: store.selectedProject,
 
                 // 搜索相关状态
                 searchQuery: store.searchQuery,
                 // 批量选择相关状态
                 batchMode: store.batchMode,
-                selectedFileIds: store.selectedFileIds,
+                selectedKeys: store.selectedKeys,
                 // 视图模式
                 viewMode: store.viewMode,
                 // 会话列表相关状态
@@ -124,7 +124,7 @@ const { computed } = Vue;
                 tagFilterSearchKeyword: store.tagFilterSearchKeyword,
                 // 会话批量选择相关状态
                 sessionBatchMode: store.sessionBatchMode,
-                selectedSessionIds: store.selectedSessionIds,
+                selectedSessionKeys: store.selectedSessionKeys,
             },
             onMounted: (mountedApp) => {
                 logInfo('[代码审查页面] 应用已挂载');
@@ -160,37 +160,17 @@ const { computed } = Vue;
                 }, 500);
                 
                 if (store) {
-                    // 首先加载项目列表
-                    store.loadProjects().then(() => {
-                        // 支持通过URL参数指定 projectId
-                        const params = new URLSearchParams(window.location.search);
-                        const projectParam = params.get('projectId');
-
-                        if (projectParam) {
-                            const hasProject = Array.isArray(store.projects.value) && store.projects.value.some(p => p && p.id === projectParam);
-                            if (hasProject) {
-                                store.setSelectedProject(projectParam);
-                                logInfo('[代码审查页面] 通过URL设置项目:', projectParam);
-                            }
-                        }
-
-                        // 如果URL未提供或无效，则使用第一个项目作为默认
-                        if (!store.selectedProject.value && store.projects.value.length > 0) {
-                            const defaultProject = store.projects.value[0];
-                            store.setSelectedProject(defaultProject.id);
-                            logInfo('[代码审查页面] 设置默认项目:', defaultProject);
-                        }
-
-                        if (store.selectedProject.value) {
-                            // 加载文件树和文件数据（不包含评论，因为评论需要项目信息）
-                            // 初始加载时使用 forceClear: true，因为初始时没有数据
-                            return Promise.all([
-                                store.loadFileTree(store.selectedProject.value, true),
-                                store.loadFiles(store.selectedProject.value)
-                            ]).then(() => {
-                                // 如果URL带了fileId，尝试预选并按需加载
-                                const params2 = new URLSearchParams(window.location.search);
-                                const fileParam = params2.get('fileId');
+                    // 首先加载会话列表，然后构建全局文件树
+                    store.loadSessions().then(() => {
+                        // 加载文件树和文件数据
+                        // 初始加载时使用 forceClear: true，因为初始时没有数据
+                        return Promise.all([
+                            store.loadFileTree(true),
+                            store.loadFiles()
+                        ]).then(() => {
+                            // 如果URL带了key，尝试预选并按需加载
+                            const params2 = new URLSearchParams(window.location.search);
+                            const fileParam = params2.get('key');
                                 // 读取高亮范围（兼容旧参数）与评论Key
                                 const startLineParam = parseInt(params2.get('startLine'), 10);
                                 const endLineParamRaw = params2.get('endLine');
@@ -209,9 +189,9 @@ const { computed } = Vue;
                                 }
                                 if (fileParam) {
                                     const norm = String(fileParam).replace(/\\\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
-                                    store.setSelectedFileId(norm);
-                                    if (typeof store.loadFileById === 'function') {
-                                        store.loadFileById(store.selectedProject?.value, norm).then(() => {
+                                    store.setSelectedKey(norm);
+                                    if (typeof store.loadFileByKey === 'function') {
+                                        store.loadFileByKey(norm).then(() => {
                                             try {
                                                 const rangeInfo = window.__aicrPendingHighlightRangeInfo || pendingHighlightRange;
                                                 if (rangeInfo) {
@@ -219,7 +199,7 @@ const { computed } = Vue;
                                                         try {
                                                             window.dispatchEvent(new CustomEvent('highlightCodeLines', {
                                                                 detail: {
-                                                                    fileId: norm,
+                                                                    fileKey: norm,
                                                                     rangeInfo
                                                                 }
                                                             }));
@@ -234,163 +214,96 @@ const { computed } = Vue;
                                 // 初次加载后若存在挂起文件或当前选中文件无内容，尝试一次补载
                                 setTimeout(() => {
                                     try {
-                                        const pending = window.__aicrPendingFileId;
-                                        const currentId = pending || (store.selectedFileId ? store.selectedFileId.value : null);
-                                        if (currentId && typeof store.loadFileById === 'function') {
-                                            const normalize3 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
-                                            const idNorm = normalize3(currentId);
-                                    const pj = store.selectedProject ? store.selectedProject.value : null;
-                                    // 无论是否已有内容，项目就绪后都按需加载一次，避免刷新后首次点击缺内容
-                                    if (pj) {
-                                        store.loadFileById(pj, idNorm).finally(() => { window.__aicrPendingFileId = null; });
+                                        const pending = window.__aicrPendingFileKey;
+                                    const currentKey = pending || (store.selectedKey ? store.selectedKey.value : null);
+                                    if (currentKey && typeof store.loadFileByKey === 'function') {
+                                        const normalize3 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                                        const keyNorm = normalize3(currentKey);
+                                        // 无论是否已有内容，就绪后都按需加载一次，避免刷新后首次点击缺内容
+                                        store.loadFileByKey(keyNorm).finally(() => { window.__aicrPendingFileKey = null; });
                                     }
-                                        }
                                     } catch (e) {
                                         logWarn('[主页面] 初次加载后的懒加载检查异常:', e?.message || e);
                                     }
                                 }, 300);
-                            });
-                        }
                     }).then(() => {
-                        // 项目/版本信息设置完成，触发评论面板按需加载
-                        logInfo('[代码审查页面] 项目/版本信息设置完成，评论将按需加载');
+                        // 全局数据设置完成，触发评论面板按需加载
+                        logInfo('[代码审查页面] 全局数据设置完成，评论将按需加载');
                         // 注意：不再在初始化时加载所有评论，改为按需加载（当用户查看评论时才加载）
                         // 这样可以减少初始化时的接口调用，提升页面加载性能
                         // 通过触发一个自定义事件来通知评论面板可以开始加载
                         setTimeout(() => {
                             window.dispatchEvent(new CustomEvent('projectReady', {
                                 detail: {
-                                    projectId: store.selectedProject.value
+                                    projectId: 'global'
                                 }
                             }));
                             // 版本就绪后，如存在待加载文件或当前选中文件无内容，执行补载
                             try {
-                                const pending = window.__aicrPendingFileId;
                                 const pendingKey = window.__aicrPendingFileKey;
-                                const currentId = pending || (store.selectedFileId ? store.selectedFileId.value : null);
-                                if (currentId && typeof store.loadFileById === 'function') {
+                                const currentKey = pendingKey || (store.selectedKey ? store.selectedKey.value : null);
+                                if (currentKey && typeof store.loadFileByKey === 'function') {
                                     const normalize4 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
-                                    const idNorm = normalize4(currentId);
-                                    const pj = store.selectedProject ? store.selectedProject.value : null;
-                                    // 项目就绪后，无论是否已有内容，确保按需加载一次
-                                    if (pj) {
-                                        // 如果有待处理的文件Key，优先使用它进行精确匹配
-                                        if (pendingKey) {
-                                            logInfo('[主页面] 项目就绪后使用文件Key进行精确加载:', idNorm, 'Key:', pendingKey);
-                                            store.loadFileById(pj, idNorm, pendingKey).finally(() => {
-                                                try {
-                                                    const rangeInfo = window.__aicrPendingHighlightRangeInfo;
-                                                    if (rangeInfo) {
-                                                        setTimeout(() => {
-                                                            try {
-                                                                window.dispatchEvent(new CustomEvent('highlightCodeLines', {
-                                                                    detail: {
-                                                                        fileId: idNorm,
-                                                                        rangeInfo
-                                                                    }
-                                                                }));
-                                                                logInfo('[代码審查] 版本就绪后触发高亮事件', rangeInfo);
-                                                            } catch (e) { logWarn('[代码審查] 触发高亮事件失败', e); }
-                                                        }, 300);
-                                                    }
-                                                } catch (e) { logWarn('[代码審查] 版本就绪高亮处理失败', e); }
-                                                // 新增：按 commentKey 触发高亮
-                                                try {
-                                                    const pendingCommentKey = window.__aicrPendingCommentKey;
-                                                    if (pendingCommentKey && Array.isArray(store.comments?.value)) {
-                                                        const all = store.comments.value;
-                                                        const target = all.find(c => (c.key || c.id) === pendingCommentKey);
-                                                        if (target && target.rangeInfo) {
-                                                            const wantedRaw = target.fileId || (target.fileInfo && target.fileInfo.fileId) || idNorm;
-                                                            const normalize4b = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/, '/');
-                                                            const wantedId = normalize4b(wantedRaw);
-                                                            if (wantedId && store.selectedFileId && store.selectedFileId.value !== wantedId) {
-                                                                store.setSelectedFileId(wantedId);
+                                    const keyNorm = normalize4(currentKey);
+                                    
+                                    // 无论是否已有内容，确保按需加载一次
+                                    logInfo('[主页面] 就绪后按需加载文件:', keyNorm);
+                                    store.loadFileByKey(keyNorm).finally(() => {
+                                        try {
+                                            const rangeInfo = window.__aicrPendingHighlightRangeInfo;
+                                            if (rangeInfo) {
+                                                setTimeout(() => {
+                                                    try {
+                                                        window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                                            detail: {
+                                                                fileKey: keyNorm,
+                                                                rangeInfo
                                                             }
-                                                            const r = target.rangeInfo;
-                                                            const normalizedRange = {
-                                                                startLine: Number(r.startLine) >= 1 ? Number(r.startLine) : 1,
-                                                                endLine: Number(r.endLine) >= 1 ? Number(r.endLine) : (Number(r.startLine) || 1),
-                                                                startChar: r.startChar,
-                                                                endChar: r.endChar
-                                                            };
-                                                            setTimeout(() => {
-                                                                try {
-                                                                    window.dispatchEvent(new CustomEvent('highlightCodeLines', {
-                                                                        detail: {
-                                                                            fileId: wantedId,
-                                                                            rangeInfo: normalizedRange,
-                                                                            comment: target
-                                                                        }
-                                                                    }));
-                                                                    logInfo('[代码審查] 版本就绪后按commentKey触发高亮', { key: pendingCommentKey, range: normalizedRange });
-                                                                } catch (e) { logWarn('[代码審查] 按commentKey触发高亮失败', e); }
-                                                            }, 500);
-                                                            window.__aicrPendingCommentKey = null;
-                                                        }
+                                                        }));
+                                                        logInfo('[代码審查] 版本就绪后触发高亮事件', rangeInfo);
+                                                    } catch (e) { logWarn('[代码審查] 触发高亮事件失败', e); }
+                                                }, 300);
+                                            }
+                                        } catch (e) { logWarn('[代码審查] 版本就绪高亮处理失败', e); }
+                                        
+                                        // 新增：按 commentKey 触发高亮
+                                        try {
+                                            const pendingCommentKey = window.__aicrPendingCommentKey;
+                                            if (pendingCommentKey && Array.isArray(store.comments?.value)) {
+                                                const all = store.comments.value;
+                                                const target = all.find(c => c.key === pendingCommentKey);
+                                                if (target && target.rangeInfo) {
+                                                    const wantedRaw = target.fileKey || (target.fileInfo && target.fileInfo.key) || keyNorm;
+                                                    const normalize4b = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/, '/');
+                                                    const wantedKey = normalize4b(wantedRaw);
+                                                    if (wantedKey && store.selectedKey && store.selectedKey.value !== wantedKey) {
+                                                        store.setSelectedKey(wantedKey);
                                                     }
-                                                } catch (e) { logWarn('[代码審查] commentKey高亮处理失败', e); }
-                                                window.__aicrPendingFileId = null;
-                                                window.__aicrPendingFileKey = null;
-                                            });
-                                        } else {
-                                            store.loadFileById(pj, idNorm).finally(() => {
-                                                try {
-                                                    const rangeInfo = window.__aicrPendingHighlightRangeInfo;
-                                                    if (rangeInfo) {
-                                                        setTimeout(() => {
-                                                            try {
-                                                                window.dispatchEvent(new CustomEvent('highlightCodeLines', {
-                                                                    detail: {
-                                                                        fileId: idNorm,
-                                                                        rangeInfo
-                                                                    }
-                                                                }));
-                                                                logInfo('[代码審查] 版本就绪后触发高亮事件', rangeInfo);
-                                                            } catch (e) { logWarn('[代码審查] 触发高亮事件失败', e); }
-                                                        }, 300);
-                                                    }
-                                                } catch (e) { logWarn('[代码審查] 版本就绪高亮处理失败', e); }
-                                                // 新增：按 commentKey 触发高亮
-                                                try {
-                                                    const pendingCommentKey = window.__aicrPendingCommentKey;
-                                                    if (pendingCommentKey && Array.isArray(store.comments?.value)) {
-                                                        const all = store.comments.value;
-                                                        const target = all.find(c => (c.key || c.id) === pendingCommentKey);
-                                                        if (target && target.rangeInfo) {
-                                                            const wantedRaw = target.fileId || (target.fileInfo && target.fileInfo.fileId) || idNorm;
-                                                            const normalize4b = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/, '/');
-                                                            const wantedId = normalize4b(wantedRaw);
-                                                            if (wantedId && store.selectedFileId && store.selectedFileId.value !== wantedId) {
-                                                                store.setSelectedFileId(wantedId);
-                                                            }
-                                                            const r = target.rangeInfo;
-                                                            const normalizedRange = {
-                                                                startLine: Number(r.startLine) >= 1 ? Number(r.startLine) : 1,
-                                                                endLine: Number(r.endLine) >= 1 ? Number(r.endLine) : (Number(r.startLine) || 1),
-                                                                startChar: r.startChar,
-                                                                endChar: r.endChar
-                                                            };
-                                                            setTimeout(() => {
-                                                                try {
-                                                                    window.dispatchEvent(new CustomEvent('highlightCodeLines', {
-                                                                        detail: {
-                                                                            fileId: wantedId,
-                                                                            rangeInfo: normalizedRange,
-                                                                            comment: target
-                                                                        }
-                                                                    }));
-                                                                    logInfo('[代码審查] 版本就绪后按commentKey触发高亮', { key: pendingCommentKey, range: normalizedRange });
-                                                                } catch (e) { logWarn('[代码審查] 按commentKey触发高亮失败', e); }
-                                                            }, 500);
-                                                            window.__aicrPendingCommentKey = null;
-                                                        }
-                                                    }
-                                                } catch (e) { logWarn('[代码審查] commentKey高亮处理失败', e); }
-                                                window.__aicrPendingFileId = null;
-                                            });
-                                        }
-                                    }
+                                                    const r = target.rangeInfo;
+                                                    const normalizedRange = {
+                                                        startLine: Number(r.startLine) >= 1 ? Number(r.startLine) : 1,
+                                                        endLine: Number(r.endLine) >= 1 ? Number(r.endLine) : (Number(r.startLine) || 1),
+                                                        startChar: r.startChar,
+                                                        endChar: r.endChar
+                                                    };
+                                                    setTimeout(() => {
+                                                        try {
+                                                            window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                                                                detail: {
+                                                                    fileKey: wantedKey,
+                                                                    rangeInfo: normalizedRange,
+                                                                    comment: target
+                                                                }
+                                                            }));
+                                                            logInfo('[代码審查] 版本就绪后按commentKey触发高亮', { key: pendingCommentKey, range: normalizedRange });
+                                                        } catch (e) { logWarn('[代码審查] 按commentKey触发高亮失败', e); }
+                                                    }, 500);
+                                                    window.__aicrPendingCommentKey = null;
+                                                }
+                                            }
+                                        } catch (e) { logWarn('[代码審查] commentKey高亮处理失败', e); }
+                                        window.__aicrPendingFileKey = null;
+                                    });
                                 }
                             } catch (e) {
                                 logWarn('[主页面] 版本就绪懒加载检查异常:', e?.message || e);
@@ -400,6 +313,7 @@ const { computed } = Vue;
                         logInfo('[代码审查页面] 数据加载完成');
                     }).catch(error => {
                         logError('[代码审查页面] 数据加载失败:', error);
+                    });
                     });
                 }
                 // 取消聚焦（如点击空白处）
@@ -424,10 +338,10 @@ const { computed } = Vue;
                         }
                         
                         logInfo('[代码审查页面] ESC键被按下，取消文件选中');
-                        if (store && store.selectedFileId.value) {
-                            const previousFileId = store.selectedFileId.value;
-                            store.setSelectedFileId(null);
-                            logInfo('[代码审查页面] 已取消文件选中，之前文件ID:', previousFileId);
+                        if (store && store.selectedKey.value) {
+                            const previousKey = store.selectedKey.value;
+                            store.setSelectedKey(null);
+                            logInfo('[代码审查页面] 已取消文件选中，之前文件Key:', previousKey);
                             
                             // 发送清除高亮事件，通知代码视图组件清除高亮
                             setTimeout(() => {
@@ -440,8 +354,8 @@ const { computed } = Vue;
                                 logInfo('[代码审查页面] 触发评论面板刷新事件，恢复到显示所有评论');
                                 window.dispatchEvent(new CustomEvent('reloadComments', {
                                 detail: { 
-                                    projectId: store.selectedProject ? store.selectedProject.value : null, 
-                                    fileId: null,
+                                    projectId: 'global', 
+                                    key: null,
                                     forceReload: true,
                                     showAllComments: true, // 新增：标记显示所有评论
                                     immediateReload: true // 新增：标记立即刷新，不使用防抖
@@ -454,15 +368,15 @@ const { computed } = Vue;
                 
                 // 监听评论区的代码高亮事件
                 window.addEventListener('highlightCodeLines', (e) => {
-                    const { fileId, rangeInfo, comment } = e.detail;
-                    logInfo('[代码审查页面] 收到代码高亮事件:', { fileId, rangeInfo, comment });
+                    const { fileKey, rangeInfo, comment } = e.detail;
+                    logInfo('[代码审查页面] 收到代码高亮事件:', { fileKey, rangeInfo, comment });
                     
-                    if (fileId) {
+                    if (fileKey) {
                         // 如果当前没有选中该文件，先选中文件
-                        const needSwitchFile = store && store.selectedFileId.value !== fileId;
+                        const needSwitchFile = store && store.selectedKey.value !== fileKey;
                         if (needSwitchFile) {
-                            logInfo('[代码审查页面] 切换到文件:', fileId);
-                            store.setSelectedFileId(fileId);
+                            logInfo('[代码审查页面] 切换到文件:', fileKey);
+                            store.setSelectedKey(fileKey);
                         }
                         
                         // 发送高亮事件给代码视图组件
@@ -474,7 +388,7 @@ const { computed } = Vue;
                             }));
                         }, delay);
                     } else {
-                        // 如果没有文件ID，直接发送事件（可能是当前文件）
+                        // 如果没有文件Key，直接发送事件（可能是当前文件）
                         setTimeout(() => {
                             window.dispatchEvent(new CustomEvent('highlightCodeLines', { 
                                 detail: { rangeInfo, comment } 
@@ -488,7 +402,7 @@ const { computed } = Vue;
                 'code-view': {},
                 'file-tree': {
                     tree: function() { return store.fileTree; },
-                    selectedFileId: function() { return store.selectedFileId.value; },
+                    selectedKey: function() { return store.selectedKey.value; },
                     expandedFolders: function() { return store.expandedFolders; },
                     loading: function() { return store.loading; },
                     error: function() { return store.errorMessage; },
@@ -496,8 +410,8 @@ const { computed } = Vue;
                     collapsed: function() { return store.sidebarCollapsed ? store.sidebarCollapsed.value : false; },
                     searchQuery: function() { return store.searchQuery ? store.searchQuery.value : ''; },
                     batchMode: function() { return store.batchMode ? store.batchMode.value : false; },
-                    selectedFileIds: function() { return store.selectedFileIds ? store.selectedFileIds.value : new Set(); },
-                    selectedProject: function() { return store.selectedProject ? store.selectedProject.value : ''; },
+                    selectedKeys: function() { return store.selectedKeys ? store.selectedKeys.value : new Set(); },
+                    selectedProject: function() { return 'global'; },
                     viewMode: function() { return store.viewMode ? store.viewMode.value : 'tree'; }
                 },
                 'comment-panel': {
@@ -529,9 +443,7 @@ const { computed } = Vue;
                     error: function() { return store.errorMessage; },
                     // 传递项目/版本信息
                     projectId: function() { 
-                        const projectId = store.selectedProject ? store.selectedProject.value : null;
-                        console.log('[主页面] 传递给评论面板的项目ID:', projectId);
-                        return projectId; 
+                        return 'global'; 
                     },
                     collapsed: function() { return store.commentsCollapsed ? store.commentsCollapsed.value : false; }
                 }
@@ -613,8 +525,8 @@ const { computed } = Vue;
                     try {
                         const methods = useMethods(store);
                         await methods.handleCreateFolder(payload);
-                        if (store && store.selectedProject.value) {
-                            await store.loadFileTree(store.selectedProject.value);
+                        if (store) {
+                            await store.loadFileTree();
                         }
                     } catch (error) {
                         logError('[主页面] 新建文件夹失败:', error);
@@ -624,10 +536,10 @@ const { computed } = Vue;
                     try {
                         const methods = useMethods(store);
                         await methods.handleCreateFile(payload);
-                        if (store && store.selectedProject.value) {
+                        if (store) {
                             await Promise.all([
-                                store.loadFileTree(store.selectedProject.value),
-                                store.loadFiles(store.selectedProject.value)
+                                store.loadFileTree(),
+                                store.loadFiles()
                             ]);
                         }
                     } catch (error) {
@@ -638,10 +550,10 @@ const { computed } = Vue;
                     try {
                         const methods = useMethods(store);
                         await methods.handleRenameItem(payload);
-                        if (store && store.selectedProject.value) {
+                        if (store) {
                             await Promise.all([
-                                store.loadFileTree(store.selectedProject.value),
-                                store.loadFiles(store.selectedProject.value)
+                                store.loadFileTree(),
+                                store.loadFiles()
                             ]);
                         }
                     } catch (error) {
@@ -655,10 +567,10 @@ const { computed } = Vue;
                         showGlobalLoading('正在删除，请稍候...');
                         try {
                             await methods.handleDeleteItem(payload);
-                            if (store && store.selectedProject.value) {
+                            if (store) {
                                 await Promise.all([
-                                    store.loadFileTree(store.selectedProject.value),
-                                    store.loadFiles(store.selectedProject.value)
+                                    store.loadFileTree(),
+                                    store.loadFiles()
                                 ]);
                             }
                         } finally {
@@ -774,11 +686,11 @@ const { computed } = Vue;
                 },
                 
                 // 切换文件选中状态（批量选择）
-                toggleFileSelection: function(fileId) {
-                    logInfo('[主页面] 收到文件选择切换事件:', fileId);
+                toggleFileSelection: function(fileKey) {
+                    logInfo('[主页面] 收到文件选择切换事件:', fileKey);
                     try {
                         const methods = useMethods(store);
-                        methods.toggleFileSelection(fileId);
+                        methods.toggleFileSelection(fileKey);
                     } catch (error) {
                         logError('[主页面] 文件选择切换失败:', error);
                     }
@@ -1138,14 +1050,14 @@ const { computed } = Vue;
                     if (!store || !store.sessions || !store.sessions.value || !Array.isArray(store.sessions.value)) {
                         return false;
                     }
-                    if (!store.selectedSessionIds || !store.selectedSessionIds.value) {
+                    if (!store.selectedSessionKeys || !store.selectedSessionKeys.value) {
                         return false;
                     }
                     const visibleSessions = store.sessions.value;
                     if (visibleSessions.length === 0) {
                         return false;
                     }
-                    return visibleSessions.every(session => store.selectedSessionIds.value.has(session.id));
+                    return visibleSessions.every(session => store.selectedSessionKeys.value.has(session.key));
                 }
             }
         });

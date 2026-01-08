@@ -15,7 +15,7 @@ import {
     extractFileName,
     extractDirPath,
     buildFullFilePath,
-    extractFileIdFromFullPath
+    extractFileKeyFromFullPath
 } from '/src/views/aicr/utils/fileFieldNormalizer.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
 
@@ -29,11 +29,11 @@ export const useMethods = (store) => {
     const { 
         fileTree,
         comments,
-        selectedFileId,
+        selectedKey,
         expandedFolders,
         newComment,
-        setSelectedFileId,
-        normalizeFileId, // 新增：统一的文件ID规范化函数
+        setSelectedKey,
+        normalizeKey, // 新增：统一的文件Key规范化函数
         toggleFolder,
         setNewComment,
         toggleSidebar,
@@ -42,7 +42,7 @@ export const useMethods = (store) => {
         setSelectedProject,
         loadFileTree,
         loadFiles,
-        loadFileById,
+        loadFileByKey,
         refreshData,
         // 文件树CRUD
         createFolder,
@@ -64,7 +64,7 @@ export const useMethods = (store) => {
         
         // 会话批量选择相关状态
         sessionBatchMode,
-        selectedSessionIds
+        selectedSessionKeys
     } = store;
 
     // 搜索相关状态
@@ -289,7 +289,7 @@ export const useMethods = (store) => {
                 const normalizePathForDownload = (p) => String(p || '').replace(/\\/g, '/').replace(/^\/+/, '');
 
                 for (const f of allFiles) {
-                    const path = normalizePathForDownload(f.path || f.id || f.fileId || f.name);
+                    const path = normalizePathForDownload(f.key || f.path || f.name);
                     const content = (typeof f.content === 'string') ? f.content : (f.data && typeof f.data.content === 'string' ? f.data.content : '');
                     zip.file(path || 'unknown.txt', content || '');
                 }
@@ -580,8 +580,8 @@ export const useMethods = (store) => {
 
                     // 使用统一的字段规范化工具
                     const normalizedFile = normalizeFileObject({
-                        fileId: normPath,
-                        id: normPath,
+                        fileKey: normPath,
+                        key: normPath,
                         path: normPath,
                         name: extractFileName(normPath),
                         content: content || '',
@@ -623,8 +623,8 @@ export const useMethods = (store) => {
                 }
 
                 // 构建树（基于路径）- 修复深层次文件丢失问题
-                // 根节点的 id 和 path 都使用 projectId
-                const root = { id: projectId, name: projectId, type: 'folder', path: projectId, children: [] };
+                // 根节点的 key 和 path 都使用 projectId
+                const root = { key: projectId, name: projectId, type: 'folder', path: projectId, children: [] };
                 const folderMap = new Map();
                 folderMap.set('', root);
                 
@@ -644,22 +644,22 @@ export const useMethods = (store) => {
                     // 如果路径为空，返回根节点
                     if (!norm) return root;
                     
-                    // 去除 projectId 前缀，确保文件夹节点的 id 不包含 projectId
-                    const folderIdWithoutProjectId = removeProjectIdPrefix(norm);
+                    // 去除 projectId 前缀，确保文件夹节点的 key 不包含 projectId
+                    const folderKeyWithoutProjectId = removeProjectIdPrefix(norm);
                     
                     // 如果已经存在，直接返回
-                    if (folderMap.has(folderIdWithoutProjectId)) return folderMap.get(folderIdWithoutProjectId);
+                    if (folderMap.has(folderKeyWithoutProjectId)) return folderMap.get(folderKeyWithoutProjectId);
                     
                     // 检查是否与文件路径冲突（避免创建与文件同名的文件夹）
-                    if (filePathsSet.has(folderIdWithoutProjectId)) {
-                        console.warn(`[ensureFolder] 跳过创建文件夹 "${folderIdWithoutProjectId}"，因为已存在同名文件`);
+                    if (filePathsSet.has(folderKeyWithoutProjectId)) {
+                        console.warn(`[ensureFolder] 跳过创建文件夹 "${folderKeyWithoutProjectId}"，因为已存在同名文件`);
                         // 返回父级目录
-                        const parentPath = folderIdWithoutProjectId.split('/').slice(0, -1).join('/');
+                        const parentPath = folderKeyWithoutProjectId.split('/').slice(0, -1).join('/');
                         return ensureFolder(parentPath);
                     }
                     
                     // 递归创建父目录
-                    const pathSegments = folderIdWithoutProjectId.split('/').filter(Boolean);
+                    const pathSegments = folderKeyWithoutProjectId.split('/').filter(Boolean);
                     let currentPath = '';
                     let parent = root;
                     
@@ -690,7 +690,7 @@ export const useMethods = (store) => {
                         if (!folderMap.has(currentPath)) {
                             // 使用统一的节点规范化工具创建文件夹节点
                             const node = normalizeTreeNode({
-                                id: currentPath,
+                                key: currentPath,
                                 name: segment,
                                 type: 'folder',
                                 children: []
@@ -763,11 +763,11 @@ export const useMethods = (store) => {
                     
                     // 检查父目录中是否已存在同名文件或文件夹
                     const existingFileItem = parent.children.find(child => 
-                        (child.name === f.name || child.id === filePathWithoutProjectId) && child.type === 'file'
+                        (child.name === f.name) && child.type === 'file'
                     );
                     
                     const existingFolderItem = parent.children.find(child => 
-                        (child.name === f.name || child.id === filePathWithoutProjectId) && child.type === 'folder'
+                        (child.name === f.name) && child.type === 'folder'
                     );
                     
                     if (existingFileItem) {
@@ -779,14 +779,14 @@ export const useMethods = (store) => {
                         // 如果存在同名文件夹，说明文件路径结构错误
                         // 不应该将文件添加到同名文件夹中，而应该跳过或报错
                         console.error(`[文件树构建] 发现同名文件夹，无法创建文件节点: ${filePathWithoutProjectId}`);
-                        console.error(`[文件树构建] 文件路径结构错误，已存在文件夹节点: ${existingFolderItem.id}`);
+                        console.error(`[文件树构建] 文件路径结构错误，已存在文件夹节点: ${existingFolderItem.key}`);
                         // 跳过该文件，避免创建冲突
                         continue;
                     }
                     
                     // 使用统一的节点规范化工具创建文件节点
                     const fileNode = normalizeTreeNode({
-                        id: filePathWithoutProjectId,
+                        key: filePathWithoutProjectId,
                         name: f.name,
                         type: 'file',
                         size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)),
@@ -825,16 +825,15 @@ export const useMethods = (store) => {
                             
                             // 如果是文件节点，添加到列表
                             if (node.type === 'file' || (node.type !== 'folder' && !node.children)) {
-                                const fileId = node.id || node.fileId || node.path || '';
-                                if (fileId) {
+                                const fileKey = node.key || node.path || node.fileKey || '';
+                                if (fileKey) {
                                     fileList.push({
-                                        fileId: fileId,
-                                        id: fileId,
-                                        path: fileId,
-                                        name: node.name || (fileId ? fileId.split('/').pop() : ''),
+                                        fileKey: fileKey,
+                                        key: fileKey,
+                                        path: fileKey,
+                                        name: node.name || (fileKey ? fileKey.split('/').pop() : ''),
                                         content: node.content || '',
                                         size: node.size || (node.content ? node.content.length : 0),
-                                        key: node.key || node._id,
                                         projectId: node.projectId || projectId
                                     });
                                 }
@@ -860,27 +859,27 @@ export const useMethods = (store) => {
                     const existingFilesList = root ? extractFilesFromTree(root) : [];
                     
                     for (const doc of existingFilesList) {
-                        const fileId = doc?.fileId || doc?.id || doc?.path;
-                        if (fileId) {
-                            existingFilesMap.set(fileId, {
-                                key: doc?.key || doc?._id || doc?.id,
+                        const fileKey = doc?.fileKey || doc?.key || doc?.path;
+                        if (fileKey) {
+                            existingFilesMap.set(fileKey, {
+                                key: fileKey,
                                 ...doc
                             });
                             
                             // 如果现有文件不在新导入的文件列表中，添加到文件树构建列表
                             const isInNewFiles = filesPayload.some(f => {
-                                const newFileId = f.fileId || f.id || f.path;
-                                return newFileId === fileId;
+                                const newFileKey = f.fileKey || f.key || f.path;
+                                return newFileKey === fileKey;
                             });
                             
                             if (!isInNewFiles) {
                                 // 现有文件不在新导入列表中，需要保留在文件树中
                                 allFilesForTree.push({
                                     projectId: doc.projectId || projectId,
-                                    fileId: fileId,
-                                    id: fileId,
-                                    path: fileId,
-                                    name: doc.name || (typeof fileId === 'string' ? fileId.split('/').pop() : ''),
+                                    fileKey: fileKey,
+                                    key: fileKey,
+                                    path: fileKey,
+                                    name: doc.name || (typeof fileKey === 'string' ? fileKey.split('/').pop() : ''),
                                     content: doc.content || '',
                                     size: doc.size || (doc.content ? doc.content.length : 0)
                                 });
@@ -895,7 +894,7 @@ export const useMethods = (store) => {
 
                 // 2. 基于所有文件（现有 + 新导入）重新构建完整的文件树
                 // 重新构建文件树，包含所有文件
-                const mergedRoot = { id: projectId, name: projectId, type: 'folder', path: projectId, children: [] };
+                const mergedRoot = { key: projectId, name: projectId, type: 'folder', path: projectId, children: [] };
                 const mergedFolderMap = new Map();
                 mergedFolderMap.set('', mergedRoot);
                 
@@ -948,7 +947,7 @@ export const useMethods = (store) => {
                         if (!mergedFolderMap.has(currentPath)) {
                             // 使用统一的节点规范化工具创建文件夹节点
                             const node = normalizeTreeNode({
-                                id: currentPath,
+                                key: currentPath,
                                 name: segment,
                                 type: 'folder',
                                 children: []
@@ -992,19 +991,19 @@ export const useMethods = (store) => {
                     
                     // 检查文件节点是否已存在（避免重复）
                     const existingFileNode = parent.children.find(child => 
-                        child.id === filePathWithoutProjectId && child.type === 'file'
+                        child.name === f.name && child.type === 'file'
                     );
                     
                     // 检查父目录中是否已存在同名文件夹（避免文件与文件夹同名冲突）
                     const existingFolderNode = parent.children.find(child => 
-                        child.id === filePathWithoutProjectId && child.type === 'folder'
+                        child.name === f.name && child.type === 'folder'
                     );
                     
                     if (existingFolderNode) {
                         // 如果存在同名文件夹，说明文件路径结构错误
                         // 不应该将文件添加到同名文件夹中，而应该跳过或报错
                         console.error(`[文件树合并] 发现同名文件夹，无法创建文件节点: ${filePathWithoutProjectId}`);
-                        console.error(`[文件树合并] 文件路径结构错误，已存在文件夹节点: ${existingFolderNode.id}`);
+                        console.error(`[文件树合并] 文件路径结构错误，已存在文件夹节点: ${existingFolderNode.key}`);
                         // 跳过该文件，避免创建冲突
                         continue;
                     }
@@ -1012,7 +1011,7 @@ export const useMethods = (store) => {
                     if (!existingFileNode) {
                         // 使用统一的节点规范化工具创建文件节点
                         const fileNode = normalizeTreeNode({
-                            id: filePathWithoutProjectId,
+                            key: filePathWithoutProjectId,
                             name: f.name,
                             type: 'file',
                             size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)),
@@ -1049,14 +1048,14 @@ export const useMethods = (store) => {
                 
                 for (const payload of filesPayload) {
                     try {
-                        const fileId = payload.fileId || payload.id || payload.path;
-                        const existingFile = existingFilesMap.get(fileId);
-                        const isFile = payload.type === 'file' || (!payload.type && fileId && !fileId.endsWith('/'));
+                        const fileKey = payload.fileKey || payload.key || payload.path;
+                        const existingFile = existingFilesMap.get(fileKey);
+                        const isFile = payload.type === 'file' || (!payload.type && fileKey && !fileKey.endsWith('/'));
                         
-                        const isExistingFile = existingFile && (existingFile.key || existingFile._id);
+                        const isExistingFile = existingFile && existingFile.key;
                         
                         // 仅处理文件，忽略文件夹
-                        if (isFile && payload.projectId && fileId) {
+                        if (isFile && payload.projectId && fileKey) {
                             try {
                                 // 使用统一的字段规范化工具确保字段一致性
                                 const normalizedFileObj = normalizeFileObject(payload, payload.projectId);
@@ -1067,14 +1066,14 @@ export const useMethods = (store) => {
                                     filesUploaded++;
                                     if (isExistingFile) {
                                         filesUpdated++;
-                                        console.log(`[数据库保存] 文件已更新到会话: ${fileId}`);
+                                        console.log(`[数据库保存] 文件已更新到会话: ${fileKey}`);
                                     } else {
                                         filesCreated++;
-                                        console.log(`[数据库保存] 文件已创建到会话: ${fileId}`);
+                                        console.log(`[数据库保存] 文件已创建到会话: ${fileKey}`);
                                     }
                                 }
                             } catch (syncError) {
-                                console.warn(`[数据库保存] 同步文件到会话失败（已忽略）: ${fileId}`, syncError?.message);
+                                console.warn(`[数据库保存] 同步文件到会话失败（已忽略）: ${fileKey}`, syncError?.message);
                                 filesFailed++;
                             }
                         }
@@ -1203,44 +1202,44 @@ export const useMethods = (store) => {
 
     /**
      * 处理文件选择
-     * @param {string|Object} fileId - 文件ID或节点对象
+     * @param {string|Object} key - 文件Key或节点对象
      */
-    const handleFileSelect = (fileId) => {
+    const handleFileSelect = (key) => {
         return safeExecute(async () => {
-            console.log('[文件选择] 收到文件选择请求:', fileId);
+            console.log('[文件选择] 收到文件选择请求:', key);
             
-            // 支持对象入参：优先使用 fileId，然后是 id，最后是 name
-            let targetFileId = fileId;
-            if (fileId && typeof fileId === 'object') {
-                const node = fileId;
-                // 优先使用 fileId，然后是 id，最后是 name
-                targetFileId = node.fileId || node.id || node.name || '';
-                console.log('[文件选择] 从对象中提取文件ID:', targetFileId, '原始对象:', node);
+            // 支持对象入参：优先使用 key，最后是 name
+            let targetKey = key;
+            if (key && typeof key === 'object') {
+                const node = key;
+                // 优先使用 key，最后是 name
+                targetKey = node.key || node.name || '';
+                console.log('[文件选择] 从对象中提取文件Key:', targetKey, '原始对象:', node);
                 
                 // 如果有 key 信息，保存到全局变量供后续使用
-                if (node.key || node._id) {
-                    window.__aicrPendingFileKey = node.key || node._id;
+                if (node.key) {
+                    window.__aicrPendingFileKey = node.key;
                     console.log('[文件选择] 保存文件Key:', window.__aicrPendingFileKey);
                 }
             }
 
-            // 使用统一的文件ID规范化函数
-            const idNorm = normalizeFileId(targetFileId);
-            if (!idNorm) {
-                throw createError('文件ID无效', ErrorTypes.VALIDATION, '文件选择');
+            // 使用统一的文件Key规范化函数
+            const keyNorm = normalizeKey(targetKey);
+            if (!keyNorm) {
+                throw createError('文件Key无效', ErrorTypes.VALIDATION, '文件选择');
             }
 
-            console.log('[文件选择] 设置选中的文件ID:', idNorm);
-            setSelectedFileId(idNorm);
+            console.log('[文件选择] 设置选中的文件Key:', keyNorm);
+            setSelectedKey(keyNorm);
 
             // 若项目就绪，尝试按需加载内容
             try {
                 const pj = selectedProject?.value;
-                if (pj && typeof loadFileById === 'function') {
+                if (pj && typeof loadFileByKey === 'function') {
                     const fileKey = window.__aicrPendingFileKey || null;
-                    console.log('[文件选择] 开始按需加载文件内容:', { project: pj, fileId: idNorm, fileKey });
-                    // 正确传递参数：projectId, targetFileId, fileKey
-                    const loadedFile = await loadFileById(pj, idNorm, fileKey);
+                    console.log('[文件选择] 开始按需加载文件内容:', { project: pj, key: keyNorm, fileKey });
+                    // 正确传递参数：projectId, targetKey, fileKey
+                    const loadedFile = await loadFileByKey(pj, keyNorm, fileKey);
                     if (loadedFile && loadedFile.content) {
                         console.log('[文件选择] 文件内容加载成功，内容长度:', loadedFile.content.length);
                     } else {
@@ -1307,7 +1306,7 @@ export const useMethods = (store) => {
                 throw createError('评论内容不能为空', ErrorTypes.VALIDATION, '评论提交');
             }
 
-            if (!selectedFileId.value) {
+            if (!selectedKey.value) {
                 throw createError('请先选择文件', ErrorTypes.VALIDATION, '评论提交');
             }
 
@@ -1378,7 +1377,7 @@ export const useMethods = (store) => {
                     content: content,
                     timestamp: timestamp,
                     // 保留评论特有字段
-                    fileId: selectedFileId.value,
+                    fileKey: selectedKey.value,
                     projectId: projectId,
                     versionId: versionId,
                     // 兼容字段（保留原有字段以兼容旧代码）
@@ -1427,7 +1426,7 @@ export const useMethods = (store) => {
                 console.log('[评论提交] API调用成功:', result);
                 
                 // 同步评论到会话消息（确保使用规范化后的评论）
-                if (projectId && selectedFileId.value) {
+                if (projectId && selectedKey.value) {
                     try {
                         const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                         const sessionSync = getSessionSyncService();
@@ -1439,7 +1438,7 @@ export const useMethods = (store) => {
                         if (store && store.normalizeComment) {
                             commentWithKey = store.normalizeComment(commentWithKey);
                         }
-                        await sessionSync.syncCommentToMessage(commentWithKey, selectedFileId.value, projectId, false);
+                        await sessionSync.syncCommentToMessage(commentWithKey, selectedKey.value, projectId, false);
                         console.log('[评论提交] 评论已同步到会话消息');
                     } catch (syncError) {
                         console.warn('[评论提交] 同步评论到会话消息失败（已忽略）:', syncError?.message);
@@ -1454,6 +1453,7 @@ export const useMethods = (store) => {
                     detail: { 
                         projectId: projectId, 
                         versionId: versionId, 
+                        fileKey: selectedKey.value,
                         forceReload: true,
                         immediateReload: true // 标记立即刷新，不使用防抖
                     }
@@ -1646,7 +1646,7 @@ export const useMethods = (store) => {
                 if (!Array.isArray(items)) {
                     // 如果是单个节点，直接处理
                     if (items.type === 'folder') {
-                        expandedFolders.value.add(items.id);
+                        expandedFolders.value.add(items.key);
                         if (items.children) {
                             expandFolder(items.children);
                         }
@@ -1656,7 +1656,7 @@ export const useMethods = (store) => {
                 
                 items.forEach(item => {
                     if (item.type === 'folder') {
-                        expandedFolders.value.add(item.id);
+                        expandedFolders.value.add(item.key);
                         if (item.children) {
                             expandFolder(item.children);
                         }
@@ -1760,7 +1760,7 @@ export const useMethods = (store) => {
                         const sessionSync = getSessionSyncService();
                         
                         // 查找评论对象以便准确匹配
-                        const comment = comments.value.find(c => (c.key || c.id) === commentId);
+                        const comment = comments.value.find(c => c.key === commentId);
                         await sessionSync.deleteCommentMessage(commentId, selectedFileId.value, projectId, comment);
                         console.log('[评论删除] 会话消息已删除');
                     } catch (syncError) {
@@ -2000,8 +2000,7 @@ export const useMethods = (store) => {
                 
                 // 创建 README.md 文件对象
                 const readmeFile = {
-                    fileId: `${projectId}/README.md`,
-                    id: `${projectId}/README.md`,
+                    key: `${projectId}/README.md`,
                     path: `${projectId}/README.md`,
                     name: 'README.md',
                     content: `# ${projectId}\n\n项目描述：这是一个新创建的项目。\n\n## 开始使用\n\n请在此处添加项目的使用说明。`,
@@ -2100,7 +2099,7 @@ export const useMethods = (store) => {
                     cname: 'comments',
                     projectId,
                     versionId,
-                    ...(selectedFileId.value ? { fileId: selectedFileId.value } : {})
+                    ...(selectedKey.value ? { key: selectedKey.value } : {})
                 });
                 
                 console.log('[加载评论] 调用获取评论接口:', queryUrl);
@@ -2176,69 +2175,7 @@ export const useMethods = (store) => {
      */
     const handleProjectChange = (projectId) => {
         return safeExecute(async () => {
-            if (projectId) {
-                console.log('[项目切换] 开始切换到项目:', projectId);
-                
-                // 设置loading状态
-                loading.value = true;
-                
-                try {
-                    // 设置选中的项目（这会自动更新版本列表）
-                    setSelectedProject(projectId);
-                    console.log('[项目切换] 项目已设置:', projectId);
-                    
-                    // 在加载前清空当前选择与数据，避免旧数据闪烁
-                    // 清空文件选择
-                    setSelectedFileId(null);
-                    
-                    // 清空评论数据
-                    comments.value = [];
-                    
-                    // 清空评论者数据
-                    if (store.commenters) {
-                        store.commenters.value = [];
-                        console.log('[项目切换] 评论者数据已清空');
-                    }
-
-                    // 加载文件树和文件数据（项目切换时需要强制清空旧数据）
-                    console.log('[项目切换] 开始加载文件树和文件数据...');
-                    await Promise.all([
-                        loadFileTree(projectId, true),  // forceClear: true，切换项目时需要清空旧数据
-                        loadFiles(projectId)
-                    ]);
-                    console.log('[项目切换] 文件树和文件数据加载完成');
-                    
-                    // 加载评论数据
-                    console.log('[项目切换] 开始加载评论数据...');
-                    await loadComments(projectId);
-                    console.log('[项目切换] 评论数据加载完成');
-                    
-                    // 重新加载评论者数据
-                    console.log('[项目切换] 开始重新加载评论者数据...');
-                    if (store.loadCommenters) {
-                        await store.loadCommenters(projectId);
-                        console.log('[项目切换] 评论者数据重新加载完成');
-                    }
-                    
-                    // 触发项目就绪事件，通知评论面板重新加载
-                    console.log('[项目切换] 触发projectReady事件');
-                    window.dispatchEvent(new CustomEvent('projectReady', {
-                        detail: {
-                            projectId: projectId
-                        }
-                    }));
-                    
-                    // 显示成功消息
-                    showSuccessMessage(`已切换到项目: ${projectId}`);
-
-                } catch (error) {
-                    console.error('[项目切换] 项目切换失败:', error);
-                    throw createError(`项目切换失败: ${error.message}`, ErrorTypes.API, '项目切换');
-                } finally {
-                    // 清除loading状态
-                    loading.value = false;
-                }
-            }
+            console.log('[项目切换] 全局模式下忽略项目切换:', projectId);
         }, '项目切换处理');
     };
 
@@ -2258,12 +2195,12 @@ export const useMethods = (store) => {
      */
     const toggleBatchMode = () => {
         return safeExecute(() => {
-            const { batchMode, selectedFileIds } = store;
+            const { batchMode, selectedKeys } = store;
             if (batchMode && typeof batchMode.value !== 'undefined') {
                 batchMode.value = !batchMode.value;
                 // 退出批量模式时清空选中项
-                if (!batchMode.value && selectedFileIds && selectedFileIds.value) {
-                    selectedFileIds.value.clear();
+                if (!batchMode.value && selectedKeys && selectedKeys.value) {
+                    selectedKeys.value.clear();
                 }
                 console.log('[批量选择] 批量模式:', batchMode.value ? '开启' : '关闭');
             }
@@ -2273,30 +2210,30 @@ export const useMethods = (store) => {
     /**
      * 切换文件选中状态（批量选择模式下）
      */
-    const toggleFileSelection = (fileId) => {
+    const toggleFileSelection = (key) => {
         return safeExecute(() => {
-            const { batchMode, selectedFileIds } = store;
+            const { batchMode, selectedKeys } = store;
             if (!batchMode || !batchMode.value) {
                 console.warn('[批量选择] 未开启批量模式');
                 return;
             }
             
-            if (!selectedFileIds || !selectedFileIds.value) {
-                console.warn('[批量选择] selectedFileIds 未初始化');
+            if (!selectedKeys || !selectedKeys.value) {
+                console.warn('[批量选择] selectedKeys 未初始化');
                 return;
             }
 
-            const normalizedFileId = normalizeFileId ? normalizeFileId(fileId) : String(fileId || '');
+            const normalizedKey = normalizeKey ? normalizeKey(key) : String(key || '');
             
-            if (selectedFileIds.value.has(normalizedFileId)) {
-                selectedFileIds.value.delete(normalizedFileId);
-                console.log('[批量选择] 取消选中文件:', normalizedFileId);
+            if (selectedKeys.value.has(normalizedKey)) {
+                selectedKeys.value.delete(normalizedKey);
+                console.log('[批量选择] 取消选中文件:', normalizedKey);
             } else {
-                selectedFileIds.value.add(normalizedFileId);
-                console.log('[批量选择] 选中文件:', normalizedFileId);
+                selectedKeys.value.add(normalizedKey);
+                console.log('[批量选择] 选中文件:', normalizedKey);
             }
             
-            console.log('[批量选择] 当前选中文件数:', selectedFileIds.value.size);
+            console.log('[批量选择] 当前选中文件数:', selectedKeys.value.size);
         }, '文件选择切换');
     };
 
@@ -2350,8 +2287,8 @@ export const useMethods = (store) => {
                 await deleteItem({ itemId, projectId });
                 showSuccessMessage('删除成功');
                 // 若删除的是当前选中文件，则清空选择
-                if (selectedFileId?.value && (selectedFileId.value === itemId || selectedFileId.value.startsWith(itemId + '/'))) {
-                    setSelectedFileId(null);
+                if (selectedKey?.value && (selectedKey.value === itemId || selectedKey.value.startsWith(itemId + '/'))) {
+                    setSelectedKey(null);
                 }
             }, '删除');
         },
@@ -2387,7 +2324,7 @@ export const useMethods = (store) => {
             return safeExecute(async () => {
                 console.log('[handleSessionSelect] 选择会话:', session);
                 
-                if (!session || !session.id) {
+                if (!session || !session.key) {
                     console.warn('[handleSessionSelect] 无效的会话数据');
                     if (window.showError) {
                         window.showError('无效的会话数据');
@@ -2427,14 +2364,14 @@ export const useMethods = (store) => {
             }, '选择会话');
         },
         
-        handleSessionDelete: async (sessionId) => {
+        handleSessionDelete: async (sessionKey) => {
             return safeExecute(async () => {
-                console.log('[handleSessionDelete] 删除会话:', sessionId);
+                console.log('[handleSessionDelete] 删除会话:', sessionKey);
                 try {
                     // 检查会话是否为树文件类型（在会话视图下不允许删除树文件类型的会话）
                     let session = null;
                     if (store.sessions && store.sessions.value && Array.isArray(store.sessions.value)) {
-                        session = store.sessions.value.find(s => s && s.id === sessionId);
+                        session = store.sessions.value.find(s => s && s.key === sessionKey);
                     }
                     
                     // 如果从列表中找不到，尝试获取完整会话信息
@@ -2442,7 +2379,7 @@ export const useMethods = (store) => {
                         try {
                             const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                             const sessionSync = getSessionSyncService();
-                            session = await sessionSync.getSession(sessionId);
+                            session = await sessionSync.getSession(sessionKey);
                         } catch (e) {
                             console.warn('[handleSessionDelete] 获取会话信息失败:', e);
                         }
@@ -2463,7 +2400,7 @@ export const useMethods = (store) => {
                     // 查找会话获取内部ID
                     const findUrl = buildServiceUrl('query_documents', {
                         cname: 'sessions',
-                        filter: { id: sessionId },
+                        filter: { id: sessionKey },
                         limit: 1
                     });
                     const findResp = await getData(findUrl, {}, false);
@@ -2485,7 +2422,7 @@ export const useMethods = (store) => {
                     
                     // 从列表中移除
                     if (store.sessions && store.sessions.value && Array.isArray(store.sessions.value)) {
-                        store.sessions.value = store.sessions.value.filter(s => s && s.id !== sessionId);
+                        store.sessions.value = store.sessions.value.filter(s => s && s.key !== sessionKey);
                     }
                     
                     if (window.showSuccess) {
@@ -2568,13 +2505,13 @@ export const useMethods = (store) => {
         },
         
         // 切换会话收藏状态
-        handleSessionToggleFavorite: async (sessionId) => {
+        handleSessionToggleFavorite: async (sessionKey) => {
             return safeExecute(async () => {
-                console.log('[handleSessionToggleFavorite] 切换收藏状态:', sessionId);
+                console.log('[handleSessionToggleFavorite] 切换收藏状态:', sessionKey);
                 try {
                     // 找到会话
                     const sessions = store.sessions?.value || [];
-                    const session = sessions.find(s => s && s.id === sessionId);
+                    const session = sessions.find(s => s && s.key === sessionKey);
                     if (!session) {
                         throw new Error('会话不存在');
                     }
@@ -2586,7 +2523,7 @@ export const useMethods = (store) => {
                     // 更新后端
                     // const { postData } = await import('/src/services/index.js');
                     const updateData = {
-                        id: sessionId,
+                        id: sessionKey,
                         isFavorite: newFavoriteState
                     };
                     // await postData(`${window.API_URL}/session/save`, updateData);
@@ -2594,7 +2531,7 @@ export const useMethods = (store) => {
                     // 查找会话获取内部ID
                     const findUrl = buildServiceUrl('query_documents', {
                         cname: 'sessions',
-                        filter: { id: sessionId },
+                        filter: { id: sessionKey },
                         limit: 1
                     });
                     const findResp = await getData(findUrl, {}, false);
@@ -2631,13 +2568,13 @@ export const useMethods = (store) => {
         },
         
         // 会话收藏（别名，用于模板中）
-        handleSessionFavorite: async (sessionId) => {
+        handleSessionFavorite: async (sessionKey) => {
             return safeExecute(async () => {
-                console.log('[handleSessionFavorite] 切换收藏状态:', sessionId);
+                console.log('[handleSessionFavorite] 切换收藏状态:', sessionKey);
                 try {
                     // 找到会话
                     const sessions = store.sessions?.value || [];
-                    const session = sessions.find(s => s && s.id === sessionId);
+                    const session = sessions.find(s => s && s.key === sessionKey);
                     if (!session) {
                         throw new Error('会话不存在');
                     }
@@ -2649,7 +2586,7 @@ export const useMethods = (store) => {
                     // 更新后端
                     // const { postData } = await import('/src/services/index.js');
                     const updateData = {
-                        id: sessionId,
+                        id: sessionKey,
                         isFavorite: newFavoriteState
                     };
                     // await postData(`${window.API_URL}/session/save`, updateData);
@@ -2657,7 +2594,7 @@ export const useMethods = (store) => {
                     // 查找会话获取内部ID
                     const findUrl = buildServiceUrl('query_documents', {
                         cname: 'sessions',
-                        filter: { id: sessionId },
+                        filter: { id: sessionKey },
                         limit: 1
                     });
                     const findResp = await getData(findUrl, {}, false);
@@ -2694,12 +2631,12 @@ export const useMethods = (store) => {
         },
         
         // 编辑会话标题
-        handleSessionEdit: async (sessionId) => {
+        handleSessionEdit: async (sessionKey) => {
             return safeExecute(async () => {
-                console.log('[handleSessionEdit] 编辑会话:', sessionId);
+                console.log('[handleSessionEdit] 编辑会话:', sessionKey);
                 try {
                     const sessions = store.sessions?.value || [];
-                    const session = sessions.find(s => s && s.id === sessionId);
+                    const session = sessions.find(s => s && s.key === sessionKey);
                     if (!session) {
                         throw new Error('会话不存在');
                     }
@@ -2724,7 +2661,7 @@ export const useMethods = (store) => {
                     // 更新后端
                     // const { postData } = await import('/src/services/index.js');
                     const updateData = {
-                        id: sessionId,
+                        id: sessionKey,
                         pageTitle: newTitle.trim(),
                         title: newTitle.trim()
                     };
@@ -2733,7 +2670,7 @@ export const useMethods = (store) => {
                     // 查找会话获取内部ID
                     const findUrl = buildServiceUrl('query_documents', {
                         cname: 'sessions',
-                        filter: { id: sessionId },
+                        filter: { id: sessionKey },
                         limit: 1
                     });
                     const findResp = await getData(findUrl, {}, false);
@@ -2770,18 +2707,18 @@ export const useMethods = (store) => {
         },
         
         // 管理会话标签（参考 YiPet 的实现）
-        handleSessionManageTags: async (sessionId) => {
+        handleSessionManageTags: async (sessionKey) => {
             return safeExecute(async () => {
-                console.log('[handleSessionManageTags] 管理标签:', sessionId);
+                console.log('[handleSessionManageTags] 管理标签:', sessionKey);
                 try {
                     const sessions = store.sessions?.value || [];
-                    const session = sessions.find(s => s && s.id === sessionId);
+                    const session = sessions.find(s => s && s.key === sessionKey);
                     if (!session) {
                         throw new Error('会话不存在');
                     }
                     
                     // 打开标签管理弹窗（传递 store 引用）
-                    await openTagManager(sessionId, session, store);
+                    await openTagManager(sessionKey, session, store);
                 } catch (error) {
                     console.error('[handleSessionManageTags] 管理标签失败:', error);
                     if (window.showError) {
@@ -2792,18 +2729,18 @@ export const useMethods = (store) => {
         },
         
         // 会话标签管理（别名，用于模板中）
-        handleSessionTag: async (sessionId) => {
+        handleSessionTag: async (sessionKey) => {
             return safeExecute(async () => {
-                console.log('[handleSessionTag] 管理标签:', sessionId);
+                console.log('[handleSessionTag] 管理标签:', sessionKey);
                 try {
                     const sessions = store.sessions?.value || [];
-                    const session = sessions.find(s => s && s.id === sessionId);
+                    const session = sessions.find(s => s && s.key === sessionKey);
                     if (!session) {
                         throw new Error('会话不存在');
                     }
                     
                     // 打开标签管理弹窗
-                    await openTagManager(sessionId, session, store);
+                    await openTagManager(sessionKey, session, store);
                 } catch (error) {
                     console.error('[handleSessionTag] 管理标签失败:', error);
                     if (window.showError) {
@@ -2814,23 +2751,24 @@ export const useMethods = (store) => {
         },
         
         // 创建会话副本
-        handleSessionDuplicate: async (sessionId) => {
+        handleSessionDuplicate: async (sessionKey) => {
             return safeExecute(async () => {
-                console.log('[handleSessionDuplicate] 创建副本:', sessionId);
+                console.log('[handleSessionDuplicate] 创建副本:', sessionKey);
                 try {
                     const sessions = store.sessions?.value || [];
-                    const sourceSession = sessions.find(s => s && s.id === sessionId);
+                    const sourceSession = sessions.find(s => s && s.key === sessionKey);
                     if (!sourceSession) {
                         throw new Error('会话不存在');
                     }
                     
                     // 生成新会话ID
-                    const newSessionId = `${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+                    const newSessionKey = `${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
                     const now = Date.now();
                     
                     // 创建副本
                     const duplicatedSession = {
-                        id: newSessionId,
+                        key: newSessionKey,
+                        id: newSessionKey,
                         url: sourceSession.url || '',
                         pageTitle: sourceSession.pageTitle ? `${sourceSession.pageTitle} (副本)` : '新会话 (副本)',
                         title: sourceSession.pageTitle ? `${sourceSession.pageTitle} (副本)` : '新会话 (副本)',
@@ -2881,12 +2819,12 @@ export const useMethods = (store) => {
         },
         
         // 打开页面上下文（对于 aicr 会话，可以显示文件内容）
-        handleSessionContext: async (sessionId) => {
+        handleSessionContext: async (sessionKey) => {
             return safeExecute(async () => {
-                console.log('[handleSessionContext] 打开页面上下文:', sessionId);
+                console.log('[handleSessionContext] 打开页面上下文:', sessionKey);
                 try {
                     const sessions = store.sessions?.value || [];
-                    const session = sessions.find(s => s && s.id === sessionId);
+                    const session = sessions.find(s => s && s.key === sessionKey);
                     if (!session) {
                         throw new Error('会话不存在');
                     }
@@ -2913,12 +2851,12 @@ export const useMethods = (store) => {
         },
         
         // 打开会话URL（如果URL以https://开头）
-        handleSessionOpenUrl: async (sessionId) => {
+        handleSessionOpenUrl: async (sessionKey) => {
             return safeExecute(async () => {
-                console.log('[handleSessionOpenUrl] 打开URL:', sessionId);
+                console.log('[handleSessionOpenUrl] 打开URL:', sessionKey);
                 try {
                     const sessions = store.sessions?.value || [];
-                    const session = sessions.find(s => s && s.id === sessionId);
+                    const session = sessions.find(s => s && s.key === sessionKey);
                     if (!session || !session.url || !session.url.startsWith('https://')) {
                         return;
                     }
@@ -2971,7 +2909,7 @@ export const useMethods = (store) => {
                 
                 try {
                     // 1. 验证输入
-                    if (!session || !session.id) {
+                    if (!session || !session.key) {
                         throw new Error('会话数据无效');
                     }
                     
@@ -2985,7 +2923,7 @@ export const useMethods = (store) => {
                     // 2. 获取会话完整数据
                     const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
-                    const fullSession = await sessionSync.getSession(session.id);
+                    const fullSession = await sessionSync.getSession(session.key);
                     
                     if (!fullSession) {
                         throw new Error('无法获取会话数据');
@@ -3134,7 +3072,7 @@ export const useMethods = (store) => {
                         
                         if (existingFile) {
                             // 保存文件ID和文件节点的深拷贝用于后续清理和回滚
-                            const existingFileId = existingFile.id;
+                            const existingFileKey = existingFile.key;
                             // 创建文件节点的深拷贝，用于可能的回滚操作
                             const existingFileCopy = JSON.parse(JSON.stringify(existingFile));
                             
@@ -3146,8 +3084,8 @@ export const useMethods = (store) => {
                             // 从本地 files 列表中删除（如果存在）
                             if (Array.isArray(files.value) && existingFileId) {
                                 files.value = files.value.filter(f => {
-                                    const ids = [f.fileId, f.id, f.path].filter(Boolean);
-                                    return !ids.some(v => String(v) === existingFileId);
+                                    const ids = [f.key, f.path].filter(Boolean);
+                                    return !ids.some(v => String(v) === existingFileKey);
                                 });
                             }
                             
@@ -3196,7 +3134,7 @@ export const useMethods = (store) => {
                         
                         // 会话元信息（作为注释）
                         const sessionMeta = {
-                            sessionId: sessionData.id || session.id,
+                            sessionId: sessionData.key || session.key,
                             createdAt: sessionData.createdAt || session.createdAt || '',
                             updatedAt: sessionData.updatedAt || session.updatedAt || '',
                             messageCount: messages.length
@@ -3266,11 +3204,11 @@ export const useMethods = (store) => {
                     // 文件已创建并持久化（createFile 已经处理了持久化）
                     
                     // 14. 删除原始会话（转成树文件后，原始会话不再需要）
-                    const originalSessionId = fullSession.id || session.id;
-                    if (originalSessionId) {
+                    const originalSessionKey = fullSession.key || session.key;
+                    if (originalSessionKey) {
                         try {
-                            await sessionSync.deleteSession(originalSessionId);
-                            console.log(`[handleSessionTree] 已删除原始会话: ${originalSessionId}`);
+                            await sessionSync.deleteSession(originalSessionKey);
+                            console.log(`[handleSessionTree] 已删除原始会话: ${originalSessionKey}`);
                         } catch (error) {
                             // 删除原始会话失败不影响主流程，只记录警告
                             console.warn(`[handleSessionTree] 删除原始会话失败（已忽略）:`, error);
@@ -3305,15 +3243,15 @@ export const useMethods = (store) => {
         handleCreateSession: async (payload) => {
             console.log('[handleCreateSession] 收到创建会话请求:', payload);
             return safeExecute(async () => {
-                const fileId = payload?.fileId || payload?.id;
-                console.log('[handleCreateSession] 文件ID:', fileId);
-                if (!fileId) {
-                    console.error('[handleCreateSession] 无效的文件ID');
-                    if (window.showError) {
-                        window.showError('无效的文件ID');
-                    }
-                    return;
+                const fileKey = payload?.key || payload?.fileKey || payload?.path;
+            console.log('[handleCreateSession] 文件Key:', fileKey);
+            if (!fileKey) {
+                console.error('[handleCreateSession] 无效的文件Key');
+                if (window.showError) {
+                    window.showError('无效的文件Key');
                 }
+                return;
+            }
 
                 try {
                     // 显示加载状态
@@ -3402,10 +3340,10 @@ export const useMethods = (store) => {
 
                     // 构建会话数据
                     const sessionData = {
-                        id: sessionId,
+                        key: sessionKey,
                         url: uniqueUrl,
-                        title: fileId, // 使用 fileId 作为会话标题
-                        pageTitle: fileId,
+                        title: fileKey, // 使用 fileKey 作为会话标题
+                        pageTitle: fileKey,
                         pageDescription: pageDescription.trim(),
                         pageContent: fileContent, // 使用文件内容作为页面上下文
                         messages: [],
@@ -3540,8 +3478,8 @@ export const useMethods = (store) => {
         // 切换会话选择状态（批量选择）
         toggleSessionSelection: (sessionId) => {
             return safeExecute(() => {
-                if (!selectedSessionIds || !selectedSessionIds.value) {
-                    console.warn('[useMethods] selectedSessionIds 未初始化');
+                if (!selectedSessionKeys || !selectedSessionKeys.value) {
+                    console.warn('[useMethods] selectedSessionKeys 未初始化');
                     return;
                 }
                 
@@ -3573,18 +3511,18 @@ export const useMethods = (store) => {
                 
                 // 检查是否全部已选中
                 const allSelected = visibleSessions.length > 0 && 
-                    visibleSessions.every(session => selectedSessionIds.value.has(session.id));
+                    visibleSessions.every(session => selectedSessionKeys.value.has(session.key));
                 
                 if (allSelected) {
                     // 取消全选：只取消当前显示的会话
                     visibleSessions.forEach(session => {
-                        selectedSessionIds.value.delete(session.id);
+                        selectedSessionKeys.value.delete(session.key);
                     });
                     console.log('[useMethods] 已取消全选，取消数量:', visibleSessions.length);
                 } else {
                     // 全选：选中所有当前显示的会话
                     visibleSessions.forEach(session => {
-                        selectedSessionIds.value.add(session.id);
+                        selectedSessionKeys.value.add(session.key);
                     });
                     console.log('[useMethods] 已全选，选中数量:', visibleSessions.length);
                 }
@@ -3712,7 +3650,7 @@ export const useMethods = (store) => {
                                     // 如果从路径提取到标签，使用这些标签
                                     if (extractedTags.length > 0) {
                                         session.tags = extractedTags;
-                                        console.log('[useMethods] 从 pageDescription 提取标签:', session.id, extractedTags);
+                                        console.log('[useMethods] 从 pageDescription 提取标签:', session.key, extractedTags);
                                     }
                                     // 如果文件在根目录，标签保持为空（不添加 projectId）
                                 }
@@ -3728,11 +3666,11 @@ export const useMethods = (store) => {
                             
                             // 确保 tags 数组被正确设置（防止被覆盖）
                             if (!Array.isArray(session.tags) || session.tags.length === 0 || session.tags[0] !== knowledgeTag) {
-                                console.warn('[useMethods] 标签数组异常，重新设置:', session.id, session.tags);
+                                console.warn('[useMethods] 标签数组异常，重新设置:', session.key, session.tags);
                                 session.tags = [knowledgeTag, ...session.tags.filter(tag => tag !== knowledgeTag)];
                             }
                             
-                            console.log('[useMethods] 确保 knowledge 标签在第一个位置:', session.id, session.tags);
+                            console.log('[useMethods] 确保 knowledge 标签在第一个位置:', session.key, session.tags);
                             
                             // 确保保存时包含完整的 tags 数组
                             const sessionToSave = {
@@ -3743,7 +3681,7 @@ export const useMethods = (store) => {
                             // 检查会话是否存在
                             const checkUrl = buildServiceUrl('query_documents', {
                                 cname: 'sessions',
-                                filter: { id: sessionToSave.id },
+                                filter: { id: sessionToSave.key },
                                 limit: 1
                             });
                             const checkResp = await getData(checkUrl, {}, false);
@@ -3774,7 +3712,7 @@ export const useMethods = (store) => {
                             await postData(`${window.API_URL}/`, savePayload);
                             successCount++;
                         } catch (error) {
-                            console.error('[useMethods] 导入会话失败:', session.id, error);
+                            console.error('[useMethods] 导入会话失败:', session.key, error);
                             failCount++;
                         }
                     }
@@ -3818,9 +3756,9 @@ export const useMethods = (store) => {
                 try {
                     // 确定要导出的会话
                     let sessionsToExport = [];
-                    if (sessionBatchMode && sessionBatchMode.value && selectedSessionIds && selectedSessionIds.value.size > 0) {
+                    if (sessionBatchMode && sessionBatchMode.value && selectedSessionKeys && selectedSessionKeys.value.size > 0) {
                         // 批量导出选中的会话
-                        sessionsToExport = sessions.value.filter(s => selectedSessionIds.value.has(s.id));
+                        sessionsToExport = sessions.value.filter(s => selectedSessionKeys.value.has(s.key));
                     } else {
                         // 导出所有会话
                         sessionsToExport = sessions.value;
@@ -3872,7 +3810,7 @@ export const useMethods = (store) => {
         // 批量删除会话（参考 YiPet 的实现）
         handleBatchDeleteSessions: async () => {
             return safeExecuteAsync(async () => {
-                if (!selectedSessionIds || !selectedSessionIds.value || selectedSessionIds.value.size === 0) {
+                if (!selectedSessionKeys || !selectedSessionKeys.value || selectedSessionKeys.value.size === 0) {
                     if (window.showError) {
                         window.showError('请先选择要删除的会话');
                     }
@@ -3880,57 +3818,57 @@ export const useMethods = (store) => {
                 }
                 
                 // 检查并过滤掉树文件类型的会话
-                const sessionIds = Array.from(selectedSessionIds.value);
-                const treeFileSessionIds = [];
-                const allowedSessionIds = [];
+                const sessionKeys = Array.from(selectedSessionKeys.value);
+                const treeFileSessionKeys = [];
+                const allowedSessionKeys = [];
                 
                 // 从会话列表中检查每个会话
                 if (store.sessions && store.sessions.value && Array.isArray(store.sessions.value)) {
-                    for (const sessionId of sessionIds) {
-                        const session = store.sessions.value.find(s => s && s.id === sessionId);
+                    for (const sessionKey of sessionKeys) {
+                        const session = store.sessions.value.find(s => s && s.key === sessionKey);
                         if (session && session.url && String(session.url).startsWith('aicr-session://')) {
-                            treeFileSessionIds.push(sessionId);
+                            treeFileSessionKeys.push(sessionKey);
                         } else {
-                            allowedSessionIds.push(sessionId);
+                            allowedSessionKeys.push(sessionKey);
                         }
                     }
                 } else {
                     // 如果无法从列表获取，尝试获取完整会话信息
                     const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
-                    for (const sessionId of sessionIds) {
+                    for (const sessionKey of sessionKeys) {
                         try {
-                            const session = await sessionSync.getSession(sessionId);
+                            const session = await sessionSync.getSession(sessionKey);
                             if (session && session.url && String(session.url).startsWith('aicr-session://')) {
-                                treeFileSessionIds.push(sessionId);
+                                treeFileSessionKeys.push(sessionKey);
                             } else {
-                                allowedSessionIds.push(sessionId);
+                                allowedSessionKeys.push(sessionKey);
                             }
                         } catch (e) {
                             // 获取失败，允许删除（可能是其他类型的会话）
-                            allowedSessionIds.push(sessionId);
+                            allowedSessionKeys.push(sessionKey);
                         }
                     }
                 }
                 
                 // 如果有树文件类型的会话，提示用户
-                if (treeFileSessionIds.length > 0) {
+                if (treeFileSessionKeys.length > 0) {
                     if (window.showError) {
-                        window.showError(`不允许在会话视图删除树文件类型的会话（已过滤 ${treeFileSessionIds.length} 个）`);
+                        window.showError(`不允许在会话视图删除树文件类型的会话（已过滤 ${treeFileSessionKeys.length} 个）`);
                     }
                     // 从选中列表中移除树文件类型的会话
-                    for (const treeSessionId of treeFileSessionIds) {
-                        if (selectedSessionIds && selectedSessionIds.value) {
-                            selectedSessionIds.value.delete(treeSessionId);
+                    for (const treeSessionKey of treeFileSessionKeys) {
+                        if (selectedSessionKeys && selectedSessionKeys.value) {
+                            selectedSessionKeys.value.delete(treeSessionKey);
                         }
                     }
                     // 如果没有可删除的会话，直接返回
-                    if (allowedSessionIds.length === 0) {
+                    if (allowedSessionKeys.length === 0) {
                         return;
                     }
                 }
                 
-                const count = allowedSessionIds.length;
+                const count = allowedSessionKeys.length;
                 const confirmMessage = `确定要删除选中的 ${count} 个会话吗？此操作不可撤销。`;
                 if (!confirm(confirmMessage)) {
                     return;
@@ -3943,11 +3881,11 @@ export const useMethods = (store) => {
                     // 使用标准服务接口逐个删除（只删除允许删除的会话）
                     let deletedCount = 0;
                     let failedCount = 0;
-                    for (const sid of allowedSessionIds) {
+                    for (const skey of allowedSessionKeys) {
                         try {
                             const findUrl = buildServiceUrl('query_documents', {
                                 cname: 'sessions',
-                                filter: { id: sid },
+                                filter: { id: skey },
                                 limit: 1
                             });
                             const findResp = await getData(findUrl, {}, false);

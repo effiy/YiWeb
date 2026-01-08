@@ -36,15 +36,15 @@
     <div v-else-if="tree.length > 0" class="file-tree-content">
         <!-- 树形视图 -->
         <ul v-if="viewMode === 'tree'" class="file-tree" role="tree">
-            <template v-for="item in sortedTree" :key="item.id">
+            <template v-for="item in sortedTree" :key="item.key">
                 <!-- 递归组件：文件树节点 -->
                 <file-tree-node 
                     :item="item" 
-                    :selected-file-id="selectedFileId"
+                    :selected-key="selectedKey"
                     :expanded-folders="expandedFolders"
                     :comments="comments"
                     :batch-mode="batchMode"
-                    :selected-file-ids="selectedFileIds"
+                    :selected-keys="selectedKeys"
                     @file-select="$emit('file-select', $event)"
                     @folder-toggle="$emit('folder-toggle', $event)"
                     @create-folder="$emit('create-folder', $event)"
@@ -62,18 +62,18 @@
             <div class="tags-container">
                 <div 
                     v-for="file in flattenedFiles" 
-                    :key="file.id"
+                    :key="file.key"
                     :class="['file-tag', { 
-                        'selected': !batchMode && isFileSelected(file.id),
-                        'batch-selected': batchMode && isFileSelected(file.id)
+                        'selected': !batchMode && isFileSelected(file.key),
+                        'batch-selected': batchMode && isFileSelected(file.key)
                     }]"
-                    @click="handleTagClick(file.id)"
+                    @click="handleTagClick(file.key)"
                     :title="`文件: ${file.name}`"
                 >
                     <span class="tag-icon">{{ getFileIcon(file) }}</span>
                     <span class="tag-name">{{ file.name }}</span>
-                    <span v-if="getCommentCount(file.id) > 0" class="tag-comment-count">
-                        {{ getCommentCount(file.id) }}
+                    <span v-if="getCommentCount(file.key) > 0" class="tag-comment-count">
+                        {{ getCommentCount(file.key) }}
                     </span>
                 </div>
             </div>

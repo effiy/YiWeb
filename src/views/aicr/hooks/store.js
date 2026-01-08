@@ -28,22 +28,17 @@ class FileDeleteService {
      * 从文件对象中提取所有可能的标识符
      * 支持导入文件和新建文件的不同数据结构
      * @param {Object} file - 文件对象
-     * @returns {Object} 包含 fileId, fileKey, projectId, isFile 的对象
+     * @returns {Object} 包含 key, projectId, isFile 的对象
      */
     extractFileIdentifiers(file) {
         if (!file || typeof file !== 'object') {
-            return { fileId: null, fileKey: null, projectId: null, isFile: false };
+            return { key: null, projectId: null, isFile: false };
         }
 
-        // 提取 fileId（支持多种字段和嵌套结构）
-        const fileId = file.fileId || file.id || file.path || 
-                      (file.data && (file.data.fileId || file.data.id || file.data.path)) ||
+        // 提取 key（优先使用 key 作为路径标识）
+        const key = file.key || file.path || 
+                      (file.data && (file.data.key || file.data.path)) ||
                       null;
-
-        // 提取 fileKey（支持多种字段和嵌套结构）
-        const fileKey = file.key || file._id || 
-                       (file.data && (file.data.key || file.data._id)) ||
-                       null;
 
         // 提取 projectId（支持多种字段和嵌套结构）
         const projectId = file.projectId || 
@@ -52,10 +47,10 @@ class FileDeleteService {
 
         // 判断是否为文件（不是文件夹）
         const isFile = file.type === 'file' || 
-                      (!file.type && fileId && !fileId.endsWith('/')) ||
+                      (!file.type && key && !key.endsWith('/')) ||
                       false;
 
-        return { fileId, fileKey, projectId, isFile };
+        return { key, projectId, isFile };
     }
 
     /**
@@ -67,58 +62,49 @@ class FileDeleteService {
      */
     async deleteFile(file, projectId = null) {
         // 提取文件标识符
-        const { fileId, fileKey, projectId: fileProjectId, isFile } = this.extractFileIdentifiers(file);
+        const { key, projectId: fileProjectId, isFile } = this.extractFileIdentifiers(file);
         
-        // 使用传入的 projectId 或从文件对象中提取
-        const actualProjectId = projectId || fileProjectId;
+        // 使用传入的 projectId 或从文件对象中提取，默认为 'global'
+        const actualProjectId = projectId || fileProjectId || 'global';
 
-        // 如果 fileId 仍然为空，尝试从原始文件对象中直接提取
-        let finalFileId = fileId;
-        if (!finalFileId && file) {
-            finalFileId = file.fileId || file.id || file.path || null;
+        // 如果 key 仍然为空，尝试从原始文件对象中直接提取
+        let finalKey = key;
+        if (!finalKey && file) {
+            finalKey = file.key || file.path || null;
         }
 
         console.log('[FileDeleteService] 开始删除文件:', { 
-            fileId: finalFileId, 
-            fileKey,
+            key: finalKey, 
             isFile, 
             projectId: actualProjectId,
-            fileType: file?.type,
-            extractedFileId: fileId,
-            fullFile: file
+            fileType: file?.type
         });
 
-        // 如果缺少 projectId，无法删除
-        if (!actualProjectId) {
-            console.error('[FileDeleteService] ✗ 无法删除文件：缺少 projectId', { fileId: finalFileId, fileKey, file });
+        // 如果缺少 key，无法删除
+        if (!finalKey) {
+            console.error('[FileDeleteService] ✗ 无法删除文件：缺少 key', { file });
             return {
                 sessionSuccess: false,
-                fileId: finalFileId,
-                fileKey,
+                key: finalKey,
                 projectId: actualProjectId,
                 isFile,
-                error: '缺少 projectId'
+                error: '缺少 key'
             };
         }
 
         const result = {
             sessionSuccess: false,
-            fileId: finalFileId,
-            fileKey,
+            key: finalKey,
             projectId: actualProjectId,
             isFile
         };
 
         // 删除会话（仅对文件，不对文件夹）
-        if (isFile && actualProjectId && finalFileId) {
-            result.sessionSuccess = await this.deleteSession(finalFileId, actualProjectId);
+        if (isFile) {
+            result.sessionSuccess = await this.deleteSession(finalKey, actualProjectId);
         } else {
             if (!isFile) {
-                console.debug('[FileDeleteService] ✗ 跳过会话删除（不是文件）:', { fileId: finalFileId, type: file?.type });
-            } else if (!actualProjectId) {
-                console.warn('[FileDeleteService] ✗ 跳过会话删除（缺少 projectId）:', { fileId: finalFileId, projectId: actualProjectId });
-            } else if (!finalFileId) {
-                console.warn('[FileDeleteService] ✗ 跳过会话删除（缺少 fileId）');
+                console.debug('[FileDeleteService] ✗ 跳过会话删除（不是文件）:', { key: finalKey, type: file?.type });
             }
         }
 
@@ -165,6 +151,25 @@ class FileDeleteService {
 
         return results;
     }
+
+    /**
+     * 删除会话
+     * @param {string} fileKey - 文件Key
+     * @param {string} projectId - 项目ID
+     * @returns {Promise<boolean>} 是否成功
+     */
+    async deleteSession(fileKey, projectId) {
+        try {
+            const sessionSync = getSessionSyncService();
+            const sessionId = sessionSync.generateSessionId(fileKey, projectId || 'global');
+            await sessionSync.deleteSession(sessionId);
+            console.log('[FileDeleteService] 会话删除成功:', sessionId);
+            return true;
+        } catch (error) {
+            console.warn('[FileDeleteService] 会话删除失败:', error?.message);
+            return false;
+        }
+    }
 }
 
 // 创建单例
@@ -182,7 +187,7 @@ const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ val
 /**
  * 数据存储工厂函数
  * 管理文件树、代码文件、评论数据、选中状态、加载状态和错误信息
- * @returns {Object} store对象，包含fileTree, files, comments, selectedFileId等方法
+ * @returns {Object} store对象，包含fileTree, files, comments, selectedKey等方法
  */
 export const createStore = () => {
     // 文件目录树
@@ -193,8 +198,8 @@ export const createStore = () => {
     const files = vueRef([]);
     // 评论数据
     const comments = vueRef([]);
-    // 当前选中的文件ID
-    const selectedFileId = vueRef(null);
+    // 当前选中的文件Key
+    const selectedKey = vueRef(null);
     // 加载状态
     const loading = vueRef(false);
     // 错误信息
@@ -213,8 +218,8 @@ export const createStore = () => {
     const commentsWidth = vueRef(450);
     
     // 项目管理 - 简化后只管理项目，不再有版本概念
-    const projects = vueRef([]); // 存储项目列表
-    const selectedProject = vueRef('');
+    // const projects = vueRef([]); // 存储项目列表 (Removed)
+    // const selectedProject = vueRef(''); (Removed)
     
     // 搜索相关状态
     const searchQuery = vueRef('');
@@ -223,18 +228,18 @@ export const createStore = () => {
     
     // 批量选择相关状态
     const batchMode = vueRef(false);
-    const selectedFileIds = vueRef(new Set());
+    const selectedKeys = vueRef(new Set());
     
     // 会话批量选择相关状态
     const sessionBatchMode = vueRef(false);
-    const selectedSessionIds = vueRef(new Set());
+    const selectedSessionKeys = vueRef(new Set());
     
     // 视图模式：'tree' 树形视图，'tags' 标签视图
     const viewMode = vueRef('tree');
     
     // 评论者相关状态
     const commenters = vueRef([]);
-    const selectedCommenterIds = vueRef([]);
+    const selectedCommenterKeys = vueRef([]);
     const commentersLoading = vueRef(false);
     const commentersError = vueRef('');
 
@@ -268,87 +273,68 @@ export const createStore = () => {
      * @param {string|null} projectId - 项目ID
      * @param {boolean} forceClear - 是否在数据为空时强制清空（默认 false，保留现有数据以避免清空问题）
      */
-    const loadFileTree = async (projectId = null, forceClear = false) => {
+    const loadFileTree = async (forceClear = false) => {
         return safeExecuteAsync(async () => {
             loading.value = true;
             error.value = null;
             errorMessage.value = '';
             
-            console.log('[loadFileTree] 正在加载文件树数据(基于会话)...', { projectId });
+            console.log('[loadFileTree] 正在加载全局文件树数据...');
             
-            const project = projectId || selectedProject.value;
-            if (!project) {
-                if (forceClear) {
-                    fileTree.value = [];
-                    fileTreeDocKey.value = '';
-                }
-                return [];
-            }
-
             // Ensure sessions are loaded
             if (!sessions.value || sessions.value.length === 0) {
                  await loadSessions();
             }
             
-            // Filter sessions for this project
-            const projectSessions = sessions.value.filter(s => {
-                return s.tags && Array.isArray(s.tags) && s.tags.includes(project);
-            });
+            const allSessions = sessions.value;
+            console.log('[loadFileTree] 会话总数:', allSessions.length);
 
-            if (projectSessions.length === 0) {
-                 console.warn('[loadFileTree] 未找到该项目的会话数据:', project);
-                 // Don't clear if not forced, but here we are rebuilding from scratch
+            if (allSessions.length === 0) {
                  if (forceClear) fileTree.value = [];
                  return [];
             }
 
-            // Build tree
-            const root = {
-                id: project,
-                name: project,
-                type: 'folder',
-                children: []
-            };
+            // Build tree - root is an array of top-level nodes
+            const treeRoots = [];
             
-            projectSessions.forEach(session => {
+            allSessions.forEach(session => {
                 const tags = session.tags || [];
-                // Remove project tag if present
-                const pathTags = tags.filter(t => t !== project);
+                // Use all tags as path
+                const pathTags = tags;
                 
-                let currentLevel = root;
-                let currentPath = project;
+                let currentLevelChildren = treeRoots;
+                let currentPath = '';
                 
                 // Build directory structure
-                pathTags.forEach(folderName => {
+                pathTags.forEach((folderName, index) => {
                     if (!folderName) return;
                     
-                    currentPath = currentPath + '/' + folderName;
+                    currentPath = currentPath ? currentPath + '/' + folderName : folderName;
                     
-                    let folderNode = currentLevel.children.find(c => c.name === folderName && c.type === 'folder');
+                    let folderNode = currentLevelChildren.find(c => c.name === folderName && c.type === 'folder');
                     if (!folderNode) {
                         folderNode = {
-                            id: currentPath,
+                            key: currentPath,
                             name: folderName,
                             type: 'folder',
                             children: []
                         };
-                        currentLevel.children.push(folderNode);
+                        currentLevelChildren.push(folderNode);
                     }
-                    currentLevel = folderNode;
+                    currentLevelChildren = folderNode.children;
                 });
                 
                 // Add file node
                 const fileName = session.title || session.pageTitle || 'Untitled';
-                const fileId = currentPath + '/' + fileName;
+                const fileKey = currentPath ? currentPath + '/' + fileName : fileName;
                 
-                if (!currentLevel.children.find(c => c.name === fileName && c.type === 'file')) {
-                    currentLevel.children.push({
-                        id: fileId,
+                if (!currentLevelChildren.find(c => c.name === fileName && c.type === 'file')) {
+                    currentLevelChildren.push({
+                        key: fileKey,
                         name: fileName,
                         type: 'file',
                         content: session.pageContent || '',
-                        key: session.id, // Bind session ID
-                        _id: session.id,
+                        _id: session.key || session.id,
                         size: (session.pageContent || '').length,
                         lastModified: session.updatedAt || session.createdAt
                     });
@@ -366,12 +352,12 @@ export const createStore = () => {
                     if (n.children) sortNodes(n.children);
                 });
             };
-            sortNodes(root.children);
+            sortNodes(treeRoots);
 
-            fileTree.value = [root];
+            fileTree.value = treeRoots;
             fileTreeDocKey.value = ''; 
             
-            console.log(`[loadFileTree] 成功构建文件树, 包含 ${projectSessions.length} 个文件`);
+            console.log(`[loadFileTree] 成功构建文件树, 包含 ${allSessions.length} 个文件`);
             
             // Default expand
              const allFolders = new Set();
@@ -380,12 +366,12 @@ export const createStore = () => {
                  if (Array.isArray(nodes)) nodes.forEach(n => collectFolders(n));
                  else {
                      if (nodes.type === 'folder') {
-                         allFolders.add(nodes.id);
+                         allFolders.add(nodes.key);
                          if (nodes.children) collectFolders(nodes.children);
                      }
                  }
              };
-             collectFolders(root);
+             collectFolders(treeRoots);
              expandedFolders.value = allFolders;
 
             return fileTree.value;
@@ -407,14 +393,14 @@ export const createStore = () => {
             if (!nodes) return;
             if (!Array.isArray(nodes)) {
                 if (nodes.type === 'folder') {
-                    all.add(nodes.id);
+                    all.add(nodes.key);
                     if (nodes.children) collect(nodes.children);
                 }
                 return;
             }
             nodes.forEach(n => {
                 if (n.type === 'folder') {
-                    all.add(n.id);
+                    all.add(n.key);
                     if (n.children) collect(n.children);
                 }
             });
@@ -426,12 +412,12 @@ export const createStore = () => {
     /**
      * 在树中查找节点及其父节点
      */
-    function findNodeAndParentById(rootNodes, targetId) {
+    function findNodeAndParentByKey(rootNodes, targetKey) {
         const stack = Array.isArray(rootNodes) ? rootNodes.map(n => ({ node: n, parent: null })) : [{ node: rootNodes, parent: null }];
         while (stack.length) {
             const { node, parent } = stack.pop();
             if (!node) continue;
-            if (node.id === targetId) return { node, parent };
+            if (node.key === targetKey) return { node, parent };
             if (node.type === 'folder' && Array.isArray(node.children)) {
                 for (const child of node.children) {
                     stack.push({ node: child, parent: node });
@@ -444,9 +430,9 @@ export const createStore = () => {
     /**
      * 持久化文件树到后端
      */
-    const persistFileTree = async (projectId = null) => {
+    const persistFileTree = async () => {
         return safeExecuteAsync(async () => {
-            const project = projectId || selectedProject.value;
+            const project = 'global';
             console.log('[persistFileTree] 跳过后端持久化，使用会话数据驱动文件树', { project });
             return { skipped: true, project };
         }, '文件树持久化');
@@ -455,7 +441,7 @@ export const createStore = () => {
     /**
      * 创建文件夹
      */
-    const createFolder = async ({ parentId, name, projectId = null }) => {
+    const createFolder = async ({ parentId, name }) => {
         return safeExecuteAsync(async () => {
             if (!name || !name.trim()) {
                 throw createError('文件夹名称不能为空', ErrorTypes.VALIDATION, '新建文件夹');
@@ -467,7 +453,7 @@ export const createStore = () => {
             if (!parentId) {
                 parentNode = root;
             } else {
-                parentNode = findNodeAndParentById(root, parentId).node;
+                parentNode = findNodeAndParentByKey(root, parentId).node;
             }
             if (!parentNode || parentNode.type !== 'folder') {
                 throw createError('父级目录无效', ErrorTypes.VALIDATION, '新建文件夹');
@@ -478,14 +464,14 @@ export const createStore = () => {
             const exists = parentNode.children.find(ch => ch.name === name);
             if (exists) throw createError('同名文件或文件夹已存在', ErrorTypes.VALIDATION, '新建文件夹');
 
-            const newId = (parentNode.id ? `${parentNode.id}/` : '') + name;
-            // 使用 normalizeTreeNode 确保 id 和 path 都包含 projectId
+            const newId = (parentNode.key ? `${parentNode.key}/` : '') + name;
+            // 使用 normalizeTreeNode 确保 key 和 path 都包含 projectId
             const folderNode = normalizeTreeNode({
-                id: newId,
+                key: newId,
                 name,
                 type: 'folder',
                 children: []
-            }, projectId || selectedProject.value);
+            }, 'global');
             if (folderNode) {
                 parentNode.children.push(folderNode);
             }
@@ -514,7 +500,7 @@ export const createStore = () => {
             // 保持全部展开
             expandAllFolders();
 
-            await persistFileTree(projectId);
+            await persistFileTree();
             return newId;
         }, '创建文件夹');
     };
@@ -528,7 +514,7 @@ export const createStore = () => {
      * @param {string} options.projectId - 项目ID
      * @param {boolean} options.skipProjectFiles - 是否跳过 projectFiles 接口调用（当通过 persistFileTree 已持久化时使用）
      */
-    const createFile = async ({ parentId, name, content = '', projectId = null, skipProjectFiles = false }) => {
+    const createFile = async ({ parentId, name, content = '', skipProjectFiles = false }) => {
         return safeExecuteAsync(async () => {
             if (!name || !name.trim()) {
                 throw createError('文件名称不能为空', ErrorTypes.VALIDATION, '新建文件');
@@ -540,7 +526,7 @@ export const createStore = () => {
             if (!parentId) {
                 parentNode = root;
             } else {
-                parentNode = findNodeAndParentById(root, parentId).node;
+                parentNode = findNodeAndParentByKey(root, parentId).node;
             }
             if (!parentNode || parentNode.type !== 'folder') {
                 throw createError('父级目录无效', ErrorTypes.VALIDATION, '新建文件');
@@ -552,20 +538,20 @@ export const createStore = () => {
             }
 
             // 使用统一的路径规范化
-            const parentPath = normalizeFilePath(parentNode.id || '', projectId || selectedProject.value);
+            const parentPath = normalizeFilePath(parentNode.key || '', 'global');
             const newId = parentPath ? `${parentPath}/${name}` : name;
-            const normalizedNewId = normalizeFilePath(newId, projectId || selectedProject.value);
+            const normalizedNewId = normalizeFilePath(newId, 'global');
             const now = Date.now();
             
             // 使用统一的节点规范化工具
             const fileNode = normalizeTreeNode({
-                id: normalizedNewId,
+                key: normalizedNewId,
                 name,
                 type: 'file',
                 size: content ? content.length : 0,
                 modified: now,
                 content: content || ''  // 确保 content 字段被设置到文件节点中
-            }, projectId || selectedProject.value);
+            }, 'global');
             
             if (fileNode) {
                 parentNode.children.push(fileNode);
@@ -597,9 +583,9 @@ export const createStore = () => {
 
             // 先持久化树（这会更新 projectTree，文件节点已包含在其中，包括 content 字段）
             // 注意：即使 skipProjectFiles=true，文件内容也会通过 persistFileTree 保存到 projectTree
-            await persistFileTree(projectId);
+            await persistFileTree();
 
-            const project = projectId || selectedProject.value;
+            const project = 'global';
             let createdKey = null;
             
             // 2025-01-08: 已移除 projectFiles 接口调用，仅使用 sessions 模式
@@ -608,12 +594,12 @@ export const createStore = () => {
 
             // 更新本地files列表，携带后端返回的key，确保首次保存可PUT更新
             const newFile = normalizeFileObject({
-                fileId: normalizedNewId,
-                id: normalizedNewId,
+                key: normalizedNewId,
                 path: normalizedNewId,
                 name,
                 content,
-                key: createdKey,
+                // key: createdKey, // removed as we use normalizedNewId as key
+                _id: createdKey,
                 type: 'file'
             }, project);
             
@@ -638,12 +624,12 @@ export const createStore = () => {
     /**
      * 重命名节点
      */
-    const renameItem = async ({ itemId, newName, projectId = null }) => {
+    const renameItem = async ({ itemId, newName }) => {
         return safeExecuteAsync(async () => {
             if (!itemId) throw createError('缺少目标ID', ErrorTypes.VALIDATION, '重命名');
             if (!newName || !newName.trim()) throw createError('名称不能为空', ErrorTypes.VALIDATION, '重命名');
             const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
-            const { node, parent } = findNodeAndParentById(root, itemId);
+            const { node, parent } = findNodeAndParentByKey(root, itemId);
             if (!node) throw createError('未找到目标节点', ErrorTypes.API, '重命名');
             const siblings = parent ? (parent.children || []) : [node];
             if (siblings.some(ch => ch !== node && ch.name === newName)) {
@@ -651,46 +637,47 @@ export const createStore = () => {
             }
 
             // 使用统一的路径规范化计算新ID
-            const project = projectId || selectedProject.value;
+            const project = 'global';
             // 获取父节点的规范化路径（不包含 projectId）
-            const parentPathWithoutProjectId = parent ? normalizeFilePath(parent.id || '', project) : '';
+            const parentPathWithoutProjectId = parent ? normalizeFilePath(parent.key || '', project) : '';
             // 获取旧ID的规范化路径（不包含 projectId）
-            const oldIdWithoutProjectId = normalizeFilePath(node.id || '', project);
+            const oldIdWithoutProjectId = normalizeFilePath(node.key || '', project);
             // 计算新ID的规范化路径（不包含 projectId）
             const newIdWithoutProjectId = normalizeFilePath(parentPathWithoutProjectId ? `${parentPathWithoutProjectId}/${newName}` : newName, project);
             // 构建包含 projectId 的完整路径
-            const oldId = oldIdWithoutProjectId ? `${project}/${oldIdWithoutProjectId}` : project;
-            const newId = newIdWithoutProjectId ? `${project}/${newIdWithoutProjectId}` : project;
+            // 在全局模式下，不使用 projectId 前缀，保持与 loadFileTree 一致
+            const oldId = oldIdWithoutProjectId;
+            const newId = newIdWithoutProjectId;
             node.name = newName;
 
             // 记录变更前的文件列表用于远端同步
             const prevFiles = Array.isArray(files.value) ? files.value.slice() : [];
 
-            const updateIdsRecursively = (n, fromPrefix, toPrefix) => {
-                if (n.id && typeof n.id === 'string') {
+            const updateKeysRecursively = (n, fromPrefix, toPrefix) => {
+                if (n.key && typeof n.key === 'string') {
                     // 比较完整路径（包含 projectId）
-                    if (n.id === fromPrefix) {
+                    if (n.key === fromPrefix) {
                         // 完全匹配，直接替换
-                        n.id = toPrefix;
+                        n.key = toPrefix;
                         n.path = toPrefix;
-                    } else if (n.id.startsWith(fromPrefix + '/')) {
+                    } else if (n.key.startsWith(fromPrefix + '/')) {
                         // 是子节点，替换前缀
-                        const suffix = n.id.substring(fromPrefix.length);
+                        const suffix = n.key.substring(fromPrefix.length);
                         const newChildId = toPrefix + suffix;
-                        n.id = newChildId;
+                        n.key = newChildId;
                         n.path = newChildId;
                     }
                 } else {
-                    // 如果没有 id，确保设置 path
+                    // 如果没有 key，确保设置 path
                     if (!n.path) {
-                        n.path = n.id || '';
+                        n.path = n.key || '';
                     }
                 }
                 if (n.type === 'folder' && Array.isArray(n.children)) {
-                    n.children.forEach(child => updateIdsRecursively(child, fromPrefix, toPrefix));
+                    n.children.forEach(child => updateKeysRecursively(child, fromPrefix, toPrefix));
                 }
             };
-            updateIdsRecursively(node, oldId, newId);
+            updateKeysRecursively(node, oldId, newId);
             
             // 对父节点的子节点进行排序
             const sortFileTreeItems = (items) => {
@@ -722,16 +709,15 @@ export const createStore = () => {
             if (Array.isArray(files.value)) {
                 files.value = files.value.map(f => {
                     const normalizedOldId = normalizeFilePath(oldId, project);
-                    const ids = [f.fileId, f.id, f.path].filter(Boolean).map(id => normalizeFilePath(id, project));
+                    const ids = [f.key, f.path].filter(Boolean).map(id => normalizeFilePath(id, project));
                     const matched = ids.some(v => v === normalizedOldId || v.startsWith(normalizedOldId + '/'));
                     if (matched) {
-                        const oldPath = normalizeFilePath(f.path || f.id || f.fileId, project);
+                        const oldPath = normalizeFilePath(f.path || f.key, project);
                         const replacedPath = oldPath.replace(normalizedOldId, newId);
                         // 使用统一的字段规范化工具
                         const normalized = normalizeFileObject({
                             ...f,
-                            fileId: replacedPath,
-                            id: replacedPath,
+                            key: replacedPath,
                             path: replacedPath
                         }, project);
                         return normalized || f;
@@ -740,7 +726,7 @@ export const createStore = () => {
                 });
             }
 
-            await persistFileTree(projectId);
+            await persistFileTree();
 
             // 同步 projectTree 中的文件节点，使用统一的字段规范化
             // 2025-01-08: 已移除 projectFiles 逻辑，仅使用 sessions 模式
@@ -748,12 +734,12 @@ export const createStore = () => {
             try {
                 const normalizedOldId = normalizeFilePath(oldId, project);
                 const affected = prevFiles.filter(f => {
-                    const ids = [f.fileId, f.id, f.path].filter(Boolean).map(id => normalizeFilePath(id, project));
+                    const ids = [f.key, f.path].filter(Boolean).map(id => normalizeFilePath(id, project));
                     return ids.some(v => v === normalizedOldId || v.startsWith(normalizedOldId + '/'));
                 });
                 
                 for (const f of affected) {
-                    const oldPath = normalizeFilePath(f.path || f.id || f.fileId, project);
+                    const oldPath = normalizeFilePath(f.path || f.key, project);
                     const newPath = oldPath.replace(normalizedOldId, newId);
                     
                     // 同步更新会话（如果是文件）
@@ -764,7 +750,7 @@ export const createStore = () => {
                             await sessionSync.deleteSession(oldSessionId);
                             
                             // 创建新会话
-                            const updatedFile = { ...f, fileId: newPath, id: newPath, path: newPath, name: newPath.split('/').pop() };
+                            const updatedFile = { ...f, key: newPath, path: newPath, name: newPath.split('/').pop() };
                             await sessionSync.syncFileToSession(updatedFile, project, false);
                             console.log('[renameItem] 会话已同步更新:', oldPath, '->', newPath);
                         } catch (syncError) {
@@ -788,109 +774,29 @@ export const createStore = () => {
         return safeExecuteAsync(async () => {
             if (!itemId) throw createError('缺少目标ID', ErrorTypes.VALIDATION, '删除');
             const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
-            const { node, parent } = findNodeAndParentById(root, itemId);
+            const { node, parent } = findNodeAndParentByKey(root, itemId);
             if (!node) throw createError('未找到目标节点', ErrorTypes.API, '删除');
-            const project = projectId || selectedProject.value;
+            const project = projectId || 'global';
             const prevFiles = Array.isArray(files.value) ? files.value.slice() : [];
             
-            // 如果删除的是根节点：执行整棵树与对应文件集合的清理
+            // 如果删除的是根节点（顶级文件夹）
             if (!parent) {
-                try {
-                    // 从会话中删除所有相关文件的会话
-                    if (project) {
-                        // 2025-01-08: 使用 sessions 查询替代 projectFiles 查询
-                        let targetSessions = [];
-                        if (sessions.value && sessions.value.length > 0) {
-                             targetSessions = sessions.value.filter(s => s.tags && Array.isArray(s.tags) && s.tags.includes(project));
-                        } else {
-                             const url = buildServiceUrl('query_documents', { cname: 'sessions' });
-                             const res = await getData(url, {}, false);
-                             const list = res?.data?.list || [];
-                             targetSessions = list.filter(s => s.tags && Array.isArray(s.tags) && s.tags.includes(project));
-                        }
-                        
-                        console.log('[deleteItem - root] 开始删除项目所有相关会话，会话数:', targetSessions.length, '项目ID:', project);
-                        
-                        let sessionSuccessCount = 0;
-                        for (const s of targetSessions) {
-                            const sid = s.id || s._id;
-                            if (sid) {
-                                try {
-                                    const payload = {
-                                        module_name: SERVICE_MODULE,
-                                        method_name: 'delete_document',
-                                        parameters: { cname: 'sessions', id: sid }
-                                    };
-                                    await postData(`${window.API_URL}/`, payload);
-                                    sessionSuccessCount++;
-                                } catch (e) {
-                                    console.warn('[deleteItem - root] 删除会话失败:', sid, e);
-                                }
-                            }
-                        }
-                        
-                        console.log('[deleteItem - root] 会话删除完成:', {
-                            总数: targetSessions.length,
-                            会话成功: sessionSuccessCount
-                        });
-                    }
-                    // 删除远端评论集合（该项目）
-                    if (project) {
-                        const commentsQueryUrl = buildServiceUrl('query_documents', {
-                            cname: 'comments',
-                            projectId: project
-                        });
-                        const commentsResp = await getData(commentsQueryUrl, {}, false);
-                        const commentsList = commentsResp?.data?.list || [];
-                        for (const c of commentsList) {
-                            const cKey = c?.key || c?._id || c?.id;
-                            if (cKey) {
-                                const deletePayload = {
-                                    module_name: SERVICE_MODULE,
-                                    method_name: 'delete_document',
-                                    parameters: {
-                                        cname: 'comments',
-                                        id: cKey
-                                    }
-                                };
-                                await postData(`${window.API_URL}/`, deletePayload);
-                            }
-                        }
-                    }
-                } catch (cleanupErr) {
-                    console.warn('[deleteItem] 根节点级联删除失败（已忽略）:', cleanupErr?.message || cleanupErr);
+                // 从根节点数组中移除
+                if (Array.isArray(fileTree.value)) {
+                    fileTree.value = fileTree.value.filter(n => n.key !== itemId);
                 }
-                // 清空本地状态
-                fileTree.value = [];
-                fileTreeDocKey.value = '';
-                files.value = [];
-                comments.value = [];
-                selectedFileId.value = null;
-                expandedFolders.value = new Set();
-                // 刷新项目列表并对齐UI
-                try {
-                    const refreshed = await loadProjects();
-                    const list = Array.isArray(refreshed) ? refreshed : (projects?.value || []);
-                    if (list.length > 0) {
-                        const first = list[0];
-                        setSelectedProject(first.id);
-                        await refreshData();
-                    } else {
-                        setSelectedProject('');
-                    }
-                } catch (_) {}
-                return true;
+            } else {
+                // 非根节点删除逻辑
+                parent.children = (parent.children || []).filter(ch => ch.key !== itemId);
             }
-
-            // 非根节点删除逻辑
-            parent.children = (parent.children || []).filter(ch => ch.id !== itemId);
+            
             // 保持全部展开
             expandAllFolders();
 
             // 同步本地files列表（若删除文件或文件夹）
             if (Array.isArray(files.value)) {
                 files.value = files.value.filter(f => {
-                    const ids = [f.fileId, f.id, f.path].filter(Boolean);
+                    const ids = [f.key, f.path].filter(Boolean);
                     const matched = ids.some(v => String(v) === itemId || String(v).startsWith(itemId + '/'));
                     return !matched;
                 });
@@ -901,7 +807,7 @@ export const createStore = () => {
             // 远端删除受影响文件（使用统一的删除服务）
             try {
                 const affected = prevFiles.filter(f => {
-                    const ids = [f.fileId, f.id, f.path].filter(Boolean);
+                    const ids = [f.key, f.path].filter(Boolean);
                     return ids.some(v => String(v) === itemId || String(v).startsWith(itemId + '/'));
                 }).map(f => {
                     // 确保每个文件对象都有 projectId
@@ -913,8 +819,8 @@ export const createStore = () => {
                 
                 console.log('[deleteItem] 开始删除，受影响文件数:', affected.length, '项目ID:', project);
                 console.log('[deleteItem] 受影响文件详情:', affected.map(f => ({
-                    fileId: f.fileId || f.id || f.path,
-                    key: f.key || f._id,
+                    key: f.key,
+                    _id: f._id,
                     projectId: f.projectId || project
                 })));
                 
@@ -957,20 +863,18 @@ export const createStore = () => {
             
             // 如果是文件节点，添加到列表
             if (node.type === 'file' || (node.type !== 'folder' && !node.children)) {
-                const fileId = node.id || node.fileId || node.path || '';
-                const name = node.name || (fileId ? fileId.split('/').pop() : '');
-                const path = node.path || fileId;
+                const fileKey = node.key || node.path || '';
+                const name = node.name || (fileKey ? fileKey.split('/').pop() : '');
+                const path = node.path || fileKey;
                 const content = node.content || '';
                 
                 fileList.push({
-                    fileId: fileId,
-                    id: fileId,
+                    key: fileKey,
                     path: path,
                     name: name,
                     content: content,
                     type: 'file',
-                    projectId: node.projectId || selectedProject.value,
-                    key: node.key,
+                    projectId: node.projectId || 'global',
                     _id: node._id || node.key,
                     createdAt: node.createdAt || node.createdTime,
                     updatedAt: node.updatedAt || node.updatedTime
@@ -996,22 +900,14 @@ export const createStore = () => {
      * 异步加载代码文件数据
      * 现在从 fileTree 中提取文件数据，不再单独调用 projectFiles 接口
      */
-    const loadFiles = async (projectId = null) => {
+    const loadFiles = async () => {
         return safeExecuteAsync(async () => {
-            console.log('[loadFiles] 正在从文件树中提取文件数据...', { projectId });
-            
-            // 需要明确的项目
-            const project = projectId || selectedProject.value;
-            if (!project) {
-                console.warn('[loadFiles] 缺少项目，跳过代码文件加载');
-                files.value = [];
-                return [];
-            }
+            console.log('[loadFiles] 正在从文件树中提取文件数据...');
             
             // 如果文件树还没有加载，先加载文件树
             if (!fileTree.value || fileTree.value.length === 0) {
                 console.log('[loadFiles] 文件树未加载，先加载文件树...');
-                await loadFileTree(project);
+                await loadFileTree();
             }
             
             // 从文件树中提取所有文件
@@ -1031,35 +927,15 @@ export const createStore = () => {
     /**
      * 从文件树中查找文件节点
      */
-    const findFileInTree = (nodes, targetFileId, fileKey = null) => {
-        const normalizeId = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
-        const targetNorm = normalizeId(targetFileId);
-        
+    const findFileByKey = (nodes, targetKey) => {
         const traverse = (node) => {
             if (!node || typeof node !== 'object') return null;
             
             // 如果是文件节点，检查是否匹配
             if (node.type === 'file' || (node.type !== 'folder' && !node.children)) {
-                // 优先使用Key匹配
-                if (fileKey && (node.key === fileKey || node._id === fileKey)) {
+                if (node.key === targetKey || node._id === targetKey) {
                     return node;
                 }
-                
-                // 使用路径匹配
-                const candidates = [node.id, node.fileId, node.path, node.name].filter(Boolean).map(normalizeId);
-                const matched = candidates.some(c => {
-                    // 完全匹配
-                    if (c === targetNorm) return true;
-                    // 路径匹配
-                    if (c.endsWith('/' + targetNorm) || targetNorm.endsWith('/' + c)) return true;
-                    // 文件名匹配
-                    const cName = c.split('/').pop();
-                    const targetName = targetNorm.split('/').pop();
-                    if (cName && targetName && cName === targetName) return true;
-                    return false;
-                });
-                
-                if (matched) return node;
             }
             
             // 递归处理子节点
@@ -1088,53 +964,34 @@ export const createStore = () => {
     /**
      * 按需加载单个文件（从文件树中查找，不再调用 projectFiles 接口）
      */
-    const loadFileById = async (projectId = null, targetFileId = null, fileKey = null) => {
+    const loadFileByKey = async (targetKey = null) => {
         return safeExecuteAsync(async () => {
-            const project = projectId || selectedProject.value;
-            const fileId = targetFileId || selectedFileId.value;
-            if (!project || !fileId) return null;
+            const key = targetKey || selectedKey.value;
+            if (!key) return null;
 
-            console.log('[loadFileById] 尝试从文件树中查找文件:', fileId, '项目:', project, '文件Key:', fileKey);
+            console.log('[loadFileByKey] 尝试从文件树中查找文件:', key);
             
             // 如果文件树还没有加载，先加载文件树
             if (!fileTree.value || fileTree.value.length === 0) {
-                console.log('[loadFileById] 文件树未加载，先加载文件树...');
-                await loadFileTree(project);
+                console.log('[loadFileByKey] 文件树未加载，先加载文件树...');
+                await loadFileTree();
             }
             
             // 从文件树中查找文件
-            let foundNode = findFileInTree(fileTree.value, fileId, fileKey);
+            let foundNode = findFileByKey(fileTree.value, key);
             
             // 如果没找到，尝试从已加载的文件列表中查找
             if (!foundNode && files.value && files.value.length > 0) {
-                console.log('[loadFileById] 在文件树中未找到，尝试从文件列表中查找');
-                const normalizeId = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
-                const targetNorm = normalizeId(fileId);
-                
-                if (fileKey) {
-                    foundNode = files.value.find(f => f.key === fileKey || f._id === fileKey);
-                }
-                
-                if (!foundNode) {
-                    foundNode = files.value.find(f => {
-                        const candidates = [f.fileId, f.id, f.path, f.name].filter(Boolean).map(normalizeId);
-                        return candidates.some(c => {
-                            if (c === targetNorm) return true;
-                            if (c.endsWith('/' + targetNorm) || targetNorm.endsWith('/' + c)) return true;
-                            const cName = c.split('/').pop();
-                            const targetName = targetNorm.split('/').pop();
-                            return cName && targetName && cName === targetName;
-                        });
-                    });
-                }
+                console.log('[loadFileByKey] 在文件树中未找到，尝试从文件列表中查找');
+                foundNode = files.value.find(f => f.key === key || f._id === key);
             }
             
             if (!foundNode) {
-                console.warn('[loadFileById] 未找到文件:', fileId);
+                console.warn('[loadFileByKey] 未找到文件:', key);
                 return null;
             }
             
-            console.log('[loadFileById] 找到文件:', foundNode.name || foundNode.id);
+            console.log('[loadFileByKey] 找到文件:', foundNode.name || foundNode.key);
             
             // 处理找到的文件节点
             return await processFileItem(foundNode);
@@ -1179,22 +1036,10 @@ export const createStore = () => {
             return '';
         };
 
-        const identifier = pickFirstString(
-            item?.fileId, item?.id, item?.path, item?.file, item?.name,
-            data?.fileId, data?.id, data?.path, data?.file, data?.name
-        );
-        // 优先选择 path 类字段作为标识，避免被后端文档 key 覆盖
-        const idCandidates = [
-            data?.path, item?.path,
-            item?.fileId, data?.fileId,
-            item?.id, data?.id,
-            item?.file, data?.file,
-            data?.name, item?.name
-        ].filter(Boolean);
-        const isPathLike = (s) => typeof s === 'string' && (s.includes('/') || s.includes('\\'));
-        const preferredId = (idCandidates.find(isPathLike) || idCandidates[0] || identifier || '');
-        const path = pickFirstString(data?.path, item?.path, preferredId);
-        const name = pickFirstString(data?.name, item?.name, (typeof path === 'string' ? path.split('/').pop() : ''));
+        // 优先使用 key
+        const key = item.key || (data && data.key);
+        const path = item.path || data.path || key;
+        const name = item.name || data.name || (typeof path === 'string' ? path.split('/').pop() : '');
 
         const commonKeys = ['content', 'code', 'text', 'source', 'lines', 'raw', 'body', 'value'];
         let content = '';
@@ -1235,53 +1080,18 @@ export const createStore = () => {
 
         const normalized = { 
             ...item, 
-            fileId: preferredId, 
-            id: preferredId, 
+            key: key,
             path, 
             name, 
             content,
             // 保留原始的唯一标识符
-            key: item?.key || item?._id || item?.id,
-            _id: item?._id || item?.key || item?.id
+            _id: item?._id || item?.key
         };
 
-        // 合并/去重更新到 files 列表（使用等值或 endsWith 规则匹配）
+        // 合并/去重更新到 files 列表
         if (!Array.isArray(files.value)) files.value = [];
-        const normalizeId = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
-        const targetNorm = normalizeId(identifier || item?.fileId || item?.id);
-        const matches = (f) => {
-            const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
-            const candidates = [f?.fileId, f?.id, f?.path, f?.name, d?.fileId, d?.id, d?.path, d?.name].filter(Boolean);
-            
-            return candidates.some(c => {
-                // 完全匹配
-                if (c === targetNorm) return true;
-                
-                // 路径匹配：确保是完整的路径匹配，不是部分匹配
-                if (c.endsWith('/' + targetNorm)) {
-                    // 确保targetNorm不是空字符串，且c以targetNorm结尾
-                    return targetNorm && targetNorm.length > 0;
-                }
-                if (targetNorm.endsWith('/' + c)) {
-                    // 确保c不是空字符串，且targetNorm以c结尾
-                    return c && c.length > 0;
-                }
-                
-                // 文件名匹配：只有当路径部分也一致时才匹配
-                const cName = c.split('/').pop();
-                const targetName = targetNorm.split('/').pop();
-                if (cName && targetName && cName === targetName) {
-                    // 检查路径部分是否一致
-                    const cPath = c.substring(0, c.lastIndexOf('/'));
-                    const targetPath = targetNorm.substring(0, targetNorm.lastIndexOf('/'));
-                    
-                    return cPath === targetPath || (!cPath && !targetPath);
-                }
-                return false;
-            });
-        };
-        // 删除旧的匹配项，插入标准化后的最新项，避免 find 命中旧的无内容项
-        const remaining = files.value.filter(f => !matches(f));
+        // 删除旧的匹配项（只匹配 key）
+        const remaining = files.value.filter(f => f.key !== key);
         remaining.push(normalized);
         files.value = remaining;
 
@@ -1363,7 +1173,7 @@ export const createStore = () => {
     /**
      * 异步加载评论数据
      */
-    const loadComments = async (projectId = null) => {
+    const loadComments = async () => {
         return safeExecuteAsync(async () => {
             // 防止重复请求
             if (loading.value) {
@@ -1371,16 +1181,7 @@ export const createStore = () => {
                 return comments.value;
             }
             
-            console.log('[loadComments] 正在加载评论数据...', { projectId });
-            
-            // 检查是否有项目信息
-            const project = projectId || selectedProject.value;
-            
-            if (!project) {
-                console.log('[loadComments] 项目信息不完整，跳过评论加载');
-                comments.value = [];
-                return [];
-            }
+            console.log('[loadComments] 正在加载评论数据...');
             
             // 设置loading状态
             loading.value = true;
@@ -1388,13 +1189,12 @@ export const createStore = () => {
             try {
                 // 调用MongoDB接口获取评论数据
                 const queryParams = {
-                    cname: 'comments',
-                    projectId: project
+                    cname: 'comments'
                 };
                 
                 // 如果有当前选中的文件，也添加到参数中
-                if (selectedFileId.value) {
-                    queryParams.fileId = selectedFileId.value;
+                if (selectedKey.value) {
+                    queryParams.key = selectedKey.value;
                 }
                 
                 const url = buildServiceUrl('query_documents', queryParams);
@@ -1437,7 +1237,7 @@ export const createStore = () => {
     /**
      * 异步加载评论者数据
      */
-    const loadCommenters = async (projectId = null) => {
+    const loadCommenters = async () => {
         return safeExecuteAsync(async () => {
             // 防止重复加载
             if (commentersLoading.value) {
@@ -1448,23 +1248,13 @@ export const createStore = () => {
             commentersLoading.value = true;
             commentersError.value = '';
             
-            console.log('[loadCommenters] 正在加载评论者数据...', { projectId });
+            console.log('[loadCommenters] 正在加载评论者数据...');
             
-            // 检查是否有项目信息
-            const project = projectId || selectedProject.value;
-            
-            if (!project) {
-                console.log('[loadCommenters] 项目信息不完整，跳过评论者加载');
-                commenters.value = [];
-                return [];
-            }
-            
-            console.log('[loadCommenters] 项目信息完整，开始加载评论者');
+            console.log('[loadCommenters] 开始加载评论者');
             
             try {
                 const commentersUrl = buildServiceUrl('query_documents', {
-                    cname: 'commenters',
-                    projectId: project
+                    cname: 'commenters'
                 });
                 
                 console.log('[loadCommenters] 调用服务接口:', commentersUrl);
@@ -1495,16 +1285,11 @@ export const createStore = () => {
     /**
      * 添加评论者
      */
-    const addCommenter = async (commenterData, projectId = null) => {
+    const addCommenter = async (commenterData) => {
         return safeExecuteAsync(async () => {
-            console.log('[addCommenter] 正在添加评论者...', { commenterData, projectId });
+            console.log('[addCommenter] 正在添加评论者...', { commenterData });
             
-            // 检查是否有项目信息
-            const project = projectId || selectedProject.value;
-            
-            if (!project) {
-                throw new Error('项目信息不完整，无法添加评论者');
-            }
+            const project = 'global';
             
             // 构建添加URL
             // 构建标准服务接口 payload
@@ -1587,16 +1372,11 @@ export const createStore = () => {
     /**
      * 更新评论者
      */
-    const updateCommenter = async (commenterKey, commenterData, projectId = null) => {
+    const updateCommenter = async (commenterKey, commenterData) => {
         return safeExecuteAsync(async () => {
-            console.log('[updateCommenter] 正在更新评论者...', { commenterKey, commenterData, projectId });
+            console.log('[updateCommenter] 正在更新评论者...', { commenterKey, commenterData });
             
-            // 检查是否有项目信息
-            const project = projectId || selectedProject.value;
-            
-            if (!project) {
-                throw new Error('项目信息不完整，无法更新评论者');
-            }
+            const project = 'global';
             
             // 构建更新URL
             // let url = `${window.API_URL}/mongodb/?cname=commenters`;
@@ -1642,21 +1422,16 @@ export const createStore = () => {
     /**
      * 删除评论者
      */
-    const deleteCommenter = async (commenterKey, projectId = null) => {
+    const deleteCommenter = async (commenterKey) => {
         return safeExecuteAsync(async () => {
-            console.log('[deleteCommenter] 正在删除评论者...', { commenterKey, projectId });
+            console.log('[deleteCommenter] 正在删除评论者...', { commenterKey });
             
             // 验证评论者key
             if (!commenterKey) {
                 throw new Error('评论者key不能为空');
             }
             
-            // 检查是否有项目信息
-            const project = projectId || selectedProject.value;
-            
-            if (!project) {
-                throw new Error('项目信息不完整，无法删除评论者');
-            }
+            const project = 'global';
             
             // 构建删除请求
             const deletePayload = {
@@ -1664,7 +1439,7 @@ export const createStore = () => {
                 method_name: 'delete_document',
                 parameters: {
                     cname: 'commenters',
-                    id: commenterKey
+                    key: commenterKey
                 }
             };
             
@@ -1694,46 +1469,46 @@ export const createStore = () => {
     };
 
     /**
-     * 设置选中的评论者ID列表
+     * 设置选中的评论者Key列表
      */
-    const setSelectedCommenterIds = (commenterIds) => {
-        if (Array.isArray(commenterIds)) {
-            selectedCommenterIds.value = commenterIds;
+    const setSelectedCommenterKeys = (commenterKeys) => {
+        if (Array.isArray(commenterKeys)) {
+            selectedCommenterKeys.value = commenterKeys;
         }
     };
 
     /**
-     * 统一的文件ID规范化函数（使用统一的规范化工具）
-     * @param {string} fileId - 文件ID
+     * 统一的Key规范化函数（使用统一的规范化工具）
+     * @param {string} key - 文件Key
      * @param {string} projectId - 项目ID（可选）
-     * @returns {string} 规范化后的文件ID
+     * @returns {string} 规范化后的Key
      */
-    const normalizeFileId = (fileId, projectId = null) => {
-        return normalizeFilePath(fileId, projectId);
+    const normalizeKey = (key, projectId) => {
+        return normalizeFilePath(key, projectId || 'global');
     };
 
     /**
-     * 设置选中的文件ID
-     * @param {string} fileId - 文件ID
+     * 设置选中的文件Key
+     * @param {string} key - 文件Key
      */
-    const setSelectedFileId = (fileId) => {
-        if (fileId === null) {
-            selectedFileId.value = null;
+    const setSelectedKey = (key) => {
+        if (key === null) {
+            selectedKey.value = null;
             return;
         }
         // 使用统一的规范化函数
-        selectedFileId.value = normalizeFileId(fileId);
+        selectedKey.value = normalizeKey(key);
     };
 
     /**
      * 切换文件夹展开状态
-     * @param {string} folderId - 文件夹ID
+     * @param {string} key - 文件夹Key
      */
-    const toggleFolder = (folderId) => {
-        if (expandedFolders.value.has(folderId)) {
-            expandedFolders.value.delete(folderId);
+    const toggleFolder = (key) => {
+        if (expandedFolders.value.has(key)) {
+            expandedFolders.value.delete(key);
         } else {
-            expandedFolders.value.add(folderId);
+            expandedFolders.value.add(key);
         }
     };
 
@@ -1746,7 +1521,7 @@ export const createStore = () => {
         
         const newCommentObj = {
             key: Date.now(),
-            fileId: commentData.fileId,
+            fileKey: commentData.fileKey,
             line: commentData.line || 0,
             author: commentData.author || 'liangliang',
             content: commentData.content,
@@ -1772,62 +1547,6 @@ export const createStore = () => {
     };
 
     /**
-     * 设置项目列表
-     */
-    const setProjects = (list) => {
-        projects.value = Array.isArray(list) ? list : [];
-        // 如果当前选中的项目不在新列表中，则清空
-        if (!projects.value.find(p => p.id === selectedProject.value)) {
-            selectedProject.value = '';
-        }
-    };
-
-    /**
-     * 加载项目列表
-     */
-    const loadProjects = async () => {
-        return safeExecuteAsync(async () => {
-            console.log('[loadProjects] 正在加载项目列表(从会话衍生)...');
-            
-            // Try to load sessions if empty
-            if (!sessions.value || sessions.value.length === 0) {
-                await loadSessions();
-            }
-            
-            const uniqueProjects = new Set();
-            if (sessions.value && Array.isArray(sessions.value)) {
-                sessions.value.forEach(s => {
-                    if (s.tags && Array.isArray(s.tags) && s.tags.length > 0) {
-                        // Assumption: First tag is project
-                        uniqueProjects.add(s.tags[0]);
-                    }
-                });
-            }
-            
-            // If no sessions, maybe fallback to existing projects or empty
-            const list = Array.from(uniqueProjects).map(id => ({ id, name: id }));
-            
-            // Sort
-            list.sort((a, b) => a.id.localeCompare(b.id));
-            
-            projects.value = list;
-            console.log(`[loadProjects] 加载了 ${list.length} 个项目`);
-            return list;
-        }, '项目列表加载', (errorInfo) => {
-            error.value = errorInfo.message;
-            errorMessage.value = errorInfo.message;
-            projects.value = [];
-        });
-    };
-
-    /**
-     * 设置选中的项目
-     */
-    const setSelectedProject = (projectId) => {
-        selectedProject.value = projectId;
-    };
-
-    /**
      * 设置新增评论内容
      * @param {string} content - 评论内容
      */
@@ -1840,25 +1559,19 @@ export const createStore = () => {
      * 刷新数据
      */
     const refreshData = async () => {
-        if (!selectedProject.value) {
-            console.warn('[refreshData] 请先选择项目');
-            return;
-        }
-        
-        console.log('[refreshData] 正在刷新数据...', { 
-            project: selectedProject.value
-        });
+        console.log('[refreshData] 正在刷新数据...');
         
         try {
             await Promise.all([
-                loadFileTree(selectedProject.value),
-                loadFiles(selectedProject.value),
-                loadComments(selectedProject.value),
-                loadCommenters(selectedProject.value)
+                loadFileTree(),
+                loadComments(),
+                loadCommenters()
             ]);
             
+            await loadFiles();
+            
             // 清空选中的文件
-            selectedFileId.value = null;
+            selectedKey.value = null;
             
             console.log('[refreshData] 数据刷新完成');
         } catch (error) {
@@ -1958,7 +1671,40 @@ export const createStore = () => {
                     console.warn('[loadSessions] 返回数据不是数组格式:', sessionList);
                     sessionList = [];
                 }
-                sessionList = sessionList.filter(s => s && s.id); // 过滤无效会话
+                sessionList = sessionList.filter(s => s && s.key); // 过滤无效会话
+                
+                // 规范化 tags 字段
+                sessionList.forEach(s => {
+                    if (!s.tags) {
+                        s.tags = [];
+                    } else if (typeof s.tags === 'string') {
+                        // 尝试解析字符串标签 (JSON 或逗号分隔)
+                        try {
+                            if (s.tags.startsWith('[')) {
+                                s.tags = JSON.parse(s.tags);
+                            } else {
+                                s.tags = s.tags.split(',').map(t => t.trim()).filter(Boolean);
+                            }
+                        } catch (e) {
+                            console.warn('[loadSessions] 标签解析失败:', s.tags, e);
+                            s.tags = [s.tags];
+                        }
+                    }
+                    
+                    if (!Array.isArray(s.tags)) {
+                        console.warn('[loadSessions] 标签格式错误 (非数组):', s.tags);
+                        s.tags = [];
+                    }
+
+                    // 如果标签为空，添加默认项目标签，确保会话能显示
+                    if (s.tags.length === 0) {
+                        const defaultProject = 'Default';
+                        s.tags.push(defaultProject);
+                        // console.log('[loadSessions] 为无标签会话添加默认项目:', s.title);
+                    }
+                });
+                
+                console.log('[loadSessions] 处理后会话示例:', sessionList[0]);
                 
                 // 排序：收藏的优先，然后按更新时间倒序（与 YiPet 保持一致）
                 sessionList.sort((a, b) => {
@@ -2022,7 +1768,7 @@ export const createStore = () => {
         fileTreeDocKey,
         files,
         comments,
-        selectedFileId,
+        selectedKey,
         loading,
         error,
         errorMessage,
@@ -2033,8 +1779,8 @@ export const createStore = () => {
         commentsWidth,
         
         // 项目管理
-        projects,
-        selectedProject,
+        // projects,
+        // selectedProject,
         
         // 搜索相关状态
         searchQuery,
@@ -2042,18 +1788,18 @@ export const createStore = () => {
         
         // 批量选择相关状态
         batchMode,
-        selectedFileIds,
+        selectedKeys,
         
         // 会话批量选择相关状态
         sessionBatchMode,
-        selectedSessionIds,
+        selectedSessionKeys,
         
         // 视图模式
         viewMode,
         
         // 评论者相关状态
         commenters,
-        selectedCommenterIds,
+        selectedCommenterKeys,
         commentersLoading,
         commentersError,
         
@@ -2077,6 +1823,7 @@ export const createStore = () => {
         // 方法
         loadFileTree,
         loadFiles,
+        loadFileByKey,
         expandAllFolders,
         persistFileTree,
         createFolder,
@@ -2090,15 +1837,15 @@ export const createStore = () => {
         updateCommenter,
         deleteCommenter,
         setSelectedCommenterIds,
-        setSelectedFileId,
-        normalizeFileId, // 新增：统一的文件ID规范化函数
+        setSelectedKey,
+        normalizeKey, // 新增：统一的文件Key规范化函数
         toggleFolder,
         addComment,
         toggleSidebar,
         toggleComments,
-        loadProjects,
-        setProjects,
-        setSelectedProject,
+        // loadProjects,
+        // setProjects,
+        // setSelectedProject,
         setNewComment,
         refreshData,
         clearError,

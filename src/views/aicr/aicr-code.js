@@ -42,7 +42,6 @@ async function createApp() {
             return {
                 // 文件信息
                 fileInfo: {
-                    fileId: '',
                     fileName: '',
                     filePath: '',
                     project: '',
@@ -117,12 +116,11 @@ async function createApp() {
         parseUrlParams() {
             const urlParams = new URLSearchParams(window.location.search);
             this.fileInfo = {
-                fileId: urlParams.get('fileId') || '',
                 fileName: urlParams.get('fileName') || '',
                 filePath: urlParams.get('filePath') || '',
                 project: urlParams.get('project') || '',
                 version: urlParams.get('version') || '',
-                fileKey: urlParams.get('fileKey') || ''
+                fileKey: urlParams.get('fileKey') || urlParams.get('fileId') || ''
             };
             
             console.log('[parseUrlParams] 解析到的文件信息:', this.fileInfo);
@@ -136,8 +134,8 @@ async function createApp() {
         
         // 加载文件内容
         async loadFileContent() {
-            if (!this.fileInfo.fileId) {
-                this.error = '未指定文件ID';
+            if (!this.fileInfo.fileKey) {
+                this.error = '未指定文件Key';
                 return;
             }
             
@@ -149,13 +147,12 @@ async function createApp() {
                 if (window.aicrStore && typeof window.aicrStore.loadFileById === 'function') {
                     const projectId = this.fileInfo.project || (window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null);
                     if (projectId) {
-                        console.log('[loadFileContent] 使用 store 加载文件:', { projectId, fileId: this.fileInfo.fileId, fileKey: this.fileInfo.fileKey });
+                        console.log('[loadFileContent] 使用 store 加载文件:', { projectId, fileKey: this.fileInfo.fileKey });
                         try {
                             // 如果提供了 fileKey，使用它进行精确查找
-                            const loadedFile = await window.aicrStore.loadFileById(projectId, this.fileInfo.fileId, this.fileInfo.fileKey);
+                            const loadedFile = await window.aicrStore.loadFileById(projectId, this.fileInfo.fileKey, this.fileInfo.fileKey);
                             if (loadedFile && loadedFile.content) {
                                 this.currentFile = {
-                                    id: loadedFile.id || loadedFile.fileId || this.fileInfo.fileId,
                                     name: loadedFile.name || this.fileInfo.fileName,
                                     path: loadedFile.path || this.fileInfo.filePath,
                                     content: loadedFile.content,
@@ -182,7 +179,7 @@ async function createApp() {
                 if (this.fileInfo.version) {
                     queryParams.versionId = this.fileInfo.version;
                 }
-                queryParams.fileId = this.fileInfo.fileId;
+                queryParams.fileId = this.fileInfo.fileKey;
                 
                 const url = buildServiceUrl('query_documents', queryParams);
                 console.log('[loadFileContent] 请求URL:', url);
@@ -213,7 +210,6 @@ async function createApp() {
                     }
                     
                     this.currentFile = {
-                        id: item.fileId || item.id || this.fileInfo.fileId,
                         name: item.name || itemData.name || this.fileInfo.fileName,
                         path: item.path || itemData.path || this.fileInfo.filePath,
                         content: content,
@@ -238,14 +234,14 @@ async function createApp() {
         
         // 加载评论
         async loadComments() {
-            if (!this.fileInfo.fileId) return;
+            if (!this.fileInfo.fileKey) return;
             
             try {
                 // 使用与主页面相同的MongoDB API
                 const queryParams = {
                     cname: 'comments',
                     projectId: this.fileInfo.project,
-                    fileId: this.fileInfo.fileId
+                    fileId: this.fileInfo.fileKey
                 };
                 if (this.fileInfo.version) {
                     queryParams.versionId = this.fileInfo.version;
@@ -346,7 +342,7 @@ async function createApp() {
                         data: {
                             projectId: this.fileInfo.project,
                             versionId: this.fileInfo.version,
-                            fileId: this.fileInfo.fileId,
+                            fileId: this.fileInfo.fileKey,
                             ...commentData
                         }
                     }

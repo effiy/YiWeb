@@ -140,7 +140,6 @@ const componentOptions = {
                                 name: newFile.name,
                                 path: newFile.path,
                                 key: newFile.key,
-                                _id: newFile._id,
                                 hasContent: !!newFile.content,
                                 contentLength: newFile.content ? newFile.content.length : 0
                             });
@@ -154,8 +153,8 @@ const componentOptions = {
                             }
                             
                             // 如果文件没有内容但有key，尝试触发文件加载
-                            if ((!newFile.content || newFile.content.length === 0) && (newFile.key || newFile._id)) {
-                                console.log('[CodeView] 文件无内容，尝试触发文件加载:', newFile.key || newFile._id);
+                            if ((!newFile.content || newFile.content.length === 0) && newFile.key) {
+                                console.log('[CodeView] 文件无内容，尝试触发文件加载:', newFile.key);
                                 this.triggerFileLoad(newFile);
                             }
                             
@@ -369,7 +368,7 @@ const componentOptions = {
                         const uniqueComments = [];
                         const seenCommentIds = new Set();
                         comments.forEach(comment => {
-                            const originalId = comment.key || comment.id || comment._id;
+                            const originalId = comment.key;
                             if (!seenCommentIds.has(originalId)) {
                                 seenCommentIds.add(originalId);
                                 uniqueComments.push(comment);
@@ -1691,7 +1690,7 @@ const componentOptions = {
                     
                     // 构建跳转URL，传递文件信息
                     const params = new URLSearchParams({
-                        fileId: this.file.id || this.file.fileId || this.file.name || this.file.path,
+                        key: this.file.key || this.file.id || this.file.name || this.file.path,
                         fileName: this.file.name || this.file.path || '',
                         filePath: this.file.path || this.file.name || '',
                         project: projectId || ''
@@ -1752,18 +1751,18 @@ const componentOptions = {
                 try {
                     // 获取项目 - 优先使用 props，然后回退到其他方式
                     const projectId = this.projectId || (window.aicrStore && window.aicrStore.selectedProject && window.aicrStore.selectedProject.value) || (document.getElementById('projectSelect')?.value) || '';
-                    const fileId = this.file.fileId || this.file.id || this.file.path || this.file.name;
+                    const key = this.file.key || this.file.id || this.file.path || this.file.name;
                     
                     console.log('[saveEditedFile] 保存参数:', {
                         projectId,
-                        fileId,
+                        key,
                         propsProjectId: this.projectId,
                         file: this.file
                     });
                     
-                    if (!projectId || !fileId) {
+                    if (!projectId || !key) {
                         this.saveError = '缺少项目/文件标识，无法保存';
-                        console.error('[saveEditedFile] 缺少必要参数:', { projectId, fileId });
+                        console.error('[saveEditedFile] 缺少必要参数:', { projectId, key });
                         return;
                     }
                     // 更新本地 file 对象
@@ -1776,15 +1775,14 @@ const componentOptions = {
                         const updatedFile = {
                             ...this.file,
                             content: content,
-                            fileId: fileId,
-                            id: fileId,
-                            path: fileId,
-                            name: (this.file.name || (typeof fileId === 'string' ? fileId.split('/').pop() : ''))
+                            key: key,
+                            path: key,
+                            name: (this.file.name || (typeof key === 'string' ? key.split('/').pop() : ''))
                         };
                         
                         // 强制立即同步并更新
                         const result = await sessionSync.syncFileToSession(updatedFile, projectId, true, true);
-                        console.log('[saveEditedFile] 文件已保存到会话:', fileId, result);
+                        console.log('[saveEditedFile] 文件已保存到会话:', key, result);
                         
                         // 如果返回了新的 key/_id，更新本地对象
                         if (result && result.data && result.data._id) {
@@ -1799,12 +1797,8 @@ const componentOptions = {
                     try {
                         const store = window.aicrStore;
                         if (store && Array.isArray(store.files?.value)) {
-                            const norm = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.+\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
-                            const target = norm(fileId);
                             const idx = store.files.value.findIndex(f => {
-                                const d = (f && typeof f === 'object' && f.data && typeof f.data === 'object') ? f.data : {};
-                                const candidates = [f.fileId, f.id, d.fileId, d.id].filter(Boolean).map(norm);
-                                return candidates.some(c => c === target || c.endsWith('/' + target) || target.endsWith('/' + c));
+                                return f.key === key || f._id === key;
                             });
                             if (idx >= 0) {
                                 const prev = store.files.value[idx];
@@ -1819,7 +1813,7 @@ const componentOptions = {
                     
                     // 发射文件保存成功事件
                     this.$emit('file-saved', {
-                        fileId: fileId,
+                        fileKey: key,
                         content: content,
                         lastModified: new Date().toISOString(),
                         projectId: projectId
@@ -3382,7 +3376,7 @@ const componentOptions = {
                         content,
                         text: this.lastSelectionText || '', // 引用的代码文本存储在 text 中
                         rangeInfo: this.lastSelectionRange, // 用于评论定位（不在界面显示行数）
-                        fileId: this.file ? (this.file.fileId || this.file.id || this.file.path || this.file.name) : undefined,
+                        fileKey: this.file ? (this.file.key || this.file.id || this.file.path || this.file.name) : undefined,
                         projectId,
                         author: '手动评论',
                         fromSystem: null, // 手动评论没有评论者系统
@@ -3423,17 +3417,17 @@ const componentOptions = {
                             forceReload: true, 
                             showAllComments: false, 
                             immediateReload: true,
-                            fileId: comment.fileId
+                            fileKey: comment.fileKey
                         } 
                     }));
 
                     // 延迟后高亮刚添加的评论位置
                     setTimeout(() => {
-                        if (comment.rangeInfo && comment.fileId) {
+                        if (comment.rangeInfo && comment.fileKey) {
                             console.log('[CodeView] 高亮新添加的评论位置:', comment.rangeInfo);
                             window.dispatchEvent(new CustomEvent('highlightCodeLines', {
                                 detail: {
-                                    fileId: comment.fileId,
+                                    fileKey: comment.fileKey,
                                     rangeInfo: comment.rangeInfo,
                                     comment: comment
                                 }
@@ -3716,7 +3710,7 @@ const componentOptions = {
                         rangeInfo: originalRangeInfo,
                         timestamp: new Date(this.editingCommentTimestamp).getTime(), // 转换为毫秒数
                         projectId,
-                        fileId: this.currentCommentDetail.fileId
+                        fileKey: this.currentCommentDetail.fileKey
                     };
                     
                     // 规范化评论数据，确保字段一致性
@@ -3752,7 +3746,7 @@ const componentOptions = {
                     // 触发重新加载评论
                     this.$emit('reload-comments', { 
                         forceReload: true, 
-                        fileId: this.currentCommentDetail.fileId,
+                        fileKey: this.currentCommentDetail.fileKey,
                         projectId
                     });
                     
@@ -3814,7 +3808,7 @@ const componentOptions = {
                     // 触发重新加载评论
                     this.$emit('reload-comments', { 
                         forceReload: true, 
-                        fileId: this.file ? (this.file.fileId || this.file.id || this.file.path) : null
+                        fileKey: this.file ? (this.file.key || this.file.id || this.file.path) : null
                     });
                     
                     hideGlobalLoading();
@@ -3889,7 +3883,7 @@ const componentOptions = {
                     // 触发重新加载评论
                     this.$emit('reload-comments', { 
                         forceReload: true, 
-                        fileId: this.file ? (this.file.fileId || this.file.id || this.file.path) : null,
+                        fileKey: this.file ? (this.file.key || this.file._id) : null,
                         projectId
                     });
                     
@@ -4112,7 +4106,7 @@ const componentOptions = {
                     // 触发代码高亮事件
                     window.dispatchEvent(new CustomEvent('highlightCodeLines', {
                         detail: {
-                            fileId: comment.fileId,
+                            fileKey: comment.fileKey,
                             rangeInfo: comment.rangeInfo
                         }
                     }));
@@ -4527,53 +4521,45 @@ const componentOptions = {
                 console.log('[CodeView] 触发文件加载:', file);
                 
                 // 检查是否有全局的store可用
-                if (window.aicrStore && typeof window.aicrStore.loadFileById === 'function') {
+                if (window.aicrStore && typeof window.aicrStore.loadFileByKey === 'function') {
                     console.log('[CodeView] 使用全局store加载文件');
                     
-                    // 获取当前的项目信息
-                    const projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
+                    // 使用文件的key进行精确加载
+                    const fileKey = file.key || file._id;
                     
-                    if (projectId) {
-                        // 使用文件的key进行精确加载
-                        const fileKey = file.key || file._id;
-                        const fileId = file.fileId || file.id || file.path;
+                    if (fileKey) {
+                        console.log('[CodeView] 通过store加载文件:', { fileKey });
                         
-                        if (fileKey && fileId) {
-                            console.log('[CodeView] 通过store加载文件:', { projectId, fileId, fileKey });
-                            
-                            window.aicrStore.loadFileById(projectId, null, fileId, fileKey)
-                                .then((loadedFile) => {
-                                    if (loadedFile && loadedFile.content) {
-                                        console.log('[CodeView] 文件加载成功:', loadedFile.name, '内容长度:', loadedFile.content.length);
+                        window.aicrStore.loadFileByKey(fileKey)
+                            .then((loadedFile) => {
+                                if (loadedFile && loadedFile.content) {
+                                    console.log('[CodeView] 文件加载成功:', loadedFile.name, '内容长度:', loadedFile.content.length);
+                                    
+                                    // 更新当前文件对象的内容
+                                    if (this.file && (this.file.key === fileKey || this.file._id === fileKey)) {
+                                        // 使用Vue的响应式API强制更新
+                                        const originalFile = this.file;
+                                        const updatedFile = { ...originalFile, content: loadedFile.content };
                                         
-                                        // 更新当前文件对象的内容
-                                        if (this.file && (this.file.key === fileKey || this.file._id === fileKey)) {
-                                            // 使用Vue的响应式API强制更新
-                                            const originalFile = this.file;
-                                            const updatedFile = { ...originalFile, content: loadedFile.content };
-                                            
-                                            // 强制触发Vue的响应式更新
-                                            Object.assign(originalFile, updatedFile);
-                                            
-                                            console.log('[CodeView] 已更新文件内容，当前行数:', this.codeLines.length);
-                                            
-                                            // 强制更新视图
-                                            this.$nextTick(() => {
-                                                this.$forceUpdate();
-                                            });
-                                        }
-                                    } else {
-                                        console.warn('[CodeView] 文件加载失败或无内容');
+                                        // 强制触发Vue的响应式更新
+                                        Object.assign(originalFile, updatedFile);
+                                        
+                                        console.log('[CodeView] 已更新文件内容，当前行数:', this.codeLines.length);
+                                        
+                                        // 强制更新视图
+                                        this.$nextTick(() => {
+                                            this.$forceUpdate();
+                                        });
                                     }
-                                })
-                                .catch((error) => {
-                                    console.error('[CodeView] 文件加载失败:', error);
-                                });
-                        } else {
-                            console.warn('[CodeView] 缺少文件标识信息:', { fileKey, fileId });
-                        }
+                                } else {
+                                    console.warn('[CodeView] 文件加载失败或无内容');
+                                }
+                            })
+                            .catch((error) => {
+                                console.error('[CodeView] 文件加载失败:', error);
+                            });
                     } else {
-                        console.warn('[CodeView] 缺少项目信息:', { projectId });
+                        console.warn('[CodeView] 缺少文件标识信息:', { fileKey });
                     }
                 } else {
                     console.warn('[CodeView] 全局store不可用，无法加载文件');

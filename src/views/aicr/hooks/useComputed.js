@@ -26,18 +26,18 @@ export const useComputed = (store) => {
         }),
 
         /**
-         * 选中的文件ID
+         * 选中的文件Key
          */
-        selectedFileId: computed(() => {
-            return store.selectedFileId?.value;
+        selectedKey: computed(() => {
+            return store.selectedKey?.value;
         }),
 
         /**
          * 当前选中的文件
          */
         currentFile: computed(() => {
-            const fileId = store.selectedFileId?.value;
-            if (!fileId) return null;
+            const key = store.selectedKey?.value;
+            if (!key) return null;
             const normalize = (v) => {
                 try {
                     if (v == null) return '';
@@ -51,7 +51,7 @@ export const useComputed = (store) => {
                     return String(v);
                 }
             };
-            const target = normalize(fileId);
+            const target = normalize(key);
             
             // 更灵活的匹配逻辑：检查多个可能的标识字段
             const currentFile = store.files.value.find(f => {
@@ -59,8 +59,7 @@ export const useComputed = (store) => {
                 
                 // 检查多个可能的标识字段
                 const candidates = [
-                    f.fileId,
-                    f.id,
+                    f.key,
                     f.path,
                     f.name
                 ].filter(Boolean).map(normalize);
@@ -95,19 +94,20 @@ export const useComputed = (store) => {
          * 当前文件的评论
          */
         currentComments: computed(() => {
-            const fileId = store.selectedFileId?.value;
-            console.log('[currentComments] 当前文件ID:', fileId);
+            const key = store.selectedKey?.value;
+            console.log('[currentComments] 当前文件Key:', key);
             console.log('[currentComments] store.comments:', store.comments);
             
-            if (!fileId) return [];
+            if (!key) return [];
             
             // 合并本地评论和store中的评论
             const localComments = []; // 这里可以添加本地评论逻辑
             const storeComments = store.comments?.value ? store.comments.value.filter(c => {
                 // 兼容不同的文件标识方式
-                const commentFileId = c.fileId || (c.fileInfo && c.fileInfo.path);
-                console.log('[currentComments] 评论文件ID:', commentFileId, '当前文件ID:', fileId);
-                return commentFileId === fileId;
+                const commentFileKey = c.fileKey || (c.fileInfo && (c.fileInfo.key || c.fileInfo.path));
+                console.log('[currentComments] 评论文件Key:', commentFileKey, '当前文件Key:', key);
+                const normalize = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                return normalize(commentFileKey) === normalize(key);
             }) : [];
             const allComments = [...localComments, ...storeComments];
             
@@ -119,7 +119,7 @@ export const useComputed = (store) => {
             // 确保返回的评论有正确的key属性
             return allComments.map(comment => ({
                 ...comment,
-                key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
+                key: comment.key || `comment_${Date.now()}_${Math.random()}`
             }));
         }),
 
@@ -167,12 +167,6 @@ export const useComputed = (store) => {
         /**
          * 选中的项目名称
          */
-        selectedProjectName: computed(() => {
-            // 仅使用项目ID模式时，此处返回ID
-            if (!store.selectedProject?.value) return '';
-            return store.selectedProject.value;
-        }),
-
         /**
          * 版本选择器已改为select元素，不再需要展开状态
          */
@@ -202,7 +196,7 @@ export const useComputed = (store) => {
          * 当前文件的语言类型
          */
         currentFileLanguage: computed(() => {
-            const file = store.files?.value?.find(f => f.fileId === store.selectedFileId?.value);
+            const file = store.files?.value?.find(f => f.key === store.selectedKey?.value);
             return file?.language || 'text';
         }),
 
@@ -210,33 +204,33 @@ export const useComputed = (store) => {
          * 当前文件的评论数量
          */
         currentFileCommentCount: computed(() => {
-            if (!store.selectedFileId?.value || !store.comments?.value) return 0;
-            return store.comments.value.filter(c => c.fileId === store.selectedFileId.value).length;
+            if (!store.selectedKey?.value || !store.comments?.value) return 0;
+            return store.comments.value.filter(c => c.key === store.selectedKey.value).length;
         }),
 
         /**
          * 是否有项目数据
          */
-        hasProjects: computed(() => {
-            return store.projects?.value && store.projects.value.length > 0;
-        }),
+        // hasProjects: computed(() => {
+        //     return store.projects?.value && store.projects.value.length > 0;
+        // }),
 
 
         /**
          * 是否已选择项目
          */
-        isProjectSelected: computed(() => {
-            return !!store.selectedProject?.value;
-        }),
+        // isProjectSelected: computed(() => {
+        //     return !!store.selectedProject?.value;
+        // }),
 
 
         /**
          * 当前项目信息
          */
-        currentProject: computed(() => {
-            if (!store.selectedProject?.value || !store.projects?.value) return null;
-            return store.projects.value.find(p => p.id === store.selectedProject.value);
-        }),
+        // currentProject: computed(() => {
+        //     if (!store.selectedProject?.value || !store.projects?.value) return null;
+        //     return store.projects.value.find(p => p.id === store.selectedProject.value);
+        // }),
 
 
         /**
@@ -277,14 +271,14 @@ export const useComputed = (store) => {
             if (!store || !store.sessions || !store.sessions.value || !Array.isArray(store.sessions.value)) {
                 return false;
             }
-            if (!store.selectedSessionIds || !store.selectedSessionIds.value) {
+            if (!store.selectedSessionKeys || !store.selectedSessionKeys.value) {
                 return false;
             }
             const visibleSessions = store.sessions.value;
             if (visibleSessions.length === 0) {
                 return false;
             }
-            return visibleSessions.every(session => store.selectedSessionIds.value.has(session.id));
+            return visibleSessions.every(session => store.selectedSessionKeys.value.has(session.key));
         }),
 
     };

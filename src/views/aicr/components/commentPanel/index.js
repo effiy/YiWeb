@@ -10,46 +10,21 @@ const { postData } = await import('/src/services/modules/crud.js');
 // 新增：异步获取评论数据（从mongo api）
 async function fetchCommentsFromMongo(file) {
     try {
-        // 优先从store获取项目/版本信息
-        let projectId = null;
-        if (window.aicrStore) {
-            projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
-            console.log('[CommentPanel] 从store获取项目ID:', projectId);
-        }
-        
-        // 如果store中没有，尝试从DOM元素获取
-        if (!projectId) {
-            const projectSelect = document.getElementById('projectSelect');
-            
-            if (projectSelect) {
-                projectId = projectSelect.value;
-                console.log('[CommentPanel] 从选择器获取项目ID:', projectId);
-            }
-        }
-        
-        // 检查项目信息是否完整
-        if (!projectId) {
-            console.log('[CommentPanel] 项目信息不完整，跳过MongoDB接口请求');
-            console.log('[CommentPanel] 项目ID:', projectId);
-            return [];
-        }
-        
         // 构建查询参数
         const queryParams = {
-            cname: 'comments',
-            projectId: projectId
+            cname: 'comments'
         };
         
         // 如果有文件信息，添加到参数中
         if (file) {
             // 兼容不同的文件ID字段
-            const fileId = file.fileId || file.id || file.path || file.key;
-            if (fileId) {
-                queryParams.fileId = fileId;
-                console.log('[CommentPanel] 添加文件ID到参数:', fileId);
+            const key = file.key || file.path;
+            if (key) {
+                queryParams.key = key;
+                console.log('[CommentPanel] 添加文件Key到参数:', key);
             }
         } else {
-            // 如果没有文件信息，不添加fileId参数，这样会返回所有评论
+            // 如果没有文件信息，不添加key参数，这样会返回所有评论
             console.log('[CommentPanel] 没有文件信息，将加载所有评论');
         }
         
@@ -136,7 +111,7 @@ const componentOptions = {
                 type: Array,
                 default: () => []
             },
-            selectedCommenterIds: {
+            selectedCommenterKeys: {
                 type: Array,
                 default: () => []
             },
@@ -166,7 +141,7 @@ const componentOptions = {
                 
                 // 评论者数据（优先使用props，如果没有则使用内部数据）
                 internalCommenters: [],
-                internalSelectedCommenterIds: [],
+                internalSelectedCommenterKeys: [],
                 
                 // 加载状态
                 commentsLoading: false,
@@ -208,7 +183,7 @@ const componentOptions = {
                 // 其他状态
                 newCommentData: {
                     text: '',
-                    commenterIds: [],
+                    commenterKeys: [],
                     status: 'open'
                 },
                 
@@ -237,14 +212,14 @@ const componentOptions = {
                 
                 return result;
             },
-            finalSelectedCommenterIds() {
+            finalSelectedCommenterKeys() {
                 // 优先使用props中的选中状态，如果没有则使用内部状态
-                const propsSelected = this.selectedCommenterIds && Array.isArray(this.selectedCommenterIds) ? this.selectedCommenterIds : [];
-                const internalSelected = this.internalSelectedCommenterIds && Array.isArray(this.internalSelectedCommenterIds) ? this.internalSelectedCommenterIds : [];
+                const propsSelected = this.selectedCommenterKeys && Array.isArray(this.selectedCommenterKeys) ? this.selectedCommenterKeys : [];
+                const internalSelected = this.internalSelectedCommenterKeys && Array.isArray(this.internalSelectedCommenterKeys) ? this.internalSelectedCommenterKeys : [];
                 
                 const result = propsSelected.length > 0 ? propsSelected : internalSelected;
                 
-                console.log('[CommentPanel] finalSelectedCommenterIds计算:', {
+                console.log('[CommentPanel] finalSelectedCommenterKeys计算:', {
                     propsSelected: propsSelected.length,
                     internalSelected: internalSelected.length,
                     result: result.length
@@ -261,7 +236,7 @@ const componentOptions = {
             commenterStats() {
                 return safeExecute(() => {
                     const total = this.finalCommenters.length;
-                    const selected = this.finalSelectedCommenterIds.length;
+                    const selected = this.finalSelectedCommenterKeys.length;
                     return { total, selected };
                 }, '评论者统计计算');
             },
@@ -279,7 +254,7 @@ const componentOptions = {
                 
                 const comments = (commentsToRender || []).map(comment => ({
                     ...comment,
-                    key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
+                    key: comment.key || `comment_${Date.now()}_${Math.random()}`
                 })).sort((a, b) => {
                     const timeA = new Date(a.timestamp || a.createdAt || 0).getTime();
                     const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
@@ -521,19 +496,19 @@ const componentOptions = {
                     // 优化：优先从 store 获取评论数据
                     if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
                         const storeComments = window.aicrStore.comments.value;
-                        const fileId = this.file?.fileId || this.file?.id || this.file?.path || this.file?.key;
+                        const key = this.file?.key || this.file?.path;
                         
                         // 如果当前有选中的文件，过滤出该文件的评论；否则使用所有评论
                         let filteredComments = storeComments;
-                        if (fileId) {
+                        if (key) {
                             filteredComments = storeComments.filter(c => {
-                                const commentFileId = c.fileId || (c.fileInfo && c.fileInfo.fileId);
-                                return commentFileId === fileId;
+                                const commentFileKey = c.fileKey || (c.fileInfo && c.fileInfo.key);
+                                return commentFileKey === key;
                             });
                         }
                         
-                        if (filteredComments.length > 0 || !fileId) {
-                            console.log('[CommentPanel] 从 store 获取评论数据，数量:', filteredComments.length, '文件ID:', fileId || 'all');
+                        if (filteredComments.length > 0 || !key) {
+                            console.log('[CommentPanel] 从 store 获取评论数据，数量:', filteredComments.length, '文件Key:', key || 'all');
                             this.mongoComments = filteredComments;
                             return;
                         }
@@ -547,10 +522,8 @@ const componentOptions = {
                         console.log('[CommentPanel] store中没有评论数据，开始从接口加载，当前文件:', this.file);
                         
                         // 生成请求键，用于防止重复请求
-                        const projectId = window.aicrStore?.selectedProject?.value || 
-                                        document.getElementById('projectSelect')?.value;
-                        const fileId = this.file?.fileId || this.file?.id || this.file?.path || this.file?.key;
-                        const requestKey = `${projectId}_${fileId || 'all'}`;
+                        const key = this.file?.key || this.file?.path;
+                        const requestKey = `global_${key || 'all'}`;
                         
                         // 检查是否与上次请求相同
                         if (this._lastRequestKey === requestKey && this._lastRequestTime && 
@@ -572,7 +545,7 @@ const componentOptions = {
                         // 确保评论数据有正确的key属性
                         const processedComments = mongoComments.map(comment => ({
                             ...comment,
-                            key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`
+                            key: comment.key || `comment_${Date.now()}_${Math.random()}`
                         }));
                         
                         this.mongoComments = processedComments;
@@ -619,7 +592,7 @@ const componentOptions = {
                         if (!window.aicrStore) {
                             console.warn('[CommentPanel] store初始化超时，使用默认评论者数据');
                             this.internalCommenters = [];
-                            this.internalSelectedCommenterIds = [];
+                            this.internalSelectedCommenterKeys = [];
                             return;
                         }
                         
@@ -627,58 +600,34 @@ const componentOptions = {
                         if (!window.aicrStore.loadCommenters) {
                             console.warn('[CommentPanel] store中loadCommenters方法不可用，使用默认评论者数据');
                             this.internalCommenters = [];
-                            this.internalSelectedCommenterIds = [];
+                            this.internalSelectedCommenterKeys = [];
                             return;
                         }
                         
                         // 获取当前项目信息
-                        const projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
+                        const projectId = 'global';
                         
                         console.log('[CommentPanel] 加载评论者数据，项目ID:', projectId);
                         
-                        // 如果项目信息不完整，等待项目信息设置完成
-                        if (!projectId) {
-                            console.log('[CommentPanel] 项目信息不完整，等待项目信息设置完成');
-                            // 等待项目信息设置完成
-                            await new Promise(resolve => {
-                                const checkProject = () => {
-                                    const currentProjectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
-                                    
-                                    if (currentProjectId) {
-                                        console.log('[CommentPanel] 项目信息已设置完成');
-                                        resolve();
-                                    } else {
-                                        setTimeout(checkProject, 500);
-                                    }
-                                };
-                                checkProject();
-                            });
-                        }
-                        
-                        // 重新获取项目信息
-                        const finalProjectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
-                        
-                        console.log('[CommentPanel] 最终项目ID:', finalProjectId);
-                        
-                        const commenters = await window.aicrStore.loadCommenters(finalProjectId);
+                        const commenters = await window.aicrStore.loadCommenters();
                         this.internalCommenters = commenters || [];
                         console.log('[CommentPanel] 从store加载评论者数据:', this.internalCommenters);
                         
                         // 从store获取选中状态
-                        if (window.aicrStore.selectedCommenterIds && window.aicrStore.selectedCommenterIds.value) {
-                            this.internalSelectedCommenterIds = [...window.aicrStore.selectedCommenterIds.value];
-                            console.log('[CommentPanel] 从store加载选中状态:', this.internalSelectedCommenterIds);
+                        if (window.aicrStore.selectedCommenterKeys && window.aicrStore.selectedCommenterKeys.value) {
+                            this.internalSelectedCommenterKeys = [...window.aicrStore.selectedCommenterKeys.value];
+                            console.log('[CommentPanel] 从store加载选中状态:', this.internalSelectedCommenterKeys);
                         } else if (this.internalCommenters.length > 0) {
                             // 如果没有选中状态，默认选中第一个
-                            this.internalSelectedCommenterIds = [this.internalCommenters[0].key];
-                            console.log('[CommentPanel] 默认选中第一个评论者:', this.internalSelectedCommenterIds);
+                            this.internalSelectedCommenterKeys = [this.internalCommenters[0].key];
+                            console.log('[CommentPanel] 默认选中第一个评论者:', this.internalSelectedCommenterKeys);
                         }
                     } catch (error) {
                         console.error('[CommentPanel] 加载评论者数据失败:', error);
                         this.internalCommentersError = '加载评论者数据失败';
                         // 即使失败也设置空数组，避免界面卡住
                         this.internalCommenters = [];
-                        this.internalSelectedCommenterIds = [];
+                        this.internalSelectedCommenterKeys = [];
                     } finally {
                         this.internalCommentersLoading = false;
                         this._isLoadingCommenters = false;
@@ -687,23 +636,23 @@ const componentOptions = {
             },
 
             // 选择评论者
-            selectCommenters(commenterIds) {
+            selectCommenters(commenterKeys) {
                 // 更新内部选中状态
-                this.internalSelectedCommenterIds = [...commenterIds];
+                this.internalSelectedCommenterKeys = [...commenterKeys];
                 
                 // 同步到store
-                if (window.aicrStore && window.aicrStore.setSelectedCommenterIds) {
-                    window.aicrStore.setSelectedCommenterIds(commenterIds);
+                if (window.aicrStore && window.aicrStore.setSelectedCommenterKeys) {
+                    window.aicrStore.setSelectedCommenterKeys(commenterKeys);
                 }
                 
                 // 使用finalCommenters获取评论者列表
-                const commenters = this.finalCommenters.filter(c => commenterIds.includes(c.key));
+                const commenters = this.finalCommenters.filter(c => commenterKeys.includes(c.key));
                 this.$emit('commenter-select', commenters);
             },
 
             // 切换单个评论者选择状态
             toggleCommenter(commenter) {
-                const currentSelected = [...this.finalSelectedCommenterIds];
+                const currentSelected = [...this.finalSelectedCommenterKeys];
                 const index = currentSelected.indexOf(commenter.key);
                 
                 if (index > -1) {
@@ -713,11 +662,11 @@ const componentOptions = {
                 }
                 
                 // 更新内部选中状态
-                this.internalSelectedCommenterIds = currentSelected;
+                this.internalSelectedCommenterKeys = currentSelected;
                 
                 // 同步到store
-                if (window.aicrStore && window.aicrStore.setSelectedCommenterIds) {
-                    window.aicrStore.setSelectedCommenterIds(currentSelected);
+                if (window.aicrStore && window.aicrStore.setSelectedCommenterKeys) {
+                    window.aicrStore.setSelectedCommenterKeys(currentSelected);
                 }
                 
                 // 使用finalCommenters获取评论者列表
@@ -766,7 +715,7 @@ const componentOptions = {
                 // 清空输入框（先清以获得更顺畅的输入体验）
                 this.newCommentText = '';
 
-                const selectedIds = Array.isArray(this.finalSelectedCommenterIds) ? this.finalSelectedCommenterIds : [];
+                const selectedIds = Array.isArray(this.finalSelectedCommenterKeys) ? this.finalSelectedCommenterKeys : [];
                 const selectedCommenters = (Array.isArray(this.finalCommenters) ? this.finalCommenters : []).filter(c => selectedIds.includes(c.key));
 
                 if (selectedCommenters.length === 0) {
@@ -784,8 +733,8 @@ const componentOptions = {
                         const fromUserObj = {
                             text,
                             rangeInfo: {},
-                            fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
-                            projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null)),
+                            fileKey: this.fileKey || (this.file && (this.file.key || this.file.path || this.file.name)),
+                            projectId: null,
                             author: commenter.name || commenter.author || 'AI评论者',
                             status: 'pending',
                             createdTime: new Date().toISOString(),
@@ -804,7 +753,7 @@ const componentOptions = {
                                     const alt = item && typeof item === 'object' ? (item.content || item.text || item.body || item.message || item.comment) : null;
                                     if (alt) commentObj.content = String(alt);
                                 }
-                                commentObj.fileId = commentObj.fileId || fromUserObj.fileId;
+                                commentObj.fileKey = commentObj.fileKey || fromUserObj.fileKey;
                                 commentObj.projectId = commentObj.projectId || fromUserObj.projectId;
                                 commentObj.author = commentObj.author || fromUserObj.author;
                                 commentObj.status = commentObj.status || 'pending';
@@ -1037,10 +986,7 @@ const componentOptions = {
                     this.editingSaving = true;
 
                     // 获取项目/版本信息（与面板其他接口保持一致）
-                    let projectId = null;
-                    if (window.aicrStore) {
-                        projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
-                    }
+                    let projectId = 'global';
 
                     // 组装URL
                     // let url = `${window.API_URL}/mongodb/?cname=comments`; // Deprecated
@@ -1076,7 +1022,7 @@ const componentOptions = {
                         console.log('[CommentPanel] 评论更新成功:', result);
 
                         // 本地同步更新，提升体验（使用规范化后的数据）
-                        const idx = this.mongoComments.findIndex(c => (c.key || c.id) === this.editingComment.key);
+                        const idx = this.mongoComments.findIndex(c => c.key === this.editingComment.key);
                         if (idx !== -1) {
                             const normalizedComment = window.aicrStore && window.aicrStore.normalizeComment 
                                 ? window.aicrStore.normalizeComment({ 
@@ -1098,22 +1044,24 @@ const componentOptions = {
 
                         // 同步更新会话消息
                         try {
-                            const fileId = this.file?.fileId || this.file?.id || this.file?.path;
-                            if (fileId && projectId) {
+                            const fileKey = this.file?.fileKey || this.file?.key || this.file?.path;
+                            if (fileKey && projectId) {
                                 const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                                 const sessionSync = getSessionSyncService();
                                 const updatedComment = window.aicrStore && window.aicrStore.normalizeComment
                                     ? window.aicrStore.normalizeComment({
                                         ...this.editingComment,
                                         ...payload,
+                                        fileKey: fileKey,
                                         key: this.editingComment.key
                                     })
                                     : {
                                         ...this.editingComment,
                                         ...payload,
+                                        fileKey: fileKey,
                                         key: this.editingComment.key
                                     };
-                                await sessionSync.syncCommentToMessage(updatedComment, fileId, projectId, false);
+                                await sessionSync.syncCommentToMessage(updatedComment, fileKey, projectId, false);
                                 console.log('[CommentPanel] 会话消息已同步更新');
                             }
                         } catch (syncError) {
@@ -1256,10 +1204,10 @@ const componentOptions = {
             highlightCode(comment) {
                 if (!comment || !comment.rangeInfo) return;
                 
-                const fileId = comment.fileId || (comment.fileInfo && comment.fileInfo.path);
+                const fileKey = comment.fileKey || (comment.fileInfo && comment.fileInfo.path);
                 const rangeInfo = comment.rangeInfo;
                 
-                if (!fileId) return;
+                if (!fileKey) return;
                 
                 const normalizedRangeInfo = {
                     startLine: rangeInfo.startLine >= 1 ? rangeInfo.startLine : rangeInfo.startLine + 1,
@@ -1269,7 +1217,7 @@ const componentOptions = {
                 };
                 
                 const eventData = {
-                    fileId: fileId,
+                    fileKey: fileKey,
                     rangeInfo: normalizedRangeInfo,
                     comment: comment
                 };
@@ -1281,7 +1229,7 @@ const componentOptions = {
             addCommentToLocalData(commentData) {
                 let newComment = {
                     ...commentData,
-                    key: commentData.key || commentData.id || `comment_${Date.now()}_${Math.random()}`
+                    key: commentData.key || `comment_${Date.now()}_${Math.random()}`
                 };
                 
                 // 规范化评论数据，确保字段一致性
@@ -1473,15 +1421,15 @@ const componentOptions = {
                     // 使用store中的API保存评论者
                     if (window.aicrStore) {
                         // 获取当前项目信息
-                        const projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
+                        // const projectId = 'global';
                         
                         if (this.editingCommenter.key) {
                             // 更新现有评论者
-                            await window.aicrStore.updateCommenter(this.editingCommenter.key, this.editingCommenter, projectId);
+                            await window.aicrStore.updateCommenter(this.editingCommenter.key, this.editingCommenter);
                             console.log('[CommentPanel] 评论者已更新到数据库');
                         } else {
                             // 添加新评论者
-                            await window.aicrStore.addCommenter(this.editingCommenter, projectId);
+                            await window.aicrStore.addCommenter(this.editingCommenter);
                             console.log('[CommentPanel] 新评论者已添加到数据库');
                         }
                         
@@ -1549,10 +1497,10 @@ const componentOptions = {
                     // 使用store中的API删除评论者
                     if (window.aicrStore && commenter.key) {
                         // 获取当前项目信息
-                        const projectId = window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null;
+                        // const projectId = 'global';
                         
-                        console.log('[CommentPanel] 调用store删除评论者:', commenter.key, projectId);
-                        await window.aicrStore.deleteCommenter(commenter.key, projectId);
+                        console.log('[CommentPanel] 调用store删除评论者:', commenter.key);
+                        await window.aicrStore.deleteCommenter(commenter.key);
                         console.log('[CommentPanel] 评论者已从数据库删除');
                         
                         // 重新加载评论者列表
@@ -1795,10 +1743,10 @@ const componentOptions = {
                 if (newFile && newFile !== oldFile) {
                     // 优化：优先从 store 获取该文件的评论
                     if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
-                        const fileId = newFile?.fileId || newFile?.id || newFile?.path || newFile?.key;
+                        const fileKey = newFile?.key || newFile?.path;
                         const filteredComments = window.aicrStore.comments.value.filter(c => {
-                            const commentFileId = c.fileId || (c.fileInfo && c.fileInfo.fileId);
-                            return commentFileId === fileId;
+                            const commentFileKey = c.fileKey || (c.fileInfo && c.fileInfo.fileKey);
+                            return commentFileKey === fileKey;
                         });
                         
                         if (filteredComments.length > 0) {
@@ -1957,9 +1905,9 @@ const componentOptions = {
                              const fromUserObj = {
                                  text,
                                  rangeInfo,
-                                 fileId: this.fileId || (this.file && (this.file.fileId || this.file.id || this.file.path || this.file.name)),
-                                 projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null)),
-                                 author: commenter.name || commenter.author || 'AI评论者',
+                                 fileKey: this.fileKey || (this.file && (this.file.key || this.file.path || this.file.name)),
+                                projectId: 'global',
+                                author: commenter.name || commenter.author || 'AI评论者',
                                  status: "pending",
                                  createdTime: new Date().toISOString(),
                                  updatedTime: new Date().toISOString()
@@ -2044,7 +1992,7 @@ const componentOptions = {
                              if (!__added) {
                                let fallback = {
                                  content: text,
-                                 fileId: fromUserObj.fileId,
+                                 fileKey: fromUserObj.fileKey,
                                  projectId: fromUserObj.projectId,
                                  author: fromUserObj.author,
                                  status: 'pending',
@@ -2101,7 +2049,7 @@ const componentOptions = {
                 // 防止重复触发
                 if (this._lastReloadEvent && 
                     this._lastReloadEvent.projectId === event.detail?.projectId &&
-                    this._lastReloadEvent.fileId === event.detail?.fileId &&
+                    this._lastReloadEvent.fileKey === event.detail?.fileKey &&
                     Date.now() - this._lastReloadEvent.timestamp < 500) {
                     console.log('[CommentPanel] 检测到重复的reloadComments事件，跳过处理');
                     return;
@@ -2110,17 +2058,17 @@ const componentOptions = {
                 // 记录事件信息
                 this._lastReloadEvent = {
                     projectId: event.detail?.projectId,
-                    fileId: event.detail?.fileId,
+                    fileKey: event.detail?.fileKey,
                     timestamp: Date.now()
                 };
                 
-                const { projectId, fileId, forceReload, showAllComments, immediateReload } = event.detail;
+                const { projectId, fileKey, forceReload, showAllComments, immediateReload } = event.detail;
                 
                 // 优化：如果 store 中有评论数据，优先使用 store 的数据
                 if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0 && !forceReload) {
                     const storeComments = window.aicrStore.comments.value;
                     
-                    if (fileId === null || !fileId) {
+                    if (fileKey === null || !fileKey) {
                         // 显示所有评论
                         console.log('[CommentPanel] 从 store 获取所有评论，数量:', storeComments.length);
                         this.mongoComments = [...storeComments];
@@ -2128,8 +2076,8 @@ const componentOptions = {
                     } else {
                         // 过滤出该文件的评论
                         const filteredComments = storeComments.filter(c => {
-                            const commentFileId = c.fileId || (c.fileInfo && c.fileInfo.fileId);
-                            return commentFileId === fileId;
+                            const commentFileKey = c.fileKey || (c.fileInfo && c.fileInfo.key);
+                            return commentFileKey === fileKey;
                         });
                         
                         if (filteredComments.length > 0) {
@@ -2143,8 +2091,8 @@ const componentOptions = {
                 if (forceReload) {
                     console.log('[CommentPanel] 强制重新加载评论数据');
                     
-                    // 如果fileId为null且showAllComments为true，说明要显示所有评论
-                    if (fileId === null && showAllComments) {
+                    // 如果fileKey为null且showAllComments为true，说明要显示所有评论
+                    if (fileKey === null && showAllComments) {
                         console.log('[CommentPanel] 文件被取消选中，显示所有评论');
                         // 根据immediateReload参数决定是否立即刷新
                         if (immediateReload) {
@@ -2156,8 +2104,8 @@ const componentOptions = {
                             // 重新加载所有评论数据（不限制文件）
                             this.debouncedLoadComments();
                         }
-                    } else if (fileId === null) {
-                        // 如果fileId为null但showAllComments不为true，清空评论数据
+                    } else if (fileKey === null) {
+                        // 如果fileKey为null但showAllComments不为true，清空评论数据
                         console.log('[CommentPanel] 文件被取消选中，清空评论数据');
                         this.mongoComments = [];
                         this.fileComments = [];

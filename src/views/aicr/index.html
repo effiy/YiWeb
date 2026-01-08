@@ -56,28 +56,7 @@
             <!-- 项目选择器 -->
             <nav class="category-filters" id="category-filters" role="toolbar" aria-label="项目过滤器">
                 <ul class="filter-buttons">
-                    <!-- 项目选择器 -->
-                    <li>
-                        <label class="visually-hidden" for="projectSelect">项目选择器</label>
-                        <select 
-                            id="projectSelect"
-                            class="filter-btn project-select"
-                            v-model="selectedProject"
-                            @change="handleProjectChange($event.target.value)"
-                            :disabled="loading"
-                            :title="selectedProject ? `当前项目: ${selectedProject}` : '选择项目'"
-                            aria-label="项目选择器"
-                        >
-                            <option value="" disabled>选择项目</option>
-                            <option 
-                                v-for="project in projects" 
-                                :key="project.id" 
-                                :value="project.id"
-                                :title="`选择项目: ${project.id}`">
-                                {{ project.id }}
-                            </option>
-                        </select>
-                    </li>
+
                 </ul>
             </nav>
             
@@ -286,7 +265,7 @@
                 <file-tree 
                     v-show="viewMode === 'tree'"
                     :tree="fileTree" 
-                    :selected-file-id="selectedFileId" 
+                    :selected-key="selectedKey" 
                     :expanded-folders="expandedFolders" 
                     :loading="loading" 
                     :error="errorMessage" 
@@ -294,10 +273,10 @@
                     :collapsed="sidebarCollapsed"
                     :search-query="searchQuery"
                     :batch-mode="batchMode"
-                    :selected-file-ids="selectedFileIds"
+                    :selected-keys="selectedKeys"
                     :selected-project="selectedProject"
                     :view-mode="viewMode"
-                    @file-select="handleFileSelect" 
+                    @file-select="handleFileSelect"  
                     @folder-toggle="handleFolderToggle"
                     @create-folder="handleCreateFolder"
                     @create-file="handleCreateFile"
@@ -327,7 +306,7 @@
                     :tag-filter-visible-count="tagFilterVisibleCount || 8"
                     :tag-filter-search-keyword="tagFilterSearchKeyword || ''"
                     :session-batch-mode="sessionBatchMode || false"
-                    :selected-session-ids="selectedSessionIds || new Set()"
+                    :selected-session-keys="selectedSessionKeys || new Set()"
                     :is-all-sessions-selected="isAllSessionsSelected"
                     @session-select="handleSessionSelect"
                     @session-delete="handleSessionDelete"

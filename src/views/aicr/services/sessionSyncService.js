@@ -64,7 +64,7 @@ class SessionSyncService {
      * @param {string} projectId - 项目ID
      * @returns {string} 会话ID
      */
-    generateSessionId(filePath, projectId) {
+    generateSessionKey(filePath, projectId) {
         if (!filePath) {
             return `${projectId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         }
@@ -111,17 +111,17 @@ class SessionSyncService {
 
     /**
      * 从会话ID提取文件路径（反向操作）
-     * @param {string} sessionId - 会话ID
+     * @param {string} sessionKey - 会话ID
      * @param {string} projectId - 项目ID
      * @returns {string|null} 文件路径
      */
-    extractFilePathFromSessionId(sessionId, projectId) {
-        if (!sessionId || !projectId) return null;
+    extractFilePathFromSessionKey(sessionKey, projectId) {
+        if (!sessionKey || !projectId) return null;
         
         const prefix = `${projectId}_`;
-        if (!sessionId.startsWith(prefix)) return null;
+        if (!sessionKey.startsWith(prefix)) return null;
         
-        let pathPart = sessionId.substring(prefix.length);
+        let pathPart = sessionKey.substring(prefix.length);
         
         // 处理扩展名（格式：path_md -> path.md）
         let fileExt = '';
@@ -175,10 +175,10 @@ class SessionSyncService {
             return null;
         }
         
-        const filePath = normalizedFile.fileId || normalizedFile.path || '';
+        const filePath = normalizedFile.fileKey || normalizedFile.path || '';
         const fileName = extractFileName(filePath);
         let tags = this.extractTagsFromPath(filePath);
-        const sessionId = this.generateSessionId(filePath, projectId);
+        const sessionKey = this.generateSessionKey(filePath, projectId);
         
         // 如果标签为空，使用项目ID作为目录名（标签）
         if (!Array.isArray(tags) || tags.length === 0) {
@@ -195,7 +195,7 @@ class SessionSyncService {
         const updatedAt = this.normalizeTimestamp(file.updatedAt);
 
         return {
-            id: String(sessionId),
+            key: String(sessionKey),
             url: uniqueUrl,
             title: fileName,
             pageTitle: fileName,
@@ -326,23 +326,22 @@ class SessionSyncService {
             }
             
             // 检查会话是否已存在
-            const existingSession = await this.getSession(sessionData.id);
+            const existingSession = await this.getSession(sessionData.key);
             
             if (existingSession) {
                 if (!forceUpdate) {
-                    console.log(`[SessionSync] 会话已存在，跳过保存: ${sessionData.id}`);
-                    return { skipped: true, sessionId: sessionData.id, reason: '会话已存在' };
+                    console.log(`[SessionSync] 会话已存在，跳过保存: ${sessionData.key}`);
+                    return { skipped: true, sessionKey: sessionData.key, reason: '会话已存在' };
                 }
                 
                 // 更新模式：保留原有消息和部分元数据
                 sessionData.messages = existingSession.messages || [];
                 sessionData.createdAt = existingSession.createdAt;
-                sessionData._id = existingSession._id;
                 sessionData.key = existingSession.key;
                 // 更新时间使用当前时间
                 sessionData.updatedAt = Date.now();
                 
-                console.log(`[SessionSync] 更新现有会话: ${sessionData.id}`);
+                console.log(`[SessionSync] 更新现有会话: ${sessionData.key}`);
             }
             
             if (immediate) {
@@ -353,9 +352,9 @@ class SessionSyncService {
                 return await this.saveSession(sessionData);
             } else {
                 // 加入同步队列
-                this.syncQueue.set(sessionData.id, sessionData);
+                this.syncQueue.set(sessionData.key, sessionData);
                 this.startSyncTimer();
-                return { queued: true, sessionId: sessionData.id };
+                return { queued: true, sessionKey: sessionData.key };
             }
         }, '文件同步到会话');
     }
@@ -376,8 +375,8 @@ class SessionSyncService {
             }
 
             // 获取或创建对应的会话
-            const sessionId = this.generateSessionId(filePath, projectId);
-            let session = await this.getSession(sessionId);
+            const sessionKey = this.generateSessionKey(filePath, projectId);
+            let session = await this.getSession(sessionKey);
             
             if (!session) {
                 // 如果会话不存在，先创建会话（需要文件信息）
@@ -387,7 +386,7 @@ class SessionSyncService {
 
             // 将评论转换为消息（统一格式）
             const message = this.commentToMessage(comment);
-            const commentKey = comment.key || comment.id;
+            const commentKey = comment.key;
             
             // 检查消息是否已存在（通过内容匹配，因为标准格式不包含 _aicr）
             // 使用内容和时间戳匹配，避免重复
@@ -438,8 +437,8 @@ class SessionSyncService {
      */
     async deleteCommentMessage(commentKey, filePath, projectId, comment = null) {
         return safeExecuteAsync(async () => {
-            const sessionId = this.generateSessionId(filePath, projectId);
-            const session = await this.getSession(sessionId);
+            const sessionKey = this.generateSessionKey(filePath, projectId);
+            const session = await this.getSession(sessionKey);
             
             if (!session) {
                 return { error: '会话不存在' };
@@ -549,6 +548,10 @@ class SessionSyncService {
                 
                 if (response && response.data && response.data.list && response.data.list.length > 0) {
                     const session = response.data.list[0];
+                    // 确保 key 字段存在
+                    if (session && !session.key && session.id) {
+                        session.key = session.id;
+                    }
                     // 规范化消息格式
                     if (session.messages) {
                         session.messages = this.normalizeMessages(session.messages);
@@ -834,8 +837,8 @@ class SessionSyncService {
                     if (filePath) {
                         // 转换为文件
                         const file = {
-                            fileId: filePath,
-                            id: filePath,
+                            fileKey: filePath,
+                            key: filePath,
                             path: filePath,
                             name: session.pageTitle || session.title || filePath.split('/').pop() || '未命名文件',
                             content: String(session.pageContent || ''),
@@ -850,14 +853,13 @@ class SessionSyncService {
                             const message = normalizedMessages[i];
                             let comment = {
                                 key: `comment_${sessionId}_${i}_${message.timestamp}`,
-                                id: `comment_${sessionId}_${i}_${message.timestamp}`,
                                 // 统一的消息字段
                                 type: message.type,
                                 content: message.content,
                                 timestamp: message.timestamp,
                                 imageDataUrl: message.imageDataUrl,
                                 // 评论特有字段
-                                fileId: filePath,
+                                fileKey: filePath,
                                 projectId: projectId,
                                 status: 'pending',
                                 // 兼容字段（保留以兼容旧代码）

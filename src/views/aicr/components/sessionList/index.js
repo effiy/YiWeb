@@ -58,7 +58,7 @@ const componentOptions = {
             type: Boolean,
             default: false
         },
-        selectedSessionIds: {
+        selectedSessionKeys: {
             type: Set,
             default: () => new Set()
         },

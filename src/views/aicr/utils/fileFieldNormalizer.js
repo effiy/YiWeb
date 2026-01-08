@@ -136,8 +136,7 @@ export function normalizeFileObject(file, projectId) {
     // 构建规范化对象
     const normalized = {
         // 统一标识字段（都指向规范化后的路径）
-        fileId: normalizedPath,
-        id: normalizedPath,
+        key: normalizedPath,
         path: normalizedPath,
         
         // 基本信息
@@ -150,7 +149,6 @@ export function normalizeFileObject(file, projectId) {
         size: fileSize,
         
         // 保留原始唯一标识（如果存在）
-        key: file.key || file._id || null,
         _id: file._id || file.key || null,
         
         // 时间戳
@@ -165,10 +163,10 @@ export function normalizeFileObject(file, projectId) {
 /**
  * 规范化文件树节点
  * 统一字段规则：
- * - id: 节点路径（包含 projectId）
+ * - key: 节点路径（包含 projectId）
  * - name: 节点名称
  * - type: 'file' 或 'folder'
- * - path: 与 id 相同（包含 projectId）
+ * - path: 与 key 相同（包含 projectId）
  * - children: 子节点数组（仅文件夹有）
  * 
  * @param {Object} node - 文件树节点
@@ -181,7 +179,7 @@ export function normalizeTreeNode(node, projectId) {
     }
     
     // 提取原始路径
-    const rawPath = node.id || node.path || node.fileId || '';
+    const rawPath = node.key || node.id || node.path || node.fileId || '';
     
     // 规范化路径（移除 projectId 前缀，以便后续统一添加）
     const normalizedPath = normalizeFilePath(rawPath, projectId);
@@ -203,7 +201,7 @@ export function normalizeTreeNode(node, projectId) {
     
     // 规范化节点
     const normalized = {
-        id: fullPath,
+        key: fullPath,
         name: nodeName,
         type: node.type || (normalizedPath.endsWith('/') ? 'folder' : 'file'),
         path: fullPath
@@ -231,14 +229,14 @@ export function normalizeTreeNode(node, projectId) {
  * 构建完整的文件路径（包含 projectId）
  * 用于存储到数据库或静态文件系统
  * 
- * @param {string} fileId - 规范化后的文件ID（不包含 projectId）
+ * @param {string} fileKey - 规范化后的文件Key（不包含 projectId）
  * @param {string} projectId - 项目ID
  * @returns {string} 完整的文件路径
  */
-export function buildFullFilePath(fileId, projectId) {
-    if (!fileId || !projectId) return fileId || '';
+export function buildFullFilePath(fileKey, projectId) {
+    if (!fileKey || !projectId) return fileKey || '';
     
-    const normalized = normalizeFilePath(fileId);
+    const normalized = normalizeFilePath(fileKey);
     if (!normalized) return '';
     
     // 确保路径以 projectId 开头
@@ -250,13 +248,13 @@ export function buildFullFilePath(fileId, projectId) {
 }
 
 /**
- * 从完整路径提取文件ID（移除 projectId 前缀）
+ * 从完整路径提取文件Key（移除 projectId 前缀）
  * 
  * @param {string} fullPath - 完整路径（可能包含 projectId）
  * @param {string} projectId - 项目ID
- * @returns {string} 文件ID（不包含 projectId）
+ * @returns {string} 文件Key（不包含 projectId）
  */
-export function extractFileIdFromFullPath(fullPath, projectId) {
+export function extractFileKeyFromFullPath(fullPath, projectId) {
     if (!fullPath) return '';
     
     return normalizeFilePath(fullPath, projectId);
