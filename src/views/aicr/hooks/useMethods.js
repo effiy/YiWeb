@@ -3228,25 +3228,32 @@ export const useMethods = (store) => {
                     
                     // 如果切换到标签视图，自动加载会话数据
                     if (mode === 'tags') {
-                        console.log('[useMethods] 切换到标签视图，自动加载会话数据');
+                        // 检查会话数据是否已存在，如果存在则不需要重新加载
+                        const hasSessions = store.sessions && store.sessions.value && store.sessions.value.length > 0;
                         
-                        // 加载会话数据
-                        if (loadSessions && typeof loadSessions === 'function') {
-                            try {
-                                console.log('[useMethods] 开始加载会话数据...');
-                                await loadSessions(true);
-                                console.log('[useMethods] 会话数据加载完成');
-                            } catch (error) {
-                                console.error('[useMethods] 加载会话数据失败:', error);
+                        if (!hasSessions) {
+                            console.log('[useMethods] 切换到标签视图，自动加载会话数据');
+                            
+                            // 加载会话数据
+                            if (loadSessions && typeof loadSessions === 'function') {
+                                try {
+                                    console.log('[useMethods] 开始加载会话数据...');
+                                    await loadSessions(true);
+                                    console.log('[useMethods] 会话数据加载完成');
+                                } catch (error) {
+                                    console.error('[useMethods] 加载会话数据失败:', error);
+                                }
+                            } else if (store.loadSessions && typeof store.loadSessions === 'function') {
+                                try {
+                                    console.log('[useMethods] 从 store 加载会话数据...');
+                                    await store.loadSessions(true);
+                                    console.log('[useMethods] 会话数据加载完成');
+                                } catch (error) {
+                                    console.error('[useMethods] 加载会话数据失败:', error);
+                                }
                             }
-                        } else if (store.loadSessions && typeof store.loadSessions === 'function') {
-                            try {
-                                console.log('[useMethods] 从 store 加载会话数据...');
-                                await store.loadSessions(true);
-                                console.log('[useMethods] 会话数据加载完成');
-                            } catch (error) {
-                                console.error('[useMethods] 加载会话数据失败:', error);
-                            }
+                        } else {
+                            console.log('[useMethods] 切换到标签视图，会话数据已存在，跳过加载');
                         }
                     }
                 }
