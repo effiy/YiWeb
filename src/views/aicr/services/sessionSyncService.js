@@ -481,25 +481,11 @@ class SessionSyncService {
             // 并行删除
             const deletePromises = sessionsToDelete.map(async (session) => {
                 try {
-                    let targetKey = session.key;
-                    const isObjectId = !targetKey || /^[0-9a-fA-F]{24}$/.test(String(targetKey));
-                    if (isObjectId) {
-                         const tags = session.tags || [];
-                         const title = session.title || session.pageTitle;
-                         const pathTags = tags.filter(t => t && t !== 'default' && t !== 'Default');
-                         
-                         if (pathTags.length > 0 && title) {
-                             const reconstructedPath = [...pathTags, title].join('/');
-                             console.log(`[SessionSync] 重建会话Key: ${reconstructedPath} (原Key: ${targetKey})`);
-                             targetKey = reconstructedPath;
-                         } else if (title) {
-                             targetKey = title;
-                         }
-                    }
-
-                    const finalKey = targetKey ? String(targetKey) : '';
-                    if (!finalKey || /^[0-9a-fA-F]{24}$/.test(finalKey)) {
-                        throw new Error('会话缺少可用的 key');
+                    // 严格使用 session.key，确保与 session 对象一致
+                    const finalKey = session.key;
+                    if (!finalKey) {
+                        console.warn('[SessionSync] 会话缺少 key:', session);
+                        throw new Error('会话缺少 key');
                     }
                     await this.deleteSession(finalKey);
                     deletedCount++;
@@ -656,6 +642,34 @@ class SessionSyncService {
                     throw new Error('会话ID无效');
                 }
                 
+                let targetKey = sessionId;
+                
+                // 检查 sessionId 是否疑似路径（包含斜杠），如果是，尝试获取真实的 UUID Key
+                // 这符合用户要求：delete_document 的 key 不应该是路径字符串
+                if (targetKey.includes('/')) {
+                    console.log('[SessionSync] 检测到会话Key疑似路径，尝试解析真实UUID:', targetKey);
+                    try {
+                        const findUrl = buildServiceUrl('query_documents', {
+                            cname: 'sessions',
+                            filter: { id: targetKey },
+                            limit: 1
+                        });
+                        const findResp = await getData(findUrl, {}, false);
+                        const item = findResp?.data?.list?.[0];
+                        
+                        // 如果找到了 item 且其 key 看起来像 UUID (不包含 /)
+                        if (item && item.key && !item.key.includes('/')) {
+                            console.log(`[SessionSync] 已将路径 Key "${targetKey}" 修正为 UUID "${item.key}"`);
+                            targetKey = item.key;
+                        } else {
+                            console.warn('[SessionSync] 无法解析出 UUID，将继续使用原始 Key:', targetKey);
+                        }
+                    } catch (lookupError) {
+                        console.warn('[SessionSync] 解析 UUID 失败:', lookupError);
+                        // 查询失败不阻断流程，继续尝试删除（可能后端支持路径删除，或者让重试逻辑处理）
+                    }
+                }
+
                 // 确保正确编码会话ID，处理包含 "/" 等特殊字符的情况
                 // const encodedSessionId = encodeURIComponent(sessionId);
                 // const url = `${this.apiUrl}/session/${encodedSessionId}`;
@@ -665,22 +679,24 @@ class SessionSyncService {
                     method_name: 'delete_document',
                     parameters: {
                         cname: 'sessions',
-                        key: sessionId // 直接使用传入的 sessionId (即 key)
+                        key: targetKey // 使用（可能修正后的）targetKey
                     }
                 };
                 
                 console.log('[SessionSync] 删除会话请求:', { 
                     originalId: sessionId, 
+                    finalKey: targetKey,
                     payload
                 });
                 
                 const response = await postData(`${this.apiUrl}/`, payload);
                 
                 if (response && response.success !== false) {
-                    console.log('[SessionSync] 会话删除成功:', sessionId);
+                    console.log('[SessionSync] 会话删除成功:', targetKey);
                     return response;
                 } else {
                     // 如果直接删除失败，尝试先查询获取 key 再删除（兼容旧数据）
+                    // 注意：如果上面的预检查已经执行过且没找到 UUID，这里的逻辑可能也是徒劳，但保留作为兜底
                     console.warn('[SessionSync] 直接删除失败，尝试查找后删除:', sessionId);
                     const findUrl = buildServiceUrl('query_documents', {
                         cname: 'sessions',

@@ -1670,13 +1670,16 @@ export const useMethods = (store) => {
                     }
                 };
 
-                console.log('[评论删除] 调用删除接口:', url);
+                console.log('[评论删除] 调用删除接口, payload:', payload);
 
                 // 调用删除接口
-                const { deleteData } = await import('/src/services/modules/crud.js');
-                const result = await deleteData(url);
+                const resp = await postData(`${window.API_URL}/`, payload);
 
-                console.log('[评论删除] 删除成功:', result);
+                if (resp && resp.success !== false) {
+                    console.log('[评论删除] 删除成功:', resp);
+                } else {
+                    throw new Error(resp?.message || '删除失败');
+                }
                 
                 // 同步删除会话消息
                 if (selectedFileId.value) {
@@ -3657,42 +3660,32 @@ export const useMethods = (store) => {
                     // 使用标准服务接口逐个删除（只删除允许删除的会话）
                     let deletedCount = 0;
                     let failedCount = 0;
+
+                    // 获取 SessionSyncService 实例
+                    let sessionSync;
+                    try {
+                        const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                        sessionSync = getSessionSyncService();
+                    } catch (e) {
+                        console.error('[useMethods] 无法加载 SessionSyncService:', e);
+                        throw new Error('服务加载失败');
+                    }
+
                     for (const skey of allowedSessionKeys) {
                         try {
-                            const findUrl = buildServiceUrl('query_documents', {
-                                cname: 'sessions',
-                                filter: { id: skey },
-                                limit: 1
-                            });
-                            const findResp = await getData(findUrl, {}, false);
-                            const item = findResp?.data?.list?.[0];
-                            if (!item) {
-                                failedCount++;
-                                continue;
-                            }
-                            const payload = {
-                                module_name: SERVICE_MODULE,
-                                method_name: 'delete_document',
-                                parameters: {
-                                    cname: 'sessions',
-                                    key: item.key
-                                }
-                            };
-                            const resp = await postData(`${window.API_URL}/`, payload);
-                            if (resp && resp.success !== false) {
-                                deletedCount++;
-                            } else {
-                                failedCount++;
-                            }
-                        } catch (_) {
+                            // 直接使用 sessionKey 调用 deleteSession，确保与 session.key 一致
+                            await sessionSync.deleteSession(skey);
+                            deletedCount++;
+                        } catch (e) {
+                            console.error(`[useMethods] 删除会话失败: ${skey}`, e);
                             failedCount++;
                         }
                     }
                     
                     if (deletedCount > 0) {
                         // 清空选中状态
-                        if (selectedSessionIds) {
-                            selectedSessionIds.value.clear();
+                        if (selectedSessionKeys) {
+                            selectedSessionKeys.value.clear();
                         }
                         
                         // 退出批量模式
@@ -3711,8 +3704,8 @@ export const useMethods = (store) => {
                         
                         if (window.showSuccess) {
                             let successMessage = `已成功删除 ${deletedCount} 个会话`;
-                            if (treeFileSessionIds.length > 0) {
-                                successMessage += `（已跳过 ${treeFileSessionIds.length} 个树文件类型的会话）`;
+                            if (treeFileSessionKeys.length > 0) {
+                                successMessage += `（已跳过 ${treeFileSessionKeys.length} 个树文件类型的会话）`;
                             }
                             if (failedCount > 0) {
                                 successMessage += `，其中 ${failedCount} 个删除失败`;
