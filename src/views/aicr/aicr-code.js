@@ -44,7 +44,6 @@ async function createApp() {
                 fileInfo: {
                     fileName: '',
                     filePath: '',
-                    project: '',
                     version: '',
                     fileKey: ''
                 },
@@ -120,7 +119,7 @@ async function createApp() {
                 filePath: urlParams.get('filePath') || '',
                 project: urlParams.get('project') || '',
                 version: urlParams.get('version') || '',
-                fileKey: urlParams.get('fileKey') || urlParams.get('fileId') || ''
+                fileKey: urlParams.get('fileKey') || ''
             };
             
             console.log('[parseUrlParams] 解析到的文件信息:', this.fileInfo);
@@ -143,30 +142,27 @@ async function createApp() {
             this.error = '';
             
             try {
-                // 优先尝试使用全局 store 的 loadFileById 方法加载文件
-                if (window.aicrStore && typeof window.aicrStore.loadFileById === 'function') {
-                    const projectId = this.fileInfo.project || (window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : null);
-                    if (projectId) {
-                        console.log('[loadFileContent] 使用 store 加载文件:', { projectId, fileKey: this.fileInfo.fileKey });
-                        try {
-                            // 如果提供了 fileKey，使用它进行精确查找
-                            const loadedFile = await window.aicrStore.loadFileById(projectId, this.fileInfo.fileKey, this.fileInfo.fileKey);
-                            if (loadedFile && loadedFile.content) {
-                                this.currentFile = {
-                                    name: loadedFile.name || this.fileInfo.fileName,
-                                    path: loadedFile.path || this.fileInfo.filePath,
-                                    content: loadedFile.content,
-                                    type: loadedFile.type || 'text',
-                                    size: loadedFile.size || 0,
-                                    lastModified: loadedFile.lastModified || new Date().toISOString(),
-                                    key: loadedFile.key || loadedFile._id || this.fileInfo.fileKey
-                                };
-                                console.log('[loadFileContent] 通过 store 加载文件成功:', this.currentFile.name);
-                                return;
-                            }
-                        } catch (storeError) {
-                            console.warn('[loadFileContent] store 加载失败，尝试 API 方式:', storeError);
+                // 优先尝试使用全局 store 的 loadFileByKey 方法加载文件
+                if (window.aicrStore && typeof window.aicrStore.loadFileByKey === 'function') {
+                    console.log('[loadFileContent] 使用 store 加载文件:', { fileKey: this.fileInfo.fileKey });
+                    try {
+                        // 使用 fileKey 进行精确查找
+                        const loadedFile = await window.aicrStore.loadFileByKey(this.fileInfo.fileKey);
+                        if (loadedFile && loadedFile.content) {
+                            this.currentFile = {
+                                name: loadedFile.name || this.fileInfo.fileName,
+                                path: loadedFile.path || this.fileInfo.filePath,
+                                content: loadedFile.content,
+                                type: loadedFile.type || 'text',
+                                size: loadedFile.size || 0,
+                                lastModified: loadedFile.lastModified || new Date().toISOString(),
+                                key: loadedFile.key || this.fileInfo.fileKey
+                            };
+                            console.log('[loadFileContent] 通过 store 加载文件成功:', this.currentFile.name);
+                            return;
                         }
+                    } catch (storeError) {
+                        console.warn('[loadFileContent] store 加载失败，尝试 API 方式:', storeError);
                     }
                 }
                 
@@ -174,12 +170,11 @@ async function createApp() {
                 // 构建 API URL，version 参数可以为空（系统已简化，不再有版本概念）
                 const queryParams = {
                     cname: 'projectVersionFiles',
-                    projectId: this.fileInfo.project || ''
+                    key: this.fileInfo.fileKey
                 };
                 if (this.fileInfo.version) {
                     queryParams.versionId = this.fileInfo.version;
                 }
-                queryParams.fileId = this.fileInfo.fileKey;
                 
                 const url = buildServiceUrl('query_documents', queryParams);
                 console.log('[loadFileContent] 请求URL:', url);
@@ -216,14 +211,13 @@ async function createApp() {
                         type: itemData.type || item.type || 'text',
                         size: itemData.size || item.size || 0,
                         lastModified: itemData.lastModified || item.lastModified || new Date().toISOString(),
-                        key: item.key || item._id
+                        key: item.key
                     };
                     
                     console.log('[loadFileContent] 文件加载成功:', this.currentFile.name, '内容长度:', content.length);
                 } else {
                     throw new Error('未找到指定的文件');
                 }
-                
             } catch (error) {
                 console.error('加载文件内容失败:', error);
                 this.error = '加载文件内容失败: ' + (error.message || error);
@@ -240,8 +234,7 @@ async function createApp() {
                 // 使用与主页面相同的MongoDB API
                 const queryParams = {
                     cname: 'comments',
-                    projectId: this.fileInfo.project,
-                    fileId: this.fileInfo.fileKey
+                    key: this.fileInfo.fileKey
                 };
                 if (this.fileInfo.version) {
                     queryParams.versionId = this.fileInfo.version;
@@ -279,22 +272,13 @@ async function createApp() {
         
         // 加载评论者数据
         async loadCommenters() {
-            if (!this.fileInfo.project || !this.fileInfo.version) {
-                console.log('[loadCommenters] 项目/版本信息不完整，跳过评论者加载');
-                return;
-            }
-            
             this.commentersLoading = true;
             this.commentersError = '';
             
             try {
                 const queryParams = {
-                    cname: 'commenters',
-                    projectId: this.fileInfo.project
+                    cname: 'commenters'
                 };
-                if (this.fileInfo.version) {
-                    queryParams.versionId = this.fileInfo.version;
-                }
                 
                 const url = buildServiceUrl('query_documents', queryParams);
                 
@@ -340,9 +324,7 @@ async function createApp() {
                     parameters: {
                         cname: 'comments',
                         data: {
-                            projectId: this.fileInfo.project,
-                            versionId: this.fileInfo.version,
-                            fileId: this.fileInfo.fileKey,
+                            fileKey: this.fileInfo.fileKey,
                             ...commentData
                         }
                     }

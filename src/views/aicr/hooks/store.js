@@ -3,16 +3,14 @@
  * author: liangliang
  */
 
-import { getData, postData, deleteData, updateData } from '/src/services/index.js';
+import { getData, postData } from '/src/services/index.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
 import { safeExecuteAsync, createError, ErrorTypes } from '/src/utils/error.js';
 import { getSessionSyncService } from '/src/views/aicr/services/sessionSyncService.js';
 import { 
     normalizeFilePath, 
     normalizeFileObject, 
-    normalizeTreeNode,
-    extractFileName,
-    extractDirPath
+    normalizeTreeNode
 } from '/src/views/aicr/utils/fileFieldNormalizer.js';
 
 /**
@@ -28,11 +26,11 @@ class FileDeleteService {
      * 从文件对象中提取所有可能的标识符
      * 支持导入文件和新建文件的不同数据结构
      * @param {Object} file - 文件对象
-     * @returns {Object} 包含 key, projectId, isFile 的对象
+     * @returns {Object} 包含 key, isFile 的对象
      */
     extractFileIdentifiers(file) {
         if (!file || typeof file !== 'object') {
-            return { key: null, projectId: null, isFile: false };
+            return { key: null, isFile: false };
         }
 
         // 提取 key（优先使用 key 作为路径标识）
@@ -40,53 +38,49 @@ class FileDeleteService {
                       (file.data && (file.data.key || file.data.path)) ||
                       null;
 
-        // 提取 projectId（支持多种字段和嵌套结构）
-        const projectId = file.projectId || 
-                         (file.data && file.data.projectId) ||
-                         null;
-
         // 判断是否为文件（不是文件夹）
         const isFile = file.type === 'file' || 
                       (!file.type && key && !key.endsWith('/')) ||
                       false;
 
-        return { key, projectId, isFile };
+        return { key, isFile };
     }
 
     /**
      * 删除单个文件（仅删除会话）
      * 这是统一的删除入口，确保导入文件和新建文件的删除行为完全一致
      * @param {Object} file - 文件对象
-     * @param {string} projectId - 项目的 projectId（可选，会从 file 对象中提取）
      * @returns {Promise<Object>} 删除结果 { sessionSuccess }
      */
-    async deleteFile(file, projectId = null) {
+    async deleteFile(file) {
         // 提取文件标识符
-        const { key, projectId: fileProjectId, isFile } = this.extractFileIdentifiers(file);
+        const { key, isFile } = this.extractFileIdentifiers(file);
         
-        // 使用传入的 projectId 或从文件对象中提取，默认为 'global'
-        const actualProjectId = projectId || fileProjectId || 'global';
-
         // 如果 key 仍然为空，尝试从原始文件对象中直接提取
         let finalKey = key;
         if (!finalKey && file) {
             finalKey = file.key || file.path || null;
         }
 
+        // 优先使用明确指定的 sessionKey
+        const sessionKey = file?.sessionKey || finalKey;
+        // 静态文件路径优先使用 path
+        const staticPath = file?.path || finalKey;
+
         console.log('[FileDeleteService] 开始删除文件:', { 
             key: finalKey, 
+            sessionKey,
+            staticPath,
             isFile, 
-            projectId: actualProjectId,
             fileType: file?.type
         });
 
         // 如果缺少 key，无法删除
-        if (!finalKey) {
+        if (!finalKey && !sessionKey) {
             console.error('[FileDeleteService] ✗ 无法删除文件：缺少 key', { file });
             return {
                 sessionSuccess: false,
                 key: finalKey,
-                projectId: actualProjectId,
                 isFile,
                 error: '缺少 key'
             };
@@ -95,13 +89,25 @@ class FileDeleteService {
         const result = {
             sessionSuccess: false,
             key: finalKey,
-            projectId: actualProjectId,
             isFile
         };
 
         // 删除会话（仅对文件，不对文件夹）
         if (isFile) {
-            result.sessionSuccess = await this.deleteSession(finalKey, actualProjectId);
+            result.sessionSuccess = await this.deleteSession(sessionKey);
+            
+            // 删除静态文件
+            try {
+                const base = String(this.apiUrl || '').replace(/\/+$/, '');
+                const endpoint = `${base}/delete-file`;
+                const response = await postData(endpoint, {
+                    target_file: staticPath
+                });
+                console.log('[FileDeleteService] 静态文件删除结果:', response);
+            } catch (e) {
+                console.warn('[FileDeleteService] 静态文件删除失败（可能是目录或已删除）:', e.message);
+                // 不视为致命错误，因为如果是文件夹删除流程，文件可能已经被删除
+            }
         } else {
             if (!isFile) {
                 console.debug('[FileDeleteService] ✗ 跳过会话删除（不是文件）:', { key: finalKey, type: file?.type });
@@ -112,23 +118,76 @@ class FileDeleteService {
     }
 
     /**
+     * 删除文件夹
+     * 1. 删除文件夹关联的所有会话
+     * 2. 调用后端接口删除静态目录
+     * @param {string} folderKey - 文件夹Key（即路径）
+     * @param {Array} allSessions - 所有会话列表
+     * @returns {Promise<Object>} 删除结果
+     */
+    async deleteFolder(folderKey, allSessions) {
+        if (!folderKey) return { success: false, error: '文件夹路径为空' };
+        
+        console.log('[FileDeleteService] 开始删除文件夹:', folderKey);
+        
+        const result = {
+            folderKey,
+            sessionResult: null,
+            staticResult: null,
+            success: false
+        };
+        
+        try {
+            // 1. 删除关联会话
+            const sessionSync = getSessionSyncService();
+            result.sessionResult = await sessionSync.deleteSessionsByFolder(folderKey, allSessions);
+            console.log('[FileDeleteService] 会话删除结果:', result.sessionResult);
+            
+            // 2. 删除静态目录
+            // 注意：folderKey 在这里被视为相对路径
+            try {
+                const base = String(this.apiUrl || '').replace(/\/+$/, '');
+                const endpoint = `${base}/delete-folder`;
+                const response = await postData(endpoint, {
+                    target_dir: folderKey
+                });
+                result.staticResult = response;
+                console.log('[FileDeleteService] 静态目录删除结果:', response);
+            } catch (e) {
+                console.warn('[FileDeleteService] 静态目录删除失败:', e);
+                result.staticResult = { success: false, error: e.message };
+            }
+            
+            result.success = result.sessionResult?.success !== false;
+            
+            return result;
+        } catch (error) {
+            console.error('[FileDeleteService] 文件夹删除失败:', error);
+            return {
+                ...result,
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
      * 批量删除文件
      * @param {Array<Object>} files - 文件对象数组
-     * @param {string} projectId - 项目的 projectId（可选）
      * @returns {Promise<Array<Object>>} 删除结果数组
      */
-    async deleteFiles(files, projectId = null) {
+    async deleteFiles(files) {
         if (!Array.isArray(files) || files.length === 0) {
             console.warn('[FileDeleteService] 批量删除：文件列表为空');
             return [];
         }
 
-        console.log('[FileDeleteService] 开始批量删除，文件数:', files.length, '项目ID:', projectId);
+        console.log('[FileDeleteService] 开始批量删除，文件数:', files.length);
         
         const results = [];
         for (const file of files) {
             try {
-                const result = await this.deleteFile(file, projectId);
+                const result = await this.deleteFile(file);
                 results.push(result);
             } catch (error) {
                 console.error('[FileDeleteService] 批量删除单个文件失败:', error);
@@ -155,13 +214,12 @@ class FileDeleteService {
     /**
      * 删除会话
      * @param {string} fileKey - 文件Key
-     * @param {string} projectId - 项目ID
      * @returns {Promise<boolean>} 是否成功
      */
-    async deleteSession(fileKey, projectId) {
+    async deleteSession(fileKey) {
         try {
             const sessionSync = getSessionSyncService();
-            const sessionId = sessionSync.generateSessionId(fileKey, projectId || 'global');
+            const sessionId = sessionSync.generateSessionKey(fileKey);
             await sessionSync.deleteSession(sessionId);
             console.log('[FileDeleteService] 会话删除成功:', sessionId);
             return true;
@@ -217,10 +275,6 @@ export const createStore = () => {
     // 评论区宽度
     const commentsWidth = vueRef(450);
     
-    // 项目管理 - 简化后只管理项目，不再有版本概念
-    // const projects = vueRef([]); // 存储项目列表 (Removed)
-    // const selectedProject = vueRef(''); (Removed)
-    
     // 搜索相关状态
     const searchQuery = vueRef('');
     // 新增评论内容
@@ -270,7 +324,6 @@ export const createStore = () => {
 
     /**
      * 异步加载文件树数据
-     * @param {string|null} projectId - 项目ID
      * @param {boolean} forceClear - 是否在数据为空时强制清空（默认 false，保留现有数据以避免清空问题）
      */
     const loadFileTree = async (forceClear = false) => {
@@ -334,7 +387,6 @@ export const createStore = () => {
                         name: fileName,
                         type: 'file',
                         content: session.pageContent || '',
-                        _id: session.key || session.id,
                         size: (session.pageContent || '').length,
                         lastModified: session.updatedAt || session.createdAt
                     });
@@ -465,13 +517,13 @@ export const createStore = () => {
             if (exists) throw createError('同名文件或文件夹已存在', ErrorTypes.VALIDATION, '新建文件夹');
 
             const newId = (parentNode.key ? `${parentNode.key}/` : '') + name;
-            // 使用 normalizeTreeNode 确保 key 和 path 都包含 projectId
+            // 使用 normalizeTreeNode 确保 key 和 path
             const folderNode = normalizeTreeNode({
                 key: newId,
                 name,
                 type: 'folder',
                 children: []
-            }, 'global');
+            });
             if (folderNode) {
                 parentNode.children.push(folderNode);
             }
@@ -511,7 +563,6 @@ export const createStore = () => {
      * @param {string} options.parentId - 父节点ID
      * @param {string} options.name - 文件名
      * @param {string} options.content - 文件内容
-     * @param {string} options.projectId - 项目ID
      * @param {boolean} options.skipProjectFiles - 是否跳过 projectFiles 接口调用（当通过 persistFileTree 已持久化时使用）
      */
     const createFile = async ({ parentId, name, content = '', skipProjectFiles = false }) => {
@@ -538,9 +589,9 @@ export const createStore = () => {
             }
 
             // 使用统一的路径规范化
-            const parentPath = normalizeFilePath(parentNode.key || '', 'global');
+            const parentPath = normalizeFilePath(parentNode.key || '');
             const newId = parentPath ? `${parentPath}/${name}` : name;
-            const normalizedNewId = normalizeFilePath(newId, 'global');
+            const normalizedNewId = normalizeFilePath(newId);
             const now = Date.now();
             
             // 使用统一的节点规范化工具
@@ -551,7 +602,7 @@ export const createStore = () => {
                 size: content ? content.length : 0,
                 modified: now,
                 content: content || ''  // 确保 content 字段被设置到文件节点中
-            }, 'global');
+            });
             
             if (fileNode) {
                 parentNode.children.push(fileNode);
@@ -585,9 +636,6 @@ export const createStore = () => {
             // 注意：即使 skipProjectFiles=true，文件内容也会通过 persistFileTree 保存到 projectTree
             await persistFileTree();
 
-            const project = 'global';
-            let createdKey = null;
-            
             // 2025-01-08: 已移除 projectFiles 接口调用，仅使用 sessions 模式
             // 文件内容将通过 sessionSync.syncFileToSession 同步到会话
 
@@ -598,10 +646,8 @@ export const createStore = () => {
                 path: normalizedNewId,
                 name,
                 content,
-                // key: createdKey, // removed as we use normalizedNewId as key
-                _id: createdKey,
                 type: 'file'
-            }, project);
+            });
             
             if (newFile && Array.isArray(files.value)) {
                 files.value.push(newFile);
@@ -609,9 +655,21 @@ export const createStore = () => {
 
             // 同步文件到会话（使用规范化后的文件对象）
             try {
-                if (project && newFile) {
-                    await sessionSync.syncFileToSession(newFile, project, false);
+                if (newFile) {
+                    await sessionSync.syncFileToSession(newFile, false);
                     console.log('[createFile] 文件已同步到会话:', normalizedNewId);
+                    
+                    // 手动更新本地 sessions 列表，确保后续操作（如删除文件夹）能找到对应会话
+                    const sessionData = sessionSync.fileToSession(newFile);
+                    if (sessionData) {
+                        const idx = sessions.value.findIndex(s => s.key === sessionData.key);
+                        if (idx >= 0) {
+                            sessions.value[idx] = { ...sessions.value[idx], ...sessionData };
+                        } else {
+                            sessions.value.push(sessionData);
+                        }
+                        console.log('[createFile] 本地会话列表已更新:', sessionData.key);
+                    }
                 }
             } catch (syncError) {
                 console.warn('[createFile] 同步文件到会话失败（已忽略）:', syncError?.message);
@@ -628,26 +686,26 @@ export const createStore = () => {
         return safeExecuteAsync(async () => {
             if (!itemId) throw createError('缺少目标ID', ErrorTypes.VALIDATION, '重命名');
             if (!newName || !newName.trim()) throw createError('名称不能为空', ErrorTypes.VALIDATION, '重命名');
-            const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
+            // 修正：直接使用 fileTree.value 作为搜索根
+            const root = fileTree.value;
             const { node, parent } = findNodeAndParentByKey(root, itemId);
             if (!node) throw createError('未找到目标节点', ErrorTypes.API, '重命名');
-            const siblings = parent ? (parent.children || []) : [node];
+            // 检查同级重名（如果是根节点，parent为null，则检查fileTree.value）
+            const siblings = parent ? (parent.children || []) : (Array.isArray(fileTree.value) ? fileTree.value : [fileTree.value]);
             if (siblings.some(ch => ch !== node && ch.name === newName)) {
                 throw createError('同级存在同名项', ErrorTypes.VALIDATION, '重命名');
             }
 
             // 使用统一的路径规范化计算新ID
-            const project = 'global';
-            // 获取父节点的规范化路径（不包含 projectId）
-            const parentPathWithoutProjectId = parent ? normalizeFilePath(parent.key || '', project) : '';
-            // 获取旧ID的规范化路径（不包含 projectId）
-            const oldIdWithoutProjectId = normalizeFilePath(node.key || '', project);
-            // 计算新ID的规范化路径（不包含 projectId）
-            const newIdWithoutProjectId = normalizeFilePath(parentPathWithoutProjectId ? `${parentPathWithoutProjectId}/${newName}` : newName, project);
-            // 构建包含 projectId 的完整路径
-            // 在全局模式下，不使用 projectId 前缀，保持与 loadFileTree 一致
-            const oldId = oldIdWithoutProjectId;
-            const newId = newIdWithoutProjectId;
+            // 获取父节点的规范化路径
+            const parentPath = parent ? normalizeFilePath(parent.key || '') : '';
+            // 获取旧ID的规范化路径
+            const oldPath = normalizeFilePath(node.key || '');
+            // 计算新ID的规范化路径
+            const newPath = normalizeFilePath(parentPath ? `${parentPath}/${newName}` : newName);
+            // 构建完整路径
+            const oldId = oldPath;
+            const newId = newPath;
             node.name = newName;
 
             // 记录变更前的文件列表用于远端同步
@@ -655,7 +713,7 @@ export const createStore = () => {
 
             const updateKeysRecursively = (n, fromPrefix, toPrefix) => {
                 if (n.key && typeof n.key === 'string') {
-                    // 比较完整路径（包含 projectId）
+                    // 比较完整路径
                     if (n.key === fromPrefix) {
                         // 完全匹配，直接替换
                         n.key = toPrefix;
@@ -708,18 +766,18 @@ export const createStore = () => {
             // 更新本地files列表（仅当是文件或其子层级文件），使用统一的字段规范化
             if (Array.isArray(files.value)) {
                 files.value = files.value.map(f => {
-                    const normalizedOldId = normalizeFilePath(oldId, project);
-                    const ids = [f.key, f.path].filter(Boolean).map(id => normalizeFilePath(id, project));
+                    const normalizedOldId = normalizeFilePath(oldId);
+                    const ids = [f.key, f.path].filter(Boolean).map(id => normalizeFilePath(id));
                     const matched = ids.some(v => v === normalizedOldId || v.startsWith(normalizedOldId + '/'));
                     if (matched) {
-                        const oldPath = normalizeFilePath(f.path || f.key, project);
+                        const oldPath = normalizeFilePath(f.path || f.key);
                         const replacedPath = oldPath.replace(normalizedOldId, newId);
                         // 使用统一的字段规范化工具
                         const normalized = normalizeFileObject({
                             ...f,
                             key: replacedPath,
                             path: replacedPath
-                        }, project);
+                        });
                         return normalized || f;
                     }
                     return f;
@@ -729,33 +787,64 @@ export const createStore = () => {
             await persistFileTree();
 
             // 同步 projectTree 中的文件节点，使用统一的字段规范化
-            // 2025-01-08: 已移除 projectFiles 逻辑，仅使用 sessions 模式
             
             try {
-                const normalizedOldId = normalizeFilePath(oldId, project);
+                const normalizedOldId = normalizeFilePath(oldId);
                 const affected = prevFiles.filter(f => {
-                    const ids = [f.key, f.path].filter(Boolean).map(id => normalizeFilePath(id, project));
+                    const ids = [f.key, f.path].filter(Boolean).map(id => normalizeFilePath(id));
                     return ids.some(v => v === normalizedOldId || v.startsWith(normalizedOldId + '/'));
                 });
                 
                 for (const f of affected) {
-                    const oldPath = normalizeFilePath(f.path || f.key, project);
+                    const oldPath = normalizeFilePath(f.path || f.key);
                     const newPath = oldPath.replace(normalizedOldId, newId);
                     
-                    // 同步更新会话（如果是文件）
-                    if (node.type === 'file' && project) {
-                        try {
-                            // 删除旧会话
-                            const oldSessionId = sessionSync.generateSessionId(oldPath, project);
-                            await sessionSync.deleteSession(oldSessionId);
-                            
-                            // 创建新会话
-                            const updatedFile = { ...f, key: newPath, path: newPath, name: newPath.split('/').pop() };
-                            await sessionSync.syncFileToSession(updatedFile, project, false);
-                            console.log('[renameItem] 会话已同步更新:', oldPath, '->', newPath);
-                        } catch (syncError) {
-                            console.warn('[renameItem] 同步会话失败（已忽略）:', syncError?.message);
+                    // 同步更新会话（无论是文件重命名还是文件夹重命名导致的路径变更）
+                    try {
+                        // 删除旧会话
+                        let oldSessionKey = sessionSync.generateSessionKey(oldPath);
+                        
+                        // 尝试查找旧会话的真实 Key (兼容旧数据)
+                        if (sessions.value && Array.isArray(sessions.value)) {
+                            const fName = oldPath.split('/').pop();
+                            const fTags = oldPath.split('/').slice(0, -1).filter(Boolean);
+                            const oldSession = sessions.value.find(s => {
+                                 const sName = s.title || s.pageTitle;
+                                 const sTags = s.tags || [];
+                                 if (sName !== fName) return false;
+                                 if (sTags.length !== fTags.length) return false;
+                                 for (let i = 0; i < sTags.length; i++) {
+                                     if (String(sTags[i]) !== String(fTags[i])) return false;
+                                 }
+                                 return true;
+                            });
+                            if (oldSession && oldSession.key) {
+                                oldSessionKey = oldSession.key;
+                                console.log(`[renameItem] 找到旧会话真实Key: ${oldSessionKey} (原路径: ${oldPath})`);
+                            }
                         }
+
+                        await sessionSync.deleteSession(oldSessionKey);
+                        
+                        // 创建新会话
+                        const updatedFile = { ...f, key: newPath, path: newPath, name: newPath.split('/').pop() };
+                        await sessionSync.syncFileToSession(updatedFile, false);
+
+                        // 更新本地 sessions 列表
+                        if (sessions.value && Array.isArray(sessions.value)) {
+                            const oldSessIdx = sessions.value.findIndex(s => s.key === oldSessionKey || s.id === oldSessionKey);
+                            if (oldSessIdx >= 0) {
+                                sessions.value.splice(oldSessIdx, 1);
+                            }
+                            const sessionData = sessionSync.fileToSession(updatedFile);
+                            if (sessionData) {
+                                sessions.value.push(sessionData);
+                            }
+                        }
+
+                        console.log('[renameItem] 会话已同步更新:', oldPath, '->', newPath);
+                    } catch (syncError) {
+                        console.warn('[renameItem] 同步会话失败（已忽略）:', syncError?.message);
                     }
                 }
             } catch (e) {
@@ -770,24 +859,36 @@ export const createStore = () => {
     /**
      * 删除节点
      */
-    const deleteItem = async ({ itemId, projectId = null }) => {
+    const deleteItem = async ({ key, itemId }) => {
         return safeExecuteAsync(async () => {
-            if (!itemId) throw createError('缺少目标ID', ErrorTypes.VALIDATION, '删除');
-            const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
-            const { node, parent } = findNodeAndParentByKey(root, itemId);
+            const targetKey = key || itemId;
+            if (!targetKey) throw createError('缺少目标ID', ErrorTypes.VALIDATION, '删除');
+            // 修正：直接使用 fileTree.value 作为搜索根，支持数组（多根）结构
+            const root = fileTree.value;
+            const { node, parent } = findNodeAndParentByKey(root, targetKey);
             if (!node) throw createError('未找到目标节点', ErrorTypes.API, '删除');
-            const project = projectId || 'global';
+            
             const prevFiles = Array.isArray(files.value) ? files.value.slice() : [];
             
             // 如果删除的是根节点（顶级文件夹）
             if (!parent) {
                 // 从根节点数组中移除
                 if (Array.isArray(fileTree.value)) {
-                    fileTree.value = fileTree.value.filter(n => n.key !== itemId);
+                    fileTree.value = fileTree.value.filter(n => n.key !== targetKey);
+                } else if (fileTree.value && fileTree.value.key === targetKey) {
+                    // 如果是单根对象且就是要删除的节点（通常不会发生，清空？）
+                    fileTree.value = [];
                 }
             } else {
                 // 非根节点删除逻辑
-                parent.children = (parent.children || []).filter(ch => ch.key !== itemId);
+                parent.children = (parent.children || []).filter(ch => ch.key !== targetKey);
+                
+                // 强制触发响应式更新，解决部分场景下视图不刷新的问题
+                if (Array.isArray(fileTree.value)) {
+                    fileTree.value = [...fileTree.value];
+                } else if (fileTree.value && typeof fileTree.value === 'object') {
+                    fileTree.value = { ...fileTree.value };
+                }
             }
             
             // 保持全部展开
@@ -797,36 +898,119 @@ export const createStore = () => {
             if (Array.isArray(files.value)) {
                 files.value = files.value.filter(f => {
                     const ids = [f.key, f.path].filter(Boolean);
-                    const matched = ids.some(v => String(v) === itemId || String(v).startsWith(itemId + '/'));
+                    const matched = ids.some(v => String(v) === targetKey || String(v).startsWith(targetKey + '/'));
                     return !matched;
                 });
             }
 
-            await persistFileTree(projectId);
+            await persistFileTree();
 
             // 远端删除受影响文件（使用统一的删除服务）
             try {
+                const fileDeleteService = getFileDeleteService();
+                let deleteResults = [];
+
+                // 如果是文件夹，执行文件夹删除逻辑（删除关联会话 + 静态目录）
+                if (node.type === 'folder') {
+                     console.log('[deleteItem] 检测到文件夹删除，执行文件夹清理逻辑:', targetKey);
+                     // 传入当前的 sessions.value
+                     const folderResult = await fileDeleteService.deleteFolder(targetKey, sessions.value);
+                     
+                     // 手动更新本地 sessions 列表（移除已删除的会话）
+                     if (sessions.value && Array.isArray(sessions.value)) {
+                         const folderTags = targetKey.split('/').filter(p => p && p.trim());
+                         const originalLength = sessions.value.length;
+                         sessions.value = sessions.value.filter(s => {
+                             const sessionTags = s.tags || [];
+                             if (sessionTags.length < folderTags.length) return true;
+                             for (let i = 0; i < folderTags.length; i++) {
+                                 if (String(sessionTags[i]) !== String(folderTags[i])) return true;
+                             }
+                             return false;
+                         });
+                         console.log('[deleteItem] 本地会话列表已更新，移除:', originalLength - sessions.value.length, '个会话');
+                     }
+                     
+                     console.log('[deleteItem] 文件夹删除结果:', folderResult);
+                }
+
                 const affected = prevFiles.filter(f => {
                     const ids = [f.key, f.path].filter(Boolean);
-                    return ids.some(v => String(v) === itemId || String(v).startsWith(itemId + '/'));
-                }).map(f => {
-                    // 确保每个文件对象都有 projectId
-                    if (!f.projectId && project) {
-                        return { ...f, projectId: project };
-                    }
-                    return f;
+                    return ids.some(v => String(v) === targetKey || String(v).startsWith(targetKey + '/'));
                 });
                 
-                console.log('[deleteItem] 开始删除，受影响文件数:', affected.length, '项目ID:', project);
-                console.log('[deleteItem] 受影响文件详情:', affected.map(f => ({
-                    key: f.key,
-                    _id: f._id,
-                    projectId: f.projectId || project
+                // 确保当前删除的节点（如果是文件）也包含在删除列表中，即使用户没有打开它
+                // 仅当是单个文件删除时需要这样做（文件夹删除已由 deleteFolder 处理）
+                let filesToDelete = [...affected];
+                if (node.type !== 'folder') {
+                    const isAlreadyAffected = filesToDelete.some(f => {
+                        const ids = [f.key, f.path].filter(Boolean);
+                        return ids.some(v => String(v) === targetKey);
+                    });
+                    
+                    if (!isAlreadyAffected) {
+                         console.log('[deleteItem] 目标文件未打开，添加到删除队列:', targetKey);
+                         filesToDelete.push({
+                             key: targetKey,
+                             path: targetKey,
+                             type: 'file',
+                             // 模拟文件对象结构，确保 FileDeleteService 能识别
+                             data: { key: targetKey, path: targetKey }
+                         });
+                    }
+                }
+
+                // 尝试为待删除文件匹配正确的会话Key
+                if (sessions.value && Array.isArray(sessions.value)) {
+                    filesToDelete = filesToDelete.map(f => {
+                         const fPath = f.path || f.key;
+                         if (!fPath) return f;
+                         
+                         // 查找匹配的会话
+                         const fName = fPath.split('/').pop();
+                         const fTags = fPath.split('/').slice(0, -1).filter(Boolean);
+                         
+                         const session = sessions.value.find(s => {
+                             const sName = s.title || s.pageTitle;
+                             const sTags = s.tags || [];
+                             
+                             if (sName !== fName) return false;
+                             if (sTags.length !== fTags.length) return false;
+                             for (let i = 0; i < sTags.length; i++) {
+                                 if (String(sTags[i]) !== String(fTags[i])) return false;
+                             }
+                             return true;
+                         });
+                         
+                         if (session) {
+                             console.log(`[deleteItem] 为文件 ${fPath} 找到对应会话Key: ${fPath}`);
+                             return { ...f, sessionKey: fPath, path: fPath };
+                         }
+                         return f;
+                    });
+                }
+                
+                console.log('[deleteItem] 开始删除文件会话，受影响文件数:', filesToDelete.length);
+                console.log('[deleteItem] 受影响文件详情:', filesToDelete.map(f => ({
+                    key: f.key || f.path
                 })));
                 
                 // 使用统一的文件删除服务
-                const fileDeleteService = getFileDeleteService();
-                const deleteResults = await fileDeleteService.deleteFiles(affected, project);
+                deleteResults = await fileDeleteService.deleteFiles(filesToDelete);
+                
+                // 手动更新本地 sessions 列表（移除已删除的文件会话）
+                if (sessions.value && Array.isArray(sessions.value) && filesToDelete.length > 0) {
+                     const deletedFileKeys = filesToDelete.map(f => f.key || f.path).filter(Boolean);
+                     if (deletedFileKeys.length > 0) {
+                         // 将文件路径转换为 session keys
+                         const deletedSessionKeys = deletedFileKeys.map(k => sessionSync.generateSessionKey(k));
+                         console.log('[deleteItem] 待删除会话Keys:', deletedSessionKeys);
+                         
+                         const originalLength = sessions.value.length;
+                         sessions.value = sessions.value.filter(s => !deletedSessionKeys.includes(s.key) && !deletedSessionKeys.includes(s.id));
+                         console.log('[deleteItem] 本地会话列表已更新，移除:', originalLength - sessions.value.length, '个文件会话');
+                     }
+                }
                 
                 // 统计删除结果
                 const mongoSuccessCount = deleteResults.filter(r => r.mongoSuccess).length;
@@ -844,6 +1028,9 @@ export const createStore = () => {
                 if (failedCount > 0) {
                     console.warn('[deleteItem] 部分文件删除失败，详情:', deleteResults.filter(r => !r.mongoSuccess && !r.sessionSuccess));
                 }
+
+                // 刷新会话列表
+                await loadSessions(true);
             } catch (e) {
                 console.error('[deleteItem] 远端文件删除失败:', e?.message, e?.stack);
                 throw e; // 重新抛出错误，让上层处理
@@ -874,8 +1061,6 @@ export const createStore = () => {
                     name: name,
                     content: content,
                     type: 'file',
-                    projectId: node.projectId || 'global',
-                    _id: node._id || node.key,
                     createdAt: node.createdAt || node.createdTime,
                     updatedAt: node.updatedAt || node.updatedTime
                 });
@@ -933,7 +1118,7 @@ export const createStore = () => {
             
             // 如果是文件节点，检查是否匹配
             if (node.type === 'file' || (node.type !== 'folder' && !node.children)) {
-                if (node.key === targetKey || node._id === targetKey) {
+                if (node.key === targetKey) {
                     return node;
                 }
             }
@@ -962,7 +1147,7 @@ export const createStore = () => {
     };
 
     /**
-     * 按需加载单个文件（从文件树中查找，不再调用 projectFiles 接口）
+     * 按需加载单个文件
      */
     const loadFileByKey = async (targetKey = null) => {
         return safeExecuteAsync(async () => {
@@ -983,7 +1168,7 @@ export const createStore = () => {
             // 如果没找到，尝试从已加载的文件列表中查找
             if (!foundNode && files.value && files.value.length > 0) {
                 console.log('[loadFileByKey] 在文件树中未找到，尝试从文件列表中查找');
-                foundNode = files.value.find(f => f.key === key || f._id === key);
+                foundNode = files.value.find(f => f.key === key);
             }
             
             if (!foundNode) {
@@ -1083,9 +1268,7 @@ export const createStore = () => {
             key: key,
             path, 
             name, 
-            content,
-            // 保留原始的唯一标识符
-            _id: item?._id || item?.key
+            content
         };
 
         // 合并/去重更新到 files 列表
@@ -1289,13 +1472,9 @@ export const createStore = () => {
         return safeExecuteAsync(async () => {
             console.log('[addCommenter] 正在添加评论者...', { commenterData });
             
-            const project = 'global';
-            
-            // 构建添加URL
             // 构建标准服务接口 payload
             const requestData = {
-                ...commenterData,
-                projectId: project
+                ...commenterData
             };
             
             console.log('[addCommenter] 调用服务接口:', requestData);
@@ -1328,7 +1507,7 @@ export const createStore = () => {
                 if (response && response.status === 200) {
                     console.log('[addCommenter] 评论者添加成功');
                     // 重新加载评论者列表
-                    await loadCommenters(project);
+                    await loadCommenters();
                     return response.data;
                 } else {
                     const errorMsg = response?.message || response?.error || '服务器返回错误';
@@ -1376,8 +1555,6 @@ export const createStore = () => {
         return safeExecuteAsync(async () => {
             console.log('[updateCommenter] 正在更新评论者...', { commenterKey, commenterData });
             
-            const project = 'global';
-            
             // 构建更新URL
             // let url = `${window.API_URL}/mongodb/?cname=commenters`;
             
@@ -1388,8 +1565,7 @@ export const createStore = () => {
                     cname: 'commenters',
                     key: commenterKey,
                     data: {
-                        ...commenterData,
-                        projectId: project
+                        ...commenterData
                     }
                 }
             };
@@ -1405,7 +1581,7 @@ export const createStore = () => {
                 if (response && response.status === 200) {
                     console.log('[updateCommenter] 评论者更新成功');
                     // 重新加载评论者列表
-                    await loadCommenters(project);
+                    await loadCommenters();
                     return response.data;
                 } else {
                     throw new Error('更新评论者失败: ' + (response?.message || '未知错误'));
@@ -1431,8 +1607,6 @@ export const createStore = () => {
                 throw new Error('评论者key不能为空');
             }
             
-            const project = 'global';
-            
             // 构建删除请求
             const deletePayload = {
                 module_name: SERVICE_MODULE,
@@ -1454,7 +1628,7 @@ export const createStore = () => {
                 if (response && response.status === 200) {
                     console.log('[deleteCommenter] 评论者删除成功');
                     // 重新加载评论者列表
-                    await loadCommenters(project);
+                    await loadCommenters();
                     return response.data;
                 } else {
                     throw new Error('删除评论者失败: ' + (response?.message || '未知错误'));
@@ -1478,13 +1652,19 @@ export const createStore = () => {
     };
 
     /**
+     * 设置选中的评论者ID列表 (兼容旧名称)
+     */
+    const setSelectedCommenterIds = (ids) => {
+        setSelectedCommenterKeys(ids);
+    };
+
+    /**
      * 统一的Key规范化函数（使用统一的规范化工具）
      * @param {string} key - 文件Key
-     * @param {string} projectId - 项目ID（可选）
      * @returns {string} 规范化后的Key
      */
-    const normalizeKey = (key, projectId) => {
-        return normalizeFilePath(key, projectId || 'global');
+    const normalizeKey = (key) => {
+        return normalizeFilePath(key);
     };
 
     /**
@@ -1671,8 +1851,8 @@ export const createStore = () => {
                     console.warn('[loadSessions] 返回数据不是数组格式:', sessionList);
                     sessionList = [];
                 }
-                sessionList = sessionList.filter(s => s && s.key); // 过滤无效会话
-                
+                sessionList = sessionList.filter(s => s);
+
                 // 规范化 tags 字段
                 sessionList.forEach(s => {
                     if (!s.tags) {
@@ -1703,6 +1883,23 @@ export const createStore = () => {
                         // console.log('[loadSessions] 为无标签会话添加默认项目:', s.title);
                     }
                 });
+
+                sessionList.forEach(s => {
+                    const rawKey = s.key ? String(s.key) : '';
+                    const badKey = !rawKey || /^[0-9a-fA-F]{24}$/.test(rawKey);
+                    if (badKey) {
+                        const title = s.title || s.pageTitle;
+                        const tags = Array.isArray(s.tags) ? s.tags : [];
+                        const pathTags = tags.filter(t => t && t !== 'default' && t !== 'Default');
+                        if (title) {
+                            s.key = pathTags.length > 0 ? `${pathTags.join('/')}/${title}` : String(title);
+                        }
+                    } else {
+                        s.key = rawKey;
+                    }
+                });
+
+                sessionList = sessionList.filter(s => s && s.key);
                 
                 console.log('[loadSessions] 处理后会话示例:', sessionList[0]);
                 
@@ -1843,8 +2040,8 @@ export const createStore = () => {
         addComment,
         toggleSidebar,
         toggleComments,
+        // selectedProject, // Restored for compatibility
         // loadProjects,
-        // setProjects,
         // setSelectedProject,
         setNewComment,
         refreshData,
@@ -1857,9 +2054,6 @@ export const createStore = () => {
         loadSessionSidebarWidth
     };
 };
-
-
-
 
 
 

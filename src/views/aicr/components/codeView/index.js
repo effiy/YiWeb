@@ -26,10 +26,6 @@ const componentOptions = {
                 type: Array,
                 default: () => []
             },
-            projectId: {
-                type: String,
-                default: ''
-            },
             hideJumpButton: {
                 type: Boolean,
                 default: false
@@ -310,7 +306,7 @@ const componentOptions = {
                                     }
                                     result[lineNum].push({
                                         ...comment,
-                                        key: comment.key || comment.id || comment._id || `comment_${Date.now()}_${Math.random()}`,
+                                        key: comment.key || comment.id || `comment_${Date.now()}_${Math.random()}`,
                                         // 标记这是否为评论的起始行
                                         isStartLine: lineNum === start,
                                         // 标记这是否为评论的结束行
@@ -1671,34 +1667,16 @@ const componentOptions = {
                     
                     console.log('[jumpToCodePage] 当前文件信息:', this.file);
                     
-                    // 获取项目ID（从多个来源尝试获取）
-                    let projectId = '';
-                    if (this.$parent?.selectedProject) {
-                        projectId = this.$parent.selectedProject;
-                    } else if (window.aicrStore?.selectedProject?.value) {
-                        projectId = window.aicrStore.selectedProject.value;
-                    } else {
-                        const projectSelectEl = document.getElementById('projectSelect');
-                        if (projectSelectEl?.value) {
-                            projectId = projectSelectEl.value;
-                        }
-                    }
-                    
-                    console.log('[jumpToCodePage] 父组件信息:', {
-                        selectedProject: projectId
-                    });
-                    
                     // 构建跳转URL，传递文件信息
                     const params = new URLSearchParams({
-                        key: this.file.key || this.file.id || this.file.name || this.file.path,
+                        key: this.file.key || this.file.name || this.file.path,
                         fileName: this.file.name || this.file.path || '',
-                        filePath: this.file.path || this.file.name || '',
-                        project: projectId || ''
+                        filePath: this.file.path || this.file.name || ''
                     });
                     
                     // 如果文件有 key 信息，也传递过去（用于精确查找）
-                    if (this.file.key || this.file._id) {
-                        params.set('fileKey', this.file.key || this.file._id);
+                    if (this.file.key) {
+                        params.set('fileKey', this.file.key);
                     }
                     
                     const jumpUrl = `/src/views/aicr/aicr-code.html?${params.toString()}`;
@@ -1749,20 +1727,17 @@ const componentOptions = {
                 this.editSaving = true;
                 this.saveError = '';
                 try {
-                    // 获取项目 - 优先使用 props，然后回退到其他方式
-                    const projectId = this.projectId || (window.aicrStore && window.aicrStore.selectedProject && window.aicrStore.selectedProject.value) || (document.getElementById('projectSelect')?.value) || '';
-                    const key = this.file.key || this.file.id || this.file.path || this.file.name;
+                    // 获取文件key
+                    const key = this.file.key || this.file.path || this.file.name;
                     
                     console.log('[saveEditedFile] 保存参数:', {
-                        projectId,
                         key,
-                        propsProjectId: this.projectId,
                         file: this.file
                     });
                     
-                    if (!projectId || !key) {
-                        this.saveError = '缺少项目/文件标识，无法保存';
-                        console.error('[saveEditedFile] 缺少必要参数:', { projectId, key });
+                    if (!key) {
+                        this.saveError = '缺少文件标识，无法保存';
+                        console.error('[saveEditedFile] 缺少必要参数:', { key });
                         return;
                     }
                     // 更新本地 file 对象
@@ -1781,14 +1756,8 @@ const componentOptions = {
                         };
                         
                         // 强制立即同步并更新
-                        const result = await sessionSync.syncFileToSession(updatedFile, projectId, true, true);
+                        const result = await sessionSync.syncFileToSession(updatedFile, true, true);
                         console.log('[saveEditedFile] 文件已保存到会话:', key, result);
-                        
-                        // 如果返回了新的 key/_id，更新本地对象
-                        if (result && result.data && result.data._id) {
-                            this.file.key = result.data._id;
-                            this.file._id = result.data._id;
-                        }
                     } catch (syncError) {
                         console.error('[saveEditedFile] 保存到会话失败:', syncError);
                         throw new Error('保存到会话失败: ' + (syncError.message || '未知错误'));
@@ -1798,7 +1767,7 @@ const componentOptions = {
                         const store = window.aicrStore;
                         if (store && Array.isArray(store.files?.value)) {
                             const idx = store.files.value.findIndex(f => {
-                                return f.key === key || f._id === key;
+                                return f.key === key;
                             });
                             if (idx >= 0) {
                                 const prev = store.files.value[idx];
@@ -1815,8 +1784,7 @@ const componentOptions = {
                     this.$emit('file-saved', {
                         fileKey: key,
                         content: content,
-                        lastModified: new Date().toISOString(),
-                        projectId: projectId
+                        lastModified: new Date().toISOString()
                     });
                     
                     // 显示保存成功消息
@@ -3358,14 +3326,6 @@ const componentOptions = {
                     const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                     showGlobalLoading('正在提交评论...');
 
-                    // 获取项目信息
-                    const projectSelect = document.getElementById('projectSelect');
-                    let projectId = null;
-                    
-                    if (projectSelect) {
-                        projectId = projectSelect.value;
-                    }
-
                     // 验证引用代码
                     console.log('[CodeView] 构建评论数据，引用文本:', this.lastSelectionText);
                     console.log('[CodeView] 构建评论数据，引用范围:', this.lastSelectionRange);
@@ -3377,7 +3337,6 @@ const componentOptions = {
                         text: this.lastSelectionText || '', // 引用的代码文本存储在 text 中
                         rangeInfo: this.lastSelectionRange, // 用于评论定位（不在界面显示行数）
                         fileKey: this.file ? (this.file.key || this.file.id || this.file.path || this.file.name) : undefined,
-                        projectId,
                         author: '手动评论',
                         fromSystem: null, // 手动评论没有评论者系统
                         status: 'pending',
@@ -3688,10 +3647,6 @@ const componentOptions = {
                     const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                     showGlobalLoading('正在保存评论...');
                     
-                    // 获取项目信息
-                    const projectSelect = document.getElementById('projectSelect');
-                    const projectId = projectSelect ? projectSelect.value : null;
-                    
                     // 构建更新数据
                     const processedContentValue = this.editingCommentContentIsJson ? JSON.parse(processedContent) : processedContent;
                     // 如果是手动评论，保持author为"手动评论"
@@ -3709,7 +3664,6 @@ const componentOptions = {
                         status: this.editingCommentStatus,
                         rangeInfo: originalRangeInfo,
                         timestamp: new Date(this.editingCommentTimestamp).getTime(), // 转换为毫秒数
-                        projectId,
                         fileKey: this.currentCommentDetail.fileKey
                     };
                     
@@ -3746,8 +3700,7 @@ const componentOptions = {
                     // 触发重新加载评论
                     this.$emit('reload-comments', { 
                         forceReload: true, 
-                        fileKey: this.currentCommentDetail.fileKey,
-                        projectId
+                        fileKey: this.currentCommentDetail.fileKey
                     });
                     
                     hideGlobalLoading();
@@ -3789,7 +3742,7 @@ const componentOptions = {
                         method_name: 'delete_document',
                         parameters: {
                             cname: 'comments',
-                            id: commentKey
+                            key: commentKey
                         }
                     });
                     
@@ -3847,15 +3800,10 @@ const componentOptions = {
                     const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                     showGlobalLoading('正在更新评论状态...');
                     
-                    // 获取项目信息
-                    const projectSelect = document.getElementById('projectSelect');
-                    const projectId = projectSelect ? projectSelect.value : null;
-                    
                     // 构建更新数据
                     const updateData = {
                         key: commentKey,
-                        status: newStatus,
-                        projectId
+                        status: newStatus
                     };
                     
                     // 调用API更新评论状态
@@ -3883,8 +3831,7 @@ const componentOptions = {
                     // 触发重新加载评论
                     this.$emit('reload-comments', { 
                         forceReload: true, 
-                        fileKey: this.file ? (this.file.key || this.file._id) : null,
-                        projectId
+                        fileKey: this.file ? this.file.key : null
                     });
                     
                     hideGlobalLoading();
@@ -4474,7 +4421,7 @@ const componentOptions = {
                 
                 // 找到要删除的评论
                 const commentToDelete = this.comments.find(comment => 
-                    comment.key === commentKey || comment.id === commentKey || comment._id === commentKey
+                    comment.key === commentKey
                 );
                 
                 if (!commentToDelete) {
@@ -4525,7 +4472,7 @@ const componentOptions = {
                     console.log('[CodeView] 使用全局store加载文件');
                     
                     // 使用文件的key进行精确加载
-                    const fileKey = file.key || file._id;
+                    const fileKey = file.key;
                     
                     if (fileKey) {
                         console.log('[CodeView] 通过store加载文件:', { fileKey });
@@ -4536,7 +4483,7 @@ const componentOptions = {
                                     console.log('[CodeView] 文件加载成功:', loadedFile.name, '内容长度:', loadedFile.content.length);
                                     
                                     // 更新当前文件对象的内容
-                                    if (this.file && (this.file.key === fileKey || this.file._id === fileKey)) {
+                                    if (this.file && (this.file.key === fileKey)) {
                                         // 使用Vue的响应式API强制更新
                                         const originalFile = this.file;
                                         const updatedFile = { ...originalFile, content: loadedFile.content };
@@ -4695,11 +4642,11 @@ const componentOptions = {
                     this.$forceUpdate();
                 },
                 reloadFile: () => {
-                    if (this.file && (this.file.key || this.file._id)) {
+                    if (this.file && this.file.key) {
                         console.log('[CodeView] 重新加载文件:', this.file.name);
                         this.triggerFileLoad(this.file);
                     } else {
-                        console.warn('[CodeView] 无法重新加载文件，缺少key或_id');
+                        console.warn('[CodeView] 无法重新加载文件，缺少key');
                     }
                 },
                 // 测试缩进处理功能
@@ -4977,8 +4924,6 @@ const componentOptions = {
         }));
     }
 })();
-
-
 
 
 

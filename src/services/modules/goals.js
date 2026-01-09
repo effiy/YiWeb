@@ -95,7 +95,7 @@ export const GoalsService = {
             method_name: 'delete_document',
             parameters: {
                 cname: CNAME,
-                id: key
+                key
             }
         };
         return postData(`${window.API_URL}/`, payload);

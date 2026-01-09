@@ -11,13 +11,11 @@
  * - 移除开头的 ./ 和多余的 /
  * - 合并连续的 /
  * - 移除结尾的 /（除非是根路径）
- * - 不包含 projectId 前缀（在存储时统一处理）
  * 
  * @param {string} path - 文件路径或ID
- * @param {string} projectId - 项目ID（可选，用于移除前缀）
  * @returns {string} 规范化后的路径
  */
-export function normalizeFilePath(path, projectId = null) {
+export function normalizeFilePath(path) {
     if (path == null || path === '') return '';
     
     try {
@@ -38,16 +36,6 @@ export function normalizeFilePath(path, projectId = null) {
         // 5. 移除结尾的斜杠（除非是根路径）
         if (s.length > 1 && s.endsWith('/')) {
             s = s.replace(/\/+$/, '');
-        }
-        
-        // 6. 如果提供了 projectId，移除开头的 projectId 前缀
-        if (projectId && s) {
-            const parts = s.split('/').filter(Boolean);
-            // 去除所有开头的 projectId（不区分大小写）
-            while (parts.length > 0 && parts[0].toLowerCase() === projectId.toLowerCase()) {
-                parts.shift();
-            }
-            s = parts.length > 0 ? parts.join('/') : '';
         }
         
         return s;
@@ -85,29 +73,26 @@ export function extractDirPath(path) {
 /**
  * 规范化文件对象，统一字段结构
  * 统一字段规则：
- * - fileId: 规范化后的文件路径（不包含 projectId）
- * - id: 与 fileId 相同
- * - path: 与 fileId 相同
+ * - key: 规范化后的文件路径（主要标识）
+ * - path: 与 key 相同
  * - name: 从路径提取的文件名
- * - projectId: 项目ID
  * - content: 文件内容（字符串）
  * - size: 文件大小（字节数）
  * - type: 'file' 或 'folder'
  * 
  * @param {Object} file - 文件对象（可能包含各种字段格式）
- * @param {string} projectId - 项目ID
  * @returns {Object} 规范化后的文件对象
  */
-export function normalizeFileObject(file, projectId) {
+export function normalizeFileObject(file) {
     if (!file || typeof file !== 'object') {
         return null;
     }
     
-    // 提取原始路径（支持多种字段）
-    const rawPath = file.fileId || file.id || file.path || '';
+    // 提取原始路径（优先使用 key，兼容旧字段）
+    const rawPath = file.key || file.path || file.fileId || file.id || '';
     
     // 规范化路径
-    const normalizedPath = normalizeFilePath(rawPath, projectId);
+    const normalizedPath = normalizeFilePath(rawPath);
     
     if (!normalizedPath) {
         console.warn('[normalizeFileObject] 无法提取有效路径:', file);
@@ -141,15 +126,11 @@ export function normalizeFileObject(file, projectId) {
         
         // 基本信息
         name: fileName || normalizedPath,
-        projectId: projectId || file.projectId || '',
         type: fileType,
         
         // 内容字段
         content: file.content || '',
         size: fileSize,
-        
-        // 保留原始唯一标识（如果存在）
-        _id: file._id || file.key || null,
         
         // 时间戳
         createdAt: file.createdAt || file.createdTime || Date.now(),
@@ -163,17 +144,16 @@ export function normalizeFileObject(file, projectId) {
 /**
  * 规范化文件树节点
  * 统一字段规则：
- * - key: 节点路径（包含 projectId）
+ * - key: 节点路径
  * - name: 节点名称
  * - type: 'file' 或 'folder'
- * - path: 与 key 相同（包含 projectId）
+ * - path: 与 key 相同
  * - children: 子节点数组（仅文件夹有）
  * 
  * @param {Object} node - 文件树节点
- * @param {string} projectId - 项目ID
  * @returns {Object} 规范化后的节点
  */
-export function normalizeTreeNode(node, projectId) {
+export function normalizeTreeNode(node) {
     if (!node || typeof node !== 'object') {
         return null;
     }
@@ -181,23 +161,14 @@ export function normalizeTreeNode(node, projectId) {
     // 提取原始路径
     const rawPath = node.key || node.id || node.path || node.fileId || '';
     
-    // 规范化路径（移除 projectId 前缀，以便后续统一添加）
-    const normalizedPath = normalizeFilePath(rawPath, projectId);
+    // 规范化路径
+    const normalizedPath = normalizeFilePath(rawPath);
     
-    // 构建包含 projectId 的完整路径
+    // 构建完整路径
     let fullPath = normalizedPath;
-    if (projectId) {
-        if (!normalizedPath || normalizedPath.trim() === '') {
-            // 如果路径为空，使用 projectId 作为根节点
-            fullPath = projectId;
-        } else {
-            // 规范化后的路径不包含 projectId，统一添加 projectId 前缀
-            fullPath = `${projectId}/${normalizedPath}`;
-        }
-    }
     
-    // 提取名称（使用规范化后的路径，不包含 projectId）
-    const nodeName = node.name || extractFileName(normalizedPath) || (normalizedPath === projectId || !normalizedPath ? projectId : normalizedPath);
+    // 提取名称
+    const nodeName = node.name || extractFileName(normalizedPath) || normalizedPath;
     
     // 规范化节点
     const normalized = {
@@ -210,7 +181,7 @@ export function normalizeTreeNode(node, projectId) {
     // 如果是文件夹，处理子节点
     if (normalized.type === 'folder' && Array.isArray(node.children)) {
         normalized.children = node.children
-            .map(child => normalizeTreeNode(child, projectId))
+            .map(child => normalizeTreeNode(child))
             .filter(Boolean);
     } else if (normalized.type === 'file') {
         // 文件节点可以包含额外信息
@@ -226,37 +197,27 @@ export function normalizeTreeNode(node, projectId) {
 }
 
 /**
- * 构建完整的文件路径（包含 projectId）
+ * 构建完整的文件路径
  * 用于存储到数据库或静态文件系统
  * 
- * @param {string} fileKey - 规范化后的文件Key（不包含 projectId）
- * @param {string} projectId - 项目ID
+ * @param {string} fileKey - 规范化后的文件Key
  * @returns {string} 完整的文件路径
  */
-export function buildFullFilePath(fileKey, projectId) {
-    if (!fileKey || !projectId) return fileKey || '';
+export function buildFullFilePath(fileKey) {
+    if (!fileKey) return '';
     
     const normalized = normalizeFilePath(fileKey);
-    if (!normalized) return '';
-    
-    // 确保路径以 projectId 开头
-    if (normalized.startsWith(projectId + '/')) {
-        return normalized;
-    }
-    
-    return `${projectId}/${normalized}`;
+    return normalized || '';
 }
 
 /**
- * 从完整路径提取文件Key（移除 projectId 前缀）
+ * 从完整路径提取文件Key
  * 
- * @param {string} fullPath - 完整路径（可能包含 projectId）
- * @param {string} projectId - 项目ID
- * @returns {string} 文件Key（不包含 projectId）
+ * @param {string} fullPath - 完整路径
+ * @returns {string} 文件Key
  */
-export function extractFileKeyFromFullPath(fullPath, projectId) {
+export function extractFileKeyFromFullPath(fullPath) {
     if (!fullPath) return '';
     
-    return normalizeFilePath(fullPath, projectId);
+    return normalizeFilePath(fullPath);
 }
-

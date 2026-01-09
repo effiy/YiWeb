@@ -234,9 +234,7 @@ const { computed } = Vue;
                         // 通过触发一个自定义事件来通知评论面板可以开始加载
                         setTimeout(() => {
                             window.dispatchEvent(new CustomEvent('projectReady', {
-                                detail: {
-                                    projectId: 'global'
-                                }
+                                detail: {}
                             }));
                             // 版本就绪后，如存在待加载文件或当前选中文件无内容，执行补载
                             try {
@@ -354,7 +352,6 @@ const { computed } = Vue;
                                 logInfo('[代码审查页面] 触发评论面板刷新事件，恢复到显示所有评论');
                                 window.dispatchEvent(new CustomEvent('reloadComments', {
                                 detail: { 
-                                    projectId: 'global', 
                                     key: null,
                                     forceReload: true,
                                     showAllComments: true, // 新增：标记显示所有评论
@@ -411,7 +408,6 @@ const { computed } = Vue;
                     searchQuery: function() { return store.searchQuery ? store.searchQuery.value : ''; },
                     batchMode: function() { return store.batchMode ? store.batchMode.value : false; },
                     selectedKeys: function() { return store.selectedKeys ? store.selectedKeys.value : new Set(); },
-                    selectedProject: function() { return 'global'; },
                     viewMode: function() { return store.viewMode ? store.viewMode.value : 'tree'; }
                 },
                 'comment-panel': {
@@ -441,10 +437,6 @@ const { computed } = Vue;
                     },
                     loading: function() { return store.loading; },
                     error: function() { return store.errorMessage; },
-                    // 传递项目/版本信息
-                    projectId: function() { 
-                        return 'global'; 
-                    },
                     collapsed: function() { return store.commentsCollapsed ? store.commentsCollapsed.value : false; }
                 }
             },
@@ -758,11 +750,11 @@ const { computed } = Vue;
                 },
                 
                 // 处理项目切换
-                handleProjectChange: function(projectId) {
-                    logInfo('[主页面] 收到项目切换事件:', projectId);
+                handleProjectChange: function() {
+                    logInfo('[主页面] 收到项目切换事件（已忽略）');
                     try {
                         const methods = useMethods(store);
-                        methods.handleProjectChange(projectId);
+                        methods.handleProjectChange();
                     } catch (error) {
                         logError('[主页面] 项目切换处理失败:', error);
                     }
@@ -1296,7 +1288,6 @@ function createResizer(sidebarElement, store, type, options) {
     
     return resizer;
 }
-
 
 
 

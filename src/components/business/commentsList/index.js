@@ -77,10 +77,9 @@ const componentOptions = {
                     // 若有文件信息，拼接查询参数以便 AICR 高亮/定位
                     const base = '/src/views/aicr/index.html';
                     const params = new URLSearchParams();
-                    const fileId = comment?.fileId || comment?.fileInfo?.path || comment?.filePath || '';
-                    if (fileId) params.set('fileId', fileId);
+                    const fileKey = comment?.fileKey || comment?.fileId || comment?.fileInfo?.key || comment?.fileInfo?.path || comment?.filePath || '';
+                    if (fileKey) params.set('fileKey', fileKey);
                     // 若后端存有项目/版本，可透传（与 AICR 页面逻辑一致）
-                    if (comment?.projectId) params.set('projectId', comment.projectId);
                     if (comment?.versionId) params.set('versionId', comment.versionId);
                     // 仅透传评论标识，用于目标页在资源加载完后自行查找并高亮
                     const key = comment?.key || comment?.id;

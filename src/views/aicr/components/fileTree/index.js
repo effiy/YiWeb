@@ -482,7 +482,7 @@ const createFileTreeNode = () => {
                     
                     const count = this.comments.filter(comment => {
                         // 兼容不同的文件标识方式，优先使用 key
-                        const commentKey = comment.key || comment.fileId || (comment.fileInfo && (comment.fileInfo.key || comment.fileInfo.fileId));
+                        const commentKey = comment.key || (comment.fileInfo && comment.fileInfo.key);
                         const normalizedCommentKey = normalize(commentKey);
                         return normalizedCommentKey === target;
                     }).length;
@@ -666,10 +666,6 @@ const componentOptions = {
             selectedKeys: {
                 type: [Set, Array],
                 default: () => new Set()
-            },
-            selectedProject: {
-                type: String,
-                default: ''
             },
             viewMode: {
                 type: String,

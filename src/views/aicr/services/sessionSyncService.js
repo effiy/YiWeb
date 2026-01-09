@@ -58,118 +58,34 @@ class SessionSyncService {
     }
 
     /**
-     * 生成会话ID（基于文件路径）
-     * 格式：{projectId}_{filePath}（文件路径中的特殊字符替换为下划线）
+     * 生成会话ID（直接使用文件路径作为Key）
      * @param {string} filePath - 文件路径
-     * @param {string} projectId - 项目ID
-     * @returns {string} 会话ID
+     * @returns {string} 会话Key
      */
-    generateSessionKey(filePath, projectId) {
+    generateSessionKey(filePath) {
         if (!filePath) {
-            return `${projectId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         }
-        
-        if (!projectId) {
-            console.warn('[SessionSync] 项目ID为空，使用默认值');
-            projectId = 'default';
-        }
-        
-        // 提取文件扩展名
-        let pathWithoutExt = filePath;
-        let fileExt = '';
-        const lastDotIndex = filePath.lastIndexOf('.');
-        if (lastDotIndex > 0) {
-            pathWithoutExt = filePath.substring(0, lastDotIndex);
-            fileExt = filePath.substring(lastDotIndex + 1);
-        }
-        
-        // 如果文件路径以项目ID开头，去除项目ID前缀（避免重复）
-        // 例如：knowledge/constructing/test.md -> constructing/test.md
-        if (pathWithoutExt.startsWith(`${projectId}/`)) {
-            pathWithoutExt = pathWithoutExt.substring(projectId.length + 1);
-        } else if (pathWithoutExt.startsWith(projectId) && pathWithoutExt.length > projectId.length) {
-            const nextChar = pathWithoutExt[projectId.length];
-            if (nextChar === '/' || nextChar === '_') {
-                pathWithoutExt = pathWithoutExt.substring(projectId.length).replace(/^[\/_]+/, '');
-            }
-        }
-        
-        // 规范化文件路径：替换特殊字符为下划线，但保留路径结构
-        let normalizedPath = pathWithoutExt
-            .replace(/[^a-zA-Z0-9\/]/g, '_')  // 替换特殊字符
-            .replace(/\/+/g, '_')             // 将斜杠替换为下划线
-            .replace(/^_+|_+$/g, '')          // 移除首尾下划线
-            .replace(/_+/g, '_');             // 合并连续下划线
-        
-        // 如果有扩展名，添加到末尾（用下划线分隔）
-        if (fileExt) {
-            normalizedPath = `${normalizedPath}_${fileExt}`;
-        }
-        
-        return `${projectId}_${normalizedPath}`;
+        return filePath;
     }
 
     /**
-     * 从会话ID提取文件路径（反向操作）
-     * @param {string} sessionKey - 会话ID
-     * @param {string} projectId - 项目ID
+     * 从会话ID提取文件路径（直接返回Key）
+     * @param {string} sessionKey - 会话Key
      * @returns {string|null} 文件路径
      */
-    extractFilePathFromSessionKey(sessionKey, projectId) {
-        if (!sessionKey || !projectId) return null;
-        
-        const prefix = `${projectId}_`;
-        if (!sessionKey.startsWith(prefix)) return null;
-        
-        let pathPart = sessionKey.substring(prefix.length);
-        
-        // 处理扩展名（格式：path_md -> path.md）
-        let fileExt = '';
-        const lastUnderscoreIndex = pathPart.lastIndexOf('_');
-        if (lastUnderscoreIndex > 0) {
-            const possibleExt = pathPart.substring(lastUnderscoreIndex + 1);
-            // 检查最后一部分是否是扩展名（通常是 1-5 个字符的字母数字）
-            if (possibleExt.length <= 5 && /^[a-zA-Z0-9]+$/.test(possibleExt)) {
-                pathPart = pathPart.substring(0, lastUnderscoreIndex);
-                fileExt = possibleExt;
-            }
-        }
-        
-        // 注意：由于文件名中可能包含下划线，我们无法准确区分哪些下划线是路径分隔符
-        // 因此，我们保持下划线不变，将其作为文件名的一部分
-        // 这样，如果原始路径是 knowledge/constructing/codereview_test.md
-        // 解析后仍然是 knowledge/constructing/codereview_test.md（正确）
-        // 但如果原始路径是 knowledge/constructing/codereview/test.md
-        // 解析后会变成 knowledge/constructing/codereview_test.md（错误，但这是无法避免的）
-        
-        // 保持下划线不变，不转换为斜杠
-        let filePath = pathPart;
-        
-        // 添加扩展名
-        if (fileExt) {
-            filePath = `${filePath}.${fileExt}`;
-        } else if (!filePath.endsWith('.md')) {
-            // 如果没有扩展名，默认添加 .md
-            filePath = `${filePath}.md`;
-        }
-        
-        // 确保文件路径以项目ID开头
-        if (!filePath.startsWith(`${projectId}/`)) {
-            filePath = `${projectId}/${filePath}`;
-        }
-        
-        return filePath;
+    extractFilePathFromSessionKey(sessionKey) {
+        return sessionKey || null;
     }
 
     /**
      * 将文件转换为会话数据（统一格式）
      * @param {Object} file - 文件对象
-     * @param {string} projectId - 项目ID
      * @returns {Object} 会话数据（符合 YiPet 格式）
      */
-    fileToSession(file, projectId) {
+    fileToSession(file) {
         // 使用统一的字段规范化工具
-        const normalizedFile = normalizeFileObject(file, projectId);
+        const normalizedFile = normalizeFileObject(file);
         if (!normalizedFile) {
             console.warn('[fileToSession] 无法规范化文件对象:', file);
             return null;
@@ -178,11 +94,11 @@ class SessionSyncService {
         const filePath = normalizedFile.fileKey || normalizedFile.path || '';
         const fileName = extractFileName(filePath);
         let tags = this.extractTagsFromPath(filePath);
-        const sessionKey = this.generateSessionKey(filePath, projectId);
+        const sessionKey = this.generateSessionKey(filePath);
         
-        // 如果标签为空，使用项目ID作为目录名（标签）
+        // 如果标签为空，使用默认标签
         if (!Array.isArray(tags) || tags.length === 0) {
-            tags = projectId ? [projectId] : [];
+            tags = ['default'];
         }
         
         const now = Date.now();
@@ -199,10 +115,10 @@ class SessionSyncService {
             url: uniqueUrl,
             title: fileName,
             pageTitle: fileName,
-            pageDescription: `文件：${projectId/filePath}`,
+            pageDescription: `文件：${filePath}`,
             pageContent: String(normalizedFile.content || ''),
             messages: [], // 消息将从评论中同步
-            tags: [projectId].concat(tags),
+            tags: tags,
             isFavorite: false,
             createdAt: createdAt,
             updatedAt: updatedAt,
@@ -308,18 +224,18 @@ class SessionSyncService {
     /**
      * 同步文件到会话（创建或更新）
      * @param {Object} file - 文件对象
-     * @param {string} projectId - 项目ID
      * @param {boolean} immediate - 是否立即同步
+     * @param {boolean} forceUpdate - 是否强制更新
      * @returns {Promise<Object>} 同步结果
      */
-    async syncFileToSession(file, projectId, immediate = false, forceUpdate = false) {
+    async syncFileToSession(file, immediate = false, forceUpdate = false) {
         return safeExecuteAsync(async () => {
             if (!this.syncEnabled) {
                 console.log('[SessionSync] 同步已禁用，跳过文件同步');
                 return null;
             }
 
-            const sessionData = this.fileToSession(file, projectId);
+            const sessionData = this.fileToSession(file);
             if (!sessionData) {
                 console.warn('[SessionSync] 无法创建会话数据，跳过同步');
                 return { error: '无法创建会话数据' };
@@ -348,7 +264,7 @@ class SessionSyncService {
                 // 如果是更新，saveSession 需要处理 update_document
                 // 现有的 saveSession 可能只处理 create?
                 // 让我们检查 saveSession 实现
-                // 假设 saveSession 能够处理带有 key/_id 的更新
+                // 假设 saveSession 能够处理带有 key 的更新
                 return await this.saveSession(sessionData);
             } else {
                 // 加入同步队列
@@ -363,11 +279,10 @@ class SessionSyncService {
      * 同步评论到会话消息
      * @param {Object} comment - 评论对象
      * @param {string} filePath - 文件路径
-     * @param {string} projectId - 项目ID
      * @param {boolean} immediate - 是否立即同步
      * @returns {Promise<Object>} 同步结果
      */
-    async syncCommentToMessage(comment, filePath, projectId, immediate = false) {
+    async syncCommentToMessage(comment, filePath, immediate = false) {
         return safeExecuteAsync(async () => {
             if (!this.syncEnabled) {
                 console.log('[SessionSync] 同步已禁用，跳过评论同步');
@@ -375,7 +290,7 @@ class SessionSyncService {
             }
 
             // 获取或创建对应的会话
-            const sessionKey = this.generateSessionKey(filePath, projectId);
+            const sessionKey = this.generateSessionKey(filePath);
             let session = await this.getSession(sessionKey);
             
             if (!session) {
@@ -420,9 +335,9 @@ class SessionSyncService {
                 return await this.saveSession(session);
             } else {
                 // 加入同步队列
-                this.syncQueue.set(sessionId, session);
+                this.syncQueue.set(sessionKey, session);
                 this.startSyncTimer();
-                return { queued: true, sessionId };
+                return { queued: true, sessionKey };
             }
         }, '评论同步到消息');
     }
@@ -431,13 +346,12 @@ class SessionSyncService {
      * 删除评论对应的消息
      * @param {string} commentKey - 评论key
      * @param {string} filePath - 文件路径
-     * @param {string} projectId - 项目ID
      * @param {Object} comment - 可选的评论对象（用于内容匹配）
      * @returns {Promise<Object>} 删除结果
      */
-    async deleteCommentMessage(commentKey, filePath, projectId, comment = null) {
+    async deleteCommentMessage(commentKey, filePath, comment = null) {
         return safeExecuteAsync(async () => {
-            const sessionKey = this.generateSessionKey(filePath, projectId);
+            const sessionKey = this.generateSessionKey(filePath);
             const session = await this.getSession(sessionKey);
             
             if (!session) {
@@ -520,6 +434,93 @@ class SessionSyncService {
     }
 
     /**
+     * 删除文件夹关联的所有会话
+     * @param {string} folderPath - 文件夹路径
+     * @param {Array} allSessions - 所有会话列表
+     * @returns {Promise<Object>} 删除结果
+     */
+    async deleteSessionsByFolder(folderPath, allSessions) {
+        return safeExecuteAsync(async () => {
+            if (!folderPath || !Array.isArray(allSessions)) {
+                return { success: false, deletedCount: 0 };
+            }
+
+            console.log(`[SessionSync] 开始删除文件夹关联会话: ${folderPath}`);
+            
+            // 找出所有在该文件夹下的会话
+            // 匹配规则：会话的 tags 包含该文件夹路径序列
+            // 或者简单点：将 path 转换为 tag 数组，检查 session.tags 是否以其开头
+            
+            const targetTags = this.extractTagsFromPath(folderPath + '/dummy'); // Hack to get tags for the folder itself
+            // Wait, extractTagsFromPath('a/b/c') -> ['a', 'b'] if it's a file.
+            // If I pass 'a/b/', it splits to ['a', 'b'].
+            
+            const folderTags = folderPath.split('/').filter(p => p && p.trim());
+            
+            console.log(`[SessionSync] 待匹配文件夹tags:`, folderTags);
+            if (allSessions.length > 0) {
+                console.log(`[SessionSync] 样本会话tags (${allSessions[0].title}):`, allSessions[0].tags);
+            }
+
+            const sessionsToDelete = allSessions.filter(session => {
+                const sessionTags = session.tags || [];
+                if (sessionTags.length < folderTags.length) return false;
+                
+                // 检查 sessionTags 前缀是否匹配 folderTags
+                for (let i = 0; i < folderTags.length; i++) {
+                    if (String(sessionTags[i]) !== String(folderTags[i])) return false;
+                }
+                return true;
+            });
+            
+            console.log(`[SessionSync] 找到 ${sessionsToDelete.length} 个关联会话需要删除`);
+            
+            let deletedCount = 0;
+            const errors = [];
+            
+            // 并行删除
+            const deletePromises = sessionsToDelete.map(async (session) => {
+                try {
+                    let targetKey = session.key;
+                    const isObjectId = !targetKey || /^[0-9a-fA-F]{24}$/.test(String(targetKey));
+                    if (isObjectId) {
+                         const tags = session.tags || [];
+                         const title = session.title || session.pageTitle;
+                         const pathTags = tags.filter(t => t && t !== 'default' && t !== 'Default');
+                         
+                         if (pathTags.length > 0 && title) {
+                             const reconstructedPath = [...pathTags, title].join('/');
+                             console.log(`[SessionSync] 重建会话Key: ${reconstructedPath} (原Key: ${targetKey})`);
+                             targetKey = reconstructedPath;
+                         } else if (title) {
+                             targetKey = title;
+                         }
+                    }
+
+                    const finalKey = targetKey ? String(targetKey) : '';
+                    if (!finalKey || /^[0-9a-fA-F]{24}$/.test(finalKey)) {
+                        throw new Error('会话缺少可用的 key');
+                    }
+                    await this.deleteSession(finalKey);
+                    deletedCount++;
+                } catch (e) {
+                    console.error(`[SessionSync] 删除会话失败: ${session.title}`, e);
+                    errors.push({ key: session.key, error: e.message });
+                }
+            });
+            
+            await Promise.all(deletePromises);
+            
+            return { 
+                success: errors.length === 0, 
+                deletedCount, 
+                totalFound: sessionsToDelete.length,
+                errors 
+            };
+        }, '删除文件夹关联会话');
+    }
+
+    /**
      * 获取会话
      * @param {string} sessionId - 会话ID
      * @returns {Promise<Object|null>} 会话数据
@@ -578,9 +579,10 @@ class SessionSyncService {
         return safeExecuteAsync(async () => {
             try {
                 // 规范化会话数据
-                const normalized = {
-                    id: String(sessionData.id || ''),
-                    url: String(sessionData.url || ''),
+            const normalized = {
+                id: String(sessionData.id || sessionData.key || ''),
+                key: String(sessionData.key || sessionData.id || ''), // 确保 key 字段被保存
+                url: String(sessionData.url || ''),
                     title: String(sessionData.title || sessionData.pageTitle || ''),
                     pageTitle: String(sessionData.pageTitle || sessionData.title || ''),
                     pageDescription: String(sessionData.pageDescription || ''),
@@ -611,7 +613,7 @@ class SessionSyncService {
                         method_name: 'update_document',
                         parameters: {
                             cname: 'sessions',
-                            id: existingSession._id, // 使用内部 _id
+                            id: existingSession.id, // 使用 key
                             data: normalized
                         }
                     };
@@ -658,25 +660,12 @@ class SessionSyncService {
                 // const encodedSessionId = encodeURIComponent(sessionId);
                 // const url = `${this.apiUrl}/session/${encodedSessionId}`;
                 
-                // 查找会话获取内部ID
-                const findUrl = buildServiceUrl('query_documents', {
-                    cname: 'sessions',
-                    filter: { id: sessionId },
-                    limit: 1
-                });
-                const findResp = await getData(findUrl, {}, false);
-                const item = findResp?.data?.list?.[0];
-                
-                if (!item) {
-                     throw new Error('会话不存在');
-                }
-                
                 const payload = {
                     module_name: SERVICE_MODULE,
                     method_name: 'delete_document',
                     parameters: {
                         cname: 'sessions',
-                        id: item._id
+                        key: sessionId // 直接使用传入的 sessionId (即 key)
                     }
                 };
                 
@@ -691,6 +680,25 @@ class SessionSyncService {
                     console.log('[SessionSync] 会话删除成功:', sessionId);
                     return response;
                 } else {
+                    // 如果直接删除失败，尝试先查询获取 key 再删除（兼容旧数据）
+                    console.warn('[SessionSync] 直接删除失败，尝试查找后删除:', sessionId);
+                    const findUrl = buildServiceUrl('query_documents', {
+                        cname: 'sessions',
+                        filter: { id: sessionId },
+                        limit: 1
+                    });
+                    const findResp = await getData(findUrl, {}, false);
+                    const item = findResp?.data?.list?.[0];
+                    
+                    if (item && item.key) {
+                        payload.parameters.key = item.key;
+                        const retryResponse = await postData(`${this.apiUrl}/`, payload);
+                         if (retryResponse && retryResponse.success !== false) {
+                            console.log('[SessionSync] 重试删除成功:', sessionId);
+                            return retryResponse;
+                         }
+                    }
+                    
                     throw new Error(response?.message || '删除会话失败');
                 }
             } catch (error) {
@@ -787,17 +795,10 @@ class SessionSyncService {
     /**
      * 从会话系统加载数据到 aicr（反向同步）
      * 从 YiPet 会话系统加载数据，转换为 aicr 的文件和评论格式
-     * 注意：由于标准格式不包含 _aicr 扩展字段，需要通过会话ID规则匹配
-     * @param {string} projectId - 项目ID
      * @returns {Promise<Object>} 包含文件和评论的数据对象
      */
-    async loadFromSessions(projectId) {
+    async loadFromSessions() {
         return safeExecuteAsync(async () => {
-            if (!projectId) {
-                console.warn('[SessionSync] 项目ID为空，跳过从会话加载');
-                return { files: [], comments: [] };
-            }
-
             try {
                 // 获取所有会话（通过列表接口）
                 const url = buildServiceUrl('query_documents', {
@@ -817,11 +818,8 @@ class SessionSyncService {
                     sessions = response.data.list;
                 }
 
-                // 过滤出属于当前项目的会话（通过会话ID前缀匹配：{projectId}_）
-                const projectSessions = sessions.filter(session => {
-                    const sessionId = String(session.id || '');
-                    return sessionId.startsWith(`${projectId}_`);
-                });
+                // 加载所有会话
+                const projectSessions = sessions;
 
                 console.log(`[SessionSync] 从会话系统加载到 ${projectSessions.length} 个会话`);
 
@@ -832,7 +830,7 @@ class SessionSyncService {
                 for (const session of projectSessions) {
                     // 从会话ID提取文件路径
                     const sessionId = String(session.id || '');
-                    const filePath = this.extractFilePathFromSessionId(sessionId, projectId);
+                    const filePath = this.extractFilePathFromSessionKey(sessionId);
                     
                     if (filePath) {
                         // 转换为文件
@@ -860,7 +858,6 @@ class SessionSyncService {
                                 imageDataUrl: message.imageDataUrl,
                                 // 评论特有字段
                                 fileKey: filePath,
-                                projectId: projectId,
                                 status: 'pending',
                                 // 兼容字段（保留以兼容旧代码）
                                 text: message.content, // content 和 text 保持一致
@@ -899,4 +896,3 @@ export function getSessionSyncService() {
 
 // 导出类（用于测试）
 export { SessionSyncService };
-

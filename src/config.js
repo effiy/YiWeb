@@ -1,6 +1,6 @@
 /**
  * YiWeb Configuration
- * 
+ *
  * Supports environment switching (local/prod) via URL params or localStorage.
  * Exports an ESM config object while maintaining backward compatibility with window globals.
  */
@@ -16,17 +16,17 @@ const envStored = getStorage('env');
 
 let ENV = envParam || envStored || ((typeof location !== 'undefined' && isLocalHost(location.hostname)) ? 'local' : 'prod');
 
-ENV = 'prod'
+ENV = 'local'
 
 // --- Configuration Definitions ---
 const ENDPOINTS = {
-  local: { 
-    DATA_URL: 'http://localhost:9000', 
-    API_URL: 'http://localhost:8000' 
+  local: {
+    DATA_URL: 'http://localhost:9000',
+    API_URL: 'http://localhost:8000'
   },
-  prod: { 
-    DATA_URL: 'https://data.effiy.cn', 
-    API_URL: 'https://api.effiy.cn' 
+  prod: {
+    DATA_URL: 'https://data.effiy.cn',
+    API_URL: 'https://api.effiy.cn'
   }
 };
 
@@ -49,7 +49,7 @@ export const config = {
   debug: debug,
   dataUrl: normalize(currentEndpoints.DATA_URL),
   apiUrl: normalize(currentEndpoints.API_URL),
-  
+
   /**
    * Switch environment
    * @param {string} name - 'local' or 'prod'
@@ -93,12 +93,12 @@ if (typeof window !== 'undefined') {
     DATA_URL: config.dataUrl,
     API_URL: config.apiUrl
   };
-  
+
   window.setEnv = config.setEnv;
   window.getEnv = () => config.env;
   window.buildApiUrl = buildApiUrl;
   window.buildDataUrl = buildDataUrl;
-  
+
   if (config.debug) {
     console.info('[YiWeb Config] Loaded:', window.__ENV__);
   }

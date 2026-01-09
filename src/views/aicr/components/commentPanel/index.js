@@ -94,10 +94,6 @@ const componentOptions = {
                 type: String,
                 default: ''
             },
-            projectId: {
-                type: String,
-                default: ''
-            },
             versionId: {
                 type: String,
                 default: ''
@@ -604,10 +600,7 @@ const componentOptions = {
                             return;
                         }
                         
-                        // 获取当前项目信息
-                        const projectId = 'global';
-                        
-                        console.log('[CommentPanel] 加载评论者数据，项目ID:', projectId);
+                        console.log('[CommentPanel] 加载评论者数据');
                         
                         const commenters = await window.aicrStore.loadCommenters();
                         this.internalCommenters = commenters || [];
@@ -734,7 +727,6 @@ const componentOptions = {
                             text,
                             rangeInfo: {},
                             fileKey: this.fileKey || (this.file && (this.file.key || this.file.path || this.file.name)),
-                            projectId: null,
                             author: commenter.name || commenter.author || 'AI评论者',
                             status: 'pending',
                             createdTime: new Date().toISOString(),
@@ -754,7 +746,6 @@ const componentOptions = {
                                     if (alt) commentObj.content = String(alt);
                                 }
                                 commentObj.fileKey = commentObj.fileKey || fromUserObj.fileKey;
-                                commentObj.projectId = commentObj.projectId || fromUserObj.projectId;
                                 commentObj.author = commentObj.author || fromUserObj.author;
                                 commentObj.status = commentObj.status || 'pending';
                                 
@@ -985,9 +976,6 @@ const componentOptions = {
                     if (this.editingSaving) return;
                     this.editingSaving = true;
 
-                    // 获取项目/版本信息（与面板其他接口保持一致）
-                    let projectId = 'global';
-
                     // 组装URL
                     // let url = `${window.API_URL}/mongodb/?cname=comments`; // Deprecated
 
@@ -1003,7 +991,6 @@ const componentOptions = {
                         let payload = {
                             key: this.editingComment.key,
                             author: finalAuthor,
-                            projectId: projectId,
                             content: newContent,
                             text: newContent, // 确保 text 与 content 保持一致
                             rangeInfo: originalRangeInfo,
@@ -1045,7 +1032,7 @@ const componentOptions = {
                         // 同步更新会话消息
                         try {
                             const fileKey = this.file?.fileKey || this.file?.key || this.file?.path;
-                            if (fileKey && projectId) {
+                            if (fileKey) {
                                 const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                                 const sessionSync = getSessionSyncService();
                                 const updatedComment = window.aicrStore && window.aicrStore.normalizeComment
@@ -1061,7 +1048,7 @@ const componentOptions = {
                                         fileKey: fileKey,
                                         key: this.editingComment.key
                                     };
-                                await sessionSync.syncCommentToMessage(updatedComment, fileKey, projectId, false);
+                                await sessionSync.syncCommentToMessage(updatedComment, fileKey, false);
                                 console.log('[CommentPanel] 会话消息已同步更新');
                             }
                         } catch (syncError) {
@@ -1420,9 +1407,6 @@ const componentOptions = {
                 try {
                     // 使用store中的API保存评论者
                     if (window.aicrStore) {
-                        // 获取当前项目信息
-                        // const projectId = 'global';
-                        
                         if (this.editingCommenter.key) {
                             // 更新现有评论者
                             await window.aicrStore.updateCommenter(this.editingCommenter.key, this.editingCommenter);
@@ -1496,9 +1480,6 @@ const componentOptions = {
                 try {
                     // 使用store中的API删除评论者
                     if (window.aicrStore && commenter.key) {
-                        // 获取当前项目信息
-                        // const projectId = 'global';
-                        
                         console.log('[CommentPanel] 调用store删除评论者:', commenter.key);
                         await window.aicrStore.deleteCommenter(commenter.key);
                         console.log('[CommentPanel] 评论者已从数据库删除');
@@ -1639,13 +1620,13 @@ const componentOptions = {
                 // 立即尝试设置监听器
                 setupWatcher();
                 
-                // 监听项目/版本变化事件
-                this._projectVersionListener = (event) => {
-                    console.log('[CommentPanel] 收到项目/版本变化事件:', event.detail);
+                // 监听项目就绪事件
+                this._projectReadyListener = (event) => {
+                    console.log('[CommentPanel] 收到项目就绪事件:', event.detail);
                     // 重新加载评论者数据
                     this.loadCommenters();
                 };
-                window.addEventListener('projectVersionReady', this._projectVersionListener);
+                window.addEventListener('projectReady', this._projectReadyListener);
             },
             
             // 清理store监听器
@@ -1656,10 +1637,10 @@ const componentOptions = {
                     this._storeWatcherInterval = null;
                 }
                 
-                // 清理项目/版本变化事件监听器
-                if (this._projectVersionListener) {
-                    window.removeEventListener('projectVersionReady', this._projectVersionListener);
-                    this._projectVersionListener = null;
+                // 清理项目就绪事件监听器
+                if (this._projectReadyListener) {
+                    window.removeEventListener('projectReady', this._projectReadyListener);
+                    this._projectReadyListener = null;
                 }
             },
 
@@ -1798,8 +1779,8 @@ const componentOptions = {
             console.log('[CommentPanel] 选中的评论者:', this.selectedCommenterIds);
             
             // 监听项目/版本变化事件
-            window.addEventListener('projectVersionReady', (event) => {
-                console.log('[CommentPanel] 收到项目/版本变化事件:', event.detail);
+            window.addEventListener('projectReady', (event) => {
+                console.log('[CommentPanel] 收到项目就绪事件:', event.detail);
                 // 重新加载评论者数据
                 this.loadCommenters();
                 // 使用防抖重新加载评论数据
@@ -1906,7 +1887,6 @@ const componentOptions = {
                                  text,
                                  rangeInfo,
                                  fileKey: this.fileKey || (this.file && (this.file.key || this.file.path || this.file.name)),
-                                projectId: 'global',
                                 author: commenter.name || commenter.author || 'AI评论者',
                                  status: "pending",
                                  createdTime: new Date().toISOString(),
@@ -1938,10 +1918,9 @@ const componentOptions = {
                                     : null;
                                   if (alt) commentObj.content = String(alt);
                                 }
-                                 commentObj.fileId = commentObj.fileId || fromUserObj.fileId;
-                                 commentObj.projectId = commentObj.projectId || fromUserObj.projectId;
-                                 commentObj.author = commentObj.author || fromUserObj.author;
-                                 commentObj.status = commentObj.status || 'pending';
+                                 commentObj.fileKey = commentObj.fileKey || fromUserObj.fileKey;
+                                commentObj.author = commentObj.author || fromUserObj.author;
+                                commentObj.status = commentObj.status || 'pending';
                                  // 保留引用代码信息（如果有）
                                  if (fromUserObj.text) {
                                      commentObj.text = fromUserObj.text;
@@ -1993,8 +1972,7 @@ const componentOptions = {
                                let fallback = {
                                  content: text,
                                  fileKey: fromUserObj.fileKey,
-                                 projectId: fromUserObj.projectId,
-                                 author: fromUserObj.author,
+                                  author: fromUserObj.author,
                                  status: 'pending',
                                  timestamp: Date.now(), // 使用毫秒数
                                  rangeInfo
@@ -2029,11 +2007,7 @@ const componentOptions = {
                           })
                         ).then(() => {
                          // 通知评论面板刷新
-                         window.dispatchEvent(new CustomEvent('reloadComments', { 
-                             detail: { 
-                                 projectId: (window.aicrStore && window.aicrStore.selectedProject ? window.aicrStore.selectedProject.value : (document.getElementById('projectSelect') ? document.getElementById('projectSelect').value : null))
-                             } 
-                        }));
+                         window.dispatchEvent(new CustomEvent('reloadComments', { detail: {} }));
                         this.commentsLoading = false;
                       }).catch(() => {
                         this.commentsLoading = false;
@@ -2048,7 +2022,6 @@ const componentOptions = {
                 
                 // 防止重复触发
                 if (this._lastReloadEvent && 
-                    this._lastReloadEvent.projectId === event.detail?.projectId &&
                     this._lastReloadEvent.fileKey === event.detail?.fileKey &&
                     Date.now() - this._lastReloadEvent.timestamp < 500) {
                     console.log('[CommentPanel] 检测到重复的reloadComments事件，跳过处理');
@@ -2057,12 +2030,11 @@ const componentOptions = {
                 
                 // 记录事件信息
                 this._lastReloadEvent = {
-                    projectId: event.detail?.projectId,
                     fileKey: event.detail?.fileKey,
                     timestamp: Date.now()
                 };
                 
-                const { projectId, fileKey, forceReload, showAllComments, immediateReload } = event.detail;
+                const { fileKey, forceReload, showAllComments, immediateReload } = event.detail;
                 
                 // 优化：如果 store 中有评论数据，优先使用 store 的数据
                 if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0 && !forceReload) {
@@ -2124,27 +2096,25 @@ const componentOptions = {
                 }
             });
             
-            // 监听projectVersionReady事件，当项目/版本切换完成时重新加载评论
-            window.addEventListener('projectVersionReady', (event) => {
-                console.log('[CommentPanel] 收到projectVersionReady事件:', event.detail);
+            // 监听projectReady事件，当项目准备就绪时重新加载评论
+            window.addEventListener('projectReady', (event) => {
+                console.log('[CommentPanel] 收到projectReady事件');
                 
                 // 防止重复触发
                 if (this._lastProjectVersionEvent && 
-                    this._lastProjectVersionEvent.projectId === event.detail?.projectId &&
                     Date.now() - this._lastProjectVersionEvent.timestamp < 1000) {
-                    console.log('[CommentPanel] 检测到重复的projectVersionReady事件，跳过处理');
+                    console.log('[CommentPanel] 检测到重复的projectReady事件，跳过处理');
                     return;
                 }
                 
                 // 记录事件信息
                 this._lastProjectVersionEvent = {
-                    projectId: event.detail?.projectId,
                     timestamp: Date.now()
                 };
                 
                 // 延迟加载评论，确保store数据已更新
                 setTimeout(() => {
-                    console.log('[CommentPanel] 项目/版本切换完成，开始加载评论数据');
+                    console.log('[CommentPanel] 项目准备就绪，开始加载评论数据');
                     this.debouncedLoadComments();
                 }, 200);
             });
@@ -2179,7 +2149,6 @@ const componentOptions = {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
-
 
 
 

@@ -38,8 +38,6 @@ export const useMethods = (store) => {
         setNewComment,
         toggleSidebar,
         toggleComments,
-        selectedProject,
-        setSelectedProject,
         loadFileTree,
         loadFiles,
         loadFileByKey,
@@ -50,7 +48,6 @@ export const useMethods = (store) => {
         renameItem,
         deleteItem,
          // 本地持久化
-         setProjects,
         // 会话相关方法
         loadSessions,
 
@@ -213,6 +210,32 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 处理删除项
+     * @param {Object} payload - 删除事件负载 { itemId }
+     */
+    const handleDeleteItem = async (payload) => {
+        return safeExecute(async () => {
+            // 兼容 { key: '...' } 和 { itemId: '...' } 两种格式，统一使用 key
+            const key = (payload && payload.key) || (payload && payload.itemId);
+            if (!key) {
+                console.warn('[handleDeleteItem] 缺少 key 或 itemId:', payload);
+                return;
+            }
+            
+            if (!confirm('确定删除该项及其子项？此操作不可撤销。')) return;
+            
+            // 统一传递 key 参数
+            await deleteItem({ key });
+            showSuccessMessage('删除成功');
+            
+            // 若删除的是当前选中文件，则清空选择
+            if (selectedKey && selectedKey.value && (selectedKey.value === key || selectedKey.value.startsWith(key + '/'))) {
+                setSelectedKey(null);
+            }
+        }, '删除');
+    };
+
+    /**
      * 处理消息输入键盘事件
      * @param {Event} event - 键盘事件
      */
@@ -264,18 +287,13 @@ export const useMethods = (store) => {
      */
     const handleDownloadProjectVersion = async () => {
         return safeExecute(async () => {
-            const projectId = selectedProject?.value;
-            if (!projectId) {
-                throw createError('请先选择项目', ErrorTypes.VALIDATION, '项目下载');
-            }
-
             // 动态加载依赖
             const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
-            showGlobalLoading(`正在打包 ${projectId} ...`);
+            showGlobalLoading(`正在打包 ...`);
             try {
                 // 确保文件列表已加载
                 if (!Array.isArray(files?.value) || files.value.length === 0) {
-                    await loadFiles(projectId);
+                    await loadFiles();
                 }
                 const allFiles = Array.isArray(files?.value) ? files.value : [];
                 if (allFiles.length === 0) {
@@ -295,7 +313,7 @@ export const useMethods = (store) => {
                 }
 
                 const blob = await zip.generateAsync({ type: 'blob' });
-                const fileName = `${projectId}.zip`;
+                const fileName = `project.zip`;
 
                 // 触发下载
                 const url = URL.createObjectURL(blob);
@@ -325,53 +343,15 @@ export const useMethods = (store) => {
                 zipFile = zipFileOrEvent.target.files[0];
             }
 
-            // 从文件名解析项目（优先使用文件名）
-            // 同时兼容全角斜杠 "／" 和反斜杠 "\\"
-            const uiProject = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
-            let baseName = '';
-            try {
-                const rawName = (zipFile && zipFile.name) ? String(zipFile.name) : '';
-                baseName = rawName.replace(/\.[Zz][Ii][Pp]$/i, '');
-            } catch (_) { baseName = ''; }
-            const parts = baseName.split(/[\/\\／]/).filter(Boolean);
-            let projectId = parts[0] || uiProject || '';
-            if (!projectId) {
-                throw createError('无法从文件名解析项目。请将压缩包命名为 "项目.zip" 或先选择项目', ErrorTypes.VALIDATION, '项目上传');
-            }
+            if (!zipFile) return;
 
             // 动态加载依赖与工具
             const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
             let __uploadLoadingShown = false;
             try {
-                // 1) 校验项目是否已存在（基于会话标签）
-                const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
-                if (store && store.loadSessions) {
-                    await store.loadSessions();
-                }
-                const sessionList = (store && store.sessions && Array.isArray(store.sessions.value)) ? store.sessions.value : [];
-                const hasExisting = sessionList.some(s => s && Array.isArray(s.tags) && s.tags[0] === projectId);
-                if (hasExisting) {
-                    const { showMessage } = await import('/src/utils/message.js');
-                    const userChoice = await new Promise((resolve) => {
-                        showMessage({
-                            type: 'warning',
-                            title: '项目已存在',
-                            content: `检测到 ${projectId} 已存在。请选择操作：`,
-                            actions: [
-                                { text: '覆盖导入', type: 'primary', action: () => resolve('overwrite') },
-                                { text: '取消', action: () => resolve('cancel') }
-                            ],
-                            duration: 0
-                        });
-                    });
-                    if (userChoice === 'cancel') {
-                        return;
-                    }
-                }
-
-                // 显示loading（至此确定会继续进行上传/覆盖）
+                // 显示loading
                 if (!__uploadLoadingShown) {
-                    showGlobalLoading(`正在上传并解析 ${projectId} ...`);
+                    showGlobalLoading(`正在上传并解析 ...`);
                     __uploadLoadingShown = true;
                 }
 
@@ -384,31 +364,12 @@ export const useMethods = (store) => {
                 zip.forEach((relativePath, fileObj) => {
                     if (!fileObj.dir) {
                         entries.push({ path: relativePath, file: fileObj });
-                        // 特别关注深层次文件
-                        if (relativePath.includes('/') && relativePath.split('/').length > 3) {
-                            console.log(`[ZIP解析] 发现深层次文件: "${relativePath}" (${relativePath.split('/').length} 层)`);
-                        }
-                        // 特别关注 MoreButton.vue
-                        if (relativePath.includes('MoreButton.vue')) {
-                            console.log(`[ZIP解析] 发现 MoreButton.vue: "${relativePath}"`);
-                        }
                     }
                 });
                 if (entries.length === 0) {
                     throw createError('ZIP 中未发现文件', ErrorTypes.VALIDATION, '项目上传');
                 }
                 
-                console.log(`[ZIP解析] 总共解析到 ${entries.length} 个文件`);
-                console.log(`[ZIP解析] 深层次文件数量: ${entries.filter(e => e.path.includes('/') && e.path.split('/').length > 3).length}`);
-                
-                // 详细列出所有深层次文件
-                const deepFiles = entries.filter(e => e.path.includes('/') && e.path.split('/').length > 3);
-                console.log(`[ZIP解析] 深层次文件列表:`, deepFiles.map(e => e.path));
-                
-                // 特别检查 MoreButton.vue
-                const moreButtonFiles = entries.filter(e => e.path.includes('MoreButton.vue'));
-                console.log(`[ZIP解析] MoreButton.vue 文件列表:`, moreButtonFiles.map(e => e.path));
-
                 // 过滤规则
                 const MAX_SIZE = 1 * 1024 * 1024; // 1MB (所有文件)
                 const EXCLUDED_DIRS = ['.git', 'node_modules', '.svn', '.hg', '__MACOSX'];
@@ -429,10 +390,7 @@ export const useMethods = (store) => {
                     const name = p.split('/').pop();
                     return EXCLUDED_FILES.includes(name);
                 };
-                // 计算是否需要去掉打包时多出的根目录：
-                // 智能检测并剥离ZIP文件内部的共同根目录，确保导入导出的目录结构保持一致
-                // 导出时：文件路径是 path/to/file.txt（不包含 projectId）
-                // 导入时：如果 zip 中有 rootDir/path/to/file.txt，剥离 rootDir/ 后得到 path/to/file.txt
+
                 let STRIP_PREFIX = '';
                 const normalizedAll = entries.map(e => normalizePathForFilter(e.path)).filter(Boolean);
                 
@@ -447,27 +405,13 @@ export const useMethods = (store) => {
                     });
                     
                     // 如果所有文件都在同一个根目录下，剥离这个根目录
-                    // 这样可以处理：1) 项目名作为根目录 2) 其他名称作为根目录的情况
                     if (firstLevelDirs.size === 1) {
                         const commonRootDir = Array.from(firstLevelDirs)[0];
                         STRIP_PREFIX = commonRootDir + '/';
                         console.log('[路径剥离] 检测到共同根目录，将剥离:', STRIP_PREFIX);
-                    } else if (firstLevelDirs.size > 1) {
-                        // 多个根目录，检查是否所有文件都以 projectId 开头（兼容旧逻辑）
-                        if (projectId && normalizedAll.every(p => {
-                            const parts = p.split('/').filter(Boolean);
-                            return parts.length > 0 && parts[0] === projectId;
-                        })) {
-                            STRIP_PREFIX = projectId + '/';
-                            console.log('[路径剥离] 多个根目录但都包含项目名，剥离项目名:', STRIP_PREFIX);
-                        } else {
-                            console.log('[路径剥离] 检测到多个根目录，不剥离前缀（保持原有结构）');
-                        }
-                    } else {
-                        // 没有根目录（文件直接在根路径下）
-                        console.log('[路径剥离] 文件直接在根路径下，无需剥离');
                     }
                 }
+
                 console.log('[路径剥离] 最终剥离前缀:', STRIP_PREFIX || '(无)');
                 let skippedExcluded = 0;
                 let skippedImages = 0;
@@ -587,11 +531,9 @@ export const useMethods = (store) => {
                         content: content || '',
                         size: payloadSize,
                         type: 'file'
-                    }, projectId);
+                    });
                     
                     if (normalizedFile) {
-                        // 确保 projectId 字段存在
-                        normalizedFile.projectId = projectId;
                         filesPayload.push(normalizedFile);
                     }
                     processed++;
@@ -623,16 +565,16 @@ export const useMethods = (store) => {
                 }
 
                 // 构建树（基于路径）- 修复深层次文件丢失问题
-                // 根节点的 key 和 path 都使用 projectId
-                const root = { key: projectId, name: projectId, type: 'folder', path: projectId, children: [] };
+                // 根节点的 key 和 path 使用 root
+                const root = { key: 'root', name: 'root', type: 'folder', path: 'root', children: [] };
                 const folderMap = new Map();
                 folderMap.set('', root);
                 
                 // 使用统一的路径规范化函数
-                const normalizePath = (path) => normalizeFilePath(path, null);
+                const normalizePath = (path) => normalizeFilePath(path);
                 
-                // 确保路径不包含 projectId（用于文件树节点的 id）
-                const removeProjectIdPrefix = (path) => normalizeFilePath(path, projectId);
+                // 确保路径规范化
+                const removeProjectIdPrefix = (path) => normalizeFilePath(path);
                 
                 // 用于跟踪所有文件路径，避免创建与文件同名的文件夹
                 const filePathsSet = new Set();
@@ -644,7 +586,7 @@ export const useMethods = (store) => {
                     // 如果路径为空，返回根节点
                     if (!norm) return root;
                     
-                    // 去除 projectId 前缀，确保文件夹节点的 key 不包含 projectId
+                    
                     const folderKeyWithoutProjectId = removeProjectIdPrefix(norm);
                     
                     // 如果已经存在，直接返回
@@ -694,7 +636,7 @@ export const useMethods = (store) => {
                                 name: segment,
                                 type: 'folder',
                                 children: []
-                            }, projectId);
+                            });
                             
                             if (node) {
                                 parent.children.push(node);
@@ -737,10 +679,10 @@ export const useMethods = (store) => {
                         continue;
                     }
                     
-                    // 去除 projectId 前缀，确保文件节点的 id 不包含 projectId
+                    
                     const filePathWithoutProjectId = removeProjectIdPrefix(filePath);
                     
-                    // 获取文件的父目录路径（也不包含 projectId）
+                    
                     const pathSegments = filePathWithoutProjectId.split('/').filter(Boolean);
                     const dir = pathSegments.length > 1 
                         ? pathSegments.slice(0, -1).join('/') 
@@ -791,7 +733,7 @@ export const useMethods = (store) => {
                         type: 'file',
                         size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)),
                         modified: Date.now()
-                    }, projectId);
+                    });
                     
                     if (fileNode) {
                         parent.children.push(fileNode);
@@ -813,7 +755,7 @@ export const useMethods = (store) => {
                 
                 // 1. 从 fileTree 中提取现有的文件列表，用于判断是更新还是新增，以及构建完整的文件树
                 // 不再调用 projectFiles 接口，直接从内存中的文件树提取
-                let existingFilesMap = new Map(); // fileId -> { key, ... }
+                let existingFilesMap = new Map(); // key -> { key, ... }
                 let allFilesForTree = [...filesPayload]; // 包含所有文件（现有 + 新导入）用于构建文件树
                 
                 try {
@@ -833,8 +775,7 @@ export const useMethods = (store) => {
                                         path: fileKey,
                                         name: node.name || (fileKey ? fileKey.split('/').pop() : ''),
                                         content: node.content || '',
-                                        size: node.size || (node.content ? node.content.length : 0),
-                                        projectId: node.projectId || projectId
+                                        size: node.size || (node.content ? node.content.length : 0)
                                     });
                                 }
                             }
@@ -875,7 +816,6 @@ export const useMethods = (store) => {
                             if (!isInNewFiles) {
                                 // 现有文件不在新导入列表中，需要保留在文件树中
                                 allFilesForTree.push({
-                                    projectId: doc.projectId || projectId,
                                     fileKey: fileKey,
                                     key: fileKey,
                                     path: fileKey,
@@ -894,7 +834,7 @@ export const useMethods = (store) => {
 
                 // 2. 基于所有文件（现有 + 新导入）重新构建完整的文件树
                 // 重新构建文件树，包含所有文件
-                const mergedRoot = { key: projectId, name: projectId, type: 'folder', path: projectId, children: [] };
+                const mergedRoot = { key: 'root', name: 'root', type: 'folder', path: 'root', children: [] };
                 const mergedFolderMap = new Map();
                 mergedFolderMap.set('', mergedRoot);
                 
@@ -902,8 +842,8 @@ export const useMethods = (store) => {
                 const mergedFilePathsSet = new Set();
                 
                 // 使用统一的规范化函数
-                const normalizePathForTree = (path) => normalizeFilePath(path, null);
-                const removeProjectIdPrefixForTree = (path) => normalizeFilePath(path, projectId);
+                const normalizePathForTree = (path) => normalizeFilePath(path);
+                const removeProjectIdPrefixForTree = (path) => normalizeFilePath(path);
                 
                 const ensureFolderForTree = (folderPath) => {
                     const norm = normalizePathForTree(folderPath);
@@ -951,7 +891,7 @@ export const useMethods = (store) => {
                                 name: segment,
                                 type: 'folder',
                                 children: []
-                            }, projectId);
+                            });
                             
                             if (node) {
                                 parent.children.push(node);
@@ -1016,7 +956,7 @@ export const useMethods = (store) => {
                             type: 'file',
                             size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)),
                             modified: Date.now()
-                        }, projectId);
+                        });
                         
                         if (fileNode) {
                             parent.children.push(fileNode);
@@ -1055,13 +995,13 @@ export const useMethods = (store) => {
                         const isExistingFile = existingFile && existingFile.key;
                         
                         // 仅处理文件，忽略文件夹
-                        if (isFile && payload.projectId && fileKey) {
+                        if (isFile && fileKey) {
                             try {
                                 // 使用统一的字段规范化工具确保字段一致性
-                                const normalizedFileObj = normalizeFileObject(payload, payload.projectId);
+                                const normalizedFileObj = normalizeFileObject(payload);
                                 if (normalizedFileObj) {
                                     // 强制更新模式 (Upsert)，确保覆盖旧内容
-                                    await sessionSync.syncFileToSession(normalizedFileObj, payload.projectId, false, true);
+                                    await sessionSync.syncFileToSession(normalizedFileObj, false, true);
                                     
                                     filesUploaded++;
                                     if (isExistingFile) {
@@ -1114,17 +1054,17 @@ export const useMethods = (store) => {
                 } catch (_) {}
 
                 // 更新选择到刚上传的项目
-                try { setSelectedProject(projectId); } catch (_) {}
+                
 
                 // 加载界面所需数据（上传项目后需要重新加载，使用 forceClear: true）
                 await Promise.all([
-                    loadFileTree(projectId, true),  // forceClear: true，上传后需要重新加载
-                    loadFiles(projectId),
-                    (async () => { try { await loadComments(projectId); } catch (_) {} })()
+                    loadFileTree(true),  // forceClear: true，上传后需要重新加载
+                    loadFiles(),
+                    (async () => { try { await loadComments(); } catch (_) {} })()
                 ]);
 
                 // 可选：同步评论者数据
-                try { if (typeof store.loadCommenters === 'function') { await store.loadCommenters(projectId); } } catch (_) {}
+                try { if (typeof store.loadCommenters === 'function') { await store.loadCommenters(); } } catch (_) {}
 
                 // 刷新会话列表（转换成树文件后需要刷新）
                 try {
@@ -1135,7 +1075,7 @@ export const useMethods = (store) => {
 
                 // 广播项目就绪事件
                 try {
-                    window.dispatchEvent(new CustomEvent('projectReady', { detail: { projectId } }));
+                    window.dispatchEvent(new CustomEvent('projectReady', { detail: { } }));
                 } catch (_) {}
 
                 const { showSuccess, showWarning } = await import('/src/utils/message.js');
@@ -1157,7 +1097,7 @@ export const useMethods = (store) => {
                 if (skippedLarge > 0) {
                     msg += `，跳过大文件(>1MB) ${skippedLarge} 个`;
                 }
-                msg += `。已切换到 ${projectId}`;
+                msg += `。已切换到新项目`;
                 
                 if (filesFailed > 0) {
                     showWarning(msg);
@@ -1234,12 +1174,11 @@ export const useMethods = (store) => {
 
             // 若项目就绪，尝试按需加载内容
             try {
-                const pj = selectedProject?.value;
-                if (pj && typeof loadFileByKey === 'function') {
+                if (typeof loadFileByKey === 'function') {
                     const fileKey = window.__aicrPendingFileKey || null;
-                    console.log('[文件选择] 开始按需加载文件内容:', { project: pj, key: keyNorm, fileKey });
-                    // 正确传递参数：projectId, targetKey, fileKey
-                    const loadedFile = await loadFileByKey(pj, keyNorm, fileKey);
+                    console.log('[文件选择] 开始按需加载文件内容:', { key: keyNorm, fileKey });
+                    // 正确传递参数：targetKey
+                    const loadedFile = await loadFileByKey(keyNorm);
                     if (loadedFile && loadedFile.content) {
                         console.log('[文件选择] 文件内容加载成功，内容长度:', loadedFile.content.length);
                     } else {
@@ -1326,12 +1265,7 @@ export const useMethods = (store) => {
                 const projectSelect = document.getElementById('projectSelect');
                 const versionSelect = document.getElementById('versionSelect');
                 
-                let projectId = null;
                 let versionId = null;
-                
-                if (projectSelect) {
-                    projectId = projectSelect.value;
-                }
                 
                 if (versionSelect) {
                     versionId = versionSelect.value;
@@ -1378,7 +1312,6 @@ export const useMethods = (store) => {
                     timestamp: timestamp,
                     // 保留评论特有字段
                     fileKey: selectedKey.value,
-                    projectId: projectId,
                     versionId: versionId,
                     // 兼容字段（保留原有字段以兼容旧代码）
                     // 如果有 rangeInfo，保留原有的 text（引用代码），否则使用 content
@@ -1426,7 +1359,7 @@ export const useMethods = (store) => {
                 console.log('[评论提交] API调用成功:', result);
                 
                 // 同步评论到会话消息（确保使用规范化后的评论）
-                if (projectId && selectedKey.value) {
+                if (selectedKey.value) {
                     try {
                         const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                         const sessionSync = getSessionSyncService();
@@ -1438,7 +1371,7 @@ export const useMethods = (store) => {
                         if (store && store.normalizeComment) {
                             commentWithKey = store.normalizeComment(commentWithKey);
                         }
-                        await sessionSync.syncCommentToMessage(commentWithKey, selectedKey.value, projectId, false);
+                        await sessionSync.syncCommentToMessage(commentWithKey, selectedKey.value, false);
                         console.log('[评论提交] 评论已同步到会话消息');
                     } catch (syncError) {
                         console.warn('[评论提交] 同步评论到会话消息失败（已忽略）:', syncError?.message);
@@ -1451,7 +1384,6 @@ export const useMethods = (store) => {
                 console.log('[评论提交] 立即触发评论面板刷新');
                 window.dispatchEvent(new CustomEvent('reloadComments', {
                     detail: { 
-                        projectId: projectId, 
                         versionId: versionId, 
                         fileKey: selectedKey.value,
                         forceReload: true,
@@ -1511,7 +1443,7 @@ export const useMethods = (store) => {
                 if (!commentAdded) {
                     console.log('[评论提交] 方法4：使用备用方案：触发重新加载评论');
                     window.dispatchEvent(new CustomEvent('reloadComments', {
-                        detail: { projectId: projectId, versionId: versionId, forceReload: true }
+                        detail: { versionId: versionId, forceReload: true }
                     }));
                 }
                 
@@ -1527,7 +1459,7 @@ export const useMethods = (store) => {
                 setTimeout(() => {
                     console.log('[评论提交] 方法6：最终备用方案 - 强制重新加载');
                     window.dispatchEvent(new CustomEvent('reloadComments', {
-                        detail: { projectId: projectId, versionId: versionId, forceReload: true }
+                        detail: { versionId: versionId, forceReload: true }
                     }));
                 }, 1000);
 
@@ -1535,19 +1467,19 @@ export const useMethods = (store) => {
                 setNewComment('');
 
                 // 重新加载评论数据 - 增加延迟和重试机制
-                if (projectId && versionId) {
+                if (versionId) {
                     console.log('[评论提交] 开始重新加载评论数据');
                     
                     // 延迟重新加载，确保数据库写入完成
                     const reloadCommentsWithRetry = async (retryCount = 0) => {
                         try {
                             console.log(`[评论提交] 第${retryCount + 1}次尝试重新加载评论`);
-                            await loadComments(projectId, versionId);
+                            await loadComments();
                             
                             // 触发评论面板重新加载mongoComments
                             console.log('[评论提交] 触发评论面板重新加载');
                             window.dispatchEvent(new CustomEvent('reloadComments', {
-                                detail: { projectId: projectId, versionId: versionId }
+                                detail: { versionId: versionId }
                             }));
                             
                             // 验证评论是否成功加载
@@ -1557,9 +1489,8 @@ export const useMethods = (store) => {
                                     const { getData: verifyGetData } = await import('/src/services/modules/crud.js');
                                     const verifyUrl = buildServiceUrl('query_documents', {
                                         cname: 'comments',
-                                        projectId,
                                         versionId,
-                                        ...(selectedFileId.value ? { fileId: selectedFileId.value } : {})
+                                        ...(selectedFileId.value ? { key: selectedFileId.value } : {})
                                     });
                                     const verifyResponse = await verifyGetData(verifyUrl);
                                     const newComments = verifyResponse.data.list || [];
@@ -1722,12 +1653,7 @@ export const useMethods = (store) => {
                 const projectSelect = document.getElementById('projectSelect');
                 const versionSelect = document.getElementById('versionSelect');
                 
-                let projectId = null;
                 let versionId = null;
-                
-                if (projectSelect) {
-                    projectId = projectSelect.value;
-                }
                 
                 if (versionSelect) {
                     versionId = versionSelect.value;
@@ -1739,8 +1665,7 @@ export const useMethods = (store) => {
                     method_name: 'delete_document',
                     parameters: {
                         cname: 'comments',
-                        id: commentId,
-                        ...(projectId ? { projectId } : {}),
+                        key: commentId,
                         ...(versionId ? { versionId } : {})
                     }
                 };
@@ -1754,14 +1679,14 @@ export const useMethods = (store) => {
                 console.log('[评论删除] 删除成功:', result);
                 
                 // 同步删除会话消息
-                if (projectId && selectedFileId.value) {
+                if (selectedFileId.value) {
                     try {
                         const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                         const sessionSync = getSessionSyncService();
                         
                         // 查找评论对象以便准确匹配
                         const comment = comments.value.find(c => c.key === commentId);
-                        await sessionSync.deleteCommentMessage(commentId, selectedFileId.value, projectId, comment);
+                        await sessionSync.deleteCommentMessage(commentId, selectedFileId.value, comment);
                         console.log('[评论删除] 会话消息已删除');
                     } catch (syncError) {
                         console.warn('[评论删除] 删除会话消息失败（已忽略）:', syncError?.message);
@@ -1779,9 +1704,9 @@ export const useMethods = (store) => {
                 }));
 
                 // 重新加载评论数据
-                if (selectedProject.value) {
+                if (selectedKey.value) {
                     console.log('[评论删除] 重新加载评论数据');
-                    await loadComments(selectedProject.value);
+                    await loadComments();
                     
                     // 触发评论面板重新加载mongoComments
                     console.log('[评论删除] 触发评论面板重新加载');
@@ -1789,7 +1714,6 @@ export const useMethods = (store) => {
                         console.log('[评论删除] 发送reloadComments事件');
                         window.dispatchEvent(new CustomEvent('reloadComments', {
                             detail: { 
-                                projectId: selectedProject.value,
                                 forceReload: true,
                                 immediateReload: true
                             }
@@ -1835,12 +1759,7 @@ export const useMethods = (store) => {
                 const projectSelect = document.getElementById('projectSelect');
                 const versionSelect = document.getElementById('versionSelect');
                 
-                let projectId = null;
                 let versionId = null;
-                
-                if (projectSelect) {
-                    projectId = projectSelect.value;
-                }
                 
                 if (versionSelect) {
                     versionId = versionSelect.value;
@@ -1855,7 +1774,6 @@ export const useMethods = (store) => {
                         data: {
                             key: commentId,
                             status: 'resolved',
-                            ...(projectId ? { projectId } : {}),
                             ...(versionId ? { versionId } : {})
                         }
                     }
@@ -1870,15 +1788,15 @@ export const useMethods = (store) => {
                 showSuccessMessage('评论已标记为已解决');
 
                 // 重新加载评论数据
-                if (selectedProject.value) {
+                if (selectedKey.value) {
                     console.log('[评论解决] 重新加载评论数据');
-                    await loadComments(selectedProject.value);
+                    await loadComments();
                     
                     // 触发评论面板重新加载mongoComments
                     console.log('[评论解决] 触发评论面板重新加载');
                     setTimeout(() => {
                         window.dispatchEvent(new CustomEvent('reloadComments', {
-                            detail: { projectId: selectedProject.value }
+                            detail: { versionId }
                         }));
                     }, 200); // 增加延迟时间到200ms
                 }
@@ -1917,21 +1835,6 @@ export const useMethods = (store) => {
                 showGlobalLoading('正在重新打开评论...');
                 console.log('[评论重新打开] 显示全局loading');
                 
-                // 从选择器获取项目信息
-                const projectSelect = document.getElementById('projectSelect');
-                const versionSelect = document.getElementById('versionSelect');
-                
-                let projectId = null;
-                let versionId = null;
-                
-                if (projectSelect) {
-                    projectId = projectSelect.value;
-                }
-                
-                if (versionSelect) {
-                    versionId = versionSelect.value;
-                }
-
                 // 构建重新打开评论的URL
                 const reopenPayload = {
                     module_name: SERVICE_MODULE,
@@ -1940,9 +1843,7 @@ export const useMethods = (store) => {
                         cname: 'comments',
                         data: {
                             key: commentId,
-                            status: 'pending',
-                            ...(projectId ? { projectId } : {}),
-                            ...(versionId ? { versionId } : {})
+                            status: 'pending'
                         }
                     }
                 };
@@ -1956,15 +1857,15 @@ export const useMethods = (store) => {
                 showSuccessMessage('评论已重新打开');
 
                 // 重新加载评论数据
-                if (selectedProject.value) {
+                if (selectedKey.value) {
                     console.log('[评论重新打开] 重新加载评论数据');
-                    await loadComments(selectedProject.value);
+                    await loadComments();
                     
                     // 触发评论面板重新加载mongoComments
                     console.log('[评论重新打开] 触发评论面板重新加载');
                     setTimeout(() => {
                         window.dispatchEvent(new CustomEvent('reloadComments', {
-                            detail: { projectId: selectedProject.value }
+                            detail: { }
                         }));
                     }, 200); // 增加延迟时间到200ms
                 }
@@ -1987,11 +1888,10 @@ export const useMethods = (store) => {
 
     /**
      * 初始化项目根目录
-     * @param {string} projectId - 项目ID
      */
-    const initializeProjectRootDirectory = async (projectId) => {
+    const initializeProjectRootDirectory = async () => {
         return safeExecuteAsync(async () => {
-            console.log('[初始化根目录] 开始初始化项目:', projectId);
+            console.log('[初始化根目录] 开始初始化项目');
             
             try {
                 // 导入会话同步服务
@@ -2000,17 +1900,16 @@ export const useMethods = (store) => {
                 
                 // 创建 README.md 文件对象
                 const readmeFile = {
-                    key: `${projectId}/README.md`,
-                    path: `${projectId}/README.md`,
+                    key: 'README.md',
+                    path: 'README.md',
                     name: 'README.md',
-                    content: `# ${projectId}\n\n项目描述：这是一个新创建的项目。\n\n## 开始使用\n\n请在此处添加项目的使用说明。`,
-                    type: 'file',
-                    projectId: projectId
+                    content: `# New Project\n\n项目描述：这是一个新创建的项目。\n\n## 开始使用\n\n请在此处添加项目的使用说明。`,
+                    type: 'file'
                 };
                 
                 // 同步到会话 (forceUpdate = true)
                 console.log('[初始化根目录]正在创建README.md会话...');
-                await sessionSync.syncFileToSession(readmeFile, projectId, false, true);
+                await sessionSync.syncFileToSession(readmeFile, false, true);
                 
                 console.log('[初始化根目录] 项目初始化完成 (README.md 已创建)');
                 
@@ -2030,34 +1929,8 @@ export const useMethods = (store) => {
             console.log('[评论重新加载] 收到重新加载评论的请求:', detail);
             
             try {
-                // 从选择器获取项目信息
-                const projectSelect = document.getElementById('projectSelect');
-                const versionSelect = document.getElementById('versionSelect');
-                
-                let projectId = null;
-                let versionId = null;
-                
-                if (projectSelect) {
-                    projectId = projectSelect.value;
-                }
-                
-                if (versionSelect) {
-                    versionId = versionSelect.value;
-                }
-                
-                // 如果详情中有项目/版本信息，优先使用
-                if (detail && detail.projectId) {
-                    projectId = detail.projectId;
-                }
-                
-                if (detail && detail.versionId) {
-                    versionId = detail.versionId;
-                }
-                
-                console.log('[评论重新加载] 使用的项目/版本:', { projectId, versionId });
-                
                 // 调用加载评论方法
-                await loadComments(projectId, versionId);
+                await loadComments();
                 
                 console.log('[评论重新加载] 评论重新加载完成');
                 
@@ -2075,16 +1948,9 @@ export const useMethods = (store) => {
 
     /**
      * 加载评论数据
-     * @param {string} projectId - 项目ID
-     * @param {string} versionId - 版本ID
      */
-    const loadComments = async (projectId, versionId) => {
+    const loadComments = async () => {
         return safeExecute(async () => {
-            if (!projectId || !versionId) {
-                console.log('[加载评论] 项目/版本信息不完整，跳过加载');
-                return;
-            }
-
             // 防止重复请求
             if (loading.value) {
                 console.log('[加载评论] 正在加载中，跳过重复请求');
@@ -2097,7 +1963,6 @@ export const useMethods = (store) => {
                 // 构建获取评论的URL
                 const queryUrl = buildServiceUrl('query_documents', {
                     cname: 'comments',
-                    projectId,
                     versionId,
                     ...(selectedKey.value ? { key: selectedKey.value } : {})
                 });
@@ -2173,9 +2038,9 @@ export const useMethods = (store) => {
     /**
      * 处理项目切换
      */
-    const handleProjectChange = (projectId) => {
+    const handleProjectChange = () => {
         return safeExecute(async () => {
-            console.log('[项目切换] 全局模式下忽略项目切换:', projectId);
+            console.log('[项目切换] 全局模式下忽略项目切换');
         }, '项目切换处理');
     };
 
@@ -2248,43 +2113,39 @@ export const useMethods = (store) => {
         // 文件树CRUD
         handleCreateFolder: async (payload) => {
             return safeExecute(async () => {
-                const parentId = payload && payload.parentId;
+                const parentId = payload && (payload.parentId || payload.parentKey);
                 const name = window.prompt('新建文件夹名称：');
                 if (!name) return;
-                const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value || '');
-                await createFolder({ parentId, name, projectId });
+                await createFolder({ parentId, name });
                 showSuccessMessage('文件夹创建成功');
             }, '新建文件夹');
         },
         handleCreateFile: async (payload) => {
             return safeExecute(async () => {
-                const parentId = payload && payload.parentId;
+                const parentId = payload && (payload.parentId || payload.parentKey);
                 const name = window.prompt('新建文件名称（含扩展名）：');
                 if (!name) return;
-                const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value || '');
-                await createFile({ parentId, name, content: '', projectId });
+                await createFile({ parentId, name, content: '' });
                 showSuccessMessage('文件创建成功');
             }, '新建文件');
         },
         handleRenameItem: async (payload) => {
             return safeExecute(async () => {
-                const itemId = payload && payload.itemId;
+                const itemId = payload && (payload.itemId || payload.key);
                 const oldName = payload && payload.name;
                 if (!itemId) return;
                 const newName = window.prompt('输入新名称：', oldName || '');
                 if (!newName) return;
-                const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
-                await renameItem({ itemId, newName, projectId });
+                await renameItem({ itemId, newName });
                 showSuccessMessage('重命名成功');
             }, '重命名');
         },
         handleDeleteItem: async (payload) => {
             return safeExecute(async () => {
-                const itemId = payload && payload.itemId;
+                const itemId = payload && (payload.itemId || payload.key);
                 if (!itemId) return;
                 if (!confirm('确定删除该项及其子项？此操作不可撤销。')) return;
-                const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
-                await deleteItem({ itemId, projectId });
+                await deleteItem({ itemId });
                 showSuccessMessage('删除成功');
                 // 若删除的是当前选中文件，则清空选择
                 if (selectedKey?.value && (selectedKey.value === itemId || selectedKey.value.startsWith(itemId + '/'))) {
@@ -2397,28 +2258,15 @@ export const useMethods = (store) => {
                     // const url = `${window.API_URL}/session/${encodeURIComponent(sessionId)}`;
                     // await deleteData(url);
 
-                    // 查找会话获取内部ID
-                    const findUrl = buildServiceUrl('query_documents', {
-                        cname: 'sessions',
-                        filter: { id: sessionKey },
-                        limit: 1
-                    });
-                    const findResp = await getData(findUrl, {}, false);
-                    const item = findResp?.data?.list?.[0];
-                    
-                    if (item) {
-                        const payload = {
-                            module_name: SERVICE_MODULE,
-                            method_name: 'delete_document',
-                            parameters: {
-                                cname: 'sessions',
-                                id: item._id
-                            }
-                        };
-                        await postData(`${window.API_URL}/`, payload);
-                    } else {
-                         console.warn('[handleSessionDelete] 会话未找到，可能已被删除:', sessionId);
-                    }
+                    const payload = {
+                        module_name: SERVICE_MODULE,
+                        method_name: 'delete_document',
+                        parameters: {
+                            cname: 'sessions',
+                            key: sessionKey
+                        }
+                    };
+                    await postData(`${window.API_URL}/`, payload);
                     
                     // 从列表中移除
                     if (store.sessions && store.sessions.value && Array.isArray(store.sessions.value)) {
@@ -2523,32 +2371,21 @@ export const useMethods = (store) => {
                     // 更新后端
                     // const { postData } = await import('/src/services/index.js');
                     const updateData = {
-                        id: sessionKey,
+                        key: sessionKey,
                         isFavorite: newFavoriteState
                     };
                     // await postData(`${window.API_URL}/session/save`, updateData);
 
-                    // 查找会话获取内部ID
-                    const findUrl = buildServiceUrl('query_documents', {
-                        cname: 'sessions',
-                        filter: { id: sessionKey },
-                        limit: 1
-                    });
-                    const findResp = await getData(findUrl, {}, false);
-                    const item = findResp?.data?.list?.[0];
-                    
-                    if (item) {
-                        const payload = {
-                            module_name: SERVICE_MODULE,
-                            method_name: 'update_document',
-                            parameters: {
-                                cname: 'sessions',
-                                id: item._id,
-                                data: updateData
-                            }
-                        };
-                        await postData(`${window.API_URL}/`, payload);
-                    }
+                    const payload = {
+                        module_name: SERVICE_MODULE,
+                        method_name: 'update_document',
+                        parameters: {
+                            cname: 'sessions',
+                            key: sessionKey,
+                            data: updateData
+                        }
+                    };
+                    await postData(`${window.API_URL}/`, payload);
                     
                     // 更新本地状态
                     if (store.sessions && store.sessions.value) {
@@ -2586,32 +2423,21 @@ export const useMethods = (store) => {
                     // 更新后端
                     // const { postData } = await import('/src/services/index.js');
                     const updateData = {
-                        id: sessionKey,
+                        key: sessionKey,
                         isFavorite: newFavoriteState
                     };
                     // await postData(`${window.API_URL}/session/save`, updateData);
 
-                    // 查找会话获取内部ID
-                    const findUrl = buildServiceUrl('query_documents', {
-                        cname: 'sessions',
-                        filter: { id: sessionKey },
-                        limit: 1
-                    });
-                    const findResp = await getData(findUrl, {}, false);
-                    const item = findResp?.data?.list?.[0];
-                    
-                    if (item) {
-                        const payload = {
-                            module_name: SERVICE_MODULE,
-                            method_name: 'update_document',
-                            parameters: {
-                                cname: 'sessions',
-                                id: item._id,
-                                data: updateData
-                            }
-                        };
-                        await postData(`${window.API_URL}/`, payload);
-                    }
+                    const payload = {
+                        module_name: SERVICE_MODULE,
+                        method_name: 'update_document',
+                        parameters: {
+                            cname: 'sessions',
+                            key: sessionKey,
+                            data: updateData
+                        }
+                    };
+                    await postData(`${window.API_URL}/`, payload);
                     
                     // 更新本地状态
                     if (store.sessions && store.sessions.value) {
@@ -2661,33 +2487,22 @@ export const useMethods = (store) => {
                     // 更新后端
                     // const { postData } = await import('/src/services/index.js');
                     const updateData = {
-                        id: sessionKey,
+                        key: sessionKey,
                         pageTitle: newTitle.trim(),
                         title: newTitle.trim()
                     };
                     // await postData(`${window.API_URL}/session/save`, updateData);
 
-                    // 查找会话获取内部ID
-                    const findUrl = buildServiceUrl('query_documents', {
-                        cname: 'sessions',
-                        filter: { id: sessionKey },
-                        limit: 1
-                    });
-                    const findResp = await getData(findUrl, {}, false);
-                    const item = findResp?.data?.list?.[0];
-                    
-                    if (item) {
-                        const payload = {
-                            module_name: SERVICE_MODULE,
-                            method_name: 'update_document',
-                            parameters: {
-                                cname: 'sessions',
-                                id: item._id,
-                                data: updateData
-                            }
-                        };
-                        await postData(`${window.API_URL}/`, payload);
-                    }
+                    const payload = {
+                        module_name: SERVICE_MODULE,
+                        method_name: 'update_document',
+                        parameters: {
+                            cname: 'sessions',
+                            key: sessionKey,
+                            data: updateData
+                        }
+                    };
+                    await postData(`${window.API_URL}/`, payload);
                     
                     // 更新本地状态
                     if (store.sessions && store.sessions.value) {
@@ -2768,7 +2583,6 @@ export const useMethods = (store) => {
                     // 创建副本
                     const duplicatedSession = {
                         key: newSessionKey,
-                        id: newSessionKey,
                         url: sourceSession.url || '',
                         pageTitle: sourceSession.pageTitle ? `${sourceSession.pageTitle} (副本)` : '新会话 (副本)',
                         title: sourceSession.pageTitle ? `${sourceSession.pageTitle} (副本)` : '新会话 (副本)',
@@ -2913,10 +2727,7 @@ export const useMethods = (store) => {
                         throw new Error('会话数据无效');
                     }
                     
-                    const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value || '');
-                    if (!projectId) {
-                        throw new Error('请先选择项目');
-                    }
+                    
                     
                     showLoading('正在获取会话数据并生成树形文件...');
                     
@@ -2970,7 +2781,7 @@ export const useMethods = (store) => {
                     };
                     
                     // 7. 查找或创建目录
-                    const findOrCreateFolder = (parentNode, folderName, projectId) => {
+                    const findOrCreateFolder = (parentNode, folderName) => {
                         if (!parentNode.children) {
                             parentNode.children = [];
                         }
@@ -2983,15 +2794,15 @@ export const useMethods = (store) => {
                         if (!folderNode) {
                             // 创建新目录
                             const folderId = parentNode.id 
-                                ? normalizeFilePath(`${parentNode.id}/${folderName}`, projectId)
-                                : normalizeFilePath(folderName, projectId);
+                                ? normalizeFilePath(`${parentNode.id}/${folderName}`)
+                                : normalizeFilePath(folderName);
                             
                             folderNode = normalizeTreeNode({
                                 id: folderId,
                                 name: folderName,
                                 type: 'folder',
                                 children: []
-                            }, projectId);
+                            });
                             
                             if (folderNode) {
                                 parentNode.children.push(folderNode);
@@ -3019,7 +2830,7 @@ export const useMethods = (store) => {
                             ? (findNodeById(root, currentParentId) || root)
                             : root;
                         
-                        const folderNode = findOrCreateFolder(parentNode, folderName, projectId);
+                        const folderNode = findOrCreateFolder(parentNode, folderName);
                         if (folderNode) {
                             currentParentId = folderNode.id;
                             tagFolders.push({ id: folderNode.id, name: folderName });
@@ -3055,13 +2866,13 @@ export const useMethods = (store) => {
                     // 持久化将在 createFile 时统一进行，确保操作的原子性
                     const handleFileOverwrite = (parentNode, fileName) => {
                         if (!checkFileExists(parentNode, fileName)) {
-                            return { canCreate: true, existingFileId: null, existingFile: null }; // 文件不存在，可以创建
+                            return { canCreate: true, existingFileKey: null, existingFile: null }; // 文件不存在，可以创建
                         }
                         
                         const confirmMessage = `文件 "${fileName}" 已存在，是否覆盖？`;
                         if (!confirm(confirmMessage)) {
                             console.log(`[handleSessionTree] 用户取消覆盖文件: ${fileName}`);
-                            return { canCreate: false, existingFileId: null, existingFile: null };
+                            return { canCreate: false, existingFileKey: null, existingFile: null };
                         }
                         
                         // 用户确认覆盖，从本地文件树中删除旧文件节点
@@ -3082,20 +2893,20 @@ export const useMethods = (store) => {
                             );
                             
                             // 从本地 files 列表中删除（如果存在）
-                            if (Array.isArray(files.value) && existingFileId) {
+                            if (Array.isArray(files.value) && existingFileKey) {
                                 files.value = files.value.filter(f => {
                                     const ids = [f.key, f.path].filter(Boolean);
                                     return !ids.some(v => String(v) === existingFileKey);
                                 });
                             }
                             
-                            console.log(`[handleSessionTree] 已从本地文件树中删除旧文件节点: ${fileName} (fileId: ${existingFileId})`);
+                            console.log(`[handleSessionTree] 已从本地文件树中删除旧文件节点: ${fileName} (key: ${existingFileKey})`);
                             console.log(`[handleSessionTree] 将在创建新文件时统一持久化文件树，确保数据一致性`);
                             
-                            return { canCreate: true, existingFileId, existingFile: existingFileCopy };
+                            return { canCreate: true, existingFileKey, existingFile: existingFileCopy };
                         }
                         
-                        return { canCreate: true, existingFileId: null, existingFile: null };
+                        return { canCreate: true, existingFileKey: null, existingFile: null };
                     };
                     
                     // 12. 构建文件内容
@@ -3165,28 +2976,27 @@ export const useMethods = (store) => {
                     // 2. 文件内容已经通过 persistFileTree 保存到 projectTree 中，不需要再调用 projectFiles 接口
                     // 3. 跳过 projectFiles 接口可以避免不必要的网络请求，并防止页面刷新后文件树丢失
                     // 4. 如果旧文件存在，它已经在本地文件树中被删除，persistFileTree 会将其从后端移除
-                    let fileId;
+                    let createdFileKey;
                     try {
-                        fileId = await createFile({
+                        createdFileKey = await createFile({
                             parentId: targetParentId,
                             name: finalFileName,
                             content: fileContent,
-                            projectId,
                             skipProjectFiles: true  // 跳过 projectFiles 接口，文件内容已通过 persistFileTree 保存到 projectTree
                         });
                         
-                        console.log(`[handleSessionTree] 文件已创建并持久化: ${fileId}`);
+                        console.log(`[handleSessionTree] 文件已创建并持久化: ${createdFileKey}`);
                         
                         // 如果覆盖了旧文件，记录日志
-                        if (overwriteResult.existingFileId) {
-                            console.log(`[handleSessionTree] 已覆盖旧文件: ${overwriteResult.existingFileId} -> ${fileId}`);
+                        if (overwriteResult.existingFileKey) {
+                            console.log(`[handleSessionTree] 已覆盖旧文件: ${overwriteResult.existingFileKey} -> ${createdFileKey}`);
                         }
                     } catch (createError) {
                         // 如果创建失败，尝试恢复文件树（回滚）
                         console.error(`[handleSessionTree] 创建文件失败，尝试回滚:`, createError);
-                        if (overwriteResult.existingFileId && overwriteResult.existingFile) {
+                        if (overwriteResult.existingFileKey && overwriteResult.existingFile) {
                             // 恢复旧文件节点（如果之前被删除）
-                            const existingFileNode = findNodeById(root, overwriteResult.existingFileId);
+                            const existingFileNode = findNodeById(root, overwriteResult.existingFileKey);
                             if (!existingFileNode) {
                                 // 如果旧文件节点不在树中，尝试恢复它
                                 parentNode.children.push(overwriteResult.existingFile);
@@ -3258,32 +3068,25 @@ export const useMethods = (store) => {
                     if (window.showGlobalLoading) {
                         window.showGlobalLoading('正在获取文件内容并生成会话描述...');
                     }
-
-                    const projectId = selectedProject?.value || (document.getElementById('projectSelect')?.value) || '';
-
-                    if (!projectId) {
-                        throw new Error('请先选择项目');
-                    }
-
+                    
                     // 获取文件内容
                     let fileContent = '';
                     let fileData = null;
 
-                    if (typeof loadFileById === 'function') {
-                        fileData = await loadFileById(projectId, null, fileId);
+                    if (typeof loadFileByKey === 'function') {
+                        fileData = await loadFileByKey(fileKey);
                         if (fileData && fileData.content) {
                             fileContent = fileData.content;
                         }
                     }
 
-                    // 如果通过 loadFileById 没有获取到内容，尝试直接调用 API
+                    // 如果通过 loadFileByKey 没有获取到内容，尝试直接调用 API
                     if (!fileContent) {
                         const { getData } = await import('/src/services/modules/crud.js');
                         const url = buildServiceUrl('query_documents', {
                             cname: 'projectVersionFiles',
-                            projectId,
                             versionId,
-                            fileId
+                            key: fileKey
                         });
                         const response = await getData(url, {}, false);
                         let list = (response?.data?.list && Array.isArray(response.data.list)) ? response.data.list : (Array.isArray(response) ? response : []);
@@ -3301,7 +3104,7 @@ export const useMethods = (store) => {
                     const { streamPromptJSON } = await import('/src/services/modules/crud.js');
                     
                     // 构建用于生成描述的 prompt
-                    const fileInfoText = `文件路径：${fileId}\n文件名称：${payload?.name || fileId.split('/').pop()}\n\n文件内容：\n${fileContent.substring(0, 10000)}`; // 限制内容长度避免过长
+                    const fileInfoText = `文件路径：${fileKey}\n文件名称：${payload?.name || fileKey.split('/').pop()}\n\n文件内容：\n${fileContent.substring(0, 10000)}`; // 限制内容长度避免过长
                     
                     // 调用 prompt 接口生成描述
                     const descriptionResponse = await streamPromptJSON(`${window.API_URL}/prompt`, {
@@ -3324,11 +3127,11 @@ export const useMethods = (store) => {
 
                     // 如果描述为空，使用默认描述
                     if (!pageDescription || pageDescription.trim() === '') {
-                        pageDescription = `文件：${payload?.name || fileId}`;
+                        pageDescription = `文件：${payload?.name || fileKey}`;
                     }
 
-                    // 生成会话 ID（使用 fileId 作为基础）
-                    const sessionId = `${Date.now()}_${fileId.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    // 生成会话 ID（使用 fileKey 作为基础）
+                    const sessionId = `${Date.now()}_${fileKey.replace(/[^a-zA-Z0-9]/g, '_')}`;
                     
                     // 获取当前时间戳
                     const now = Date.now();
@@ -3370,7 +3173,7 @@ export const useMethods = (store) => {
                     
                     if (saveResult && saveResult.success !== false) {
                         if (window.showSuccess) {
-                            window.showSuccess(`已成功创建 YiPet 会话：${fileId}`);
+                            window.showSuccess(`已成功创建 YiPet 会话：${fileKey}`);
                         }
                         console.log('[创建会话] 会话创建成功:', saveResult);
                     } else {
@@ -3589,29 +3392,7 @@ export const useMethods = (store) => {
                         }
                     }
                     
-                    // 获取当前选中的项目ID（从多个来源尝试获取）
-                    let projectId = '';
-                    if (selectedProject?.value) {
-                        projectId = selectedProject.value;
-                    } else if (window.aicrStore?.selectedProject?.value) {
-                        projectId = window.aicrStore.selectedProject.value;
-                    } else {
-                        const projectSelectEl = document.getElementById('projectSelect');
-                        if (projectSelectEl?.value) {
-                            projectId = projectSelectEl.value;
-                        }
-                    }
-                    
-                    // 如果没有 projectId，提示用户
-                    if (!projectId) {
-                        hideGlobalLoading();
-                        if (window.showError) {
-                            window.showError('请先选择项目后再导入会话');
-                        }
-                        return;
-                    }
-                    
-                    console.log('[useMethods] 导入会话，使用项目ID:', projectId);
+                    console.log('[useMethods] 导入会话');
                     
                     // 导入会话到服务器
                     const { postData } = await import('/src/services/index.js');
@@ -3652,7 +3433,7 @@ export const useMethods = (store) => {
                                         session.tags = extractedTags;
                                         console.log('[useMethods] 从 pageDescription 提取标签:', session.key, extractedTags);
                                     }
-                                    // 如果文件在根目录，标签保持为空（不添加 projectId）
+                                    
                                 }
                                 // 无法从 pageDescription 提取路径，标签保持为空
                             }
@@ -3694,7 +3475,7 @@ export const useMethods = (store) => {
                                     method_name: 'update_document',
                                     parameters: {
                                         cname: 'sessions',
-                                        id: existingItem._id,
+                                        id: existingItem.id,
                                         data: sessionToSave
                                     }
                                 };
@@ -3899,7 +3680,7 @@ export const useMethods = (store) => {
                                 method_name: 'delete_document',
                                 parameters: {
                                     cname: 'sessions',
-                                    id: item._id
+                                    key: item.key
                                 }
                             };
                             const resp = await postData(`${window.API_URL}/`, payload);
@@ -5308,7 +5089,7 @@ async function saveTags(sessionId, store) {
             method_name: 'update_document',
             parameters: {
                 cname: 'sessions',
-                id: existingItem._id,
+                id: existingItem.id,
                 data: {
                     id: sessionId,
                     tags: session.tags,
@@ -5366,29 +5147,20 @@ async function closeTagManager(sessionId, store) {
                     session.updatedAt = Date.now();
                     
                     // 更新后端（标准服务接口）
-                    const checkUrl = buildServiceUrl('query_documents', {
-                        cname: 'sessions',
-                        filter: { id: sessionId },
-                        limit: 1
-                    });
-                    const checkResp = await getData(checkUrl, {}, false);
-                    const existingItem = checkResp?.data?.list?.[0];
-                    if (existingItem) {
-                        const payload = {
-                            module_name: SERVICE_MODULE,
-                            method_name: 'update_document',
-                            parameters: {
-                                cname: 'sessions',
-                                id: existingItem._id,
-                                data: {
-                                    id: sessionId,
-                                    tags: session.tags,
-                                    updatedAt: Date.now()
-                                }
+                    const payload = {
+                        module_name: SERVICE_MODULE,
+                        method_name: 'update_document',
+                        parameters: {
+                            cname: 'sessions',
+                            key: sessionId,
+                            data: {
+                                key: sessionId,
+                                tags: session.tags,
+                                updatedAt: Date.now()
                             }
-                        };
-                        await postData(`${window.API_URL}/`, payload);
-                    }
+                        }
+                    };
+                    await postData(`${window.API_URL}/`, payload);
                     
                     // 更新本地状态
                     if (store.sessions && store.sessions.value) {
@@ -5408,9 +5180,5 @@ async function closeTagManager(sessionId, store) {
         }
     }
 }
-
-
-
-
 
 
