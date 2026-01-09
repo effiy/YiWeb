@@ -2258,15 +2258,10 @@ export const useMethods = (store) => {
                     // const url = `${window.API_URL}/session/${encodeURIComponent(sessionId)}`;
                     // await deleteData(url);
 
-                    const payload = {
-                        module_name: SERVICE_MODULE,
-                        method_name: 'delete_document',
-                        parameters: {
-                            cname: 'sessions',
-                            key: sessionKey
-                        }
-                    };
-                    await postData(`${window.API_URL}/`, payload);
+                    // 使用 SessionSyncService 删除会话，确保一致性和重试逻辑
+                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.deleteSession(sessionKey);
                     
                     // 从列表中移除
                     if (store.sessions && store.sessions.value && Array.isArray(store.sessions.value)) {

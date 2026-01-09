@@ -213,15 +213,17 @@ class FileDeleteService {
 
     /**
      * 删除会话
-     * @param {string} fileKey - 文件Key
+     * @param {string} sessionKey - 会话Key
      * @returns {Promise<boolean>} 是否成功
      */
-    async deleteSession(fileKey) {
+    async deleteSession(sessionKey) {
         try {
             const sessionSync = getSessionSyncService();
-            const sessionId = sessionSync.generateSessionKey(fileKey);
-            await sessionSync.deleteSession(sessionId);
-            console.log('[FileDeleteService] 会话删除成功:', sessionId);
+            // 直接使用传入的 sessionKey
+            // 注意：generateSessionKey 仅用于从文件路径生成Key，这里我们可能已经有了真实的 sessionKey
+            const finalKey = sessionKey || sessionSync.generateSessionKey(sessionKey);
+            await sessionSync.deleteSession(finalKey);
+            console.log('[FileDeleteService] 会话删除成功:', finalKey);
             return true;
         } catch (error) {
             console.warn('[FileDeleteService] 会话删除失败:', error?.message);
@@ -983,8 +985,9 @@ export const createStore = () => {
                          });
                          
                          if (session) {
-                             console.log(`[deleteItem] 为文件 ${fPath} 找到对应会话Key: ${fPath}`);
-                             return { ...f, sessionKey: fPath, path: fPath };
+                             const realSessionKey = session.key || session.id;
+                             console.log(`[deleteItem] 为文件 ${fPath} 找到对应会话Key: ${realSessionKey}`);
+                             return { ...f, sessionKey: realSessionKey, path: fPath };
                          }
                          return f;
                     });
@@ -1000,10 +1003,12 @@ export const createStore = () => {
                 
                 // 手动更新本地 sessions 列表（移除已删除的文件会话）
                 if (sessions.value && Array.isArray(sessions.value) && filesToDelete.length > 0) {
-                     const deletedFileKeys = filesToDelete.map(f => f.key || f.path).filter(Boolean);
-                     if (deletedFileKeys.length > 0) {
-                         // 将文件路径转换为 session keys
-                         const deletedSessionKeys = deletedFileKeys.map(k => sessionSync.generateSessionKey(k));
+                     // 收集所有需要删除的会话Key
+                     const deletedSessionKeys = filesToDelete
+                        .map(f => f.sessionKey || sessionSync.generateSessionKey(f.key || f.path))
+                        .filter(Boolean);
+                     
+                     if (deletedSessionKeys.length > 0) {
                          console.log('[deleteItem] 待删除会话Keys:', deletedSessionKeys);
                          
                          const originalLength = sessions.value.length;
