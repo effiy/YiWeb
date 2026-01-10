@@ -118,6 +118,50 @@ class FileDeleteService {
     }
 
     /**
+     * 重命名文件
+     * @param {string} oldPath - 旧路径
+     * @param {string} newPath - 新路径
+     * @returns {Promise<Object>} 结果
+     */
+    async renameFile(oldPath, newPath) {
+        console.log('[FileDeleteService] 重命名文件:', oldPath, '->', newPath);
+        try {
+            const base = String(this.apiUrl || '').replace(/\/+$/, '');
+            const endpoint = `${base}/rename-file`;
+            const response = await postData(endpoint, {
+                old_path: oldPath,
+                new_path: newPath
+            });
+            return { success: true, response };
+        } catch (e) {
+            console.warn('[FileDeleteService] 静态文件重命名失败:', e.message);
+            return { success: false, error: e.message };
+        }
+    }
+
+    /**
+     * 重命名文件夹
+     * @param {string} oldPath - 旧路径
+     * @param {string} newPath - 新路径
+     * @returns {Promise<Object>} 结果
+     */
+    async renameFolder(oldPath, newPath) {
+        console.log('[FileDeleteService] 重命名文件夹:', oldPath, '->', newPath);
+        try {
+            const base = String(this.apiUrl || '').replace(/\/+$/, '');
+            const endpoint = `${base}/rename-folder`;
+            const response = await postData(endpoint, {
+                old_dir: oldPath,
+                new_dir: newPath
+            });
+            return { success: true, response };
+        } catch (e) {
+            console.warn('[FileDeleteService] 静态文件夹重命名失败:', e.message);
+            return { success: false, error: e.message };
+        }
+    }
+
+    /**
      * 删除文件夹
      * 1. 删除文件夹关联的所有会话
      * 2. 调用后端接口删除静态目录
@@ -746,6 +790,21 @@ export const createStore = () => {
             // 构建完整路径
             const oldId = oldPath;
             const newId = newPath;
+
+            // 调用后端重命名 API
+            const fileDeleteService = getFileDeleteService();
+            if (node.type === 'folder') {
+                const res = await fileDeleteService.renameFolder(oldPath, newPath);
+                if (!res.success) {
+                    throw createError('文件夹重命名失败: ' + (res.error || '未知错误'), ErrorTypes.API, '重命名');
+                }
+            } else {
+                const res = await fileDeleteService.renameFile(oldPath, newPath);
+                if (!res.success) {
+                    throw createError('文件重命名失败: ' + (res.error || '未知错误'), ErrorTypes.API, '重命名');
+                }
+            }
+
             node.name = newName;
 
             // 记录变更前的文件列表用于远端同步
