@@ -502,25 +502,38 @@ export const createStore = () => {
             if (!name || !name.trim()) {
                 throw createError('文件夹名称不能为空', ErrorTypes.VALIDATION, '新建文件夹');
             }
-            const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
-            if (!root || typeof root !== 'object') throw createError('文件树未加载', ErrorTypes.API, '新建文件夹');
+            // 修正：使用完整 fileTree.value 作为根，支持数组结构
+            const root = fileTree.value;
+            if (!root) throw createError('文件树未加载', ErrorTypes.API, '新建文件夹');
 
             let parentNode = null;
+            let targetChildren = null;
+
             if (!parentId) {
-                parentNode = root;
+                // 根目录创建
+                if (Array.isArray(root)) {
+                    targetChildren = root;
+                } else {
+                    parentNode = root;
+                    if (parentNode.type !== 'folder') throw createError('根节点无效', ErrorTypes.VALIDATION, '新建文件夹');
+                    targetChildren = parentNode.children = parentNode.children || [];
+                }
             } else {
-                parentNode = findNodeAndParentByKey(root, parentId).node;
-            }
-            if (!parentNode || parentNode.type !== 'folder') {
-                throw createError('父级目录无效', ErrorTypes.VALIDATION, '新建文件夹');
+                // 子目录创建
+                const result = findNodeAndParentByKey(root, parentId);
+                parentNode = result.node;
+                if (!parentNode || parentNode.type !== 'folder') {
+                    throw createError('父级目录无效', ErrorTypes.VALIDATION, '新建文件夹');
+                }
+                targetChildren = parentNode.children = parentNode.children || [];
             }
 
-            parentNode.children = Array.isArray(parentNode.children) ? parentNode.children : [];
             // 保证同级唯一
-            const exists = parentNode.children.find(ch => ch.name === name);
+            const exists = targetChildren.find(ch => ch.name === name);
             if (exists) throw createError('同名文件或文件夹已存在', ErrorTypes.VALIDATION, '新建文件夹');
 
-            const newId = (parentNode.key ? `${parentNode.key}/` : '') + name;
+            const parentKey = parentNode ? parentNode.key : '';
+            const newId = (parentKey ? `${parentKey}/` : '') + name;
             // 使用 normalizeTreeNode 确保 key 和 path
             const folderNode = normalizeTreeNode({
                 key: newId,
@@ -529,7 +542,7 @@ export const createStore = () => {
                 children: []
             });
             if (folderNode) {
-                parentNode.children.push(folderNode);
+                targetChildren.push(folderNode);
             }
             
             // 对父节点的子节点进行排序
@@ -552,7 +565,12 @@ export const createStore = () => {
                 });
             };
             
-            parentNode.children = sortFileTreeItems(parentNode.children);
+            const sorted = sortFileTreeItems(targetChildren);
+            if (parentNode) {
+                parentNode.children = sorted;
+            } else if (Array.isArray(root)) {
+                fileTree.value = sorted;
+            }
             // 保持全部展开
             expandAllFolders();
 
@@ -574,26 +592,38 @@ export const createStore = () => {
             if (!name || !name.trim()) {
                 throw createError('文件名称不能为空', ErrorTypes.VALIDATION, '新建文件');
             }
-            const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
-            if (!root || typeof root !== 'object') throw createError('文件树未加载', ErrorTypes.API, '新建文件');
+            // 修正：使用完整 fileTree.value 作为根，支持数组结构
+            const root = fileTree.value;
+            if (!root) throw createError('文件树未加载', ErrorTypes.API, '新建文件');
 
             let parentNode = null;
+            let targetChildren = null;
+
             if (!parentId) {
-                parentNode = root;
+                // 根目录创建
+                if (Array.isArray(root)) {
+                    targetChildren = root;
+                } else {
+                    parentNode = root;
+                    if (parentNode.type !== 'folder') throw createError('根节点无效', ErrorTypes.VALIDATION, '新建文件');
+                    targetChildren = parentNode.children = parentNode.children || [];
+                }
             } else {
-                parentNode = findNodeAndParentByKey(root, parentId).node;
-            }
-            if (!parentNode || parentNode.type !== 'folder') {
-                throw createError('父级目录无效', ErrorTypes.VALIDATION, '新建文件');
+                // 子目录创建
+                const result = findNodeAndParentByKey(root, parentId);
+                parentNode = result.node;
+                if (!parentNode || parentNode.type !== 'folder') {
+                    throw createError('父级目录无效', ErrorTypes.VALIDATION, '新建文件');
+                }
+                targetChildren = parentNode.children = parentNode.children || [];
             }
 
-            parentNode.children = Array.isArray(parentNode.children) ? parentNode.children : [];
-            if (parentNode.children.find(ch => ch.name === name)) {
+            if (targetChildren.find(ch => ch.name === name)) {
                 throw createError('同名文件或文件夹已存在', ErrorTypes.VALIDATION, '新建文件');
             }
 
             // 使用统一的路径规范化
-            const parentPath = normalizeFilePath(parentNode.key || '');
+            const parentPath = parentNode ? normalizeFilePath(parentNode.key || '') : '';
             const newId = parentPath ? `${parentPath}/${name}` : name;
             const normalizedNewId = normalizeFilePath(newId);
             const now = Date.now();
@@ -609,10 +639,10 @@ export const createStore = () => {
             });
             
             if (fileNode) {
-                parentNode.children.push(fileNode);
+                targetChildren.push(fileNode);
             }
             
-            // 对父节点的子节点进行排序
+            // 对子节点进行排序
             const sortFileTreeItems = (items) => {
                 if (!Array.isArray(items)) return items;
                 
@@ -632,7 +662,12 @@ export const createStore = () => {
                 });
             };
             
-            parentNode.children = sortFileTreeItems(parentNode.children);
+            const sorted = sortFileTreeItems(targetChildren);
+            if (parentNode) {
+                parentNode.children = sorted;
+            } else if (Array.isArray(root)) {
+                fileTree.value = sorted;
+            }
             // 保持全部展开
             expandAllFolders();
 
@@ -660,7 +695,8 @@ export const createStore = () => {
             // 同步文件到会话（使用规范化后的文件对象）
             try {
                 if (newFile) {
-                    await sessionSync.syncFileToSession(newFile, false);
+                    // 强制立即同步且强制更新，确保会话被创建
+                    await sessionSync.syncFileToSession(newFile, true, true);
                     console.log('[createFile] 文件已同步到会话:', normalizedNewId);
                     
                     // 手动更新本地 sessions 列表，确保后续操作（如删除文件夹）能找到对应会话
@@ -799,57 +835,70 @@ export const createStore = () => {
                     return ids.some(v => v === normalizedOldId || v.startsWith(normalizedOldId + '/'));
                 });
                 
-                for (const f of affected) {
-                    const oldPath = normalizeFilePath(f.path || f.key);
-                    const newPath = oldPath.replace(normalizedOldId, newId);
-                    
-                    // 同步更新会话（无论是文件重命名还是文件夹重命名导致的路径变更）
-                    try {
-                        // 删除旧会话
-                        let oldSessionKey = sessionSync.generateSessionKey(oldPath);
+                // 使用分块并行处理，避免并发请求过多
+                const concurrency = 5;
+                const chunks = [];
+                for (let i = 0; i < affected.length; i += concurrency) {
+                    chunks.push(affected.slice(i, i + concurrency));
+                }
+
+                console.log(`[renameItem] 开始迁移 ${affected.length} 个文件的会话，分 ${chunks.length} 批处理`);
+
+                for (const chunk of chunks) {
+                    await Promise.all(chunk.map(async (f) => {
+                        const oldPath = normalizeFilePath(f.path || f.key);
+                        const newPath = oldPath.replace(normalizedOldId, newId);
                         
-                        // 尝试查找旧会话的真实 Key (兼容旧数据)
-                        if (sessions.value && Array.isArray(sessions.value)) {
-                            const fName = oldPath.split('/').pop();
-                            const fTags = oldPath.split('/').slice(0, -1).filter(Boolean);
-                            const oldSession = sessions.value.find(s => {
-                                 const sName = s.title || s.pageTitle;
-                                 const sTags = s.tags || [];
-                                 if (sName !== fName) return false;
-                                 if (sTags.length !== fTags.length) return false;
-                                 for (let i = 0; i < sTags.length; i++) {
-                                     if (String(sTags[i]) !== String(fTags[i])) return false;
-                                 }
-                                 return true;
-                            });
-                            if (oldSession && oldSession.key) {
-                                oldSessionKey = oldSession.key;
-                                console.log(`[renameItem] 找到旧会话真实Key: ${oldSessionKey} (原路径: ${oldPath})`);
+                        // 构造新的文件对象
+                        const updatedFile = { 
+                            ...f, 
+                            key: newPath, 
+                            path: newPath, 
+                            name: newPath.split('/').pop() 
+                        };
+
+                        try {
+                            // 调用 renameSession 进行原子化迁移（保留消息）
+                            // 这会自动处理：获取旧消息 -> 删除旧会话 -> 创建新会话（带旧消息）
+                            await sessionSync.renameSession(oldPath, newPath, updatedFile);
+
+                            // 更新本地 sessions 列表
+                            if (sessions.value && Array.isArray(sessions.value)) {
+                                // 查找并移除旧会话
+                                const fName = oldPath.split('/').pop();
+                                const fTags = oldPath.split('/').slice(0, -1).filter(Boolean);
+                                
+                                const oldSessIdx = sessions.value.findIndex(s => {
+                                    if (s.key === oldPath || s.id === oldPath) return true;
+                                    // 模糊匹配 (兼容 UUID Key 的情况)
+                                    const sName = s.title || s.pageTitle;
+                                    const sTags = s.tags || [];
+                                    if (sName !== fName) return false;
+                                    if (sTags.length !== fTags.length) return false;
+                                    for (let i = 0; i < sTags.length; i++) {
+                                         if (String(sTags[i]) !== String(fTags[i])) return false;
+                                    }
+                                    return true;
+                                });
+
+                                if (oldSessIdx >= 0) {
+                                    sessions.value.splice(oldSessIdx, 1);
+                                }
+                                
+                                // 添加新会话（本地模拟，无需再次查询）
+                                const sessionData = sessionSync.fileToSession(updatedFile);
+                                if (sessionData) {
+                                    // 尝试保留一些本地状态（如果需要）
+                                    sessions.value.push(sessionData);
+                                }
                             }
+                            
+                            console.log('[renameItem] 会话迁移完成:', oldPath, '->', newPath);
+                        } catch (err) {
+                            console.error(`[renameItem] 文件 ${oldPath} 会话迁移失败:`, err);
+                            // 继续处理其他文件，不中断整体流程
                         }
-
-                        await sessionSync.deleteSession(oldSessionKey);
-                        
-                        // 创建新会话
-                        const updatedFile = { ...f, key: newPath, path: newPath, name: newPath.split('/').pop() };
-                        await sessionSync.syncFileToSession(updatedFile, false);
-
-                        // 更新本地 sessions 列表
-                        if (sessions.value && Array.isArray(sessions.value)) {
-                            const oldSessIdx = sessions.value.findIndex(s => s.key === oldSessionKey || s.id === oldSessionKey);
-                            if (oldSessIdx >= 0) {
-                                sessions.value.splice(oldSessIdx, 1);
-                            }
-                            const sessionData = sessionSync.fileToSession(updatedFile);
-                            if (sessionData) {
-                                sessions.value.push(sessionData);
-                            }
-                        }
-
-                        console.log('[renameItem] 会话已同步更新:', oldPath, '->', newPath);
-                    } catch (syncError) {
-                        console.warn('[renameItem] 同步会话失败（已忽略）:', syncError?.message);
-                    }
+                    }));
                 }
             } catch (e) {
                 console.warn('[renameItem] 远端文件同步失败（已忽略）:', e?.message);

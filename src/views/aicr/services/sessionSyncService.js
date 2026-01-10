@@ -565,10 +565,22 @@ class SessionSyncService {
         return safeExecuteAsync(async () => {
             try {
                 // 规范化会话数据
-            const normalized = {
-                id: String(sessionData.id || sessionData.key || ''),
-                key: String(sessionData.key || sessionData.id || ''), // 确保 key 字段被保存
-                url: String(sessionData.url || ''),
+                // 注意：id 字段使用路径，key 字段保留为空（新建时）或使用现有 UUID（更新时）
+                // sessionData.key 可能是路径（来自 fileToSession），也可能是 UUID（来自 renameSession 或 loadFromSessions）
+                // 我们需要判断 sessionData.key 是否是 UUID
+                
+                let targetKey = sessionData.key;
+                const pathId = sessionData.id || sessionData.key || '';
+                
+                // 如果 key 看起来像路径（包含 /），则视为 id，key 设为空或 undefined
+                if (targetKey && typeof targetKey === 'string' && targetKey.includes('/')) {
+                    targetKey = undefined;
+                }
+
+                const normalized = {
+                    id: String(pathId),
+                    // key: targetKey, // 不要在这里设置 key，除非它是 UUID
+                    url: String(sessionData.url || ''),
                     title: String(sessionData.title || sessionData.pageTitle || ''),
                     pageTitle: String(sessionData.pageTitle || sessionData.title || ''),
                     pageDescription: String(sessionData.pageDescription || ''),
@@ -581,8 +593,13 @@ class SessionSyncService {
                     lastAccessTime: this.normalizeTimestamp(sessionData.lastAccessTime)
                 };
 
+                // 如果有有效的 UUID key，也放入 normalized 数据中（虽然 update 时参数里也会传）
+                if (targetKey) {
+                    normalized.key = targetKey;
+                }
+
                 // 使用统一的 postData 接口（会自动添加认证头）
-                // 检查会话是否存在
+                // 检查会话是否存在（通过 id=路径 查询）
                 const checkUrl = buildServiceUrl('query_documents', {
                     cname: 'sessions',
                     filter: { id: normalized.id },
@@ -594,18 +611,33 @@ class SessionSyncService {
                 let response;
                 if (existingSession) {
                     // 更新会话
+                    // 确保使用真实的 UUID Key
+                    const realKey = existingSession.key;
+                    if (!realKey) {
+                        throw new Error('现有会话缺少 UUID Key，无法更新');
+                    }
+                    
+                    // 确保 normalized 数据中包含 key
+                    normalized.key = realKey;
+
                     const payload = {
                         module_name: SERVICE_MODULE,
                         method_name: 'update_document',
                         parameters: {
                             cname: 'sessions',
-                            id: existingSession.id, // 使用 key
+                            key: realKey, // 使用 UUID
                             data: normalized
                         }
                     };
+                    console.log(`[SessionSync] 更新会话: ${normalized.id} (Key: ${realKey})`);
                     response = await postData(`${this.apiUrl}/`, payload);
                 } else {
                     // 创建会话
+                    // 如果传入了 UUID key (比如从旧会话迁移)，则使用它；否则不传 key 让后端生成
+                    if (targetKey) {
+                        normalized.key = targetKey;
+                    }
+                    
                     const payload = {
                         module_name: SERVICE_MODULE,
                         method_name: 'create_document',
@@ -614,6 +646,7 @@ class SessionSyncService {
                             data: normalized
                         }
                     };
+                    console.log(`[SessionSync] 创建会话: ${normalized.id}`);
                     response = await postData(`${this.apiUrl}/`, payload);
                 }
                 
@@ -726,6 +759,68 @@ class SessionSyncService {
                 throw error;
             }
         }, '删除会话');
+    }
+
+    /**
+     * 重命名会话（迁移数据）
+     * 1. 获取旧会话数据（保留消息历史）
+     * 2. 删除旧会话
+     * 3. 创建新会话（注入旧消息和更新后的元数据）
+     * 
+     * @param {string} oldKey - 旧会话Key (通常是旧文件路径)
+     * @param {string} newKey - 新会话Key (通常是新文件路径)
+     * @param {Object} newFile - 新文件对象 (包含新路径和内容)
+     * @returns {Promise<Object>} 新会话保存结果
+     */
+    async renameSession(oldKey, newKey, newFile) {
+        return safeExecuteAsync(async () => {
+            console.log(`[SessionSync] 开始重命名会话: ${oldKey} -> ${newKey}`);
+            
+            // 1. 获取旧会话
+            // 注意：这里我们使用 oldKey (通常是路径) 去查询，getSession 内部会处理 filter: { id: oldKey }
+            const oldSession = await this.getSession(oldKey);
+            let messages = [];
+            let createdAt = Date.now();
+            let originalUuidKey = null; // 如果旧会话有 UUID Key，记录下来用于删除
+            
+            if (oldSession) {
+                console.log(`[SessionSync] 找到旧会话，将迁移 ${oldSession.messages?.length || 0} 条消息`);
+                messages = oldSession.messages || [];
+                createdAt = oldSession.createdAt;
+                originalUuidKey = oldSession.key; // 获取真实的 UUID Key
+            } else {
+                console.warn(`[SessionSync] 未找到旧会话 ${oldKey}，将创建全新会话`);
+            }
+            
+            // 2. 删除旧会话
+            // 如果找到了 oldSession，使用其真实 Key 删除更稳妥；否则尝试用 oldKey 删除
+            const deleteTargetKey = originalUuidKey || oldKey;
+            try {
+                await this.deleteSession(deleteTargetKey);
+            } catch (delErr) {
+                console.warn(`[SessionSync] 删除旧会话失败 (可能不存在): ${delErr.message}`);
+                // 不阻断流程，继续创建新会话
+            }
+            
+            // 3. 创建新会话数据
+            const sessionData = this.fileToSession(newFile);
+            if (!sessionData) throw new Error('无法从文件对象创建会话数据');
+            
+            // 4. 注入旧数据和更新元数据
+            // 注意：sessionData.key 通常由 fileToSession 生成 (基于 newFile 的路径)
+            // 如果 newKey 与 sessionData.key 不一致，以传入的 newKey 为准 (虽然通常是一样的)
+            if (newKey) {
+                sessionData.key = newKey;
+                sessionData.id = newKey; // 确保 id 也更新
+            }
+            
+            sessionData.messages = messages;
+            sessionData.createdAt = createdAt; // 保持原始创建时间
+            sessionData.updatedAt = Date.now(); // 更新修改时间
+            
+            // 5. 保存新会话
+            return await this.saveSession(sessionData);
+        }, '重命名会话');
     }
 
     /**

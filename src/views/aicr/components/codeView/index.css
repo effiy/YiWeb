@@ -21,17 +21,19 @@
     border: 1px solid var(--border-primary);
     border-top: none;
     border-radius: 0 0 8px 8px;
-    padding: 5px 0;
+    padding: 0; /* Remove padding to let children fill fully */
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 14px;
     line-height: 1.6;
-    overflow: auto;
+    overflow: hidden; /* Changed from auto to hidden */
     position: relative;
     min-height: 120px;
     box-shadow: var(--shadow-sm);
     /* Flex adjustment for scrolling */
     flex: 1;
-    height: 0; 
+    height: 0;
+    display: flex; /* Make it a flex container */
+    flex-direction: column;
 }
 
 /* ========== Markdown预览容器 ========== */
@@ -1331,12 +1333,15 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    flex: 1;
+    height: 0;
+    overflow: hidden;
+    padding: 10px;
 }
 
 .edit-textarea {
     width: 100%;
-    min-height: 240px;
-    max-height: calc(70vh);
+    height: 100%;
     background: var(--bg-secondary);
     color: var(--text-primary);
     border: 1px solid var(--border-primary);
@@ -1347,6 +1352,7 @@
     line-height: 1.6;
     resize: none;
     outline: none;
+    flex: 1;
 }
 
 .save-error {
@@ -1378,6 +1384,9 @@
     font-family: inherit;
     font-size: inherit;
     line-height: inherit;
+    flex: 1;
+    height: 0;
+    overflow: auto;
 }
 
 /* ========== 代码行 ========== */
