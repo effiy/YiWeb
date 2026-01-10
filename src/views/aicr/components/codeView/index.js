@@ -1727,47 +1727,56 @@ const componentOptions = {
                 this.editSaving = true;
                 this.saveError = '';
                 try {
-                    // 获取文件key
-                    const key = this.file.key || this.file.path || this.file.name;
+                    // 获取文件路径
+                    const targetFile = this.file.path || this.file.key;
                     
                     console.log('[saveEditedFile] 保存参数:', {
-                        key,
+                        targetFile,
                         file: this.file
                     });
                     
-                    if (!key) {
-                        this.saveError = '缺少文件标识，无法保存';
-                        console.error('[saveEditedFile] 缺少必要参数:', { key });
-                        return;
+                    if (!targetFile) {
+                        throw new Error('缺少文件路径，无法保存');
                     }
+
+                    // 调用后端写入接口
+                    // 直接构建 URL，不使用 buildServiceUrl，因为它用于 RPC 模式
+                    const baseUrl = window.API_URL || '';
+                    const url = `${baseUrl.replace(/\/$/, '')}/write-file`;
+                    
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            target_file: targetFile,
+                            content: content,
+                            is_base64: false
+                        })
+                    });
+
+                    if (!response.ok) {
+                         const errorData = await response.json().catch(() => ({}));
+                         throw new Error(errorData.message || `保存失败: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    if (result.code !== 0) {
+                        throw new Error(result.message || '保存失败');
+                    }
+
+                    console.log('[saveEditedFile] 文件保存成功:', result);
+
                     // 更新本地 file 对象
                     this.file.content = content;
 
-                    // 使用 sessions API 保存文件
-                    try {
-                        const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
-                        const sessionSync = getSessionSyncService();
-                        const updatedFile = {
-                            ...this.file,
-                            content: content,
-                            key: key,
-                            path: key,
-                            name: (this.file.name || (typeof key === 'string' ? key.split('/').pop() : ''))
-                        };
-                        
-                        // 强制立即同步并更新
-                        const result = await sessionSync.syncFileToSession(updatedFile, true, true);
-                        console.log('[saveEditedFile] 文件已保存到会话:', key, result);
-                    } catch (syncError) {
-                        console.error('[saveEditedFile] 保存到会话失败:', syncError);
-                        throw new Error('保存到会话失败: ' + (syncError.message || '未知错误'));
-                    }
-                    
+                    // 更新 store 中的文件内容
                     try {
                         const store = window.aicrStore;
                         if (store && Array.isArray(store.files?.value)) {
                             const idx = store.files.value.findIndex(f => {
-                                return f.key === key;
+                                return f.key === this.file.key || f.path === this.file.path;
                             });
                             if (idx >= 0) {
                                 const prev = store.files.value[idx];
@@ -1782,7 +1791,8 @@ const componentOptions = {
                     
                     // 发射文件保存成功事件
                     this.$emit('file-saved', {
-                        fileKey: key,
+                        fileKey: this.file.key,
+                        filePath: targetFile,
                         content: content,
                         lastModified: new Date().toISOString()
                     });
@@ -1790,7 +1800,9 @@ const componentOptions = {
                     // 显示保存成功消息
                     showSuccess('文件保存成功');
                 } catch (e) {
+                    console.error('[saveEditedFile] 保存失败:', e);
                     this.saveError = e?.message || '保存失败';
+                    showError(this.saveError);
                 } finally {
                     this.editSaving = false;
                 }

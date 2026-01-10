@@ -256,6 +256,8 @@ export const createStore = () => {
     const fileTreeDocKey = vueRef('');
     // 代码文件内容
     const files = vueRef([]);
+    // 待处理的文件加载请求（用于去重）
+    const pendingFileRequests = new Map();
     // 评论数据
     const comments = vueRef([]);
     // 当前选中的文件Key
@@ -1118,12 +1120,21 @@ export const createStore = () => {
      * 从文件树中查找文件节点
      */
     const findFileByKey = (nodes, targetKey) => {
+        const normalize = (v) => {
+            try {
+                return normalizeFilePath(v);
+            } catch (e) {
+                return String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+            }
+        };
+        const target = normalize(targetKey);
         const traverse = (node) => {
             if (!node || typeof node !== 'object') return null;
             
             // 如果是文件节点，检查是否匹配
             if (node.type === 'file' || (node.type !== 'folder' && !node.children)) {
-                if (node.key === targetKey) {
+                const nodeKey = normalize(node.key);
+                if (nodeKey && target && nodeKey === target) {
                     return node;
                 }
             }
@@ -1159,32 +1170,139 @@ export const createStore = () => {
             const key = targetKey || selectedKey.value;
             if (!key) return null;
 
-            console.log('[loadFileByKey] 尝试从文件树中查找文件:', key);
-            
-            // 如果文件树还没有加载，先加载文件树
-            if (!fileTree.value || fileTree.value.length === 0) {
-                console.log('[loadFileByKey] 文件树未加载，先加载文件树...');
-                await loadFileTree();
+            // 检查是否有正在进行的加载请求
+            if (pendingFileRequests.has(key)) {
+                console.log('[loadFileByKey] 复用正在进行的请求:', key);
+                return await pendingFileRequests.get(key);
             }
+
+            const loadTask = async () => {
+                console.log('[loadFileByKey] 尝试从文件树中查找文件:', key);
+                
+                // 如果文件树还没有加载，先加载文件树
+                if (!fileTree.value || fileTree.value.length === 0) {
+                    console.log('[loadFileByKey] 文件树未加载，先加载文件树...');
+                    await loadFileTree();
+                }
+                
+                // 从文件树中查找文件
+                let foundNode = findFileByKey(fileTree.value, key);
+                
+                // 如果没找到，尝试从已加载的文件列表中查找
+                if (!foundNode && files.value && files.value.length > 0) {
+                    console.log('[loadFileByKey] 在文件树中未找到，尝试从文件列表中查找');
+                    foundNode = files.value.find(f => f.key === key);
+                }
+                
+                if (!foundNode) {
+                    console.warn('[loadFileByKey] 未找到文件:', key);
+                    return null;
+                }
+                
+                console.log('[loadFileByKey] 找到文件:', foundNode.name || foundNode.key);
+                
+                // 处理找到的文件节点
+                const processed = await processFileItem(foundNode);
+
+                // 优先使用已缓存的静态内容（避免重复请求）
+                const cachedStatic = Array.isArray(files.value)
+                    ? files.value.find(f => {
+                        if (!f) return false;
+                        return (
+                            (processed.key && f.key === processed.key) ||
+                            (processed.path && f.path === processed.path) ||
+                            (processed.name && f.name === processed.name)
+                        );
+                    })
+                    : null;
+                if (cachedStatic?.__fromStatic && typeof cachedStatic.content === 'string' && cachedStatic.content) {
+                    console.log('[loadFileByKey] 使用已缓存的内容:', key);
+                    return cachedStatic;
+                }
+
+                // 尝试通过 API 加载文件内容
+                if (processed.path || processed.key) {
+                    try {
+                        const path = processed.path || processed.key;
+                        // 处理路径：移除开头的 / 或 static/，确保发送给后端的是相对路径
+                        let cleanPath = String(path || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                        
+                        // 移除 static/ 前缀 (假设后端 static_base_dir 已指向 static 目录)
+                        if (cleanPath.startsWith('static/')) {
+                            cleanPath = cleanPath.substring(7);
+                        }
+                        cleanPath = cleanPath.replace(/^\/+/, '');
+
+                        console.log('[loadFileByKey] 尝试通过API加载内容:', cleanPath);
+                        
+                        const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL))
+                            ? String(window.API_URL).replace(/\/+$/, '')
+                            : '';
+                            
+                        if (apiBase) {
+                            const res = await fetch(`${apiBase}/read-file`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    target_file: cleanPath
+                                })
+                            });
+                            
+                            if (res.ok) {
+                                const json = await res.json();
+                                // 兼容后端返回 code: 0 或 code: 200 表示成功
+                                if ((json.code === 200 || json.code === 0) && json.data && json.data.content) {
+                                    const content = json.data.content;
+                                    
+                                    if (json.data.type === 'base64') {
+                                        processed.contentBase64 = content;
+                                    } else {
+                                        processed.content = content;
+                                    }
+                                    
+                                    processed.__fromStatic = true;
+                                    console.log('[loadFileByKey] API加载成功, 长度:', content.length);
+
+                                    if (Array.isArray(files.value)) {
+                                        const idx = files.value.findIndex(f => {
+                                            if (!f) return false;
+                                            return (
+                                                (processed.key && f.key === processed.key) ||
+                                                (processed.path && f.path === processed.path) ||
+                                                (processed.name && f.name === processed.name)
+                                            );
+                                        });
+                                        if (idx >= 0) {
+                                            files.value[idx] = { ...files.value[idx], ...processed };
+                                        } else {
+                                            files.value.push(processed);
+                                        }
+                                    }
+                                } else {
+                                    console.warn('[loadFileByKey] API返回错误:', json.message || '无内容');
+                                }
+                            } else {
+                                console.warn('[loadFileByKey] API请求失败:', res.status, res.statusText);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('[loadFileByKey] API加载出错:', e);
+                    }
+                }
+                
+                return processed;
+            };
+
+            const promise = loadTask();
+            pendingFileRequests.set(key, promise);
             
-            // 从文件树中查找文件
-            let foundNode = findFileByKey(fileTree.value, key);
-            
-            // 如果没找到，尝试从已加载的文件列表中查找
-            if (!foundNode && files.value && files.value.length > 0) {
-                console.log('[loadFileByKey] 在文件树中未找到，尝试从文件列表中查找');
-                foundNode = files.value.find(f => f.key === key);
+            try {
+                return await promise;
+            } finally {
+                pendingFileRequests.delete(key);
             }
-            
-            if (!foundNode) {
-                console.warn('[loadFileByKey] 未找到文件:', key);
-                return null;
-            }
-            
-            console.log('[loadFileByKey] 找到文件:', foundNode.name || foundNode.key);
-            
-            // 处理找到的文件节点
-            return await processFileItem(foundNode);
         }, '按需加载单个文件');
     };
     
@@ -2059,8 +2177,3 @@ export const createStore = () => {
         loadSessionSidebarWidth
     };
 };
-
-
-
-
-

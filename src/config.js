@@ -16,8 +16,6 @@ const envStored = getStorage('env');
 
 let ENV = envParam || envStored || ((typeof location !== 'undefined' && isLocalHost(location.hostname)) ? 'local' : 'prod');
 
-ENV = 'prod'
-
 // --- Configuration Definitions ---
 const ENDPOINTS = {
   local: {
