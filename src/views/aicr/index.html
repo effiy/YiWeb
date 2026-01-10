@@ -155,56 +155,10 @@
                     <!-- 工具栏（两种视图模式都显示） -->
                     <div class="file-tree-toolbar">
                         <!-- 树形视图工具栏 -->
-                        <template v-if="viewMode === 'tree'">
-                            <div class="toolbar-group">
-                                <!-- 批量选择按钮 -->
-                                <button 
-                                    type="button"
-                                    class="toolbar-btn"
-                                    :class="{ 'active': batchMode }"
-                                    @click="toggleBatchMode"
-                                    :title="batchMode ? '退出批量选择' : '批量选择'"
-                                    aria-label="批量选择">
-                                    <i class="fas" :class="batchMode ? 'fa-check-square' : 'fa-square'" aria-hidden="true"></i>
-                                    <span>批量</span>
-                                </button>
-                            </div>
-                            <div class="toolbar-group">
-                                <!-- 下载按钮 -->
-                                <button 
-                                    type="button"
-                                    class="toolbar-btn"
-                                    @click="handleDownloadProjectVersion"
-                                    :disabled="loading"
-                                    title="下载项目"
-                                    aria-label="下载项目">
-                                    <i class="fas fa-download" aria-hidden="true"></i>
-                                    <span>下载</span>
-                                </button>
-                                <!-- 上传按钮 -->
-                                <button 
-                                    type="button"
-                                    class="toolbar-btn"
-                                    @click="triggerUploadProjectVersion"
-                                    :disabled="loading"
-                                    title="上传项目"
-                                    aria-label="上传项目">
-                                    <i class="fas fa-upload" aria-hidden="true"></i>
-                                    <span>上传</span>
-                                </button>
-                                <input
-                                    id="aicrUploadZipInput"
-                                    ref="uploadInput"
-                                    type="file" 
-                                    accept=".zip"
-                                    @change="handleUploadProjectVersion"
-                                    style="display:none" 
-                                    aria-label="上传项目ZIP">
-                            </div>
-                        </template>
+                        <!-- 已移除上传下载及批量功能 -->
                         
                         <!-- 标签视图工具栏 -->
-                        <template v-else-if="viewMode === 'tags'">
+                        <template v-if="viewMode === 'tags'">
                             <div class="toolbar-group">
                                 <!-- 批量选择按钮 -->
                                 <button 

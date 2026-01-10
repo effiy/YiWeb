@@ -285,51 +285,9 @@ export const useMethods = (store) => {
     /**
      * 下载当前项目为ZIP
      */
+    // 已移除下载功能
     const handleDownloadProjectVersion = async () => {
-        return safeExecute(async () => {
-            // 动态加载依赖
-            const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
-            showGlobalLoading(`正在打包 ...`);
-            try {
-                // 确保文件列表已加载
-                if (!Array.isArray(files?.value) || files.value.length === 0) {
-                    await loadFiles();
-                }
-                const allFiles = Array.isArray(files?.value) ? files.value : [];
-                if (allFiles.length === 0) {
-                    throw createError('当前项目下没有文件可下载', ErrorTypes.VALIDATION, '项目下载');
-                }
-
-                // 按路径构建ZIP
-                const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip || (await import('jszip')).default;
-                const zip = new JSZip();
-
-                const normalizePathForDownload = (p) => String(p || '').replace(/\\/g, '/').replace(/^\/+/, '');
-
-                for (const f of allFiles) {
-                    const path = normalizePathForDownload(f.key || f.path || f.name);
-                    const content = (typeof f.content === 'string') ? f.content : (f.data && typeof f.data.content === 'string' ? f.data.content : '');
-                    zip.file(path || 'unknown.txt', content || '');
-                }
-
-                const blob = await zip.generateAsync({ type: 'blob' });
-                const fileName = `project.zip`;
-
-                // 触发下载
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-
-                showSuccessMessage('打包完成，开始下载');
-            } finally {
-                try { hideGlobalLoading(); } catch (_) {}
-            }
-        }, '项目下载');
+        console.warn('[handleDownloadProjectVersion] 该功能已被禁用');
     };
 
     /**
@@ -1111,20 +1069,9 @@ export const useMethods = (store) => {
     };
 
     // 触发隐藏的文件选择
+    // 已移除上传功能
     const triggerUploadProjectVersion = () => {
-        return safeExecute(() => {
-            const input = document.getElementById('aicrUploadZipInput');
-            if (input) {
-                try { input.value = ''; } catch (_) {}
-                if (typeof input.click === 'function') {
-                    input.click();
-                } else {
-                    console.warn('[triggerUploadProjectVersion] input.click 不是函数');
-                }
-            } else {
-                console.warn('[triggerUploadProjectVersion] 未找到上传输入框元素 #aicrUploadZipInput');
-            }
-        }, '触发上传选择');
+        console.warn('[triggerUploadProjectVersion] 该功能已被禁用');
     };
 
     /**
