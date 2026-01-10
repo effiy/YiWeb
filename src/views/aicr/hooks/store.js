@@ -400,8 +400,8 @@ export const createStore = () => {
             
             allSessions.forEach(session => {
                 const tags = session.tags || [];
-                // Use all tags as path
-                const pathTags = tags;
+                // Use all tags as path, filtering out 'default'
+                const pathTags = tags.filter(t => t && t.toLowerCase() !== 'default');
                 
                 let currentLevelChildren = treeRoots;
                 let currentPath = '';
@@ -426,19 +426,30 @@ export const createStore = () => {
                 });
                 
                 // Add file node
-                const fileName = session.title || session.pageTitle || 'Untitled';
-                const fileKey = currentPath ? currentPath + '/' + fileName : fileName;
+                let fileName = session.title || session.pageTitle || 'Untitled';
+                // 替换文件名中的特殊字符，避免路径解析错误
+                fileName = fileName.replace(/\//g, '-');
                 
-                if (!currentLevelChildren.find(c => c.name === fileName && c.type === 'file')) {
-                    currentLevelChildren.push({
-                        key: fileKey,
-                        name: fileName,
-                        type: 'file',
-                        content: session.pageContent || '',
-                        size: (session.pageContent || '').length,
-                        lastModified: session.updatedAt || session.createdAt
-                    });
+                let uniqueName = fileName;
+                let counter = 1;
+                
+                // 处理重名文件
+                while (currentLevelChildren.find(c => c.name === uniqueName && c.type === 'file')) {
+                    uniqueName = `${fileName} (${counter})`;
+                    counter++;
                 }
+                
+                const fileKey = currentPath ? currentPath + '/' + uniqueName : uniqueName;
+                
+                currentLevelChildren.push({
+                    key: fileKey,
+                    name: uniqueName,
+                    type: 'file',
+                    content: session.pageContent || '',
+                    size: (session.pageContent || '').length,
+                    lastModified: session.updatedAt || session.createdAt,
+                    sessionKey: session.key || session.id // 保存会话标识，用于查找
+                });
             });
             
             // Sort tree

@@ -96,9 +96,9 @@ class SessionSyncService {
         let tags = this.extractTagsFromPath(filePath);
         const sessionKey = this.generateSessionKey(filePath);
         
-        // 如果标签为空，使用默认标签
-        if (!Array.isArray(tags) || tags.length === 0) {
-            tags = ['default'];
+        // 如果标签为空，不再使用默认标签，直接放在根目录
+        if (!Array.isArray(tags)) {
+            tags = [];
         }
         
         const now = Date.now();

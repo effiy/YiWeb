@@ -245,18 +245,45 @@ export const useMethods = (store) => {
             
             console.log('[handleSessionSelect] 选中会话:', session.title);
             
-            // 1. 构建文件Key (与 store.js loadFileTree 逻辑保持一致)
-            const tags = session.tags || [];
-            let currentPath = '';
-            tags.forEach((folderName) => {
-                if (!folderName) return;
-                currentPath = currentPath ? currentPath + '/' + folderName : folderName;
-            });
+            // 1. 尝试通过 sessionKey 在文件树中直接查找节点 (支持重名处理后的节点)
+            const targetSessionKey = session.key || session.id;
+            let fileKey = null;
             
-            const fileName = session.title || session.pageTitle || 'Untitled';
-            const fileKey = currentPath ? currentPath + '/' + fileName : fileName;
+            // 递归查找 helper
+            const findNodeBySessionKey = (nodes) => {
+                if (!nodes) return null;
+                const list = Array.isArray(nodes) ? nodes : [nodes];
+                for (const node of list) {
+                    if (node.type === 'file' && node.sessionKey === targetSessionKey) return node;
+                    if (node.children) {
+                        const found = findNodeBySessionKey(node.children);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            };
+
+            const foundNode = findNodeBySessionKey(store.fileTree.value);
             
-            console.log('[handleSessionSelect] 对应的文件Key:', fileKey);
+            if (foundNode) {
+                fileKey = foundNode.key;
+                console.log('[handleSessionSelect] 通过 sessionKey 找到文件Key:', fileKey);
+            } else {
+                // 回退逻辑：手动构建路径 (可能无法处理重名文件)
+                console.warn('[handleSessionSelect] 未找到对应文件节点，使用路径构建回退');
+                const tags = session.tags || [];
+                let currentPath = '';
+                tags.forEach((folderName) => {
+                    if (!folderName || (folderName.toLowerCase && folderName.toLowerCase() === 'default')) return;
+                    currentPath = currentPath ? currentPath + '/' + folderName : folderName;
+                });
+                
+                let fileName = session.title || session.pageTitle || 'Untitled';
+                fileName = fileName.replace(/\//g, '-');
+                fileKey = currentPath ? currentPath + '/' + fileName : fileName;
+            }
+            
+            console.log('[handleSessionSelect] 最终文件Key:', fileKey);
             
             // 2. 设置选中Key
             if (setSelectedKey) {
