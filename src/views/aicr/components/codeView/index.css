@@ -3,6 +3,17 @@
  * 优化代码展示、语法高亮和用户交互体验
  */
 
+/* ========== 代码视图容器 ========== */
+.code-view-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg-primary);
+}
+
 /* ========== 代码内容容器 ========== */
 .code-content {
     background: var(--bg-primary);
@@ -10,14 +21,17 @@
     border: 1px solid var(--border-primary);
     border-top: none;
     border-radius: 0 0 8px 8px;
-    padding: 0 10px;
+    padding: 5px 0;
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
-    font-size: 12px;
-    line-height: 1.4;
-    overflow: visible;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow: auto;
     position: relative;
     min-height: 120px;
     box-shadow: var(--shadow-sm);
+    /* Flex adjustment for scrolling */
+    flex: 1;
+    height: 0; 
 }
 
 /* ========== Markdown预览容器 ========== */
@@ -31,7 +45,9 @@
     min-height: 120px;
     box-shadow: var(--shadow-md);
     overflow: hidden;
-    max-height: 100vh;
+    /* Flex adjustment for scrolling */
+    flex: 1;
+    height: 0;
     background: linear-gradient(135deg, var(--bg-primary) 0%, rgba(255, 255, 255, 0.02) 100%);
 }
 
@@ -40,9 +56,68 @@
     flex-direction: column;
     height: 100%;
     overflow-y: auto;
-    max-height: 100vh;
+    /* Remove max-height as height is controlled by flex */
     scroll-behavior: smooth;
 }
+
+/* Lightbox Styles */
+.md-lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s ease;
+}
+
+.md-lightbox-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.md-lightbox-image {
+    max-width: 100%;
+    max-height: 85vh;
+    border-radius: 4px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    object-fit: contain;
+}
+
+.md-lightbox-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.md-lightbox-close:hover {
+    opacity: 1;
+}
+
+.md-lightbox-caption {
+    margin-top: 12px;
+    color: #fff;
+    font-size: 14px;
+    text-align: center;
+    max-width: 100%;
+}
+
 
 /* 预览模式提示 */
 .preview-mode-hint {
@@ -1076,21 +1151,32 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 6px 10px 6px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--border-primary);
-    margin: 0px -10px 8px -10px;
-    background: var(--bg-tertiary);
+    margin: 0;
+    background: rgba(255, 255, 255, 0.8); /* 亮色模式默认 */
     position: sticky;
     top: 0;
-    z-index: 10;
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
+    z-index: 120;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     /* 确保固定在顶部 */
     position: -webkit-sticky;
     position: sticky;
     /* 防止在滚动时移动 */
     will-change: transform;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
+
+/* 暗黑模式适配 (如果支持) - 这里假设有 dark 类或者基于 var 变量 */
+@media (prefers-color-scheme: dark) {
+    .code-header {
+        background: rgba(30, 41, 59, 0.8);
+    }
+}
+
+/* 如果使用 CSS 变量定义了背景色，可以直接使用带透明度的变量，这里先保留上面的写法作为兜底，
+   或者如果 var(--bg-tertiary) 已经是合适的颜色，可以沿用但调整透明度 */
 
 /* 引用代码输入框下方操作区域 */
 .textarea-actions {
@@ -1141,13 +1227,21 @@
 .code-header .file-name {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     font-weight: 600;
     color: var(--text-primary);
+    font-size: 14px;
     max-width: 60%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    letter-spacing: 0.3px;
+}
+
+.code-header .file-name i {
+    color: var(--primary);
+    font-size: 16px;
+    opacity: 0.9;
 }
 
 .code-actions {
@@ -1157,47 +1251,79 @@
 }
 
 .code-actions .action-button {
-    padding: 6px 10px;
+    padding: 6px 12px;
     border-radius: 6px;
     border: 1px solid var(--border-primary);
-    background: var(--bg-secondary);
-    color: var(--text-primary);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 500;
     box-shadow: var(--shadow-sm);
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.code-actions .action-button:hover:not(:disabled) {
+    background: var(--bg-secondary);
+    border-color: var(--border-hover, #ccc);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.code-actions .action-button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
 }
 
 .code-actions .action-button:disabled {
     opacity: .6;
     cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
 }
 
-.code-actions .save-button { background: var(--success-gradient); color: var(--text-on-accent); border-color: rgba(16,185,129,.35); }
-.code-actions .cancel-button { background: var(--bg-secondary); }
+.code-actions .save-button { 
+    background: var(--success-gradient); 
+    color: var(--text-on-accent); 
+    border-color: transparent; 
+}
+.code-actions .save-button:hover:not(:disabled) {
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    border-color: transparent;
+}
+
+.code-actions .cancel-button { 
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+.code-actions .cancel-button:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+}
+
 .code-actions .jump-button { 
     background: var(--accent); 
     color: var(--text-on-accent); 
-    border-color: rgba(139,92,246,.35);
-    transition: all 0.2s ease;
+    border-color: transparent;
 }
 .code-actions .jump-button:hover:not(:disabled) {
     background: var(--accent-hover);
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(139,92,246,.3);
+    border-color: transparent;
 }
+
 .code-actions .preview-toggle-button { 
     background: var(--accent); 
     color: var(--text-on-accent); 
-    border-color: rgba(6,182,212,.35); 
-    transition: all 0.2s ease;
+    border-color: transparent; 
 }
-.code-actions .preview-toggle-button:hover {
+.code-actions .preview-toggle-button:hover:not(:disabled) {
     background: var(--accent-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 12px rgba(6,182,212,.3);
+    border-color: transparent;
 }
 
 /* 编辑模式 */
@@ -1217,8 +1343,8 @@
     border-radius: 8px;
     padding: 10px 12px;
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
-    font-size: 12px;
-    line-height: 1.5;
+    font-size: 14px;
+    line-height: 1.6;
     resize: none;
     outline: none;
 }
@@ -1250,26 +1376,55 @@
     background: none;
     color: inherit;
     font-family: inherit;
-    font-size: 11px;
-    line-height: 1.1;
+    font-size: inherit;
+    line-height: inherit;
 }
 
 /* ========== 代码行 ========== */
 .code-line {
-    display: block;
-    padding: 4px 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0;
     margin: 0;
     border: none;
-    background: none;
-    font-size: 12px;
-    line-height: 1.2;
-    white-space: pre;
+    min-height: 1.6em;
     position: relative;
 }
 
+.code-line:hover {
+    background-color: var(--bg-secondary);
+}
+
+.line-number {
+    display: inline-block;
+    min-width: 45px;
+    padding-right: 16px;
+    margin-right: 0;
+    text-align: right;
+    color: var(--text-muted);
+    user-select: none;
+    border-right: 1px solid var(--border-secondary);
+    font-size: 12px;
+    line-height: inherit;
+    opacity: 0.7;
+    flex-shrink: 0;
+    position: sticky;
+    left: 0;
+    background-color: var(--bg-primary);
+    z-index: 10;
+}
+
+.code-line:hover .line-number {
+    background-color: var(--bg-secondary);
+}
+
 .line-content {
+    flex: 1;
     white-space: pre;
+    overflow-x: visible;
     font-family: inherit;
+    padding-left: 12px;
 }
 
 /* ========== 评论标记样式 ========== */

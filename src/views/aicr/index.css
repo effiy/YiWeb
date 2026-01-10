@@ -44,7 +44,9 @@
     flex: 1;
     background: var(--bg-primary);
     color: var(--text-primary);
-    overflow: visible;
+    overflow: hidden; /* Changed from visible to hidden to contain scrolling children */
+    display: flex;
+    flex-direction: column;
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 14px;
     line-height: 1.6;

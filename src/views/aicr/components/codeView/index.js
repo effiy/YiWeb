@@ -119,6 +119,12 @@ const componentOptions = {
                 _cacheMaxSize: 100,
                 _cacheExpiryTime: 5 * 60 * 1000, // 5分钟
 
+                // Lightbox state
+                lightbox: {
+                    visible: false,
+                    url: '',
+                    alt: ''
+                },
             };
         },
         watch: {
@@ -868,6 +874,19 @@ const componentOptions = {
             }
         },
         methods: {
+            openLightbox(url, alt) {
+                if (!this.lightbox) {
+                    this.lightbox = { visible: false, url: '', alt: '' };
+                }
+                this.lightbox.url = url;
+                this.lightbox.alt = alt;
+                this.lightbox.visible = true;
+            },
+            closeLightbox() {
+                if (this.lightbox) {
+                    this.lightbox.visible = false;
+                }
+            },
             // 处理组件错误
             handleComponentError(error, info) {
                 try {
@@ -907,6 +926,20 @@ const componentOptions = {
                     this.editingCommentText = '';
                     this.editingImprovementText = '';
                     this.editingSaving = false;
+                    
+                    // Reset lightbox state
+                    if (this.lightbox) {
+                        this.lightbox.visible = false;
+                        this.lightbox.url = '';
+                        this.lightbox.alt = '';
+                    } else {
+                        this.lightbox = {
+                            visible: false,
+                            url: '',
+                            alt: ''
+                        };
+                    }
+                    
                     console.log('[CodeView] 组件状态重置完成');
                 } catch (error) {
                     console.error('[CodeView] 重置组件状态失败:', error);
@@ -1467,6 +1500,17 @@ const componentOptions = {
                     // 为表格添加折叠功能
                     this.addCollapseToTables();
                     
+                    // 为图片添加点击预览功能
+                    const images = this.$el?.querySelectorAll('.markdown-preview-content img');
+                    images?.forEach(img => {
+                        img.style.cursor = 'zoom-in';
+                        img.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            this.openLightbox(img.src, img.alt);
+                        });
+                    });
+                    
                     // 重新初始化 Mermaid 图表（修复切换模式后丢失的问题）
                     this.initializeMermaidDiagrams();
                     
@@ -1965,6 +2009,19 @@ const componentOptions = {
                         return `<pre class="md-code-block" id="${codeId}"><code class="language-mermaid">${self.escapeHtml(code)}</code></pre>`;
                     }
                     
+                    let highlightedCode = self.escapeHtml(code);
+                    if (typeof hljs !== 'undefined' && lang !== 'text') {
+                        try {
+                            if (hljs.getLanguage(lang)) {
+                                highlightedCode = hljs.highlight(code, { language: lang }).value;
+                            } else {
+                                highlightedCode = hljs.highlightAuto(code).value;
+                            }
+                        } catch (e) {
+                            console.warn('Highlight.js error:', e);
+                        }
+                    }
+                    
                     return `
                         <div class="md-code-block-wrapper" data-source-line="${self.getCurrentSourceLine()}">
                             <div class="md-code-block-header">
@@ -1982,7 +2039,7 @@ const componentOptions = {
                                 </div>
                             </div>
                             <pre class="md-code-block" id="${codeId}">
-                                <code class="language-${lang}">${self.escapeHtml(code)}</code>
+                                <code class="language-${lang} hljs">${highlightedCode}</code>
                             </pre>
                         </div>
                     `;

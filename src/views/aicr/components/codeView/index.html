@@ -68,7 +68,8 @@
                 :class="['code-line', highlightedLines.includes(index + 1) ? 'highlight' : '']"
                 :data-line="index + 1"
             >
-                <span class="line-content" v-html="escapeHtml(line)"></span>
+                <span class="line-number">{{ index + 1 }}</span>
+                <span class="line-content" v-html="escapeHtml(line) || ' '"></span>
                 
                 <!-- 评论标记 -->
                 <div v-if="lineCommentMarkers[index + 1]" class="comment-markers">
@@ -578,7 +579,17 @@
         <div class="empty-title">请选择文件</div>
         <div class="empty-subtitle">从左侧文件树中选择要查看的文件</div>
     </div>
-</section>
+<!-- Lightbox for Image Preview -->
+        <div v-if="lightbox && lightbox.visible" class="md-lightbox" @click="closeLightbox">
+            <div class="md-lightbox-content" @click.stop>
+                <img :src="lightbox.url" :alt="lightbox.alt" class="md-lightbox-image">
+                <button class="md-lightbox-close" @click="closeLightbox">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="md-lightbox-caption" v-if="lightbox.alt">{{ lightbox.alt }}</div>
+            </div>
+        </div>
+    </section>
 
 
 
