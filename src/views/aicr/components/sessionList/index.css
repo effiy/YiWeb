@@ -98,15 +98,6 @@
     opacity: 1;
 }
 
-/* 展开/折叠按钮在头部的样式 */
-.tag-filter-expand-btn {
-    /* 与普通按钮样式一致 */
-}
-
-.tag-filter-expand-btn.active {
-    color: var(--primary, #6366f1);
-}
-
 .tags-clear-btn {
     padding: 4px 8px;
     border: none;

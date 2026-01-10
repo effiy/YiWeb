@@ -27,11 +27,10 @@
                     aria-label="反向过滤">
                     <i class="fas fa-exchange-alt"></i>
                 </button>
-                <!-- 展开/折叠按钮（在头部） -->
+                <!-- 展开/折叠按钮 -->
                 <button 
                     type="button"
-                    v-if="shouldShowExpandBtn"
-                    class="tag-filter-btn tag-filter-expand-btn"
+                    class="tag-filter-btn"
                     :class="{ active: tagFilterExpanded }"
                     @click="toggleExpand"
                     :title="tagFilterExpanded ? '收起标签列表' : '展开标签列表'"

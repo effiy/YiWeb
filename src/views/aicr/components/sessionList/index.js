@@ -196,12 +196,6 @@ const componentOptions = {
             return visible;
         });
         
-        // 计算是否应该显示展开/折叠按钮（在头部）
-        const shouldShowExpandBtn = computed(() => {
-            // 当标签数量超过可见数量时显示
-            return allTags.value.length > props.tagFilterVisibleCount;
-        });
-        
         // 是否有更多标签
         const hasMoreTags = computed(() => {
             if (props.tagFilterExpanded || props.tagFilterSearchKeyword) {
@@ -783,7 +777,6 @@ const componentOptions = {
             filteredTags,
             visibleTags,
             hasMoreTags,
-            shouldShowExpandBtn,
             tagCounts,
             filteredSessions,
             toggleTag,
