@@ -978,6 +978,9 @@ export const createStore = () => {
             }
             
             // 同步更新会话（如果是文件）
+            // 重命名完成后调用 query_documents 接口刷新会话列表
+            await loadSessions(true);
+
             return newId;
         }, '重命名');
     };
