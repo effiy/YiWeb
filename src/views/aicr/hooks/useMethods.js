@@ -236,6 +236,51 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 处理会话选择
+     * @param {Object} session - 选中的会话对象
+     */
+    const handleSessionSelect = async (session) => {
+        return safeExecute(async () => {
+            if (!session) return;
+            
+            console.log('[handleSessionSelect] 选中会话:', session.title);
+            
+            // 1. 构建文件Key (与 store.js loadFileTree 逻辑保持一致)
+            const tags = session.tags || [];
+            let currentPath = '';
+            tags.forEach((folderName) => {
+                if (!folderName) return;
+                currentPath = currentPath ? currentPath + '/' + folderName : folderName;
+            });
+            
+            const fileName = session.title || session.pageTitle || 'Untitled';
+            const fileKey = currentPath ? currentPath + '/' + fileName : fileName;
+            
+            console.log('[handleSessionSelect] 对应的文件Key:', fileKey);
+            
+            // 2. 设置选中Key
+            if (setSelectedKey) {
+                setSelectedKey(fileKey);
+            }
+            
+            // 3. 加载文件内容
+            if (loadFileByKey) {
+                try {
+                    await loadFileByKey(fileKey);
+                    // 确保代码视图更新
+                    if (store.currentFile) {
+                        // 如果 store 中没有直接暴露 currentFile，可能需要依赖 loadFileByKey 的副作用
+                        // 或者触发一次 refreshData
+                    }
+                } catch (e) {
+                    console.error('[handleSessionSelect] 加载文件失败:', e);
+                }
+            }
+            
+        }, '处理会话选择');
+    };
+
+    /**
      * 处理消息输入键盘事件
      * @param {Event} event - 键盘事件
      */
@@ -2135,42 +2180,51 @@ export const useMethods = (store) => {
             return safeExecute(async () => {
                 console.log('[handleSessionSelect] 选择会话:', session);
                 
-                if (!session || !session.key) {
+                if (!session || (!session.key && !session.id)) {
                     console.warn('[handleSessionSelect] 无效的会话数据');
                     if (window.showError) {
                         window.showError('无效的会话数据');
                     }
                     return;
                 }
+
+                // 1. 构建文件Key (参考 loadFileTree 中的逻辑)
+                // 注意：必须与 store.js 中的 loadFileTree 逻辑保持一致
+                const tags = session.tags || [];
+                let currentPath = '';
                 
-                // 获取会话的完整数据（如果需要）
-                let targetSession = session;
+                // 构建目录路径
+                tags.forEach((folderName) => {
+                    if (!folderName) return;
+                    currentPath = currentPath ? currentPath + '/' + folderName : folderName;
+                });
                 
-                // 如果会话有 URL，尝试打开该 URL
+                // 构建文件名
+                const fileName = session.title || session.pageTitle || 'Untitled';
+                const fileKey = currentPath ? currentPath + '/' + fileName : fileName;
+                
+                console.log('[handleSessionSelect] 构建文件Key:', fileKey);
+                
+                // 2. 更新选中状态
+                if (selectedKey) {
+                    selectedKey.value = fileKey;
+                }
+                
+                // 3. 加载文件内容
+                // 这将触发 CodeView 显示对应的静态文件内容
+                if (loadFileByKey) {
+                    await loadFileByKey(fileKey);
+                }
+                
+                // 4. 如果会话有 URL，且不是内部协议，可以选择性打开
+                // 目前为了满足"显示对应的静态文件内容"的需求，主要聚焦于加载内容
+                // URL 打开逻辑保留但作为次要操作，或者由用户通过界面按钮触发
                 if (session.url && !session.url.startsWith('blank-session://') && !session.url.startsWith('aicr-session://')) {
-                    // 普通 URL，直接打开
-                    try {
-                        // 尝试使用扩展 API 打开（如果可用）
-                        if (window.chrome && window.chrome.tabs && window.chrome.tabs.create) {
-                            window.chrome.tabs.create({ url: session.url });
-                        } else {
-                            // 降级方案：使用 window.open
-                            window.open(session.url, '_blank');
-                        }
-                        if (window.showSuccess) {
-                            window.showSuccess(`已打开会话：${session.pageTitle || session.title || '未命名会话'}`);
-                        }
-                    } catch (error) {
-                        console.error('[handleSessionSelect] 打开会话 URL 失败:', error);
-                        if (window.showError) {
-                            window.showError(`打开会话失败：${error.message || '未知错误'}`);
-                        }
-                    }
-                } else {
-                    // 对于空白会话或 aicr 会话，显示提示信息
-                    if (window.showSuccess) {
-                        window.showSuccess(`已选择会话：${session.pageTitle || session.title || '未命名会话'}`);
-                    }
+                    console.log('[handleSessionSelect] 会话包含外部URL:', session.url);
+                }
+
+                if (window.showSuccess) {
+                   // window.showSuccess(`已选择会话：${session.pageTitle || session.title || '未命名会话'}`);
                 }
             }, '选择会话');
         },

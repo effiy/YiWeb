@@ -668,6 +668,16 @@ const componentOptions = {
             }
             
             // 非批量模式下，正常打开会话
+            console.log('[SessionList] 选中会话:', session.id, session.title);
+            
+            // 设置选中状态
+            // 确保 session.id 存在，避免 undefined === undefined 导致的多选问题
+            if (session.id) {
+                selectedSessionId.value = session.id;
+            } else {
+                console.warn('[SessionList] 会话缺少ID，无法设置高亮:', session);
+            }
+            
             emit('session-select', session);
         };
         

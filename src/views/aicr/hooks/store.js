@@ -2143,6 +2143,12 @@ export const createStore = () => {
                     } else {
                         s.key = rawKey;
                     }
+
+                    // 确保 id 存在，用于列表渲染和选中状态判断
+                    // 解决因 id 缺失导致列表所有项被错误高亮的问题 (undefined === undefined)
+                    if (!s.id) {
+                        s.id = s._id || s.key || `temp_${Date.now()}_${Math.random().toString(36).substr(2)}`;
+                    }
                 });
 
                 sessionList = sessionList.filter(s => s && s.key);
