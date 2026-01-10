@@ -149,8 +149,10 @@
                 @touchstart="startLongPress(session, $event)"
                 @touchend="cancelLongPress"
                 @touchcancel="cancelLongPress">
+                
+                <!-- 第一行：标题和收藏按钮 -->
                 <div class="session-item-header">
-                    <div class="session-item-title">
+                    <div class="session-item-title-group">
                         <!-- 批量选择复选框（仅在批量模式下显示） -->
                         <input
                             v-if="sessionBatchMode"
@@ -167,91 +169,94 @@
                         </div>
                         <i v-if="getSessionSourceIcon(session)" :class="[getSessionSourceIcon(session), 'session-source-icon', { 'session-source-icon-news': getSessionSource(session) === 'news', 'session-source-icon-file': getSessionSource(session) === 'file-tree' }]"></i>
                         <span class="session-title-text">{{ session.pageTitle || session.title || '未命名会话' }}</span>
-                        <!-- 收藏按钮（批量模式下隐藏，使用 emoji 图标，在标题右边） -->
+                    </div>
+                    
+                    <!-- 收藏按钮（批量模式下隐藏，在标题行右侧） -->
+                    <button 
+                        type="button"
+                        v-if="!sessionBatchMode"
+                        class="session-favorite-btn"
+                        :class="{ active: session.isFavorite }"
+                        @click.stop="handleFavoriteClick(session)"
+                        :title="session.isFavorite ? '取消收藏' : '收藏'"
+                        aria-label="收藏">
+                        {{ session.isFavorite ? '❤️' : '🤍' }}
+                    </button>
+                </div>
+
+                <!-- 第二行：标签（如果有） -->
+                <div class="session-item-tags" v-if="session.tags && session.tags.length > 0">
+                    <span 
+                        v-for="tag in session.tags" 
+                        :key="tag"
+                        class="session-tag">
+                        {{ tag }}
+                    </span>
+                </div>
+
+                <!-- 第三行：底部信息（时间与操作） -->
+                <div class="session-item-footer">
+                    <span class="session-item-time">{{ formatTime(session.updatedAt || session.createdAt) }}</span>
+                    <!-- 操作按钮容器（底部，批量模式下隐藏） -->
+                    <div 
+                        v-if="!sessionBatchMode"
+                        class="session-item-actions session-item-actions-footer">
+                        <!-- 编辑按钮 -->
                         <button 
                             type="button"
-                            v-if="!sessionBatchMode"
-                            class="session-favorite-btn"
-                            :class="{ active: session.isFavorite }"
-                            @click.stop="handleFavoriteClick(session)"
-                            :title="session.isFavorite ? '取消收藏' : '收藏'"
-                            aria-label="收藏">
-                            {{ session.isFavorite ? '❤️' : '🤍' }}
+                            class="session-action-btn session-edit-btn"
+                            @click.stop="handleEditClick(session)"
+                            title="编辑标题"
+                            aria-label="编辑标题">
+                            <i class="fas fa-edit"></i>
                         </button>
-                    </div>
-                </div>
-                <div class="session-item-meta">
-                    <span class="session-item-tags" v-if="session.tags && session.tags.length > 0">
-                        <span 
-                            v-for="tag in session.tags" 
-                            :key="tag"
-                            class="session-tag">
-                            {{ tag }}
-                        </span>
-                    </span>
-                    <div class="session-item-footer">
-                        <span class="session-item-time">{{ formatTime(session.updatedAt || session.createdAt) }}</span>
-                        <!-- 操作按钮容器（底部，批量模式下隐藏） -->
-                        <div 
-                            v-if="!sessionBatchMode"
-                            class="session-item-actions session-item-actions-footer">
-                            <!-- 编辑按钮 -->
-                            <button 
-                                type="button"
-                                class="session-action-btn session-edit-btn"
-                                @click.stop="handleEditClick(session)"
-                                title="编辑标题"
-                                aria-label="编辑标题">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <!-- 标签管理按钮 -->
-                            <button 
-                                type="button"
-                                class="session-action-btn session-tag-btn"
-                                @click.stop="handleTagClick(session)"
-                                title="管理标签"
-                                aria-label="管理标签">
-                                <i class="fas fa-tags"></i>
-                            </button>
-                            <!-- 副本按钮 -->
-                            <button 
-                                type="button"
-                                class="session-action-btn session-duplicate-btn"
-                                @click.stop="handleDuplicateClick(session)"
-                                title="创建副本"
-                                aria-label="创建副本">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                            <!-- 页面上下文按钮 -->
-                            <button 
-                                type="button"
-                                class="session-action-btn session-context-btn"
-                                @click.stop="handleContextClick(session)"
-                                title="页面上下文"
-                                aria-label="页面上下文">
-                                <i class="fas fa-file-alt"></i>
-                            </button>
-                            <!-- 打开URL按钮（如果URL以https://开头） -->
-                            <button 
-                                type="button"
-                                v-if="session.url && session.url.startsWith('https://')"
-                                class="session-action-btn session-open-url-btn"
-                                @click.stop="handleOpenUrlClick(session)"
-                                title="在新标签页打开"
-                                aria-label="在新标签页打开">
-                                <i class="fas fa-external-link-alt"></i>
-                            </button>
-                            <!-- 目录接口按钮（仅当会话不是来自树形文件时显示） -->
-                            <button 
-                                type="button"
-                                v-if="!isSessionFromTree(session)"
-                                class="session-action-btn session-tree-btn"
-                                @click.stop="handleTreeClick(session)"
-                                title="转成树形文件内容"
-                                aria-label="转成树形文件内容">
-                                <i class="fas fa-sitemap"></i>
-                            </button>
-                        </div>
+                        <!-- 标签管理按钮 -->
+                        <button 
+                            type="button"
+                            class="session-action-btn session-tag-btn"
+                            @click.stop="handleTagClick(session)"
+                            title="管理标签"
+                            aria-label="管理标签">
+                            <i class="fas fa-tags"></i>
+                        </button>
+                        <!-- 副本按钮 -->
+                        <button 
+                            type="button"
+                            class="session-action-btn session-duplicate-btn"
+                            @click.stop="handleDuplicateClick(session)"
+                            title="创建副本"
+                            aria-label="创建副本">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <!-- 页面上下文按钮 -->
+                        <button 
+                            type="button"
+                            class="session-action-btn session-context-btn"
+                            @click.stop="handleContextClick(session)"
+                            title="页面上下文"
+                            aria-label="页面上下文">
+                            <i class="fas fa-file-alt"></i>
+                        </button>
+                        <!-- 打开URL按钮（如果URL以https://开头） -->
+                        <button 
+                            type="button"
+                            v-if="session.url && session.url.startsWith('https://')"
+                            class="session-action-btn session-open-url-btn"
+                            @click.stop="handleOpenUrlClick(session)"
+                            title="在新标签页打开"
+                            aria-label="在新标签页打开">
+                            <i class="fas fa-external-link-alt"></i>
+                        </button>
+                        <!-- 目录接口按钮（仅当会话不是来自树形文件时显示） -->
+                        <button 
+                            type="button"
+                            v-if="!isSessionFromTree(session)"
+                            class="session-action-btn session-tree-btn"
+                            @click.stop="handleTreeClick(session)"
+                            title="转成树形文件内容"
+                            aria-label="转成树形文件内容">
+                            <i class="fas fa-sitemap"></i>
+                        </button>
                     </div>
                 </div>
             </div>
