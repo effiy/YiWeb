@@ -1047,15 +1047,13 @@ export const createStore = () => {
                      
                      // 手动更新本地 sessions 列表（移除已删除的会话）
                      if (sessions.value && Array.isArray(sessions.value)) {
-                         const folderTags = targetKey.split('/').filter(p => p && p.trim());
                          const originalLength = sessions.value.length;
                          sessions.value = sessions.value.filter(s => {
-                             const sessionTags = s.tags || [];
-                             if (sessionTags.length < folderTags.length) return true;
-                             for (let i = 0; i < folderTags.length; i++) {
-                                 if (String(sessionTags[i]) !== String(folderTags[i])) return true;
-                             }
-                             return false;
+                             // 使用 key 进行精确匹配
+                             const sessionKey = String(s.key || '');
+                             const targetPath = String(targetKey || '');
+                             const shouldDelete = sessionKey === targetPath || sessionKey.startsWith(targetPath + '/');
+                             return !shouldDelete;
                          });
                          console.log('[deleteItem] 本地会话列表已更新，移除:', originalLength - sessions.value.length, '个会话');
                      }

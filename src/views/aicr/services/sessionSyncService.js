@@ -463,14 +463,12 @@ class SessionSyncService {
             }
 
             const sessionsToDelete = allSessions.filter(session => {
-                const sessionTags = session.tags || [];
-                if (sessionTags.length < folderTags.length) return false;
+                // 使用 key 进行精确匹配，避免基于 tags 的模糊匹配导致误删
+                const sessionKey = String(session.key || '');
+                const targetPath = String(folderPath || '');
                 
-                // 检查 sessionTags 前缀是否匹配 folderTags
-                for (let i = 0; i < folderTags.length; i++) {
-                    if (String(sessionTags[i]) !== String(folderTags[i])) return false;
-                }
-                return true;
+                // 匹配规则：key 等于文件夹路径（极少情况）或 key 以 "文件夹路径/" 开头
+                return sessionKey === targetPath || sessionKey.startsWith(targetPath + '/');
             });
             
             console.log(`[SessionSync] 找到 ${sessionsToDelete.length} 个关联会话需要删除`);
