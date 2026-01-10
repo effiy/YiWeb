@@ -617,8 +617,8 @@ class SessionSyncService {
                         throw new Error('现有会话缺少 UUID Key，无法更新');
                     }
                     
-                    // 确保 normalized 数据中包含 key
-                    normalized.key = realKey;
+                    // data 中不需要包含 key，因为已经在 parameters.key 中指定
+                    // normalized.key = realKey;
 
                     const payload = {
                         module_name: SERVICE_MODULE,
@@ -772,54 +772,54 @@ class SessionSyncService {
      * @param {Object} newFile - 新文件对象 (包含新路径和内容)
      * @returns {Promise<Object>} 新会话保存结果
      */
-    async renameSession(oldKey, newKey, newFile) {
+    async renameSession(targetKey, newKey, newFile) {
         return safeExecuteAsync(async () => {
-            console.log(`[SessionSync] 开始重命名会话: ${oldKey} -> ${newKey}`);
+            console.log(`[SessionSync] 开始重命名会话 (Update模式): ${targetKey} -> ${newKey}`);
             
-            // 1. 获取旧会话
-            // 注意：这里我们使用 oldKey (通常是路径) 去查询，getSession 内部会处理 filter: { id: oldKey }
-            const oldSession = await this.getSession(oldKey);
-            let messages = [];
-            let createdAt = Date.now();
-            let originalUuidKey = null; // 如果旧会话有 UUID Key，记录下来用于删除
-            
-            if (oldSession) {
-                console.log(`[SessionSync] 找到旧会话，将迁移 ${oldSession.messages?.length || 0} 条消息`);
-                messages = oldSession.messages || [];
-                createdAt = oldSession.createdAt;
-                originalUuidKey = oldSession.key; // 获取真实的 UUID Key
+            // 基于新文件生成基础数据
+            const newSessionData = this.fileToSession(newFile);
+            if (!newSessionData) throw new Error('无法从文件对象创建会话数据');
+
+            // 构造只包含变更字段的更新数据
+            const updateData = {
+                // 必须包含 key 以修复 "Execution failed: 更新数据必须包含 key 字段"
+                key: targetKey,
+                
+                // 核心标识变更：id 更新为新路径
+                id: String(newKey || newSessionData.key),
+                
+                // 更新文件相关元数据
+                url: String(newSessionData.url),
+                title: String(newSessionData.title || newSessionData.pageTitle || ''),
+                pageTitle: String(newSessionData.pageTitle || newSessionData.title || ''),
+                pageDescription: String(newSessionData.pageDescription || ''),
+                // pageContent: String(newSessionData.pageContent || ''), // 可选：如果重命名不涉及内容变更，可以不传
+                tags: Array.isArray(newSessionData.tags) ? newSessionData.tags : [],
+                updatedAt: Date.now()
+            };
+
+            // 3. 执行更新
+            // 注意：update_document 只需要 key 进行定位，但 data 中也必须包含 key 以通过校验
+            const payload = {
+                module_name: SERVICE_MODULE,
+                method_name: 'update_document',
+                parameters: {
+                    cname: 'sessions',
+                    key: targetKey, // 使用 UUID 定位文档
+                    data: updateData // 更新内容
+                }
+            };
+
+            const response = await postData(`${this.apiUrl}/`, payload);
+
+            if (response && response.success !== false) {
+                console.log('[SessionSync] 会话重命名成功:', newKey);
+                return response;
             } else {
-                console.warn(`[SessionSync] 未找到旧会话 ${oldKey}，将创建全新会话`);
+                // 如果更新失败，可能是因为 targetKey 其实是路径而不是 UUID，且后端找不到
+                // 但由于要求不能 query，这里只能抛出错误
+                throw new Error(response?.message || '重命名会话失败');
             }
-            
-            // 2. 删除旧会话
-            // 如果找到了 oldSession，使用其真实 Key 删除更稳妥；否则尝试用 oldKey 删除
-            const deleteTargetKey = originalUuidKey || oldKey;
-            try {
-                await this.deleteSession(deleteTargetKey);
-            } catch (delErr) {
-                console.warn(`[SessionSync] 删除旧会话失败 (可能不存在): ${delErr.message}`);
-                // 不阻断流程，继续创建新会话
-            }
-            
-            // 3. 创建新会话数据
-            const sessionData = this.fileToSession(newFile);
-            if (!sessionData) throw new Error('无法从文件对象创建会话数据');
-            
-            // 4. 注入旧数据和更新元数据
-            // 注意：sessionData.key 通常由 fileToSession 生成 (基于 newFile 的路径)
-            // 如果 newKey 与 sessionData.key 不一致，以传入的 newKey 为准 (虽然通常是一样的)
-            if (newKey) {
-                sessionData.key = newKey;
-                sessionData.id = newKey; // 确保 id 也更新
-            }
-            
-            sessionData.messages = messages;
-            sessionData.createdAt = createdAt; // 保持原始创建时间
-            sessionData.updatedAt = Date.now(); // 更新修改时间
-            
-            // 5. 保存新会话
-            return await this.saveSession(sessionData);
         }, '重命名会话');
     }
 

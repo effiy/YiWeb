@@ -916,38 +916,52 @@ export const createStore = () => {
                             name: newPath.split('/').pop() 
                         };
 
+                        // 查找旧会话以获取 UUID (用于后端更新)
+                        let targetSessionKey = oldPath;
+                        let foundSessionIdx = -1;
+
+                        if (sessions.value && Array.isArray(sessions.value)) {
+                            const fName = oldPath.split('/').pop();
+                            const fTags = oldPath.split('/').slice(0, -1).filter(Boolean);
+                            
+                            foundSessionIdx = sessions.value.findIndex(s => {
+                                if (s.key === oldPath || s.id === oldPath) return true;
+                                // 模糊匹配 (兼容 UUID Key 的情况)
+                                const sName = s.title || s.pageTitle;
+                                const sTags = s.tags || [];
+                                if (sName !== fName) return false;
+                                if (sTags.length !== fTags.length) return false;
+                                for (let i = 0; i < sTags.length; i++) {
+                                        if (String(sTags[i]) !== String(fTags[i])) return false;
+                                }
+                                return true;
+                            });
+                            
+                            if (foundSessionIdx >= 0) {
+                                const foundSession = sessions.value[foundSessionIdx];
+                                if (foundSession && foundSession.key) {
+                                    targetSessionKey = foundSession.key;
+                                }
+                            }
+                        }
+
                         try {
-                            // 调用 renameSession 进行原子化迁移（保留消息）
-                            // 这会自动处理：获取旧消息 -> 删除旧会话 -> 创建新会话（带旧消息）
-                            await sessionSync.renameSession(oldPath, newPath, updatedFile);
+                            // 调用 renameSession 进行原子化迁移
+                            // 传入真实的 UUID (targetSessionKey) 以避免后端查询
+                            await sessionSync.renameSession(targetSessionKey, newPath, updatedFile);
 
                             // 更新本地 sessions 列表
-                            if (sessions.value && Array.isArray(sessions.value)) {
-                                // 查找并移除旧会话
-                                const fName = oldPath.split('/').pop();
-                                const fTags = oldPath.split('/').slice(0, -1).filter(Boolean);
+                            if (foundSessionIdx >= 0 && sessions.value) {
+                                // 移除旧会话
+                                sessions.value.splice(foundSessionIdx, 1);
                                 
-                                const oldSessIdx = sessions.value.findIndex(s => {
-                                    if (s.key === oldPath || s.id === oldPath) return true;
-                                    // 模糊匹配 (兼容 UUID Key 的情况)
-                                    const sName = s.title || s.pageTitle;
-                                    const sTags = s.tags || [];
-                                    if (sName !== fName) return false;
-                                    if (sTags.length !== fTags.length) return false;
-                                    for (let i = 0; i < sTags.length; i++) {
-                                         if (String(sTags[i]) !== String(fTags[i])) return false;
-                                    }
-                                    return true;
-                                });
-
-                                if (oldSessIdx >= 0) {
-                                    sessions.value.splice(oldSessIdx, 1);
-                                }
-                                
-                                // 添加新会话（本地模拟，无需再次查询）
+                                // 添加新会话（本地模拟）
                                 const sessionData = sessionSync.fileToSession(updatedFile);
                                 if (sessionData) {
-                                    // 尝试保留一些本地状态（如果需要）
+                                    // 保持原有 UUID (如果是更新)
+                                    if (targetSessionKey !== oldPath) {
+                                        sessionData.key = targetSessionKey;
+                                    }
                                     sessions.value.push(sessionData);
                                 }
                             }
