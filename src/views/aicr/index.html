@@ -264,6 +264,17 @@
                     ></comment-panel>
                 </div>
             </aside>
+
+            <!-- 评论区收起按钮 (展开时显示，跟随评论区宽度) -->
+            <div 
+                class="comments-toggle" 
+                v-show="!commentsCollapsed"
+                @click="toggleComments"
+                title="收起评论区"
+                :style="{ right: (commentsWidth - 14) + 'px', left: 'auto' }">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+
             <!-- 评论区收起后的展开把手 -->
             <button 
                 type="button"

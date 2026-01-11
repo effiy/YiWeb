@@ -825,10 +825,10 @@
 }
 
 /* 文件树右侧收起小圆按钮：增强命中面积与光晕动效 */
-.file-tree-toggle {
+.file-tree-toggle,
+.comments-toggle {
   position: absolute;
   top: 50%;
-  right: -16px;
   transform: translateY(-50%);
   width: 28px;
   height: 28px;
@@ -846,7 +846,17 @@
   backdrop-filter: blur(10px); /* Match backdrop-filter */
   -webkit-backdrop-filter: blur(10px);
 }
-.file-tree-toggle::before { /* 扩大命中感受的光晕 */
+
+.file-tree-toggle {
+    right: -16px;
+}
+
+.comments-toggle {
+    left: -16px; /* Default positioning, overridden by inline style */
+}
+
+.file-tree-toggle::before,
+.comments-toggle::before { /* 扩大命中感受的光晕 */
   content: '';
   position: absolute;
   inset: -8px;
@@ -856,9 +866,11 @@
   transition: opacity 0.2s ease;
   pointer-events: none;
 }
-.file-tree-toggle:hover::before { opacity: 1; }
+.file-tree-toggle:hover::before,
+.comments-toggle:hover::before { opacity: 1; }
 
-.file-tree-toggle:hover {
+.file-tree-toggle:hover,
+.comments-toggle:hover {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
@@ -866,26 +878,36 @@
   transform: translateY(-50%) scale(1.08) translateX(1px); /* Match hover transform */
 }
 
-.file-tree-toggle:active {
+.file-tree-toggle:active,
+.comments-toggle:active {
   transform: translateY(-50%) scale(0.95); /* Match active transform */
 }
 
-.file-tree-toggle:focus-visible {
+.file-tree-toggle:focus-visible,
+.comments-toggle:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgba(79,70,229,0.35), 0 6px 18px rgba(79,70,229,0.25); /* Match focus styles */
 }
 
-.file-tree-toggle i { transition: transform 0.25s ease; font-size: 12px; }
-.file-tree-toggle i.rotated { transform: rotate(180deg); }
+.file-tree-toggle i,
+.comments-toggle i { transition: transform 0.25s ease; font-size: 12px; }
+.file-tree-toggle i.rotated,
+.comments-toggle i.rotated { transform: rotate(180deg); }
 
 /* 收起状态：让按钮更贴合边缘且高亮 */
-.file-tree-container.collapsed .file-tree-toggle {
-  right: -12px;
+.file-tree-container.collapsed .file-tree-toggle,
+.comment-panel-container.collapsed .comments-toggle {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
 }
-.file-tree-container.collapsed .file-tree-toggle:hover {
+
+.file-tree-container.collapsed .file-tree-toggle {
+    right: -12px;
+}
+
+.file-tree-container.collapsed .file-tree-toggle:hover,
+.comment-panel-container.collapsed .comments-toggle:hover {
   box-shadow: 0 8px 24px rgba(79,70,229,0.35);
 }
 
