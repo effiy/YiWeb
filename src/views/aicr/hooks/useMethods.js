@@ -2183,21 +2183,35 @@ export const useMethods = (store) => {
 
     /**
      * 处理批量删除会话
+     * @param {Array} payloadIds - 可选：要删除的会话ID列表（如果不传则删除所有选中的）
      */
-    const handleBatchDeleteSessions = async () => {
+    const handleBatchDeleteSessions = async (payloadIds) => {
         return safeExecute(async () => {
             const { selectedSessionKeys } = store;
-            if (!selectedSessionKeys || !selectedSessionKeys.value || selectedSessionKeys.value.size === 0) {
-                if (window.showError) window.showError('请先选择要删除的会话');
-                return;
+            
+            // 确定要删除的ID列表
+            let keysToDelete = [];
+            
+            // 检查 payloadIds 是否为数组且不为空
+            // 注意：payloadIds 可能是 event 对象，所以要严格检查是否为数组
+            if (Array.isArray(payloadIds) && payloadIds.length > 0) {
+                keysToDelete = payloadIds;
+            } else {
+                // 如果没有传入ID列表，则使用 selectedSessionKeys
+                if (!selectedSessionKeys || !selectedSessionKeys.value || selectedSessionKeys.value.size === 0) {
+                    if (window.showError) window.showError('请先选择要删除的会话');
+                    return;
+                }
+                keysToDelete = Array.from(selectedSessionKeys.value);
             }
             
-            const count = selectedSessionKeys.value.size;
+            const count = keysToDelete.length;
+            if (count === 0) return;
+
             if (!confirm(`确定要删除选中的 ${count} 个会话吗？此操作不可撤销。`)) {
                 return;
             }
             
-            const keysToDelete = Array.from(selectedSessionKeys.value);
             console.log('[会话批量] 开始删除, 数量:', count);
             
             const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
@@ -2233,7 +2247,9 @@ export const useMethods = (store) => {
                 if (res.success) {
                     successCount++;
                     // 从选中集合中移除
-                    selectedSessionKeys.value.delete(res.key);
+                    if (selectedSessionKeys && selectedSessionKeys.value) {
+                        selectedSessionKeys.value.delete(res.key);
+                    }
                 } else {
                     if (res.reason !== 'skip_tree_file') {
                         failCount++;

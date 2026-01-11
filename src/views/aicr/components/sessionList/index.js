@@ -741,7 +741,13 @@ const componentOptions = {
 
         // 批量删除
         const handleBatchDelete = () => {
-            emit('session-batch-delete');
+            // 只删除当前筛选视图中选中的会话
+            const currentFilteredIds = new Set(filteredSessions.value.map(s => s.id));
+            const idsToDelete = Array.from(props.selectedSessionKeys).filter(id => currentFilteredIds.has(id));
+            
+            if (idsToDelete.length === 0) return;
+            
+            emit('session-batch-delete', idsToDelete);
         };
 
         // 取消批量操作
