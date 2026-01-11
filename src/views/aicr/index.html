@@ -147,6 +147,11 @@
                     :batch-mode="batchMode"
                     :selected-keys="selectedKeys"
                     :view-mode="viewMode"
+                    :selected-tags="(selectedSessionTags && Array.isArray(selectedSessionTags)) ? selectedSessionTags : []"
+                    :tag-filter-reverse="tagFilterReverse || false"
+                    :tag-filter-no-tags="tagFilterNoTags || false"
+                    :tag-filter-expanded="tagFilterExpanded || false"
+                    :tag-filter-search-keyword="tagFilterSearchKeyword || ''"
                     @file-select="handleFileSelect"  
                     @folder-toggle="handleFolderToggle"
                     @create-folder="handleCreateFolder"
@@ -161,6 +166,12 @@
                     @download-project="handleDownloadProjectVersion"
                     @upload-project="handleUploadProjectVersion"
                     @view-mode-change="setViewMode"
+                    @tag-select="handleTagSelect"
+                    @tag-clear="handleTagClear"
+                    @tag-filter-reverse="handleTagFilterReverse"
+                    @tag-filter-no-tags="handleTagFilterNoTags"
+                    @tag-filter-expand="handleTagFilterExpand"
+                    @tag-filter-search="handleTagFilterSearch"
                 ></file-tree>
                 
                 <!-- 标签视图：显示会话列表 -->

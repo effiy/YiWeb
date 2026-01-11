@@ -541,6 +541,172 @@ const createFileTreeNode = () => {
                     return totalCount;
                 }, '文件夹评论数量计算');
             },
+            
+            // 切换标签选择
+            toggleTag(tag) {
+                return safeExecute(() => {
+                    this.$emit('tag-select', tag);
+                }, '切换标签选择');
+            },
+            
+            // 切换反向过滤
+            toggleReverse() {
+                this.$emit('tag-filter-reverse');
+            },
+            
+            // 切换无标签筛选
+            toggleNoTags() {
+                this.$emit('tag-filter-no-tags');
+            },
+            
+            // 切换展开/折叠
+            toggleExpand() {
+                this.$emit('tag-filter-expand');
+            },
+            
+            // 更新标签搜索关键词
+            updateTagSearch(keyword) {
+                this.$emit('tag-filter-search', keyword);
+            },
+            
+            // 清除所有过滤条件
+            clearAllFilters() {
+                this.$emit('tag-clear');
+            },
+            
+            // 保存标签顺序
+            saveTagOrder(order) {
+                try {
+                    localStorage.setItem('aicr_file_tag_order', JSON.stringify(order));
+                    // 强制更新 allTags
+                    this.$forceUpdate();
+                } catch (e) {
+                    console.warn('[FileTree] 保存标签顺序失败:', e);
+                }
+            },
+
+            // 拖拽开始
+            handleDragStart(e, tag) {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', tag);
+                e.currentTarget.classList.add('dragging');
+                
+                // 设置自定义拖拽图像
+                const dragImage = e.currentTarget.cloneNode(true);
+                dragImage.style.opacity = '0.8';
+                dragImage.style.transform = 'rotate(3deg)';
+                dragImage.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.2)';
+                dragImage.style.position = 'absolute';
+                dragImage.style.top = '-1000px';
+                document.body.appendChild(dragImage);
+                e.dataTransfer.setDragImage(dragImage, e.offsetX, e.offsetY);
+                
+                setTimeout(() => {
+                    if (dragImage.parentNode) {
+                        dragImage.parentNode.removeChild(dragImage);
+                    }
+                }, 0);
+            },
+            
+            // 拖拽结束
+            handleDragEnd(e) {
+                e.currentTarget.classList.remove('dragging');
+                
+                // 移除所有拖拽相关的样式
+                document.querySelectorAll('.tag-item').forEach(item => {
+                    item.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+                });
+            },
+            
+            // 拖拽经过
+            handleDragOver(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = 'move';
+                
+                if (e.currentTarget.classList.contains('dragging')) {
+                    return;
+                }
+                
+                const rect = e.currentTarget.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                
+                // 移除所有拖拽指示样式
+                document.querySelectorAll('.tag-item').forEach(item => {
+                    if (!item.classList.contains('dragging')) {
+                        item.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+                    }
+                });
+                
+                // 根据鼠标位置显示插入位置指示
+                if (e.clientY < midY) {
+                    e.currentTarget.classList.add('drag-over-top');
+                    e.currentTarget.classList.remove('drag-over-bottom');
+                } else {
+                    e.currentTarget.classList.add('drag-over-bottom');
+                    e.currentTarget.classList.remove('drag-over-top');
+                }
+                
+                e.currentTarget.classList.add('drag-hover');
+            },
+            
+            // 拖拽离开
+            handleDragLeave(e) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX;
+                const y = e.clientY;
+                
+                if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+                    e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+                }
+            },
+            
+            // 放置
+            handleDrop(e, targetTag) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const draggedTag = e.dataTransfer.getData('text/plain');
+                
+                if (draggedTag === targetTag) {
+                    return;
+                }
+                
+                const currentOrder = this.allTags;
+                const draggedIndex = currentOrder.indexOf(draggedTag);
+                const targetIndex = currentOrder.indexOf(targetTag);
+                
+                if (draggedIndex === -1 || targetIndex === -1) {
+                    return;
+                }
+                
+                // 计算新的插入位置
+                const rect = e.currentTarget.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                let insertIndex = targetIndex;
+                if (e.clientY < midY) {
+                    insertIndex = targetIndex;
+                } else {
+                    insertIndex = targetIndex + 1;
+                }
+                
+                // 调整顺序
+                const newOrder = [...currentOrder];
+                // 先移除拖拽的元素
+                newOrder.splice(draggedIndex, 1);
+                // 如果插入位置在移除元素之后，索引需要减1
+                if (insertIndex > draggedIndex) {
+                    insertIndex--;
+                }
+                // 插入元素
+                newOrder.splice(insertIndex, 0, draggedTag);
+                
+                // 保存新顺序
+                this.saveTagOrder(newOrder);
+                
+                // 清除样式
+                e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+            },
         },
         template: `
             <li 
@@ -692,13 +858,195 @@ const componentOptions = {
                 type: String,
                 default: 'tree',
                 validator: (value) => ['tree', 'tags'].includes(value)
+            },
+            selectedTags: {
+                type: Array,
+                default: () => []
+            },
+            tagFilterReverse: {
+                type: Boolean,
+                default: false
+            },
+            tagFilterNoTags: {
+                type: Boolean,
+                default: false
+            },
+            tagFilterExpanded: {
+                type: Boolean,
+                default: false
+            },
+            tagFilterSearchKeyword: {
+                type: String,
+                default: ''
+            },
+            tagFilterVisibleCount: {
+                type: Number,
+                default: 8
             }
         },
         computed: {
+            // 提取所有标签（文件夹）
+            allTags() {
+                if (!Array.isArray(this.tree)) return [];
+                
+                const tags = new Set();
+                const traverse = (items) => {
+                    if (!Array.isArray(items)) return;
+                    for (const item of items) {
+                        if (item.type === 'folder') {
+                            tags.add(item.name);
+                            if (item.children) traverse(item.children);
+                        } else if (item.type === 'file') {
+                            // 也可以从文件路径中提取父目录作为标签
+                            // 这里简化处理，仅使用文件夹名称作为标签
+                        }
+                    }
+                };
+                traverse(this.tree);
+                
+                const allTagsArray = Array.from(tags).sort();
+                
+                // 应用保存的标签顺序
+                try {
+                    const saved = localStorage.getItem('aicr_file_tag_order');
+                    const savedOrder = saved ? JSON.parse(saved) : null;
+                    
+                    if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+                        // 使用保存的顺序，但只包含当前存在的标签
+                        const orderedTags = savedOrder.filter(tag => tags.has(tag));
+                        // 添加新标签（不在保存顺序中的）到末尾，按字母顺序
+                        const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
+                        return [...orderedTags, ...newTags];
+                    }
+                } catch (e) {
+                    console.warn('[FileTree] 加载标签顺序失败:', e);
+                }
+                
+                return allTagsArray;
+            },
+            
+            // 计算每个标签下的文件数量
+            tagCounts() {
+                const counts = {};
+                let noTagsCount = 0;
+                
+                const traverse = (items, parentTags = []) => {
+                    if (!Array.isArray(items)) return;
+                    for (const item of items) {
+                        if (item.type === 'folder') {
+                            // 文件夹本身不计数，但它的名称是标签
+                            // 它的子文件将拥有这个标签
+                            const currentTags = [...parentTags, item.name];
+                            if (item.children) traverse(item.children, currentTags);
+                        } else if (item.type === 'file') {
+                            if (parentTags.length === 0) {
+                                noTagsCount++;
+                            } else {
+                                for (const tag of parentTags) {
+                                    counts[tag] = (counts[tag] || 0) + 1;
+                                }
+                            }
+                        }
+                    }
+                };
+                
+                traverse(this.tree);
+                return { counts, noTagsCount };
+            },
+            
+            // 过滤后的标签列表
+            filteredTags() {
+                let tags = this.allTags;
+                
+                // 搜索过滤
+                if (this.tagFilterSearchKeyword) {
+                    const keyword = this.tagFilterSearchKeyword.toLowerCase();
+                    tags = tags.filter(tag => tag.toLowerCase().includes(keyword));
+                }
+                
+                // 排序：选中在前，然后按数量降序，最后按名称
+                return tags.sort((a, b) => {
+                    const isSelectedA = this.selectedTags.includes(a);
+                    const isSelectedB = this.selectedTags.includes(b);
+                    if (isSelectedA !== isSelectedB) return isSelectedA ? -1 : 1;
+                    
+                    const countA = this.tagCounts.counts[a] || 0;
+                    const countB = this.tagCounts.counts[b] || 0;
+                    if (countA !== countB) return countB - countA;
+                    
+                    return a.localeCompare(b, 'zh-CN');
+                });
+            },
+            
+            // 可见标签列表
+            visibleTags() {
+                if (this.tagFilterExpanded || this.tagFilterSearchKeyword) {
+                    return this.filteredTags;
+                }
+                return this.filteredTags.slice(0, this.tagFilterVisibleCount);
+            },
+            
+            // 是否有更多标签
+            hasMoreTags() {
+                return this.filteredTags.length > this.tagFilterVisibleCount;
+            },
+
             // 排序后的文件树数据（应用过滤）
             sortedTree() {
                 if (!Array.isArray(this.tree)) return [];
-                const sorted = this.tree.map(item => sortFileTreeRecursively(item));
+                
+                // 先进行标签过滤
+                let filteredItems = this.tree;
+                
+                // 如果有标签过滤条件
+                if (this.selectedTags.length > 0 || this.tagFilterNoTags) {
+                    const filterByTags = (items, parentTags = []) => {
+                        const result = [];
+                        for (const item of items) {
+                            if (item.type === 'folder') {
+                                const currentTags = [...parentTags, item.name];
+                                const children = filterByTags(item.children || [], currentTags);
+                                
+                                // 如果子项有匹配，或者是反向过滤且当前文件夹不含排除标签
+                                // 这里逻辑稍复杂，简化为：如果子项保留，则保留文件夹
+                                if (children.length > 0) {
+                                    result.push({ ...item, children });
+                                }
+                            } else if (item.type === 'file') {
+                                // 检查文件是否匹配过滤条件
+                                let match = false;
+                                
+                                if (this.tagFilterNoTags && parentTags.length === 0) {
+                                    match = true;
+                                } else if (this.selectedTags.length > 0) {
+                                    // 检查是否有选中的标签
+                                    const hasSelectedTag = parentTags.some(tag => this.selectedTags.includes(tag));
+                                    
+                                    if (this.tagFilterReverse) {
+                                        // 反向过滤：不包含任何选中标签
+                                        match = !hasSelectedTag;
+                                    } else {
+                                        // 正向过滤：包含至少一个选中标签
+                                        match = hasSelectedTag;
+                                    }
+                                } else if (!this.tagFilterNoTags) {
+                                    // 没有选中标签且没有勾选无标签，显示所有（如果没有其他过滤逻辑）
+                                    // 但这里的逻辑是 "如果有标签过滤条件"，所以不会走到这
+                                    match = true;
+                                }
+                                
+                                if (match) {
+                                    result.push(item);
+                                }
+                            }
+                        }
+                        return result;
+                    };
+                    
+                    filteredItems = filterByTags(this.tree);
+                }
+
+                const sorted = filteredItems.map(item => sortFileTreeRecursively(item));
                 
                 // 如果有搜索关键词，进行过滤
                 if (this.searchQuery && this.searchQuery.trim()) {
@@ -709,8 +1057,7 @@ const componentOptions = {
             },
             // 标签视图：扁平化所有文件
             flattenedFiles() {
-                if (!Array.isArray(this.tree)) return [];
-                
+                // 复用 sortedTree 的逻辑，因为它已经包含了标签过滤和搜索过滤
                 const files = [];
                 const flatten = (items) => {
                     if (!Array.isArray(items)) return;
@@ -724,24 +1071,14 @@ const componentOptions = {
                 };
                 
                 flatten(this.sortedTree);
-                
-                // 如果有搜索关键词，进行过滤
-                if (this.searchQuery && this.searchQuery.trim()) {
-                    const query = this.searchQuery.trim().toLowerCase();
-                    return files.filter(file => {
-                        const name = (file.name || '').toLowerCase();
-                        const path = (file.path || file.id || '').toLowerCase();
-                        return name.includes(query) || path.includes(query);
-                    });
-                }
-                
                 return files;
             }
         },
-        emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'copy-as-prompt'],
+        emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'copy-as-prompt', 'tag-select', 'tag-clear', 'tag-filter-reverse', 'tag-filter-no-tags', 'tag-filter-expand', 'tag-filter-search'],
         data() {
             return {
-                searchDebounceTimer: null
+                searchDebounceTimer: null,
+                tagOrderVersion: 0
             };
         },
         methods: {
@@ -1021,6 +1358,179 @@ const componentOptions = {
                     // 普通模式：选择文件
                     this.selectFile(keyStr);
                 }, '标签点击处理');
+            },
+
+            // 切换标签选择
+            toggleTag(tag) {
+                return safeExecute(() => {
+                    const newTags = [...this.selectedTags];
+                    const index = newTags.indexOf(tag);
+                    if (index > -1) {
+                        newTags.splice(index, 1);
+                    } else {
+                        newTags.push(tag);
+                    }
+                    this.$emit('tag-select', newTags);
+                }, '切换标签选择');
+            },
+            
+            // 切换反向过滤
+            toggleReverse() {
+                this.$emit('tag-filter-reverse', !this.tagFilterReverse);
+            },
+            
+            // 切换无标签筛选
+            toggleNoTags() {
+                this.$emit('tag-filter-no-tags', !this.tagFilterNoTags);
+            },
+            
+            // 切换展开/折叠
+            toggleExpand() {
+                this.$emit('tag-filter-expand', !this.tagFilterExpanded);
+            },
+            
+            // 更新标签搜索关键词
+            updateTagSearch(keyword) {
+                this.$emit('tag-filter-search', keyword);
+            },
+            
+            // 清除所有过滤条件
+            clearAllFilters() {
+                this.$emit('tag-clear');
+            },
+            
+            // 保存标签顺序
+            saveTagOrder(order) {
+                try {
+                    localStorage.setItem('aicr_file_tag_order', JSON.stringify(order));
+                    // 强制更新 allTags
+                    this.$forceUpdate();
+                } catch (e) {
+                    console.warn('[FileTree] 保存标签顺序失败:', e);
+                }
+            },
+
+            // 拖拽开始
+            handleDragStart(e, tag) {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', tag);
+                e.currentTarget.classList.add('dragging');
+                
+                // 设置自定义拖拽图像
+                const dragImage = e.currentTarget.cloneNode(true);
+                dragImage.style.opacity = '0.8';
+                dragImage.style.transform = 'rotate(3deg)';
+                dragImage.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.2)';
+                dragImage.style.position = 'absolute';
+                dragImage.style.top = '-1000px';
+                document.body.appendChild(dragImage);
+                e.dataTransfer.setDragImage(dragImage, e.offsetX, e.offsetY);
+                
+                setTimeout(() => {
+                    if (dragImage.parentNode) {
+                        dragImage.parentNode.removeChild(dragImage);
+                    }
+                }, 0);
+            },
+            
+            // 拖拽结束
+            handleDragEnd(e) {
+                e.currentTarget.classList.remove('dragging');
+                
+                // 移除所有拖拽相关的样式
+                document.querySelectorAll('.tag-item').forEach(item => {
+                    item.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+                });
+            },
+            
+            // 拖拽经过
+            handleDragOver(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = 'move';
+                
+                if (e.currentTarget.classList.contains('dragging')) {
+                    return;
+                }
+                
+                const rect = e.currentTarget.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                
+                // 移除所有拖拽指示样式
+                document.querySelectorAll('.tag-item').forEach(item => {
+                    if (!item.classList.contains('dragging')) {
+                        item.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+                    }
+                });
+                
+                // 根据鼠标位置显示插入位置指示
+                if (e.clientY < midY) {
+                    e.currentTarget.classList.add('drag-over-top');
+                    e.currentTarget.classList.remove('drag-over-bottom');
+                } else {
+                    e.currentTarget.classList.add('drag-over-bottom');
+                    e.currentTarget.classList.remove('drag-over-top');
+                }
+                
+                e.currentTarget.classList.add('drag-hover');
+            },
+            
+            // 拖拽离开
+            handleDragLeave(e) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX;
+                const y = e.clientY;
+                
+                if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+                    e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+                }
+            },
+            
+            // 放置
+            handleDrop(e, targetTag) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const draggedTag = e.dataTransfer.getData('text/plain');
+                
+                if (draggedTag === targetTag) {
+                    return;
+                }
+                
+                const currentOrder = this.allTags;
+                const draggedIndex = currentOrder.indexOf(draggedTag);
+                const targetIndex = currentOrder.indexOf(targetTag);
+                
+                if (draggedIndex === -1 || targetIndex === -1) {
+                    return;
+                }
+                
+                // 计算新的插入位置
+                const rect = e.currentTarget.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                let insertIndex = targetIndex;
+                if (e.clientY < midY) {
+                    insertIndex = targetIndex;
+                } else {
+                    insertIndex = targetIndex + 1;
+                }
+                
+                // 调整顺序
+                const newOrder = [...currentOrder];
+                // 先移除拖拽的元素
+                newOrder.splice(draggedIndex, 1);
+                // 如果插入位置在移除元素之后，索引需要减1
+                if (insertIndex > draggedIndex) {
+                    insertIndex--;
+                }
+                // 插入元素
+                newOrder.splice(insertIndex, 0, draggedTag);
+                
+                // 保存新顺序
+                this.saveTagOrder(newOrder);
+                
+                // 清除样式
+                e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
             },
             
             // 获取文件夹的评论数量（递归计算所有子文件的评论）
