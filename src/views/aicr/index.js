@@ -30,45 +30,12 @@ const { computed } = Vue;
             // 假设当前文件key为store.selectedKey
             const fileKey = (store.selectedKey && store.selectedKey.value) || (store.state && store.state.selectedKey);
             // 记录range的起止行号和字符索引
-            let startLine = 0, endLine = 0, startChar = 0, endChar = 0;
-            if (detail.range) {
-                const range = detail.range;
-                // 通过closest('.code-line') 获取准确行号（author: liangliang）
-                const getLineNumberFromNode = (node) => {
-                    const el = node && node.nodeType === 3 ? node.parentElement : node;
-                    if (!el) return 0;
-                    const codeLineEl = el.classList && el.classList.contains('code-line')
-                        ? el
-                        : (el.closest ? el.closest('.code-line') : null);
-                    if (!codeLineEl) return 0;
-                    const num = parseInt(codeLineEl.getAttribute('data-line'));
-                    return Number.isFinite(num) ? num : 0;
-                };
-
-                startLine = getLineNumberFromNode(range.startContainer);
-                endLine = getLineNumberFromNode(range.endContainer);
-
-                // 获取字符级索引
-                if (range.startContainer && range.startContainer.nodeType === 3) {
-                    startChar = range.startOffset;
-                }
-                if (range.endContainer && range.endContainer.nodeType === 3) {
-                    endChar = range.endOffset;
-                }
-
-                // 规范化与排序
-                if (!startLine && endLine) startLine = endLine;
-                if (!endLine && startLine) endLine = startLine;
-                if (!startLine) startLine = 1;
-                if (!endLine) endLine = startLine;
-                if (startLine > endLine) {
-                    const tmp = startLine; startLine = endLine; endLine = tmp;
-                    const tmpChar = startChar; startChar = endChar; endChar = tmpChar;
-                }
-            }
+            let startLine = 1, endLine = 1, startChar = 0, endChar = 0;
+            // 移除找行号逻辑
+            
             // 兼容性处理
             if (!startLine || !endLine) {
-                startLine = endLine = 0;
+                startLine = endLine = 1;
             }
             localState.codeComments.push({
                 key: commentKey,

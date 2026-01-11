@@ -22,15 +22,6 @@
       <header class="header-row" role="banner">
         <section class="search-row">
             <form class="search-box" role="search" aria-label="代码审查搜索">
-                <!-- 展开/折叠按钮（在头部） -->
-                <button 
-                    type="button"
-                    class="header-sidebar-toggle"
-                    @click="toggleSidebar"
-                    :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
-                    aria-label="切换侧边栏">
-                    <i class="fas" :class="sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'" aria-hidden="true"></i>
-                </button>
                 <span class="search-logo" aria-hidden="true" @click="openLink('/index.html')">
                     <i class="fas fa-globe" aria-label="代码审查图标"></i>
                 </span>
@@ -75,6 +66,28 @@
         </section>
         </header>
         <main class="aicr-main">
+            <!-- 侧边栏展开把手 (收起时显示) -->
+            <button 
+                type="button"
+                class="sidebar-expand-handle"
+                v-show="sidebarCollapsed"
+                @click="toggleSidebar"
+                aria-label="展开侧边栏"
+                title="展开侧边栏">
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                <span class="label">展开</span>
+            </button>
+
+            <!-- 侧边栏收起按钮 (展开时显示，跟随侧边栏宽度) -->
+            <div 
+                class="file-tree-toggle" 
+                v-show="!sidebarCollapsed"
+                @click="toggleSidebar"
+                title="收起侧边栏"
+                :style="{ left: (sidebarWidth - 14) + 'px', right: 'auto' }">
+                <i class="fas fa-chevron-left"></i>
+            </div>
+
             <aside class="aicr-sidebar" aria-label="侧边栏" v-show="!sidebarCollapsed" :style="{ width: sidebarWidth + 'px' }">
                 <!-- 共享搜索容器（两种视图模式共用） -->
                 <div v-if="!sidebarCollapsed" class="file-tree-header-container">
@@ -218,16 +231,7 @@
                 ></session-list>
             </aside>
             
-            <!-- 侧边栏收起后的展开把手 -->
-            <button 
-                type="button"
-                class="sidebar-expand-handle" 
-                v-show="sidebarCollapsed"
-                @click="toggleSidebar"
-                aria-label="展开文件目录树"
-                title="展开文件目录树">
-                <i class="fas fa-chevron-right" aria-hidden="true"></i>
-            </button>
+
             <section class="aicr-code" :class="{ 'with-sidebar-collapsed': sidebarCollapsed, 'with-comments-collapsed': commentsCollapsed }" aria-label="代码区">
                 <code-view 
                     :file="currentFile" 

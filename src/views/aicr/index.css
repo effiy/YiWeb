@@ -824,27 +824,42 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 20;
+  z-index: 30; /* Match z-index */
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--text-secondary);
+  box-shadow: 0 6px 18px rgba(79,70,229,0.15); /* Match initial shadow */
+  backdrop-filter: blur(10px); /* Match backdrop-filter */
+  -webkit-backdrop-filter: blur(10px);
 }
 .file-tree-toggle::before { /* 扩大命中感受的光晕 */
   content: '';
   position: absolute;
   inset: -8px;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(79,70,229,0.15), rgba(79,70,229,0.0));
+  background: radial-gradient(closest-side, rgba(79,70,229,0.18), rgba(79,70,229,0.0)); /* Adjusted opacity */
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: none;
 }
 .file-tree-toggle:hover::before { opacity: 1; }
+
 .file-tree-toggle:hover {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
-  box-shadow: 0 6px 18px rgba(79,70,229,0.25);
+  box-shadow: 0 8px 24px rgba(79,70,229,0.28), 0 0 0 8px rgba(79,70,229,0.10); /* Match hover shadow */
+  transform: translateY(-50%) scale(1.08) translateX(1px); /* Match hover transform */
 }
+
+.file-tree-toggle:active {
+  transform: translateY(-50%) scale(0.95); /* Match active transform */
+}
+
+.file-tree-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.35), 0 6px 18px rgba(79,70,229,0.25); /* Match focus styles */
+}
+
 .file-tree-toggle i { transition: transform 0.25s ease; font-size: 12px; }
 .file-tree-toggle i.rotated { transform: rotate(180deg); }
 

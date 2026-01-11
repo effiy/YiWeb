@@ -236,9 +236,89 @@ export const useMethods = (store) => {
     };
 
     /**
-     * 处理会话选择
-     * @param {Object} session - 选中的会话对象
+     * 处理标签选择
+     * @param {string|Array} tag - 标签名称或标签数组
      */
+    const handleTagSelect = (tag) => {
+        return safeExecute(() => {
+            if (!store.selectedSessionTags) return;
+            
+            // 如果传入的是数组（来自文件树的多选或排序更新），直接替换
+            if (Array.isArray(tag)) {
+                store.selectedSessionTags.value = tag;
+                return;
+            }
+            
+            // 单个标签切换
+            const currentTags = new Set(store.selectedSessionTags.value || []);
+            if (currentTags.has(tag)) {
+                currentTags.delete(tag);
+            } else {
+                currentTags.add(tag);
+            }
+            store.selectedSessionTags.value = Array.from(currentTags);
+            
+            console.log('[TagSelect] 选中标签:', store.selectedSessionTags.value);
+        }, '处理标签选择');
+    };
+
+    /**
+     * 清除所有标签过滤
+     */
+    const handleTagClear = () => {
+        return safeExecute(() => {
+            if (store.selectedSessionTags) store.selectedSessionTags.value = [];
+            if (store.tagFilterNoTags) store.tagFilterNoTags.value = false;
+            if (store.tagFilterSearchKeyword) store.tagFilterSearchKeyword.value = '';
+            // 不清除反向过滤状态，或者根据需求清除
+            // if (store.tagFilterReverse) store.tagFilterReverse.value = false;
+        }, '清除标签过滤');
+    };
+
+    /**
+     * 切换反向过滤
+     */
+    const handleTagFilterReverse = () => {
+        return safeExecute(() => {
+            if (store.tagFilterReverse) {
+                store.tagFilterReverse.value = !store.tagFilterReverse.value;
+            }
+        }, '切换反向过滤');
+    };
+
+    /**
+     * 切换无标签筛选
+     */
+    const handleTagFilterNoTags = () => {
+        return safeExecute(() => {
+            if (store.tagFilterNoTags) {
+                store.tagFilterNoTags.value = !store.tagFilterNoTags.value;
+            }
+        }, '切换无标签筛选');
+    };
+
+    /**
+     * 切换标签列表展开/折叠
+     */
+    const handleTagFilterExpand = () => {
+        return safeExecute(() => {
+            if (store.tagFilterExpanded) {
+                store.tagFilterExpanded.value = !store.tagFilterExpanded.value;
+            }
+        }, '切换标签列表展开');
+    };
+
+    /**
+     * 处理标签搜索
+     */
+    const handleTagFilterSearch = (keyword) => {
+        return safeExecute(() => {
+            if (store.tagFilterSearchKeyword) {
+                store.tagFilterSearchKeyword.value = keyword || '';
+            }
+        }, '处理标签搜索');
+    };
+
     const handleSessionSelect = async (session) => {
         return safeExecute(async () => {
             if (!session) return;
@@ -1400,15 +1480,18 @@ export const useMethods = (store) => {
                 showSuccessMessage('评论添加成功');
 
                 // 立即触发评论面板刷新，确保新评论能够显示
+                // 注释掉立即刷新，因为这会导致 CommentPanel 从 store 加载旧数据，覆盖掉下面 addCommentToLocalData 添加的本地数据
+                // 真正的刷新应该在 store 更新后进行（见下方的 reloadCommentsWithRetry）
+                /*
                 console.log('[评论提交] 立即触发评论面板刷新');
                 window.dispatchEvent(new CustomEvent('reloadComments', {
                     detail: { 
-                        versionId: versionId, 
                         fileKey: selectedKey.value,
                         forceReload: true,
                         immediateReload: true // 标记立即刷新，不使用防抖
                     }
                 }));
+                */
 
                 // 立即在UI中显示新评论
                 let commentAdded = false;
@@ -1462,7 +1545,7 @@ export const useMethods = (store) => {
                 if (!commentAdded) {
                     console.log('[评论提交] 方法4：使用备用方案：触发重新加载评论');
                     window.dispatchEvent(new CustomEvent('reloadComments', {
-                        detail: { versionId: versionId, forceReload: true }
+                        detail: { forceReload: true }
                     }));
                 }
                 
@@ -1478,7 +1561,7 @@ export const useMethods = (store) => {
                 setTimeout(() => {
                     console.log('[评论提交] 方法6：最终备用方案 - 强制重新加载');
                     window.dispatchEvent(new CustomEvent('reloadComments', {
-                        detail: { versionId: versionId, forceReload: true }
+                        detail: { forceReload: true }
                     }));
                 }, 1000);
 
@@ -1486,66 +1569,63 @@ export const useMethods = (store) => {
                 setNewComment('');
 
                 // 重新加载评论数据 - 增加延迟和重试机制
-                if (versionId) {
-                    console.log('[评论提交] 开始重新加载评论数据');
-                    
-                    // 延迟重新加载，确保数据库写入完成
-                    const reloadCommentsWithRetry = async (retryCount = 0) => {
-                        try {
-                            console.log(`[评论提交] 第${retryCount + 1}次尝试重新加载评论`);
-                            await loadComments();
-                            
-                            // 触发评论面板重新加载mongoComments
-                            console.log('[评论提交] 触发评论面板重新加载');
-                            window.dispatchEvent(new CustomEvent('reloadComments', {
-                                detail: { versionId: versionId }
-                            }));
-                            
-                            // 验证评论是否成功加载
-                            setTimeout(async () => {
-                                try {
-                                    // 验证评论是否已加载
-                                    const { getData: verifyGetData } = await import('/src/services/modules/crud.js');
-                                    const verifyUrl = buildServiceUrl('query_documents', {
-                                        cname: 'comments',
-                                        versionId,
-                                        ...(selectedFileId.value ? { key: selectedFileId.value } : {})
-                                    });
-                                    const verifyResponse = await verifyGetData(verifyUrl);
-                                    const newComments = verifyResponse.data.list || [];
-                                    
-                                    console.log('[评论提交] 验证评论加载结果:', newComments.length, '条评论');
-                                    
-                                    // 如果评论数量没有增加，且还有重试次数，则重试
-                                    if (newComments.length <= comments.value.length && retryCount < 2) {
-                                        console.log('[评论提交] 评论数量未增加，准备重试');
-                                        setTimeout(() => {
-                                            reloadCommentsWithRetry(retryCount + 1);
-                                        }, 1000); // 1秒后重试
-                                    } else {
-                                        console.log('[评论提交] 评论重新加载完成');
-                                    }
-                                } catch (error) {
-                                    console.error('[评论提交] 验证评论加载失败:', error);
+                console.log('[评论提交] 开始重新加载评论数据');
+                
+                // 延迟重新加载，确保数据库写入完成
+                const reloadCommentsWithRetry = async (retryCount = 0) => {
+                    try {
+                        console.log(`[评论提交] 第${retryCount + 1}次尝试重新加载评论`);
+                        await loadComments();
+                        
+                        // 触发评论面板重新加载mongoComments
+                        console.log('[评论提交] 触发评论面板重新加载');
+                        window.dispatchEvent(new CustomEvent('reloadComments', {
+                            detail: { forceReload: true }
+                        }));
+                        
+                        // 验证评论是否成功加载
+                        setTimeout(async () => {
+                            try {
+                                // 验证评论是否已加载
+                                const { getData: verifyGetData } = await import('/src/services/modules/crud.js');
+                                const verifyUrl = buildServiceUrl('query_documents', {
+                                    cname: 'comments',
+                                    ...(selectedKey.value ? { key: selectedKey.value } : {})
+                                });
+                                const verifyResponse = await verifyGetData(verifyUrl);
+                                const newComments = verifyResponse.data.list || [];
+                                
+                                console.log('[评论提交] 验证评论加载结果:', newComments.length, '条评论');
+                                
+                                // 如果评论数量没有增加，且还有重试次数，则重试
+                                if (newComments.length <= comments.value.length && retryCount < 2) {
+                                    console.log('[评论提交] 评论数量未增加，准备重试');
+                                    setTimeout(() => {
+                                        reloadCommentsWithRetry(retryCount + 1);
+                                    }, 1000); // 1秒后重试
+                                } else {
+                                    console.log('[评论提交] 评论重新加载完成');
                                 }
-                            }, 500);
-                            
-                        } catch (error) {
-                            console.error(`[评论提交] 第${retryCount + 1}次重新加载失败:`, error);
-                            if (retryCount < 2) {
-                                console.log('[评论提交] 准备重试重新加载');
-                                setTimeout(() => {
-                                    reloadCommentsWithRetry(retryCount + 1);
-                                }, 1000); // 1秒后重试
+                            } catch (error) {
+                                console.error('[评论提交] 验证评论加载失败:', error);
                             }
+                        }, 500);
+                        
+                    } catch (error) {
+                        console.error(`[评论提交] 第${retryCount + 1}次重新加载失败:`, error);
+                        if (retryCount < 2) {
+                            console.log('[评论提交] 准备重试重新加载');
+                            setTimeout(() => {
+                                reloadCommentsWithRetry(retryCount + 1);
+                            }, 1000); // 1秒后重试
                         }
-                    };
-                    
-                    // 延迟500ms后开始重新加载，确保数据库写入完成
-                    setTimeout(() => {
-                        reloadCommentsWithRetry();
-                    }, 500);
-                }
+                    }
+                };
+                
+                // 延迟500ms后开始重新加载，确保数据库写入完成
+                setTimeout(() => {
+                    reloadCommentsWithRetry();
+                }, 500);
 
             } catch (error) {
                 console.error('[评论提交] 提交失败:', error);
@@ -1696,19 +1776,26 @@ export const useMethods = (store) => {
 
                 if (resp && resp.success !== false) {
                     console.log('[评论删除] 删除成功:', resp);
+                    
+                    // 立即从本地store中移除，确保UI立即更新
+                    if (comments && comments.value) {
+                        const initialLength = comments.value.length;
+                        comments.value = comments.value.filter(c => c.key !== commentId);
+                        console.log('[评论删除] 已从本地store移除评论，剩余:', comments.value.length, '原数量:', initialLength);
+                    }
                 } else {
                     throw new Error(resp?.message || '删除失败');
                 }
                 
                 // 同步删除会话消息
-                if (selectedFileId.value) {
+                if (selectedKey.value) {
                     try {
                         const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                         const sessionSync = getSessionSyncService();
                         
                         // 查找评论对象以便准确匹配
                         const comment = comments.value.find(c => c.key === commentId);
-                        await sessionSync.deleteCommentMessage(commentId, selectedFileId.value, comment);
+                        await sessionSync.deleteCommentMessage(commentId, selectedKey.value, comment);
                         console.log('[评论删除] 会话消息已删除');
                     } catch (syncError) {
                         console.warn('[评论删除] 删除会话消息失败（已忽略）:', syncError?.message);
@@ -1726,22 +1813,20 @@ export const useMethods = (store) => {
                 }));
 
                 // 重新加载评论数据
-                if (selectedKey.value) {
-                    console.log('[评论删除] 重新加载评论数据');
-                    await loadComments();
-                    
-                    // 触发评论面板重新加载mongoComments
-                    console.log('[评论删除] 触发评论面板重新加载');
-                    setTimeout(() => {
-                        console.log('[评论删除] 发送reloadComments事件');
-                        window.dispatchEvent(new CustomEvent('reloadComments', {
-                            detail: { 
-                                forceReload: true,
-                                immediateReload: true
-                            }
-                        }));
-                    }, 200); // 增加延迟时间到200ms
-                }
+                console.log('[评论删除] 重新加载评论数据');
+                await loadComments();
+                
+                // 触发评论面板重新加载mongoComments
+                console.log('[评论删除] 触发评论面板重新加载');
+                setTimeout(() => {
+                    console.log('[评论删除] 发送reloadComments事件');
+                    window.dispatchEvent(new CustomEvent('reloadComments', {
+                        detail: { 
+                            forceReload: true,
+                            immediateReload: true
+                        }
+                    }));
+                }, 200); // 增加延迟时间到200ms
 
             } catch (error) {
                 console.error('[评论删除] 删除失败:', error);
@@ -1985,7 +2070,6 @@ export const useMethods = (store) => {
                 // 构建获取评论的URL
                 const queryUrl = buildServiceUrl('query_documents', {
                     cname: 'comments',
-                    versionId,
                     ...(selectedKey.value ? { key: selectedKey.value } : {})
                 });
                 
@@ -3298,7 +3382,6 @@ export const useMethods = (store) => {
                         const { getData } = await import('/src/services/modules/crud.js');
                         const url = buildServiceUrl('query_documents', {
                             cname: 'projectVersionFiles',
-                            versionId,
                             key: fileKey
                         });
                         const response = await getData(url, {}, false);
@@ -5433,7 +5516,6 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
             }
         }
     }
-}
 
 // 保存标签
 async function saveTags(sessionId, store) {
@@ -5568,3 +5650,38 @@ async function closeTagManager(sessionId, store) {
 }
 
 
+    return {
+        // 搜索相关
+        handleSearchInput,
+        performSearch,
+        searchInFileTree,
+        handleSearchChange,
+        searchInComments,
+        searchInCode,
+        clearSearchResults,
+        clearSearch,
+        
+        // 文件操作
+        handleDeleteItem,
+        
+        // 标签操作
+        handleTagSelect,
+        handleTagClear,
+        handleTagFilterReverse,
+        handleTagFilterNoTags,
+        handleTagFilterExpand,
+        handleTagFilterSearch,
+        
+        // 会话操作
+        handleSessionSelect,
+        
+        // 消息输入
+        handleMessageInput,
+        handleCompositionStart,
+        handleCompositionEnd,
+        
+        // 项目导入导出
+        handleDownloadProjectVersion,
+        handleUploadProjectVersion
+    };
+};

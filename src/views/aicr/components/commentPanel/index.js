@@ -1,7 +1,7 @@
 // 代码评审评论面板组件 - 负责代码评审评论的展示和管理
 // 作者：liangliang
 
-import { safeExecute, createError, ErrorTypes } from '/src/utils/error.js';
+import { safeExecute } from '/src/utils/error.js';
 import { getData } from '/src/services/index.js';
 import { defineComponent } from '/src/utils/componentLoader.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
@@ -172,6 +172,7 @@ const componentOptions = {
                 _lastRequestTime: null,
                 _lastReloadEvent: null,
                 _lastProjectVersionEvent: null,
+                _markedConfigured: false,
                 
                 // 防抖定时器
                 _debounceTimer: null,
@@ -187,7 +188,12 @@ const componentOptions = {
                 newCommentText: '',
                 
                 // 删除评论状态管理
-                deletingComments: {}
+                deletingComments: {},
+                
+                // 删除确认对话框状态
+                showDeleteDialog: false,
+                deleteTargetId: null,
+                deleteTargetAuthor: ''
             };
         },
         computed: {
@@ -279,116 +285,75 @@ const componentOptions = {
             }
         },
         methods: {
-            // 将Markdown渲染为HTML（与codeView保持一致的轻量实现）
+            // 将Markdown渲染为HTML（使用marked.js优化）
             renderMarkdown(text) {
                 return safeExecute(() => {
                     if (!text) return '';
                     
-                    // 检查是否为JSON对象
+                    // 预处理：如果是对象，转为JSON字符串
                     let processedText = text;
-                    let isJsonContent = false;
-                    
                     if (typeof text === 'object') {
                         try {
-                            // 如果是对象，格式化为JSON字符串
                             processedText = JSON.stringify(text, null, 2);
-                            isJsonContent = true;
+                            processedText = '```json\n' + processedText + '\n```';
                         } catch (e) {
-                            // 如果JSON.stringify失败，使用toString()
                             processedText = text.toString();
                         }
-                    } else if (typeof text === 'string') {
-                        // 尝试解析为JSON，如果是有效的JSON则格式化
-                        try {
-                            const parsed = JSON.parse(text);
-                            if (typeof parsed === 'object' && parsed !== null) {
-                                processedText = JSON.stringify(parsed, null, 2);
-                                isJsonContent = true;
+                    }
+
+                    // 检查 marked 是否可用
+                    if (typeof window.marked === 'undefined') {
+                        console.warn('[CommentPanel] marked.js 未加载，使用简易渲染');
+                        // 简易渲染回退
+                         return processedText
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/\n/g, '<br/>');
+                    }
+
+                    // 配置 marked 选项（仅配置一次）
+                    if (!this._markedConfigured) {
+                        const renderer = new window.marked.Renderer();
+                        
+                        // 自定义代码块渲染以支持 Mermaid
+                        const originalCodeRenderer = renderer.code.bind(renderer);
+                        renderer.code = (code, language, isEscaped) => {
+                            // 检查是否为mermaid图表
+                            if (language && language.toLowerCase() === 'mermaid') {
+                                const codeId = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                                // 返回容器div，稍后由mermaid渲染
+                                return this.createMermaidDiagram(code.trim(), codeId);
                             }
-                        } catch (e) {
-                            // 不是有效的JSON，保持原样
-                            processedText = text;
-                        }
+                            
+                            // 处理普通代码块
+                            // 如果有hljs，使用它进行高亮
+                            if (window.hljs) {
+                                const validLanguage = window.hljs.getLanguage(language) ? language : 'plaintext';
+                                try {
+                                    const highlighted = window.hljs.highlight(code, { language: validLanguage }).value;
+                                    return `<pre><code class="hljs language-${validLanguage}">${highlighted}</code></pre>`;
+                                } catch (e) {}
+                            }
+                            
+                            // 回退到默认渲染
+                            return originalCodeRenderer(code, language, isEscaped);
+                        };
+
+                        window.marked.setOptions({
+                            renderer: renderer,
+                            breaks: true, // 支持 GitHub 风格的换行
+                            gfm: true     // GitHub Flavored Markdown
+                        });
+                        this._markedConfigured = true;
                     }
                     
-                    let html = processedText;
-
-                    const escapeHtml = (s) => s
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;');
-                    html = escapeHtml(html);
-
-                    // 如果是JSON内容，包装在代码块中
-                    if (isJsonContent) {
-                        html = `<pre class="md-code json-content"><code>${html}</code></pre>`;
+                    try {
+                        return window.marked.parse(processedText);
+                    } catch (e) {
+                        console.error('[CommentPanel] marked解析失败:', e);
+                        return text;
                     }
-
-                    // 代码块 ``` - 支持语言标识和 Mermaid
-                    html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, (m, lang, code) => {
-                        const language = lang || 'text';
-                        const codeId = `comment-code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                        
-                        // 如果是 mermaid 图表，创建图表容器
-                        if (language.toLowerCase() === 'mermaid') {
-                            return this.createMermaidDiagram(code.trim(), codeId);
-                        }
-                        
-                        return `<pre class="md-code"><code class="language-${language}">${code}</code></pre>`;
-                    });
-
-                    // 行内代码 `code`
-                    html = html.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
-
-                    // 图片 ![alt](url)
-                    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, url) => {
-                        const safeUrl = /^https?:\/\//i.test(url) ? url : '';
-                        const altText = alt || '';
-                        return safeUrl ? `<img src="${safeUrl}" alt="${altText}" class="md-image"/>` : m;
-                    });
-
-                    // 标题 # ## ### #### ##### ######（行首）- 修复解析顺序
-                    html = html.replace(/^#{1}\s+(.+)$/gm, '<h1>$1<\/h1>')
-                               .replace(/^#{2}\s+(.+)$/gm, '<h2>$1<\/h2>')
-                               .replace(/^#{3}\s+(.+)$/gm, '<h3>$1<\/h3>')
-                               .replace(/^#{4}\s+(.+)$/gm, '<h4>$1<\/h4>')
-                               .replace(/^#{5}\s+(.+)$/gm, '<h5>$1<\/h5>')
-                               .replace(/^#{6}\s+(.+)$/gm, '<h6>$1<\/h6>');
-
-                    // 粗体/斜体（先粗体）
-                    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1<\/strong>');
-                    html = html.replace(/\*([^*]+)\*/g, '<em>$1<\/em>');
-
-                    // 链接 [text](url)
-                    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer noopener">$1<\/a>');
-
-                    // 有序列表
-                    html = html.replace(/^(\d+)\.\s+(.+)$/gm, '<li>$2<\/li>');
-                    html = html.replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ol>${m.replace(/\n/g, '')}<\/ol>`);
-                    // 无序列表
-                    html = html.replace(/^[-*+]\s+(.+)$/gm, '<li>$1<\/li>');
-                    html = html.replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ul>${m.replace(/\n/g, '')}<\/ul>`);
-
-                    // 段落/换行
-                    const blockTags = ['h1','h2','h3','h4','h5','h6','pre','ul','ol','li','blockquote'];
-                    // 优化：先清理多余的换行符，避免多个连续的\n
-                    html = html.replace(/\n{3,}/g, '\n\n'); // 将3个或更多换行符替换为2个
-                    html = html.split(/\n{2,}/).map(block => {
-                        const trimmed = block.trim();
-                        if (!trimmed) return '';
-                        const isBlock = blockTags.some(tag => new RegExp(`^<${tag}[\\s>]`, 'i').test(trimmed));
-                        return isBlock ? trimmed : `<p>${trimmed.replace(/\n/g, '<br/>')}<\/p>`;
-                    }).join('');
-
-                    // 清理空列表
-                    html = html.replace(/<(ul|ol)>\s*<\/\1>/g, '');
-
-                    // 独立图片链接行转图片
-                    html = html.replace(/(?:^|\n)(https?:[^\s]+\.(?:png|jpe?g|gif|webp|svg))(?:\n|$)/gi, (m, url) => {
-                        return `\n<p><img src="${url}" alt="image" class="md-image"\/><\/p>\n`;
-                    });
-
-                    return html;
                 }, 'Markdown渲染(CommentPanel)');
             },
             
@@ -802,13 +767,31 @@ const componentOptions = {
                 const comment = this.renderComments.find(c => c.key === commentId);
                 const commentAuthor = comment?.author || '这条评论';
                 
-                // 显示确认对话框
-                const confirmed = await this.showDeleteConfirmation(commentAuthor);
-                if (!confirmed) {
+                // 设置确认对话框状态
+                this.deleteTargetId = commentId;
+                this.deleteTargetAuthor = commentAuthor;
+                this.showDeleteDialog = true;
+            },
+            
+            // 取消删除
+            cancelDelete() {
+                this.showDeleteDialog = false;
+                this.deleteTargetId = null;
+                this.deleteTargetAuthor = '';
+            },
+            
+            // 确认删除
+            async confirmDelete() {
+                const commentId = this.deleteTargetId;
+                if (!commentId) {
+                    this.cancelDelete();
                     return;
                 }
                 
-                // 设置删除状态（Vue 3 直接赋值即可）
+                // 关闭对话框
+                this.showDeleteDialog = false;
+                
+                // 设置删除状态
                 this.deletingComments[commentId] = true;
                 
                 try {
@@ -818,80 +801,14 @@ const componentOptions = {
                 } catch (error) {
                     console.error('[CommentPanel] 删除评论失败:', error);
                     // 清除删除状态
-                    delete this.deletingComments[commentId];
-                }
-            },
-            
-            // 显示删除确认对话框
-            showDeleteConfirmation(commentAuthor) {
-                return new Promise((resolve) => {
-                    try {
-                        // 创建对话框HTML
-                        const dialogHTML = `
-                            <div class="delete-confirmation-dialog" role="dialog" aria-labelledby="delete-dialog-title" aria-modal="true">
-                                <div class="dialog-overlay"></div>
-                                <div class="dialog-content">
-                                    <div class="dialog-header">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                        <h3 id="delete-dialog-title">确认删除评论</h3>
-                                    </div>
-                                    <div class="dialog-body">
-                                        <p>确定要删除 <strong>${commentAuthor}</strong> 的评论吗？</p>
-                                        <p class="warning-text">此操作不可恢复，请谨慎操作。</p>
-                                    </div>
-                                    <div class="dialog-actions">
-                                        <button class="btn-cancel" aria-label="取消删除">取消</button>
-                                        <button class="btn-confirm" aria-label="确认删除">确认删除</button>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        
-                        // 创建对话框元素
-                        const dialog = document.createElement('div');
-                        dialog.innerHTML = dialogHTML;
-                        const dialogElement = dialog.firstElementChild;
-                        document.body.appendChild(dialogElement);
-                        
-                        // 添加显示动画
-                        requestAnimationFrame(() => {
-                            dialogElement.classList.add('show');
-                        });
-                        
-                        // 绑定事件
-                        const cancelBtn = dialogElement.querySelector('.btn-cancel');
-                        const confirmBtn = dialogElement.querySelector('.btn-confirm');
-                        const overlay = dialogElement.querySelector('.dialog-overlay');
-                        
-                        const closeDialog = (result) => {
-                            dialogElement.classList.remove('show');
-                            setTimeout(() => {
-                                if (dialogElement && dialogElement.parentNode) {
-                                    dialogElement.remove();
-                                }
-                                resolve(result);
-                            }, 300);
-                        };
-                        
-                        cancelBtn.addEventListener('click', () => closeDialog(false));
-                        confirmBtn.addEventListener('click', () => closeDialog(true));
-                        overlay.addEventListener('click', () => closeDialog(false));
-                        
-                        // ESC键关闭
-                        const handleEsc = (e) => {
-                            if (e.key === 'Escape') {
-                                document.removeEventListener('keydown', handleEsc);
-                                closeDialog(false);
-                            }
-                        };
-                        document.addEventListener('keydown', handleEsc);
-                        
-                    } catch (error) {
-                        console.error('[CommentPanel] 显示确认对话框失败:', error);
-                        // 降级到原生confirm
-                        resolve(confirm(`确定要删除 ${commentAuthor} 的评论吗？此操作不可恢复。`));
+                    if (this.deletingComments[commentId]) {
+                        delete this.deletingComments[commentId];
                     }
-                });
+                } finally {
+                    // 重置对话框数据
+                    this.deleteTargetId = null;
+                    this.deleteTargetAuthor = '';
+                }
             },
 
 

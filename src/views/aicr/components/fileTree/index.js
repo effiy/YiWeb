@@ -732,9 +732,6 @@ const createFileTreeNode = () => {
                     @keydown.enter="toggleFolder(item.key)"
                     @keydown.space="toggleFolder(item.key)"
                 >
-                    <span class="folder-toggle" aria-hidden="true" @click.stop="toggleFolder(item.key)">
-                        <i :class="['fas', isFolderExpanded(item.key) ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
-                    </span>
                     <span class="file-icon" aria-hidden="true" @click.stop="toggleFolder(item.key)">{{ getFileIcon(item) }}</span>
                     <span class="file-name">{{ item.name }}</span>
                     <span v-if="item.children" class="folder-count">({{ item.children.length }})</span>
@@ -765,7 +762,6 @@ const createFileTreeNode = () => {
                     @keydown.enter="selectFile(item.key)"
                     @keydown.space="selectFile(item.key)"
                 >
-                    <span class="folder-toggle file-toggle-placeholder" aria-hidden="true"></span>
                     <span class="file-icon" aria-hidden="true" @click.stop="selectFile(item.key)">{{ getFileIcon(item) }}</span>
                     <span class="file-name">{{ item.name }}</span>
                     <span v-if="getFileSizeDisplay(item)" class="file-size">{{ getFileSizeDisplay(item) }}</span>

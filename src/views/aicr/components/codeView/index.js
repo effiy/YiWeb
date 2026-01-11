@@ -1052,16 +1052,7 @@ const componentOptions = {
                 // 添加目标行高亮
                 this.highlightedLines.push(Number(lineNumber));
                 
-                // 添加临时高亮效果
-                this.$nextTick(() => {
-                    const targetElement = this.$el?.querySelector(`[data-line="${lineNumber}"]`);
-                    if (targetElement) {
-                        targetElement.classList.add('highlight-animation');
-                        setTimeout(() => {
-                            targetElement.classList.remove('highlight-animation');
-                        }, 2000);
-                    }
-                });
+                // 不再执行DOM查找和动画添加
             },
             
             // 滚动到顶部
@@ -1106,11 +1097,6 @@ const componentOptions = {
             initKeyboardShortcuts() {
                 document.addEventListener('keydown', (event) => {
                     // Ctrl/Cmd + G: 快速定位到指定行
-                    if ((event.ctrlKey || event.metaKey) && event.key === 'g') {
-                        event.preventDefault();
-                        this.showGoToLineDialog();
-                    }
-                    
                     // Ctrl/Cmd + F: 在预览模式下快速切换
                     if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
                         if (this.shouldShowMarkdownPreview) {
@@ -1121,190 +1107,7 @@ const componentOptions = {
                 });
             },
             
-            // 显示跳转到指定行的对话框
-            showGoToLineDialog() {
-                const lineNumber = prompt('请输入要跳转的行号:', '');
-                if (lineNumber && !isNaN(lineNumber) && Number(lineNumber) > 0) {
-                    const targetLine = Number(lineNumber);
-                    const maxLines = this.file?.content?.split('\n').length || 0;
-                    
-                    if (targetLine <= maxLines) {
-                        this.scrollToLineInSource(targetLine);
-                    } else {
-                        this.showScrollFeedback(`行号超出范围 (最大: ${maxLines})`);
-                    }
-                }
-            },
-            
-            // 计算评论标记在Markdown预览中的位置 - 优化版本
-            calculateCommentMarkerPositions() {
-                // 预览模式下不计算评论标记位置
-                if (this.shouldShowMarkdownPreview) {
-                    console.log('[CodeView] 预览模式下不计算评论标记位置');
-                    return;
-                }
-                
-                if (!this.file || !this.file.content) {
-                    return;
-                }
-                
-                this.$nextTick(() => {
-                    const overlay = this.$el?.querySelector('.comment-markers-overlay');
-                    const previewContent = this.$el?.querySelector('.markdown-full-content');
-                    if (!overlay || !previewContent) return;
-                    
-                    // 使用缓存避免重复计算
-                    if (this._positionCache && this._positionCache.content === this.file.content) {
-                        this.applyCachedPositions(overlay);
-                        return;
-                    }
-                    
-                    // 获取预览容器的实际样式
-                    const previewStyles = window.getComputedStyle(previewContent);
-                    const containerPaddingTop = parseInt(previewStyles.paddingTop) || 0;
-                    const containerPaddingLeft = parseInt(previewStyles.paddingLeft) || 0;
-                    const containerPaddingRight = parseInt(previewStyles.paddingRight) || 0;
-                    const fontSize = parseInt(previewStyles.fontSize) || 14;
-                    const lineHeight = parseFloat(previewStyles.lineHeight) || fontSize * 1.5;
-                    
-                    // 创建临时元素来测量实际行高（优化版本）
-                    const tempElement = document.createElement('div');
-                    tempElement.style.cssText = `
-                        position: absolute;
-                        visibility: hidden;
-                        white-space: pre-wrap;
-                        font-family: ${previewStyles.fontFamily};
-                        font-size: ${fontSize}px;
-                        line-height: ${lineHeight}px;
-                        width: ${previewContent.offsetWidth - containerPaddingLeft - containerPaddingRight}px;
-                        top: -9999px;
-                        word-wrap: break-word;
-                        overflow-wrap: break-word;
-                        padding: 0;
-                        margin: 0;
-                    `;
-                    document.body.appendChild(tempElement);
-                    
-                    const lines = this.file.content.split('\n');
-                    const positions = [];
-                    let currentTop = containerPaddingTop;
-                    
-                    // 批量计算所有行位置 - 优化版本
-                    lines.forEach((line, index) => {
-                        const lineNumber = index + 1;
-                        const commentLine = overlay.querySelector(`[data-line="${lineNumber}"]`);
-                        if (commentLine) {
-                            // 设置临时元素内容来测量行高
-                            tempElement.textContent = line || ' '; // 空行用空格占位
-                            const measuredHeight = tempElement.offsetHeight;
-                            const actualLineHeight = Math.max(measuredHeight, lineHeight); // 确保最小行高
-                            
-                            positions.push({
-                                lineNumber,
-                                top: currentTop,
-                                height: actualLineHeight,
-                                element: commentLine,
-                                index: index
-                            });
-                            
-                            // 更新下一行的起始位置
-                            currentTop += actualLineHeight;
-                        }
-                    });
-                    
-                    // 清理临时元素
-                    document.body.removeChild(tempElement);
-                    
-                    // 批量应用位置（减少重排）- 优化版本
-                    requestAnimationFrame(() => {
-                        positions.forEach(({ lineNumber, top, height, element, index }) => {
-                            // 添加平滑过渡效果
-                            element.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-                            element.style.top = `${top}px`;
-                            element.style.left = `${containerPaddingLeft}px`;
-                            element.style.position = 'absolute';
-                            element.style.width = '100%';
-                            element.style.height = `${height}px`;
-                            
-                            // 确保评论标记可以接收事件
-                            const commentMarker = element.querySelector('.comment-marker');
-                            if (commentMarker) {
-                                commentMarker.style.pointerEvents = 'auto';
-                                commentMarker.style.cursor = 'pointer';
-                                
-                                // 添加加载状态类（如果需要）
-                                if (commentMarker.dataset.loading === 'true') {
-                                    commentMarker.classList.add('loading');
-                                }
-                                
-                                // 添加错落有致的进入动画
-                                commentMarker.style.opacity = '0';
-                                commentMarker.style.transform = 'translateY(-50%) scale(0.8)';
-                                
-                                // 延迟显示，创建错落有致的动画效果
-                                setTimeout(() => {
-                                    commentMarker.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                                    commentMarker.style.opacity = '1';
-                                    commentMarker.style.transform = 'translateY(-50%) scale(1)';
-                                }, index * 30); // 错落显示，减少延迟时间
-                            }
-                        });
-                        
-                        // 设置覆盖层位置
-                        overlay.style.position = 'absolute';
-                        overlay.style.top = '0';
-                        overlay.style.left = '0';
-                        overlay.style.width = '100%';
-                        overlay.style.height = `${currentTop + 40}px`; // 增加缓冲区域
-                        overlay.style.pointerEvents = 'none'; // 允许点击穿透到内容
-                        
-                        // 缓存计算结果
-                        this._positionCache = {
-                            content: this.file.content,
-                            positions: positions.map(p => ({ lineNumber: p.lineNumber, top: p.top, height: p.height }))
-                        };
-                        
-                        // 确保评论标记可以交互
-                        this.ensureCommentMarkerInteractions();
-                    });
-                });
-            },
-            
-            // 应用缓存的位置数据
-            applyCachedPositions(overlay) {
-                if (!this._positionCache) return;
-                
-                const containerPaddingLeft = parseInt(window.getComputedStyle(this.$el?.querySelector('.markdown-full-content')).paddingLeft) || 0;
-                
-                this._positionCache.positions.forEach(({ lineNumber, top, height }) => {
-                    const commentLine = overlay.querySelector(`[data-line="${lineNumber}"]`);
-                    if (commentLine) {
-                        commentLine.style.top = `${top}px`;
-                        commentLine.style.left = `${containerPaddingLeft}px`;
-                        commentLine.style.position = 'absolute';
-                        commentLine.style.width = '100%';
-                        commentLine.style.height = `${height}px`;
-                        
-                        const commentMarker = commentLine.querySelector('.comment-marker');
-                        if (commentMarker) {
-                            commentMarker.style.pointerEvents = 'auto';
-                            commentMarker.style.cursor = 'pointer';
-                        }
-                    }
-                });
-                
-                this.ensureCommentMarkerInteractions();
-            },
-            
-            // 监听文件变化
-            onFileChange() {
-                // 预览模式下不需要计算评论标记位置
-            },
-            
-            // 监听窗口大小变化
-            onWindowResize() {
-                // 预览模式下不需要重新计算评论标记位置
-            },
+
             
             // 确保评论标记在预览模式下可以交互 - 优化版本
             ensureCommentMarkerInteractions() {
@@ -2467,255 +2270,27 @@ const componentOptions = {
                     this.highlightedLines = [];
                     for (let i = start; i <= end; i++) this.highlightedLines.push(i);
                     
-                    // 等待代码行渲染完成后再滚动
-                    // 使用智能等待机制：检查代码行是否已加载
-                    const waitForCodeLines = (retryCount = 0) => {
-                        const maxRetries = 10; // 最多等待1秒（10次 * 100ms）
-                        const hasCodeLines = this.codeLines && this.codeLines.length > 0;
-                        const targetLineExists = this.$el && this.$el.querySelector(`[data-line="${start}"]`);
-                        
-                        if (hasCodeLines && (targetLineExists || retryCount >= maxRetries)) {
-                            // 代码行已加载，可以尝试滚动
-                            setTimeout(() => {
-                                this.scrollToCommentPosition(start, comment);
-                            }, 50); // 再等待一点时间确保DOM完全渲染
-                        } else if (retryCount < maxRetries) {
-                            // 继续等待
-                            setTimeout(() => {
-                                waitForCodeLines(retryCount + 1);
-                            }, 100);
-                        } else {
-                            // 超时，直接尝试滚动（可能文件内容为空或行号超出范围）
-                            console.warn('[CodeView] 等待代码行加载超时，直接尝试滚动');
-                            setTimeout(() => {
-                                this.scrollToCommentPosition(start, comment);
-                            }, 50);
-                        }
-                    };
-                    
-                    // 开始等待
-                    waitForCodeLines();
+                    // 不需要自动滚动，仅高亮
+                    console.log('[CodeView] 已高亮代码行，不执行滚动');
                     
                 }, '处理代码高亮事件');
             },
             
             // 滚动到评论位置并可选择性打开评论详情
             scrollToCommentPosition(startLine, comment = null) {
-                // 设置滚动状态
-                this.isScrolling = true;
-                this.scrollRetryCount = 0;
-                
-                // 使用递归重试机制，确保DOM元素已渲染
-                const attemptScroll = (retryCount = 0) => {
-                    this.scrollRetryCount = retryCount;
-                    try {
-                        // 优先尝试滚动到评论标记位置
-                        let targetElement = null;
-                        let targetType = '';
-                        let triedCommentMarker = false;
-                        
-                        if (comment && comment.key) {
-                            // 先尝试找到具体的评论标记
-                            const markers = this.$el ? this.$el.querySelectorAll('.comment-marker') : [];
-                            for (const marker of markers) {
-                                if (marker.dataset.commentKey === comment.key) {
-                                    targetElement = marker;
-                                    targetType = '评论标记';
-                                    console.log('[CodeView] 找到评论标记:', comment.key);
-                                    break;
-                                }
-                            }
-                            triedCommentMarker = true;
-                        }
-                        
-                        // 如果没找到评论标记，立即回退到代码行（不重试评论标记）
-                        if (!targetElement && startLine) {
-                            targetElement = this.$el ? this.$el.querySelector(`[data-line="${startLine}"]`) : null;
-                            targetType = '代码行';
-                            if (triedCommentMarker) {
-                                console.log('[CodeView] 未找到评论标记，回退到代码行:', startLine);
-                            } else {
-                                console.log('[CodeView] 尝试滚动到代码行:', startLine);
-                            }
-                        }
-                        
-                        // 执行滚动
-                        if (targetElement && typeof targetElement.scrollIntoView === 'function') {
-                            // 先高亮目标行
-                            this.highlightedLines = [];
-                            if (comment && comment.rangeInfo) {
-                                const start = Number(comment.rangeInfo.startLine) || 1;
-                                const end = Number(comment.rangeInfo.endLine) || start;
-                                for (let i = start; i <= end; i++) {
-                                    this.highlightedLines.push(i);
-                                }
-                            } else if (startLine) {
-                                this.highlightedLines.push(Number(startLine));
-                            }
-                            
-                            // 执行平滑滚动
-                            targetElement.scrollIntoView({ 
-                                behavior: 'smooth', 
-                                block: 'center',
-                                inline: 'nearest'
-                            });
-                            
-                            console.log('[CodeView] 成功滚动到位置:', { startLine, comment: comment?.key, targetType });
-                            
-                            // 清除滚动状态
-                            this.isScrolling = false;
-                            this.scrollRetryCount = 0;
-                            
-                            // 注释掉自动打开评论详情的逻辑，满足用户需求：点击引用代码时不需要打开评论详情弹框
-                            // if (comment && comment.key) {
-                            //     setTimeout(() => {
-                            //         this.autoOpenCommentDetail(comment);
-                            //     }, 1000); // 等待滚动动画完成
-                            // }
-                            
-                            return true; // 成功
-                        } else {
-                            // 如果找不到目标元素且重试次数未达上限，继续重试
-                            // 增加重试次数，给文件加载更多时间
-                            if (retryCount < 3) {
-                                console.log(`[CodeView] 未找到${targetType || '目标'}元素，第${retryCount + 1}次重试...`, {
-                                    codeLinesCount: this.codeLines?.length,
-                                    hasFile: !!this.file,
-                                    fileLoading: this.loading
-                                });
-                                setTimeout(() => {
-                                    attemptScroll(retryCount + 1);
-                                }, 300); // 增加等待时间到300ms
-                            } else {
-                                // 提供更友好的错误信息和替代方案
-                                const errorMsg = this.generateScrollErrorMessage(startLine, comment, targetType);
-                                console.warn('[CodeView] 达到最大重试次数，停止尝试滚动:', errorMsg, {
-                                    codeLinesCount: this.codeLines?.length,
-                                    hasFile: !!this.file,
-                                    fileLoading: this.loading,
-                                    startLine
-                                });
-                                
-                                // 清除滚动状态
-                                this.isScrolling = false;
-                                this.scrollRetryCount = 0;
-                                
-                                // 尝试替代方案：滚动到文件顶部或显示提示
-                                this.handleScrollFailure(startLine, comment, errorMsg);
-                            }
-                        }
-                        
-                    } catch (error) {
-                        console.warn('[CodeView] 滚动到评论位置失败:', error);
-                        
-                        // 清除滚动状态
-                        this.isScrolling = false;
-                        this.scrollRetryCount = 0;
-                        
-                        // 提供错误恢复机制
-                        this.handleScrollError(error, startLine, comment);
+                // 仅更新高亮行，不再执行滚动查找逻辑
+                this.highlightedLines = [];
+                if (comment && comment.rangeInfo) {
+                    const start = Number(comment.rangeInfo.startLine) || 1;
+                    const end = Number(comment.rangeInfo.endLine) || start;
+                    for (let i = start; i <= end; i++) {
+                        this.highlightedLines.push(i);
                     }
-                    
-                    return false;
-                };
-                
-                // 开始尝试滚动
-                attemptScroll();
-            },
-            
-            // 生成滚动错误消息
-            generateScrollErrorMessage(startLine, comment, targetType) {
-                // 如果尝试过找评论标记但没找到，说明评论可能已被删除
-                if (comment && comment.key && targetType === '评论标记') {
-                    return `无法找到评论标记 "${comment.key}"，已回退到代码行 ${startLine || '未知'}`;
-                } else if (comment && comment.key) {
-                    // 如果连代码行也找不到
-                    return `无法找到评论标记 "${comment.key}" 和对应的代码行，可能评论已被删除或文件内容已更改`;
                 } else if (startLine) {
-                    return `无法找到第 ${startLine} 行，可能文件内容已更改或行号超出范围`;
-                } else {
-                    return '无法找到目标位置';
+                    this.highlightedLines.push(Number(startLine));
                 }
-            },
-            
-            // 处理滚动失败的情况
-            handleScrollFailure(startLine, comment, errorMsg) {
-                try {
-                    // 检查代码行是否真的存在
-                    const codeLinesCount = this.codeLines ? this.codeLines.length : 0;
-                    const hasValidLine = startLine && startLine > 0 && startLine <= codeLinesCount;
-                    
-                    // 如果行号有效但找不到元素，可能是DOM还未完全渲染，尝试最后一次查找
-                    if (hasValidLine) {
-                        const codeLine = this.$el ? this.$el.querySelector(`[data-line="${startLine}"]`) : null;
-                        if (codeLine) {
-                            codeLine.scrollIntoView({ 
-                                behavior: 'smooth', 
-                                block: 'center',
-                                inline: 'nearest'
-                            });
-                            // 高亮代码行
-                            this.highlightedLines = [Number(startLine)];
-                            console.log('[CodeView] 最终找到代码行，已滚动到:', startLine);
-                            return; // 成功回退，不需要显示错误
-                        }
-                    }
-                    
-                    // 如果行号超出范围，尝试滚动到文件末尾
-                    if (startLine && codeLinesCount > 0 && startLine > codeLinesCount) {
-                        const lastLine = this.$el ? this.$el.querySelector(`[data-line="${codeLinesCount}"]`) : null;
-                        if (lastLine) {
-                            lastLine.scrollIntoView({ 
-                                behavior: 'smooth', 
-                                block: 'end',
-                                inline: 'nearest'
-                            });
-                            this.highlightedLines = [codeLinesCount];
-                            console.log('[CodeView] 行号超出范围，已滚动到文件末尾:', codeLinesCount);
-                            return;
-                        }
-                    }
-                    
-                    // 如果完全找不到目标，尝试滚动到文件顶部作为替代方案
-                    const codeBlock = this.$el ? this.$el.querySelector('.code-block') : null;
-                    if (codeBlock) {
-                        codeBlock.scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'start',
-                            inline: 'nearest'
-                        });
-                        console.log('[CodeView] 已滚动到文件顶部作为替代方案');
-                    }
-                    
-                    // 只在完全无法找到目标时才显示信息（不显示警告，避免噪音）
-                    // 评论标记不存在或文件内容已更改是正常情况
-                    if (hasValidLine) {
-                        console.info('[CodeView] 无法定位到目标位置（可能文件内容已更改），已滚动到文件顶部');
-                    } else if (startLine) {
-                        console.info('[CodeView] 行号超出范围或文件为空，已滚动到文件顶部');
-                    }
-                } catch (error) {
-                    console.warn('[CodeView] 处理滚动失败时出错:', error);
-                }
-            },
-            
-            // 处理滚动错误
-            handleScrollError(error, startLine, comment) {
-                try {
-                    console.error('[CodeView] 滚动过程中发生错误:', error);
-                    
-                    // 尝试基本的滚动恢复
-                    if (this.$el) {
-                        this.$el.scrollTop = 0;
-                    }
-                    
-                    // 如果有消息系统，显示错误提示
-                    if (this.$message && typeof this.$message.error === 'function') {
-                        this.$message.error('滚动功能暂时不可用，请手动导航到目标位置');
-                    }
-                } catch (recoveryError) {
-                    console.error('[CodeView] 错误恢复失败:', recoveryError);
-                }
+                
+                console.log('[CodeView] 已高亮位置 (不滚动):', { startLine, comment: comment?.key });
             },
             
             // 自动打开指定评论的详情
@@ -2917,177 +2492,7 @@ const componentOptions = {
                 return cleaned;
             },
             
-            // 计算Markdown预览模式下的行号
-            calculateMarkdownLineNumber(container, offset) {
-                try {
-                    const markdownContent = this.$el?.querySelector('.markdown-full-content');
-                    if (!markdownContent) return null;
-                    
-                    // 创建范围来计算选中文本之前的内容
-                    const range = document.createRange();
-                    range.setStart(markdownContent, 0);
-                    range.setEnd(container, offset);
-                    
-                    const beforeText = range.toString();
-                    const lineNumber = (beforeText.match(/\n/g) || []).length + 1;
-                    
-                    console.log('[CodeView] Markdown行号计算:', {
-                        beforeTextLength: beforeText.length,
-                        lineNumber: lineNumber,
-                        container: container,
-                        offset: offset
-                    });
-                    
-                    return lineNumber;
-                } catch (error) {
-                    console.error('[CodeView] Markdown行号计算失败:', error);
-                    return null;
-                }
-            },
-            
-            // 获取选中文本对应的行号范围
-            getSelectionLineRange(range) {
-                try {
-                    if (!range) return null;
-                    
-                    // 根据当前模式选择正确的根元素
-                    let codeRoot = null;
-                    if (this.shouldShowMarkdownPreview) {
-                        // Markdown预览模式：查找markdown-preview-content
-                        codeRoot = this.$el && this.$el.querySelector('.markdown-preview-content');
-                    } else {
-                        // 代码模式：查找code-content
-                        codeRoot = this.$el && this.$el.querySelector('.code-content');
-                    }
-                    
-                    if (!codeRoot) {
-                        console.warn('[CodeView] 无法找到代码根元素', { 
-                            isMarkdownPreview: this.shouldShowMarkdownPreview,
-                            hasElement: !!this.$el
-                        });
-                        return null;
-                    }
-                    
-                    // 查找选区开始和结束位置所在的代码行元素
-                    const findLineElement = (node) => {
-                        let current = node;
-                        while (current && current !== codeRoot) {
-                            // 查找最近的具有data-line属性的元素
-                            if (current.nodeType === 1 && current.hasAttribute && current.hasAttribute('data-line')) {
-                                return current;
-                            }
-                            // 也检查父元素是否有data-line属性
-                            if (current.parentNode && current.parentNode.nodeType === 1 && 
-                                current.parentNode.hasAttribute && current.parentNode.hasAttribute('data-line')) {
-                                return current.parentNode;
-                            }
-                            current = current.parentNode;
-                        }
-                        return null;
-                    };
-                    
-                    // 在Markdown预览模式下，需要特殊处理，因为行元素在覆盖层中
-                    const findMarkdownLineElement = (node) => {
-                        // 首先尝试在markdown-full-content中查找
-                        const markdownContent = codeRoot.querySelector('.markdown-full-content');
-                        if (markdownContent && markdownContent.contains(node)) {
-                            // 在Markdown内容中，我们需要通过位置计算行号
-                            // 这里使用一个简化的方法：通过文本位置估算行号
-                            const textContent = markdownContent.textContent || '';
-                            const selectedText = range.toString();
-                            const startIndex = textContent.indexOf(selectedText);
-                            
-                            if (startIndex !== -1) {
-                                // 计算选中文本之前的换行符数量
-                                const beforeText = textContent.substring(0, startIndex);
-                                const lineNumber = (beforeText.match(/\n/g) || []).length + 1;
-                                return { lineNumber: lineNumber };
-                            }
-                        }
-                        
-                        // 尝试在评论标记覆盖层中查找
-                        const overlay = codeRoot.querySelector('.comment-markers-overlay');
-                        if (overlay) {
-                            const lineElements = overlay.querySelectorAll('.markdown-comment-line');
-                            for (let i = 0; i < lineElements.length; i++) {
-                                const lineElement = lineElements[i];
-                                if (lineElement.contains(node)) {
-                                    return lineElement;
-                                }
-                            }
-                        }
-                        
-                        return null;
-                    };
-                    
-                    // 特殊处理：如果选择的是文本节点，需要找到它所在的代码行
-                    const getLineFromTextNode = (container, offset) => {
-                        if (!container) return null;
-                        
-                        if (this.shouldShowMarkdownPreview) {
-                            // Markdown预览模式：使用专门的方法计算行号
-                            return this.calculateMarkdownLineNumber(container, offset);
-                        } else {
-                            // 代码模式：使用原有的逻辑
-                            let lineElement = findLineElement(container);
-                            if (lineElement) {
-                                return parseInt(lineElement.getAttribute('data-line'), 10);
-                            }
-                            
-                            // 备用方案：通过遍历所有代码行来定位
-                            const allCodeLines = codeRoot.querySelectorAll('[data-line]');
-                            for (let i = 0; i < allCodeLines.length; i++) {
-                                const line = allCodeLines[i];
-                                if (line.contains(container)) {
-                                    return parseInt(line.getAttribute('data-line'), 10);
-                                }
-                            }
-                        }
-                        
-                        return null;
-                    };
-                    
-                    const startLine = getLineFromTextNode(range.startContainer, range.startOffset);
-                    const endLine = getLineFromTextNode(range.endContainer, range.endOffset);
-                    
-                    console.log('[CodeView] 行号计算结果:', {
-                        isMarkdownPreview: this.shouldShowMarkdownPreview,
-                        startLine: startLine,
-                        endLine: endLine,
-                        startContainer: range.startContainer,
-                        endContainer: range.endContainer,
-                        selectedText: range.toString().substring(0, 50)
-                    });
-                    
-                    // 如果无法获取行号，返回null
-                    if (!startLine && !endLine) {
-                        console.warn('[CodeView] 无法获取选择范围的行号', { 
-                            startContainer: range.startContainer, 
-                            endContainer: range.endContainer,
-                            isMarkdownPreview: this.shouldShowMarkdownPreview,
-                            codeRoot: codeRoot
-                        });
-                        return null;
-                    }
-                    
-                    // 使用获取到的行号，如果只有一个可用，则两端都使用同一个
-                    const finalStartLine = startLine || endLine || 1;
-                    const finalEndLine = endLine || startLine || finalStartLine;
-                    
-                    const result = {
-                        startLine: Math.min(finalStartLine, finalEndLine),
-                        endLine: Math.max(finalStartLine, finalEndLine),
-                        startChar: range.startOffset || 0,
-                        endChar: range.endOffset || 0
-                    };
-                    
-                    console.log('[CodeView] 计算得到的行号范围:', result);
-                    return result;
-                } catch (error) {
-                    console.error('[CodeView] 计算行号范围失败:', error);
-                    return null;
-                }
-            },
+
             // 监听选择变化并定位"评论"按钮
             onSelectionChange() {
                 try {
@@ -3215,12 +2620,12 @@ const componentOptions = {
                     const cleanText = this.extractCodeContent(currentSelection);
                     
                     // 计算选择范围（用于评论定位）
-                    const currentRange = currentSelection.rangeCount > 0 ? currentSelection.getRangeAt(0) : null;
-                    const rangeInfo = this.getSelectionLineRange(currentRange);
+                    // const currentRange = currentSelection.rangeCount > 0 ? currentSelection.getRangeAt(0) : null;
+                    // const rangeInfo = this.getSelectionLineRange(currentRange);
                     
                     // 更新保存的选择信息
                     this.lastSelectionText = cleanText;
-                    this.lastSelectionRange = rangeInfo;
+                    this.lastSelectionRange = null; // 不再计算行号范围
                     
                     console.log('[CodeView] 在按钮定位时保存选择信息:', {
                         raw: rawText.substring(0, 50) + (rawText.length > 50 ? '...' : ''),
@@ -4684,9 +4089,7 @@ const componentOptions = {
             };
             window.addEventListener('unhandledrejection', this._unhandledRejectionHandler);
             
-            // 添加窗口大小变化监听器
-            this._resizeHandler = () => this.onWindowResize();
-            window.addEventListener('resize', this._resizeHandler);
+
             
             // 初始化键盘快捷键
             this.initKeyboardShortcuts();

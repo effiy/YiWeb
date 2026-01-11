@@ -485,7 +485,7 @@
 }
 
 .file-tree > .file-tree-node {
-    margin-left: -22px;
+    margin-left: 0;
 }
 
 .file-tree-children {
