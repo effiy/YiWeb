@@ -70,9 +70,27 @@ const componentOptions = {
     emits: ['session-select', 'session-delete', 'session-create', 'tag-select', 'tag-clear', 'search-change', 'toggle-collapse', 
             'tag-filter-reverse', 'tag-filter-no-tags', 'tag-filter-expand', 'tag-filter-search', 'tag-order-updated',
             'session-favorite', 'session-edit', 'session-tag', 'session-duplicate', 'session-context', 'session-open-url',
-            'session-batch-select', 'session-batch-select-all', 'session-batch-delete', 'session-batch-cancel', 'session-tree'],
+            'session-batch-select', 'session-batch-select-all', 'session-batch-delete', 'session-batch-cancel', 'session-tree',
+            'session-import-file', 'session-export', 'toggle-batch-mode'],
     setup(props, { emit }) {
         const selectedSessionId = ref(null);
+        
+        // 导入相关
+        const sessionImportInput = ref(null);
+        
+        const triggerImport = () => {
+            if (sessionImportInput.value) {
+                sessionImportInput.value.click();
+            }
+        };
+        
+        const handleFileChange = (event) => {
+            emit('session-import-file', event);
+            // 重置input，允许重复选择同一文件
+            if (event.target) {
+                event.target.value = '';
+            }
+        };
         
         // 标签顺序（响应式）
         const tagOrder = ref(null);
@@ -839,7 +857,11 @@ const componentOptions = {
             isSessionSelected,
             handleSelectAll,
             handleBatchDelete,
-            handleBatchCancel
+            handleBatchCancel,
+            // 导入相关
+            sessionImportInput,
+            triggerImport,
+            handleFileChange
         };
     }
 };

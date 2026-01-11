@@ -105,7 +105,7 @@ const createFileTreeNode = () => {
                 return this.tree.map(item => sortFileTreeRecursively(item));
             }
         },
-        emits: ['file-select', 'folder-toggle', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'batch-select-file'],
+        emits: ['file-select', 'folder-toggle', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'batch-select-file', 'copy-as-prompt'],
         methods: {
             // 排序函数，供模板使用
             sortFileTreeItems(items) {
@@ -302,6 +302,25 @@ const createFileTreeNode = () => {
                     console.log('[FileTreeNode] 发射 create-session 事件:', payload);
                     this.$emit('create-session', payload);
                 }, '创建会话');
+            },
+            
+            // 复制为 Prompt
+            copyAsPrompt(event, item) {
+                return safeExecute(() => {
+                    event && event.stopPropagation && event.stopPropagation();
+                    if (!item || !item.key) {
+                        throw createError('文件信息无效', ErrorTypes.VALIDATION, '复制为Prompt');
+                    }
+                    const payload = { 
+                        key: item.key,
+                        name: item.name,
+                        path: item.path,
+                        type: item.type,
+                        originalItem: item
+                    };
+                    console.log('[FileTreeNode] 发射 copy-as-prompt 事件:', payload);
+                    this.$emit('copy-as-prompt', payload);
+                }, '复制为Prompt');
             },
             
             // 检查文件夹是否展开
@@ -557,6 +576,7 @@ const createFileTreeNode = () => {
                         <button :title="'在 ' + item.name + ' 下新建文件夹'" @click="createSubFolder($event, item.key)"><i class="fas fa-folder-plus"></i></button>
                         <button :title="'在 ' + item.name + ' 下新建文件'" @click="createSubFile($event, item.key)"><i class="fas fa-file"></i></button>
                         <button :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
+                        <button :title="'复制 ' + item.name + ' 为 Prompt'" @click="copyAsPrompt($event, item)"><i class="fas fa-clipboard"></i></button>
                     </span>
                 </div>
                 
@@ -610,6 +630,7 @@ const createFileTreeNode = () => {
                              @delete-item="$emit('delete-item', $event)"
                              @create-session="$emit('create-session', $event)"
                              @batch-select-file="$emit('batch-select-file', $event)"
+                             @copy-as-prompt="$emit('copy-as-prompt', $event)"
                         ></file-tree-node>
                     </template>
                 </ul>
@@ -717,7 +738,7 @@ const componentOptions = {
                 return files;
             }
         },
-        emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change'],
+        emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'copy-as-prompt'],
         data() {
             return {
                 searchDebounceTimer: null

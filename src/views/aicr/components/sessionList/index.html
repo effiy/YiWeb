@@ -1,38 +1,4 @@
 <div class="session-list-container">
-    <!-- 批量操作工具栏 -->
-    <div class="session-batch-toolbar" v-if="sessionBatchMode">
-        <div class="batch-toolbar-left">
-            <label class="batch-select-all">
-                <input 
-                    type="checkbox" 
-                    :checked="filteredSessions.length > 0 && filteredSessions.every(s => isSessionSelected(s.id))"
-                    @change="handleSelectAll"
-                >
-                <span>全选</span>
-            </label>
-            <span class="batch-selected-count" v-if="selectedSessionKeys.size > 0">
-                已选 {{ selectedSessionKeys.size }} 项
-            </span>
-        </div>
-        <div class="batch-toolbar-right">
-            <button 
-                type="button" 
-                class="batch-action-btn batch-delete-btn"
-                :disabled="selectedSessionKeys.size === 0"
-                @click="handleBatchDelete"
-                title="删除选中会话">
-                <i class="fas fa-trash-alt"></i> 删除
-            </button>
-            <button 
-                type="button" 
-                class="batch-action-btn batch-cancel-btn"
-                @click="handleBatchCancel"
-                title="退出批量模式">
-                取消
-            </button>
-        </div>
-    </div>
-
     <!-- 标签过滤器（参考 YiPet 项目） -->
     <div class="session-list-tags" v-if="allTags.length > 0 || tagCounts.noTagsCount > 0">
         <div class="tags-header">
@@ -148,6 +114,100 @@
                 :title="tagFilterExpanded ? '收起标签' : '展开标签'">
                 <i class="fas" :class="tagFilterExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                 {{ tagFilterExpanded ? '收起' : `展开 (${filteredTags.length - visibleTags.length})` }}
+            </button>
+        </div>
+    </div>
+    
+    <!-- 工具栏（移至标签筛选下方） -->
+    <div class="file-tree-toolbar session-toolbar" style="padding: 8px 12px; border-bottom: 1px solid var(--border-primary, rgba(99, 102, 241, 0.1));">
+        <div class="toolbar-group">
+            <!-- 批量选择按钮 -->
+            <button 
+                type="button"
+                class="toolbar-btn"
+                :class="{ 'active': sessionBatchMode }"
+                @click="$emit('toggle-batch-mode')"
+                :title="sessionBatchMode ? '退出批量选择' : '批量选择'"
+                aria-label="批量选择">
+                <i class="fas" :class="sessionBatchMode ? 'fa-check-square' : 'fa-square'" aria-hidden="true"></i>
+                <span>批量</span>
+            </button>
+        </div>
+        <div class="toolbar-group">
+            <!-- 导入按钮 -->
+            <button 
+                type="button"
+                class="toolbar-btn"
+                @click="triggerImport"
+                :disabled="loading"
+                title="导入会话"
+                aria-label="导入会话">
+                <i class="fas fa-file-import" aria-hidden="true"></i>
+                <span>导入</span>
+            </button>
+            <!-- 导出按钮 -->
+            <button 
+                type="button"
+                class="toolbar-btn"
+                @click="$emit('session-export')"
+                :disabled="loading || !sessions || sessions.length === 0"
+                title="导出会话"
+                aria-label="导出会话">
+                <i class="fas fa-file-export" aria-hidden="true"></i>
+                <span>导出</span>
+            </button>
+            <input
+                ref="sessionImportInput"
+                type="file" 
+                accept=".json,.zip"
+                @change="handleFileChange"
+                class="hidden-input"
+                aria-label="导入会话文件"
+                style="display: none;">
+            <!-- 新建会话按钮 -->
+            <button 
+                type="button"
+                class="toolbar-btn"
+                @click="$emit('session-create')"
+                :disabled="loading"
+                title="新建会话"
+                aria-label="新建会话">
+                <i class="fas fa-plus" aria-hidden="true"></i>
+                <span>新建</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- 批量操作工具栏（移至工具栏下方） -->
+    <div class="session-batch-toolbar" v-if="sessionBatchMode">
+        <div class="batch-toolbar-left">
+            <label class="batch-select-all">
+                <input 
+                    type="checkbox" 
+                    :checked="filteredSessions.length > 0 && filteredSessions.every(s => isSessionSelected(s.id))"
+                    @change="handleSelectAll"
+                >
+                <span>全选</span>
+            </label>
+            <span class="batch-selected-count" v-if="selectedSessionKeys.size > 0">
+                已选 {{ selectedSessionKeys.size }} 项
+            </span>
+        </div>
+        <div class="batch-toolbar-right">
+            <button 
+                type="button" 
+                class="batch-action-btn batch-delete-btn"
+                :disabled="selectedSessionKeys.size === 0"
+                @click="handleBatchDelete"
+                title="删除选中会话">
+                <i class="fas fa-trash-alt"></i> 删除
+            </button>
+            <button 
+                type="button" 
+                class="batch-action-btn batch-cancel-btn"
+                @click="handleBatchCancel"
+                title="退出批量模式">
+                取消
             </button>
         </div>
     </div>

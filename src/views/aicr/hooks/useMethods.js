@@ -3959,8 +3959,170 @@ export const useMethods = (store) => {
                     }
                 }
             }, '批量删除会话');
-        }
+        },
         // 注意：会话列表相关方法（toggleSessionList, handleSessionSelect 等）已在上面定义，不需要重复引用
+        
+        /**
+         * 处理复制为Prompt
+         * @param {Object} payload - 文件信息
+         */
+        handleCopyAsPrompt: async (payload) => {
+            return safeExecute(async () => {
+                const { key, name, path, type } = payload;
+                console.log('[handleCopyAsPrompt] Processing:', payload);
+
+                // 如果是文件夹，目前暂不支持或仅提示
+                if (type === 'folder') {
+                    if (window.showSuccess) {
+                        window.showSuccess('文件夹暂不支持直接复制为Prompt，请选择具体文件');
+                    }
+                    return;
+                }
+
+                // 尝试获取文件内容
+                let content = '';
+                // 检查缓存
+                if (files && files.value && files.value[key] && files.value[key].content) {
+                    content = files.value[key].content;
+                } else {
+                    // 加载文件
+                    await loadFileByKey(key);
+                    if (files && files.value && files.value[key]) {
+                        content = files.value[key].content;
+                    }
+                }
+
+                if (!content) {
+                    throw createError(`无法获取文件 ${name} 的内容`, ErrorTypes.VALIDATION, '复制为Prompt');
+                }
+
+                // 格式化为Prompt
+                // 使用简单的 XML 格式 <file path="...">...</file>
+                const promptText = `<file path="${path}">\n${content}\n</file>`;
+                
+                // 写入剪贴板
+                await navigator.clipboard.writeText(promptText);
+                
+                if (window.showSuccess) {
+                    window.showSuccess(`${name} 已复制为 Prompt`);
+                }
+            }, '复制为Prompt');
+        },
+
+        // 切换批量选择模式
+        toggleSessionBatchMode: () => {
+            return safeExecute(() => {
+                if (store.sessionBatchMode) {
+                    store.sessionBatchMode.value = !store.sessionBatchMode.value;
+                    if (!store.sessionBatchMode.value && store.selectedSessionKeys) {
+                        store.selectedSessionKeys.value.clear();
+                    }
+                }
+            }, '切换批量选择模式');
+        },
+
+        // 导出会话
+        handleSessionExport: async () => {
+            return safeExecute(async () => {
+                if (!store.sessions || !store.sessions.value || store.sessions.value.length === 0) {
+                    alert('没有可导出的会话');
+                    return;
+                }
+                
+                try {
+                    const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
+                    showGlobalLoading('正在导出会话...');
+                    
+                    const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip || (await import('jszip')).default;
+                    const zip = new JSZip();
+                    
+                    // 导出所有会话为 JSON 文件
+                    store.sessions.value.forEach(session => {
+                        let fileName = session.title || session.pageTitle || 'Untitled';
+                        fileName = fileName.replace(/[\\/:*?"<>|]/g, '_'); // 替换非法字符
+                        const content = JSON.stringify(session, null, 2);
+                        zip.file(`${fileName}.json`, content);
+                    });
+                    
+                    const content = await zip.generateAsync({ type: 'blob' });
+                    const url = URL.createObjectURL(content);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `sessions_export_${new Date().toISOString().slice(0, 10)}.zip`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    hideGlobalLoading();
+                    if (window.showSuccess) window.showSuccess('导出成功');
+                } catch (error) {
+                    console.error('导出失败:', error);
+                    // hideGlobalLoading();
+                    alert('导出失败: ' + error.message);
+                }
+            }, '导出会话');
+        },
+
+        // 导入会话文件
+        handleSessionImportFile: async (event) => {
+            return safeExecute(async () => {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                try {
+                    const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
+                    showGlobalLoading('正在导入会话...');
+                    
+                    const sessionSync = (await import('/src/views/aicr/services/sessionSyncService.js')).getSessionSyncService();
+                    
+                    if (file.name.endsWith('.json')) {
+                        const text = await file.text();
+                        const sessionData = JSON.parse(text);
+                        
+                        await sessionSync.syncFileToSession({
+                            name: file.name,
+                            content: JSON.stringify(sessionData),
+                            type: 'file'
+                        }, false, true); // isUpdate=false, isImport=true
+                    } else if (file.name.endsWith('.zip')) {
+                         const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip || (await import('jszip')).default;
+                         const zip = await JSZip.loadAsync(file);
+                         
+                         const promises = [];
+                         zip.forEach((relativePath, zipEntry) => {
+                             if (!zipEntry.dir && zipEntry.name.endsWith('.json')) {
+                                 promises.push(async () => {
+                                     const text = await zipEntry.async('string');
+                                     try {
+                                         // verify json
+                                         JSON.parse(text);
+                                         await sessionSync.syncFileToSession({
+                                             name: zipEntry.name.split('/').pop(),
+                                             content: text,
+                                             type: 'file'
+                                         }, false, true);
+                                     } catch (e) {
+                                         console.warn('Skipping invalid JSON:', zipEntry.name);
+                                     }
+                                 });
+                             }
+                         });
+                         
+                         await Promise.all(promises.map(p => p()));
+                    }
+                    
+                    if (store.loadSessions) {
+                        await store.loadSessions(true);
+                    }
+                    hideGlobalLoading();
+                    if (window.showSuccess) window.showSuccess('导入成功');
+                } catch (e) {
+                    console.error(e);
+                    alert('导入失败: ' + e.message);
+                }
+            }, '导入会话文件');
+        }
     };
 };
 

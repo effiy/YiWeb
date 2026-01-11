@@ -404,35 +404,46 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 20;
+    z-index: 30;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: var(--shadow-sm);
     color: var(--text-secondary);
-    font-size: 12px;
-    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 6px 18px rgba(79,70,229,0.15);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-size: 12px;
+}
+
+.file-tree-toggle::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(79,70,229,0.18), rgba(79,70,229,0.00));
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
 }
 
 .file-tree-toggle:hover {
     background: var(--primary);
-    color: white;
+    color: #fff;
     border-color: var(--primary);
-    transform: translateY(-50%) scale(1.15);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 8px 24px rgba(79,70,229,0.28), 0 0 0 8px rgba(79,70,229,0.10);
+    transform: translateY(-50%) scale(1.08) translateX(1px);
 }
 
 .file-tree-toggle:active {
-    transform: translateY(-50%) scale(0.9);
+    transform: translateY(-50%) scale(0.95);
 }
 
-.file-tree-toggle:focus {
+.file-tree-toggle:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.35), 0 6px 18px rgba(79,70,229,0.25);
 }
 
 .file-tree-toggle i {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    font-size: 11px;
+    transition: transform 0.25s ease;
+    font-size: 12px;
 }
 
 .file-tree-toggle i.rotated {
@@ -443,13 +454,12 @@
 .file-tree-container.collapsed .file-tree-toggle {
     right: -12px;
     background: var(--primary);
-    color: white;
+    color: #fff;
     border-color: var(--primary);
 }
 
 .file-tree-container.collapsed .file-tree-toggle:hover {
     background: var(--primary-dark, #4338ca);
-    transform: translateY(-50%) scale(1.1);
 }
 
 /* ========== 文件树内容容器 ========== */

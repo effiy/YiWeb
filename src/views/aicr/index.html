@@ -129,70 +129,8 @@
                         </div>
                     </div>
                     
-                    <!-- 工具栏（两种视图模式都显示） -->
-                    <div class="file-tree-toolbar">
-                        <!-- 树形视图工具栏 -->
-                        <!-- 已移除上传下载及批量功能 -->
-                        
-                        <!-- 标签视图工具栏 -->
-                        <template v-if="viewMode === 'tags'">
-                            <div class="toolbar-group">
-                                <!-- 批量选择按钮 -->
-                                <button 
-                                    type="button"
-                                    class="toolbar-btn"
-                                    :class="{ 'active': sessionBatchMode }"
-                                    @click="toggleSessionBatchMode"
-                                    :title="sessionBatchMode ? '退出批量选择' : '批量选择'"
-                                    aria-label="批量选择">
-                                    <i class="fas" :class="sessionBatchMode ? 'fa-check-square' : 'fa-square'" aria-hidden="true"></i>
-                                    <span>批量</span>
-                                </button>
-                            </div>
-                            <div class="toolbar-group">
-                                <!-- 导入按钮 -->
-                                <button 
-                                    type="button"
-                                    class="toolbar-btn"
-                                    @click="handleSessionImport"
-                                    :disabled="loading"
-                                    title="导入会话"
-                                    aria-label="导入会话">
-                                    <i class="fas fa-file-import" aria-hidden="true"></i>
-                                    <span>导入</span>
-                                </button>
-                                <!-- 导出按钮 -->
-                                <button 
-                                    type="button"
-                                    class="toolbar-btn"
-                                    @click="handleSessionExport"
-                                    :disabled="loading || !sessions || sessions.length === 0"
-                                    title="导出会话"
-                                    aria-label="导出会话">
-                                    <i class="fas fa-file-export" aria-hidden="true"></i>
-                                    <span>导出</span>
-                                </button>
-                                <input
-                                    ref="sessionImportInput"
-                                    type="file" 
-                                    accept=".json,.zip"
-                                    @change="handleSessionImportFile"
-                                    class="hidden-input"
-                                    aria-label="导入会话文件">
-                                <!-- 新建会话按钮 -->
-                                <button 
-                                    type="button"
-                                    class="toolbar-btn"
-                                    @click="handleSessionCreate"
-                                    :disabled="loading"
-                                    title="新建会话"
-                                    aria-label="新建会话">
-                                    <i class="fas fa-plus" aria-hidden="true"></i>
-                                    <span>新建</span>
-                                </button>
-                            </div>
-                        </template>
-                    </div>
+                    <!-- 工具栏（已移至会话列表组件内部） -->
+                    
                 </div>
                 
                 <!-- 树形视图：显示文件树 -->
@@ -255,6 +193,9 @@
                     @session-batch-select-all="handleToggleSelectAllSessions"
                     @session-batch-delete="handleBatchDeleteSessions"
                     @session-batch-cancel="toggleSessionBatchMode"
+                    @toggle-batch-mode="toggleSessionBatchMode"
+                    @session-import-file="handleSessionImportFile"
+                    @session-export="handleSessionExport"
                     @tag-select="handleTagSelect"
                     @tag-clear="handleTagClear"
                     @search-change="handleSessionSearchChange"
