@@ -1,11 +1,11 @@
 // 代码评审评论面板组件 - 负责代码评审评论的展示和管理
 // 作者：liangliang
 
-import { safeExecute } from '/src/utils/error.js';
-import { getData } from '/src/services/index.js';
+import { safeExecute, showErrorMessage } from '/src/utils/error.js';
+import { getData, postData, updateData, deleteData, streamPromptJSON } from '/src/services/index.js';
 import { defineComponent } from '/src/utils/componentLoader.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
-const { postData } = await import('/src/services/modules/crud.js');
+// const { postData } = await import('/src/services/modules/crud.js');
 
 // 新增：异步获取评论数据（从mongo api）
 async function fetchCommentsFromMongo(file) {
@@ -741,7 +741,13 @@ const componentOptions = {
                                         }
                                     };
                                     await postData(`${window.API_URL}/`, payload);
-                                } catch (e) { console.warn('[CommentPanel] 后台写库失败（已在本地显示）:', e); }
+                                } catch (e) {
+                                    console.error('[CommentPanel] 后台写库失败:', e);
+                                    showErrorMessage({
+                                        title: '保存评论失败',
+                                        message: '虽然已显示在本地，但保存到服务器失败。请检查网络或刷新页面。'
+                                    });
+                                }
                             }
                         }
                     }));
@@ -893,6 +899,12 @@ const componentOptions = {
                     if (this.editingSaving) return;
                     this.editingSaving = true;
 
+                    // 验证API地址配置
+                    if (!window.API_URL) {
+                        this.editingSaving = false;
+                        throw new Error('API地址未配置，无法保存评论');
+                    }
+
                     // 组装URL
                     // let url = `${window.API_URL}/mongodb/?cname=comments`; // Deprecated
 
@@ -905,7 +917,9 @@ const componentOptions = {
                         const finalAuthor = originalAuthor === '手动评论' ? '手动评论' : newAuthor;
                         // 保留原始的 rangeInfo，因为用户不再可以编辑行号
                         const originalRangeInfo = this.editingComment.rangeInfo || { startLine: 1, endLine: 1 };
-                        let payload = {
+                        
+                        // 构建更新Payload
+                        const updateDataPayload = {
                             key: this.editingComment.key,
                             author: finalAuthor,
                             content: newContent,
@@ -919,10 +933,20 @@ const componentOptions = {
                         
                         // 规范化评论数据，确保字段一致性
                         if (window.aicrStore && window.aicrStore.normalizeComment) {
-                            payload = window.aicrStore.normalizeComment(payload);
+                            // updateDataPayload = window.aicrStore.normalizeComment(updateDataPayload);
+                            // 注意：normalizeComment可能会覆盖某些字段，这里主要需要更新特定字段
                         }
                         
-                        const result = await updateData(url, payload);
+                        const payload = {
+                            module_name: SERVICE_MODULE,
+                            method_name: 'update_document',
+                            parameters: {
+                                cname: 'comments',
+                                data: updateDataPayload
+                            }
+                        };
+                        
+                        const result = await postData(`${window.API_URL}/`, payload);
                         console.log('[CommentPanel] 评论更新成功:', result);
 
                         // 本地同步更新，提升体验（使用规范化后的数据）

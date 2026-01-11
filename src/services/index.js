@@ -33,6 +33,7 @@ export {
     patchData,
     deleteData,
     streamPrompt,
+    streamPromptJSON,
     batchOperations,
     CacheManager
 } from './modules/crud.js';

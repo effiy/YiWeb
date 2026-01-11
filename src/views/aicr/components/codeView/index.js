@@ -2400,19 +2400,8 @@ const componentOptions = {
                     // 4. 智能清理：只处理明显的多余换行符，保留代码结构
                     result = this.smartCleanNewlines(result);
                     
-                    // 5. 最终清理：移除首尾的空白字符，但保留行内缩进
+                    // 5. 最终清理：移除首尾的空白字符，但移除行内缩进
                     result = result.trim();
-                    
-                    console.log('[CodeView] 优化文本清理:', {
-                        原始行数: lines.length,
-                        清理后行数: nonEmptyLines.length,
-                        过滤空行和数字行: lines.length - nonEmptyLines.length,
-                        清理后: result.substring(0, 100) + (result.length > 100 ? '...' : ''),
-                        包含换行符: result.includes('\n'),
-                        换行符数量: (result.match(/\n/g) || []).length,
-                        最终长度: result.length,
-                        保留缩进: result.split('\n').some(line => line.startsWith(' ') || line.startsWith('\t'))
-                    });
                     
                     return result;
                     
@@ -2566,6 +2555,44 @@ const componentOptions = {
                     this.hideSelectionButton();
                 }
             },
+            // 获取选择的行号范围
+            getSelectionLineRange(range) {
+                if (!range) return null;
+                
+                try {
+                    // 辅助函数：查找最近的代码行元素
+                    const findLineElement = (node) => {
+                        if (!node) return null;
+                        // 如果节点是文本节点，使用其父节点
+                        const el = node.nodeType === 3 ? node.parentNode : node;
+                        // 查找带有data-line属性的code元素
+                        return el.closest && el.closest('code[data-line]');
+                    };
+
+                    const startLineEl = findLineElement(range.startContainer);
+                    const endLineEl = findLineElement(range.endContainer);
+
+                    if (startLineEl) {
+                        const startLine = parseInt(startLineEl.getAttribute('data-line'), 10);
+                        let endLine = startLine;
+                        
+                        if (endLineEl) {
+                            endLine = parseInt(endLineEl.getAttribute('data-line'), 10);
+                        }
+                        
+                        // 确保start <= end
+                        return {
+                            startLine: Math.min(startLine, endLine),
+                            endLine: Math.max(startLine, endLine)
+                        };
+                    }
+                } catch (e) {
+                    console.error('[CodeView] 计算行号范围失败:', e);
+                }
+                
+                return null;
+            },
+
             getActionContainer() {
                 // 首先尝试在当前组件内查找容器（确保在视图内）
                 let container = this.$el && this.$el.querySelector('#comment-action-container');
@@ -2620,12 +2647,12 @@ const componentOptions = {
                     const cleanText = this.extractCodeContent(currentSelection);
                     
                     // 计算选择范围（用于评论定位）
-                    // const currentRange = currentSelection.rangeCount > 0 ? currentSelection.getRangeAt(0) : null;
-                    // const rangeInfo = this.getSelectionLineRange(currentRange);
+                    const currentRange = currentSelection.rangeCount > 0 ? currentSelection.getRangeAt(0) : null;
+                    const rangeInfo = this.getSelectionLineRange(currentRange);
                     
                     // 更新保存的选择信息
                     this.lastSelectionText = cleanText;
-                    this.lastSelectionRange = null; // 不再计算行号范围
+                    this.lastSelectionRange = rangeInfo;
                     
                     console.log('[CodeView] 在按钮定位时保存选择信息:', {
                         raw: rawText.substring(0, 50) + (rawText.length > 50 ? '...' : ''),
@@ -2809,7 +2836,7 @@ const componentOptions = {
                     let comment = {
                         content,
                         text: this.lastSelectionText || '', // 引用的代码文本存储在 text 中
-                        rangeInfo: this.lastSelectionRange, // 用于评论定位（不在界面显示行数）
+                        rangeInfo: this.lastSelectionRange ? { ...this.lastSelectionRange } : null, // 复制一份用于评论定位
                         fileKey: this.file ? (this.file.key || this.file.id || this.file.path || this.file.name) : undefined,
                         author: '手动评论',
                         fromSystem: null, // 手动评论没有评论者系统
@@ -2825,6 +2852,11 @@ const componentOptions = {
                         // 保留 text 字段（引用代码），不要覆盖为 content
                         comment.createdTime = comment.timestamp; // 毫秒数
                         comment.createdAt = comment.timestamp; // 毫秒数
+                    }
+
+                    // 验证API地址配置
+                    if (!window.API_URL) {
+                        throw new Error('API地址未配置，无法提交评论');
                     }
 
                     // 调用API提交评论
@@ -3148,6 +3180,11 @@ const componentOptions = {
                     
                     console.log('[CodeView] 更新评论数据:', updateData);
                     
+                    // 验证API地址配置
+                    if (!window.API_URL) {
+                        throw new Error('API地址未配置，无法保存评论');
+                    }
+
                     // 调用API更新评论
                     const { postData: apiPost } = await import('/src/services/modules/crud.js');
                     const response = await apiPost(`${window.API_URL}/`, {
@@ -3209,6 +3246,11 @@ const componentOptions = {
                     const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                     showGlobalLoading('正在删除评论...');
                     
+                    // 验证API地址配置
+                    if (!window.API_URL) {
+                        throw new Error('API地址未配置，无法删除评论');
+                    }
+
                     // 调用API删除评论
                     const { postData: apiPost } = await import('/src/services/modules/crud.js');
                     const response = await apiPost(`${window.API_URL}/`, {
@@ -3274,6 +3316,11 @@ const componentOptions = {
                     const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                     showGlobalLoading('正在更新评论状态...');
                     
+                    // 验证API地址配置
+                    if (!window.API_URL) {
+                        throw new Error('API地址未配置，无法更新评论状态');
+                    }
+
                     // 构建更新数据
                     const updateData = {
                         key: commentKey,

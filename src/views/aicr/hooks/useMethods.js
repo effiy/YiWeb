@@ -1443,8 +1443,13 @@ export const useMethods = (store) => {
 
                 console.log('[评论提交] 构建的评论数据:', comment);
 
+                // 检查API配置
+                if (!window.API_URL) {
+                    throw createError('API地址未配置，无法提交评论', ErrorTypes.API, '评论提交');
+                }
+
                 // 调用API提交评论
-                const { postData } = await import('/src/services/modules/crud.js');
+                // const { postData } = await import('/src/services/modules/crud.js');
                 const payload = {
                     module_name: SERVICE_MODULE,
                     method_name: 'create_document',
@@ -1740,6 +1745,11 @@ export const useMethods = (store) => {
                 throw createError('评论ID不能为空', ErrorTypes.VALIDATION, '评论删除');
             }
 
+            // 检查API配置
+            if (!window.API_URL) {
+                throw createError('API地址未配置，无法删除评论', ErrorTypes.API, '评论删除');
+            }
+
             console.log('[评论删除] 开始删除评论:', commentId);
 
             try {
@@ -1854,6 +1864,11 @@ export const useMethods = (store) => {
                 throw createError('评论ID不能为空', ErrorTypes.VALIDATION, '评论解决');
             }
 
+            // 检查API配置
+            if (!window.API_URL) {
+                throw createError('API地址未配置，无法解决评论', ErrorTypes.API, '评论解决');
+            }
+
             console.log('[评论解决] 开始解决评论:', commentId);
 
             try {
@@ -1932,6 +1947,11 @@ export const useMethods = (store) => {
         return safeExecute(async () => {
             if (!commentId) {
                 throw createError('评论ID不能为空', ErrorTypes.VALIDATION, '评论重新打开');
+            }
+
+            // 检查API配置
+            if (!window.API_URL) {
+                throw createError('API地址未配置，无法重新打开评论', ErrorTypes.API, '评论重新打开');
             }
 
             console.log('[评论重新打开] 开始重新打开评论:', commentId);
