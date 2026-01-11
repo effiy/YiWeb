@@ -1010,11 +1010,11 @@ const { computed } = Vue;
                             methods.toggleSessionSelection(sessionId);
                         } else {
                             // 备用方法：直接操作 store
-                            if (store && store.selectedSessionIds && store.selectedSessionIds.value) {
-                                if (store.selectedSessionIds.value.has(sessionId)) {
-                                    store.selectedSessionIds.value.delete(sessionId);
+                            if (store && store.selectedSessionKeys && store.selectedSessionKeys.value) {
+                                if (store.selectedSessionKeys.value.has(sessionId)) {
+                                    store.selectedSessionKeys.value.delete(sessionId);
                                 } else {
-                                    store.selectedSessionIds.value.add(sessionId);
+                                    store.selectedSessionKeys.value.add(sessionId);
                                 }
                             }
                         }
@@ -1024,12 +1024,16 @@ const { computed } = Vue;
                 },
                 
                 // 全选/取消全选会话
-                handleToggleSelectAllSessions: function() {
-                    logInfo('[主页面] 全选/取消全选会话');
+                handleToggleSelectAllSessions: function(payload) {
+                    logInfo('[主页面] 全选/取消全选会话', payload);
                     try {
                         const methods = useMethods(store);
                         if (methods.toggleSelectAllSessions) {
-                            methods.toggleSelectAllSessions();
+                            if (payload && typeof payload === 'object' && Array.isArray(payload.ids)) {
+                                methods.toggleSelectAllSessions(payload.ids, payload.isSelect);
+                            } else {
+                                methods.toggleSelectAllSessions();
+                            }
                         }
                     } catch (error) {
                         logError('[主页面] 全选/取消全选会话失败:', error);

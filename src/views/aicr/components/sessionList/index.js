@@ -722,7 +722,31 @@ const componentOptions = {
         
         // 检查会话是否被选中
         const isSessionSelected = (sessionId) => {
-            return props.selectedSessionIds && props.selectedSessionIds.has && props.selectedSessionIds.has(sessionId);
+            return props.selectedSessionKeys && props.selectedSessionKeys.has && props.selectedSessionKeys.has(sessionId);
+        };
+
+        // 全选/取消全选
+        const handleSelectAll = () => {
+            const allIds = filteredSessions.value.map(s => s.id);
+            // 检查当前是否所有筛选后的会话都被选中
+            const isAllFilteredSelected = filteredSessions.value.length > 0 && 
+                                         filteredSessions.value.every(s => isSessionSelected(s.id));
+            
+            if (isAllFilteredSelected) {
+                emit('session-batch-select-all', { ids: allIds, isSelect: false });
+            } else {
+                emit('session-batch-select-all', { ids: allIds, isSelect: true });
+            }
+        };
+
+        // 批量删除
+        const handleBatchDelete = () => {
+            emit('session-batch-delete');
+        };
+
+        // 取消批量操作
+        const handleBatchCancel = () => {
+            emit('session-batch-cancel');
         };
         
         // 判断会话来源（通过URL判断）
@@ -806,7 +830,10 @@ const componentOptions = {
             getSessionFirstChar,
             isSessionFromTree,
             handleBatchSelect,
-            isSessionSelected
+            isSessionSelected,
+            handleSelectAll,
+            handleBatchDelete,
+            handleBatchCancel
         };
     }
 };
@@ -821,4 +848,5 @@ defineComponent(componentOptions).then(component => {
 });
 
 export default componentOptions;
+
 

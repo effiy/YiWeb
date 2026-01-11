@@ -1,6 +1,40 @@
 <div class="session-list-container">
+    <!-- 批量操作工具栏 -->
+    <div class="session-batch-toolbar" v-if="sessionBatchMode">
+        <div class="batch-toolbar-left">
+            <label class="batch-select-all">
+                <input 
+                    type="checkbox" 
+                    :checked="filteredSessions.length > 0 && filteredSessions.every(s => isSessionSelected(s.id))"
+                    @change="handleSelectAll"
+                >
+                <span>全选</span>
+            </label>
+            <span class="batch-selected-count" v-if="selectedSessionKeys.size > 0">
+                已选 {{ selectedSessionKeys.size }} 项
+            </span>
+        </div>
+        <div class="batch-toolbar-right">
+            <button 
+                type="button" 
+                class="batch-action-btn batch-delete-btn"
+                :disabled="selectedSessionKeys.size === 0"
+                @click="handleBatchDelete"
+                title="删除选中会话">
+                <i class="fas fa-trash-alt"></i> 删除
+            </button>
+            <button 
+                type="button" 
+                class="batch-action-btn batch-cancel-btn"
+                @click="handleBatchCancel"
+                title="退出批量模式">
+                取消
+            </button>
+        </div>
+    </div>
+
     <!-- 标签过滤器（参考 YiPet 项目） -->
-    <div class="session-list-tags" v-if="allTags.length > 0 || tagCounts.noTagsCount > 0">
+    <div class="session-list-tags" v-if="!sessionBatchMode && (allTags.length > 0 || tagCounts.noTagsCount > 0)">
         <div class="tags-header">
             <span class="tags-title">标签筛选</span>
             <div class="tags-header-actions">

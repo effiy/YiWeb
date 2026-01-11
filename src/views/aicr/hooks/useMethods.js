@@ -2078,7 +2078,7 @@ export const useMethods = (store) => {
     };
 
     /**
-     * 切换批量选择模式
+     * 切换批量选择模式 (文件树)
      */
     const toggleBatchMode = () => {
         return safeExecute(() => {
@@ -2092,6 +2092,177 @@ export const useMethods = (store) => {
                 console.log('[批量选择] 批量模式:', batchMode.value ? '开启' : '关闭');
             }
         }, '批量模式切换');
+    };
+
+    /**
+     * 切换会话批量选择模式
+     */
+    const toggleSessionBatchMode = () => {
+        return safeExecute(() => {
+            const { sessionBatchMode, selectedSessionKeys } = store;
+            if (sessionBatchMode && typeof sessionBatchMode.value !== 'undefined') {
+                sessionBatchMode.value = !sessionBatchMode.value;
+                // 退出批量模式时清空选中项
+                if (!sessionBatchMode.value && selectedSessionKeys && selectedSessionKeys.value) {
+                    selectedSessionKeys.value.clear();
+                }
+                console.log('[会话批量] 模式切换:', sessionBatchMode.value ? '开启' : '关闭');
+            }
+        }, '会话批量模式切换');
+    };
+
+    /**
+     * 处理会话批量选择
+     * @param {string} sessionId - 会话ID
+     */
+    const handleSessionBatchSelect = (sessionId) => {
+        return safeExecute(() => {
+            const { sessionBatchMode, selectedSessionKeys } = store;
+            
+            if (!sessionBatchMode || !sessionBatchMode.value) {
+                console.warn('[会话批量] 未开启批量模式');
+                return;
+            }
+            
+            if (!selectedSessionKeys || !selectedSessionKeys.value) {
+                console.warn('[会话批量] selectedSessionKeys 未初始化');
+                return;
+            }
+            
+            if (selectedSessionKeys.value.has(sessionId)) {
+                selectedSessionKeys.value.delete(sessionId);
+            } else {
+                selectedSessionKeys.value.add(sessionId);
+            }
+            
+            console.log('[会话批量] 当前选中数量:', selectedSessionKeys.value.size);
+        }, '会话批量选择');
+    };
+
+    /**
+     * 处理全选/取消全选会话
+     * @param {Object} payload - { ids: [], isSelect: boolean }，如果为空则默认全选/取消全选当前store中的所有会话
+     */
+    const handleToggleSelectAllSessions = (payload) => {
+        return safeExecute(() => {
+            const { selectedSessionKeys, sessions } = store;
+            
+            if (!selectedSessionKeys || !selectedSessionKeys.value) return;
+            
+            // 1. 如果传入了具体的ID列表（通常来自 filteredSessions）
+            if (payload && Array.isArray(payload.ids)) {
+                const { ids, isSelect } = payload;
+                if (isSelect) {
+                    ids.forEach(id => selectedSessionKeys.value.add(id));
+                } else {
+                    ids.forEach(id => selectedSessionKeys.value.delete(id));
+                }
+                console.log('[会话批量] 指定范围全选/取消:', isSelect, '数量:', ids.length);
+                return;
+            }
+            
+            // 2. 如果没有传入参数，则根据当前选中状态切换（全选所有/清空）
+            // 这种情况下，我们只能操作 store.sessions 中的所有会话
+            const allSessions = sessions.value || [];
+            const allIds = allSessions.map(s => s.id || s.key).filter(id => id);
+            
+            // 检查是否已全选 (所有有效ID都在选中集合中)
+            const isAllSelected = allIds.length > 0 && allIds.every(id => selectedSessionKeys.value.has(id));
+            
+            if (isAllSelected) {
+                // 取消全选
+                selectedSessionKeys.value.clear();
+                console.log('[会话批量] 取消全选');
+            } else {
+                // 全选
+                allIds.forEach(id => selectedSessionKeys.value.add(id));
+                console.log('[会话批量] 全选所有会话, 数量:', allIds.length);
+            }
+        }, '会话全选/取消全选');
+    };
+
+    /**
+     * 处理批量删除会话
+     */
+    const handleBatchDeleteSessions = async () => {
+        return safeExecute(async () => {
+            const { selectedSessionKeys } = store;
+            if (!selectedSessionKeys || !selectedSessionKeys.value || selectedSessionKeys.value.size === 0) {
+                if (window.showError) window.showError('请先选择要删除的会话');
+                return;
+            }
+            
+            const count = selectedSessionKeys.value.size;
+            if (!confirm(`确定要删除选中的 ${count} 个会话吗？此操作不可撤销。`)) {
+                return;
+            }
+            
+            const keysToDelete = Array.from(selectedSessionKeys.value);
+            console.log('[会话批量] 开始删除, 数量:', count);
+            
+            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+            const sessionSync = getSessionSyncService();
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            // 批量删除
+            // 为了避免请求过多，可以分组处理或串行处理
+            // 这里使用 Promise.all 并发处理，但建议数量大时分批
+            const deletePromises = keysToDelete.map(async (key) => {
+                try {
+                    // 检查是否为树文件类型的会话
+                    // 我们需要从 store.sessions 中找到对应的会话对象来检查 URL
+                    const session = store.sessions.value.find(s => (s.key === key || s.id === key));
+                    if (session && session.url && String(session.url).startsWith('aicr-session://')) {
+                        console.warn(`[会话批量] 跳过树文件会话: ${key}`);
+                        return { success: false, key, reason: 'skip_tree_file' };
+                    }
+
+                    await sessionSync.deleteSession(key);
+                    return { success: true, key };
+                } catch (e) {
+                    console.error(`[会话批量] 删除失败: ${key}`, e);
+                    return { success: false, key, reason: e.message };
+                }
+            });
+            
+            const results = await Promise.all(deletePromises);
+            
+            results.forEach(res => {
+                if (res.success) {
+                    successCount++;
+                    // 从选中集合中移除
+                    selectedSessionKeys.value.delete(res.key);
+                } else {
+                    if (res.reason !== 'skip_tree_file') {
+                        failCount++;
+                    }
+                }
+            });
+            
+            // 更新本地 sessions 列表
+            // 过滤掉已删除的
+            const deletedKeys = new Set(results.filter(r => r.success).map(r => r.key));
+            if (store.sessions && store.sessions.value) {
+                store.sessions.value = store.sessions.value.filter(s => !deletedKeys.has(s.key) && !deletedKeys.has(s.id));
+            }
+            
+            // 提示结果
+            let msg = `批量删除完成: 成功 ${successCount} 个`;
+            if (failCount > 0) {
+                msg += `, 失败 ${failCount} 个`;
+                if (window.showError) window.showError(msg);
+            } else {
+                if (window.showSuccess) window.showSuccess(msg);
+            }
+            
+            // 如果全部删除了，退出批量模式
+            if (selectedSessionKeys.value.size === 0) {
+                // toggleSessionBatchMode(); // 可选：保持批量模式还是退出？通常保持方便继续操作，但如果空了就无所谓
+            }
+            
+        }, '批量删除会话');
     };
 
     /**
@@ -3303,8 +3474,8 @@ export const useMethods = (store) => {
             return safeExecute(() => {
                 if (sessionBatchMode) {
                     sessionBatchMode.value = !sessionBatchMode.value;
-                    if (!sessionBatchMode.value && selectedSessionIds) {
-                        selectedSessionIds.value.clear();
+                    if (!sessionBatchMode.value && selectedSessionKeys) {
+                        selectedSessionKeys.value.clear();
                     }
                     console.log('[useMethods] 会话批量选择模式:', sessionBatchMode.value);
                 }
@@ -3319,48 +3490,62 @@ export const useMethods = (store) => {
                     return;
                 }
                 
-                if (selectedSessionIds.value.has(sessionId)) {
-                    selectedSessionIds.value.delete(sessionId);
+                if (selectedSessionKeys.value.has(sessionId)) {
+                    selectedSessionKeys.value.delete(sessionId);
                 } else {
-                    selectedSessionIds.value.add(sessionId);
+                    selectedSessionKeys.value.add(sessionId);
                 }
-                console.log('[useMethods] 会话选择状态已切换:', sessionId, '选中数量:', selectedSessionIds.value.size);
+                console.log('[useMethods] 会话选择状态已切换:', sessionId, '选中数量:', selectedSessionKeys.value.size);
             }, '切换会话选择状态');
         },
         
-        // 全选/取消全选会话（参考 YiPet 的实现）
-        toggleSelectAllSessions: () => {
+        // 全选/取消全选会话
+        toggleSelectAllSessions: (ids, isSelect) => {
             return safeExecute(() => {
-                if (!sessions || !sessions.value || !Array.isArray(sessions.value)) {
+                if (!store.sessions || !store.sessions.value || !Array.isArray(store.sessions.value)) {
                     console.warn('[useMethods] 会话列表为空');
                     return;
                 }
                 
-                if (!selectedSessionIds || !selectedSessionIds.value) {
-                    console.warn('[useMethods] selectedSessionIds 未初始化');
+                if (!selectedSessionKeys || !selectedSessionKeys.value) {
+                    console.warn('[useMethods] selectedSessionKeys 未初始化');
                     return;
                 }
                 
-                // 获取过滤后的会话列表（需要考虑搜索和标签过滤）
-                // 这里简化处理，使用所有可见的会话
-                const visibleSessions = sessions.value;
-                
-                // 检查是否全部已选中
-                const allSelected = visibleSessions.length > 0 && 
-                    visibleSessions.every(session => selectedSessionKeys.value.has(session.key));
-                
-                if (allSelected) {
-                    // 取消全选：只取消当前显示的会话
-                    visibleSessions.forEach(session => {
-                        selectedSessionKeys.value.delete(session.key);
-                    });
-                    console.log('[useMethods] 已取消全选，取消数量:', visibleSessions.length);
+                // 如果传入了 ids，使用 ids，否则使用所有会话
+                let targetSessions = [];
+                if (ids && Array.isArray(ids) && ids.length > 0) {
+                     targetSessions = store.sessions.value.filter(s => ids.includes(s.key || s.id));
                 } else {
-                    // 全选：选中所有当前显示的会话
-                    visibleSessions.forEach(session => {
+                     targetSessions = store.sessions.value;
+                }
+                
+                if (targetSessions.length === 0) {
+                    return;
+                }
+                
+                // 如果 explicit isSelect provided, use it
+                // If not provided (undefined), toggle based on current state (legacy behavior)
+                let shouldSelect = isSelect;
+                
+                if (typeof shouldSelect !== 'boolean') {
+                    // Legacy toggle logic
+                    const allSelected = targetSessions.every(session => selectedSessionKeys.value.has(session.key));
+                    shouldSelect = !allSelected;
+                }
+                
+                if (shouldSelect) {
+                    // 全选
+                    targetSessions.forEach(session => {
                         selectedSessionKeys.value.add(session.key);
                     });
-                    console.log('[useMethods] 已全选，选中数量:', visibleSessions.length);
+                    console.log('[useMethods] 已全选，选中数量:', targetSessions.length);
+                } else {
+                    // 取消全选
+                    targetSessions.forEach(session => {
+                        selectedSessionKeys.value.delete(session.key);
+                    });
+                    console.log('[useMethods] 已取消全选，取消数量:', targetSessions.length);
                 }
             }, '全选/取消全选会话');
         },
@@ -3554,7 +3739,7 @@ export const useMethods = (store) => {
         // 处理会话导出
         handleSessionExport: async () => {
             return safeExecuteAsync(async () => {
-                if (!sessions || !sessions.value || sessions.value.length === 0) {
+                if (!store.sessions || !store.sessions.value || store.sessions.value.length === 0) {
                     console.warn('[useMethods] 没有可导出的会话');
                     if (window.showError) {
                         window.showError('没有可导出的会话');
@@ -3562,7 +3747,7 @@ export const useMethods = (store) => {
                     return;
                 }
                 
-                console.log('[useMethods] 导出会话，数量:', sessions.value.length);
+                console.log('[useMethods] 导出会话，数量:', store.sessions.value.length);
                 
                 const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                 showGlobalLoading('正在导出会话...');
@@ -3572,10 +3757,10 @@ export const useMethods = (store) => {
                     let sessionsToExport = [];
                     if (sessionBatchMode && sessionBatchMode.value && selectedSessionKeys && selectedSessionKeys.value.size > 0) {
                         // 批量导出选中的会话
-                        sessionsToExport = sessions.value.filter(s => selectedSessionKeys.value.has(s.key));
+                        sessionsToExport = store.sessions.value.filter(s => selectedSessionKeys.value.has(s.key));
                     } else {
                         // 导出所有会话
-                        sessionsToExport = sessions.value;
+                        sessionsToExport = store.sessions.value;
                     }
                     
                     if (sessionsToExport.length === 0) {
