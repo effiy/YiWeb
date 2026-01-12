@@ -1067,14 +1067,6 @@ const { computed } = Vue;
             }
         });
         
-        // 确保store中的评论者方法可用
-        logInfo('[代码审查页面] store已暴露到全局，评论者方法:', {
-            loadCommenters: !!store.loadCommenters,
-            addCommenter: !!store.addCommenter,
-            updateCommenter: !!store.updateCommenter,
-            deleteCommenter: !!store.deleteCommenter,
-            setSelectedCommenterIds: !!store.setSelectedCommenterIds
-        });
         
         if (window.aicrApp && window.aicrApp.reload) {
             const oldReload = window.aicrApp.reload;

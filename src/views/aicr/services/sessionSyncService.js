@@ -517,19 +517,23 @@ class SessionSyncService {
                     return null;
                 }
                 
-                // 确保正确编码会话ID，处理包含 "/" 等特殊字符的情况
-                // const encodedSessionId = encodeURIComponent(sessionId);
-                // const url = `${this.apiUrl}/session/${encodedSessionId}`;
-                
-                // const response = await getData(url, {}, false);
-
-                // 使用标准服务接口查询会话
-                const url = buildServiceUrl('query_documents', {
+                // 1. 优先尝试按 key 查询 (符合 "只需要key即可" 的原则)
+                let url = buildServiceUrl('query_documents', {
                     cname: 'sessions',
-                    filter: { id: sessionId },
+                    filter: { key: sessionId },
                     limit: 1
                 });
-                const response = await getData(url, {}, false);
+                let response = await getData(url, {}, false);
+                
+                // 2. 如果未找到，尝试按 id 查询 (兼容旧数据或路径类型的会话)
+                if (!response || !response.data || !response.data.list || response.data.list.length === 0) {
+                     url = buildServiceUrl('query_documents', {
+                        cname: 'sessions',
+                        filter: { id: sessionId },
+                        limit: 1
+                    });
+                    response = await getData(url, {}, false);
+                }
                 
                 if (response && response.data && response.data.list && response.data.list.length > 0) {
                     const session = response.data.list[0];

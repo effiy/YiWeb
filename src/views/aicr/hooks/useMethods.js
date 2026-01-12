@@ -367,6 +367,12 @@ export const useMethods = (store) => {
             
             // 2. 设置选中Key
             if (setSelectedKey) {
+                // 如果点击的是当前选中的会话（对应的文件），则取消选中
+                if (selectedKey.value === fileKey) {
+                    console.log('[handleSessionSelect] 取消选中会话对应的文件:', fileKey);
+                    setSelectedKey(null);
+                    return;
+                }
                 setSelectedKey(fileKey);
             }
             
@@ -1172,10 +1178,7 @@ export const useMethods = (store) => {
                     loadFiles(),
                     (async () => { try { await loadComments(); } catch (_) {} })()
                 ]);
-
-                // 可选：同步评论者数据
-                try { if (typeof store.loadCommenters === 'function') { await store.loadCommenters(); } } catch (_) {}
-
+                
                 // 刷新会话列表（转换成树文件后需要刷新）
                 try {
                     if (typeof store.loadSessions === 'function') {
@@ -1266,6 +1269,14 @@ export const useMethods = (store) => {
             const keyNorm = normalizeKey(targetKey);
             if (!keyNorm) {
                 throw createError('文件Key无效', ErrorTypes.VALIDATION, '文件选择');
+            }
+
+            // 如果点击的是当前选中的文件，则取消选中（恢复刷新页面时的状态）
+            if (selectedKey.value === keyNorm) {
+                console.log('[文件选择] 取消选中文件:', keyNorm);
+                setSelectedKey(null);
+                window.__aicrPendingFileKey = null;
+                return;
             }
 
             console.log('[文件选择] 设置选中的文件Key:', keyNorm);
@@ -1716,24 +1727,7 @@ export const useMethods = (store) => {
         }, '收起所有文件夹');
     };
 
-    /**
-     * 处理评论者选择
-     * @param {Array} commenters - 选中的评论者数组
-     */
-    const handleCommenterSelect = (commenters) => {
-        return safeExecute(() => {
-            console.log('[评论者选择] 选中的评论者:', commenters);
-            
-            if (commenters && commenters.length > 0) {
-                console.log('[评论者选择] 选中的评论者数量:', commenters.length);
-                commenters.forEach(commenter => {
-                    console.log('[评论者选择] 评论者:', commenter.name, commenter.key);
-                });
-            } else {
-                console.log('[评论者选择] 没有选中任何评论者');
-            }
-        }, '评论者选择处理');
-    };
+
 
     /**
      * 处理评论删除
@@ -2114,32 +2108,7 @@ export const useMethods = (store) => {
         }, '评论数据加载');
     };
 
-    /**
-     * 更新评论的fromSystem字段
-     * @param {Object} commentData - 评论数据
-     */
-    const updateCommentFromSystem = async (commentData) => {
-        return safeExecute(async () => {
-            try {
-                // 这里可以调用接口更新评论的fromSystem字段
-                // 示例接口调用：
-                // const response = await fetch('/api/comments/update-from-system', {
-                //     method: 'POST',
-                //     headers: {
-                //         'Content-Type': 'application/json'
-                //     },
-                //     body: JSON.stringify({
-                //         commentId: commentData.id,
-                //         fromSystem: commentData.fromSystem
-                //     })
-                // });
-                
-                console.log('[评论者选择] 评论fromSystem字段更新成功');
-            } catch (error) {
-                console.error('[评论者选择] 评论fromSystem字段更新失败:', error);
-            }
-        }, '更新评论fromSystem字段');
-    };
+
 
     /**
      * 切换侧边栏
@@ -2550,13 +2519,55 @@ export const useMethods = (store) => {
         handleSessionDelete: async (sessionKey) => {
             return safeExecute(async () => {
                 console.log('[handleSessionDelete] 删除会话:', sessionKey);
-                try {
-                    // 检查会话是否为树文件类型（在会话视图下不允许删除树文件类型的会话）
-                    let session = null;
-                    if (store.sessions && store.sessions.value && Array.isArray(store.sessions.value)) {
-                        session = store.sessions.value.find(s => s && s.key === sessionKey);
+                
+                // 1. 获取会话对象 (仅通过 key 查找)
+                const sessions = store.sessions?.value || [];
+                let session = sessions.find(s => s && s.key === sessionKey);
+                
+                // 尝试在文件树中查找对应的节点，以便复用文件删除逻辑
+                // 确保文件树已加载
+                if (!fileTree.value || fileTree.value.length === 0) {
+                    console.log('[handleSessionDelete] 文件树为空，尝试加载...');
+                    if (loadFileTree) {
+                        await loadFileTree();
                     }
-                    
+                }
+                
+                // 递归查找节点
+                const findNode = (nodes) => {
+                    if (!nodes || !Array.isArray(nodes)) return null;
+                    for (const node of nodes) {
+                        // 直接匹配 key
+                        if (node.key === sessionKey) return node;
+                        // 兼容 sessionKey 匹配
+                        if (node.sessionKey === sessionKey) return node;
+                        
+                        if (node.children) {
+                            const found = findNode(node.children);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                };
+                
+                const node = findNode(fileTree.value);
+                
+                if (node) {
+                     console.log('[handleSessionDelete] 找到对应文件节点，使用文件删除逻辑:', node.key);
+                     const itemId = node.key;
+                     if (!confirm('确定删除该会话及其对应文件？此操作不可撤销。')) return;
+                     
+                     // 调用 store 的 deleteItem
+                     if (deleteItem) {
+                        await deleteItem({ itemId });
+                        showSuccessMessage('删除成功');
+                     }
+                     return;
+                }
+
+                console.warn('[handleSessionDelete] 未找到对应文件节点，回退到普通会话删除逻辑');
+
+                try {
                     // 如果从列表中找不到，尝试获取完整会话信息
                     if (!session) {
                         try {
@@ -2568,6 +2579,8 @@ export const useMethods = (store) => {
                         }
                     }
                     
+                    if (!confirm('确定删除该会话？此操作不可撤销。')) return;
+
                     // 判断是否为树文件类型的会话（通过URL判断）
                     if (session && session.url && String(session.url).startsWith('aicr-session://')) {
                         if (window.showError) {
@@ -2576,11 +2589,7 @@ export const useMethods = (store) => {
                         return; // 阻止删除
                     }
                     
-                    // const { deleteData } = await import('/src/services/index.js');
-                    // const url = `${window.API_URL}/session/${encodeURIComponent(sessionId)}`;
-                    // await deleteData(url);
-
-                    // 使用 SessionSyncService 删除会话，确保一致性和重试逻辑
+                    // 使用 SessionSyncService 删除会话
                     const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     await sessionSync.deleteSession(sessionKey);
@@ -2676,7 +2685,18 @@ export const useMethods = (store) => {
                 try {
                     // 找到会话
                     const sessions = store.sessions?.value || [];
-                    const session = sessions.find(s => s && s.key === sessionKey);
+                    let session = sessions.find(s => s && s.key === sessionKey);
+                    
+                    if (!session) {
+                        try {
+                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const sessionSync = getSessionSyncService();
+                            session = await sessionSync.getSession(sessionKey);
+                        } catch (e) {
+                            console.warn('[handleSessionToggleFavorite] 获取会话信息失败:', e);
+                        }
+                    }
+
                     if (!session) {
                         throw new Error('会话不存在');
                     }
@@ -2728,7 +2748,18 @@ export const useMethods = (store) => {
                 try {
                     // 找到会话
                     const sessions = store.sessions?.value || [];
-                    const session = sessions.find(s => s && s.key === sessionKey);
+                    let session = sessions.find(s => s && s.key === sessionKey);
+                    
+                    if (!session) {
+                        try {
+                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const sessionSync = getSessionSyncService();
+                            session = await sessionSync.getSession(sessionKey);
+                        } catch (e) {
+                            console.warn('[handleSessionFavorite] 获取会话信息失败:', e);
+                        }
+                    }
+
                     if (!session) {
                         throw new Error('会话不存在');
                     }
@@ -2777,15 +2808,73 @@ export const useMethods = (store) => {
         handleSessionEdit: async (sessionKey) => {
             return safeExecute(async () => {
                 console.log('[handleSessionEdit] 编辑会话:', sessionKey);
+                
+                // 1. 获取会话对象 (仅通过 key 查找)
+                const sessions = store.sessions?.value || [];
+                let session = sessions.find(s => s && s.key === sessionKey);
+                
+                // 尝试在文件树中查找对应的节点，以便复用文件重命名逻辑
+                // 确保文件树已加载
+                if (!fileTree.value || fileTree.value.length === 0) {
+                    console.log('[handleSessionEdit] 文件树为空，尝试加载...');
+                    if (loadFileTree) {
+                        await loadFileTree();
+                    }
+                }
+                
+                // 递归查找节点
+                const findNode = (nodes) => {
+                    if (!nodes || !Array.isArray(nodes)) return null;
+                    for (const node of nodes) {
+                        // 直接匹配 key
+                        if (node.key === sessionKey) return node;
+                        // 兼容 sessionKey 匹配
+                        if (node.sessionKey === sessionKey) return node;
+                        
+                        if (node.children) {
+                            const found = findNode(node.children);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                };
+                
+                const node = findNode(fileTree.value);
+                
+                if (node) {
+                     console.log('[handleSessionEdit] 找到对应文件节点，使用文件重命名逻辑:', node.key);
+                     const itemId = node.key;
+                     const oldName = node.name;
+                     const newName = window.prompt('输入新名称：', oldName || '');
+                     if (!newName) return;
+                     
+                     // 调用 store 的 renameItem
+                     if (renameItem) {
+                        await renameItem({ itemId, newName });
+                        showSuccessMessage('重命名成功');
+                     }
+                     return;
+                }
+                
+                // 如果未找到文件节点，回退到简单标题更新逻辑
+                console.warn('[handleSessionEdit] 未找到对应文件节点，回退到简单标题更新逻辑');
+                
                 try {
-                    const sessions = store.sessions?.value || [];
-                    const session = sessions.find(s => s && s.key === sessionKey);
+                    if (!session) {
+                        try {
+                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const sessionSync = getSessionSyncService();
+                            session = await sessionSync.getSession(sessionKey);
+                        } catch (e) {
+                            console.warn('[handleSessionEdit] 获取会话信息失败:', e);
+                        }
+                    }
+
                     if (!session) {
                         throw new Error('会话不存在');
                     }
                     
                     const currentTitle = session.pageTitle || session.title || '';
-                    const currentDescription = session.pageDescription || '';
                     
                     // 使用 prompt 获取新标题
                     const newTitle = prompt('请输入新标题:', currentTitle);
@@ -2797,18 +2886,12 @@ export const useMethods = (store) => {
                         throw new Error('标题不能为空');
                     }
                     
-                    // 更新会话
-                    session.pageTitle = newTitle.trim();
-                    session.title = newTitle.trim();
-                    
                     // 更新后端
-                    // const { postData } = await import('/src/services/index.js');
                     const updateData = {
                         key: sessionKey,
                         pageTitle: newTitle.trim(),
                         title: newTitle.trim()
                     };
-                    // await postData(`${window.API_URL}/session/save`, updateData);
 
                     const payload = {
                         module_name: SERVICE_MODULE,
@@ -2820,6 +2903,10 @@ export const useMethods = (store) => {
                         }
                     };
                     await postData(`${window.API_URL}/`, payload);
+                    
+                    // 更新本地状态
+                    session.pageTitle = newTitle.trim();
+                    session.title = newTitle.trim();
                     
                     // 更新本地状态
                     if (store.sessions && store.sessions.value) {
@@ -2844,13 +2931,24 @@ export const useMethods = (store) => {
                 console.log('[handleSessionManageTags] 管理标签:', sessionKey);
                 try {
                     const sessions = store.sessions?.value || [];
-                    const session = sessions.find(s => s && s.key === sessionKey);
+                    let session = sessions.find(s => s && s.key === sessionKey);
+                    
+                    if (!session) {
+                        try {
+                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const sessionSync = getSessionSyncService();
+                            session = await sessionSync.getSession(sessionKey);
+                        } catch (e) {
+                            console.warn('[handleSessionManageTags] 获取会话信息失败:', e);
+                        }
+                    }
+
                     if (!session) {
                         throw new Error('会话不存在');
                     }
                     
                     // 打开标签管理弹窗（传递 store 引用）
-                    await openTagManager(sessionKey, session, store);
+                    await openTagManager(session.key, session, store);
                 } catch (error) {
                     console.error('[handleSessionManageTags] 管理标签失败:', error);
                     if (window.showError) {
@@ -2866,13 +2964,24 @@ export const useMethods = (store) => {
                 console.log('[handleSessionTag] 管理标签:', sessionKey);
                 try {
                     const sessions = store.sessions?.value || [];
-                    const session = sessions.find(s => s && s.key === sessionKey);
+                    let session = sessions.find(s => s && s.key === sessionKey);
+                    
+                    if (!session) {
+                        try {
+                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const sessionSync = getSessionSyncService();
+                            session = await sessionSync.getSession(sessionKey);
+                        } catch (e) {
+                            console.warn('[handleSessionTag] 获取会话信息失败:', e);
+                        }
+                    }
+
                     if (!session) {
                         throw new Error('会话不存在');
                     }
                     
                     // 打开标签管理弹窗
-                    await openTagManager(sessionKey, session, store);
+                    await openTagManager(session.key, session, store);
                 } catch (error) {
                     console.error('[handleSessionTag] 管理标签失败:', error);
                     if (window.showError) {
@@ -2888,7 +2997,18 @@ export const useMethods = (store) => {
                 console.log('[handleSessionDuplicate] 创建副本:', sessionKey);
                 try {
                     const sessions = store.sessions?.value || [];
-                    const sourceSession = sessions.find(s => s && s.key === sessionKey);
+                    let sourceSession = sessions.find(s => s && s.key === sessionKey);
+                    
+                    if (!sourceSession) {
+                        try {
+                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const sessionSync = getSessionSyncService();
+                            sourceSession = await sessionSync.getSession(sessionKey);
+                        } catch (e) {
+                            console.warn('[handleSessionDuplicate] 获取会话信息失败:', e);
+                        }
+                    }
+
                     if (!sourceSession) {
                         throw new Error('会话不存在');
                     }
@@ -3512,13 +3632,11 @@ export const useMethods = (store) => {
         clearAllComments,
         expandAllFolders,
         collapseAllFolders,
-        handleCommenterSelect,
         handleCommentDelete,
         handleCommentResolve,
         handleCommentReopen,
         handleReloadComments,
         loadComments,
-        updateCommentFromSystem,
         toggleSidebar: handleToggleSidebar,
         toggleComments: handleToggleComments,
         // 项目/版本管理方法
@@ -3527,6 +3645,11 @@ export const useMethods = (store) => {
         // 搜索相关方法
         handleSearchInput,
         handleSearchChange,
+        performSearch,
+        searchInFileTree,
+        searchInComments,
+        searchInCode,
+        clearSearchResults,
         clearSearch,
         handleMessageInput,
         handleCompositionStart,
@@ -4225,13 +4348,31 @@ export const useMethods = (store) => {
                     alert('导入失败: ' + e.message);
                 }
             }, '导入会话文件');
-        }
+        },
+        
+        // 标签管理
+        openTagManager,
+        closeTagManager
     };
-};
 
 /**
  * 标签管理相关函数（参考 YiPet 的实现）
  */
+
+function getTagManagerStore(modal, store) {
+    return store || modal?._store || window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+}
+
+function findSessionBySessionId(store, sessionId) {
+    const normalizedSessionId = sessionId == null ? '' : String(sessionId);
+    const sessions = store?.sessions?.value || [];
+    return sessions.find(s => {
+        if (!s) return false;
+        const key = s.key == null ? '' : String(s.key);
+        const id = s.id == null ? '' : String(s.id);
+        return key === normalizedSessionId || id === normalizedSessionId;
+    });
+}
 
 // 打开标签管理弹窗
 async function openTagManager(sessionId, session, store) {
@@ -4249,6 +4390,8 @@ async function openTagManager(sessionId, session, store) {
         console.error('标签管理弹窗未找到');
         return;
     }
+    
+    modal._store = store;
 
     // 显示弹窗
     modal.style.display = 'flex';
@@ -4329,8 +4472,8 @@ function ensureTagManagerUi() {
         left: 0 !important;
         right: 0 !important;
         bottom: 0 !important;
-        background: rgba(15, 23, 42, 0.6) !important;
-        backdrop-filter: blur(4px) !important;
+        background: rgba(0, 0, 0, 0.75) !important;
+        backdrop-filter: blur(8px) !important;
         display: none !important;
         align-items: center !important;
         justify-content: center !important;
@@ -4342,7 +4485,7 @@ function ensureTagManagerUi() {
         if (e.target === modal) {
             const sessionId = modal.dataset.sessionId;
             if (sessionId) {
-                const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+                const store = getTagManagerStore(modal);
                 closeTagManager(sessionId, store);
             }
         }
@@ -4350,15 +4493,17 @@ function ensureTagManagerUi() {
 
     const panel = document.createElement('div');
     panel.style.cssText = `
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
-        border-radius: 16px !important;
-        padding: 28px !important;
+        background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%) !important;
+        border-radius: 24px !important;
+        padding: 32px !important;
         width: 90% !important;
-        max-width: 800px !important;
-        max-height: 80vh !important;
+        max-width: 640px !important;
+        max-height: 85vh !important;
         overflow-y: auto !important;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
-        border: 1px solid rgba(226, 232, 240, 0.8) !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) inset !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(20px) !important;
+        color: #f8fafc !important;
     `;
 
     // 标题
@@ -4367,46 +4512,48 @@ function ensureTagManagerUi() {
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
-        margin-bottom: 20px !important;
+        margin-bottom: 24px !important;
+        padding-bottom: 16px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
     `;
     
     const title = document.createElement('h3');
     title.textContent = '管理标签';
     title.style.cssText = `
         margin: 0 !important;
-        font-size: 20px !important;
-        font-weight: 700 !important;
-        color: #1e293b !important;
-        letter-spacing: -0.02em !important;
+        font-size: 18px !important;
+        font-weight: 600 !important;
+        color: #f8fafc !important;
+        letter-spacing: -0.01em !important;
     `;
 
     const closeBtn = document.createElement('button');
     closeBtn.className = 'tag-manager-close';
-    closeBtn.innerHTML = '✕';
+    closeBtn.innerHTML = '<i class="fas fa-times"></i>'; // 使用 FontAwesome 图标
+    if (!closeBtn.querySelector('i')) closeBtn.innerHTML = '✕'; // Fallback
+    
     closeBtn.style.cssText = `
-        background: rgba(241, 245, 249, 0.8) !important;
+        background: transparent !important;
         border: none !important;
-        font-size: 20px !important;
+        font-size: 16px !important;
         cursor: pointer !important;
-        color: #64748b !important;
-        padding: 0 !important;
+        color: #94a3b8 !important;
+        padding: 8px !important;
         width: 32px !important;
         height: 32px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        border-radius: 8px !important;
+        border-radius: 50% !important;
         transition: all 0.2s ease !important;
     `;
     closeBtn.addEventListener('mouseenter', () => {
-        closeBtn.style.background = '#f1f5f9';
-        closeBtn.style.color = '#1e293b';
-        closeBtn.style.transform = 'scale(1.05)';
+        closeBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+        closeBtn.style.color = '#f8fafc';
     });
     closeBtn.addEventListener('mouseleave', () => {
-        closeBtn.style.background = 'rgba(241, 245, 249, 0.8)';
-        closeBtn.style.color = '#64748b';
-        closeBtn.style.transform = 'scale(1)';
+        closeBtn.style.background = 'transparent';
+        closeBtn.style.color = '#94a3b8';
     });
 
     header.appendChild(title);
@@ -4417,8 +4564,8 @@ function ensureTagManagerUi() {
     inputGroup.className = 'tag-manager-input-group';
     inputGroup.style.cssText = `
         display: flex !important;
-        gap: 8px !important;
-        margin-bottom: 20px !important;
+        gap: 12px !important;
+        margin-bottom: 24px !important;
     `;
 
     const tagInput = document.createElement('input');
@@ -4428,14 +4575,14 @@ function ensureTagManagerUi() {
     tagInput.style.cssText = `
         flex: 1 !important;
         padding: 12px 16px !important;
-        border: 2px solid #e2e8f0 !important;
-        border-radius: 10px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
         font-size: 14px !important;
         outline: none !important;
-        background: #ffffff !important;
-        color: #1e293b !important;
+        background: rgba(15, 23, 42, 0.6) !important;
+        color: #f8fafc !important;
         transition: all 0.2s ease !important;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2) !important;
     `;
     
     tagInput._isComposing = false;
@@ -4448,41 +4595,41 @@ function ensureTagManagerUi() {
     
     tagInput.addEventListener('focus', () => {
         tagInput.style.borderColor = '#6366f1';
-        tagInput.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+        tagInput.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.25)';
+        tagInput.style.background = 'rgba(15, 23, 42, 0.8) !important';
     });
     tagInput.addEventListener('blur', () => {
-        tagInput.style.borderColor = '#e2e8f0';
-        tagInput.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
+        tagInput.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        tagInput.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
+        tagInput.style.background = 'rgba(15, 23, 42, 0.6) !important';
     });
 
     const addBtn = document.createElement('button');
     addBtn.textContent = '添加';
     addBtn.style.cssText = `
         padding: 12px 24px !important;
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        background: #4f46e5 !important;
         color: white !important;
         border: none !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         cursor: pointer !important;
         font-size: 14px !important;
-        font-weight: 600 !important;
+        font-weight: 500 !important;
         transition: all 0.2s ease !important;
-        box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3) !important;
+        box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.1), 0 2px 4px -1px rgba(79, 70, 229, 0.06) !important;
     `;
     addBtn.addEventListener('mouseenter', () => {
-        addBtn.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
-        addBtn.style.boxShadow = '0 6px 12px rgba(16, 185, 129, 0.4)';
+        addBtn.style.background = '#4338ca';
         addBtn.style.transform = 'translateY(-1px)';
     });
     addBtn.addEventListener('mouseleave', () => {
-        addBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-        addBtn.style.boxShadow = '0 4px 6px rgba(16, 185, 129, 0.3)';
+        addBtn.style.background = '#4f46e5';
         addBtn.style.transform = 'translateY(0)';
     });
     addBtn.addEventListener('click', () => {
         const sessionId = modal.dataset.sessionId;
         if (sessionId) {
-            const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+            const store = getTagManagerStore(modal);
             addTagFromInput(sessionId, modal, store);
         }
     });
@@ -4493,35 +4640,35 @@ function ensureTagManagerUi() {
     smartGenerateBtn.textContent = '✨ 智能生成';
     smartGenerateBtn.style.cssText = `
         padding: 12px 24px !important;
-        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+        background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%) !important;
         color: white !important;
         border: none !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         cursor: pointer !important;
         font-size: 14px !important;
-        font-weight: 600 !important;
-        transition: all 0.2s ease !important;
+        font-weight: 500 !important;
+        transition: all 0.3s ease !important;
         white-space: nowrap !important;
-        box-shadow: 0 4px 6px rgba(139, 92, 246, 0.3) !important;
+        box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.2), 0 2px 4px -1px rgba(139, 92, 246, 0.1) !important;
     `;
     smartGenerateBtn.addEventListener('mouseenter', () => {
         if (!smartGenerateBtn.disabled) {
-            smartGenerateBtn.style.background = 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)';
-            smartGenerateBtn.style.boxShadow = '0 6px 12px rgba(139, 92, 246, 0.4)';
+            smartGenerateBtn.style.filter = 'brightness(1.1)';
             smartGenerateBtn.style.transform = 'translateY(-1px)';
+            smartGenerateBtn.style.boxShadow = '0 10px 15px -3px rgba(139, 92, 246, 0.3), 0 4px 6px -2px rgba(139, 92, 246, 0.1) !important';
         }
     });
     smartGenerateBtn.addEventListener('mouseleave', () => {
         if (!smartGenerateBtn.disabled) {
-            smartGenerateBtn.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)';
-            smartGenerateBtn.style.boxShadow = '0 4px 6px rgba(139, 92, 246, 0.3)';
+            smartGenerateBtn.style.filter = 'brightness(1)';
             smartGenerateBtn.style.transform = 'translateY(0)';
+            smartGenerateBtn.style.boxShadow = '0 4px 6px -1px rgba(139, 92, 246, 0.2), 0 2px 4px -1px rgba(139, 92, 246, 0.1) !important';
         }
     });
     smartGenerateBtn.addEventListener('click', () => {
         const sessionId = modal.dataset.sessionId;
         if (sessionId) {
-            const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+            const store = getTagManagerStore(modal);
             generateSmartTags(sessionId, smartGenerateBtn, modal, store);
         }
     });
@@ -4536,13 +4683,17 @@ function ensureTagManagerUi() {
     quickTagsContainer.style.cssText = `
         display: flex !important;
         flex-wrap: wrap !important;
-        gap: 8px !important;
-        margin-bottom: 20px !important;
+        gap: 10px !important;
+        margin-bottom: 24px !important;
+        padding: 16px !important;
+        background: rgba(15, 23, 42, 0.3) !important;
+        border-radius: 16px !important;
+        border: 1px dashed rgba(51, 65, 85, 0.5) !important;
     `;
 
     // 获取所有标签（与标签筛选模块保持一致）
     const getAllTags = () => {
-        const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+        const store = getTagManagerStore(modal);
         const sessions = store?.sessions?.value || [];
         
         // 提取所有标签
@@ -4561,28 +4712,7 @@ function ensureTagManagerUi() {
         const allTagsArray = Array.from(tagSet);
         allTagsArray.sort();
         
-        // 优先标签列表（与标签筛选模块保持一致）
-        const priorityTags = ['网文', '文档', '工具', '工作', '家庭', '娱乐', '日记', '开源项目'];
-        const priorityTagSet = new Set(priorityTags);
-        const priorityTagList = [];
-        const otherTags = [];
-        
-        // 先添加存在的优先标签（按顺序）
-        priorityTags.forEach(tag => {
-            if (allTagsArray.includes(tag)) {
-                priorityTagList.push(tag);
-            }
-        });
-        
-        // 添加其他标签（按字母顺序）
-        allTagsArray.forEach(tag => {
-            if (!priorityTagSet.has(tag)) {
-                otherTags.push(tag);
-            }
-        });
-        
-        // 合并：优先标签在前，其他标签在后
-        const defaultOrder = [...priorityTagList, ...otherTags];
+        const defaultOrder = allTagsArray;
         
         // 应用保存的标签顺序（从 localStorage）
         try {
@@ -4592,7 +4722,7 @@ function ensureTagManagerUi() {
                 // 使用保存的顺序，但只包含当前存在的标签
                 const orderedTags = savedOrder.filter(tag => tagSet.has(tag));
                 // 添加新标签（不在保存顺序中的）到末尾，按字母顺序
-                const newTags = defaultOrder.filter(tag => !savedOrder.includes(tag));
+                const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
                 return [...orderedTags, ...newTags];
             }
         } catch (e) {
@@ -4621,9 +4751,8 @@ function ensureTagManagerUi() {
     } else {
         // 获取当前会话的标签（用于判断快捷标签是否已添加）
         const sessionId = modal.dataset.sessionId;
-        const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
-        const sessions = store?.sessions?.value || [];
-        const session = sessions.find(s => s && s.id === sessionId);
+        const store = getTagManagerStore(modal);
+        const session = findSessionBySessionId(store, sessionId);
         const currentTags = session?.tags || [];
         
         quickTags.forEach(tagName => {
@@ -4634,30 +4763,32 @@ function ensureTagManagerUi() {
             quickTagBtn.dataset.tagName = tagName;
             quickTagBtn.style.cssText = `
                 padding: 8px 16px !important;
-                background: ${isAdded ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#f1f5f9'} !important;
-                color: ${isAdded ? 'white' : '#475569'} !important;
-                border: 1.5px solid ${isAdded ? '#10b981' : '#e2e8f0'} !important;
+                background: ${isAdded ? 'rgba(99, 102, 241, 0.2)' : 'rgba(30, 41, 59, 0.6)'} !important;
+                color: ${isAdded ? '#a5b4fc' : '#94a3b8'} !important;
+                border: 1px solid ${isAdded ? 'rgba(99, 102, 241, 0.3)' : 'rgba(51, 65, 85, 0.5)'} !important;
                 border-radius: 8px !important;
                 cursor: ${isAdded ? 'not-allowed' : 'pointer'} !important;
                 font-size: 13px !important;
                 font-weight: 500 !important;
                 transition: all 0.2s ease !important;
                 opacity: ${isAdded ? '0.8' : '1'} !important;
-                box-shadow: ${isAdded ? '0 2px 4px rgba(16, 185, 129, 0.2)' : 'none'} !important;
+                box-shadow: ${isAdded ? 'none' : '0 1px 2px 0 rgba(0, 0, 0, 0.2)'} !important;
             `;
             
             if (!isAdded) {
                 quickTagBtn.addEventListener('mouseenter', () => {
-                    quickTagBtn.style.background = '#e2e8f0';
+                    quickTagBtn.style.background = 'rgba(51, 65, 85, 0.8)';
                     quickTagBtn.style.borderColor = '#6366f1';
-                    quickTagBtn.style.color = '#6366f1';
+                    quickTagBtn.style.color = '#f8fafc';
                     quickTagBtn.style.transform = 'translateY(-1px)';
+                    quickTagBtn.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.3)';
                 });
                 quickTagBtn.addEventListener('mouseleave', () => {
-                    quickTagBtn.style.background = '#f1f5f9';
-                    quickTagBtn.style.borderColor = '#e2e8f0';
-                    quickTagBtn.style.color = '#475569';
+                    quickTagBtn.style.background = 'rgba(30, 41, 59, 0.6)';
+                    quickTagBtn.style.borderColor = 'rgba(51, 65, 85, 0.5)';
+                    quickTagBtn.style.color = '#94a3b8';
                     quickTagBtn.style.transform = 'translateY(0)';
+                    quickTagBtn.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
                 });
             }
             
@@ -4667,7 +4798,7 @@ function ensureTagManagerUi() {
                 }
                 const sessionId = modal.dataset.sessionId;
                 if (sessionId) {
-                    const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+                    const store = getTagManagerStore(modal);
                     addQuickTag(sessionId, tagName, modal, store);
                 }
             });
@@ -4682,11 +4813,11 @@ function ensureTagManagerUi() {
         min-height: 100px !important;
         max-height: 300px !important;
         overflow-y: auto !important;
-        margin-bottom: 20px !important;
+        margin-bottom: 24px !important;
         padding: 16px !important;
-        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
-        border-radius: 12px !important;
-        border: 1px solid #e2e8f0 !important;
+        background: rgba(0, 0, 0, 0.2) !important;
+        border-radius: 16px !important;
+        border: 1px dashed rgba(255, 255, 255, 0.1) !important;
     `;
 
     // 底部按钮
@@ -4694,36 +4825,37 @@ function ensureTagManagerUi() {
     footer.style.cssText = `
         display: flex !important;
         justify-content: flex-end !important;
-        gap: 10px !important;
+        gap: 12px !important;
     `;
 
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = '取消';
     cancelBtn.style.cssText = `
         padding: 12px 24px !important;
-        background: #f1f5f9 !important;
-        color: #475569 !important;
-        border: 1.5px solid #e2e8f0 !important;
-        border-radius: 10px !important;
+        background: transparent !important;
+        color: #94a3b8 !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
         cursor: pointer !important;
         font-size: 14px !important;
         font-weight: 500 !important;
         transition: all 0.2s ease !important;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
     `;
     cancelBtn.addEventListener('mouseenter', () => {
-        cancelBtn.style.background = '#e2e8f0';
-        cancelBtn.style.borderColor = '#cbd5e1';
-        cancelBtn.style.color = '#334155';
+        cancelBtn.style.background = 'rgba(255, 255, 255, 0.05)';
+        cancelBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+        cancelBtn.style.color = '#f8fafc';
     });
     cancelBtn.addEventListener('mouseleave', () => {
-        cancelBtn.style.background = '#f1f5f9';
-        cancelBtn.style.borderColor = '#e2e8f0';
-        cancelBtn.style.color = '#475569';
+        cancelBtn.style.background = 'transparent';
+        cancelBtn.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        cancelBtn.style.color = '#94a3b8';
     });
     cancelBtn.addEventListener('click', () => {
         const sessionId = modal.dataset.sessionId;
         if (sessionId) {
-            const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+            const store = getTagManagerStore(modal);
             closeTagManager(sessionId, store);
         }
     });
@@ -4733,24 +4865,22 @@ function ensureTagManagerUi() {
     saveBtn.textContent = '保存';
     saveBtn.style.cssText = `
         padding: 12px 24px !important;
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        background: #4f46e5 !important;
         color: white !important;
         border: none !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         cursor: pointer !important;
         font-size: 14px !important;
-        font-weight: 600 !important;
+        font-weight: 500 !important;
         transition: all 0.2s ease !important;
-        box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3) !important;
+        box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.1), 0 2px 4px -1px rgba(79, 70, 229, 0.06) !important;
     `;
     saveBtn.addEventListener('mouseenter', () => {
-        saveBtn.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
-        saveBtn.style.boxShadow = '0 6px 12px rgba(59, 130, 246, 0.4)';
+        saveBtn.style.background = '#4338ca';
         saveBtn.style.transform = 'translateY(-1px)';
     });
     saveBtn.addEventListener('mouseleave', () => {
-        saveBtn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
-        saveBtn.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.3)';
+        saveBtn.style.background = '#4f46e5';
         saveBtn.style.transform = 'translateY(0)';
     });
 
@@ -4803,6 +4933,32 @@ function ensureTagManagerUi() {
             .tag-manager-tag-item {
                 position: relative !important;
             }
+            /* 滚动条样式 */
+            .tag-manager-tags::-webkit-scrollbar {
+                width: 6px !important;
+            }
+            .tag-manager-tags::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.05) !important;
+                border-radius: 3px !important;
+            }
+            .tag-manager-tags::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.2) !important;
+                border-radius: 3px !important;
+            }
+            .tag-manager-tags::-webkit-scrollbar-thumb:hover {
+                background: rgba(255, 255, 255, 0.3) !important;
+            }
+            .tag-manager-panel::-webkit-scrollbar {
+                width: 6px !important;
+            }
+            .tag-manager-panel::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.05) !important;
+                border-radius: 3px !important;
+            }
+            .tag-manager-panel::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.2) !important;
+                border-radius: 3px !important;
+            }
         `;
         document.head.appendChild(style);
     }
@@ -4834,16 +4990,16 @@ function loadTagsIntoManager(sessionId, tags, modal) {
         return;
     }
 
-    // 标签颜色方案（更丰富的配色）
+    // 标签颜色方案（更丰富的配色 - 柔和风格 - 深色适配）
     const tagColors = [
-        { bg: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', text: 'white' },
-        { bg: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', text: 'white' },
-        { bg: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', text: 'white' },
-        { bg: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', text: 'white' },
-        { bg: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', text: 'white' },
-        { bg: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)', text: 'white' },
-        { bg: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)', text: 'white' },
-        { bg: 'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)', text: 'white' }
+        { bg: 'rgba(99, 102, 241, 0.2)', text: '#e0e7ff', border: 'rgba(99, 102, 241, 0.4)' }, // Indigo
+        { bg: 'rgba(34, 197, 94, 0.2)', text: '#dcfce7', border: 'rgba(34, 197, 94, 0.4)' }, // Green
+        { bg: 'rgba(245, 158, 11, 0.2)', text: '#fef3c7', border: 'rgba(245, 158, 11, 0.4)' }, // Amber
+        { bg: 'rgba(239, 68, 68, 0.2)', text: '#fee2e2', border: 'rgba(239, 68, 68, 0.4)' }, // Red
+        { bg: 'rgba(139, 92, 246, 0.2)', text: '#ede9fe', border: 'rgba(139, 92, 246, 0.4)' }, // Violet
+        { bg: 'rgba(6, 182, 212, 0.2)', text: '#cffafe', border: 'rgba(6, 182, 212, 0.4)' }, // Cyan
+        { bg: 'rgba(236, 72, 153, 0.2)', text: '#fce7f3', border: 'rgba(236, 72, 153, 0.4)' }, // Pink
+        { bg: 'rgba(20, 184, 166, 0.2)', text: '#ccfbf1', border: 'rgba(20, 184, 166, 0.4)' }  // Teal
     ];
     
     tags.forEach((tag, index) => {
@@ -4856,15 +5012,16 @@ function loadTagsIntoManager(sessionId, tags, modal) {
         tagItem.style.cssText = `
             display: inline-flex !important;
             align-items: center !important;
-            gap: 8px !important;
+            gap: 6px !important;
             background: ${colorScheme.bg} !important;
             color: ${colorScheme.text} !important;
-            padding: 8px 14px !important;
-            border-radius: 20px !important;
+            border: 1px solid ${colorScheme.border} !important;
+            padding: 5px 12px !important;
+            border-radius: 9999px !important;
             margin: 4px !important;
             font-size: 13px !important;
             font-weight: 500 !important;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
             transition: all 0.2s ease !important;
             cursor: move !important;
             user-select: none !important;
@@ -4876,36 +5033,39 @@ function loadTagsIntoManager(sessionId, tags, modal) {
         const removeBtn = document.createElement('button');
         removeBtn.innerHTML = '✕';
         removeBtn.style.cssText = `
-            background: rgba(255, 255, 255, 0.25) !important;
+            background: rgba(255, 255, 255, 0.1) !important;
             border: none !important;
-            color: white !important;
+            color: ${colorScheme.text} !important;
             width: 20px !important;
             height: 20px !important;
             border-radius: 50% !important;
             cursor: pointer !important;
-            font-size: 13px !important;
+            font-size: 11px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             padding: 0 !important;
             transition: all 0.2s ease !important;
-            font-weight: 600 !important;
+            font-weight: 700 !important;
             flex-shrink: 0 !important;
+            opacity: 0.7 !important;
         `;
         removeBtn.addEventListener('mouseenter', () => {
-            removeBtn.style.background = 'rgba(255, 255, 255, 0.4)';
+            removeBtn.style.background = 'rgba(255, 255, 255, 0.25)';
             removeBtn.style.transform = 'scale(1.1)';
+            removeBtn.style.opacity = '1';
         });
         removeBtn.addEventListener('mouseleave', () => {
-            removeBtn.style.background = 'rgba(255, 255, 255, 0.25)';
+            removeBtn.style.background = 'rgba(255, 255, 255, 0.1)';
             removeBtn.style.transform = 'scale(1)';
+            removeBtn.style.opacity = '0.7';
         });
         removeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault(); // 防止触发拖拽
             const sessionId = modal.dataset.sessionId;
             if (sessionId) {
-                const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+                const store = getTagManagerStore(modal);
                 removeTag(sessionId, index, modal, store);
             }
         });
@@ -5010,9 +5170,8 @@ function loadTagsIntoManager(sessionId, tags, modal) {
             const sessionId = modal.dataset.sessionId;
             if (!sessionId) return;
             
-            const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
-            const sessions = store?.sessions?.value || [];
-            const session = sessions.find(s => s && s.id === sessionId);
+            const store = getTagManagerStore(modal);
+            const session = findSessionBySessionId(store, sessionId);
             if (!session || !session.tags) return;
             
             // 计算新的插入位置
@@ -5064,19 +5223,19 @@ function updateQuickTagButtons(modal, currentTags) {
         const isAdded = currentTags && currentTags.includes(tagName);
         
         if (isAdded) {
-            btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-            btn.style.color = 'white';
-            btn.style.borderColor = '#10b981';
+            btn.style.background = 'rgba(99, 102, 241, 0.2)';
+            btn.style.color = '#a5b4fc';
+            btn.style.borderColor = 'rgba(99, 102, 241, 0.3)';
             btn.style.opacity = '0.8';
             btn.style.cursor = 'not-allowed';
-            btn.style.boxShadow = '0 2px 4px rgba(16, 185, 129, 0.2)';
+            btn.style.boxShadow = 'none';
         } else {
-            btn.style.background = '#f1f5f9';
-            btn.style.color = '#475569';
-            btn.style.borderColor = '#e2e8f0';
+            btn.style.background = 'rgba(30, 41, 59, 0.6)';
+            btn.style.color = '#94a3b8';
+            btn.style.borderColor = 'rgba(51, 65, 85, 0.5)';
             btn.style.opacity = '1';
             btn.style.cursor = 'pointer';
-            btn.style.boxShadow = 'none';
+            btn.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
         }
     });
 }
@@ -5090,7 +5249,7 @@ function refreshQuickTags(modal) {
     
     // 获取所有标签（与标签筛选模块保持一致）
     const getAllTags = () => {
-        const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+        const store = getTagManagerStore(modal);
         const sessions = store?.sessions?.value || [];
         
         // 提取所有标签
@@ -5109,28 +5268,7 @@ function refreshQuickTags(modal) {
         const allTagsArray = Array.from(tagSet);
         allTagsArray.sort();
         
-        // 优先标签列表（与标签筛选模块保持一致）
-        const priorityTags = ['网文', '文档', '工具', '工作', '家庭', '娱乐', '日记', '开源项目'];
-        const priorityTagSet = new Set(priorityTags);
-        const priorityTagList = [];
-        const otherTags = [];
-        
-        // 先添加存在的优先标签（按顺序）
-        priorityTags.forEach(tag => {
-            if (allTagsArray.includes(tag)) {
-                priorityTagList.push(tag);
-            }
-        });
-        
-        // 添加其他标签（按字母顺序）
-        allTagsArray.forEach(tag => {
-            if (!priorityTagSet.has(tag)) {
-                otherTags.push(tag);
-            }
-        });
-        
-        // 合并：优先标签在前，其他标签在后
-        const defaultOrder = [...priorityTagList, ...otherTags];
+        const defaultOrder = allTagsArray;
         
         // 应用保存的标签顺序（从 localStorage）
         try {
@@ -5140,7 +5278,7 @@ function refreshQuickTags(modal) {
                 // 使用保存的顺序，但只包含当前存在的标签
                 const orderedTags = savedOrder.filter(tag => tagSet.has(tag));
                 // 添加新标签（不在保存顺序中的）到末尾，按字母顺序
-                const newTags = defaultOrder.filter(tag => !savedOrder.includes(tag));
+                const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
                 return [...orderedTags, ...newTags];
             }
         } catch (e) {
@@ -5174,9 +5312,8 @@ function refreshQuickTags(modal) {
     
     // 获取当前会话的标签
     const sessionId = modal.dataset.sessionId;
-    const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
-    const sessions = store?.sessions?.value || [];
-    const session = sessions.find(s => s && s.id === sessionId);
+    const store = getTagManagerStore(modal);
+    const session = findSessionBySessionId(store, sessionId);
     const currentTags = session?.tags || [];
     
     // 创建快捷标签按钮
@@ -5188,30 +5325,32 @@ function refreshQuickTags(modal) {
         quickTagBtn.dataset.tagName = tagName;
         quickTagBtn.style.cssText = `
             padding: 8px 16px !important;
-            background: ${isAdded ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#f1f5f9'} !important;
-            color: ${isAdded ? 'white' : '#475569'} !important;
-            border: 1.5px solid ${isAdded ? '#10b981' : '#e2e8f0'} !important;
+            background: ${isAdded ? 'rgba(99, 102, 241, 0.2)' : 'rgba(30, 41, 59, 0.6)'} !important;
+            color: ${isAdded ? '#a5b4fc' : '#94a3b8'} !important;
+            border: 1px solid ${isAdded ? 'rgba(99, 102, 241, 0.3)' : 'rgba(51, 65, 85, 0.5)'} !important;
             border-radius: 8px !important;
             cursor: ${isAdded ? 'not-allowed' : 'pointer'} !important;
             font-size: 13px !important;
             font-weight: 500 !important;
             transition: all 0.2s ease !important;
             opacity: ${isAdded ? '0.8' : '1'} !important;
-            box-shadow: ${isAdded ? '0 2px 4px rgba(16, 185, 129, 0.2)' : 'none'} !important;
+            box-shadow: ${isAdded ? 'none' : '0 1px 2px 0 rgba(0, 0, 0, 0.2)'} !important;
         `;
         
         if (!isAdded) {
             quickTagBtn.addEventListener('mouseenter', () => {
-                quickTagBtn.style.background = '#e2e8f0';
+                quickTagBtn.style.background = 'rgba(51, 65, 85, 0.8)';
                 quickTagBtn.style.borderColor = '#6366f1';
-                quickTagBtn.style.color = '#6366f1';
+                quickTagBtn.style.color = '#f8fafc';
                 quickTagBtn.style.transform = 'translateY(-1px)';
+                quickTagBtn.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.3)';
             });
             quickTagBtn.addEventListener('mouseleave', () => {
-                quickTagBtn.style.background = '#f1f5f9';
-                quickTagBtn.style.borderColor = '#e2e8f0';
-                quickTagBtn.style.color = '#475569';
+                quickTagBtn.style.background = 'rgba(30, 41, 59, 0.6)';
+                quickTagBtn.style.borderColor = 'rgba(51, 65, 85, 0.5)';
+                quickTagBtn.style.color = '#94a3b8';
                 quickTagBtn.style.transform = 'translateY(0)';
+                quickTagBtn.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
             });
         }
         
@@ -5221,7 +5360,7 @@ function refreshQuickTags(modal) {
             }
             const sessionId = modal.dataset.sessionId;
             if (sessionId) {
-                const store = window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
+                const store = getTagManagerStore(modal);
                 addQuickTag(sessionId, tagName, modal, store);
             }
         });
@@ -5243,8 +5382,8 @@ function addTagFromInput(sessionId, modal, store) {
     const tagName = tagInput.value.trim();
     if (!tagName) return;
 
-    const sessions = store?.sessions?.value || [];
-    const session = sessions.find(s => s && s.id === sessionId);
+    store = getTagManagerStore(modal, store);
+    const session = findSessionBySessionId(store, sessionId);
     if (!session) return;
 
     if (!session.tags) {
@@ -5282,8 +5421,8 @@ function addQuickTag(sessionId, tagName, modal, store) {
     }
     if (!modal) return;
 
-    const sessions = store?.sessions?.value || [];
-    const session = sessions.find(s => s && s.id === sessionId);
+    store = getTagManagerStore(modal, store);
+    const session = findSessionBySessionId(store, sessionId);
     if (!session) return;
 
     if (!session.tags) {
@@ -5307,8 +5446,8 @@ function addQuickTag(sessionId, tagName, modal, store) {
 
 // 删除标签
 function removeTag(sessionId, index, modal, store) {
-    const sessions = store?.sessions?.value || [];
-    const session = sessions.find(s => s && s.id === sessionId);
+    store = getTagManagerStore(modal, store);
+    const session = findSessionBySessionId(store, sessionId);
     if (!session || !session.tags) return;
 
     session.tags.splice(index, 1);
@@ -5330,8 +5469,8 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
         return;
     }
 
-    const sessions = store?.sessions?.value || [];
-    const session = sessions.find(s => s && s.id === sessionId);
+    store = getTagManagerStore(modal, store);
+    const session = findSessionBySessionId(store, sessionId);
     if (!session) {
         console.warn('会话不存在，无法生成标签:', sessionId);
         return;
@@ -5349,11 +5488,12 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
         // 禁用按钮，显示加载状态
         if (buttonElement) {
             buttonElement.disabled = true;
-            buttonElement.style.background = 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)';
+            buttonElement.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)';
             buttonElement.style.cursor = 'not-allowed';
-            buttonElement.style.boxShadow = '0 2px 4px rgba(148, 163, 184, 0.2)';
+            buttonElement.style.boxShadow = 'none';
             const originalText = buttonElement.textContent;
             buttonElement.textContent = '生成中...';
+        }
         
         try {
             // 收集页面上下文信息
@@ -5529,9 +5669,9 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
             // 恢复按钮状态
             if (buttonElement) {
                 buttonElement.disabled = false;
-                buttonElement.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)';
+                buttonElement.style.background = 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)';
                 buttonElement.style.cursor = 'pointer';
-                buttonElement.style.boxShadow = '0 4px 6px rgba(139, 92, 246, 0.3)';
+                buttonElement.style.boxShadow = '0 4px 6px -1px rgba(99, 102, 241, 0.3), 0 2px 4px -1px rgba(99, 102, 241, 0.1)';
                 buttonElement.textContent = '✨ 智能生成';
             }
         }
@@ -5545,8 +5685,9 @@ async function saveTags(sessionId, store) {
     }
 
     try {
-        const sessions = store?.sessions?.value || [];
-        const session = sessions.find(s => s && s.id === sessionId);
+        const modalEl = document.querySelector('#aicr-tag-manager');
+        store = getTagManagerStore(modalEl, store);
+        const session = findSessionBySessionId(store, sessionId);
         if (!session) {
             throw new Error('会话不存在');
         }
@@ -5562,24 +5703,14 @@ async function saveTags(sessionId, store) {
         session.updatedAt = Date.now();
 
         // 更新后端（标准服务接口）
-        const checkUrl = buildServiceUrl('query_documents', {
-            cname: 'sessions',
-            filter: { id: sessionId },
-            limit: 1
-        });
-        const checkResp = await getData(checkUrl, {}, false);
-        const existingItem = checkResp?.data?.list?.[0];
-        if (!existingItem) {
-            throw new Error('会话不存在');
-        }
         const payload = {
             module_name: SERVICE_MODULE,
             method_name: 'update_document',
             parameters: {
                 cname: 'sessions',
-                id: existingItem.id,
+                key: sessionId,
                 data: {
-                    id: sessionId,
+                    key: sessionId,
                     tags: session.tags,
                     updatedAt: Date.now()
                 }
@@ -5593,10 +5724,9 @@ async function saveTags(sessionId, store) {
         }
 
         // 关闭弹窗
-        const modal = document.querySelector('#aicr-tag-manager');
-        if (modal) {
-            modal.style.display = 'none';
-            const tagInput = modal.querySelector('.tag-manager-input');
+        if (modalEl) {
+            modalEl.style.display = 'none';
+            const tagInput = modalEl.querySelector('.tag-manager-input');
             if (tagInput) {
                 tagInput.value = '';
             }
@@ -5621,8 +5751,8 @@ async function closeTagManager(sessionId, store) {
         // 关闭前自动保存
         if (sessionId) {
             try {
-                const sessions = store?.sessions?.value || [];
-                const session = sessions.find(s => s && s.id === sessionId);
+                store = getTagManagerStore(modal, store);
+                const session = findSessionBySessionId(store, sessionId);
                 if (session) {
                     // 规范化标签（trim处理，去重，过滤空标签）
                     if (session.tags && Array.isArray(session.tags)) {
@@ -5670,38 +5800,5 @@ async function closeTagManager(sessionId, store) {
 }
 
 
-    return {
-        // 搜索相关
-        handleSearchInput,
-        performSearch,
-        searchInFileTree,
-        handleSearchChange,
-        searchInComments,
-        searchInCode,
-        clearSearchResults,
-        clearSearch,
-        
-        // 文件操作
-        handleDeleteItem,
-        
-        // 标签操作
-        handleTagSelect,
-        handleTagClear,
-        handleTagFilterReverse,
-        handleTagFilterNoTags,
-        handleTagFilterExpand,
-        handleTagFilterSearch,
-        
-        // 会话操作
-        handleSessionSelect,
-        
-        // 消息输入
-        handleMessageInput,
-        handleCompositionStart,
-        handleCompositionEnd,
-        
-        // 项目导入导出
-        handleDownloadProjectVersion,
-        handleUploadProjectVersion
-    };
+
 };

@@ -148,51 +148,42 @@ const componentOptions = {
             const allTagsArray = Array.from(tagSet);
             allTagsArray.sort();
             
-            // 优先标签列表（参考 YiPet）
-            const priorityTags = ['网文', '文档', '工具', '工作', '家庭', '娱乐', '日记', '开源项目'];
-            const priorityTagSet = new Set(priorityTags);
-            const priorityTagList = [];
-            const otherTags = [];
-            
-            // 先添加存在的优先标签（按顺序）
-            priorityTags.forEach(tag => {
-                if (allTagsArray.includes(tag)) {
-                    priorityTagList.push(tag);
-                }
-            });
-            
-            // 添加其他标签（按字母顺序）
-            allTagsArray.forEach(tag => {
-                if (!priorityTagSet.has(tag)) {
-                    otherTags.push(tag);
-                }
-            });
-            
-            // 合并：优先标签在前，其他标签在后
-            const defaultOrder = [...priorityTagList, ...otherTags];
-            
             // 应用保存的标签顺序
             const savedOrder = loadTagOrder();
             if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
                 // 使用保存的顺序，但只包含当前存在的标签
                 const orderedTags = savedOrder.filter(tag => tagSet.has(tag));
                 // 添加新标签（不在保存顺序中的）到末尾，按字母顺序
-                const newTags = defaultOrder.filter(tag => !savedOrder.includes(tag));
+                const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
                 return [...orderedTags, ...newTags];
             }
             
-            return defaultOrder;
+            return allTagsArray;
         });
         
         // 根据搜索关键词过滤标签
         const filteredTags = computed(() => {
+            let tags = [...allTags.value];
             const searchKeyword = (props.tagFilterSearchKeyword || '').trim().toLowerCase();
-            if (!searchKeyword) {
-                return allTags.value;
+            
+            if (searchKeyword) {
+                tags = tags.filter(tag => 
+                    tag.toLowerCase().includes(searchKeyword)
+                );
             }
-            return allTags.value.filter(tag => 
-                tag.toLowerCase().includes(searchKeyword)
-            );
+            
+            // 排序：选中在前，然后按数量降序，最后按名称（保持与文件视图一致）
+            return tags.sort((a, b) => {
+                const isSelectedA = props.selectedTags && props.selectedTags.includes(a);
+                const isSelectedB = props.selectedTags && props.selectedTags.includes(b);
+                if (isSelectedA !== isSelectedB) return isSelectedA ? -1 : 1;
+                
+                const countA = tagCounts.value.counts[a] || 0;
+                const countB = tagCounts.value.counts[b] || 0;
+                if (countA !== countB) return countB - countA;
+                
+                return a.localeCompare(b, 'zh-CN');
+            });
         });
         
         // 确定要显示的标签（根据折叠状态）
@@ -641,7 +632,7 @@ const componentOptions = {
                 const sessionName = session.pageTitle || session.title || '未命名会话';
                 if (confirm(`确定删除会话 "${sessionName}" 吗？此操作不可撤销。`)) {
                     isDeleting.value = true;
-                    emit('session-delete', session.id);
+                    emit('session-delete', session.key || session.id);
                     // 延迟重置删除状态
                     setTimeout(() => {
                         isDeleting.value = false;
@@ -695,32 +686,32 @@ const componentOptions = {
         
         // 处理收藏按钮点击
         const handleFavoriteClick = (session) => {
-            emit('session-favorite', session.id);
+            emit('session-favorite', session.key);
         };
         
         // 处理编辑按钮点击
         const handleEditClick = (session) => {
-            emit('session-edit', session.id);
+            emit('session-edit', session.key);
         };
         
         // 处理标签管理按钮点击
         const handleTagClick = (session) => {
-            emit('session-tag', session.id);
+            emit('session-tag', session.key);
         };
         
         // 处理副本按钮点击
         const handleDuplicateClick = (session) => {
-            emit('session-duplicate', session.id);
+            emit('session-duplicate', session.key);
         };
         
         // 处理页面上下文按钮点击
         const handleContextClick = (session) => {
-            emit('session-context', session.id);
+            emit('session-context', session.key);
         };
         
         // 处理打开URL按钮点击
         const handleOpenUrlClick = (session) => {
-            emit('session-open-url', session.id);
+            emit('session-open-url', session.key);
         };
         
         // 处理目录接口按钮点击

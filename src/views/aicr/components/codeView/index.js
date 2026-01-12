@@ -2717,35 +2717,9 @@ const componentOptions = {
             handleSelectionCommentClick() {
                 console.log('[CodeView] 处理评论按钮点击，当前保存的选择文本:', this.lastSelectionText);
                 
-                // 查询当前选中的评论者
-                let selected = [];
-                try {
-                    window.dispatchEvent(new CustomEvent('getSelectedCommenters', { 
-                        detail: { 
-                            callback: (arr) => { 
-                                selected = Array.isArray(arr) ? arr : [];
-                                console.log('[CodeView] 获取到选中的评论者:', selected); 
-                            } 
-                        } 
-                    }));
-                } catch (err) {
-                    console.error('[CodeView] 获取评论者失败:', err);
-                }
-                
-                // 根据评论者选择状态决定行为
-                if (!selected || selected.length === 0) {
-                    console.log('[CodeView] 未选择评论者，打开手动评论弹框');
-                    this.openManualImprovementModal();
-                } else {
-                    console.log('[CodeView] 已选择评论者，聚焦评论面板');
-                    // 传递划词数据到评论面板
-                    window.dispatchEvent(new CustomEvent('focusCommentPanel', {
-                        detail: {
-                            text: this.lastSelectionText || '',
-                            rangeInfo: this.lastSelectionRange || null
-                        }
-                    }));
-                }
+                // 由于评论者功能已移除，直接打开手动评论弹框
+                console.log('[CodeView] 打开手动评论弹框');
+                this.openManualImprovementModal();
             },
             openManualImprovementModal() {
                 this.showManualImprovementModal = true;

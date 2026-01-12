@@ -66,12 +66,6 @@ async function createApp() {
                     status: 'pending'
                 },
                 
-                // 评论者数据
-                commenters: [],
-                selectedCommenterIds: [],
-                commentersLoading: false,
-                commentersError: '',
-                
                 // 界面控制
                 showComments: true,
                 
@@ -98,11 +92,8 @@ async function createApp() {
                 // 加载文件内容
                 await this.loadFileContent();
                 
-                // 加载评论和评论者数据
-                await Promise.all([
-                    this.loadComments(),
-                    this.loadCommenters()
-                ]);
+                // 加载评论
+                await this.loadComments();
                 
             } catch (error) {
                 console.error('页面初始化失败:', error);
@@ -270,50 +261,6 @@ async function createApp() {
             }
         },
         
-        // 加载评论者数据
-        async loadCommenters() {
-            this.commentersLoading = true;
-            this.commentersError = '';
-            
-            try {
-                const queryParams = {
-                    cname: 'commenters'
-                };
-                
-                const url = buildServiceUrl('query_documents', queryParams);
-                
-                console.log('[loadCommenters] 请求URL:', url);
-                
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data && data.data && data.data.list) {
-                    this.commenters = data.data.list;
-                    console.log('[loadCommenters] 加载评论者成功，数量:', this.commenters.length);
-                    
-                    // 默认选中第一个评论者
-                    if (this.commenters.length > 0) {
-                        this.selectedCommenterIds = [this.commenters[0].key];
-                        console.log('[loadCommenters] 默认选中第一个评论者:', this.selectedCommenterIds);
-                    }
-                } else {
-                    this.commenters = [];
-                    console.log('[loadCommenters] 没有评论者数据');
-                }
-                
-            } catch (error) {
-                console.error('加载评论者失败:', error);
-                this.commentersError = '加载评论者数据失败: ' + (error.message || error);
-                this.commenters = [];
-            } finally {
-                this.commentersLoading = false;
-            }
-        },
-        
         // 处理评论提交
         async handleCommentSubmit(commentData) {
             try {
@@ -351,11 +298,6 @@ async function createApp() {
         // 处理评论输入
         handleCommentInput(commentData) {
             this.newComment = { ...this.newComment, ...commentData };
-        },
-        
-        // 处理评论者选择
-        handleCommenterSelect(author) {
-            this.newComment.author = author;
         },
         
         // 处理评论删除

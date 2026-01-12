@@ -196,6 +196,7 @@
     background: rgba(255, 255, 255, 0.08);
     cursor: pointer;
     transition: all 0.2s;
+    -webkit-user-select: none;
     user-select: none;
 }
 
@@ -524,6 +525,22 @@
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
 }
 
+.session-tag.session-tag-no-tags {
+    border-color: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-muted, #94a3b8);
+    font-style: italic;
+    opacity: 0.7;
+}
+
+.session-tag.session-tag-no-tags:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary, #e2e8f0);
+    transform: none;
+    box-shadow: none;
+}
+
 .session-item-footer {
     display: flex;
     align-items: center;
@@ -663,6 +680,7 @@
     font-size: 13px;
     color: var(--text-primary, #f8fafc);
     cursor: pointer;
+    -webkit-user-select: none;
     user-select: none;
 }
 

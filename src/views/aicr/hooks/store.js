@@ -338,12 +338,6 @@ export const createStore = () => {
     
     // 视图模式：'tree' 树形视图，'tags' 标签视图
     const viewMode = vueRef('tree');
-    
-    // 评论者相关状态
-    const commenters = vueRef([]);
-    const selectedCommenterKeys = vueRef([]);
-    const commentersLoading = vueRef(false);
-    const commentersError = vueRef('');
 
     // 会话列表相关状态
     const sessions = vueRef([]);
@@ -1674,246 +1668,7 @@ export const createStore = () => {
         });
     };
 
-    /**
-     * 异步加载评论者数据
-     */
-    const loadCommenters = async () => {
-        return safeExecuteAsync(async () => {
-            // 防止重复加载
-            if (commentersLoading.value) {
-                console.log('[loadCommenters] 评论者数据正在加载中，跳过重复请求');
-                return commenters.value;
-            }
-            
-            commentersLoading.value = true;
-            commentersError.value = '';
-            
-            console.log('[loadCommenters] 正在加载评论者数据...');
-            
-            console.log('[loadCommenters] 开始加载评论者');
-            
-            try {
-                const commentersUrl = buildServiceUrl('query_documents', {
-                    cname: 'commenters'
-                });
-                
-                console.log('[loadCommenters] 调用服务接口:', commentersUrl);
-                const response = await getData(commentersUrl);
-                
-                if (response && response.data && response.data.list) {
-                    commenters.value = response.data.list;
-                    console.log(`[loadCommenters] 成功加载 ${commenters.value.length} 个评论者`);
-                    return commenters.value;
-                } else {
-                    commenters.value = [];
-                    console.log('[loadCommenters] 没有评论者数据');
-                    return [];
-                }
-            } catch (error) {
-                console.error('[loadCommenters] 加载评论者失败:', error);
-                commenters.value = [];
-                return [];
-            }
-        }, '评论者数据加载', (errorInfo) => {
-            commentersError.value = errorInfo.message;
-            commenters.value = [];
-        }).finally(() => {
-            commentersLoading.value = false;
-        });
-    };
 
-    /**
-     * 添加评论者
-     */
-    const addCommenter = async (commenterData) => {
-        return safeExecuteAsync(async () => {
-            console.log('[addCommenter] 正在添加评论者...', { commenterData });
-            
-            // 构建标准服务接口 payload
-            const requestData = {
-                ...commenterData
-            };
-            
-            console.log('[addCommenter] 调用服务接口:', requestData);
-            
-            try {
-                // 检查网络连接
-                if (!navigator.onLine) {
-                    throw new Error('网络连接不可用，请检查网络设置');
-                }
-                
-                // 检查API_URL是否可用
-                if (!window.API_URL) {
-                    throw new Error('API配置错误：API_URL未定义');
-                }
-                
-                console.log('[addCommenter] API_URL:', window.API_URL);
-                // 使用标准服务接口创建评论者
-                const payload = {
-                    module_name: SERVICE_MODULE,
-                    method_name: 'create_document',
-                    parameters: {
-                        cname: 'commenters',
-                        data: requestData
-                    }
-                };
-                const response = await postData(`${window.API_URL}/`, payload);
-                
-                console.log('[addCommenter] 添加响应:', response);
-                
-                if (response && response.status === 200) {
-                    console.log('[addCommenter] 评论者添加成功');
-                    // 重新加载评论者列表
-                    await loadCommenters();
-                    return response.data;
-                } else {
-                    const errorMsg = response?.message || response?.error || '服务器返回错误';
-                    console.error('[addCommenter] 服务器返回错误:', response);
-                    throw new Error('添加评论者失败: ' + errorMsg);
-                }
-            } catch (error) {
-                console.error('[addCommenter] 添加请求失败:', error);
-                
-                // 提供更详细的错误信息
-                let errorMessage = '添加评论者失败: ';
-                
-                if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                    errorMessage += '网络请求失败，可能是网络连接问题或API服务器不可用';
-                } else if (error.status === 404) {
-                    errorMessage += 'API接口不存在';
-                } else if (error.status === 500) {
-                    errorMessage += '服务器内部错误';
-                } else if (error.status === 403) {
-                    errorMessage += '访问被拒绝，请检查权限';
-                } else if (error.message.includes('timeout')) {
-                    errorMessage += '请求超时，请检查网络连接';
-                } else {
-                    errorMessage += error.message || '未知错误';
-                }
-                
-                console.error('[addCommenter] 详细错误信息:', {
-                    name: error.name,
-                    message: error.message,
-                    status: error.status,
-                    stack: error.stack
-                });
-                
-                throw new Error(errorMessage);
-            }
-        }, '添加评论者', (errorInfo) => {
-            commentersError.value = errorInfo.message;
-        });
-    };
-
-    /**
-     * 更新评论者
-     */
-    const updateCommenter = async (commenterKey, commenterData) => {
-        return safeExecuteAsync(async () => {
-            console.log('[updateCommenter] 正在更新评论者...', { commenterKey, commenterData });
-            
-            // 构建更新URL
-            // let url = `${window.API_URL}/mongodb/?cname=commenters`;
-            
-            const payload = {
-                module_name: SERVICE_MODULE,
-                method_name: 'update_document',
-                parameters: {
-                    cname: 'commenters',
-                    key: commenterKey,
-                    data: {
-                        ...commenterData
-                    }
-                }
-            };
-            
-            console.log('[updateCommenter] 调用MongoDB接口:', payload);
-            
-            try {
-                // 使用PUT方法更新评论者
-                const response = await postData(`${window.API_URL}/`, payload);
-                
-                console.log('[updateCommenter] 更新响应:', response);
-                
-                if (response && response.status === 200) {
-                    console.log('[updateCommenter] 评论者更新成功');
-                    // 重新加载评论者列表
-                    await loadCommenters();
-                    return response.data;
-                } else {
-                    throw new Error('更新评论者失败: ' + (response?.message || '未知错误'));
-                }
-            } catch (error) {
-                console.error('[updateCommenter] 更新请求失败:', error);
-                throw new Error('更新评论者失败: ' + error.message);
-            }
-        }, '更新评论者', (errorInfo) => {
-            commentersError.value = errorInfo.message;
-        });
-    };
-
-    /**
-     * 删除评论者
-     */
-    const deleteCommenter = async (commenterKey) => {
-        return safeExecuteAsync(async () => {
-            console.log('[deleteCommenter] 正在删除评论者...', { commenterKey });
-            
-            // 验证评论者key
-            if (!commenterKey) {
-                throw new Error('评论者key不能为空');
-            }
-            
-            // 构建删除请求
-            const deletePayload = {
-                module_name: SERVICE_MODULE,
-                method_name: 'delete_document',
-                parameters: {
-                    cname: 'commenters',
-                    key: commenterKey
-                }
-            };
-            
-            console.log('[deleteCommenter] 调用MongoDB接口:', deletePayload);
-            
-            try {
-                // 使用POST方法删除评论者
-                const response = await postData(`${window.API_URL}/`, deletePayload);
-                
-                console.log('[deleteCommenter] 删除响应:', response);
-                
-                if (response && response.status === 200) {
-                    console.log('[deleteCommenter] 评论者删除成功');
-                    // 重新加载评论者列表
-                    await loadCommenters();
-                    return response.data;
-                } else {
-                    throw new Error('删除评论者失败: ' + (response?.message || '未知错误'));
-                }
-            } catch (error) {
-                console.error('[deleteCommenter] 删除请求失败:', error);
-                throw new Error('删除评论者失败: ' + error.message);
-            }
-        }, '删除评论者', (errorInfo) => {
-            commentersError.value = errorInfo.message;
-        });
-    };
-
-    /**
-     * 设置选中的评论者Key列表
-     */
-    const setSelectedCommenterKeys = (commenterKeys) => {
-        if (Array.isArray(commenterKeys)) {
-            selectedCommenterKeys.value = commenterKeys;
-        }
-    };
-
-    /**
-     * 设置选中的评论者ID列表 (兼容旧名称)
-     */
-    const setSelectedCommenterIds = (ids) => {
-        setSelectedCommenterKeys(ids);
-    };
 
     /**
      * 统一的Key规范化函数（使用统一的规范化工具）
@@ -2001,8 +1756,7 @@ export const createStore = () => {
         try {
             await Promise.all([
                 loadFileTree(),
-                loadComments(),
-                loadCommenters()
+                loadComments()
             ]);
             
             await loadFiles();
@@ -2133,12 +1887,7 @@ export const createStore = () => {
                         s.tags = [];
                     }
 
-                    // 如果标签为空，添加默认项目标签，确保会话能显示
-                    if (s.tags.length === 0) {
-                        const defaultProject = 'Default';
-                        s.tags.push(defaultProject);
-                        // console.log('[loadSessions] 为无标签会话添加默认项目:', s.title);
-                    }
+
                 });
 
                 sessionList.forEach(s => {
@@ -2257,12 +2006,6 @@ export const createStore = () => {
         // 视图模式
         viewMode,
         
-        // 评论者相关状态
-        commenters,
-        selectedCommenterKeys,
-        commentersLoading,
-        commentersError,
-        
         // 会话列表相关状态
         sessions,
         sessionLoading,
@@ -2292,11 +2035,6 @@ export const createStore = () => {
         deleteItem,
         normalizeComment,
         loadComments,
-        loadCommenters,
-        addCommenter,
-        updateCommenter,
-        deleteCommenter,
-        setSelectedCommenterIds,
         setSelectedKey,
         normalizeKey, // 新增：统一的文件Key规范化函数
         toggleFolder,

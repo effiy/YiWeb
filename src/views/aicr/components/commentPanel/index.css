@@ -2171,7 +2171,6 @@
     align-items: center;
 }
 
-.edit-commenters-btn,
 .test-network-btn {
     background: none;
     border: none;
@@ -2186,45 +2185,19 @@
     gap: 4px;
 }
 
-.edit-commenters-btn:hover,
 .test-network-btn:hover {
     color: var(--primary, #4f46e5);
     background: rgba(79,70,229,0.1);
     transform: translateY(-1px);
 }
 
-.edit-commenters-btn:active,
 .test-network-btn:active {
     transform: translateY(0);
 }
 
-.edit-commenters-btn i,
 .test-network-btn i {
     font-size: 11px;
     opacity: 0.9;
-}
-
-/* 没有评论者时的编辑按钮样式 */
-.edit-commenters-btn.no-commenters {
-    background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.08) 100%);
-    color: var(--success, #10b981);
-    border-color: rgba(16,185,129,0.2);
-    animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.edit-commenters-btn.no-commenters:hover {
-    background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.12) 100%);
-    border-color: rgba(16,185,129,0.3);
-    box-shadow: 0 4px 12px rgba(16,185,129,0.2);
-}
-
-@keyframes pulse-glow {
-    0%, 100% {
-        box-shadow: 0 0 0 0 rgba(16,185,129,0.4);
-    }
-    50% {
-        box-shadow: 0 0 0 4px rgba(16,185,129,0.1);
-    }
 }
 
 .test-network-btn {
@@ -3586,6 +3559,5 @@
         animation-iteration-count: 1 !important;
     }
 }
-
 
 
