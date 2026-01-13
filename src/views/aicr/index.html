@@ -410,6 +410,123 @@
                             </div>
                         </div>
                     </div>
+
+                    <div v-if="sessionFaqVisible" class="aicr-session-context-modal" role="dialog" aria-modal="true" aria-label="常见问题">
+                        <div class="aicr-session-context-modal-mask" @click="closeSessionFaq"></div>
+                        <div class="aicr-session-context-modal-body aicr-session-faq-modal-body" tabindex="0" @keydown.esc="closeSessionFaq">
+                            <div class="aicr-session-context-modal-header">
+                                <div class="aicr-session-context-modal-title">
+                                    💡 常见问题
+                                    <span class="aicr-session-context-modal-subtitle">（一键插入/发送）</span>
+                                </div>
+                                <div class="aicr-session-context-modal-header-right">
+                                    <button type="button" class="aicr-session-context-modal-close" @click="closeSessionFaq" aria-label="关闭">✕</button>
+                                </div>
+                            </div>
+                            <div class="aicr-session-context-modal-content aicr-session-faq-modal-content">
+                                <div class="aicr-session-faq-search-row">
+                                    <input
+                                        type="text"
+                                        class="aicr-session-faq-search-input"
+                                        :value="sessionFaqSearchKeyword"
+                                        @input="sessionFaqSearchKeyword = $event.target.value"
+                                        placeholder="搜索常见问题..."
+                                        aria-label="搜索常见问题"
+                                    />
+                                    <button
+                                        type="button"
+                                        class="aicr-session-faq-search-clear"
+                                        :disabled="!String(sessionFaqSearchKeyword || '').trim()"
+                                        @click="sessionFaqSearchKeyword = ''"
+                                        aria-label="清除搜索"
+                                        title="清除搜索"
+                                    >清除</button>
+                                </div>
+
+                                <div class="aicr-session-faq-list" role="list" aria-label="常见问题列表">
+                                    <div
+                                        v-for="item in (sessionFaqItems || []).filter(i => {
+                                            const kw = String(sessionFaqSearchKeyword || '').trim().toLowerCase();
+                                            if (!kw) return true;
+                                            const hay = `${String(i?.title || '')}\n${String(i?.prompt || '')}`.toLowerCase();
+                                            return hay.includes(kw);
+                                        })"
+                                        :key="item.key"
+                                        class="aicr-session-faq-item"
+                                        role="listitem"
+                                    >
+                                        <div class="aicr-session-faq-item-header">
+                                            <div class="aicr-session-faq-item-title">{{ item.title }}</div>
+                                            <div class="aicr-session-faq-item-actions">
+                                                <button type="button" class="aicr-session-faq-item-btn" @click="applySessionFaqItem(item, 'insert')" aria-label="插入">插入</button>
+                                                <button type="button" class="aicr-session-faq-item-btn primary" @click="applySessionFaqItem(item, 'send')" aria-label="发送">发送</button>
+                                            </div>
+                                        </div>
+                                        <div class="aicr-session-faq-item-prompt">{{ item.prompt }}</div>
+                                    </div>
+
+                                    <div
+                                        v-if="(sessionFaqItems || []).filter(i => {
+                                            const kw = String(sessionFaqSearchKeyword || '').trim().toLowerCase();
+                                            if (!kw) return true;
+                                            const hay = `${String(i?.title || '')}\n${String(i?.prompt || '')}`.toLowerCase();
+                                            return hay.includes(kw);
+                                        }).length === 0"
+                                        class="aicr-session-faq-empty"
+                                        role="status"
+                                    >
+                                        未找到匹配的常见问题
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="sessionSettingsVisible" class="aicr-session-context-modal" role="dialog" aria-modal="true" aria-label="AI 设置">
+                        <div class="aicr-session-context-modal-mask" @click="closeSessionSettings"></div>
+                        <div class="aicr-session-context-modal-body aicr-session-settings-modal-body" tabindex="0" @keydown.esc="closeSessionSettings">
+                            <div class="aicr-session-context-modal-header">
+                                <div class="aicr-session-context-modal-title">
+                                    ⚙️ AI 设置
+                                    <span class="aicr-session-context-modal-subtitle">（当前浏览器本地）</span>
+                                </div>
+                                <div class="aicr-session-context-modal-header-right">
+                                    <button type="button" class="aicr-session-context-toolbar-btn" @click="restoreSessionSettingsDefaults" aria-label="恢复默认" title="恢复默认">恢复默认</button>
+                                    <button type="button" class="aicr-session-context-toolbar-btn primary" @click="saveSessionSettings" aria-label="保存" title="保存">保存</button>
+                                    <button type="button" class="aicr-session-context-modal-close" @click="closeSessionSettings" aria-label="关闭">✕</button>
+                                </div>
+                            </div>
+                            <div class="aicr-session-context-modal-content aicr-session-settings-modal-content">
+                                <div class="aicr-session-settings-field">
+                                    <label class="aicr-session-settings-label" for="aicr-session-bot-model">模型（可选）</label>
+                                    <input
+                                        id="aicr-session-bot-model"
+                                        type="text"
+                                        class="aicr-session-settings-input"
+                                        :value="sessionBotModelDraft"
+                                        @input="sessionBotModelDraft = $event.target.value"
+                                        placeholder="例如：gpt-4o-mini"
+                                        autocomplete="off"
+                                        spellcheck="false"
+                                        aria-label="模型"
+                                    />
+                                    <div class="aicr-session-settings-hint">留空表示使用服务端默认模型。</div>
+                                </div>
+
+                                <div class="aicr-session-settings-field">
+                                    <label class="aicr-session-settings-label" for="aicr-session-system-prompt">系统提示词</label>
+                                    <textarea
+                                        id="aicr-session-system-prompt"
+                                        class="aicr-session-settings-textarea"
+                                        :value="sessionBotSystemPromptDraft"
+                                        @input="sessionBotSystemPromptDraft = $event.target.value"
+                                        rows="10"
+                                        aria-label="系统提示词"
+                                    ></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
             <aside class="aicr-comments" aria-label="评论区" v-show="viewMode === 'tree' && !commentsCollapsed" :style="{ width: commentsWidth + 'px' }">

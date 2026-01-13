@@ -2016,3 +2016,199 @@
     color: rgba(248, 250, 252, 0.98);
     font-weight: 650;
 }
+
+.aicr-session-faq-modal-body {
+    inset: 16px;
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.aicr-session-faq-modal-content {
+    overflow: hidden;
+}
+
+.aicr-session-faq-search-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.aicr-session-faq-search-input {
+    flex: 1;
+    border-radius: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(51, 65, 85, 0.85);
+    background: rgba(2, 6, 23, 0.60);
+    color: rgba(226, 232, 240, 0.95);
+    outline: none;
+    font-size: 14px;
+}
+
+.aicr-session-faq-search-input:focus {
+    border-color: rgba(34, 211, 238, 0.45);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18);
+}
+
+.aicr-session-faq-search-clear {
+    border: 1px solid rgba(51, 65, 85, 0.85);
+    background: rgba(30, 41, 59, 0.6);
+    color: rgba(226, 232, 240, 0.9);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.aicr-session-faq-search-clear:hover:enabled {
+    background: rgba(51, 65, 85, 0.6);
+    transform: translateY(-1px);
+}
+
+.aicr-session-faq-search-clear:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.aicr-session-faq-list {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: auto;
+    flex: 1;
+    min-height: 0;
+    padding-right: 2px;
+}
+
+.aicr-session-faq-item {
+    border: 1px solid rgba(51, 65, 85, 0.75);
+    background: rgba(2, 6, 23, 0.35);
+    border-radius: 14px;
+    padding: 12px 14px;
+}
+
+.aicr-session-faq-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.aicr-session-faq-item-title {
+    color: rgba(226, 232, 240, 0.95);
+    font-weight: 650;
+    font-size: 14px;
+}
+
+.aicr-session-faq-item-actions {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.aicr-session-faq-item-btn {
+    border: 1px solid rgba(51, 65, 85, 0.85);
+    background: rgba(30, 41, 59, 0.6);
+    color: rgba(226, 232, 240, 0.9);
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.aicr-session-faq-item-btn:hover {
+    background: rgba(51, 65, 85, 0.6);
+    transform: translateY(-1px);
+}
+
+.aicr-session-faq-item-btn.primary {
+    border-color: rgba(79, 70, 229, 0.45);
+    background: rgba(79, 70, 229, 0.85);
+    color: rgba(248, 250, 252, 0.98);
+    font-weight: 650;
+}
+
+.aicr-session-faq-item-prompt {
+    margin-top: 10px;
+    color: rgba(148, 163, 184, 0.85);
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.aicr-session-faq-empty {
+    padding: 18px 12px;
+    text-align: center;
+    color: rgba(148, 163, 184, 0.8);
+    border: 1px dashed rgba(51, 65, 85, 0.7);
+    border-radius: 14px;
+}
+
+.aicr-session-settings-modal-body {
+    inset: 16px;
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.aicr-session-settings-modal-content {
+    overflow: auto;
+}
+
+.aicr-session-settings-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.aicr-session-settings-label {
+    color: rgba(226, 232, 240, 0.92);
+    font-weight: 650;
+    font-size: 13px;
+}
+
+.aicr-session-settings-input {
+    border-radius: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(51, 65, 85, 0.85);
+    background: rgba(2, 6, 23, 0.60);
+    color: rgba(226, 232, 240, 0.95);
+    outline: none;
+    font-size: 14px;
+}
+
+.aicr-session-settings-input:focus {
+    border-color: rgba(34, 211, 238, 0.45);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18);
+}
+
+.aicr-session-settings-textarea {
+    width: 100%;
+    resize: vertical;
+    min-height: 220px;
+    border-radius: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(51, 65, 85, 0.85);
+    background: rgba(2, 6, 23, 0.60);
+    color: rgba(226, 232, 240, 0.95);
+    outline: none;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    font-size: 14px;
+    line-height: 1.6;
+    box-sizing: border-box;
+}
+
+.aicr-session-settings-textarea:focus {
+    border-color: rgba(34, 211, 238, 0.45);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18);
+}
+
+.aicr-session-settings-hint {
+    color: rgba(148, 163, 184, 0.75);
+    font-size: 12px;
+    line-height: 1.5;
+}

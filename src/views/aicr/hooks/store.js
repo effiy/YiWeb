@@ -470,6 +470,13 @@ export const createStore = () => {
     const sessionContextMode = vueRef('edit');
     const sessionContextUndoVisible = vueRef(false);
     const sessionContextOptimizeBackup = vueRef('');
+    const sessionFaqVisible = vueRef(false);
+    const sessionFaqSearchKeyword = vueRef('');
+    const sessionSettingsVisible = vueRef(false);
+    const sessionBotModel = vueRef('');
+    const sessionBotSystemPrompt = vueRef('你是一个专业、简洁且可靠的 AI 助手。');
+    const sessionBotModelDraft = vueRef('');
+    const sessionBotSystemPromptDraft = vueRef('');
     
     // 标签过滤相关状态（参考 YiPet 项目）
     const tagFilterReverse = vueRef(false); // 是否反向过滤会话
@@ -2069,6 +2076,13 @@ export const createStore = () => {
         sessionContextMode,
         sessionContextUndoVisible,
         sessionContextOptimizeBackup,
+        sessionFaqVisible,
+        sessionFaqSearchKeyword,
+        sessionSettingsVisible,
+        sessionBotModel,
+        sessionBotSystemPrompt,
+        sessionBotModelDraft,
+        sessionBotSystemPromptDraft,
         
         // 标签过滤相关状态
         tagFilterReverse,

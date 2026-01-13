@@ -69,8 +69,70 @@ export const useMethods = (store) => {
         sessionContextDraft,
         sessionContextMode,
         sessionContextUndoVisible,
-        sessionContextOptimizeBackup
+        sessionContextOptimizeBackup,
+        sessionFaqVisible,
+        sessionFaqSearchKeyword,
+        sessionSettingsVisible,
+        sessionBotModel,
+        sessionBotSystemPrompt,
+        sessionBotModelDraft,
+        sessionBotSystemPromptDraft
     } = store;
+
+    const defaultSessionBotSystemPrompt = '你是一个专业、简洁且可靠的 AI 助手。';
+
+    const loadSessionBotSettings = () => {
+        try {
+            if (sessionBotModel) {
+                const model = localStorage.getItem('aicr_session_bot_model');
+                if (model != null) sessionBotModel.value = String(model || '').trim();
+            }
+            if (sessionBotSystemPrompt) {
+                const prompt = localStorage.getItem('aicr_session_bot_system_prompt');
+                if (prompt != null) {
+                    const normalized = String(prompt || '').trim();
+                    sessionBotSystemPrompt.value = normalized || defaultSessionBotSystemPrompt;
+                }
+            }
+        } catch (_) {}
+    };
+
+    const persistSessionBotSettings = () => {
+        try {
+            if (sessionBotModel) localStorage.setItem('aicr_session_bot_model', String(sessionBotModel.value || '').trim());
+            if (sessionBotSystemPrompt) localStorage.setItem('aicr_session_bot_system_prompt', String(sessionBotSystemPrompt.value || '').trim());
+        } catch (_) {}
+    };
+
+    loadSessionBotSettings();
+
+    const sessionFaqItems = [
+        {
+            key: 'how_to_use',
+            title: '如何开始对话？',
+            prompt: '请你先总结当前会话，然后告诉我下一步建议怎么做。'
+        },
+        {
+            key: 'summarize',
+            title: '总结这段对话',
+            prompt: '请用要点总结我们刚才的对话，并给出结论与待办列表。'
+        },
+        {
+            key: 'explain_code',
+            title: '解释选中文件/代码',
+            prompt: '请解释当前文件的主要职责、关键函数、数据流，并指出可能的风险点。'
+        },
+        {
+            key: 'review',
+            title: '做代码审查',
+            prompt: '请对当前改动做一次代码审查：指出潜在 bug、性能/安全问题，并给出可执行的修改建议。'
+        },
+        {
+            key: 'write_test',
+            title: '补充测试用例',
+            prompt: '请为当前功能补充测试用例：覆盖正常路径、边界条件、异常情况，并说明为什么。'
+        }
+    ];
 
     // 搜索相关状态
     let searchTimeout = null;
@@ -2515,6 +2577,7 @@ export const useMethods = (store) => {
 
     return {
         openLink,
+        sessionFaqItems,
         handleFileSelect,
         handleFolderToggle,
         // 文件树CRUD
@@ -2700,13 +2763,60 @@ export const useMethods = (store) => {
         },
 
         openSessionFaq: () => {
-            console.log('Open Session FAQ');
-            alert('常见问题功能开发中...');
+            if (sessionFaqVisible) sessionFaqVisible.value = true;
+            if (sessionFaqSearchKeyword) sessionFaqSearchKeyword.value = '';
+            if (sessionSettingsVisible) sessionSettingsVisible.value = false;
+            if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
         },
 
         openSessionSettings: () => {
-            console.log('Open Session Settings');
-            alert('机器人设置功能开发中...');
+            if (sessionFaqVisible) sessionFaqVisible.value = false;
+            if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
+            if (sessionBotModelDraft) sessionBotModelDraft.value = String(sessionBotModel?.value || '').trim();
+            if (sessionBotSystemPromptDraft) sessionBotSystemPromptDraft.value = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim();
+            if (sessionSettingsVisible) sessionSettingsVisible.value = true;
+        },
+
+        closeSessionFaq: () => {
+            if (sessionFaqVisible) sessionFaqVisible.value = false;
+        },
+
+        closeSessionSettings: () => {
+            if (sessionSettingsVisible) sessionSettingsVisible.value = false;
+        },
+
+        applySessionFaqItem: (item, mode = 'insert') => {
+            const text = String(item?.prompt || '').trim();
+            if (!text) return;
+            if (sessionChatInput) sessionChatInput.value = text;
+            try {
+                const el = document.getElementById('pet-chat-input');
+                if (el) el.focus();
+            } catch (_) {}
+            if (String(mode) === 'send') {
+                setTimeout(() => {
+                    try {
+                        if (typeof window.aicrApp?.sendSessionChatMessage === 'function') {
+                            window.aicrApp.sendSessionChatMessage();
+                        }
+                    } catch (_) {}
+                }, 0);
+            }
+        },
+
+        restoreSessionSettingsDefaults: () => {
+            if (sessionBotModelDraft) sessionBotModelDraft.value = '';
+            if (sessionBotSystemPromptDraft) sessionBotSystemPromptDraft.value = defaultSessionBotSystemPrompt;
+        },
+
+        saveSessionSettings: () => {
+            const model = String(sessionBotModelDraft?.value || '').trim();
+            const prompt = String(sessionBotSystemPromptDraft?.value || '').trim() || defaultSessionBotSystemPrompt;
+            if (sessionBotModel) sessionBotModel.value = model;
+            if (sessionBotSystemPrompt) sessionBotSystemPrompt.value = prompt;
+            persistSessionBotSettings();
+            if (sessionSettingsVisible) sessionSettingsVisible.value = false;
+            if (window.showSuccess) window.showSuccess('已保存');
         },
 
         closeSessionContextEditor: () => {
@@ -2935,7 +3045,7 @@ export const useMethods = (store) => {
                 const pageContent = String(sessionContextDraft?.value ?? nextSession.pageContent ?? '').trim();
                 const includeContext = !!sessionContextEnabled?.value;
                 const history = buildHistory();
-                const fromSystem = '你是一个专业、简洁且可靠的 AI 助手。';
+                const fromSystem = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim() || defaultSessionBotSystemPrompt;
                 let fromUser = '';
                 if (includeContext && pageContent) {
                     fromUser += `## 页面上下文\n\n${pageContent}\n\n`;
@@ -2956,7 +3066,13 @@ export const useMethods = (store) => {
                 try {
                     await streamPrompt(
                         promptUrl,
-                        { fromSystem, fromUser },
+                        {
+                            fromSystem,
+                            fromUser,
+                            ...(String(sessionBotModel?.value || '').trim()
+                                ? { model: String(sessionBotModel.value || '').trim() }
+                                : {})
+                        },
                         controller ? { signal: controller.signal } : {},
                         (chunk) => {
                             accumulated += String(chunk || '');
