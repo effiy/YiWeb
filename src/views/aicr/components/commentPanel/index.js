@@ -5,6 +5,7 @@ import { safeExecute, showErrorMessage } from '/src/utils/error.js';
 import { getData, postData, updateData, deleteData, streamPromptJSON } from '/src/services/index.js';
 import { defineComponent } from '/src/utils/componentLoader.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
+import { getSessionSyncService } from '/src/views/aicr/services/sessionSyncService.js';
 // const { postData } = await import('/src/services/modules/crud.js');
 
 // 新增：异步获取评论数据（从mongo api）
@@ -21,6 +22,7 @@ async function fetchCommentsFromMongo(file) {
             const key = file.key || file.path;
             if (key) {
                 queryParams.key = key;
+                queryParams.fileKey = key;
                 console.log('[CommentPanel] 添加文件Key到参数:', key);
             }
         } else {
@@ -101,6 +103,10 @@ const componentOptions = {
             collapsed: {
                 type: Boolean,
                 default: false
+            },
+            viewMode: {
+                type: String,
+                default: 'tree'
             }
         },
         emits: [
@@ -164,10 +170,29 @@ const componentOptions = {
                 // 删除确认对话框状态
                 showDeleteDialog: false,
                 deleteTargetId: null,
-                deleteTargetAuthor: ''
+                deleteTargetAuthor: '',
+
+                sessionChatSession: null,
+                sessionChatLoading: false,
+                sessionChatError: '',
+                sessionChatInputText: '',
+                sessionChatIncludePageContext: true,
+                sessionChatShowContextEditor: false,
+                sessionChatContextEditMode: 'edit',
+                sessionChatEditingPageContent: '',
+                sessionChatSavingContext: false,
+                sessionChatSending: false
             };
         },
         computed: {
+            isSessionChatMode() {
+                return this.viewMode === 'tags';
+            },
+            sessionChatMessages() {
+                const session = this.sessionChatSession;
+                const msgs = Array.isArray(session?.messages) ? session.messages : [];
+                return [...msgs].sort((a, b) => Number(a?.timestamp || 0) - Number(b?.timestamp || 0));
+            },
             renderComments() {
                 // 优先使用mongoComments，如果没有则使用props中的comments
                 const mongoComments = this.mongoComments && Array.isArray(this.mongoComments) ? this.mongoComments : [];
@@ -205,6 +230,22 @@ const componentOptions = {
             }
         },
         methods: {
+            _normalizeFileKey(v) {
+                try {
+                    return String(v || '')
+                        .replace(/\\/g, '/')
+                        .replace(/^\.\//, '')
+                        .replace(/^\/+/, '')
+                        .replace(/\/\/+/g, '/');
+                } catch (e) {
+                    return String(v || '');
+                }
+            },
+            _isSameFileKey(a, b) {
+                const na = this._normalizeFileKey(a);
+                const nb = this._normalizeFileKey(b);
+                return !!na && !!nb && na === nb;
+            },
             // 将Markdown渲染为HTML（使用marked.js优化）
             renderMarkdown(text) {
                 return safeExecute(() => {
@@ -336,6 +377,149 @@ const componentOptions = {
             toggleCollapse() {
                 this.$emit('toggle-collapse');
             },
+
+            async loadSessionChatSession(force = false) {
+                return safeExecute(async () => {
+                    if (!this.isSessionChatMode) return;
+                    const fileKey = this.file?.key || this.file?.path;
+                    if (!fileKey) {
+                        this.sessionChatSession = null;
+                        this.sessionChatError = '';
+                        this.sessionChatLoading = false;
+                        return;
+                    }
+
+                    if (!force && this.sessionChatSession && (this.sessionChatSession.id === fileKey || this.sessionChatSession.key === fileKey)) {
+                        return;
+                    }
+
+                    this.sessionChatLoading = true;
+                    this.sessionChatError = '';
+                    try {
+                        const sessionSync = getSessionSyncService();
+                        const session = await sessionSync.getSession(String(fileKey));
+                        this.sessionChatSession = session;
+                        this.sessionChatEditingPageContent = String(session?.pageContent || '');
+                        this.$nextTick(() => {
+                            try {
+                                const el = this.$el && this.$el.querySelector('.aicr-session-chat-messages');
+                                if (el) el.scrollTop = el.scrollHeight;
+                            } catch (_) {}
+                        });
+                    } catch (e) {
+                        this.sessionChatError = e?.message || '加载会话失败';
+                        this.sessionChatSession = null;
+                    } finally {
+                        this.sessionChatLoading = false;
+                    }
+                }, '加载会话聊天数据');
+            },
+
+            openSessionChatContextEditor() {
+                this.sessionChatShowContextEditor = true;
+                this.sessionChatContextEditMode = 'edit';
+                this.sessionChatEditingPageContent = String(this.sessionChatSession?.pageContent || '');
+            },
+
+            closeSessionChatContextEditor() {
+                this.sessionChatShowContextEditor = false;
+            },
+
+            openSessionChatFaq() {
+                console.log('[CommentPanel] openSessionChatFaq clicked');
+                // TODO: 实现常见问题面板
+            },
+
+            openSessionChatSettings() {
+                console.log('[CommentPanel] openSessionChatSettings clicked');
+                // TODO: 实现设置面板
+            },
+
+            toggleSessionChatContextEditMode(mode) {
+                if (mode === 'edit' || mode === 'preview') {
+                    this.sessionChatContextEditMode = mode;
+                }
+            },
+
+            async saveSessionChatPageContext() {
+                return safeExecute(async () => {
+                    if (!this.sessionChatSession) return;
+                    const content = String(this.sessionChatEditingPageContent ?? '');
+                    if (content === String(this.sessionChatSession.pageContent || '')) {
+                        this.sessionChatShowContextEditor = false;
+                        return;
+                    }
+
+                    this.sessionChatSavingContext = true;
+                    const sessionSync = getSessionSyncService();
+                    const updated = { ...this.sessionChatSession, pageContent: content, updatedAt: Date.now(), lastAccessTime: Date.now() };
+                    await sessionSync.saveSession(updated);
+                    this.sessionChatSession = updated;
+                    this.sessionChatShowContextEditor = false;
+                }, '保存页面上下文');
+            },
+
+            async sendSessionChatMessage(payload = {}) {
+                return safeExecute(async () => {
+                    if (!this.sessionChatSession) return;
+                    if (this.sessionChatSending) return;
+
+                    const rawText = typeof payload.text === 'string' ? payload.text : this.sessionChatInputText;
+                    const text = String(rawText || '').trim();
+                    if (!text) return;
+
+                    const now = Date.now();
+                    const userMessage = {
+                        type: 'user',
+                        content: text,
+                        timestamp: now
+                    };
+
+                    this.sessionChatSending = true;
+                    this.sessionChatInputText = '';
+
+                    const sessionSync = getSessionSyncService();
+                    const prevSession = this.sessionChatSession;
+                    const nextSession = {
+                        ...prevSession,
+                        messages: [...(Array.isArray(prevSession.messages) ? prevSession.messages : []), userMessage],
+                        updatedAt: now,
+                        lastAccessTime: now
+                    };
+                    this.sessionChatSession = nextSession;
+                    this.$nextTick(() => {
+                        try {
+                            const el = this.$el && this.$el.querySelector('.aicr-session-chat-messages');
+                            if (el) el.scrollTop = el.scrollHeight;
+                        } catch (_) {}
+                    });
+
+                    try {
+                        await sessionSync.saveSession(nextSession);
+                    } catch (e) {
+                        this.sessionChatSession = prevSession;
+                        this.sessionChatInputText = text;
+                        throw e;
+                    } finally {
+                        this.sessionChatSending = false;
+                    }
+                }, '发送会话消息');
+            },
+
+            onSessionChatKeydown(e) {
+                try {
+                    if (!e) return;
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendSessionChatMessage();
+                        return;
+                    }
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        this.sessionChatInputText = '';
+                    }
+                } catch (_) {}
+            },
             // 测试方法
             testMethod() {
                 console.log('[CommentPanel] testMethod被调用');
@@ -366,7 +550,7 @@ const componentOptions = {
             },
 
             // 加载MongoDB评论数据（优化：优先从 store 获取，避免重复调用接口）
-            async loadMongoComments() {
+            async loadMongoComments(force = false) {
                 return safeExecute(async () => {
                     // 防止重复请求
                     if (this._isLoadingComments) {
@@ -375,7 +559,7 @@ const componentOptions = {
                     }
                     
                     // 优化：优先从 store 获取评论数据
-                    if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
+                    if (!force && window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
                         const storeComments = window.aicrStore.comments.value;
                         const key = this.file?.key || this.file?.path;
                         
@@ -383,8 +567,8 @@ const componentOptions = {
                         let filteredComments = storeComments;
                         if (key) {
                             filteredComments = storeComments.filter(c => {
-                                const commentFileKey = c.fileKey || (c.fileInfo && c.fileInfo.key);
-                                return commentFileKey === key;
+                                const commentFileKey = c.fileKey || (c.fileInfo && (c.fileInfo.key || c.fileInfo.path));
+                                return this._isSameFileKey(commentFileKey, key);
                             });
                         }
                         
@@ -429,7 +613,28 @@ const componentOptions = {
                             key: comment.key || `comment_${Date.now()}_${Math.random()}`
                         }));
                         
-                        this.mongoComments = processedComments;
+                        const existing = Array.isArray(this.mongoComments) ? this.mongoComments : [];
+                        const currentFileKey = this.file?.key || this.file?.path;
+                        const existingSameFile = currentFileKey
+                            ? existing.filter(c => this._isSameFileKey(c.fileKey || (c.fileInfo && (c.fileInfo.key || c.fileInfo.path)), currentFileKey))
+                            : existing;
+
+                        const mergedByKey = new Map();
+                        [...processedComments, ...existingSameFile].forEach(c => {
+                            const k = c && c.key ? String(c.key) : '';
+                            if (k) {
+                                if (!mergedByKey.has(k)) mergedByKey.set(k, c);
+                                return;
+                            }
+                            const fileK = this._normalizeFileKey(c.fileKey || (c.fileInfo && (c.fileInfo.key || c.fileInfo.path)));
+                            const ts = c.timestamp || c.createdAt || c.createdTime || '';
+                            const content = c.content || '';
+                            const fallbackKey = `${fileK}__${ts}__${content}`;
+                            if (!mergedByKey.has(fallbackKey)) mergedByKey.set(fallbackKey, c);
+                        });
+                        const merged = Array.from(mergedByKey.values());
+                        const shouldKeepExisting = processedComments.length === 0 && existingSameFile.length > 0 && !!currentFileKey;
+                        this.mongoComments = shouldKeepExisting ? existingSameFile : merged;
                         
                         console.log('[CommentPanel] 加载评论数据完成，评论数量:', this.mongoComments.length);
                         console.log('[CommentPanel] 评论数据详情:', this.mongoComments);
@@ -875,15 +1080,16 @@ const componentOptions = {
                     newComment = window.aicrStore.normalizeComment(newComment);
                 } else {
                     // 如果没有规范化函数，手动设置字段
-                    const content = String(newComment.content || newComment.text || '').trim();
+                    const content = String(newComment.content || '').trim();
+                    const quotedText = String(newComment.text || '').trim();
                     const timestamp = newComment.timestamp || newComment.createdTime || newComment.createdAt || Date.now();
                     // 确保时间戳是毫秒数
                     const normalizedTimestamp = typeof timestamp === 'string' 
                         ? new Date(timestamp).getTime() 
                         : (timestamp < 1e12 ? timestamp * 1000 : timestamp);
                     
-                    newComment.content = content;
-                    newComment.text = content; // content 和 text 保持一致
+                    if (content) newComment.content = content;
+                    if (!newComment.text) newComment.text = quotedText || content;
                     newComment.timestamp = normalizedTimestamp;
                     newComment.createdTime = normalizedTimestamp; // 毫秒数
                     newComment.createdAt = normalizedTimestamp; // 毫秒数
@@ -916,7 +1122,7 @@ const componentOptions = {
             },
 
             // 防抖的评论加载方法
-            debouncedLoadComments() {
+            debouncedLoadComments(force = false) {
                 // 检查是否正在加载
                 if (this._isLoadingComments) {
                     console.log('[CommentPanel] 正在加载中，跳过防抖请求');
@@ -929,12 +1135,12 @@ const componentOptions = {
                 
                 this._debounceTimer = setTimeout(async () => {
                     console.log('[CommentPanel] 防抖触发评论加载');
-                    await this.loadMongoComments();
+                    await this.loadMongoComments(force);
                 }, 300); // 300ms防抖延迟
             },
 
             // 立即刷新评论列表（用于ESC键等需要立即响应的场景）
-            immediateLoadComments() {
+            immediateLoadComments(force = false) {
                 console.log('[CommentPanel] 立即刷新评论列表');
                 
                 // 检查是否正在加载
@@ -953,7 +1159,45 @@ const componentOptions = {
                 this._isLoadingComments = false;
                 
                 // 立即加载评论
-                this.loadMongoComments();
+                this.loadMongoComments(force);
+            },
+
+            resetToInitialState() {
+                console.log('[CommentPanel] 重置评论区到初始化状态');
+
+                this.newCommentText = '';
+                this.showCommentEditor = false;
+
+                this.editingComment = null;
+                this.editingCommentContent = '';
+                this.editingCommentAuthor = '';
+                this.editingCommentTimestamp = '';
+                this.editingCommentText = '';
+                this.editingRangeInfo = { startLine: 1, endLine: 1 };
+                this.editingImprovementText = '';
+                this.editingCommentType = '';
+                this.editingCommentStatus = 'pending';
+                this.editingSaving = false;
+
+                this.showDeleteDialog = false;
+                this.deleteTargetId = null;
+                this.deleteTargetAuthor = '';
+                this.deletingComments = {};
+
+                this.commentsError = '';
+                this.commentsLoading = false;
+                this._isLoadingComments = false;
+
+                this.fileComments = [];
+
+                const storeComments = window.aicrStore?.comments?.value;
+                if (Array.isArray(storeComments) && storeComments.length > 0) {
+                    this.mongoComments = [...storeComments];
+                    return;
+                }
+
+                this.mongoComments = [];
+                this.immediateLoadComments(true);
             },
 
             // 清理所有定时器和缓存
@@ -988,18 +1232,22 @@ const componentOptions = {
             
             if (window.aicrStore) {
                 console.log('[CommentPanel] store已初始化，开始加载数据');
-                
-                // 优化：优先从 store 获取评论数据，避免重复调用接口
-                if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
-                    console.log('[CommentPanel] store中已有评论数据，直接使用，数量:', window.aicrStore.comments.value.length);
-                    this.mongoComments = [...window.aicrStore.comments.value];
+
+                if (this.isSessionChatMode) {
+                    await this.loadSessionChatSession(true);
                 } else {
-                    // 如果 store 中没有评论数据，且当前有选中的文件，才按需加载
-                    if (this.file) {
-                        console.log('[CommentPanel] store中没有评论数据，且已选中文件，按需加载评论');
-                        this.debouncedLoadComments();
+                    // 优化：优先从 store 获取评论数据，避免重复调用接口
+                    if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
+                        console.log('[CommentPanel] store中已有评论数据，直接使用，数量:', window.aicrStore.comments.value.length);
+                        this.mongoComments = [...window.aicrStore.comments.value];
                     } else {
-                        console.log('[CommentPanel] store中没有评论数据，且未选中文件，等待文件选择后再加载');
+                        // 如果 store 中没有评论数据，且当前有选中的文件，才按需加载
+                        if (this.file) {
+                            console.log('[CommentPanel] store中没有评论数据，且已选中文件，按需加载评论');
+                            this.debouncedLoadComments();
+                        } else {
+                            console.log('[CommentPanel] store中没有评论数据，且未选中文件，等待文件选择后再加载');
+                        }
                     }
                 }
             } else {
@@ -1011,12 +1259,16 @@ const componentOptions = {
                 console.log('[CommentPanel] 文件选择变化:', { newFile, oldFile });
                 
                 if (newFile && newFile !== oldFile) {
+                    if (this.isSessionChatMode) {
+                        this.loadSessionChatSession(true);
+                        return;
+                    }
                     // 优化：优先从 store 获取该文件的评论
                     if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
                         const fileKey = newFile?.key || newFile?.path;
                         const filteredComments = window.aicrStore.comments.value.filter(c => {
-                            const commentFileKey = c.fileKey || (c.fileInfo && c.fileInfo.fileKey);
-                            return commentFileKey === fileKey;
+                            const commentFileKey = c.fileKey || (c.fileInfo && (c.fileInfo.key || c.fileInfo.path));
+                            return this._isSameFileKey(commentFileKey, fileKey);
                         });
                         
                         if (filteredComments.length > 0) {
@@ -1029,6 +1281,12 @@ const componentOptions = {
                     console.log('[CommentPanel] store中没有该文件的评论，使用防抖重新加载:', newFile);
                     this.debouncedLoadComments();
                 } else if (!newFile && oldFile) {
+                    if (this.isSessionChatMode) {
+                        this.sessionChatSession = null;
+                        this.sessionChatError = '';
+                        this.sessionChatLoading = false;
+                        return;
+                    }
                     // 文件被取消选中（如按ESC键）
                     console.log('[CommentPanel] 文件被取消选中，显示所有评论');
                     // 优化：优先从 store 获取所有评论
@@ -1043,13 +1301,36 @@ const componentOptions = {
                     }
                 }
             });
+
+            this.$watch('viewMode', (newMode, oldMode) => {
+                if (newMode === oldMode) return;
+                if (newMode === 'tags') {
+                    this.loadSessionChatSession(true);
+                } else {
+                    this.sessionChatSession = null;
+                    this.sessionChatError = '';
+                    this.sessionChatLoading = false;
+                    if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
+                        this.mongoComments = [...window.aicrStore.comments.value];
+                    } else {
+                        this.debouncedLoadComments();
+                    }
+                }
+            });
             
             // 监听评论数据变化
             this.$watch('comments', async (newComments, oldComments) => {
                 if (newComments && newComments !== oldComments) {
                     console.log('[CommentPanel] 评论数据变化，更新本地数据:', newComments);
-                    // 更新本地评论数据
-                    this.mongoComments = [...(newComments || [])];
+                    const incoming = Array.isArray(newComments) ? newComments : [];
+                    if (incoming.length > 0) {
+                        this.mongoComments = [...incoming];
+                        return;
+                    }
+                    const existing = Array.isArray(this.mongoComments) ? this.mongoComments : [];
+                    if (existing.length === 0) {
+                        this.mongoComments = [];
+                    }
                 }
             });
             
@@ -1107,14 +1388,20 @@ const componentOptions = {
                     this.addCommentToLocalData(comment);
                 }
             });
+
+            window.addEventListener('resetAicrComments', () => {
+                this.resetToInitialState();
+            });
             
             // 监听reloadComments事件，重新加载评论数据
             window.addEventListener('reloadComments', (event) => {
                 console.log('[CommentPanel] 收到reloadComments事件:', event.detail);
                 
+                const resolvedFileKey = event.detail?.fileKey ?? event.detail?.key;
+
                 // 防止重复触发
                 if (this._lastReloadEvent && 
-                    this._lastReloadEvent.fileKey === event.detail?.fileKey &&
+                    this._isSameFileKey(this._lastReloadEvent.fileKey, resolvedFileKey) &&
                     Date.now() - this._lastReloadEvent.timestamp < 500) {
                     console.log('[CommentPanel] 检测到重复的reloadComments事件，跳过处理');
                     return;
@@ -1122,11 +1409,12 @@ const componentOptions = {
                 
                 // 记录事件信息
                 this._lastReloadEvent = {
-                    fileKey: event.detail?.fileKey,
+                    fileKey: resolvedFileKey,
                     timestamp: Date.now()
                 };
                 
-                const { fileKey, forceReload, showAllComments, immediateReload } = event.detail;
+                const { forceReload, showAllComments, immediateReload } = event.detail || {};
+                const fileKey = resolvedFileKey;
                 
                 // 优化：如果 store 中有评论数据，优先使用 store 的数据
                 if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0 && !forceReload) {
@@ -1140,8 +1428,8 @@ const componentOptions = {
                     } else {
                         // 过滤出该文件的评论
                         const filteredComments = storeComments.filter(c => {
-                            const commentFileKey = c.fileKey || (c.fileInfo && c.fileInfo.key);
-                            return commentFileKey === fileKey;
+                            const commentFileKey = c.fileKey || (c.fileInfo && (c.fileInfo.key || c.fileInfo.path));
+                            return this._isSameFileKey(commentFileKey, fileKey);
                         });
                         
                         if (filteredComments.length > 0) {
@@ -1163,10 +1451,10 @@ const componentOptions = {
                             console.log('[CommentPanel] 立即刷新评论列表（不使用防抖）');
                             // 强制重置加载状态，确保能够重新请求
                             this._isLoadingComments = false;
-                            this.immediateLoadComments();
+                            this.immediateLoadComments(true);
                         } else {
                             // 重新加载所有评论数据（不限制文件）
-                            this.debouncedLoadComments();
+                            this.debouncedLoadComments(true);
                         }
                     } else if (fileKey === null) {
                         // 如果fileKey为null但showAllComments不为true，清空评论数据
@@ -1179,10 +1467,10 @@ const componentOptions = {
                             console.log('[CommentPanel] 立即刷新评论列表（不使用防抖）');
                             // 强制重置加载状态，确保能够重新请求
                             this._isLoadingComments = false;
-                            this.immediateLoadComments();
+                            this.immediateLoadComments(true);
                         } else {
                             // 使用防抖重新加载评论数据
-                            this.debouncedLoadComments();
+                            this.debouncedLoadComments(true);
                         }
                     }
                 }
@@ -1233,15 +1521,6 @@ const componentOptions = {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
-
-
-
-
-
-
-
-
-
 
 
 

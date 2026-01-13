@@ -13,6 +13,116 @@ import {
     normalizeTreeNode
 } from '/src/views/aicr/utils/fileFieldNormalizer.js';
 
+export function buildFileTreeFromSessions(allSessions) {
+    const sessionsList = Array.isArray(allSessions) ? allSessions.filter(Boolean) : [];
+    const treeRoots = [];
+    const sessionPathMap = new Map();
+
+    const normalizeFolders = (tags) => {
+        if (!Array.isArray(tags)) return [];
+        return tags
+            .map(t => (t == null ? '' : String(t)).trim())
+            .filter(t => t.length > 0 && String(t).toLowerCase() !== 'default');
+    };
+
+    const sanitizeFileName = (name) => String(name || '').replace(/\//g, '-');
+
+    const sortable = sessionsList.map((s) => {
+        const folderParts = normalizeFolders(s.tags);
+        const folderKey = folderParts.join('/');
+        const baseName = sanitizeFileName(s.title || s.pageTitle || 'Untitled');
+        const stableId = String(s.id || s._id || s.key || '');
+        return { s, folderParts, folderKey, baseName, stableId };
+    });
+
+    sortable.sort((a, b) => {
+        const folderCmp = (a.folderKey || '').localeCompare(b.folderKey || '', 'zh-CN');
+        if (folderCmp !== 0) return folderCmp;
+        const nameCmp = (a.baseName || '').localeCompare(b.baseName || '', 'zh-CN');
+        if (nameCmp !== 0) return nameCmp;
+        return (a.stableId || '').localeCompare(b.stableId || '', 'zh-CN');
+    });
+
+    for (const item of sortable) {
+        const session = item.s;
+        const pathTags = item.folderParts;
+
+        let currentLevelChildren = treeRoots;
+        let currentPath = '';
+
+        for (const folderNameRaw of pathTags) {
+            const folderName = String(folderNameRaw || '').trim();
+            if (!folderName) continue;
+
+            currentPath = currentPath ? currentPath + '/' + folderName : folderName;
+            let folderNode = currentLevelChildren.find(c => c.name === folderName && c.type === 'folder');
+            if (!folderNode) {
+                folderNode = {
+                    key: currentPath,
+                    name: folderName,
+                    type: 'folder',
+                    children: []
+                };
+                currentLevelChildren.push(folderNode);
+            }
+            currentLevelChildren = folderNode.children;
+        }
+
+        const fileName = item.baseName;
+
+        let uniqueName = fileName;
+        let counter = 1;
+        while (currentLevelChildren.find(c => c.name === uniqueName && c.type === 'file')) {
+            uniqueName = `${fileName} (${counter})`;
+            counter++;
+        }
+
+        const fileKey = currentPath ? currentPath + '/' + uniqueName : uniqueName;
+        const sessionKey = session.key || session.id;
+
+        currentLevelChildren.push({
+            key: fileKey,
+            name: uniqueName,
+            type: 'file',
+            content: session.pageContent || '',
+            size: (session.pageContent || '').length,
+            lastModified: session.updatedAt || session.createdAt,
+            sessionKey: sessionKey
+        });
+
+        if (sessionKey != null) {
+            sessionPathMap.set(String(sessionKey), fileKey);
+        }
+    }
+
+    const sortNodes = (nodes) => {
+        if (!nodes) return;
+        nodes.sort((a, b) => {
+            if (a.type === b.type) return (a.name || '').localeCompare(b.name || '', 'zh-CN');
+            return a.type === 'folder' ? -1 : 1;
+        });
+        nodes.forEach(n => {
+            if (n.children) sortNodes(n.children);
+        });
+    };
+    sortNodes(treeRoots);
+
+    const allFolders = new Set();
+    const collectFolders = (nodes) => {
+        if (!nodes) return;
+        if (Array.isArray(nodes)) nodes.forEach(n => collectFolders(n));
+        else {
+            if (nodes.type === 'folder') {
+                allFolders.add(nodes.key);
+                if (nodes.children) collectFolders(nodes.children);
+            }
+        }
+    };
+    collectFolders(treeRoots);
+
+    return { treeRoots, expandedFolders: allFolders, sessionPathMap };
+ }
+
 /**
  * 统一的文件删除服务
  * 确保导入文件和新建文件的删除行为完全一致
@@ -347,6 +457,19 @@ export const createStore = () => {
     const selectedSessionTags = vueRef([]);
     const sessionSearchQuery = vueRef('');
     const sessionSidebarWidth = vueRef(320);
+
+    const activeSession = vueRef(null);
+    const activeSessionLoading = vueRef(false);
+    const activeSessionError = vueRef(null);
+    const sessionChatInput = vueRef('');
+    const sessionChatSending = vueRef(false);
+    const sessionChatAbortController = vueRef(null);
+    const sessionContextEnabled = vueRef(true);
+    const sessionContextEditorVisible = vueRef(false);
+    const sessionContextDraft = vueRef('');
+    const sessionContextMode = vueRef('edit');
+    const sessionContextUndoVisible = vueRef(false);
+    const sessionContextOptimizeBackup = vueRef('');
     
     // 标签过滤相关状态（参考 YiPet 项目）
     const tagFilterReverse = vueRef(false); // 是否反向过滤会话
@@ -389,95 +512,14 @@ export const createStore = () => {
                  return [];
             }
 
-            // Build tree - root is an array of top-level nodes
-            const treeRoots = [];
-            
-            allSessions.forEach(session => {
-                const tags = session.tags || [];
-                // Use all tags as path, filtering out 'default'
-                const pathTags = tags.filter(t => t && t.toLowerCase() !== 'default');
-                
-                let currentLevelChildren = treeRoots;
-                let currentPath = '';
-                
-                // Build directory structure
-                pathTags.forEach((folderName, index) => {
-                    if (!folderName) return;
-                    
-                    currentPath = currentPath ? currentPath + '/' + folderName : folderName;
-                    
-                    let folderNode = currentLevelChildren.find(c => c.name === folderName && c.type === 'folder');
-                    if (!folderNode) {
-                        folderNode = {
-                            key: currentPath,
-                            name: folderName,
-                            type: 'folder',
-                            children: []
-                        };
-                        currentLevelChildren.push(folderNode);
-                    }
-                    currentLevelChildren = folderNode.children;
-                });
-                
-                // Add file node
-                let fileName = session.title || session.pageTitle || 'Untitled';
-                // 替换文件名中的特殊字符，避免路径解析错误
-                fileName = fileName.replace(/\//g, '-');
-                
-                let uniqueName = fileName;
-                let counter = 1;
-                
-                // 处理重名文件
-                while (currentLevelChildren.find(c => c.name === uniqueName && c.type === 'file')) {
-                    uniqueName = `${fileName} (${counter})`;
-                    counter++;
-                }
-                
-                const fileKey = currentPath ? currentPath + '/' + uniqueName : uniqueName;
-                
-                currentLevelChildren.push({
-                    key: fileKey,
-                    name: uniqueName,
-                    type: 'file',
-                    content: session.pageContent || '',
-                    size: (session.pageContent || '').length,
-                    lastModified: session.updatedAt || session.createdAt,
-                    sessionKey: session.key || session.id // 保存会话标识，用于查找
-                });
-            });
-            
-            // Sort tree
-            const sortNodes = (nodes) => {
-                if (!nodes) return;
-                nodes.sort((a, b) => {
-                    if (a.type === b.type) return (a.name || '').localeCompare(b.name || '', 'zh-CN');
-                    return a.type === 'folder' ? -1 : 1;
-                });
-                nodes.forEach(n => {
-                    if (n.children) sortNodes(n.children);
-                });
-            };
-            sortNodes(treeRoots);
+            const { treeRoots, expandedFolders: folderSet } = buildFileTreeFromSessions(allSessions);
 
             fileTree.value = treeRoots;
             fileTreeDocKey.value = ''; 
             
             console.log(`[loadFileTree] 成功构建文件树, 包含 ${allSessions.length} 个文件`);
             
-            // Default expand
-             const allFolders = new Set();
-             const collectFolders = (nodes) => {
-                 if (!nodes) return;
-                 if (Array.isArray(nodes)) nodes.forEach(n => collectFolders(n));
-                 else {
-                     if (nodes.type === 'folder') {
-                         allFolders.add(nodes.key);
-                         if (nodes.children) collectFolders(nodes.children);
-                     }
-                 }
-             };
-             collectFolders(treeRoots);
-             expandedFolders.value = allFolders;
+            expandedFolders.value = folderSet;
 
             return fileTree.value;
         }, '文件树数据加载', (errorInfo) => {
@@ -2014,6 +2056,19 @@ export const createStore = () => {
         selectedSessionTags,
         sessionSearchQuery,
         sessionSidebarWidth,
+
+        activeSession,
+        activeSessionLoading,
+        activeSessionError,
+        sessionChatInput,
+        sessionChatSending,
+        sessionChatAbortController,
+        sessionContextEnabled,
+        sessionContextEditorVisible,
+        sessionContextDraft,
+        sessionContextMode,
+        sessionContextUndoVisible,
+        sessionContextOptimizeBackup,
         
         // 标签过滤相关状态
         tagFilterReverse,

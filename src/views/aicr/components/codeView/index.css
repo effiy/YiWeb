@@ -74,6 +74,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    -webkit-backdrop-filter: blur(5px);
     backdrop-filter: blur(5px);
     animation: fadeIn 0.3s ease;
 }
@@ -135,6 +136,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -325,7 +327,6 @@
     line-height: 1.8;
     color: var(--text-primary);
     text-align: justify;
-    hyphens: auto;
 }
 
 /* 列表样式 */
@@ -932,6 +933,7 @@
     background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
     color: white;
     cursor: pointer;
+    -webkit-user-select: none;
     user-select: none;
 }
 
@@ -1198,6 +1200,66 @@
     margin-top: 0;
 }
 
+/* 被评论代码展示区域样式 */
+.manual-quoted-code-section {
+    margin-bottom: 0;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 40%;
+    max-width: 40%;
+    min-width: 0;
+    min-height: 0;
+}
+
+.manual-quoted-code-label {
+    display: block;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.manual-quoted-code-label i {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.manual-quoted-code-content {
+    padding: 12px;
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    background: var(--bg-primary);
+}
+
+.manual-quoted-code-content pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+.manual-quoted-code-content pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    color: inherit;
+}
+
 /* 与 commentPanel 保持一致的引用代码编辑区外观 */
 .quoted-code-textarea {
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
@@ -1412,6 +1474,7 @@
     margin-right: 0;
     text-align: right;
     color: var(--text-muted);
+    -webkit-user-select: none;
     user-select: none;
     border-right: 1px solid var(--border-secondary);
     font-size: 12px;
@@ -1625,8 +1688,8 @@
 
 /* 评论选择菜单样式 */
 .comment-select-menu {
-    backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
 }
 
 .comment-select-item:hover {
@@ -1803,8 +1866,8 @@
     max-height: min(720px, 85vh);
     min-height: 80vh;
     z-index: 999999;
-    backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
     animation: modernDialogFadeIn 0.4s cubic-bezier(0.34, 1.26, 0.64, 1);
     display: flex;
     flex-direction: column;
@@ -1863,8 +1926,8 @@
     border-radius: 20px 20px 0 0;
     position: relative;
     flex-shrink: 0;
-    backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     box-shadow: 
         0 4px 20px rgba(79, 70, 229, 0.1),
         inset 0 1px 0 rgba(255, 255, 255, 0.05);
@@ -2337,8 +2400,8 @@
             rgba(51, 65, 85, 0.86) 50%,
             rgba(71, 85, 105, 0.83) 75%,
             rgba(100, 116, 139, 0.8) 100%);
-        backdrop-filter: blur(16px) saturate(160%);
         -webkit-backdrop-filter: blur(16px) saturate(160%);
+        backdrop-filter: blur(16px) saturate(160%);
     }
     
     .comment-detail-header.modern-header {
@@ -2350,8 +2413,8 @@
             rgba(6, 182, 212, 0.08) 25%,
             rgba(147, 197, 253, 0.06) 50%,
             rgba(255, 255, 255, 0.03) 100%);
-        backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
     }
     
     .header-main {
@@ -2423,8 +2486,8 @@
             rgba(51, 65, 85, 0.83) 50%,
             rgba(71, 85, 105, 0.8) 75%,
             rgba(100, 116, 139, 0.77) 100%);
-        backdrop-filter: blur(12px) saturate(140%);
         -webkit-backdrop-filter: blur(12px) saturate(140%);
+        backdrop-filter: blur(12px) saturate(140%);
     }
     
     .comment-detail-header.modern-header {
@@ -2434,8 +2497,8 @@
             rgba(6, 182, 212, 0.1) 25%,
             rgba(147, 197, 253, 0.08) 50%,
             rgba(255, 255, 255, 0.04) 100%);
-        backdrop-filter: blur(6px);
         -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
     }
     
     .comment-author-avatar.premium {
@@ -2523,8 +2586,8 @@
             rgba(51, 65, 85, 0.8) 50%,
             rgba(71, 85, 105, 0.77) 75%,
             rgba(100, 116, 139, 0.74) 100%);
-        backdrop-filter: blur(8px) saturate(120%);
         -webkit-backdrop-filter: blur(8px) saturate(120%);
+        backdrop-filter: blur(8px) saturate(120%);
     }
     
     .comment-detail-header.modern-header {
@@ -2535,8 +2598,7 @@
             rgba(147, 197, 253, 0.1) 50%,
             rgba(255, 255, 255, 0.05) 100%);
         -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
     }
     
     .comment-view-content.modern-content {
@@ -2748,9 +2810,6 @@
     max-height: calc(91vh - 120px); /* 与弹框高度联动，预留头部和底部空间 */
     overflow-y: auto;
     background: var(--bg-secondary);
-    /* 优化滚动条样式 */
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-primary) transparent;
 }
 
 .comment-detail-body::-webkit-scrollbar {
@@ -2791,7 +2850,6 @@
     overflow: hidden;
     background: var(--bg-glass);
     -webkit-backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
 }
 
@@ -2827,9 +2885,6 @@
     position: relative;
     /* 优化长代码的显示 */
     overflow-x: auto;
-    /* 添加代码区域的滚动条样式 */
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-primary) transparent;
     /* 统一 Tab 显示宽度为 4 个空格 */
     -moz-tab-size: 4;
     tab-size: 4;
@@ -2884,7 +2939,6 @@
     overflow: hidden;
     background: var(--bg-glass);
     -webkit-backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
 }
 
@@ -2916,9 +2970,6 @@
     border-radius: 0 0 8px 8px;
     /* 优化长代码的显示 */
     overflow-x: auto;
-    /* 添加代码区域的滚动条样式 */
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-primary) transparent;
 }
 
 .improvement-code::-webkit-scrollbar {
@@ -3170,10 +3221,10 @@
 
 .manual-improvement-body {
     padding: 16px;
-    overflow: auto;
+    overflow: hidden;
     display: flex;
-    flex-direction: column;
-    gap: 10px;
+    flex-direction: row;
+    gap: 16px;
     flex: 1;
     min-height: 0;
 }
@@ -3202,24 +3253,81 @@
 
 /* Markdown 输入 + 预览布局 */
 .md-input-preview {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
     height: 100%;
     min-height: 0;
 }
 
-/* 预览折叠时，改为单列布局并让输入区占满 */
-.md-input-preview.preview-collapsed {
-    grid-template-columns: 1fr;
+.md-editor-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 
-/* 折叠时强制隐藏预览列，并让输入列占据整行，增强兼容性 */
-.md-input-preview.preview-collapsed .md-preview {
-    display: none !important;
+.md-editor-panel .md-toolbar {
+    border: none;
+    border-radius: 0;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-primary);
 }
-.md-input-preview.preview-collapsed .md-input {
-    grid-column: 1 / -1;
+
+.md-view-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-primary);
+    margin-right: 8px;
+}
+
+.md-view-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.md-view-btn:hover {
+    color: var(--text-primary);
+    background: rgba(79,70,229,0.08);
+}
+
+.md-view-btn.active {
+    color: var(--text-primary);
+    background: rgba(79,70,229,0.14);
+    border: 1px solid rgba(79,70,229,0.35);
+}
+
+.md-editor-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+}
+
+.md-editor-panel .manual-improvement-input {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding: 12px;
+}
+
+.md-editor-panel .md-preview-body {
+    padding: 12px;
 }
 
 .md-input {
@@ -3332,8 +3440,8 @@
     white-space: pre-wrap;
     word-wrap: break-word;
     box-shadow: 0 2px 8px rgba(79,70,229,0.1);
-    backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
     position: relative;
 }
 
@@ -3374,7 +3482,7 @@
 
 @media (max-width: 900px) {
     .md-input-preview {
-        grid-template-columns: 1fr;
+        height: auto;
     }
 }
 
@@ -3554,9 +3662,6 @@
     max-height: 250px; /* 增加最大高度 */
     overflow-y: auto;
     background: var(--bg-secondary);
-    /* 优化滚动条样式 */
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-primary) transparent;
 }
 
 .preview-body::-webkit-scrollbar {
@@ -3594,7 +3699,6 @@
     border-radius: 8px;
     overflow: hidden;
     background: var(--bg-glass);
-    -webkit-backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
 }
@@ -3695,9 +3799,6 @@
     border-radius: 0 0 8px 8px;
     /* 优化长代码的显示 */
     overflow-x: auto;
-    /* 添加代码区域的滚动条样式 */
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-primary) transparent;
     /* 优化缩进显示 */
     -moz-tab-size: 4;
     tab-size: 4;
@@ -3730,7 +3831,6 @@
     overflow: hidden;
     background: var(--bg-glass);
     -webkit-backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
 }
 
@@ -3762,9 +3862,6 @@
     border-radius: 0 0 8px 8px;
     /* 优化长代码的显示 */
     overflow-x: auto;
-    /* 添加代码区域的滚动条样式 */
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-primary) transparent;
     /* 优化缩进显示 */
     -moz-tab-size: 4;
     tab-size: 4;
@@ -4150,8 +4247,8 @@
     opacity: 0; /* 默认透明 */
     transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     pointer-events: none; /* 默认不响应事件 */
-    backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
     padding: 8px 12px;
     border-radius: 16px;
     background: linear-gradient(135deg, 
@@ -4401,8 +4498,8 @@
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
-    backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
     border: 1px solid rgba(79, 70, 229, 0.2);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
     z-index: 1001;
@@ -4485,8 +4582,8 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.15);
     position: relative;
     overflow: hidden;
-    backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
     font-weight: 500;
     letter-spacing: 0.3px;
     white-space: nowrap;
@@ -4886,8 +4983,8 @@
         opacity: 1;
         pointer-events: auto;
         transform: translateY(0) scale(1);
-        backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
         padding: 10px 14px;
         border-radius: 18px;
     }
@@ -5669,6 +5766,7 @@
     border-color: var(--accent-hover, #5b21b6);
     background: linear-gradient(135deg, var(--accent-hover, #5b21b6) 0%, #7c3aed 100%); /* 悬停渐变 */
     color: white;
+    -webkit-backdrop-filter: blur(8px); /* 增强背景模糊 */
     backdrop-filter: blur(8px); /* 增强背景模糊 */
     animation: comment-marker-bounce 0.6s ease-out; /* 添加弹跳动画 */
 }
@@ -5850,6 +5948,7 @@
         0 8px 25px rgba(245, 158, 11, 0.6),
         0 4px 12px rgba(245, 158, 11, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     animation: none; /* 悬停时停止脉冲动画 */
 }
@@ -5871,6 +5970,7 @@
         0 8px 25px rgba(16, 185, 129, 0.6),
         0 4px 12px rgba(16, 185, 129, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
 }
 
@@ -5892,6 +5992,7 @@
         0 8px 25px rgba(239, 68, 68, 0.6),
         0 4px 12px rgba(239, 68, 68, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     opacity: 1; /* 悬停时恢复不透明 */
 }
@@ -6596,6 +6697,28 @@
     }
 }
 
+@media (max-width: 768px) {
+    .manual-improvement-body {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+    
+    .manual-quoted-code-section {
+        flex: none;
+        width: 100%;
+        max-width: none;
+        max-height: 30vh;
+        margin-bottom: 16px;
+    }
 
+    .md-input-preview {
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        overflow: visible;
+    }
 
-
+    .md-editor-body {
+        min-height: 300px;
+    }
+}

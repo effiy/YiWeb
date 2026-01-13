@@ -14,6 +14,22 @@ const componentOptions = {
                 type: Object,
                 default: null
             },
+            viewMode: {
+                type: String,
+                default: 'tree'
+            },
+            activeSession: {
+                type: Object,
+                default: null
+            },
+            activeSessionLoading: {
+                type: Boolean,
+                default: false
+            },
+            activeSessionError: {
+                type: String,
+                default: ''
+            },
             loading: {
                 type: Boolean,
                 default: false
@@ -31,7 +47,7 @@ const componentOptions = {
                 default: false
             }
         },
-        emits: ['comment-delete', 'comment-resolve', 'comment-reopen', 'reload-comments'],
+        emits: ['comment-delete', 'comment-resolve', 'comment-reopen', 'reload-comments', 'session-chat-send', 'session-context-save'],
         // 错误边界处理
         errorCaptured(error, instance, info) {
             console.error('[CodeView] 捕获到子组件错误:', error, info);
@@ -58,7 +74,8 @@ const componentOptions = {
                 // 划词评论与手动Markdown弹框
                 showManualImprovementModal: false,
                 manualCommentText: '',
-                manualPreviewCollapsed: false,
+                manualQuotedCode: '',
+                manualEditorView: 'edit',
                 manualMaxLength: 4000,
                 manualCommentError: '',
                 manualSubmitting: false,
@@ -125,9 +142,36 @@ const componentOptions = {
                     url: '',
                     alt: ''
                 },
+
+                sessionChatInputLocal: '',
+                sessionContextEnabledLocal: true,
+                sessionContextEditorVisibleLocal: false,
+                sessionContextDraftLocal: '',
+                sessionContextEditorViewLocal: 'edit',
             };
         },
         watch: {
+            activeSession: {
+                handler(newSession, oldSession) {
+                    if (newSession !== oldSession) {
+                        this.sessionChatInputLocal = '';
+                        this.sessionContextEditorVisibleLocal = false;
+                        this.sessionContextEditorViewLocal = 'edit';
+                        this.sessionContextDraftLocal = String(newSession?.pageContent || '');
+                        try {
+                            const saved = localStorage.getItem('aicr_context_switch_enabled');
+                            if (saved === '0') this.sessionContextEnabledLocal = false;
+                            if (saved === '1') this.sessionContextEnabledLocal = true;
+                        } catch (_) {}
+                        this.$nextTick(() => {
+                            const el = document.getElementById('pet-chat-messages');
+                            if (el) el.scrollTop = el.scrollHeight;
+                        });
+                    }
+                },
+                immediate: true,
+                deep: false
+            },
             // 监听文件变化，清除高亮并处理文件加载
             file: {
                 handler(newFile, oldFile) {
@@ -1343,9 +1387,25 @@ const componentOptions = {
                     } else {
                         // 降级到传统复制方法
                         this.fallbackCopyToClipboard(code);
-                    }
                 }
+            }
+        },
+        computed: {
+            sessionMessages() {
+                const msgs = this.activeSession && Array.isArray(this.activeSession.messages) ? this.activeSession.messages : [];
+                return msgs
+                    .map(m => ({
+                        type: m?.type === 'pet' ? 'pet' : 'user',
+                        content: String(m?.content || ''),
+                        timestamp: typeof m?.timestamp === 'number' ? m.timestamp : Date.now(),
+                        imageDataUrl: m?.imageDataUrl
+                    }))
+                    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
             },
+            canSendSessionChat() {
+                return !!(this.activeSession && String(this.sessionChatInputLocal || '').trim());
+            }
+        },
             
             // 降级复制方法
             fallbackCopyToClipboard(text) {
@@ -1555,7 +1615,12 @@ const componentOptions = {
                     this.isEditingFile = true;
                     this.$nextTick(() => {
                         const ta = this.$el && this.$el.querySelector('.edit-textarea');
-                        if (ta) ta.focus();
+                        if (ta) {
+                            ta.focus();
+                            // 光标定位在文件内容的最前面
+                            ta.setSelectionRange(0, 0);
+                            ta.scrollTop = 0;
+                        }
                     });
                 } catch (_) {}
             },
@@ -2724,6 +2789,8 @@ const componentOptions = {
             openManualImprovementModal() {
                 this.showManualImprovementModal = true;
                 this.manualCommentError = '';
+                this.manualQuotedCode = this.lastSelectionText || '';
+                this.manualEditorView = 'edit';
                 this.$nextTick(() => {
                     try {
                         const ta = this.$el && this.$el.querySelector('.manual-improvement-input');
@@ -2734,14 +2801,26 @@ const componentOptions = {
             closeManualImprovementModal() {
                 this.showManualImprovementModal = false;
                 this.manualCommentError = '';
+                this.manualQuotedCode = '';
                 // 清空选择状态，确保下次打开时重新选择
                 this.lastSelectionText = '';
                 this.lastSelectionRange = null;
             },
-            toggleManualPreviewCollapse() {
-                this.manualPreviewCollapsed = !this.manualPreviewCollapsed;
+            setManualEditorView(view) {
+                this.manualEditorView = view === 'preview' ? 'preview' : 'edit';
+                if (this.manualEditorView === 'edit') {
+                    this.$nextTick(() => {
+                        try {
+                            const ta = this.$el && this.$el.querySelector('.manual-improvement-input');
+                            if (ta) ta.focus();
+                        } catch (_) {}
+                    });
+                }
             },
             insertMarkdown(type) {
+                if (this.manualEditorView !== 'edit') {
+                    this.manualEditorView = 'edit';
+                }
                 const textarea = this.$el && this.$el.querySelector('.manual-improvement-input');
                 if (!textarea) return;
                 const start = textarea.selectionStart || 0;
@@ -2809,7 +2888,7 @@ const componentOptions = {
                     // text 字段存储引用的代码内容，content 字段存储评论内容
                     let comment = {
                         content,
-                        text: this.lastSelectionText || '', // 引用的代码文本存储在 text 中
+                        text: this.manualQuotedCode || this.lastSelectionText || '', // 引用的代码文本存储在 text 中
                         rangeInfo: this.lastSelectionRange ? { ...this.lastSelectionRange } : null, // 复制一份用于评论定位
                         fileKey: this.file ? (this.file.key || this.file.id || this.file.path || this.file.name) : undefined,
                         author: '手动评论',
@@ -2817,6 +2896,8 @@ const componentOptions = {
                         status: 'pending',
                         timestamp: Date.now() // 使用毫秒数
                     };
+
+                    console.log('[CodeView] 准备提交评论，文件Key:', comment.fileKey, '文件对象:', this.file);
                     
                     // 规范化评论数据，确保字段一致性
                     if (window.aicrStore && window.aicrStore.normalizeComment) {
@@ -2850,6 +2931,11 @@ const componentOptions = {
                     const { showSuccess } = await import('/src/utils/message.js');
                     showSuccess('评论添加成功');
 
+                    // 通知评论面板添加新评论（乐观更新）
+                    window.dispatchEvent(new CustomEvent('addNewComment', {
+                        detail: { comment }
+                    }));
+
                     // 通知评论面板刷新
                     window.dispatchEvent(new CustomEvent('reloadComments', { 
                         detail: { 
@@ -2878,6 +2964,7 @@ const componentOptions = {
                     this.closeManualImprovementModal();
                     this.hideSelectionButton();
                     this.manualCommentText = '';
+                    this.manualQuotedCode = '';
                     // 清空选择状态，避免下次评论时重复使用
                     this.lastSelectionText = '';
                     this.lastSelectionRange = null;
@@ -4417,8 +4504,6 @@ const componentOptions = {
         }));
     }
 })();
-
-
 
 
 

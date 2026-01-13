@@ -18,14 +18,9 @@ import {
     extractFileKeyFromFullPath
 } from '/src/views/aicr/utils/fileFieldNormalizer.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
+import { getFileDeleteService, buildFileTreeFromSessions } from './store.js';
 
 export const useMethods = (store) => {
-    // 添加调试信息
-    console.log('[useMethods] store对象:', store);
-    console.log('[useMethods] store.loadSessions 类型:', typeof store?.loadSessions);
-    console.log('[useMethods] store 对象键:', store ? Object.keys(store).slice(0, 20) : 'store is null');
-    console.log('[useMethods] searchQuery状态:', store.searchQuery);
-    
     const { 
         fileTree,
         comments,
@@ -33,7 +28,7 @@ export const useMethods = (store) => {
         expandedFolders,
         newComment,
         setSelectedKey,
-        normalizeKey, // 新增：统一的文件Key规范化函数
+        normalizeKey,
         toggleFolder,
         setNewComment,
         toggleSidebar,
@@ -61,17 +56,24 @@ export const useMethods = (store) => {
         
         // 会话批量选择相关状态
         sessionBatchMode,
-        selectedSessionKeys
+        selectedSessionKeys,
+
+        activeSession,
+        activeSessionLoading,
+        activeSessionError,
+        sessionChatInput,
+        sessionChatSending,
+        sessionChatAbortController,
+        sessionContextEnabled,
+        sessionContextEditorVisible,
+        sessionContextDraft,
+        sessionContextMode,
+        sessionContextUndoVisible,
+        sessionContextOptimizeBackup
     } = store;
 
     // 搜索相关状态
     let searchTimeout = null;
-    
-    // 添加searchQuery状态检查
-    console.log('[useMethods] 解构后的searchQuery:', searchQuery);
-    if (!searchQuery) {
-        console.warn('[useMethods] searchQuery未在store中找到');
-    }
 
     /**
      * 处理搜索输入
@@ -317,80 +319,6 @@ export const useMethods = (store) => {
                 store.tagFilterSearchKeyword.value = keyword || '';
             }
         }, '处理标签搜索');
-    };
-
-    const handleSessionSelect = async (session) => {
-        return safeExecute(async () => {
-            if (!session) return;
-            
-            console.log('[handleSessionSelect] 选中会话:', session.title);
-            
-            // 1. 尝试通过 sessionKey 在文件树中直接查找节点 (支持重名处理后的节点)
-            const targetSessionKey = session.key || session.id;
-            let fileKey = null;
-            
-            // 递归查找 helper
-            const findNodeBySessionKey = (nodes) => {
-                if (!nodes) return null;
-                const list = Array.isArray(nodes) ? nodes : [nodes];
-                for (const node of list) {
-                    if (node.type === 'file' && node.sessionKey === targetSessionKey) return node;
-                    if (node.children) {
-                        const found = findNodeBySessionKey(node.children);
-                        if (found) return found;
-                    }
-                }
-                return null;
-            };
-
-            const foundNode = findNodeBySessionKey(store.fileTree.value);
-            
-            if (foundNode) {
-                fileKey = foundNode.key;
-                console.log('[handleSessionSelect] 通过 sessionKey 找到文件Key:', fileKey);
-            } else {
-                // 回退逻辑：手动构建路径 (可能无法处理重名文件)
-                console.warn('[handleSessionSelect] 未找到对应文件节点，使用路径构建回退');
-                const tags = session.tags || [];
-                let currentPath = '';
-                tags.forEach((folderName) => {
-                    if (!folderName || (folderName.toLowerCase && folderName.toLowerCase() === 'default')) return;
-                    currentPath = currentPath ? currentPath + '/' + folderName : folderName;
-                });
-                
-                let fileName = session.title || session.pageTitle || 'Untitled';
-                fileName = fileName.replace(/\//g, '-');
-                fileKey = currentPath ? currentPath + '/' + fileName : fileName;
-            }
-            
-            console.log('[handleSessionSelect] 最终文件Key:', fileKey);
-            
-            // 2. 设置选中Key
-            if (setSelectedKey) {
-                // 如果点击的是当前选中的会话（对应的文件），则取消选中
-                if (selectedKey.value === fileKey) {
-                    console.log('[handleSessionSelect] 取消选中会话对应的文件:', fileKey);
-                    setSelectedKey(null);
-                    return;
-                }
-                setSelectedKey(fileKey);
-            }
-            
-            // 3. 加载文件内容
-            if (loadFileByKey) {
-                try {
-                    await loadFileByKey(fileKey);
-                    // 确保代码视图更新
-                    if (store.currentFile) {
-                        // 如果 store 中没有直接暴露 currentFile，可能需要依赖 loadFileByKey 的副作用
-                        // 或者触发一次 refreshData
-                    }
-                } catch (e) {
-                    console.error('[handleSessionSelect] 加载文件失败:', e);
-                }
-            }
-            
-        }, '处理会话选择');
     };
 
     /**
@@ -2388,6 +2316,120 @@ export const useMethods = (store) => {
      * 版本选择器已改为select元素，不再需要切换方法
      */
 
+    const selectSessionForChat = async (session, { toggleActive = true, openContextEditor = false } = {}) => {
+        if (!session || (!session.key && !session.id)) {
+            if (window.showError) window.showError('无效的会话数据');
+            return;
+        }
+
+        const targetSessionKey = String(session.key || session.id);
+
+        if (
+            toggleActive &&
+            activeSession?.value &&
+            String(activeSession.value.key || activeSession.value.id || '') === targetSessionKey
+        ) {
+            if (setSelectedKey) setSelectedKey(null);
+            if (activeSession) activeSession.value = null;
+            if (sessionChatInput) sessionChatInput.value = '';
+            if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
+            if (sessionContextDraft) sessionContextDraft.value = '';
+            return;
+        }
+
+        let fileKey = null;
+        const findNodeBySessionKey = (nodes) => {
+            if (!nodes) return null;
+            const list = Array.isArray(nodes) ? nodes : [nodes];
+            for (const node of list) {
+                if (node && node.type === 'file' && String(node.sessionKey || '') === targetSessionKey) return node;
+                if (node && node.children) {
+                    const found = findNodeBySessionKey(node.children);
+                    if (found) return found;
+                }
+            }
+            return null;
+        };
+
+        const foundNode = findNodeBySessionKey(store.fileTree?.value);
+        if (foundNode) {
+            fileKey = foundNode.key;
+        } else {
+            const tags = Array.isArray(session.tags) ? session.tags : [];
+            let currentPath = '';
+            tags.forEach((folderName) => {
+                if (!folderName || (folderName.toLowerCase && folderName.toLowerCase() === 'default')) return;
+                currentPath = currentPath ? currentPath + '/' + folderName : folderName;
+            });
+            let fileName = session.title || session.pageTitle || 'Untitled';
+            fileName = String(fileName).replace(/\//g, '-');
+            fileKey = currentPath ? currentPath + '/' + fileName : fileName;
+        }
+
+        if (setSelectedKey) {
+            setSelectedKey(fileKey);
+        } else if (selectedKey) {
+            selectedKey.value = fileKey;
+        }
+
+        if (activeSessionLoading) activeSessionLoading.value = true;
+        if (activeSessionError) activeSessionError.value = null;
+
+        try {
+            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+            const sessionSync = getSessionSyncService();
+            const fullSession =
+                (await sessionSync.getSession(targetSessionKey)) ||
+                (session.id ? await sessionSync.getSession(String(session.id)) : null) ||
+                (fileKey ? await sessionSync.getSession(String(fileKey)) : null);
+
+            const normalized = fullSession || session;
+            if (!normalized.messages || !Array.isArray(normalized.messages)) normalized.messages = [];
+            normalized.messages = normalized.messages
+                .map(m => ({
+                    type: m?.type === 'pet' ? 'pet' : 'user',
+                    content: String(m?.content || ''),
+                    timestamp: typeof m?.timestamp === 'number' ? m.timestamp : Date.now(),
+                    imageDataUrl: m?.imageDataUrl
+                }))
+                .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+            if (activeSession) activeSession.value = normalized;
+
+            if (sessionContextEnabled) {
+                try {
+                    const saved = localStorage.getItem('aicr_context_switch_enabled');
+                    if (saved === '0') sessionContextEnabled.value = false;
+                    if (saved === '1') sessionContextEnabled.value = true;
+                } catch (_) {}
+            }
+
+            if (sessionContextMode) sessionContextMode.value = openContextEditor ? 'split' : (sessionContextMode.value || 'edit');
+
+            let staticFile = null;
+            if (fileKey && typeof loadFileByKey === 'function') {
+                staticFile = await loadFileByKey(fileKey);
+            }
+            const staticContent = staticFile && typeof staticFile.content === 'string' ? staticFile.content : '';
+            if (sessionContextDraft) sessionContextDraft.value = String(staticContent || '');
+            if (activeSession?.value) {
+                activeSession.value = { ...activeSession.value, pageContent: String(staticContent || '') };
+            }
+            if (sessionContextEditorVisible) sessionContextEditorVisible.value = !!openContextEditor;
+            if (sessionChatInput) sessionChatInput.value = '';
+
+            setTimeout(() => {
+                const el = document.getElementById('pet-chat-messages');
+                if (el) el.scrollTop = el.scrollHeight;
+            }, 0);
+        } catch (e) {
+            if (activeSessionError) activeSessionError.value = e?.message || '加载会话失败';
+            if (window.showError) window.showError(activeSessionError?.value || '加载会话失败');
+        } finally {
+            if (activeSessionLoading) activeSessionLoading.value = false;
+        }
+    };
+
     return {
         openLink,
         handleFileSelect,
@@ -2465,56 +2507,458 @@ export const useMethods = (store) => {
         
         handleSessionSelect: async (session) => {
             return safeExecute(async () => {
-                console.log('[handleSessionSelect] 选择会话:', session);
-                
-                if (!session || (!session.key && !session.id)) {
-                    console.warn('[handleSessionSelect] 无效的会话数据');
-                    if (window.showError) {
-                        window.showError('无效的会话数据');
+                await selectSessionForChat(session, { toggleActive: true, openContextEditor: false });
+            }, '选择会话');
+        },
+
+        sessionChatMessages: (session) => {
+            try {
+                const msgs = Array.isArray(session?.messages) ? session.messages : [];
+                return [...msgs]
+                    .map(m => ({
+                        type: m?.type === 'pet' ? 'pet' : 'user',
+                        content: String(m?.content || ''),
+                        timestamp: typeof m?.timestamp === 'number' ? m.timestamp : Date.now(),
+                        imageDataUrl: m?.imageDataUrl
+                    }))
+                    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            } catch (_) {
+                return [];
+            }
+        },
+
+        renderSessionChatMarkdown: (text) => {
+            try {
+                const raw = text == null ? '' : String(text);
+                if (!raw) return '';
+                if (typeof window.marked === 'undefined') {
+                    return raw
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/\n/g, '<br/>');
+                }
+                try {
+                    window.marked.setOptions({
+                        breaks: true,
+                        gfm: true
+                    });
+                } catch (_) {}
+                return window.marked.parse(raw);
+            } catch (_) {
+                return '';
+            }
+        },
+
+        setSessionChatInput: (v) => {
+            if (!sessionChatInput) return;
+            sessionChatInput.value = String(v ?? '');
+        },
+
+        onSessionChatInput: (e) => {
+            try {
+                const v = e && e.target ? e.target.value : '';
+                if (sessionChatInput) sessionChatInput.value = String(v ?? '');
+                const el = e && e.target;
+                if (el && el.style) {
+                    el.style.height = 'auto';
+                    const min = 60;
+                    const max = 220;
+                    const next = Math.max(min, Math.min(max, el.scrollHeight || min));
+                    el.style.height = `${next}px`;
+                }
+                setTimeout(() => {
+                    try {
+                        const box = document.getElementById('pet-chat-messages');
+                        if (box) box.scrollTop = box.scrollHeight;
+                    } catch (_) {}
+                }, 0);
+            } catch (_) {}
+        },
+
+        clearSessionChatInput: () => {
+            if (!sessionChatInput) return;
+            sessionChatInput.value = '';
+        },
+
+        toggleSessionContextSwitch: () => {
+            if (!sessionContextEnabled) return;
+            sessionContextEnabled.value = !sessionContextEnabled.value;
+            try {
+                localStorage.setItem('aicr_context_switch_enabled', sessionContextEnabled.value ? '1' : '0');
+            } catch (_) {}
+        },
+
+        setSessionContextEnabled: (enabled) => {
+            if (!sessionContextEnabled) return;
+            sessionContextEnabled.value = !!enabled;
+            try {
+                localStorage.setItem('aicr_context_switch_enabled', sessionContextEnabled.value ? '1' : '0');
+            } catch (_) {}
+        },
+
+        openSessionContextEditor: async () => {
+            if (sessionContextMode) sessionContextMode.value = 'split';
+            if (sessionContextOptimizeBackup) sessionContextOptimizeBackup.value = '';
+            if (sessionContextUndoVisible) sessionContextUndoVisible.value = false;
+
+            const key = selectedKey?.value;
+            let staticFile = null;
+            if (key && typeof loadFileByKey === 'function') {
+                staticFile = await loadFileByKey(key);
+            }
+            const staticContent = staticFile && typeof staticFile.content === 'string' ? staticFile.content : '';
+            if (sessionContextDraft) sessionContextDraft.value = String(staticContent || '');
+            if (activeSession?.value) {
+                activeSession.value = { ...activeSession.value, pageContent: String(staticContent || '') };
+            }
+            if (sessionContextEditorVisible) sessionContextEditorVisible.value = true;
+        },
+
+        openSessionFaq: () => {
+            console.log('Open Session FAQ');
+            alert('常见问题功能开发中...');
+        },
+
+        openSessionSettings: () => {
+            console.log('Open Session Settings');
+            alert('机器人设置功能开发中...');
+        },
+
+        closeSessionContextEditor: () => {
+            if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
+            if (sessionContextUndoVisible) sessionContextUndoVisible.value = false;
+            if (sessionContextOptimizeBackup) sessionContextOptimizeBackup.value = '';
+        },
+
+        setSessionContextMode: (mode) => {
+            if (!sessionContextMode) return;
+            const v = String(mode || '').toLowerCase();
+            sessionContextMode.value = v === 'preview' ? 'preview' : (v === 'split' ? 'split' : 'edit');
+        },
+
+        setSessionContextDraft: (v) => {
+            if (!sessionContextDraft) return;
+            sessionContextDraft.value = String(v ?? '');
+        },
+
+        copySessionContextDraft: async () => {
+            return safeExecute(async () => {
+                const content = String(sessionContextDraft?.value ?? '').trim();
+                if (!content) return;
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    await navigator.clipboard.writeText(content);
+                    if (window.showSuccess) window.showSuccess('已复制');
+                    return;
+                }
+                const ta = document.createElement('textarea');
+                ta.value = content;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                ta.style.top = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                if (window.showSuccess) window.showSuccess('已复制');
+            }, '复制页面上下文');
+        },
+
+        optimizeSessionContextDraft: async () => {
+            return safeExecute(async () => {
+                if (!sessionContextDraft) return;
+                const raw = String(sessionContextDraft.value ?? '');
+                if (!raw.trim()) return;
+
+                if (sessionContextOptimizeBackup) sessionContextOptimizeBackup.value = raw;
+                if (sessionContextUndoVisible) sessionContextUndoVisible.value = true;
+
+                const normalized = raw
+                    .replace(/\r\n/g, '\n')
+                    .replace(/[ \t]+\n/g, '\n')
+                    .replace(/\n{3,}/g, '\n\n')
+                    .trim();
+
+                sessionContextDraft.value = normalized;
+                if (window.showSuccess) window.showSuccess('已优化');
+            }, '智能优化页面上下文');
+        },
+
+        undoOptimizeSessionContextDraft: async () => {
+            return safeExecute(async () => {
+                const backup = String(sessionContextOptimizeBackup?.value ?? '');
+                if (!backup) return;
+                if (sessionContextDraft) sessionContextDraft.value = backup;
+                if (sessionContextUndoVisible) sessionContextUndoVisible.value = false;
+                if (sessionContextOptimizeBackup) sessionContextOptimizeBackup.value = '';
+                if (window.showSuccess) window.showSuccess('已撤销');
+            }, '撤销优化');
+        },
+
+        clearSessionContext: async () => {
+            return safeExecute(async () => {
+                if (sessionContextDraft) sessionContextDraft.value = '';
+                if (sessionContextUndoVisible) sessionContextUndoVisible.value = false;
+                if (sessionContextOptimizeBackup) sessionContextOptimizeBackup.value = '';
+
+                const key = selectedKey?.value;
+                const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL))
+                    ? String(window.API_URL).replace(/\/+$/, '')
+                    : '';
+
+                if (apiBase && key) {
+                    const file = Array.isArray(files?.value)
+                        ? files.value.find(f => f && (f.key === key || f.path === key))
+                        : null;
+                    const path = String(file?.path || file?.key || key || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                    const cleanPath = path.startsWith('static/') ? path.slice(7) : path;
+                    await fetch(`${apiBase}/write-file`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ target_file: cleanPath, content: '', is_base64: false })
+                    }).catch(() => {});
+                }
+
+                if (activeSession?.value) {
+                    activeSession.value = { ...activeSession.value, pageContent: '' };
+                }
+            }, '清除页面上下文');
+        },
+
+        saveSessionContext: async () => {
+            return safeExecute(async () => {
+                const content = String(sessionContextDraft?.value ?? '');
+                const key = selectedKey?.value;
+
+                const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL))
+                    ? String(window.API_URL).replace(/\/+$/, '')
+                    : '';
+
+                if (apiBase && key) {
+                    const file = Array.isArray(files?.value)
+                        ? files.value.find(f => f && (f.key === key || f.path === key))
+                        : null;
+                    const path = String(file?.path || file?.key || key || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                    const cleanPath = path.startsWith('static/') ? path.slice(7) : path;
+
+                    const res = await fetch(`${apiBase}/write-file`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ target_file: cleanPath, content, is_base64: false })
+                    });
+                    if (!res.ok) {
+                        const errorData = await res.json().catch(() => ({}));
+                        throw new Error(errorData.message || `保存失败: ${res.status}`);
+                    }
+                    const result = await res.json().catch(() => ({}));
+                    if (result && result.code != null && result.code !== 0 && result.code !== 200) {
+                        throw new Error(result.message || '保存失败');
+                    }
+
+                    if (Array.isArray(files?.value)) {
+                        const idx = files.value.findIndex(f => f && (f.key === key || f.path === key));
+                        if (idx >= 0) {
+                            files.value[idx] = { ...files.value[idx], content, __fromStatic: true };
+                        }
+                    }
+                }
+
+                if (activeSession?.value) {
+                    const prev = activeSession.value;
+                    activeSession.value = { ...prev, pageContent: content, updatedAt: Date.now(), lastAccessTime: Date.now() };
+                }
+
+                if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
+                if (sessionContextUndoVisible) sessionContextUndoVisible.value = false;
+                if (sessionContextOptimizeBackup) sessionContextOptimizeBackup.value = '';
+                if (window.showSuccess) window.showSuccess('已保存');
+            }, '保存页面上下文');
+        },
+
+        onSessionChatKeydown: (e) => {
+            try {
+                if (!e) return;
+                if (e.isComposing) return;
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (typeof window.aicrApp?.sendSessionChatMessage === 'function') {
+                        window.aicrApp.sendSessionChatMessage();
                     }
                     return;
                 }
-
-                // 1. 构建文件Key (参考 loadFileTree 中的逻辑)
-                // 注意：必须与 store.js 中的 loadFileTree 逻辑保持一致
-                const tags = session.tags || [];
-                let currentPath = '';
-                
-                // 构建目录路径
-                tags.forEach((folderName) => {
-                    if (!folderName) return;
-                    currentPath = currentPath ? currentPath + '/' + folderName : folderName;
-                });
-                
-                // 构建文件名
-                const fileName = session.title || session.pageTitle || 'Untitled';
-                const fileKey = currentPath ? currentPath + '/' + fileName : fileName;
-                
-                console.log('[handleSessionSelect] 构建文件Key:', fileKey);
-                
-                // 2. 更新选中状态
-                if (selectedKey) {
-                    selectedKey.value = fileKey;
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    if (sessionChatInput) sessionChatInput.value = '';
+                    try {
+                        const el = document.getElementById('pet-chat-input');
+                        if (el && el.style) {
+                            el.style.height = '60px';
+                            el.blur();
+                        }
+                    } catch (_) {}
                 }
-                
-                // 3. 加载文件内容
-                // 这将触发 CodeView 显示对应的静态文件内容
-                if (loadFileByKey) {
-                    await loadFileByKey(fileKey);
-                }
-                
-                // 4. 如果会话有 URL，且不是内部协议，可以选择性打开
-                // 目前为了满足"显示对应的静态文件内容"的需求，主要聚焦于加载内容
-                // URL 打开逻辑保留但作为次要操作，或者由用户通过界面按钮触发
-                if (session.url && !session.url.startsWith('blank-session://') && !session.url.startsWith('aicr-session://')) {
-                    console.log('[handleSessionSelect] 会话包含外部URL:', session.url);
-                }
-
-                if (window.showSuccess) {
-                   // window.showSuccess(`已选择会话：${session.pageTitle || session.title || '未命名会话'}`);
-                }
-            }, '选择会话');
+            } catch (_) {}
         },
+
+        abortSessionChatRequest: () => {
+            try {
+                const controller = sessionChatAbortController?.value;
+                if (controller && typeof controller.abort === 'function') {
+                    controller.abort();
+                }
+            } catch (_) {}
+        },
+
+        copySessionChatMessage: async (text) => {
+            return safeExecute(async () => {
+                const content = String(text ?? '').trim();
+                if (!content) return;
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    await navigator.clipboard.writeText(content);
+                    if (window.showSuccess) window.showSuccess('已复制');
+                    return;
+                }
+                const ta = document.createElement('textarea');
+                ta.value = content;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                ta.style.top = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                if (window.showSuccess) window.showSuccess('已复制');
+            }, '复制消息');
+        },
+
+        sendSessionChatMessage: async () => {
+            return safeExecute(async () => {
+                if (!activeSession?.value) return;
+                if (sessionChatSending?.value) return;
+                const text = String(sessionChatInput?.value ?? '').trim();
+                if (!text) return;
+
+                const now = Date.now();
+                const userMessage = { type: 'user', content: text, timestamp: now };
+                const petMessage = { type: 'pet', content: '', timestamp: now + 1 };
+
+                const prevSession = activeSession.value;
+                const prevMessages = Array.isArray(prevSession.messages) ? prevSession.messages : [];
+                const nextSession = {
+                    ...prevSession,
+                    messages: [...prevMessages, userMessage, petMessage],
+                    updatedAt: now,
+                    lastAccessTime: now
+                };
+
+                activeSession.value = nextSession;
+                if (sessionChatInput) sessionChatInput.value = '';
+
+                const scrollToBottom = () => {
+                    try {
+                        const el = document.getElementById('pet-chat-messages');
+                        if (el) el.scrollTop = el.scrollHeight;
+                    } catch (_) {}
+                };
+                setTimeout(scrollToBottom, 0);
+
+                const buildHistory = () => {
+                    const msgs = Array.isArray(nextSession.messages) ? nextSession.messages : [];
+                    const cleaned = msgs
+                        .filter(m => m && m.content != null && String(m.content).trim())
+                        .slice(-30)
+                        .map(m => {
+                            const role = m.type === 'pet' ? '助手' : '用户';
+                            const content = String(m.content || '').trim();
+                            return `${role}：${content}`;
+                        })
+                        .join('\n\n');
+                    return cleaned;
+                };
+
+                const pageContent = String(sessionContextDraft?.value ?? nextSession.pageContent ?? '').trim();
+                const includeContext = !!sessionContextEnabled?.value;
+                const history = buildHistory();
+                const fromSystem = '你是一个专业、简洁且可靠的 AI 助手。';
+                let fromUser = '';
+                if (includeContext && pageContent) {
+                    fromUser += `## 页面上下文\n\n${pageContent}\n\n`;
+                }
+                if (history) {
+                    fromUser += `## 会话历史\n\n${history}\n\n`;
+                }
+                fromUser += `## 当前消息\n\n${text}`;
+
+                const { streamPrompt } = await import('/src/services/modules/crud.js');
+                const promptUrl = `${(window.API_URL || '').replace(/\/$/, '')}/prompt`;
+
+                let accumulated = '';
+                if (sessionChatSending) sessionChatSending.value = true;
+                const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                if (sessionChatAbortController) sessionChatAbortController.value = controller;
+
+                try {
+                    await streamPrompt(
+                        promptUrl,
+                        { fromSystem, fromUser },
+                        controller ? { signal: controller.signal } : {},
+                        (chunk) => {
+                            accumulated += String(chunk || '');
+                            try {
+                                const s = activeSession.value;
+                                const msgs = Array.isArray(s.messages) ? [...s.messages] : [];
+                                const lastIdx = msgs.length - 1;
+                                if (lastIdx >= 0) {
+                                    const last = msgs[lastIdx];
+                                    if (last && last.type === 'pet' && last.timestamp === petMessage.timestamp) {
+                                        msgs[lastIdx] = { ...last, content: accumulated };
+                                        activeSession.value = { ...s, messages: msgs };
+                                        scrollToBottom();
+                                    }
+                                }
+                            } catch (_) {}
+                        }
+                    );
+                } catch (e) {
+                    const aborted =
+                        (e && e.name === 'AbortError') ||
+                        (e && typeof e.message === 'string' && e.message.toLowerCase().includes('aborted'));
+                    if (!aborted) throw e;
+                } finally {
+                    if (sessionChatSending) sessionChatSending.value = false;
+                    if (sessionChatAbortController) sessionChatAbortController.value = null;
+                }
+
+                const finalSession = (() => {
+                    const s = activeSession.value || nextSession;
+                    const msgs = Array.isArray(s.messages) ? [...s.messages] : [];
+                    const lastIdx = msgs.length - 1;
+                    if (lastIdx >= 0) {
+                        const last = msgs[lastIdx];
+                        if (last && last.type === 'pet' && last.timestamp === petMessage.timestamp) {
+                            msgs[lastIdx] = { ...last, content: String(accumulated || '').trim() };
+                        }
+                    }
+                    return { ...s, messages: msgs, pageContent: String(sessionContextDraft?.value ?? s.pageContent ?? '') };
+                })();
+                activeSession.value = finalSession;
+
+                const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                const sessionSync = getSessionSyncService();
+                await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
+            }, '发送会话消息');
+        },
+
+        canSendSessionChat: Vue.computed(() => {
+            try {
+                const hasSession = !!(activeSession && activeSession.value);
+                const text = String(sessionChatInput?.value ?? '').trim();
+                const sending = !!sessionChatSending?.value;
+                return hasSession && !!text && !sending;
+            } catch (_) {
+                return false;
+            }
+        }),
         
         handleSessionDelete: async (sessionKey) => {
             return safeExecute(async () => {
@@ -3069,29 +3513,20 @@ export const useMethods = (store) => {
             }, '创建副本');
         },
         
-        // 打开页面上下文（对于 aicr 会话，可以显示文件内容）
         handleSessionContext: async (sessionKey) => {
             return safeExecute(async () => {
-                console.log('[handleSessionContext] 打开页面上下文:', sessionKey);
                 try {
                     const sessions = store.sessions?.value || [];
                     const session = sessions.find(s => s && s.key === sessionKey);
                     if (!session) {
                         throw new Error('会话不存在');
                     }
-                    
-                    // 对于 aicr 会话，如果 URL 包含文件信息，可以尝试打开文件
-                    if (session.url && session.url.startsWith('aicr-session://')) {
-                        // 尝试从会话的 pageContent 或其他字段获取文件信息
-                        // 这里可以根据实际需求实现
-                        if (window.showInfo) {
-                            window.showInfo('页面上下文功能待实现');
-                        }
-                    } else {
-                        if (window.showInfo) {
-                            window.showInfo('此会话类型不支持页面上下文');
-                        }
+
+                    if (viewMode && viewMode.value !== 'tags') {
+                        viewMode.value = 'tags';
                     }
+
+                    await selectSessionForChat(session, { toggleActive: false, openContextEditor: true });
                 } catch (error) {
                     console.error('[handleSessionContext] 打开页面上下文失败:', error);
                     if (window.showError) {
@@ -3666,6 +4101,46 @@ export const useMethods = (store) => {
                     const previousMode = viewMode.value;
                     viewMode.value = mode;
                     console.log('[useMethods] 视图模式已切换:', previousMode, '->', mode);
+
+                    if (previousMode !== mode) {
+                        try {
+                            if (mode === 'tree' && typeof window.aicrApp?.abortSessionChatRequest === 'function') {
+                                window.aicrApp.abortSessionChatRequest();
+                            }
+                        } catch (_) {}
+
+                        if (typeof setSelectedKey === 'function') {
+                            setSelectedKey(null);
+                        } else if (selectedKey) {
+                            selectedKey.value = null;
+                        }
+
+                        if (typeof setNewComment === 'function') {
+                            setNewComment('');
+                        } else if (newComment) {
+                            newComment.value = '';
+                        }
+
+                        if (activeSession) activeSession.value = null;
+                        if (activeSessionError) activeSessionError.value = null;
+                        if (activeSessionLoading) activeSessionLoading.value = false;
+                        if (sessionChatInput) sessionChatInput.value = '';
+                        if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
+                        if (sessionContextDraft) sessionContextDraft.value = '';
+
+                        window.dispatchEvent(new CustomEvent('clearCodeHighlight'));
+                        setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('resetAicrComments'));
+                            window.dispatchEvent(new CustomEvent('reloadComments', {
+                                detail: {
+                                    key: null,
+                                    forceReload: true,
+                                    showAllComments: true,
+                                    immediateReload: true
+                                }
+                            }));
+                        }, 0);
+                    }
                     
                     // 如果切换到标签视图，自动加载会话数据
                     if (mode === 'tags') {
@@ -3697,6 +4172,20 @@ export const useMethods = (store) => {
                             console.log('[useMethods] 切换到标签视图，会话数据已存在，跳过加载');
                         }
                     }
+
+                    setTimeout(() => {
+                        try {
+                            const sidebar = document.querySelector('.aicr-sidebar');
+                            if (!sidebar) return;
+                            if (mode === 'tags') {
+                                const w = store.sessionSidebarWidth?.value;
+                                if (typeof w === 'number' && w > 0) sidebar.style.width = `${w}px`;
+                            } else {
+                                const w = store.sidebarWidth?.value;
+                                if (typeof w === 'number' && w > 0) sidebar.style.width = `${w}px`;
+                            }
+                        } catch (_) {}
+                    }, 0);
                 }
             }, '视图模式切换');
         },
@@ -3705,9 +4194,54 @@ export const useMethods = (store) => {
         handleSessionViewBack: () => {
             return safeExecute(() => {
                 console.log('[useMethods] 从会话视图返回文件树视图');
+                try {
+                    if (typeof window.aicrApp?.abortSessionChatRequest === 'function') {
+                        window.aicrApp.abortSessionChatRequest();
+                    }
+                } catch (_) {}
                 if (viewMode) {
                     viewMode.value = 'tree';
                 }
+
+                if (typeof setSelectedKey === 'function') {
+                    setSelectedKey(null);
+                } else if (selectedKey) {
+                    selectedKey.value = null;
+                }
+
+                if (typeof setNewComment === 'function') {
+                    setNewComment('');
+                } else if (newComment) {
+                    newComment.value = '';
+                }
+
+                if (activeSession) activeSession.value = null;
+                if (activeSessionError) activeSessionError.value = null;
+                if (activeSessionLoading) activeSessionLoading.value = false;
+                if (sessionChatInput) sessionChatInput.value = '';
+                if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
+                if (sessionContextDraft) sessionContextDraft.value = '';
+
+                window.dispatchEvent(new CustomEvent('clearCodeHighlight'));
+                setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('resetAicrComments'));
+                    window.dispatchEvent(new CustomEvent('reloadComments', {
+                        detail: {
+                            key: null,
+                            forceReload: true,
+                            showAllComments: true,
+                            immediateReload: true
+                        }
+                    }));
+                }, 0);
+
+                setTimeout(() => {
+                    try {
+                        const sidebar = document.querySelector('.aicr-sidebar');
+                        const w = store.sidebarWidth?.value;
+                        if (sidebar && typeof w === 'number' && w > 0) sidebar.style.width = `${w}px`;
+                    } catch (_) {}
+                }, 0);
             }, '返回文件树视图');
         },
         
@@ -4186,7 +4720,6 @@ export const useMethods = (store) => {
                 }
             }, '批量删除会话');
         },
-        // 注意：会话列表相关方法（toggleSessionList, handleSessionSelect 等）已在上面定义，不需要重复引用
         
         /**
          * 处理复制为Prompt
@@ -4381,7 +4914,8 @@ async function openTagManager(sessionId, session, store) {
         return;
     }
 
-    const currentTags = session.tags || [];
+    // 创建标签副本，避免直接修改 session.tags
+    const currentTags = [...(session.tags || [])];
 
     // 创建标签管理弹窗
     ensureTagManagerUi();
@@ -4392,6 +4926,7 @@ async function openTagManager(sessionId, session, store) {
     }
     
     modal._store = store;
+    modal._currentTags = currentTags;
 
     // 显示弹窗
     modal.style.display = 'flex';
@@ -4454,9 +4989,15 @@ async function openTagManager(sessionId, session, store) {
     const escHandler = (e) => {
         if (e.key === 'Escape') {
             closeTagManager(sessionId, store);
-            document.removeEventListener('keydown', escHandler);
         }
     };
+    
+    // 移除旧的监听器（如果有）
+    if (modal._escHandler) {
+        document.removeEventListener('keydown', modal._escHandler);
+    }
+    
+    modal._escHandler = escHandler;
     document.addEventListener('keydown', escHandler);
 }
 
@@ -5170,9 +5711,9 @@ function loadTagsIntoManager(sessionId, tags, modal) {
             const sessionId = modal.dataset.sessionId;
             if (!sessionId) return;
             
-            const store = getTagManagerStore(modal);
-            const session = findSessionBySessionId(store, sessionId);
-            if (!session || !session.tags) return;
+            // 使用临时标签数据
+            if (!modal._currentTags) return;
+            const currentTags = modal._currentTags;
             
             // 计算新的插入位置
             const rect = tagItem.getBoundingClientRect();
@@ -5190,18 +5731,18 @@ function loadTagsIntoManager(sessionId, tags, modal) {
             }
             
             // 重新排序标签数组
-            const newTags = [...session.tags];
+            const newTags = [...currentTags];
             newTags.splice(draggedIndex, 1);
             newTags.splice(insertIndex, 0, draggedTag);
             
-            // 更新会话标签
-            session.tags = newTags;
+            // 更新临时标签
+            modal._currentTags = newTags;
             
             // 重新加载标签列表
-            loadTagsIntoManager(sessionId, session.tags, modal);
+            loadTagsIntoManager(sessionId, newTags, modal);
             
             // 更新快捷标签按钮状态
-            updateQuickTagButtons(modal, session.tags);
+            updateQuickTagButtons(modal, newTags);
         });
 
         tagItem.appendChild(tagText);
@@ -5382,31 +5923,27 @@ function addTagFromInput(sessionId, modal, store) {
     const tagName = tagInput.value.trim();
     if (!tagName) return;
 
-    store = getTagManagerStore(modal, store);
-    const session = findSessionBySessionId(store, sessionId);
-    if (!session) return;
-
-    if (!session.tags) {
-        session.tags = [];
-    }
+    // 使用临时标签数据
+    if (!modal._currentTags) modal._currentTags = [];
+    const currentTags = modal._currentTags;
 
     // 检查标签是否已存在
-    if (session.tags.includes(tagName)) {
+    if (currentTags.includes(tagName)) {
         tagInput.value = '';
         tagInput.focus();
         return;
     }
 
     // 添加标签
-    session.tags.push(tagName);
+    currentTags.push(tagName);
     tagInput.value = '';
     tagInput.focus();
 
     // 重新加载标签列表
-    loadTagsIntoManager(sessionId, session.tags, modal);
+    loadTagsIntoManager(sessionId, currentTags, modal);
     
     // 更新快捷标签按钮状态
-    updateQuickTagButtons(modal, session.tags);
+    updateQuickTagButtons(modal, currentTags);
     
     // 如果添加了新标签，刷新快捷标签列表
     setTimeout(() => {
@@ -5421,40 +5958,41 @@ function addQuickTag(sessionId, tagName, modal, store) {
     }
     if (!modal) return;
 
-    store = getTagManagerStore(modal, store);
-    const session = findSessionBySessionId(store, sessionId);
-    if (!session) return;
-
-    if (!session.tags) {
-        session.tags = [];
-    }
+    // 使用临时标签数据
+    if (!modal._currentTags) modal._currentTags = [];
+    const currentTags = modal._currentTags;
 
     // 检查标签是否已存在
-    if (session.tags.includes(tagName)) {
+    if (currentTags.includes(tagName)) {
         return;
     }
 
     // 添加标签
-    session.tags.push(tagName);
+    currentTags.push(tagName);
 
     // 重新加载标签列表
-    loadTagsIntoManager(sessionId, session.tags, modal);
+    loadTagsIntoManager(sessionId, currentTags, modal);
     
     // 更新快捷标签按钮状态
-    updateQuickTagButtons(modal, session.tags);
+    updateQuickTagButtons(modal, currentTags);
 }
 
 // 删除标签
 function removeTag(sessionId, index, modal, store) {
-    store = getTagManagerStore(modal, store);
-    const session = findSessionBySessionId(store, sessionId);
-    if (!session || !session.tags) return;
+    if (!modal) {
+        modal = document.querySelector('#aicr-tag-manager');
+    }
+    if (!modal) return;
 
-    session.tags.splice(index, 1);
-    loadTagsIntoManager(sessionId, session.tags, modal);
+    // 使用临时标签数据
+    if (!modal._currentTags) return;
+    const currentTags = modal._currentTags;
+
+    currentTags.splice(index, 1);
+    loadTagsIntoManager(sessionId, currentTags, modal);
     
     // 更新快捷标签按钮状态
-    updateQuickTagButtons(modal, session.tags);
+    updateQuickTagButtons(modal, currentTags);
     
     // 如果删除的标签不再被任何会话使用，刷新快捷标签列表
     setTimeout(() => {
@@ -5538,7 +6076,7 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
                 userPrompt += `\n\n会话内容摘要：\n${messageSummary}`;
             }
 
-            const currentTags = session.tags || [];
+            const currentTags = modal._currentTags || [];
             if (currentTags.length > 0) {
                 userPrompt += `\n\n已有标签：${currentTags.join(', ')}\n请避免生成重复的标签。`;
             }
@@ -5585,31 +6123,32 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
             }
 
             // 确保标签数组存在
-            if (!session.tags) {
-                session.tags = [];
+            if (!modal._currentTags) {
+                modal._currentTags = [];
             }
+            const tagsList = modal._currentTags;
 
             // 添加新标签（排除已存在的标签）
             let addedCount = 0;
             generatedTags.forEach(tag => {
                 const trimmedTag = tag.trim();
-                if (trimmedTag && !session.tags.includes(trimmedTag)) {
-                    session.tags.push(trimmedTag);
+                if (trimmedTag && !tagsList.includes(trimmedTag)) {
+                    tagsList.push(trimmedTag);
                     addedCount++;
                 }
             });
 
             if (addedCount > 0) {
                 // 重新加载标签列表
-                loadTagsIntoManager(sessionId, session.tags, modal);
+                loadTagsIntoManager(sessionId, tagsList, modal);
                 
                 // 更新快捷标签按钮状态和列表
-                updateQuickTagButtons(modal, session.tags);
+                updateQuickTagButtons(modal, tagsList);
                 setTimeout(() => {
                     refreshQuickTags(modal);
                 }, 100);
                 
-                console.log(`成功生成并添加 ${addedCount} 个标签:`, generatedTags.filter(tag => session.tags.includes(tag.trim())));
+                console.log(`成功生成并添加 ${addedCount} 个标签:`, generatedTags.filter(tag => tagsList.includes(tag.trim())));
             } else {
                 console.log('生成的标签都已存在，未添加新标签');
             }
@@ -5684,6 +6223,9 @@ async function saveTags(sessionId, store) {
         return;
     }
 
+    let sessionRef = null;
+    let previousTags = null;
+
     try {
         const modalEl = document.querySelector('#aicr-tag-manager');
         store = getTagManagerStore(modalEl, store);
@@ -5691,15 +6233,154 @@ async function saveTags(sessionId, store) {
         if (!session) {
             throw new Error('会话不存在');
         }
+        sessionRef = session;
+        previousTags = Array.isArray(session.tags) ? [...session.tags] : [];
 
-        // 规范化标签（trim处理，去重，过滤空标签）
-        if (session.tags && Array.isArray(session.tags)) {
-            const normalizedTags = session.tags
-                .map(tag => tag ? tag.trim() : '')
-                .filter(tag => tag.length > 0);
-            // 去重
-            session.tags = [...new Set(normalizedTags)];
+        if (store.loadSessions && (!store.sessions?.value || store.sessions.value.length === 0)) {
+            await store.loadSessions(false);
         }
+
+        let oldPath = null;
+        let fileNode = null;
+        
+        const findNode = (nodes) => {
+            if (!nodes) return null;
+            if (Array.isArray(nodes)) {
+                for (const node of nodes) {
+                    const res = findNode(node);
+                    if (res) return res;
+                }
+            } else {
+                if (nodes.sessionKey === sessionId) return nodes;
+                if (nodes.children) return findNode(nodes.children);
+            }
+            return null;
+        };
+        
+        if (store.fileTree && store.fileTree.value) {
+            fileNode = findNode(store.fileTree.value);
+            if (fileNode) {
+                oldPath = fileNode.key;
+            }
+        }
+        
+        if (!fileNode && store.loadFileTree) {
+            await store.loadFileTree();
+            if (store.fileTree && store.fileTree.value) {
+                fileNode = findNode(store.fileTree.value);
+                if (fileNode) {
+                    oldPath = fileNode.key;
+                }
+            }
+        }
+
+        let newTags = [];
+        if (modalEl && modalEl._currentTags) {
+             newTags = [...modalEl._currentTags];
+        } else if (session.tags) {
+             newTags = [...session.tags];
+        }
+
+        const normalizedTags = newTags
+            .map(tag => tag ? tag.trim() : '')
+            .filter(tag => tag.length > 0);
+        const uniqueTags = [...new Set(normalizedTags)];
+        
+        const sessionsList = store.sessions?.value || [];
+
+        const oldSessionKey = String(session.key || session.id || sessionId || '');
+        const { sessionPathMap: oldMap } = buildFileTreeFromSessions(sessionsList);
+
+        const draftSessions = sessionsList.map(s => (s === session ? { ...s, tags: uniqueTags } : s));
+        const { sessionPathMap: newMap } = buildFileTreeFromSessions(draftSessions);
+
+        const safeToken = (value) => {
+            const str = String(value ?? '');
+            return str.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 48) || 'x';
+        };
+
+        const buildTmpPath = (path, token) => {
+            const parts = String(path || '').split('/');
+            const fileName = parts.pop() || '';
+            const dir = parts.join('/');
+            const tmpName = `${fileName}.__tmp__${safeToken(token)}__${Date.now()}`;
+            return dir ? `${dir}/${tmpName}` : tmpName;
+        };
+
+        const fileDeleteService = getFileDeleteService();
+        const renamePlans = [];
+
+        for (const s of sessionsList) {
+            if (!s) continue;
+            const sessionKey = String(s.key || s.id || '');
+            if (!sessionKey) continue;
+
+            const oldPathByRule = oldMap.get(sessionKey) || null;
+            const newPathByRule = newMap.get(sessionKey) || null;
+            if (!oldPathByRule || !newPathByRule) continue;
+            if (oldPathByRule === newPathByRule) continue;
+
+            const candidates = [String(oldPathByRule)];
+            if (sessionKey === oldSessionKey) {
+                if (oldPath) candidates.unshift(String(oldPath));
+            }
+            const uniqueCandidates = Array.from(new Set(candidates)).filter(Boolean);
+
+            renamePlans.push({
+                sessionKey,
+                candidates: uniqueCandidates,
+                oldPath: String(oldPathByRule),
+                newPath: String(newPathByRule),
+                tmpPath: buildTmpPath(oldPathByRule, sessionKey)
+            });
+        }
+
+        if (!newMap.get(oldSessionKey)) {
+            throw new Error('无法计算新路径，已取消保存以保持结构一致');
+        }
+
+        const staged = [];
+        const moved = [];
+        try {
+            for (const plan of renamePlans) {
+                let actualOldPath = null;
+                for (const candidate of plan.candidates) {
+                    const res = await fileDeleteService.renameFile(candidate, plan.tmpPath);
+                    if (res.success) {
+                        actualOldPath = candidate;
+                        break;
+                    }
+                }
+                if (!actualOldPath) {
+                    throw new Error(`静态文件移动失败，已取消保存以保持结构一致: ${plan.oldPath} -> ${plan.newPath}`);
+                }
+                staged.push({ ...plan, actualOldPath });
+            }
+
+            for (const plan of staged) {
+                const res = await fileDeleteService.renameFile(plan.tmpPath, plan.newPath);
+                if (!res.success) {
+                    throw new Error(`静态文件移动失败，已取消保存以保持结构一致: ${plan.actualOldPath} -> ${plan.newPath}`);
+                }
+                moved.push(plan);
+            }
+        } catch (e) {
+            try {
+                for (let i = moved.length - 1; i >= 0; i--) {
+                    const plan = moved[i];
+                    await fileDeleteService.renameFile(plan.newPath, plan.actualOldPath);
+                }
+                for (let i = staged.length - 1; i >= 0; i--) {
+                    const plan = staged[i];
+                    const wasMoved = moved.some(m => m.sessionKey === plan.sessionKey);
+                    if (wasMoved) continue;
+                    await fileDeleteService.renameFile(plan.tmpPath, plan.actualOldPath);
+                }
+            } catch (rollbackError) { }
+            throw e;
+        }
+
+        session.tags = uniqueTags;
         session.updatedAt = Date.now();
 
         // 更新后端（标准服务接口）
@@ -5723,14 +6404,13 @@ async function saveTags(sessionId, store) {
             store.sessions.value = [...store.sessions.value];
         }
 
-        // 关闭弹窗
-        if (modalEl) {
-            modalEl.style.display = 'none';
-            const tagInput = modalEl.querySelector('.tag-manager-input');
-            if (tagInput) {
-                tagInput.value = '';
-            }
+        // 刷新文件树以反映标签更改（目录结构变化）
+        if (store.loadFileTree) {
+            await store.loadFileTree();
         }
+
+        // 关闭弹窗
+        closeTagManager(sessionId, store);
 
         if (window.showSuccess) {
             window.showSuccess('标签已保存');
@@ -5738,56 +6418,32 @@ async function saveTags(sessionId, store) {
         console.log('标签已保存:', session.tags);
     } catch (error) {
         console.error('保存标签失败:', error);
+        try {
+            if (sessionRef && Array.isArray(previousTags)) {
+                sessionRef.tags = previousTags;
+            }
+            if (store && store.loadFileTree) {
+                await store.loadFileTree();
+            }
+        } catch (e) { }
         if (window.showError) {
             window.showError('保存标签失败，请重试');
         }
     }
 }
 
-// 关闭标签管理器（自动保存）
+// 关闭标签管理器（放弃未保存的更改）
 async function closeTagManager(sessionId, store) {
     const modal = document.querySelector('#aicr-tag-manager');
     if (modal) {
-        // 关闭前自动保存
-        if (sessionId) {
-            try {
-                store = getTagManagerStore(modal, store);
-                const session = findSessionBySessionId(store, sessionId);
-                if (session) {
-                    // 规范化标签（trim处理，去重，过滤空标签）
-                    if (session.tags && Array.isArray(session.tags)) {
-                        const normalizedTags = session.tags
-                            .map(tag => tag ? tag.trim() : '')
-                            .filter(tag => tag.length > 0);
-                        // 去重
-                        session.tags = [...new Set(normalizedTags)];
-                    }
-                    session.updatedAt = Date.now();
-                    
-                    // 更新后端（标准服务接口）
-                    const payload = {
-                        module_name: SERVICE_MODULE,
-                        method_name: 'update_document',
-                        parameters: {
-                            cname: 'sessions',
-                            key: sessionId,
-                            data: {
-                                key: sessionId,
-                                tags: session.tags,
-                                updatedAt: Date.now()
-                            }
-                        }
-                    };
-                    await postData(`${window.API_URL}/`, payload);
-                    
-                    // 更新本地状态
-                    if (store.sessions && store.sessions.value) {
-                        store.sessions.value = [...store.sessions.value];
-                    }
-                }
-            } catch (error) {
-                console.error('自动保存标签失败:', error);
-            }
+        // 清理临时数据
+        if (modal._currentTags) {
+             delete modal._currentTags;
+        }
+
+        if (modal._escHandler) {
+            document.removeEventListener('keydown', modal._escHandler);
+            delete modal._escHandler;
         }
         
         modal.style.display = 'none';

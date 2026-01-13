@@ -65,6 +65,7 @@ const { computed } = Vue;
                 sidebarCollapsed: store.sidebarCollapsed,
                 commentsCollapsed: store.commentsCollapsed,
                 sidebarWidth: store.sidebarWidth,
+                sessionSidebarWidth: store.sessionSidebarWidth,
                 commentsWidth: store.commentsWidth,
                 // 项目管理 - Removed
                 // projects: store.projects,
@@ -83,6 +84,17 @@ const { computed } = Vue;
                 sessionError: store.sessionError,
                 selectedSessionTags: store.selectedSessionTags,
                 sessionSearchQuery: store.sessionSearchQuery,
+                // 会话右侧面板（聊天）状态
+                activeSession: store.activeSession,
+                activeSessionLoading: store.activeSessionLoading,
+                activeSessionError: store.activeSessionError,
+                sessionChatInput: store.sessionChatInput,
+                sessionChatSending: store.sessionChatSending,
+                sessionContextEnabled: store.sessionContextEnabled,
+                sessionContextEditorVisible: store.sessionContextEditorVisible,
+                sessionContextDraft: store.sessionContextDraft,
+                sessionContextMode: store.sessionContextMode,
+                sessionContextUndoVisible: store.sessionContextUndoVisible,
                 // 标签过滤相关状态
                 tagFilterReverse: store.tagFilterReverse,
                 tagFilterNoTags: store.tagFilterNoTags,
@@ -1211,8 +1223,13 @@ function createResizer(sidebarElement, store, type, options) {
             sidebarElement.style.width = `${newWidth}px`;
             
             // 更新 store 中的宽度值
-            if (type === 'sidebar' && store.sidebarWidth) {
-                store.sidebarWidth.value = newWidth;
+            if (type === 'sidebar') {
+                const mode = store.viewMode && store.viewMode.value;
+                if (mode === 'tags' && store.sessionSidebarWidth) {
+                    store.sessionSidebarWidth.value = newWidth;
+                } else if (store.sidebarWidth) {
+                    store.sidebarWidth.value = newWidth;
+                }
             } else if (type === 'comments' && store.commentsWidth) {
                 store.commentsWidth.value = newWidth;
             }
@@ -1233,7 +1250,16 @@ function createResizer(sidebarElement, store, type, options) {
             
             // 保存宽度
             const finalWidth = sidebarElement.offsetWidth;
-            if (saveWidth && typeof saveWidth === 'function') {
+            if (type === 'sidebar') {
+                const mode = store.viewMode && store.viewMode.value;
+                if (mode === 'tags' && typeof store.saveSessionSidebarWidth === 'function') {
+                    store.saveSessionSidebarWidth(finalWidth);
+                } else if (typeof store.saveSidebarWidth === 'function') {
+                    store.saveSidebarWidth(finalWidth);
+                } else if (saveWidth && typeof saveWidth === 'function') {
+                    saveWidth(finalWidth);
+                }
+            } else if (saveWidth && typeof saveWidth === 'function') {
                 saveWidth(finalWidth);
             }
             
@@ -1251,11 +1277,6 @@ function createResizer(sidebarElement, store, type, options) {
     
     return resizer;
 }
-
-
-
-
-
 
 
 

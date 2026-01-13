@@ -84,11 +84,11 @@
                 v-show="!sidebarCollapsed"
                 @click="toggleSidebar"
                 title="收起侧边栏"
-                :style="{ left: (sidebarWidth - 14) + 'px', right: 'auto' }">
+                :style="{ left: ((viewMode === 'tree' ? sidebarWidth : sessionSidebarWidth) - 14) + 'px', right: 'auto' }">
                 <i class="fas fa-chevron-left"></i>
             </div>
 
-            <aside class="aicr-sidebar" aria-label="侧边栏" v-show="!sidebarCollapsed" :style="{ width: sidebarWidth + 'px' }">
+            <aside class="aicr-sidebar" aria-label="侧边栏" v-show="!sidebarCollapsed" :style="{ width: (viewMode === 'tree' ? sidebarWidth : sessionSidebarWidth) + 'px' }">
                 <div class="sidebar-scroll-container">
                     <!-- 共享搜索容器（两种视图模式共用） -->
                     <div v-if="!sidebarCollapsed" class="file-tree-header-container">
@@ -233,9 +233,10 @@
                 </div>
             </aside>
             
-
+            
             <section class="aicr-code" :class="{ 'with-sidebar-collapsed': sidebarCollapsed, 'with-comments-collapsed': commentsCollapsed }" aria-label="代码区">
                 <code-view 
+                    v-if="viewMode === 'tree'"
                     :file="currentFile" 
                     :loading="loading" 
                     :error="errorMessage"
@@ -245,12 +246,182 @@
                     @comment-reopen="handleCommentReopen"
                     @reload-comments="handleReloadComments"
                 ></code-view>
+
+                <div v-if="viewMode === 'tags'" class="pet-chat-right-panel" aria-label="会话聊天面板">
+                    <div class="pet-chat-messages" id="pet-chat-messages" role="log" aria-live="polite">
+                        <div v-if="activeSessionLoading" class="pet-chat-loading" role="status" aria-live="polite">
+                            <div class="loading-spinner" aria-hidden="true"></div>
+                            <div class="loading-text">正在加载会话...</div>
+                        </div>
+                        <div v-else-if="activeSessionError" class="pet-chat-error" role="alert" aria-live="polite">
+                            <div class="error-text">{{ activeSessionError }}</div>
+                        </div>
+                        <div v-else-if="!activeSession" class="pet-chat-empty" role="status">
+                            <div class="pet-chat-empty-title">未选择会话</div>
+                            <div class="pet-chat-empty-subtitle">请从左侧会话列表选择一个会话</div>
+                        </div>
+                        <div v-else>
+                            <div 
+                                v-for="(m, idx) in sessionChatMessages(activeSession)" 
+                                :key="`${m.timestamp || 0}_${idx}`"
+                                class="pet-chat-message"
+                                :class="m.type === 'pet' ? 'is-pet' : 'is-user'"
+                            >
+                                <div class="pet-chat-bubble">
+                                    <img v-if="m.imageDataUrl" class="pet-chat-image" :src="m.imageDataUrl" alt="图片消息" />
+                                    <div v-if="m.content && String(m.content).trim()" class="pet-chat-content md-preview-body" v-html="renderSessionChatMarkdown(m.content)"></div>
+                                    <div class="pet-chat-meta">
+                                        <button
+                                            v-if="m.content && String(m.content).trim()"
+                                            type="button"
+                                            class="pet-chat-meta-btn"
+                                            @click="copySessionChatMessage(m.content)"
+                                            aria-label="复制消息"
+                                            title="复制"
+                                        >复制</button>
+                                        <time class="pet-chat-time" :datetime="m.timestamp">{{ formatTime(m.timestamp) }}</time>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pet-chat-input-container chat-input-container">
+                        <div class="pet-chat-toolbar chat-input-toolbar">
+                            <div class="pet-chat-toolbar-left chat-input-btn-group">
+                                <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionContextEditor" title="页面上下文" aria-label="页面上下文">📝 页面上下文</button>
+                                <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionFaq" title="常见问题" aria-label="常见问题">💡 常见问题</button>
+                                <button type="button" class="pet-chat-btn chat-input-btn chat-input-icon-btn" @click="openSessionSettings" title="AI 设置" aria-label="AI 设置">⚙️</button>
+                            </div>
+                            <div class="pet-chat-toolbar-right chat-input-btn-group">
+                                <div class="context-switch-container" :class="{ active: sessionContextEnabled }" title="开启/关闭页面上下文">
+                                    <span class="context-switch-label">页面上下文</span>
+                                    <label class="context-switch-wrapper" for="context-switch">
+                                        <div class="context-switch-thumb"></div>
+                                    </label>
+                                    <input
+                                        id="context-switch"
+                                        class="context-switch-input"
+                                        type="checkbox"
+                                        :checked="sessionContextEnabled"
+                                        @change="setSessionContextEnabled($event.target.checked)"
+                                        aria-label="页面上下文开关"
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    class="chat-input-status-btn"
+                                    :class="{ active: sessionChatSending }"
+                                    :disabled="!sessionChatSending"
+                                    @click="abortSessionChatRequest"
+                                    :title="sessionChatSending ? '请求状态：生成中（点击停止）' : '请求状态：空闲'"
+                                    aria-label="请求状态"
+                                >⏹️</button>
+                                <button type="button" class="pet-chat-btn chat-input-clear-btn" @click="clearSessionContext" title="清除上下文" aria-label="清除上下文">🧹 清除上下文</button>
+                            </div>
+                        </div>
+
+                        <div class="chat-input-wrapper">
+                            <textarea
+                                id="pet-chat-input"
+                                class="pet-chat-textarea chat-message-input"
+                                :value="sessionChatInput"
+                                @input="onSessionChatInput"
+                                @keydown="onSessionChatKeydown"
+                                placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
+                                rows="2"
+                                aria-label="会话输入框"
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <div v-if="sessionContextEditorVisible" class="aicr-session-context-modal" role="dialog" aria-modal="true" aria-label="页面上下文编辑器">
+                        <div class="aicr-session-context-modal-mask" @click="closeSessionContextEditor"></div>
+                        <div class="aicr-session-context-modal-body">
+                            <div class="aicr-session-context-modal-header">
+                                <div class="aicr-session-context-modal-title">
+                                    页面上下文
+                                    <span class="aicr-session-context-modal-subtitle">（Markdown）</span>
+                                </div>
+                                <div class="aicr-session-context-modal-header-right">
+                                <div class="aicr-session-context-mode-group" role="tablist" aria-label="上下文视图切换">
+                                    <button
+                                        type="button"
+                                        class="aicr-session-context-mode-btn"
+                                        :class="{ active: sessionContextMode === 'split' }"
+                                        @click="setSessionContextMode('split')"
+                                        role="tab"
+                                        :aria-selected="sessionContextMode === 'split'"
+                                        aria-label="并排"
+                                    >并排</button>
+                                    <button
+                                        type="button"
+                                        class="aicr-session-context-mode-btn"
+                                        :class="{ active: sessionContextMode === 'edit' }"
+                                        @click="setSessionContextMode('edit')"
+                                        role="tab"
+                                        :aria-selected="sessionContextMode === 'edit'"
+                                        aria-label="仅编辑"
+                                    >仅编辑</button>
+                                    <button
+                                        type="button"
+                                        class="aicr-session-context-mode-btn"
+                                        :class="{ active: sessionContextMode === 'preview' }"
+                                        @click="setSessionContextMode('preview')"
+                                        role="tab"
+                                        :aria-selected="sessionContextMode === 'preview'"
+                                        aria-label="仅预览"
+                                    >仅预览</button>
+                                </div>
+                                <button type="button" class="aicr-session-context-toolbar-btn" @click="copySessionContextDraft" title="复制内容" aria-label="复制内容">复制</button>
+                                <button type="button" class="aicr-session-context-toolbar-btn" @click="optimizeSessionContextDraft" title="智能优化上下文内容" aria-label="智能优化">✨ 智能优化</button>
+                                <button v-show="sessionContextUndoVisible" type="button" class="aicr-session-context-toolbar-btn" @click="undoOptimizeSessionContextDraft" title="撤销优化" aria-label="撤销优化">↶ 撤销</button>
+                                <button type="button" class="aicr-session-context-toolbar-btn primary" @click="saveSessionContext" title="保存修改" aria-label="保存修改">保存</button>
+                                <button type="button" class="aicr-session-context-modal-close" @click="closeSessionContextEditor" aria-label="关闭">✕</button>
+                                </div>
+                            </div>
+                            <div class="aicr-session-context-modal-content">
+                                <div class="aicr-session-context-editor-body" :data-mode="sessionContextMode">
+                                    <div v-if="sessionContextMode === 'split'" class="aicr-session-context-split">
+                                        <textarea
+                                            class="aicr-session-context-textarea"
+                                            :value="sessionContextDraft"
+                                            @input="setSessionContextDraft($event.target.value)"
+                                            rows="10"
+                                            aria-label="页面上下文内容"
+                                        ></textarea>
+                                        <div
+                                            class="aicr-session-context-preview md-preview-body"
+                                            v-html="renderSessionChatMarkdown(sessionContextDraft)"
+                                            aria-label="页面上下文预览"
+                                        ></div>
+                                    </div>
+                                    <textarea
+                                        v-else-if="sessionContextMode === 'edit'"
+                                        class="aicr-session-context-textarea"
+                                        :value="sessionContextDraft"
+                                        @input="setSessionContextDraft($event.target.value)"
+                                        rows="10"
+                                        aria-label="页面上下文内容"
+                                    ></textarea>
+                                    <div
+                                        v-else
+                                        class="aicr-session-context-preview md-preview-body"
+                                        v-html="renderSessionChatMarkdown(sessionContextDraft)"
+                                        aria-label="页面上下文预览"
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
-            <aside class="aicr-comments" aria-label="评论区" v-show="!commentsCollapsed" :style="{ width: commentsWidth + 'px' }">
+            <aside class="aicr-comments" aria-label="评论区" v-show="viewMode === 'tree' && !commentsCollapsed" :style="{ width: commentsWidth + 'px' }">
                 <div class="sidebar-scroll-container">
                     <comment-panel 
                         :comments="currentComments" 
                         :file="currentFile"
+                        :view-mode="viewMode"
                         :new-comment="newComment" 
                         :loading="loading" 
                         :error="errorMessage" 
@@ -268,7 +439,7 @@
             <!-- 评论区收起按钮 (展开时显示，跟随评论区宽度) -->
             <div 
                 class="comments-toggle" 
-                v-show="!commentsCollapsed"
+                v-show="viewMode === 'tree' && !commentsCollapsed"
                 @click="toggleComments"
                 title="收起评论区"
                 :style="{ right: (commentsWidth - 14) + 'px', left: 'auto' }">
@@ -279,7 +450,7 @@
             <button 
                 type="button"
                 class="comments-expand-handle" 
-                v-show="commentsCollapsed"
+                v-show="viewMode === 'tree' && commentsCollapsed"
                 @click="toggleComments"
                 aria-label="展开评论区"
                 title="展开评论区">
@@ -322,10 +493,3 @@
     <script type="module" src="../../utils/performance.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-

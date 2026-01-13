@@ -17,148 +17,288 @@
 
     <!-- 评论内容 -->
     <div v-else class="comment-panel-content">
-        <!-- 评论列表 -->
-        <div v-if="renderComments && renderComments.length > 0" class="comment-list" role="list">
-            <!-- 调试信息 -->
-            <div v-if="false" class="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 12px;">
-                <p>调试信息:</p>
-                <p>评论数量: {{ renderComments.length }}</p>
-                <p>文件信息: {{ file ? file.name : '无文件' }}</p>
-                <p>加载状态: {{ loading }}</p>
-                <p>错误信息: {{ error }}</p>
+        <div v-if="isSessionChatMode" class="aicr-session-chat">
+            <div v-if="sessionChatLoading" class="loading-container" role="status" aria-live="polite">
+                <div class="loading-spinner" aria-hidden="true"></div>
+                <div class="loading-text">正在加载会话...</div>
             </div>
-            <article 
-                v-for="comment in renderComments" 
-                :key="comment.key"
-                class="comment-item"
-                :class="getCommentStatusClass(comment.status)"
-                role="listitem"
-            >
-                <!-- 评论头部 -->
-                <div class="comment-header-section">
-                    <div class="comment-meta">
-                        <div class="comment-author-info">
-                            <div class="comment-avatar" :style="getAuthorAvatar(comment.author)">
-                                {{ getAuthorAvatar(comment.author).text }}
-                            </div>
-                            <div class="comment-author-details">
-                                <span class="comment-author">{{ comment.author }}</span>
-                                <time class="comment-time" :datetime="comment.timestamp">
-                                    {{ formatTime(comment.timestamp) }}
+
+            <div v-else-if="sessionChatError" class="error-container" role="alert" aria-live="polite">
+                <div class="error-icon" aria-hidden="true">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="error-text">{{ sessionChatError }}</div>
+            </div>
+
+            <div v-else class="aicr-session-chat-body">
+                <div v-if="!sessionChatSession" class="no-file-state" role="status">
+                    <div class="no-file-icon" aria-hidden="true">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <div class="no-file-title">未选择会话</div>
+                    <div class="no-file-subtitle">请从左侧会话列表选择一个会话</div>
+                </div>
+
+                <div v-else class="aicr-session-chat-right-panel">
+                    <div class="aicr-session-chat-messages" role="log" aria-live="polite">
+                        <div 
+                            v-for="(m, idx) in sessionChatMessages" 
+                            :key="`${m.timestamp || 0}_${idx}`"
+                            class="aicr-session-chat-message"
+                            :class="m.type === 'pet' ? 'is-pet' : 'is-user'"
+                        >
+                            <div class="aicr-session-chat-bubble">
+                                <div class="aicr-session-chat-content md-preview-body" v-html="renderMarkdown(m.content)"></div>
+                                <time class="aicr-session-chat-time" :datetime="m.timestamp">
+                                    {{ formatTime(m.timestamp) }}
                                 </time>
                             </div>
                         </div>
-                        
-                        <!-- 评论类型和状态 -->
-                        <div class="comment-badges">
-                            <span v-if="comment.type" class="comment-type" :class="`type-${comment.type}`">
-                                <i :class="getCommentTypeIcon(comment.type)"></i>
-                                {{ getCommentTypeLabel(comment.type) }}
-                            </span>
-                            <span v-if="comment.status" class="comment-status" :class="`status-${comment.status}`">
-                                <i :class="getCommentStatusIcon(comment.status)"></i>
-                                {{ getCommentStatusLabel(comment.status) }}
-                            </span>
-                        </div>
                     </div>
-                </div>
 
-                <!-- 评论内容 -->
-                <div class="comment-body">
-                    <div v-if="comment.text" class="comment-quote">
-                        <div class="quote-header">
-                            <i class="fas fa-quote-left"></i>
-                            <span>引用代码</span>
+                    <div class="aicr-session-chat-input-container">
+                        <div class="aicr-session-chat-toolbar">
+                            <div class="aicr-session-chat-btn-group">
+                                <button type="button" class="aicr-session-chat-btn aicr-session-chat-icon-btn" title="提及" aria-label="提及">
+                                    @
+                                </button>
+                                <button type="button" class="aicr-session-chat-btn aicr-session-chat-text-btn" @click="openSessionChatContextEditor" title="页面上下文" aria-label="页面上下文">
+                                    📝 页面上下文
+                                </button>
+                                <button type="button" class="aicr-session-chat-btn aicr-session-chat-text-btn" title="常见问题" aria-label="常见问题" @click="openSessionChatFaq">
+                                    💡 常见问题
+                                </button>
+                                <button type="button" class="aicr-session-chat-btn aicr-session-chat-icon-btn" title="AI 设置" aria-label="AI 设置" @click="openSessionChatSettings">
+                                    ⚙️
+                                </button>
+                            </div>
+
+                            <div class="aicr-session-chat-btn-group">
+                                <button
+                                    type="button"
+                                    class="aicr-session-chat-btn aicr-session-chat-context-switch"
+                                    :class="{ active: sessionChatIncludePageContext }"
+                                    @click="sessionChatIncludePageContext = !sessionChatIncludePageContext"
+                                    title="上下文开关"
+                                    aria-label="上下文开关"
+                                >
+                                    {{ sessionChatIncludePageContext ? '上下文: 开' : '上下文: 关' }}
+                                </button>
+                                <button type="button" class="aicr-session-chat-btn aicr-session-chat-status-btn" disabled title="请求状态：空闲" aria-label="请求状态">
+                                    ⏹️
+                                </button>
+                                <button type="button" class="aicr-session-chat-btn aicr-session-chat-clear-btn" title="清除输入" aria-label="清除输入" @click="sessionChatInputText = ''">
+                                    🧹 清除输入
+                                </button>
+                            </div>
                         </div>
-                        <pre class="quote-code">{{ comment.text }}</pre>
-                    </div>
-                    <!-- 评论内容展示 -->
-                    <div class="comment-content md-preview-body" v-html="renderMarkdown(comment.content)"></div>
-                    
-                    <!-- 改进代码展示区域，仅当有改进代码时显示 -->
-                    <div v-if="comment.improvementText" class="comment-improvement">
-                        <div class="improvement-header">
-                            <i class="fas fa-magic"></i>
-                            <span>改进代码</span>
+
+                        <div class="aicr-session-chat-input-wrapper">
+                            <textarea
+                                class="aicr-session-chat-textarea"
+                                :value="sessionChatInputText"
+                                @input="sessionChatInputText = $event.target.value"
+                                @keydown="onSessionChatKeydown"
+                                placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
+                                rows="2"
+                                aria-label="会话输入框"
+                            ></textarea>
+                            <button
+                                type="button"
+                                class="aicr-session-chat-send-btn"
+                                :disabled="sessionChatSending || !sessionChatInputText.trim()"
+                                @click="sendSessionChatMessage()"
+                                aria-label="发送"
+                                title="发送 (Enter)"
+                            >
+                                发送
+                            </button>
                         </div>
-                        <pre class="improvement-code">{{ comment.improvementText }}</pre>
-                    </div>
-                    
-                    <!-- 评论操作 -->
-                    <div class="comment-actions">
-                        <button 
-                            type="button"
-                            v-if="comment.status === 'pending'"
-                            @click="resolveComment(comment.key)"
-                            class="action-button resolve-button"
-                            title="标记为已解决"
-                        >
-                            <i class="fas fa-check"></i>
-                            解决
-                        </button>
-                        
-                        <button 
-                            type="button"
-                            v-if="comment.status === 'resolved'"
-                            @click="reopenComment(comment.key)"
-                            class="action-button reopen-button"
-                            title="重新打开"
-                        >
-                            <i class="fas fa-undo"></i>
-                            重开
-                        </button>
-                        
-                        <button 
-                            type="button"
-                            v-if="comment.author === '手动评论'"
-                            @click="openCommentEditor(comment)"
-                            class="action-button resolve-button"
-                            title="编辑评论"
-                        >
-                            <i class="fas fa-edit"></i>
-                            编辑
-                        </button>
-                        
-                        <button 
-                            type="button"
-                            @click="deleteComment(comment.key)"
-                            class="action-button resolve-button"
-                            :class="{ 'deleting': deletingComments[comment.key] }"
-                            :disabled="deletingComments[comment.key]"
-                            title="删除评论"
-                            :aria-label="`删除评论 ${comment.author}`"
-                        >
-                            <i class="fas" :class="deletingComments[comment.key] ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
-                            <span v-if="!deletingComments[comment.key]">删除</span>
-                            <span v-else>删除中...</span>
-                        </button>
                     </div>
                 </div>
-            </article>
-        </div>
-        
-        <!-- 加载状态 - 优先显示 -->
-        <div v-if="commentsLoading" class="loading-container" role="status" aria-live="polite">
-            <div class="loading-spinner" aria-hidden="true"></div>
-            <div class="loading-text">正在加载评论...</div>
-        </div>
-        
-        <!-- 未选中文件状态 -->
-        <div v-else-if="!file && (!renderComments || renderComments.length === 0)" class="no-file-state" role="status">
-            <div class="no-file-icon" aria-hidden="true">
-                <i class="fas fa-file-alt"></i>
             </div>
-            <div class="no-file-title">未选中文件</div>
-            <div class="no-file-subtitle">请从左侧文件树中选择一个文件来查看评论</div>
         </div>
-        
-        <!-- 无评论状态 -->
-        <div v-else-if="file && (!renderComments || renderComments.length === 0)" class="no-comments-state" role="status">
-            <div class="no-comments-icon" aria-hidden="true">
-                <i class="fas fa-comment-slash"></i>
+
+        <div v-else>
+            <!-- 评论列表 -->
+            <div v-if="renderComments && renderComments.length > 0" class="comment-list" role="list">
+                <!-- 调试信息 -->
+                <div v-if="false" class="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 12px;">
+                    <p>调试信息:</p>
+                    <p>评论数量: {{ renderComments.length }}</p>
+                    <p>文件信息: {{ file ? file.name : '无文件' }}</p>
+                    <p>加载状态: {{ loading }}</p>
+                    <p>错误信息: {{ error }}</p>
+                </div>
+                <article 
+                    v-for="comment in renderComments" 
+                    :key="comment.key"
+                    class="comment-item"
+                    :class="getCommentStatusClass(comment.status)"
+                    role="listitem"
+                >
+                    <!-- 评论头部 -->
+                    <div class="comment-header-section">
+                        <div class="comment-meta">
+                            <div class="comment-author-info">
+                                <div class="comment-avatar" :style="getAuthorAvatar(comment.author)">
+                                    {{ getAuthorAvatar(comment.author).text }}
+                                </div>
+                                <div class="comment-author-details">
+                                    <span class="comment-author">{{ comment.author }}</span>
+                                    <time class="comment-time" :datetime="comment.timestamp">
+                                        {{ formatTime(comment.timestamp) }}
+                                    </time>
+                                </div>
+                            </div>
+                            
+                            <!-- 评论类型和状态 -->
+                            <div class="comment-badges">
+                                <span v-if="comment.type" class="comment-type" :class="`type-${comment.type}`">
+                                    <i :class="getCommentTypeIcon(comment.type)"></i>
+                                    {{ getCommentTypeLabel(comment.type) }}
+                                </span>
+                                <span v-if="comment.status" class="comment-status" :class="`status-${comment.status}`">
+                                    <i :class="getCommentStatusIcon(comment.status)"></i>
+                                    {{ getCommentStatusLabel(comment.status) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 评论内容 -->
+                    <div class="comment-body">
+                        <div v-if="comment.text" class="comment-quote">
+                            <div class="quote-header">
+                                <i class="fas fa-quote-left"></i>
+                                <span>引用代码</span>
+                            </div>
+                            <pre class="quote-code">{{ comment.text }}</pre>
+                        </div>
+                        <!-- 评论内容展示 -->
+                        <div class="comment-content md-preview-body" v-html="renderMarkdown(comment.content)"></div>
+                        
+                        <!-- 改进代码展示区域，仅当有改进代码时显示 -->
+                        <div v-if="comment.improvementText" class="comment-improvement">
+                            <div class="improvement-header">
+                                <i class="fas fa-magic"></i>
+                                <span>改进代码</span>
+                            </div>
+                            <pre class="improvement-code">{{ comment.improvementText }}</pre>
+                        </div>
+                        
+                        <!-- 评论操作 -->
+                        <div class="comment-actions">
+                            <button 
+                                type="button"
+                                v-if="comment.status === 'pending'"
+                                @click="resolveComment(comment.key)"
+                                class="action-button resolve-button"
+                                title="标记为已解决"
+                            >
+                                <i class="fas fa-check"></i>
+                                解决
+                            </button>
+                            
+                            <button 
+                                type="button"
+                                v-if="comment.status === 'resolved'"
+                                @click="reopenComment(comment.key)"
+                                class="action-button reopen-button"
+                                title="重新打开"
+                            >
+                                <i class="fas fa-undo"></i>
+                                重开
+                            </button>
+                            
+                            <button 
+                                type="button"
+                                v-if="comment.author === '手动评论'"
+                                @click="openCommentEditor(comment)"
+                                class="action-button resolve-button"
+                                title="编辑评论"
+                            >
+                                <i class="fas fa-edit"></i>
+                                编辑
+                            </button>
+                            
+                            <button 
+                                type="button"
+                                @click="deleteComment(comment.key)"
+                                class="action-button resolve-button"
+                                :class="{ 'deleting': deletingComments[comment.key] }"
+                                :disabled="deletingComments[comment.key]"
+                                title="删除评论"
+                                :aria-label="`删除评论 ${comment.author}`"
+                            >
+                                <i class="fas" :class="deletingComments[comment.key] ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
+                                <span v-if="!deletingComments[comment.key]">删除</span>
+                                <span v-else>删除中...</span>
+                            </button>
+                        </div>
+                    </div>
+                </article>
             </div>
-            <div class="no-comments-title">暂无评论</div>
-            <div class="no-comments-subtitle">开始代码评审，添加第一个评论</div>
+            
+            <!-- 加载状态 - 优先显示 -->
+            <div v-if="commentsLoading" class="loading-container" role="status" aria-live="polite">
+                <div class="loading-spinner" aria-hidden="true"></div>
+                <div class="loading-text">正在加载评论...</div>
+            </div>
+            
+            <!-- 未选中文件状态 -->
+            <div v-else-if="!file && (!renderComments || renderComments.length === 0)" class="no-file-state" role="status">
+                <div class="no-file-icon" aria-hidden="true">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="no-file-title">未选中文件</div>
+                <div class="no-file-subtitle">请从左侧文件树中选择一个文件来查看评论</div>
+            </div>
+            
+            <!-- 无评论状态 -->
+            <div v-else-if="file && (!renderComments || renderComments.length === 0)" class="no-comments-state" role="status">
+                <div class="no-comments-icon" aria-hidden="true">
+                    <i class="fas fa-comment-slash"></i>
+                </div>
+                <div class="no-comments-title">暂无评论</div>
+                <div class="no-comments-subtitle">开始代码评审，添加第一个评论</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 会话页面上下文编辑器 -->
+    <div v-if="sessionChatShowContextEditor" class="session-context-modal" @click="closeSessionChatContextEditor">
+        <div class="session-context-modal-content" @click.stop>
+            <div class="session-context-modal-header">
+                <div class="session-context-modal-title">页面上下文</div>
+                <div class="session-context-modal-actions">
+                    <div class="session-context-mode-toggle" role="tablist" aria-label="页面上下文视图切换">
+                        <button type="button" class="session-context-mode-btn" :class="{ active: sessionChatContextEditMode === 'edit' }" @click="toggleSessionChatContextEditMode('edit')" role="tab" :aria-selected="sessionChatContextEditMode === 'edit'">编辑</button>
+                        <button type="button" class="session-context-mode-btn" :class="{ active: sessionChatContextEditMode === 'preview' }" @click="toggleSessionChatContextEditMode('preview')" role="tab" :aria-selected="sessionChatContextEditMode === 'preview'">预览</button>
+                    </div>
+                    <button type="button" class="session-context-close-btn" @click="closeSessionChatContextEditor" aria-label="关闭" title="关闭">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="session-context-modal-body">
+                <textarea
+                    v-if="sessionChatContextEditMode === 'edit'"
+                    class="session-context-textarea"
+                    v-model="sessionChatEditingPageContent"
+                    rows="14"
+                    aria-label="页面上下文编辑框"
+                ></textarea>
+                <div v-else class="session-context-preview md-preview-body" v-html="renderMarkdown(sessionChatEditingPageContent)"></div>
+            </div>
+            <div class="session-context-modal-footer">
+                <button type="button" class="session-context-save-btn" :disabled="sessionChatSavingContext" @click="saveSessionChatPageContext" aria-label="保存">
+                    保存
+                </button>
+                <button type="button" class="session-context-cancel-btn" @click="closeSessionChatContextEditor" aria-label="取消">
+                    取消
+                </button>
+            </div>
         </div>
     </div>
 

@@ -120,8 +120,16 @@
                     </button>
                 </div>
                 <div class="manual-improvement-body">
-                    <div class="md-input-preview" :class="{ 'preview-collapsed': manualPreviewCollapsed }">
-                        <div class="md-input">
+                    <!-- 被评论的代码展示区域 -->
+                    <div class="manual-quoted-code-section" v-if="manualQuotedCode">
+                        <label class="manual-quoted-code-label"><i class="fas fa-quote-left"></i> 被评论的内容</label>
+                        <div class="manual-quoted-code-content">
+                            <pre><code>{{ manualQuotedCode }}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="md-input-preview">
+                        <div class="md-editor-panel">
                             <div class="md-toolbar" role="toolbar" aria-label="Markdown工具栏">
                                 <button type="button" class="md-btn" title="粗体" @click="insertMarkdown('bold')"><i class="fas fa-bold"></i></button>
                                 <button type="button" class="md-btn" title="斜体" @click="insertMarkdown('italic')"><i class="fas fa-italic"></i></button>
@@ -130,26 +138,43 @@
                                 <button type="button" class="md-btn" title="无序列表" @click="insertMarkdown('ul')"><i class="fas fa-list-ul"></i></button>
                                 <button type="button" class="md-btn" title="有序列表" @click="insertMarkdown('ol')"><i class="fas fa-list-ol"></i></button>
                                 <button type="button" class="md-btn" title="链接" @click="insertMarkdown('link')"><i class="fas fa-link"></i></button>
-                                <button type="button" class="md-btn" :title="manualPreviewCollapsed ? '展开预览' : '折叠预览'" @click="toggleManualPreviewCollapse" aria-label="切换预览显示"><i class="fas" :class="manualPreviewCollapsed ? 'fa-eye' : 'fa-eye-slash'"></i></button>
                                 <span class="md-toolbar-spacer"></span>
+                                <div class="md-view-switch" aria-label="编辑与预览切换">
+                                    <button
+                                        type="button"
+                                        class="md-view-btn"
+                                        :class="{ active: manualEditorView === 'edit' }"
+                                        @click="setManualEditorView('edit')"
+                                        aria-label="切换到编辑"
+                                    >编辑</button>
+                                    <button
+                                        type="button"
+                                        class="md-view-btn"
+                                        :class="{ active: manualEditorView === 'preview' }"
+                                        @click="setManualEditorView('preview')"
+                                        aria-label="切换到预览"
+                                    >预览</button>
+                                </div>
                                 <span class="md-counter" :title="'最多 ' + manualMaxLength + ' 字'">{{ (manualCommentText || '').length }} / {{ manualMaxLength }}</span>
                             </div>
-                            <textarea 
-                                class="manual-improvement-input"
-                                v-model="manualCommentText" 
-                                placeholder="请输入要发布的评论内容，支持Markdown语法"
-                                rows="10"
-                                @keydown="handleManualKeydown"
-                            ></textarea>
+                            <div class="md-editor-body">
+                                <textarea 
+                                    class="manual-improvement-input"
+                                    v-show="manualEditorView === 'edit'"
+                                    v-model="manualCommentText" 
+                                    placeholder="请输入要发布的评论内容，支持Markdown语法"
+                                    rows="10"
+                                    @keydown="handleManualKeydown"
+                                ></textarea>
+                                <div
+                                    class="md-preview-body"
+                                    v-show="manualEditorView === 'preview'"
+                                    v-html="manualCommentPreviewHtml"
+                                ></div>
+                            </div>
                             <div v-if="manualCommentError" class="manual-improvement-error">
                                 <i class="fas fa-exclamation-circle"></i> {{ manualCommentError }}
                             </div>
-                        </div>
-                        <div class="md-preview" v-show="!manualPreviewCollapsed">
-                            <div class="preview-header-row">
-                                <span class="preview-title"><i class="fas fa-eye"></i> 预览</span>
-                            </div>
-                            <div class="md-preview-body" v-html="manualCommentPreviewHtml"></div>
                         </div>
                     </div>
                 </div>
@@ -367,6 +392,7 @@
                         <!-- 主要操作组 -->
                         <div class="action-group primary">
                             <button 
+                                type="button"
                                 @click="saveEditedCommentDetail"
                                 class="action-button save-button success large"
                                 :disabled="editingSaving"
@@ -380,6 +406,7 @@
                         <!-- 次要操作组 -->
                         <div class="action-group secondary">
                             <button 
+                                type="button"
                                 @click="cancelEditCommentDetail" 
                                 class="action-button cancel-button neutral" 
                                 :disabled="editingSaving" 
@@ -582,15 +609,11 @@
 <!-- Lightbox for Image Preview -->
         <div v-if="lightbox && lightbox.visible" class="md-lightbox" @click="closeLightbox">
             <div class="md-lightbox-content" @click.stop>
-                <img :src="lightbox.url" :alt="lightbox.alt" class="md-lightbox-image">
-                <button class="md-lightbox-close" @click="closeLightbox">
+                <img :src="lightbox.url" alt="预览图片" title="预览图片" class="md-lightbox-image">
+                <button type="button" class="md-lightbox-close" @click="closeLightbox" title="关闭预览" aria-label="关闭预览">
                     <i class="fas fa-times"></i>
                 </button>
                 <div class="md-lightbox-caption" v-if="lightbox.alt">{{ lightbox.alt }}</div>
             </div>
         </div>
     </section>
-
-
-
-
