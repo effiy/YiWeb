@@ -63,6 +63,8 @@ export const useMethods = (store) => {
         activeSessionError,
         sessionChatInput,
         sessionChatDraftImages,
+        sessionChatLastDraftText,
+        sessionChatLastDraftImages,
         sessionChatSending,
         sessionChatAbortController,
         sessionContextEnabled,
@@ -94,6 +96,20 @@ export const useMethods = (store) => {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
+    };
+
+    const _sanitizeUrl = (href) => {
+        const raw = String(href ?? '').trim();
+        if (!raw) return '';
+        if (raw.startsWith('#') || raw.startsWith('/') || raw.startsWith('./') || raw.startsWith('../')) return raw;
+        try {
+            const u = new URL(raw, window.location.origin);
+            const p = String(u.protocol || '').toLowerCase();
+            if (p === 'http:' || p === 'https:' || p === 'mailto:') return u.href;
+            return '';
+        } catch (_) {
+            return '';
+        }
     };
 
     const loadSessionBotSettings = () => {
@@ -2711,6 +2727,29 @@ export const useMethods = (store) => {
                     try {
                         const renderer = new window.marked.Renderer();
                         const originalCodeRenderer = renderer.code.bind(renderer);
+
+                        renderer.html = (html) => {
+                            return _escapeHtml(html);
+                        };
+
+                        renderer.link = (href, title, text) => {
+                            const safeHref = _sanitizeUrl(href);
+                            const safeText = _escapeHtml(text == null ? '' : String(text));
+                            if (!safeHref) return safeText;
+                            const safeTitle = title == null ? '' : String(title);
+                            const titleAttr = safeTitle ? ` title="${_escapeHtml(safeTitle)}"` : '';
+                            return `<a href="${_escapeHtml(safeHref)}"${titleAttr} target="_blank" rel="noopener noreferrer">${safeText}</a>`;
+                        };
+
+                        renderer.image = (href, title, text) => {
+                            const safeHref = _sanitizeUrl(href);
+                            const alt = _escapeHtml(text == null ? '' : String(text));
+                            if (!safeHref) return alt;
+                            const safeTitle = title == null ? '' : String(title);
+                            const titleAttr = safeTitle ? ` title="${_escapeHtml(safeTitle)}"` : '';
+                            return `<img src="${_escapeHtml(safeHref)}" alt="${alt}" loading="lazy"${titleAttr} />`;
+                        };
+
                         renderer.code = (code, language, isEscaped) => {
                             const lang = String(language || '').trim().toLowerCase();
                             const src = String(code || '');
@@ -3118,6 +3157,22 @@ export const useMethods = (store) => {
             } catch (_) {}
         },
 
+        retryLastSessionChatMessage: async () => {
+            return safeExecute(async () => {
+                if (sessionChatSending?.value) return;
+                const text = String(sessionChatLastDraftText?.value ?? '').trim();
+                const images = Array.isArray(sessionChatLastDraftImages?.value) ? sessionChatLastDraftImages.value.filter(Boolean) : [];
+                if (!text && images.length === 0) return;
+                if (sessionChatInput) sessionChatInput.value = text;
+                if (sessionChatDraftImages) sessionChatDraftImages.value = images.slice(0, 4);
+                try {
+                    if (typeof window.aicrApp?.sendSessionChatMessage === 'function') {
+                        await window.aicrApp.sendSessionChatMessage();
+                    }
+                } catch (_) {}
+            }, '重试会话消息');
+        },
+
         copySessionChatMessage: async (text) => {
             return safeExecute(async () => {
                 const content = String(text ?? '').trim();
@@ -3148,6 +3203,9 @@ export const useMethods = (store) => {
                 const text = rawText.trim();
                 const images = Array.isArray(sessionChatDraftImages?.value) ? sessionChatDraftImages.value.filter(Boolean).slice(0, 4) : [];
                 if (!text && images.length === 0) return;
+
+                if (sessionChatLastDraftText) sessionChatLastDraftText.value = text;
+                if (sessionChatLastDraftImages) sessionChatLastDraftImages.value = images;
 
                 const now = Date.now();
                 const userMessage = {

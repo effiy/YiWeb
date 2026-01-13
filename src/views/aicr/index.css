@@ -1493,6 +1493,10 @@
     box-shadow: 0 8px 24px rgba(248, 113, 113, 0.08);
 }
 
+.pet-chat-message.is-aborted .pet-chat-bubble {
+    border-color: rgba(148, 163, 184, 0.35);
+}
+
 .pet-chat-content {
     font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
     color: rgba(226, 232, 240, 0.95);

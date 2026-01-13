@@ -267,7 +267,8 @@
                                 :class="{
                                     'is-pet': m.type === 'pet',
                                     'is-user': m.type !== 'pet',
-                                    'is-error': !!m.error
+                                    'is-error': !!m.error,
+                                    'is-aborted': !!m.aborted
                                 }"
                             >
                                 <div class="pet-chat-bubble">
@@ -286,6 +287,14 @@
                                             aria-label="复制消息"
                                             title="复制"
                                         >复制</button>
+                                        <button
+                                            v-if="m.type === 'pet' && (m.error || m.aborted) && idx === (sessionChatMessages(activeSession).length - 1)"
+                                            type="button"
+                                            class="pet-chat-meta-btn"
+                                            @click="retryLastSessionChatMessage"
+                                            aria-label="重试"
+                                            :title="m.error ? '重试' : '继续生成'"
+                                        >{{ m.error ? '重试' : '继续' }}</button>
                                         <time class="pet-chat-time" :datetime="m.timestamp">{{ formatTime(m.timestamp) }}</time>
                                     </div>
                                 </div>
