@@ -268,6 +268,20 @@ const componentOptions = {
             }
         },
         computed: {
+            sessionMessages() {
+                const msgs = this.activeSession && Array.isArray(this.activeSession.messages) ? this.activeSession.messages : [];
+                return msgs
+                    .map(m => ({
+                        type: m?.type === 'pet' ? 'pet' : 'user',
+                        content: String(m?.content || ''),
+                        timestamp: typeof m?.timestamp === 'number' ? m.timestamp : Date.now(),
+                        imageDataUrl: m?.imageDataUrl
+                    }))
+                    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            },
+            canSendSessionChat() {
+                return !!(this.activeSession && String(this.sessionChatInputLocal || '').trim());
+            },
             codeLines() {
                 try {
                     const content = (this.file && typeof this.file.content === 'string') ? this.file.content : '';
@@ -496,6 +510,21 @@ const componentOptions = {
                 return html;
             },
             
+
+            // 获取Markdown预览的行数（用于行号显示和评论标记）
+            markdownPreviewLines() {
+                if (!this.shouldShowMarkdownPreview || !this.file || !this.file.content) {
+                    return [];
+                }
+                // 将内容按行分割，为每行创建占位符
+                const lines = this.file.content.split('\n');
+                return lines.map((line, index) => ({
+                    number: index + 1,
+                    content: line
+                }));
+            }
+        },
+        methods: {
             // 添加代码块交互功能
             addCodeBlockInteractions() {
                 // 注册全局函数
@@ -571,353 +600,6 @@ const componentOptions = {
                 document.body.removeChild(textArea);
             },
             
-            // 添加目录导航
-            addTableOfContents() {
-                const content = this.$el.querySelector('.markdown-preview-content');
-                if (!content) return;
-                
-                const headings = content.querySelectorAll('h1, h2, h3, h4, h5, h6');
-                if (headings.length === 0) return;
-                
-                // 创建目录
-                const toc = document.createElement('div');
-                toc.className = 'md-toc';
-                toc.innerHTML = `
-                    <div class="md-toc-header">
-                        <h4>目录</h4>
-                        <button type="button" class="md-toc-toggle" onclick="this.parentElement.parentElement.classList.toggle('collapsed')">
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                    </div>
-                    <div class="md-toc-content"></div>
-                `;
-                
-                const tocContent = toc.querySelector('.md-toc-content');
-                headings.forEach((heading, index) => {
-                    const id = `heading-${index}`;
-                    heading.id = id;
-                    
-                    const level = parseInt(heading.tagName.charAt(1));
-                    const item = document.createElement('div');
-                    item.className = `md-toc-item level-${level}`;
-                    item.innerHTML = `<a href="#${id}" class="md-toc-link">${heading.textContent}</a>`;
-                    tocContent.appendChild(item);
-                });
-                
-                // 插入到内容前面
-                content.insertBefore(toc, content.firstChild);
-            },
-            
-            // 添加代码高亮
-            addCodeHighlighting() {
-                const codeBlocks = this.$el.querySelectorAll('.md-code-block code');
-                codeBlocks.forEach(block => {
-                    const language = block.className.match(/language-(\w+)/);
-                    if (language) {
-                        this.highlightCodeBlock(block, language[1]);
-                    }
-                });
-            },
-            
-            // 代码块高亮处理
-            highlightCodeBlock(block, language) {
-                // 简单的语法高亮实现
-                const code = block.textContent;
-                let highlighted = code;
-                
-                // 根据语言进行不同的高亮处理
-                switch (language.toLowerCase()) {
-                    case 'javascript':
-                    case 'js':
-                        highlighted = this.highlightJavaScript(code);
-                        break;
-                    case 'typescript':
-                    case 'ts':
-                        highlighted = this.highlightTypeScript(code);
-                        break;
-                    case 'python':
-                    case 'py':
-                        highlighted = this.highlightPython(code);
-                        break;
-                    case 'css':
-                        highlighted = this.highlightCSS(code);
-                        break;
-                    case 'scss':
-                    case 'sass':
-                        highlighted = this.highlightSCSS(code);
-                        break;
-                    case 'html':
-                    case 'xml':
-                        highlighted = this.highlightHTML(code);
-                        break;
-                    case 'json':
-                        highlighted = this.highlightJSON(code);
-                        break;
-                    case 'yaml':
-                    case 'yml':
-                        highlighted = this.highlightYAML(code);
-                        break;
-                    case 'bash':
-                    case 'shell':
-                    case 'sh':
-                        highlighted = this.highlightBash(code);
-                        break;
-                    case 'sql':
-                        highlighted = this.highlightSQL(code);
-                        break;
-                    case 'java':
-                        highlighted = this.highlightJava(code);
-                        break;
-                    case 'cpp':
-                    case 'c++':
-                        highlighted = this.highlightCpp(code);
-                        break;
-                    case 'c':
-                        highlighted = this.highlightC(code);
-                        break;
-                    case 'go':
-                        highlighted = this.highlightGo(code);
-                        break;
-                    case 'rust':
-                        highlighted = this.highlightRust(code);
-                        break;
-                    case 'php':
-                        highlighted = this.highlightPHP(code);
-                        break;
-                    case 'ruby':
-                        highlighted = this.highlightRuby(code);
-                        break;
-                    case 'swift':
-                        highlighted = this.highlightSwift(code);
-                        break;
-                    case 'kotlin':
-                        highlighted = this.highlightKotlin(code);
-                        break;
-                    case 'dart':
-                        highlighted = this.highlightDart(code);
-                        break;
-                    case 'markdown':
-                    case 'md':
-                        highlighted = this.highlightMarkdown(code);
-                        break;
-                    default:
-                        highlighted = this.highlightGeneric(code);
-                }
-                
-                block.innerHTML = highlighted;
-            },
-            
-            // JavaScript语法高亮
-            highlightJavaScript(code) {
-                return code
-                    .replace(/\b(function|const|let|var|if|else|for|while|return|class|import|export|from|async|await)\b/g, '<span class="md-keyword">$1</span>')
-                    .replace(/\b(true|false|null|undefined)\b/g, '<span class="md-literal">$1</span>')
-                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
-                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
-                    .replace(/\/\/.*$/gm, '<span class="md-comment">$&</span>')
-                    .replace(/\/\*[\s\S]*?\*\//g, '<span class="md-comment">$&</span>');
-            },
-            
-            // Python语法高亮
-            highlightPython(code) {
-                return code
-                    .replace(/\b(def|class|if|elif|else|for|while|import|from|return|yield|lambda|with|as|try|except|finally|raise|assert|pass|break|continue)\b/g, '<span class="md-keyword">$1</span>')
-                    .replace(/\b(True|False|None)\b/g, '<span class="md-literal">$1</span>')
-                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
-                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
-                    .replace(/#.*$/gm, '<span class="md-comment">$&</span>');
-            },
-            
-            // CSS语法高亮
-            highlightCSS(code) {
-                return code
-                    .replace(/([.#]?[a-zA-Z-]+)\s*\{/g, '<span class="md-selector">$1</span> {')
-                    .replace(/([a-zA-Z-]+)\s*:/g, '<span class="md-property">$1</span>:')
-                    .replace(/([a-zA-Z-]+)\s*;/g, '<span class="md-value">$1</span>;')
-                    .replace(/\/\*[\s\S]*?\*\//g, '<span class="md-comment">$&</span>');
-            },
-            
-            // HTML语法高亮
-            highlightHTML(code) {
-                return code
-                    .replace(/&lt;(\/?[a-zA-Z][^&]*?)&gt;/g, '<span class="md-tag">&lt;$1&gt;</span>')
-                    .replace(/([a-zA-Z-]+)=/g, '<span class="md-attribute">$1</span>=')
-                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
-                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>');
-            },
-            
-            // TypeScript语法高亮
-            highlightTypeScript(code) {
-                return code
-                    .replace(/\b(function|const|let|var|if|else|for|while|return|class|import|export|from|async|await|interface|type|enum|namespace|module|declare|public|private|protected|static|readonly|abstract|extends|implements)\b/g, '<span class="md-keyword">$1</span>')
-                    .replace(/\b(true|false|null|undefined)\b/g, '<span class="md-literal">$1</span>')
-                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
-                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
-                    .replace(/`([^`]*)`/g, '<span class="md-string">`$1`</span>')
-                    .replace(/\/\/.*$/gm, '<span class="md-comment">$&</span>')
-                    .replace(/\/\*[\s\S]*?\*\//g, '<span class="md-comment">$&</span>')
-                    .replace(/\b\d+\.?\d*\b/g, '<span class="md-number">$&</span>')
-                    .replace(/\b[A-Z][a-zA-Z0-9]*\b/g, '<span class="md-type">$&</span>');
-            },
-            
-            // JSON语法高亮
-            highlightJSON(code) {
-                return code
-                    .replace(/"([^"]*)"\s*:/g, '<span class="md-property">"$1"</span>:')
-                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
-                    .replace(/\b(true|false|null)\b/g, '<span class="md-literal">$1</span>')
-                    .replace(/\b\d+\.?\d*\b/g, '<span class="md-number">$1</span>');
-            },
-            
-            // YAML语法高亮
-            highlightYAML(code) {
-                return code
-                    .replace(/^(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/gm, '$1<span class="md-property">$2</span>:')
-                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
-                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
-                    .replace(/\b(true|false|null|~)\b/g, '<span class="md-literal">$1</span>')
-                    .replace(/\b\d+\.?\d*\b/g, '<span class="md-number">$&</span>')
-                    .replace(/#.*$/gm, '<span class="md-comment">$&</span>');
-            },
-            
-            // Bash语法高亮
-            highlightBash(code) {
-                return code
-                    .replace(/\b(if|then|else|elif|fi|for|while|do|done|case|esac|function|return|break|continue|exit)\b/g, '<span class="md-keyword">$1</span>')
-                    .replace(/\b(true|false)\b/g, '<span class="md-literal">$1</span>')
-                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
-                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
-                    .replace(/\$[a-zA-Z_][a-zA-Z0-9_]*/g, '<span class="md-variable">$&</span>')
-                    .replace(/#.*$/gm, '<span class="md-comment">$&</span>');
-            },
-            
-            // SQL语法高亮
-            highlightSQL(code) {
-                return code
-                    .replace(/\b(SELECT|FROM|WHERE|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|TABLE|INDEX|VIEW|DATABASE|SCHEMA|JOIN|LEFT|RIGHT|INNER|OUTER|ON|GROUP|BY|ORDER|HAVING|UNION|DISTINCT|LIMIT|OFFSET|AS|AND|OR|NOT|IN|EXISTS|BETWEEN|LIKE|IS|NULL|TRUE|FALSE)\b/gi, '<span class="md-keyword">$1</span>')
-                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
-                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
-                    .replace(/\b\d+\.?\d*\b/g, '<span class="md-number">$&</span>')
-                    .replace(/--.*$/gm, '<span class="md-comment">$&</span>')
-                    .replace(/\/\*[\s\S]*?\*\//g, '<span class="md-comment">$&</span>');
-            },
-            
-            // 通用语法高亮
-            highlightGeneric(code) {
-                return code
-                    .replace(/"([^"]*)"/g, '<span class="md-string">"$1"</span>')
-                    .replace(/'([^']*)'/g, '<span class="md-string">\'$1\'</span>')
-                    .replace(/\b\d+\.?\d*\b/g, '<span class="md-number">$&</span>');
-            },
-            
-            // 添加图片灯箱效果（带懒加载）
-            addImageLightbox() {
-                const images = this.$el.querySelectorAll('.md-image');
-                
-                // 使用Intersection Observer进行懒加载
-                if ('IntersectionObserver' in window) {
-                    const imageObserver = new IntersectionObserver((entries) => {
-                        entries.forEach(entry => {
-                            if (entry.isIntersecting) {
-                                const img = entry.target;
-                                img.style.cursor = 'pointer';
-                                img.addEventListener('click', () => {
-                                    this.showImageLightbox(img.src, img.alt);
-                                });
-                                imageObserver.unobserve(img);
-                            }
-                        });
-                    }, { rootMargin: '50px' });
-                    
-                    // 安全地观察每个图片元素
-                    images.forEach(img => {
-                        if (img && img instanceof Node) {
-                            imageObserver.observe(img);
-                        }
-                    });
-                } else {
-                    // 降级处理
-                    images.forEach(img => {
-                        if (img && img instanceof HTMLElement) {
-                            img.style.cursor = 'pointer';
-                            img.addEventListener('click', () => {
-                                this.showImageLightbox(img.src, img.alt);
-                            });
-                        }
-                    });
-                }
-            },
-            
-            // 显示图片灯箱
-            showImageLightbox(src, alt) {
-                const lightbox = document.createElement('div');
-                lightbox.className = 'md-lightbox';
-                lightbox.innerHTML = `
-                    <div class="md-lightbox-content">
-                        <img src="${src}" alt="${alt}" class="md-lightbox-image">
-                        <button class="md-lightbox-close" onclick="this.parentElement.parentElement.remove()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                `;
-                document.body.appendChild(lightbox);
-            },
-            
-            // 添加平滑滚动
-            addSmoothScrolling() {
-                const links = this.$el.querySelectorAll('.md-toc-link');
-                links.forEach(link => {
-                    link.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const targetId = link.getAttribute('href').substring(1);
-                        const target = document.getElementById(targetId);
-                        if (target) {
-                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }
-                    });
-                });
-            },
-            
-            // 性能监控
-            measurePerformance(name, fn) {
-                const start = performance.now();
-                const result = fn();
-                const end = performance.now();
-                console.log(`[MD Preview] ${name}: ${(end - start).toFixed(2)}ms`);
-                return result;
-            },
-            
-            // 清理资源
-            cleanup() {
-                if (this.interactionTimeout) {
-                    clearTimeout(this.interactionTimeout);
-                }
-                
-                // 清理事件监听器
-                const images = this.$el.querySelectorAll('.md-image');
-                images.forEach(img => {
-                    img.removeEventListener('click', this.showImageLightbox);
-                });
-                
-                // 清理缓存
-                if (this.markdownCache) {
-                    this.markdownCache = {};
-                }
-            },
-            // 获取Markdown预览的行数（用于行号显示和评论标记）
-            markdownPreviewLines() {
-                if (!this.shouldShowMarkdownPreview || !this.file || !this.file.content) {
-                    return [];
-                }
-                // 将内容按行分割，为每行创建占位符
-                const lines = this.file.content.split('\n');
-                return lines.map((line, index) => ({
-                    number: index + 1,
-                    content: line
-                }));
-            }
-        },
-        methods: {
             openLightbox(url, alt) {
                 if (!this.lightbox) {
                     this.lightbox = { visible: false, url: '', alt: '' };
@@ -998,8 +680,7 @@ const componentOptions = {
                     
                     // 重新绑定事件监听器
                     this.$nextTick(() => {
-                        this.bindEventListeners();
-                        this.addSmoothScrolling();
+                        this.addMarkdownInteractions();
                     });
                     
                     console.log('[CodeView] 组件重新初始化完成');
@@ -1377,57 +1058,16 @@ const componentOptions = {
                     // 检查是否支持Clipboard API
                     if (navigator.clipboard && navigator.clipboard.writeText) {
                         navigator.clipboard.writeText(code).then(() => {
-                            console.log('[CodeView] 代码块已复制到剪贴板');
-                            // 可以添加成功提示
+                            this.showCopySuccess(codeId);
                         }).catch(err => {
                             console.error('[CodeView] 复制失败:', err);
-                            // 降级到传统复制方法
-                            this.fallbackCopyToClipboard(code);
+                            // 降级处理
+                            this.fallbackCopy(code);
                         });
                     } else {
-                        // 降级到传统复制方法
-                        this.fallbackCopyToClipboard(code);
-                }
-            }
-        },
-        computed: {
-            sessionMessages() {
-                const msgs = this.activeSession && Array.isArray(this.activeSession.messages) ? this.activeSession.messages : [];
-                return msgs
-                    .map(m => ({
-                        type: m?.type === 'pet' ? 'pet' : 'user',
-                        content: String(m?.content || ''),
-                        timestamp: typeof m?.timestamp === 'number' ? m.timestamp : Date.now(),
-                        imageDataUrl: m?.imageDataUrl
-                    }))
-                    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-            },
-            canSendSessionChat() {
-                return !!(this.activeSession && String(this.sessionChatInputLocal || '').trim());
-            }
-        },
-            
-            // 降级复制方法
-            fallbackCopyToClipboard(text) {
-                try {
-                    const textArea = document.createElement('textarea');
-                    textArea.value = text;
-                    textArea.style.position = 'fixed';
-                    textArea.style.left = '-999999px';
-                    textArea.style.top = '-999999px';
-                    document.body.appendChild(textArea);
-                    textArea.focus();
-                    textArea.select();
-                    const successful = document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    
-                    if (successful) {
-                        console.log('[CodeView] 代码块已复制到剪贴板（降级方法）');
-                    } else {
-                        console.error('[CodeView] 复制失败（降级方法）');
+                        // 降级处理
+                        this.fallbackCopy(code);
                     }
-                } catch (err) {
-                    console.error('[CodeView] 复制失败（降级方法）:', err);
                 }
             },
             
@@ -1457,13 +1097,6 @@ const componentOptions = {
                         }
                     }
                     
-                }
-            },
-            
-            // 切换内容折叠/展开
-            toggleContentCollapse(element) {
-                if (element) {
-                    element.classList.toggle('collapsed');
                 }
             },
             // 渲染单行Markdown内容
@@ -4188,6 +3821,9 @@ const componentOptions = {
         },
         mounted() {
             console.log('[CodeView] 组件挂载');
+            
+            // 初始化代码块交互
+            this.addCodeBlockInteractions();
             
             // 添加全局Promise拒绝处理器
             this._unhandledRejectionHandler = (event) => {

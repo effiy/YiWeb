@@ -1818,11 +1818,7 @@
 
 .aicr-session-context-modal-body {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: min(1000px, 95vw);
-    max-height: min(90vh, 900px);
+    inset: 12px;
     background: rgba(15, 23, 42, 0.95);
     border: 1px solid rgba(51, 65, 85, 0.85);
     border-radius: 14px;
@@ -1948,7 +1944,8 @@
     flex: 1;
     width: 100%;
     resize: none;
-    min-height: 240px;
+    min-height: 0;
+    height: 100%;
     border-radius: 12px;
     padding: 10px 12px;
     border: 1px solid rgba(51, 65, 85, 0.85);
@@ -1969,7 +1966,8 @@
 .aicr-session-context-preview {
     flex: 1;
     width: 100%;
-    min-height: 240px;
+    min-height: 0;
+    height: 100%;
     border-radius: 12px;
     padding: 12px 14px;
     border: 1px solid rgba(51, 65, 85, 0.85);
