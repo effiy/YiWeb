@@ -264,11 +264,19 @@
                                 v-for="(m, idx) in sessionChatMessages(activeSession)" 
                                 :key="`${m.timestamp || 0}_${idx}`"
                                 class="pet-chat-message"
-                                :class="m.type === 'pet' ? 'is-pet' : 'is-user'"
+                                :class="{
+                                    'is-pet': m.type === 'pet',
+                                    'is-user': m.type !== 'pet',
+                                    'is-error': !!m.error
+                                }"
                             >
                                 <div class="pet-chat-bubble">
-                                    <img v-if="m.imageDataUrl" class="pet-chat-image" :src="m.imageDataUrl" alt="图片消息" />
-                                    <div v-if="m.content && String(m.content).trim()" class="pet-chat-content md-preview-body" v-html="renderSessionChatMarkdown(m.content)"></div>
+                                    <div v-if="Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0" class="pet-chat-images">
+                                        <img v-for="(src, imgIdx) in m.imageDataUrls" :key="`${m.timestamp || 0}_${imgIdx}`" class="pet-chat-image" :src="src" alt="图片消息" />
+                                    </div>
+                                    <img v-else-if="m.imageDataUrl" class="pet-chat-image" :src="m.imageDataUrl" alt="图片消息" />
+                                    <div v-if="m.type === 'pet' && (!m.content || !String(m.content).trim()) && sessionChatSending && idx === (sessionChatMessages(activeSession).length - 1)" class="pet-chat-typing" aria-label="生成中">...</div>
+                                    <div v-else-if="m.content && String(m.content).trim()" class="pet-chat-content md-preview-body" v-html="renderSessionChatMarkdown(m.content)"></div>
                                     <div class="pet-chat-meta">
                                         <button
                                             v-if="m.content && String(m.content).trim()"
@@ -320,16 +328,38 @@
                         </div>
 
                         <div class="chat-input-wrapper">
-                            <textarea
-                                id="pet-chat-input"
-                                class="pet-chat-textarea chat-message-input"
-                                :value="sessionChatInput"
-                                @input="onSessionChatInput"
-                                @keydown="onSessionChatKeydown"
-                                placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
-                                rows="2"
-                                aria-label="会话输入框"
-                            ></textarea>
+                            <div v-if="Array.isArray(sessionChatDraftImages) && sessionChatDraftImages.length > 0" class="pet-chat-draft-images" aria-label="待发送图片">
+                                <div v-for="(src, imgIdx) in sessionChatDraftImages" :key="`draft_${imgIdx}`" class="pet-chat-draft-image">
+                                    <img class="pet-chat-draft-image-preview" :src="src" alt="待发送图片" />
+                                    <button type="button" class="pet-chat-draft-image-remove" @click="removeSessionChatDraftImage(imgIdx)" aria-label="移除图片" title="移除">✕</button>
+                                </div>
+                                <button type="button" class="pet-chat-draft-images-clear" @click="clearSessionChatDraftImages" aria-label="清空图片" title="清空图片">清空图片</button>
+                            </div>
+
+                            <div class="pet-chat-input-row">
+                                <textarea
+                                    id="pet-chat-input"
+                                    class="pet-chat-textarea chat-message-input"
+                                    :value="sessionChatInput"
+                                    @input="onSessionChatInput"
+                                    @keydown="onSessionChatKeydown"
+                                    @compositionstart="onSessionChatCompositionStart"
+                                    @compositionupdate="onSessionChatCompositionUpdate"
+                                    @compositionend="onSessionChatCompositionEnd"
+                                    @paste="onSessionChatPaste"
+                                    placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
+                                    rows="2"
+                                    aria-label="会话输入框"
+                                ></textarea>
+                                <button
+                                    type="button"
+                                    class="pet-chat-send-btn"
+                                    :disabled="sessionChatSending || (!String(sessionChatInput || '').trim() && !(Array.isArray(sessionChatDraftImages) && sessionChatDraftImages.length > 0))"
+                                    @click="sendSessionChatMessage"
+                                    aria-label="发送"
+                                    title="发送 (Enter)"
+                                >发送</button>
+                            </div>
                         </div>
                     </div>
 

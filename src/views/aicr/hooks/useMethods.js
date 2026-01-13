@@ -62,6 +62,7 @@ export const useMethods = (store) => {
         activeSessionLoading,
         activeSessionError,
         sessionChatInput,
+        sessionChatDraftImages,
         sessionChatSending,
         sessionChatAbortController,
         sessionContextEnabled,
@@ -80,6 +81,20 @@ export const useMethods = (store) => {
     } = store;
 
     const defaultSessionBotSystemPrompt = '你是一个专业、简洁且可靠的 AI 助手。';
+    let _sessionChatIsComposing = false;
+    let _sessionChatCompositionEndTime = 0;
+    const _SESSION_CHAT_COMPOSITION_END_DELAY = 100;
+    let _sessionMarkedConfigured = false;
+    let _sessionMarkedRenderer = null;
+
+    const _escapeHtml = (v) => {
+        return String(v ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    };
 
     const loadSessionBotSettings = () => {
         try {
@@ -2661,12 +2676,20 @@ export const useMethods = (store) => {
             try {
                 const msgs = Array.isArray(session?.messages) ? session.messages : [];
                 return [...msgs]
-                    .map(m => ({
-                        type: m?.type === 'pet' ? 'pet' : 'user',
-                        content: String(m?.content || ''),
-                        timestamp: typeof m?.timestamp === 'number' ? m.timestamp : Date.now(),
-                        imageDataUrl: m?.imageDataUrl
-                    }))
+                    .map(m => {
+                        const timestamp = typeof m?.timestamp === 'number' ? m.timestamp : Date.now();
+                        const imageDataUrls = Array.isArray(m?.imageDataUrls) ? m.imageDataUrls.filter(Boolean) : [];
+                        const imageDataUrl = String(m?.imageDataUrl || (imageDataUrls[0] || '') || '');
+                        return {
+                            type: m?.type === 'pet' ? 'pet' : 'user',
+                            content: String(m?.content || ''),
+                            timestamp,
+                            imageDataUrls,
+                            imageDataUrl,
+                            error: !!m?.error,
+                            aborted: !!m?.aborted
+                        };
+                    })
                     .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
             } catch (_) {
                 return [];
@@ -2684,13 +2707,69 @@ export const useMethods = (store) => {
                         .replace(/>/g, '&gt;')
                         .replace(/\n/g, '<br/>');
                 }
+                if (!_sessionMarkedConfigured) {
+                    try {
+                        const renderer = new window.marked.Renderer();
+                        const originalCodeRenderer = renderer.code.bind(renderer);
+                        renderer.code = (code, language, isEscaped) => {
+                            const lang = String(language || '').trim().toLowerCase();
+                            const src = String(code || '');
+                            if (lang === 'mermaid') {
+                                const diagramId = `aicr-chat-mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+                                const diagramCode = String(src || '').trim();
+                                if (window.mermaidRenderer && typeof window.mermaidRenderer.createDiagramContainer === 'function' && typeof window.mermaidRenderer.renderDiagram === 'function') {
+                                    const container = window.mermaidRenderer.createDiagramContainer(diagramId, diagramCode, {
+                                        showHeader: false,
+                                        showActions: true,
+                                        headerLabel: 'MERMAID 图表',
+                                        sourceLine: null
+                                    });
+                                    setTimeout(() => {
+                                        try {
+                                            window.mermaidRenderer.renderDiagram(diagramId, diagramCode, { showLoading: false });
+                                        } catch (_) {}
+                                    }, 0);
+                                    return container;
+                                }
+                                return `<pre class="md-code"><code class="language-mermaid">${_escapeHtml(diagramCode)}</code></pre>`;
+                            }
+
+                            if (window.hljs) {
+                                const desiredLanguage = lang || 'plaintext';
+                                const validLanguage = window.hljs.getLanguage(desiredLanguage) ? desiredLanguage : 'plaintext';
+                                try {
+                                    const highlighted = window.hljs.highlight(src, { language: validLanguage }).value;
+                                    return `<pre><code class="hljs language-${validLanguage}">${highlighted}</code></pre>`;
+                                } catch (_) {}
+                            }
+
+                            return originalCodeRenderer(src, language, isEscaped);
+                        };
+
+                        _sessionMarkedRenderer = renderer;
+                        _sessionMarkedConfigured = true;
+                    } catch (_) {
+                        _sessionMarkedRenderer = null;
+                        _sessionMarkedConfigured = true;
+                    }
+                }
+
                 try {
-                    window.marked.setOptions({
-                        breaks: true,
-                        gfm: true
-                    });
-                } catch (_) {}
-                return window.marked.parse(raw);
+                    if (typeof window.marked.parse === 'function') {
+                        return window.marked.parse(raw, {
+                            renderer: _sessionMarkedRenderer || undefined,
+                            breaks: true,
+                            gfm: true
+                        });
+                    }
+                    return window.marked(raw);
+                } catch (_) {
+                    return raw
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/\n/g, '<br/>');
+                }
             } catch (_) {
                 return '';
             }
@@ -2713,13 +2792,72 @@ export const useMethods = (store) => {
                     const next = Math.max(min, Math.min(max, el.scrollHeight || min));
                     el.style.height = `${next}px`;
                 }
-                setTimeout(() => {
-                    try {
-                        const box = document.getElementById('pet-chat-messages');
-                        if (box) box.scrollTop = box.scrollHeight;
-                    } catch (_) {}
-                }, 0);
             } catch (_) {}
+        },
+
+        onSessionChatCompositionStart: () => {
+            _sessionChatIsComposing = true;
+            _sessionChatCompositionEndTime = 0;
+        },
+
+        onSessionChatCompositionUpdate: () => {
+            _sessionChatIsComposing = true;
+            _sessionChatCompositionEndTime = 0;
+        },
+
+        onSessionChatCompositionEnd: () => {
+            _sessionChatIsComposing = false;
+            _sessionChatCompositionEndTime = Date.now();
+        },
+
+        onSessionChatPaste: (e) => {
+            try {
+                const clipboard = e?.clipboardData;
+                const items = clipboard?.items;
+                if (!items || typeof items.length !== 'number') return;
+
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if (!item || typeof item.type !== 'string') continue;
+                    if (!item.type.includes('image')) continue;
+                    const file = item.getAsFile && item.getAsFile();
+                    if (!file) continue;
+
+                    e.preventDefault();
+
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        try {
+                            const dataUrl = String(reader.result || '').trim();
+                            if (!dataUrl) return;
+                            const current = Array.isArray(sessionChatDraftImages?.value) ? [...sessionChatDraftImages.value] : [];
+                            if (current.length >= 4) {
+                                if (window.showError) window.showError('最多支持 4 张图片');
+                                return;
+                            }
+                            current.push(dataUrl);
+                            if (sessionChatDraftImages) sessionChatDraftImages.value = current;
+                            if (window.showSuccess) window.showSuccess('已添加图片');
+                        } catch (_) {}
+                    };
+                    reader.readAsDataURL(file);
+                    break;
+                }
+            } catch (_) {}
+        },
+
+        removeSessionChatDraftImage: (idx) => {
+            try {
+                const list = Array.isArray(sessionChatDraftImages?.value) ? [...sessionChatDraftImages.value] : [];
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i < 0 || i >= list.length) return;
+                list.splice(i, 1);
+                if (sessionChatDraftImages) sessionChatDraftImages.value = list;
+            } catch (_) {}
+        },
+
+        clearSessionChatDraftImages: () => {
+            if (sessionChatDraftImages) sessionChatDraftImages.value = [];
         },
 
         clearSessionChatInput: () => {
@@ -2944,17 +3082,22 @@ export const useMethods = (store) => {
         onSessionChatKeydown: (e) => {
             try {
                 if (!e) return;
-                if (e.isComposing) return;
+                if (e.isComposing || _sessionChatIsComposing) return;
+                if (e.key === 'Enter' && _sessionChatCompositionEndTime > 0) {
+                    if (Date.now() - _sessionChatCompositionEndTime < _SESSION_CHAT_COMPOSITION_END_DELAY) return;
+                }
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     if (typeof window.aicrApp?.sendSessionChatMessage === 'function') {
                         window.aicrApp.sendSessionChatMessage();
                     }
+                    _sessionChatCompositionEndTime = 0;
                     return;
                 }
                 if (e.key === 'Escape') {
                     e.preventDefault();
                     if (sessionChatInput) sessionChatInput.value = '';
+                    if (sessionChatDraftImages) sessionChatDraftImages.value = [];
                     try {
                         const el = document.getElementById('pet-chat-input');
                         if (el && el.style) {
@@ -3001,11 +3144,18 @@ export const useMethods = (store) => {
             return safeExecute(async () => {
                 if (!activeSession?.value) return;
                 if (sessionChatSending?.value) return;
-                const text = String(sessionChatInput?.value ?? '').trim();
-                if (!text) return;
+                const rawText = String(sessionChatInput?.value ?? '');
+                const text = rawText.trim();
+                const images = Array.isArray(sessionChatDraftImages?.value) ? sessionChatDraftImages.value.filter(Boolean).slice(0, 4) : [];
+                if (!text && images.length === 0) return;
 
                 const now = Date.now();
-                const userMessage = { type: 'user', content: text, timestamp: now };
+                const userMessage = {
+                    type: 'user',
+                    content: text,
+                    timestamp: now,
+                    ...(images.length > 0 ? { imageDataUrls: images, imageDataUrl: images[0] } : {})
+                };
                 const petMessage = { type: 'pet', content: '', timestamp: now + 1 };
 
                 const prevSession = activeSession.value;
@@ -3019,6 +3169,18 @@ export const useMethods = (store) => {
 
                 activeSession.value = nextSession;
                 if (sessionChatInput) sessionChatInput.value = '';
+                if (sessionChatDraftImages) sessionChatDraftImages.value = [];
+
+                const shouldAutoScroll = () => {
+                    try {
+                        const el = document.getElementById('pet-chat-messages');
+                        if (!el) return true;
+                        const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
+                        return distance < 140;
+                    } catch (_) {
+                        return true;
+                    }
+                };
 
                 const scrollToBottom = () => {
                     try {
@@ -3031,11 +3193,17 @@ export const useMethods = (store) => {
                 const buildHistory = () => {
                     const msgs = Array.isArray(nextSession.messages) ? nextSession.messages : [];
                     const cleaned = msgs
-                        .filter(m => m && m.content != null && String(m.content).trim())
+                        .filter(m => m && (String(m.content || '').trim() || (m.imageDataUrl || (Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0))))
                         .slice(-30)
                         .map(m => {
                             const role = m.type === 'pet' ? '助手' : '用户';
-                            const content = String(m.content || '').trim();
+                            const contentText = String(m.content || '').trim();
+                            const imageCount = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.length : (m.imageDataUrl ? 1 : 0);
+                            const content = (() => {
+                                if (contentText) return contentText;
+                                if (imageCount > 0) return imageCount === 1 ? '[图片]' : `[图片 x${imageCount}]`;
+                                return '';
+                            })();
                             return `${role}：${content}`;
                         })
                         .join('\n\n');
@@ -3053,7 +3221,7 @@ export const useMethods = (store) => {
                 if (history) {
                     fromUser += `## 会话历史\n\n${history}\n\n`;
                 }
-                fromUser += `## 当前消息\n\n${text}`;
+                fromUser += `## 当前消息\n\n${text || '用户发送了图片，请结合图片内容回答。'}`;
 
                 const { streamPrompt } = await import('/src/services/modules/crud.js');
                 const promptUrl = `${(window.API_URL || '').replace(/\/$/, '')}/prompt`;
@@ -3062,6 +3230,8 @@ export const useMethods = (store) => {
                 if (sessionChatSending) sessionChatSending.value = true;
                 const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
                 if (sessionChatAbortController) sessionChatAbortController.value = controller;
+                let streamErrorMessage = '';
+                let streamAborted = false;
 
                 try {
                     await streamPrompt(
@@ -3071,10 +3241,12 @@ export const useMethods = (store) => {
                             fromUser,
                             ...(String(sessionBotModel?.value || '').trim()
                                 ? { model: String(sessionBotModel.value || '').trim() }
-                                : {})
+                                : {}),
+                            ...(images.length > 0 ? { images } : {})
                         },
                         controller ? { signal: controller.signal } : {},
                         (chunk) => {
+                            const autoScroll = shouldAutoScroll();
                             accumulated += String(chunk || '');
                             try {
                                 const s = activeSession.value;
@@ -3085,7 +3257,7 @@ export const useMethods = (store) => {
                                     if (last && last.type === 'pet' && last.timestamp === petMessage.timestamp) {
                                         msgs[lastIdx] = { ...last, content: accumulated };
                                         activeSession.value = { ...s, messages: msgs };
-                                        scrollToBottom();
+                                        if (autoScroll) scrollToBottom();
                                     }
                                 }
                             } catch (_) {}
@@ -3095,7 +3267,11 @@ export const useMethods = (store) => {
                     const aborted =
                         (e && e.name === 'AbortError') ||
                         (e && typeof e.message === 'string' && e.message.toLowerCase().includes('aborted'));
-                    if (!aborted) throw e;
+                    if (aborted) {
+                        streamAborted = true;
+                    } else {
+                        streamErrorMessage = String(e?.message || '请求失败');
+                    }
                 } finally {
                     if (sessionChatSending) sessionChatSending.value = false;
                     if (sessionChatAbortController) sessionChatAbortController.value = null;
@@ -3108,16 +3284,31 @@ export const useMethods = (store) => {
                     if (lastIdx >= 0) {
                         const last = msgs[lastIdx];
                         if (last && last.type === 'pet' && last.timestamp === petMessage.timestamp) {
-                            msgs[lastIdx] = { ...last, content: String(accumulated || '').trim() };
+                            const trimmed = String(accumulated || '').trim();
+                            const content = streamErrorMessage
+                                ? (trimmed || `请求失败：${streamErrorMessage}`)
+                                : (streamAborted && !trimmed ? '已停止' : trimmed);
+                            msgs[lastIdx] = {
+                                ...last,
+                                content,
+                                ...(streamErrorMessage ? { error: true } : {}),
+                                ...(streamAborted ? { aborted: true } : {})
+                            };
                         }
                     }
                     return { ...s, messages: msgs, pageContent: String(sessionContextDraft?.value ?? s.pageContent ?? '') };
                 })();
                 activeSession.value = finalSession;
 
-                const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
-                const sessionSync = getSessionSyncService();
-                await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
+                try {
+                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
+                } catch (_) {}
+
+                if (streamErrorMessage && window.showError) {
+                    window.showError(streamErrorMessage);
+                }
             }, '发送会话消息');
         },
 
@@ -3125,8 +3316,9 @@ export const useMethods = (store) => {
             try {
                 const hasSession = !!(activeSession && activeSession.value);
                 const text = String(sessionChatInput?.value ?? '').trim();
+                const hasImages = Array.isArray(sessionChatDraftImages?.value) && sessionChatDraftImages.value.some(Boolean);
                 const sending = !!sessionChatSending?.value;
-                return hasSession && !!text && !sending;
+                return hasSession && !sending && (!!text || hasImages);
             } catch (_) {
                 return false;
             }

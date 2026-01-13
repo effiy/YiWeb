@@ -462,6 +462,7 @@ export const createStore = () => {
     const activeSessionLoading = vueRef(false);
     const activeSessionError = vueRef(null);
     const sessionChatInput = vueRef('');
+    const sessionChatDraftImages = vueRef([]);
     const sessionChatSending = vueRef(false);
     const sessionChatAbortController = vueRef(null);
     const sessionContextEnabled = vueRef(true);
@@ -2068,6 +2069,7 @@ export const createStore = () => {
         activeSessionLoading,
         activeSessionError,
         sessionChatInput,
+        sessionChatDraftImages,
         sessionChatSending,
         sessionChatAbortController,
         sessionContextEnabled,
