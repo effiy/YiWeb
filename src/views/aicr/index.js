@@ -862,16 +862,6 @@ const { computed } = Vue;
                     }
                 },
                 
-                handleSessionTree: async function(session) {
-                    logInfo('[主页面] 收到会话转树形文件事件:', session);
-                    try {
-                        const methods = useMethods(store);
-                        await methods.handleSessionTree(session);
-                    } catch (error) {
-                        logError('[主页面] 会话转树形文件处理失败:', error);
-                    }
-                },
-                
                 handleTagSelect: function(tags) {
                     logInfo('[主页面] 收到标签选择事件:', tags);
                     try {

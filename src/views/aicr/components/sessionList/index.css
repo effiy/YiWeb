@@ -624,10 +624,6 @@
     background: rgba(52, 211, 153, 0.15);
 }
 
-.session-tree-btn:hover {
-    color: #2dd4bf; /* teal-400 */
-    background: rgba(45, 212, 191, 0.15);
-}
 
 /* 收藏按钮样式 */
 .session-favorite-btn {

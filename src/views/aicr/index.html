@@ -213,7 +213,6 @@
                         @session-duplicate="handleSessionDuplicate"
                         @session-context="handleSessionContext"
                         @session-open-url="handleSessionOpenUrl"
-                        @session-tree="handleSessionTree"
                         @session-batch-select="handleSessionBatchSelect"
                         @session-batch-select-all="handleToggleSelectAllSessions"
                         @session-batch-delete="handleBatchDeleteSessions"
@@ -317,7 +316,6 @@
                                     :title="sessionChatSending ? '请求状态：生成中（点击停止）' : '请求状态：空闲'"
                                     aria-label="请求状态"
                                 >⏹️</button>
-                                <button type="button" class="pet-chat-btn chat-input-clear-btn" @click="clearSessionContext" title="清除上下文" aria-label="清除上下文">🧹 清除上下文</button>
                             </div>
                         </div>
 

@@ -714,11 +714,7 @@ const componentOptions = {
             emit('session-open-url', session.key);
         };
         
-        // 处理目录接口按钮点击
-        const handleTreeClick = (session) => {
-            emit('session-tree', session);
-        };
-        
+
         // 处理批量选择切换
         const handleBatchSelect = (sessionId, event) => {
             // 阻止事件冒泡，避免触发会话项的点击事件
@@ -800,11 +796,7 @@ const componentOptions = {
             return null;
         };
         
-        // 判断会话是否已经是树形文件
-        const isSessionFromTree = (session) => {
-            return getSessionSource(session) === 'file-tree';
-        };
-        
+
         // 组件挂载时加载标签顺序
         onMounted(() => {
             loadTagOrder();
@@ -839,11 +831,9 @@ const componentOptions = {
             handleDuplicateClick,
             handleContextClick,
             handleOpenUrlClick,
-            handleTreeClick,
             getSessionSource,
             getSessionSourceIcon,
             getSessionFirstChar,
-            isSessionFromTree,
             handleBatchSelect,
             isSessionSelected,
             handleSelectAll,

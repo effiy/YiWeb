@@ -342,16 +342,7 @@
                             aria-label="在新标签页打开">
                             <i class="fas fa-external-link-alt"></i>
                         </button>
-                        <!-- 目录接口按钮（仅当会话不是来自树形文件时显示） -->
-                        <button 
-                            type="button"
-                            v-if="!isSessionFromTree(session)"
-                            class="session-action-btn session-tree-btn"
-                            @click.stop="handleTreeClick(session)"
-                            title="转成树形文件内容"
-                            aria-label="转成树形文件内容">
-                            <i class="fas fa-sitemap"></i>
-                        </button>
+
                     </div>
                 </div>
             </div>
