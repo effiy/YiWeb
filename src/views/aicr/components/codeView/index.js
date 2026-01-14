@@ -1794,6 +1794,8 @@ const componentOptions = {
                 html = html.replace(/<p class="md-paragraph">(<h[1-6]|<blockquote|<ul|<ol|<pre|<hr)/g, '$1');
                 html = html.replace(/(<\/h[1-6]>|<\/blockquote>|<\/ul>|<\/ol>|<\/pre>|<\/hr>)<\/p>/g, '$1');
                 
+                html = this.processMermaidDiagrams(html);
+                
                 return html;
             },
             
@@ -1837,47 +1839,38 @@ const componentOptions = {
                     return html;
                 }
                 
-                // 查找 mermaid 代码块
-                const mermaidRegex = /<pre class="md-code-block"[^>]*>\s*<code class="language-mermaid">([\s\S]*?)<\/code>\s*<\/pre>/g;
+                const wrapperRegex = /<div class="md-code-block-wrapper"[^>]*>[\s\S]*?<pre class="md-code-block"[^>]*>\s*<code class="language-mermaid">([\s\S]*?)<\/code>\s*<\/pre>[\s\S]*?<\/div>/g;
+                const preRegex = /<pre class="md-code-block"[^>]*>\s*<code class="language-mermaid">([\s\S]*?)<\/code>\s*<\/pre>/g;
                 
-                let processedHtml = html;
-                let match;
                 let diagramIndex = 0;
                 
-                while ((match = mermaidRegex.exec(html)) !== null) {
-                    // 解码 HTML 实体并清理代码
-                    let mermaidCode = match[1];
+                const replaceToContainer = (wholeMatch, codeMatch) => {
+                    let mermaidCode = this.unescapeHtml(codeMatch);
                     
-                    // 解码 HTML 实体
-                    mermaidCode = this.unescapeHtml(mermaidCode);
-                    
-                    // 清理代码：保留必要的换行，只移除多余的空白
                     mermaidCode = mermaidCode
                         .trim()
-                        .replace(/[ \t]+$/gm, '') // 只移除每行末尾的空格和制表符，保留换行
-                        .replace(/\n{3,}/g, '\n\n') // 将多个连续换行替换为最多两个
-                        .replace(/^[ \t]+/gm, ''); // 移除每行开头的空格和制表符，但保留换行结构
+                        .replace(/[ \t]+$/gm, '')
+                        .replace(/\n{3,}/g, '\n\n')
+                        .replace(/^[ \t]+/gm, '');
                     
                     if (!mermaidCode) {
-                        console.warn('[CodeView] Mermaid 代码为空，跳过');
-                        continue;
+                        return wholeMatch;
                     }
                     
-                    const diagramId = `mermaid-diagram-${Date.now()}-${diagramIndex++}`;
+                    const idMatch = wholeMatch.match(/id="([^"]+)"/);
+                    const diagramId = idMatch ? idMatch[1] : `mermaid-diagram-${Date.now()}-${diagramIndex}`;
+                    diagramIndex += 1;
                     
-                    console.log('[CodeView] 处理 Mermaid 代码:', mermaidCode);
-                    
-                    // 使用统一的渲染管理器创建图表容器
-                    const mermaidContainer = window.mermaidRenderer.createDiagramContainer(diagramId, mermaidCode, {
+                    return window.mermaidRenderer.createDiagramContainer(diagramId, mermaidCode, {
                         showHeader: true,
                         showActions: true,
                         headerLabel: 'MERMAID 图表',
                         sourceLine: this.getCurrentSourceLine()
                     });
-                    
-                    // 替换原来的代码块
-                    processedHtml = processedHtml.replace(match[0], mermaidContainer);
-                }
+                };
+                
+                let processedHtml = html.replace(wrapperRegex, (whole, codeMatch) => replaceToContainer(whole, codeMatch));
+                processedHtml = processedHtml.replace(preRegex, (whole, codeMatch) => replaceToContainer(whole, codeMatch));
                 
                 // 在下一个事件循环中初始化 Mermaid
                 if (diagramIndex > 0) {
@@ -2523,7 +2516,7 @@ const componentOptions = {
                         content,
                         text: this.manualQuotedCode || this.lastSelectionText || '', // 引用的代码文本存储在 text 中
                         rangeInfo: this.lastSelectionRange ? { ...this.lastSelectionRange } : null, // 复制一份用于评论定位
-                        fileKey: this.file ? (this.file.key || this.file.id || this.file.path || this.file.name) : undefined,
+                        fileKey: this.file ? (this.file.sessionKey || this.file.fileKey || this.file.key || this.file.id) : undefined,
                         author: '手动评论',
                         fromSystem: null, // 手动评论没有评论者系统
                         status: 'pending',
@@ -2971,7 +2964,7 @@ const componentOptions = {
                     // 触发重新加载评论
                     this.$emit('reload-comments', { 
                         forceReload: true, 
-                        fileKey: this.file ? (this.file.key || this.file.id || this.file.path) : null
+                        fileKey: this.file ? (this.file.sessionKey || this.file.fileKey || this.file.key || this.file.id) : null
                     });
                     
                     hideGlobalLoading();
@@ -3046,7 +3039,7 @@ const componentOptions = {
                     // 触发重新加载评论
                     this.$emit('reload-comments', { 
                         forceReload: true, 
-                        fileKey: this.file ? this.file.key : null
+                        fileKey: this.file ? (this.file.sessionKey || this.file.fileKey || this.file.key) : null
                     });
                     
                     hideGlobalLoading();
@@ -4140,8 +4133,6 @@ const componentOptions = {
         }));
     }
 })();
-
-
 
 
 

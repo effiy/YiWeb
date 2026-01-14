@@ -242,9 +242,33 @@ const componentOptions = {
             
             // 创建 Mermaid 图表
             createMermaidDiagram(code, diagramId) {
+                let decodedCode = String(code || '');
+                try {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = decodedCode;
+                    decodedCode = tempDiv.textContent || tempDiv.innerText || decodedCode;
+                } catch (e) {
+                    decodedCode = String(code || '');
+                }
+                decodedCode = decodedCode.trim();
+
+                if (typeof window.mermaidRenderer !== 'undefined') {
+                    const container = window.mermaidRenderer.createDiagramContainer(diagramId, decodedCode, {
+                        showHeader: true,
+                        showActions: true,
+                        headerLabel: 'MERMAID 图表'
+                    });
+                    
+                    this.$nextTick(() => {
+                        this.renderMermaidDiagram(diagramId, decodedCode);
+                    });
+                    
+                    return `<div class="news-mermaid">${container}</div>`;
+                }
+
                 if (typeof mermaid === 'undefined') {
                     console.warn('[CommentsList] Mermaid.js 未加载，显示原始代码');
-                    return `<pre class="md-code"><code class="language-mermaid">${this.escapeHtml(code)}</code></pre>`;
+                    return `<pre class="md-code"><code class="language-mermaid">${this.escapeHtml(decodedCode)}</code></pre>`;
                 }
                 
                 const container = `
@@ -259,15 +283,14 @@ const componentOptions = {
                                 </button>
                             </div>
                         </div>
-                        <div class="mermaid-diagram-container" id="${diagramId}" data-mermaid-code="${this.escapeHtml(code)}">
-                            ${code}
+                        <div class="mermaid-diagram-container" id="${diagramId}" data-mermaid-code="${this.escapeHtml(decodedCode)}">
                         </div>
                     </div>
                 `;
                 
                 // 延迟渲染图表
                 this.$nextTick(() => {
-                    this.renderMermaidDiagram(diagramId, code);
+                    this.renderMermaidDiagram(diagramId, decodedCode);
                 });
                 
                 return container;
@@ -586,7 +609,6 @@ const componentOptions = {
         console.error('[CommentsList] 组件初始化失败:', e);
     }
 })();
-
 
 
 

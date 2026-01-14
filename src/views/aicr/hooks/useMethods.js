@@ -7,15 +7,12 @@
  * @returns {Object} 方法集合
  */
 import { safeExecute, createError, ErrorTypes, showSuccessMessage } from '/src/utils/error.js';
-import { getData, postData, deleteData } from '/src/services/index.js';
+import { getData, postData, deleteData, batchOperations } from '/src/services/index.js';
 import { 
     normalizeFilePath, 
     normalizeFileObject, 
     normalizeTreeNode,
-    extractFileName,
-    extractDirPath,
-    buildFullFilePath,
-    extractFileKeyFromFullPath
+    extractFileName
 } from '/src/views/aicr/utils/fileFieldNormalizer.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
 import { getFileDeleteService, buildFileTreeFromSessions } from './store.js';
@@ -67,6 +64,10 @@ export const useMethods = (store) => {
         sessionChatLastDraftImages,
         sessionChatSending,
         sessionChatAbortController,
+        sessionChatStreamingTargetTimestamp,
+        sessionChatStreamingType,
+        sessionChatCopyFeedback,
+        sessionChatRegenerateFeedback,
         sessionContextEnabled,
         sessionContextEditorVisible,
         sessionContextDraft,
@@ -75,6 +76,16 @@ export const useMethods = (store) => {
         sessionContextOptimizeBackup,
         sessionFaqVisible,
         sessionFaqSearchKeyword,
+        sessionFaqItems,
+        sessionFaqLoading,
+        sessionFaqError,
+        sessionFaqSelectedTags,
+        sessionFaqTagFilterReverse,
+        sessionFaqTagFilterNoTags,
+        sessionFaqTagFilterExpanded,
+        sessionFaqTagFilterVisibleCount,
+        sessionFaqTagFilterSearchKeyword,
+        sessionFaqTagManagerVisible,
         sessionSettingsVisible,
         sessionBotModel,
         sessionBotSystemPrompt,
@@ -88,6 +99,26 @@ export const useMethods = (store) => {
     const _SESSION_CHAT_COMPOSITION_END_DELAY = 100;
     let _sessionMarkedConfigured = false;
     let _sessionMarkedRenderer = null;
+    const { computed } = Vue;
+
+    const getApiBaseUrl = () => {
+        return String(window.API_URL || '').trim().replace(/\/$/, '');
+    };
+
+    const getPromptUrl = () => {
+        return `${getApiBaseUrl()}/`;
+    };
+
+    const _isAbortError = (e) => {
+        try {
+            if (!e) return false;
+            if (e.name === 'AbortError') return true;
+            const msg = typeof e.message === 'string' ? e.message : '';
+            return msg.toLowerCase().includes('aborted');
+        } catch (_) {
+            return false;
+        }
+    };
 
     const _escapeHtml = (v) => {
         return String(v ?? '')
@@ -110,6 +141,94 @@ export const useMethods = (store) => {
         } catch (_) {
             return '';
         }
+    };
+
+    const _sessionChatMessageKey = (m, idx) => {
+        const ts = typeof m?.timestamp === 'number' ? m.timestamp : null;
+        if (typeof ts === 'number' && Number.isFinite(ts)) return `ts_${ts}`;
+        const i = Number(idx);
+        if (Number.isFinite(i)) return `idx_${i}`;
+        return `k_${Date.now()}`;
+    };
+
+    const _setFeedbackFlag = (refMap, key, durationMs) => {
+        try {
+            if (!refMap) return;
+            const now = Date.now();
+            const expiresAt = now + Math.max(0, Number(durationMs) || 0);
+            const current = refMap.value && typeof refMap.value === 'object' ? refMap.value : {};
+            refMap.value = { ...current, [key]: expiresAt };
+            setTimeout(() => {
+                try {
+                    const cur = refMap.value && typeof refMap.value === 'object' ? refMap.value : {};
+                    if (cur[key] !== expiresAt) return;
+                    const next = { ...cur };
+                    delete next[key];
+                    refMap.value = next;
+                } catch (_) {}
+            }, Math.max(0, expiresAt - Date.now()) + 20);
+        } catch (_) {}
+    };
+
+    const _isStreamingMessage = (m) => {
+        try {
+            const sending = !!sessionChatSending?.value;
+            if (!sending) return false;
+            const targetTs = sessionChatStreamingTargetTimestamp?.value;
+            if (typeof targetTs !== 'number' || !Number.isFinite(targetTs)) return false;
+            const ts = typeof m?.timestamp === 'number' ? m.timestamp : null;
+            if (typeof ts !== 'number' || !Number.isFinite(ts)) return false;
+            return ts === targetTs;
+        } catch (_) {
+            return false;
+        }
+    };
+
+    const _isPetSessionMessage = (m) => {
+        return !!(m && m.type === 'pet');
+    };
+
+    const _getSessionMessageMoveBlock = (messages, idx) => {
+        const list = Array.isArray(messages) ? messages : [];
+        const i = Number(idx);
+        if (!Number.isFinite(i) || i < 0 || i >= list.length) return { start: -1, end: -1 };
+        const cur = list[i];
+        if (_isPetSessionMessage(cur)) {
+            const prev = list[i - 1];
+            if (prev && !_isPetSessionMessage(prev)) return { start: i - 1, end: i + 1 };
+            return { start: i, end: i + 1 };
+        }
+        const next = list[i + 1];
+        if (next && _isPetSessionMessage(next)) return { start: i, end: i + 2 };
+        return { start: i, end: i + 1 };
+    };
+
+    const _getPrevSessionMessageBlock = (messages, blockStart) => {
+        const list = Array.isArray(messages) ? messages : [];
+        const end = Number(blockStart);
+        if (!Number.isFinite(end) || end <= 0) return { start: -1, end: -1 };
+        const lastIdx = end - 1;
+        const last = list[lastIdx];
+        if (_isPetSessionMessage(last)) {
+            const maybeUserIdx = lastIdx - 1;
+            const maybeUser = list[maybeUserIdx];
+            if (maybeUser && !_isPetSessionMessage(maybeUser)) return { start: maybeUserIdx, end };
+            return { start: lastIdx, end };
+        }
+        return { start: lastIdx, end };
+    };
+
+    const _getNextSessionMessageBlock = (messages, blockEnd) => {
+        const list = Array.isArray(messages) ? messages : [];
+        const start = Number(blockEnd);
+        if (!Number.isFinite(start) || start < 0 || start >= list.length) return { start: -1, end: -1 };
+        const first = list[start];
+        if (!_isPetSessionMessage(first)) {
+            const next = list[start + 1];
+            if (next && _isPetSessionMessage(next)) return { start, end: start + 2 };
+            return { start, end: start + 1 };
+        }
+        return { start, end: start + 1 };
     };
 
     const loadSessionBotSettings = () => {
@@ -137,33 +256,300 @@ export const useMethods = (store) => {
 
     loadSessionBotSettings();
 
-    const sessionFaqItems = [
-        {
-            key: 'how_to_use',
-            title: '如何开始对话？',
-            prompt: '请你先总结当前会话，然后告诉我下一步建议怎么做。'
-        },
-        {
-            key: 'summarize',
-            title: '总结这段对话',
-            prompt: '请用要点总结我们刚才的对话，并给出结论与待办列表。'
-        },
-        {
-            key: 'explain_code',
-            title: '解释选中文件/代码',
-            prompt: '请解释当前文件的主要职责、关键函数、数据流，并指出可能的风险点。'
-        },
-        {
-            key: 'review',
-            title: '做代码审查',
-            prompt: '请对当前改动做一次代码审查：指出潜在 bug、性能/安全问题，并给出可执行的修改建议。'
-        },
-        {
-            key: 'write_test',
-            title: '补充测试用例',
-            prompt: '请为当前功能补充测试用例：覆盖正常路径、边界条件、异常情况，并说明为什么。'
+    const _normalizeFaqTags = (tags) => {
+        if (!tags) return [];
+        const raw = Array.isArray(tags) ? tags : String(tags).split(',');
+        const seen = new Set();
+        const out = [];
+        for (const t of raw) {
+            const s = String(t ?? '').trim();
+            if (!s) continue;
+            const k = s.toLowerCase();
+            if (seen.has(k)) continue;
+            seen.add(k);
+            out.push(s);
         }
-    ];
+        return out;
+    };
+
+    const _normalizeFaqDoc = (doc) => {
+        const key = String(doc?.key ?? doc?.id ?? '').trim();
+        return {
+            key,
+            title: String(doc?.title ?? '').trim(),
+            prompt: String(doc?.prompt ?? doc?.text ?? '').trim(),
+            tags: _normalizeFaqTags(doc?.tags),
+            order: Number.isFinite(Number(doc?.order)) ? Number(doc.order) : 0,
+            updatedTime: doc?.updatedTime
+        };
+    };
+
+    const _getFaqQueryUrl = () => {
+        return buildServiceUrl('query_documents', {
+            cname: 'faqs',
+            pageNum: 1,
+            pageSize: 2000,
+            orderBy: 'order',
+            orderType: 'asc'
+        });
+    };
+
+    const loadSessionFaqs = async ({ force = false } = {}) => {
+        if (!sessionFaqItems || !sessionFaqLoading || !sessionFaqError) return [];
+        if (!window.API_URL) {
+            const msg = 'API地址未配置，无法加载常见问题';
+            sessionFaqError.value = msg;
+            return [];
+        }
+
+        const shouldUseCache = !force;
+        sessionFaqLoading.value = true;
+        sessionFaqError.value = null;
+        try {
+            const res = await getData(_getFaqQueryUrl(), {}, shouldUseCache);
+            const list = Array.isArray(res?.data?.list)
+                ? res.data.list
+                : (Array.isArray(res?.data) ? res.data : []);
+            const normalized = list.map(_normalizeFaqDoc).filter(i => i.key && (i.prompt || i.title));
+            sessionFaqItems.value = normalized;
+            return normalized;
+        } catch (e) {
+            const msg = e?.message || '加载常见问题失败';
+            sessionFaqError.value = msg;
+            sessionFaqItems.value = [];
+            return [];
+        } finally {
+            sessionFaqLoading.value = false;
+        }
+    };
+
+    const sessionFaqAllTags = computed(() => {
+        const items = Array.isArray(sessionFaqItems?.value) ? sessionFaqItems.value : [];
+        const map = new Map();
+        for (const it of items) {
+            const tags = Array.isArray(it?.tags) ? it.tags : [];
+            for (const t of tags) {
+                const s = String(t ?? '').trim();
+                if (!s) continue;
+                const k = s.toLowerCase();
+                if (!map.has(k)) map.set(k, s);
+            }
+        }
+        return Array.from(map.values()).sort((a, b) => a.localeCompare(b, 'zh-CN'));
+    });
+
+    const sessionFaqVisibleTags = computed(() => {
+        const kw = String(sessionFaqTagFilterSearchKeyword?.value || '').trim().toLowerCase();
+        const all = Array.isArray(sessionFaqAllTags.value) ? sessionFaqAllTags.value : [];
+        const filtered = kw ? all.filter(t => String(t).toLowerCase().includes(kw)) : all;
+        const expanded = !!sessionFaqTagFilterExpanded?.value;
+        const visibleCount = Math.max(0, Number(sessionFaqTagFilterVisibleCount?.value) || 0);
+        return expanded ? filtered : filtered.slice(0, visibleCount || 0);
+    });
+
+    const filteredSessionFaqItems = computed(() => {
+        const items = Array.isArray(sessionFaqItems?.value) ? sessionFaqItems.value : [];
+        const searchKw = String(sessionFaqSearchKeyword?.value || '').trim().toLowerCase();
+        const selectedTags = Array.isArray(sessionFaqSelectedTags?.value) ? sessionFaqSelectedTags.value : [];
+        const reverse = !!sessionFaqTagFilterReverse?.value;
+        const noTags = !!sessionFaqTagFilterNoTags?.value;
+
+        return items.filter((it) => {
+            if (searchKw) {
+                const hay = `${String(it?.title || '')}\n${String(it?.prompt || '')}`.toLowerCase();
+                if (!hay.includes(searchKw)) return false;
+            }
+
+            const tags = Array.isArray(it?.tags) ? it.tags : [];
+            if (noTags) {
+                return tags.length === 0;
+            }
+
+            if (selectedTags.length === 0) return true;
+
+            const hasAny = tags.some(t => selectedTags.includes(t));
+            return reverse ? !hasAny : hasAny;
+        });
+    });
+
+    const toggleSessionFaqTag = (tag) => {
+        const t = String(tag ?? '').trim();
+        if (!t || !sessionFaqSelectedTags) return;
+        const current = Array.isArray(sessionFaqSelectedTags.value) ? [...sessionFaqSelectedTags.value] : [];
+        const idx = current.indexOf(t);
+        if (idx >= 0) current.splice(idx, 1);
+        else current.push(t);
+        sessionFaqSelectedTags.value = current;
+        if (sessionFaqTagFilterNoTags) sessionFaqTagFilterNoTags.value = false;
+    };
+
+    const clearSessionFaqTagFilters = () => {
+        if (sessionFaqSelectedTags) sessionFaqSelectedTags.value = [];
+        if (sessionFaqTagFilterReverse) sessionFaqTagFilterReverse.value = false;
+        if (sessionFaqTagFilterNoTags) sessionFaqTagFilterNoTags.value = false;
+    };
+
+    const toggleSessionFaqTagReverse = () => {
+        if (!sessionFaqTagFilterReverse) return;
+        sessionFaqTagFilterReverse.value = !sessionFaqTagFilterReverse.value;
+        if (sessionFaqTagFilterNoTags) sessionFaqTagFilterNoTags.value = false;
+    };
+
+    const toggleSessionFaqNoTags = () => {
+        if (!sessionFaqTagFilterNoTags) return;
+        const next = !sessionFaqTagFilterNoTags.value;
+        sessionFaqTagFilterNoTags.value = next;
+        if (next) {
+            if (sessionFaqSelectedTags) sessionFaqSelectedTags.value = [];
+            if (sessionFaqTagFilterReverse) sessionFaqTagFilterReverse.value = false;
+        }
+    };
+
+    const toggleSessionFaqTagExpanded = () => {
+        if (!sessionFaqTagFilterExpanded) return;
+        sessionFaqTagFilterExpanded.value = !sessionFaqTagFilterExpanded.value;
+    };
+
+    const toggleSessionFaqTagManager = () => {
+        if (!sessionFaqTagManagerVisible) return;
+        sessionFaqTagManagerVisible.value = !sessionFaqTagManagerVisible.value;
+    };
+
+    const _updateFaqDocument = async (key, patch) => {
+        const faqKey = String(key ?? '').trim();
+        if (!faqKey || !patch || typeof patch !== 'object') return null;
+        if (!window.API_URL) throw new Error('API地址未配置');
+        const payload = {
+            module_name: SERVICE_MODULE,
+            method_name: 'update_document',
+            parameters: {
+                cname: 'faqs',
+                data: {
+                    key: faqKey,
+                    ...patch
+                }
+            }
+        };
+        return postData(`${window.API_URL}/`, payload);
+    };
+
+    const _patchLocalFaq = (key, patch) => {
+        const faqKey = String(key ?? '').trim();
+        if (!faqKey || !sessionFaqItems) return;
+        const current = Array.isArray(sessionFaqItems.value) ? sessionFaqItems.value : [];
+        sessionFaqItems.value = current.map(it => (it && String(it.key) === faqKey ? { ...it, ...patch } : it));
+    };
+
+    const refreshSessionFaqs = async () => {
+        return loadSessionFaqs({ force: true });
+    };
+
+    const editSessionFaqTags = async (item) => {
+        const key = String(item?.key ?? '').trim();
+        if (!key) return;
+        const currentTags = _normalizeFaqTags(item?.tags);
+        const nextRaw = window.prompt('编辑标签（逗号分隔）：', currentTags.join(', '));
+        if (nextRaw == null) return;
+        const nextTags = _normalizeFaqTags(nextRaw);
+        try {
+            if (sessionFaqLoading) sessionFaqLoading.value = true;
+            await _updateFaqDocument(key, { tags: nextTags });
+            _patchLocalFaq(key, { tags: nextTags });
+            if (window.showSuccess) window.showSuccess('已更新标签');
+        } catch (e) {
+            if (window.showError) window.showError(e?.message || '更新标签失败');
+        } finally {
+            if (sessionFaqLoading) sessionFaqLoading.value = false;
+        }
+    };
+
+    const renameSessionFaqTag = async (tag) => {
+        const oldTag = String(tag ?? '').trim();
+        if (!oldTag) return;
+        const nextRaw = window.prompt('重命名标签为：', oldTag);
+        if (nextRaw == null) return;
+        const newTag = String(nextRaw ?? '').trim();
+        if (!newTag || newTag === oldTag) return;
+
+        const items = Array.isArray(sessionFaqItems?.value) ? sessionFaqItems.value : [];
+        const affected = items.filter(it => Array.isArray(it?.tags) && it.tags.includes(oldTag));
+        if (affected.length === 0) return;
+
+        try {
+            if (sessionFaqLoading) sessionFaqLoading.value = true;
+            const url = `${window.API_URL}/`;
+            const ops = affected.map(it => {
+                const tags = _normalizeFaqTags((it.tags || []).map(t => (t === oldTag ? newTag : t)));
+                return {
+                    type: 'POST',
+                    url,
+                    data: {
+                        module_name: SERVICE_MODULE,
+                        method_name: 'update_document',
+                        parameters: { cname: 'faqs', data: { key: it.key, tags } }
+                    }
+                };
+            });
+            const res = await batchOperations(ops);
+            for (const it of affected) {
+                const tags = _normalizeFaqTags((it.tags || []).map(t => (t === oldTag ? newTag : t)));
+                _patchLocalFaq(it.key, { tags });
+            }
+            if (res?.errorCount) {
+                if (window.showError) window.showError(`部分标签更新失败（${res.errorCount}条）`);
+            } else if (window.showSuccess) {
+                window.showSuccess('已重命名标签');
+            }
+        } catch (e) {
+            if (window.showError) window.showError(e?.message || '重命名标签失败');
+        } finally {
+            if (sessionFaqLoading) sessionFaqLoading.value = false;
+        }
+    };
+
+    const deleteSessionFaqTag = async (tag) => {
+        const target = String(tag ?? '').trim();
+        if (!target) return;
+        if (!confirm(`确定删除标签「${target}」？会从所有常见问题中移除。`)) return;
+
+        const items = Array.isArray(sessionFaqItems?.value) ? sessionFaqItems.value : [];
+        const affected = items.filter(it => Array.isArray(it?.tags) && it.tags.includes(target));
+        if (affected.length === 0) return;
+
+        try {
+            if (sessionFaqLoading) sessionFaqLoading.value = true;
+            const url = `${window.API_URL}/`;
+            const ops = affected.map(it => {
+                const tags = _normalizeFaqTags((it.tags || []).filter(t => t !== target));
+                return {
+                    type: 'POST',
+                    url,
+                    data: {
+                        module_name: SERVICE_MODULE,
+                        method_name: 'update_document',
+                        parameters: { cname: 'faqs', data: { key: it.key, tags } }
+                    }
+                };
+            });
+            const res = await batchOperations(ops);
+            for (const it of affected) {
+                const tags = _normalizeFaqTags((it.tags || []).filter(t => t !== target));
+                _patchLocalFaq(it.key, { tags });
+            }
+            if (Array.isArray(sessionFaqSelectedTags?.value) && sessionFaqSelectedTags.value.includes(target)) {
+                sessionFaqSelectedTags.value = sessionFaqSelectedTags.value.filter(t => t !== target);
+            }
+            if (res?.errorCount) {
+                if (window.showError) window.showError(`部分标签删除失败（${res.errorCount}条）`);
+            } else if (window.showSuccess) {
+                window.showSuccess('已删除标签');
+            }
+        } catch (e) {
+            if (window.showError) window.showError(e?.message || '删除标签失败');
+        } finally {
+            if (sessionFaqLoading) sessionFaqLoading.value = false;
+        }
+    };
 
     // 搜索相关状态
     let searchTimeout = null;
@@ -1431,6 +1817,25 @@ export const useMethods = (store) => {
                 // 统一 content 字段
                 const content = String(commentData.content || commentData.text || '').trim();
                 
+                 let targetFileKey = selectedKey.value;
+                 if (store && store.fileTree && store.fileTree.value && selectedKey.value) {
+                     try {
+                         const root = store.fileTree.value;
+                         const { node } = findNodeAndParentByKey(root, selectedKey.value);
+                         if (node && node.sessionKey) {
+                             targetFileKey = node.sessionKey;
+                             console.log('[评论提交] 使用 sessionKey 作为 fileKey:', targetFileKey);
+                         }
+                     } catch (e) {}
+                 }
+                 if (store && store.files && store.files.value && selectedKey.value && targetFileKey === selectedKey.value) {
+                     const currentFile = store.files.value.find(f => f.key === selectedKey.value || f.path === selectedKey.value);
+                     if (currentFile && currentFile.sessionKey) {
+                         targetFileKey = currentFile.sessionKey;
+                         console.log('[评论提交] 使用 sessionKey 作为 fileKey:', targetFileKey);
+                     }
+                 }
+ 
                 // 构建评论数据（保留评论特有字段，同时包含统一的消息字段）
                 // 如果有 rangeInfo，说明 text 字段存储的是引用代码，应该保留原有的 text 值
                 const textValue = (commentData.rangeInfo && commentData.text) ? commentData.text : content;
@@ -1442,7 +1847,7 @@ export const useMethods = (store) => {
                     content: content,
                     timestamp: timestamp,
                     // 保留评论特有字段
-                    fileKey: selectedKey.value,
+                    fileKey: targetFileKey,
                     versionId: versionId,
                     // 兼容字段（保留原有字段以兼容旧代码）
                     // 如果有 rangeInfo，保留原有的 text（引用代码），否则使用 content
@@ -1495,7 +1900,7 @@ export const useMethods = (store) => {
                 console.log('[评论提交] API调用成功:', result);
                 
                 // 同步评论到会话消息（确保使用规范化后的评论）
-                if (selectedKey.value) {
+                if (targetFileKey) {
                     try {
                         const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                         const sessionSync = getSessionSyncService();
@@ -1507,7 +1912,7 @@ export const useMethods = (store) => {
                         if (store && store.normalizeComment) {
                             commentWithKey = store.normalizeComment(commentWithKey);
                         }
-                        await sessionSync.syncCommentToMessage(commentWithKey, selectedKey.value, false);
+                        await sessionSync.syncCommentToMessage(commentWithKey, targetFileKey, false);
                         console.log('[评论提交] 评论已同步到会话消息');
                     } catch (syncError) {
                         console.warn('[评论提交] 同步评论到会话消息失败（已忽略）:', syncError?.message);
@@ -1627,7 +2032,7 @@ export const useMethods = (store) => {
                                 const { getData: verifyGetData } = await import('/src/services/modules/crud.js');
                                 const verifyUrl = buildServiceUrl('query_documents', {
                                     cname: 'comments',
-                                    ...(selectedKey.value ? { key: selectedKey.value } : {})
+                                    ...(targetFileKey ? { key: targetFileKey, fileKey: targetFileKey } : {})
                                 });
                                 const verifyResponse = await verifyGetData(verifyUrl);
                                 const newComments = verifyResponse.data.list || [];
@@ -1768,6 +2173,10 @@ export const useMethods = (store) => {
             console.log('[评论删除] 开始删除评论:', commentId);
 
             try {
+                const commentForSync = (comments && comments.value && Array.isArray(comments.value))
+                    ? comments.value.find(c => c && c.key === commentId)
+                    : null;
+
                 // 显示全局loading
                 const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                 showGlobalLoading('正在删除评论...');
@@ -1818,9 +2227,8 @@ export const useMethods = (store) => {
                         const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                         const sessionSync = getSessionSyncService();
                         
-                        // 查找评论对象以便准确匹配
-                        const comment = comments.value.find(c => c.key === commentId);
-                        await sessionSync.deleteCommentMessage(commentId, selectedKey.value, comment);
+                        const targetKey = commentForSync?.fileKey || commentForSync?.key || selectedKey.value;
+                        await sessionSync.deleteCommentMessage(commentId, targetKey, commentForSync);
                         console.log('[评论删除] 会话消息已删除');
                     } catch (syncError) {
                         console.warn('[评论删除] 删除会话消息失败（已忽略）:', syncError?.message);
@@ -2102,10 +2510,20 @@ export const useMethods = (store) => {
             console.log('[加载评论] 开始加载评论数据...');
             
             try {
+                let targetKey = selectedKey.value;
+                if (selectedKey.value && store && store.fileTree && store.fileTree.value) {
+                    try {
+                        const root = store.fileTree.value;
+                        const { node } = findNodeAndParentByKey(root, selectedKey.value);
+                        if (node && node.sessionKey) {
+                            targetKey = node.sessionKey;
+                        }
+                    } catch (e) {}
+                }
                 // 构建获取评论的URL
                 const queryUrl = buildServiceUrl('query_documents', {
                     cname: 'comments',
-                    ...(selectedKey.value ? { key: selectedKey.value } : {})
+                    ...(targetKey ? { key: targetKey, fileKey: targetKey } : {})
                 });
                 
                 console.log('[加载评论] 调用获取评论接口:', queryUrl);
@@ -2258,7 +2676,7 @@ export const useMethods = (store) => {
             // 2. 如果没有传入参数，则根据当前选中状态切换（全选所有/清空）
             // 这种情况下，我们只能操作 store.sessions 中的所有会话
             const allSessions = sessions.value || [];
-            const allIds = allSessions.map(s => s.id || s.key).filter(id => id);
+            const allIds = allSessions.map(s => s && s.key).filter(Boolean);
             
             // 检查是否已全选 (所有有效ID都在选中集合中)
             const isAllSelected = allIds.length > 0 && allIds.every(id => selectedSessionKeys.value.has(id));
@@ -2549,6 +2967,11 @@ export const useMethods = (store) => {
 
         if (activeSessionLoading) activeSessionLoading.value = true;
         if (activeSessionError) activeSessionError.value = null;
+        if (activeSession) {
+            const baseSession = { ...(session || {}), key: targetSessionKey };
+            if (!baseSession.messages || !Array.isArray(baseSession.messages)) baseSession.messages = [];
+            activeSession.value = baseSession;
+        }
 
         try {
             const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
@@ -2563,7 +2986,7 @@ export const useMethods = (store) => {
             normalized.messages = normalized.messages
                 .map(m => ({
                     type: m?.type === 'pet' ? 'pet' : 'user',
-                    content: String(m?.content || ''),
+                    message: String(m?.message || m?.content || ''),
                     timestamp: typeof m?.timestamp === 'number' ? m.timestamp : Date.now(),
                     imageDataUrl: m?.imageDataUrl
                 }))
@@ -2609,6 +3032,20 @@ export const useMethods = (store) => {
     return {
         openLink,
         sessionFaqItems,
+        sessionFaqAllTags,
+        sessionFaqVisibleTags,
+        filteredSessionFaqItems,
+        loadSessionFaqs,
+        refreshSessionFaqs,
+        toggleSessionFaqTag,
+        clearSessionFaqTagFilters,
+        toggleSessionFaqTagReverse,
+        toggleSessionFaqNoTags,
+        toggleSessionFaqTagExpanded,
+        toggleSessionFaqTagManager,
+        editSessionFaqTags,
+        renameSessionFaqTag,
+        deleteSessionFaqTag,
         handleFileSelect,
         handleFolderToggle,
         // 文件树CRUD
@@ -2684,29 +3121,29 @@ export const useMethods = (store) => {
         
         handleSessionSelect: async (session) => {
             return safeExecute(async () => {
-                await selectSessionForChat(session, { toggleActive: true, openContextEditor: false });
+                await selectSessionForChat(session, { toggleActive: false, openContextEditor: false });
             }, '选择会话');
         },
 
         sessionChatMessages: (session) => {
             try {
                 const msgs = Array.isArray(session?.messages) ? session.messages : [];
-                return [...msgs]
-                    .map(m => {
-                        const timestamp = typeof m?.timestamp === 'number' ? m.timestamp : Date.now();
-                        const imageDataUrls = Array.isArray(m?.imageDataUrls) ? m.imageDataUrls.filter(Boolean) : [];
-                        const imageDataUrl = String(m?.imageDataUrl || (imageDataUrls[0] || '') || '');
-                        return {
-                            type: m?.type === 'pet' ? 'pet' : 'user',
-                            content: String(m?.content || ''),
-                            timestamp,
-                            imageDataUrls,
-                            imageDataUrl,
-                            error: !!m?.error,
-                            aborted: !!m?.aborted
-                        };
-                    })
-                    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                return [...msgs].map(m => {
+                    const timestamp = typeof m?.timestamp === 'number' ? m.timestamp : Date.now();
+                    const imageDataUrls = Array.isArray(m?.imageDataUrls) ? m.imageDataUrls.filter(Boolean) : [];
+                    const imageDataUrl = String(m?.imageDataUrl || (imageDataUrls[0] || '') || '');
+                    const message = String(m?.message || m?.content || m?.text || '');
+                    return {
+                        type: m?.type === 'pet' ? 'pet' : 'user',
+                        message,
+                        content: message,
+                        timestamp,
+                        imageDataUrls,
+                        imageDataUrl,
+                        error: !!m?.error,
+                        aborted: !!m?.aborted
+                    };
+                });
             } catch (_) {
                 return [];
             }
@@ -2809,6 +3246,16 @@ export const useMethods = (store) => {
                         .replace(/>/g, '&gt;')
                         .replace(/\n/g, '<br/>');
                 }
+            } catch (_) {
+                return '';
+            }
+        },
+
+        renderSessionChatStreamingHtml: (text) => {
+            try {
+                const raw = text == null ? '' : String(text);
+                if (!raw) return '';
+                return _escapeHtml(raw).replace(/\n/g, '<br/>');
             } catch (_) {
                 return '';
             }
@@ -2939,11 +3386,17 @@ export const useMethods = (store) => {
             ensureSessionContextScrollSync();
         },
 
-        openSessionFaq: () => {
+        openSessionFaq: async () => {
             if (sessionFaqVisible) sessionFaqVisible.value = true;
             if (sessionFaqSearchKeyword) sessionFaqSearchKeyword.value = '';
             if (sessionSettingsVisible) sessionSettingsVisible.value = false;
             if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
+            try {
+                const hasItems = Array.isArray(sessionFaqItems?.value) && sessionFaqItems.value.length > 0;
+                if (!hasItems) {
+                    await loadSessionFaqs({ force: false });
+                }
+            } catch (_) {}
         },
 
         openSessionSettings: () => {
@@ -3157,28 +3610,816 @@ export const useMethods = (store) => {
             } catch (_) {}
         },
 
+        isSessionChatStreamingMessage: (m, idx) => {
+            try {
+                return _isStreamingMessage(m);
+            } catch (_) {
+                return false;
+            }
+        },
+
+        isSessionChatRegenerating: (m, idx) => {
+            try {
+                if (String(sessionChatStreamingType?.value || '') !== 'regenerate') return false;
+                return _isStreamingMessage(m);
+            } catch (_) {
+                return false;
+            }
+        },
+
+        sessionChatCopyButtonLabel: (m, idx) => {
+            try {
+                const key = _sessionChatMessageKey(m, idx);
+                const map = sessionChatCopyFeedback?.value && typeof sessionChatCopyFeedback.value === 'object'
+                    ? sessionChatCopyFeedback.value
+                    : {};
+                const expiresAt = map[key];
+                if (typeof expiresAt === 'number' && Date.now() < expiresAt) return '已复制';
+                return '复制';
+            } catch (_) {
+                return '复制';
+            }
+        },
+
+        sessionChatRegenerateButtonLabel: (m, idx) => {
+            try {
+                if (String(sessionChatStreamingType?.value || '') === 'regenerate' && _isStreamingMessage(m)) {
+                    return '生成中';
+                }
+                const key = _sessionChatMessageKey(m, idx);
+                const map = sessionChatRegenerateFeedback?.value && typeof sessionChatRegenerateFeedback.value === 'object'
+                    ? sessionChatRegenerateFeedback.value
+                    : {};
+                const expiresAt = map[key];
+                if (typeof expiresAt === 'number' && Date.now() < expiresAt) return '已生成';
+                if (m && (m.error || m.aborted)) return '重试';
+                return '重新生成';
+            } catch (_) {
+                return '重新生成';
+            }
+        },
+
+        canRegenerateSessionChatMessage: (session, idx) => {
+            try {
+                if (!session) return false;
+                const messages = Array.isArray(session?.messages) ? session.messages : [];
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i < 0 || i >= messages.length) return false;
+                const m = messages[i];
+                if (!m || m.type !== 'pet') return false;
+                for (let j = i - 1; j >= 0; j--) {
+                    const prev = messages[j];
+                    if (!prev || prev.type === 'pet') continue;
+                    const text = String(prev.message ?? prev.content ?? '').trim();
+                    const hasImages =
+                        (Array.isArray(prev.imageDataUrls) && prev.imageDataUrls.some(Boolean)) ||
+                        !!String(prev.imageDataUrl || '').trim();
+                    return !!(text || hasImages);
+                }
+                return false;
+            } catch (_) {
+                return false;
+            }
+        },
+
+        editSessionChatMessageAt: (idx) => {
+            try {
+                const s = activeSession?.value;
+                const messages = Array.isArray(s?.messages) ? s.messages : [];
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i < 0 || i >= messages.length) return;
+                const m = messages[i];
+                if (!m || m.type === 'pet') return;
+                const text = String(m.message ?? m.content ?? '');
+                const images = (() => {
+                    const list = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.filter(Boolean) : [];
+                    const first = String(m.imageDataUrl || '').trim();
+                    if (first) list.unshift(first);
+                    return Array.from(new Set(list)).slice(0, 4);
+                })();
+                if (sessionChatInput) sessionChatInput.value = text;
+                if (sessionChatDraftImages) sessionChatDraftImages.value = images;
+                try {
+                    const el = document.getElementById('pet-chat-input');
+                    if (el && typeof el.focus === 'function') el.focus();
+                } catch (_) {}
+            } catch (_) {}
+        },
+
+        deleteSessionChatMessageAt: async (idx) => {
+            return safeExecute(async () => {
+                if (sessionChatSending?.value) return;
+                const s = activeSession?.value;
+                if (!s) return;
+                const messages = Array.isArray(s.messages) ? [...s.messages] : [];
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i < 0 || i >= messages.length) return;
+                if (!confirm('确定删除这条消息吗？')) return;
+
+                const target = messages[i];
+                const next = messages[i + 1];
+                if (target && target.type !== 'pet' && next && next.type === 'pet') {
+                    messages.splice(i, 2);
+                } else {
+                    messages.splice(i, 1);
+                }
+
+                const now = Date.now();
+                const nextSession = { ...s, messages, updatedAt: now, lastAccessTime: now };
+                activeSession.value = nextSession;
+
+                try {
+                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.saveSession(nextSession);
+                } catch (_) {}
+            }, '删除消息');
+        },
+
+        canMoveSessionChatMessageUp: (session, idx) => {
+            try {
+                const s = session || activeSession?.value;
+                const messages = Array.isArray(s?.messages) ? s.messages : [];
+                const block = _getSessionMessageMoveBlock(messages, idx);
+                if (block.start <= 0) return false;
+                const prevBlock = _getPrevSessionMessageBlock(messages, block.start);
+                return prevBlock.start >= 0;
+            } catch (_) {
+                return false;
+            }
+        },
+
+        canMoveSessionChatMessageDown: (session, idx) => {
+            try {
+                const s = session || activeSession?.value;
+                const messages = Array.isArray(s?.messages) ? s.messages : [];
+                const block = _getSessionMessageMoveBlock(messages, idx);
+                if (block.end < 0 || block.end >= messages.length) return false;
+                const nextBlock = _getNextSessionMessageBlock(messages, block.end);
+                return nextBlock.start >= 0;
+            } catch (_) {
+                return false;
+            }
+        },
+
+        moveSessionChatMessageUp: async (idx) => {
+            return safeExecute(async () => {
+                if (sessionChatSending?.value) return;
+                const s = activeSession?.value;
+                if (!s) return;
+                const messages = Array.isArray(s.messages) ? [...s.messages] : [];
+                const block = _getSessionMessageMoveBlock(messages, idx);
+                if (block.start <= 0) return;
+                const prevBlock = _getPrevSessionMessageBlock(messages, block.start);
+                if (prevBlock.start < 0) return;
+                const prevPart = messages.slice(prevBlock.start, block.start);
+                const curPart = messages.slice(block.start, block.end);
+                const nextMessages = [
+                    ...messages.slice(0, prevBlock.start),
+                    ...curPart,
+                    ...prevPart,
+                    ...messages.slice(block.end)
+                ];
+                const now = Date.now();
+                const nextSession = { ...s, messages: nextMessages, updatedAt: now, lastAccessTime: now };
+                activeSession.value = nextSession;
+                try {
+                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.saveSession(nextSession);
+                } catch (_) {}
+            }, '上移消息');
+        },
+
+        moveSessionChatMessageDown: async (idx) => {
+            return safeExecute(async () => {
+                if (sessionChatSending?.value) return;
+                const s = activeSession?.value;
+                if (!s) return;
+                const messages = Array.isArray(s.messages) ? [...s.messages] : [];
+                const block = _getSessionMessageMoveBlock(messages, idx);
+                if (block.end < 0 || block.end >= messages.length) return;
+                const nextBlock = _getNextSessionMessageBlock(messages, block.end);
+                if (nextBlock.start < 0) return;
+                const curPart = messages.slice(block.start, block.end);
+                const nextPart = messages.slice(nextBlock.start, nextBlock.end);
+                const nextMessages = [
+                    ...messages.slice(0, block.start),
+                    ...nextPart,
+                    ...curPart,
+                    ...messages.slice(nextBlock.end)
+                ];
+                const now = Date.now();
+                const nextSession = { ...s, messages: nextMessages, updatedAt: now, lastAccessTime: now };
+                activeSession.value = nextSession;
+                try {
+                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.saveSession(nextSession);
+                } catch (_) {}
+            }, '下移消息');
+        },
+
+        resendSessionChatMessageAt: async (idx) => {
+            return safeExecute(async () => {
+                if (sessionChatSending?.value) return;
+                const s = activeSession?.value;
+                if (!s) return;
+                const originalMessages = Array.isArray(s.messages) ? s.messages : [];
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i < 0 || i >= originalMessages.length) return;
+                const userMsg = originalMessages[i];
+                if (!userMsg || userMsg.type === 'pet') return;
+
+                const text = String(userMsg.message ?? userMsg.content ?? '').trim();
+                const images = (() => {
+                    const list = Array.isArray(userMsg.imageDataUrls) ? userMsg.imageDataUrls.filter(Boolean) : [];
+                    const first = String(userMsg.imageDataUrl || '').trim();
+                    if (first) list.unshift(first);
+                    return Array.from(new Set(list)).slice(0, 4);
+                })();
+                if (!text && images.length === 0) return;
+
+                const shouldAutoScroll = () => {
+                    try {
+                        const el = document.getElementById('pet-chat-messages');
+                        if (!el) return true;
+                        const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
+                        return distance < 140;
+                    } catch (_) {
+                        return true;
+                    }
+                };
+
+                const scrollToIndex = (targetIdx) => {
+                    try {
+                        const el = document.querySelector(`[data-chat-idx="${targetIdx}"]`);
+                        if (el && typeof el.scrollIntoView === 'function') {
+                            el.scrollIntoView({ block: 'nearest' });
+                            return;
+                        }
+                        const container = document.getElementById('pet-chat-messages');
+                        if (container) container.scrollTop = container.scrollHeight;
+                    } catch (_) {}
+                };
+
+                const now = Date.now();
+                const insertedPet = { type: 'pet', message: '', timestamp: now + 1 };
+                const nextMessages = [...originalMessages];
+                nextMessages.splice(i + 1, 0, insertedPet);
+                const nextSession = { ...s, messages: nextMessages, updatedAt: now, lastAccessTime: now };
+                activeSession.value = nextSession;
+                setTimeout(() => scrollToIndex(i + 1), 0);
+
+                const buildHistory = () => {
+                    const msgs = originalMessages.slice(0, i);
+                    const cleaned = msgs
+                        .filter(m => m && (String(m.message ?? m.content ?? '').trim() || (m.imageDataUrl || (Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0))))
+                        .slice(-30)
+                        .map(m => {
+                            const role = m.type === 'pet' ? '助手' : '用户';
+                            const contentText = String(m.message ?? m.content ?? '').trim();
+                            const imageCount = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.length : (m.imageDataUrl ? 1 : 0);
+                            const content = (() => {
+                                if (contentText) return contentText;
+                                if (imageCount > 0) return imageCount === 1 ? '[图片]' : `[图片 x${imageCount}]`;
+                                return '';
+                            })();
+                            return `${role}：${content}`;
+                        })
+                        .join('\n\n');
+                    return cleaned;
+                };
+
+                const pageContent = String(sessionContextDraft?.value ?? s.pageContent ?? '').trim();
+                const includeContext = !!sessionContextEnabled?.value;
+                const history = buildHistory();
+                const fromSystem = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim() || defaultSessionBotSystemPrompt;
+                let fromUser = '';
+                if (includeContext && pageContent) {
+                    fromUser += `## 页面上下文\n\n${pageContent}\n\n`;
+                }
+                if (history) {
+                    fromUser += `## 会话历史\n\n${history}\n\n`;
+                }
+                fromUser += `## 当前消息\n\n${text || '用户发送了图片，请结合图片内容回答。'}`;
+
+                const { streamPrompt } = await import('/src/services/modules/crud.js');
+                const promptUrl = getPromptUrl();
+
+                let accumulated = '';
+                if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = insertedPet.timestamp;
+                if (sessionChatStreamingType) sessionChatStreamingType.value = 'resend';
+                if (sessionChatSending) sessionChatSending.value = true;
+                const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                if (sessionChatAbortController) sessionChatAbortController.value = controller;
+                let streamErrorMessage = '';
+                let streamAborted = false;
+
+                try {
+                    await streamPrompt(
+                        promptUrl,
+                        {
+                            module_name: 'services.ai.chat_service',
+                            method_name: 'chat',
+                            parameters: {
+                                system: fromSystem,
+                                user: fromUser,
+                                stream: true,
+                                ...(String(sessionBotModel?.value || '').trim()
+                                    ? { model: String(sessionBotModel.value || '').trim() }
+                                    : {}),
+                                ...(images.length > 0 ? { images } : {})
+                            }
+                        },
+                        controller ? { signal: controller.signal } : {},
+                        (chunk) => {
+                            const autoScroll = shouldAutoScroll();
+                            accumulated += String(chunk || '');
+                            try {
+                                const cur = activeSession.value || nextSession;
+                                const msgs = Array.isArray(cur.messages) ? [...cur.messages] : [];
+                                const targetIdx = msgs.findIndex(m => m && m.type === 'pet' && m.timestamp === insertedPet.timestamp);
+                                if (targetIdx >= 0) {
+                                    msgs[targetIdx] = { ...msgs[targetIdx], message: accumulated, error: false, aborted: false };
+                                    activeSession.value = { ...cur, messages: msgs };
+                                    if (autoScroll) scrollToIndex(targetIdx);
+                                }
+                            } catch (_) {}
+                        }
+                    );
+                } catch (e) {
+                    const aborted = _isAbortError(e);
+                    if (aborted) {
+                        streamAborted = true;
+                    } else {
+                        streamErrorMessage = String(e?.message || '请求失败');
+                    }
+                } finally {
+                    if (sessionChatSending) sessionChatSending.value = false;
+                    if (sessionChatAbortController) sessionChatAbortController.value = null;
+                    if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = null;
+                    if (sessionChatStreamingType) sessionChatStreamingType.value = '';
+                }
+
+                const finalSession = (() => {
+                    const cur = activeSession.value || nextSession;
+                    const msgs = Array.isArray(cur.messages) ? [...cur.messages] : [];
+                    const targetIdx = msgs.findIndex(m => m && m.type === 'pet' && m.timestamp === insertedPet.timestamp);
+                    if (targetIdx >= 0) {
+                        const trimmed = String(accumulated || '').trim();
+                        const content = streamErrorMessage
+                            ? (trimmed || `请求失败：${streamErrorMessage}`)
+                            : (streamAborted && !trimmed ? '已停止' : trimmed);
+                        msgs[targetIdx] = {
+                            ...msgs[targetIdx],
+                            message: content,
+                            ...(streamErrorMessage ? { error: true } : {}),
+                            ...(streamAborted ? { aborted: true } : {})
+                        };
+                    }
+                    return { ...cur, messages: msgs, pageContent: String(sessionContextDraft?.value ?? cur.pageContent ?? '') };
+                })();
+                activeSession.value = finalSession;
+
+                try {
+                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
+                } catch (_) {}
+
+                if (streamErrorMessage && window.showError) {
+                    window.showError(streamErrorMessage);
+                }
+            }, '重新发送消息');
+        },
+
+        regenerateSessionChatMessageAt: async (idx) => {
+            return safeExecute(async () => {
+                if (sessionChatSending?.value) return;
+                const currentSession = activeSession?.value;
+                if (!currentSession) return;
+                const originalMessages = Array.isArray(currentSession.messages) ? currentSession.messages : [];
+                const petIdx = Number(idx);
+                if (!Number.isFinite(petIdx) || petIdx < 0 || petIdx >= originalMessages.length) return;
+                const originalPet = originalMessages[petIdx];
+                if (!originalPet || originalPet.type !== 'pet') return;
+
+                let userIdx = -1;
+                for (let i = petIdx - 1; i >= 0; i--) {
+                    const m = originalMessages[i];
+                    if (m && m.type !== 'pet') {
+                        userIdx = i;
+                        break;
+                    }
+                }
+                if (userIdx < 0) return;
+
+                const userMsg = originalMessages[userIdx] || {};
+                const text = String(userMsg.message ?? userMsg.content ?? '').trim();
+                const images = (() => {
+                    const list = Array.isArray(userMsg.imageDataUrls) ? userMsg.imageDataUrls.filter(Boolean) : [];
+                    const first = String(userMsg.imageDataUrl || '').trim();
+                    if (first) list.unshift(first);
+                    return Array.from(new Set(list)).slice(0, 4);
+                })();
+                if (!text && images.length === 0) return;
+
+                if (sessionChatLastDraftText) sessionChatLastDraftText.value = text;
+                if (sessionChatLastDraftImages) sessionChatLastDraftImages.value = images;
+
+                const shouldAutoScroll = () => {
+                    try {
+                        const el = document.getElementById('pet-chat-messages');
+                        if (!el) return true;
+                        const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
+                        return distance < 140;
+                    } catch (_) {
+                        return true;
+                    }
+                };
+
+                const scrollToIndex = (targetIdx) => {
+                    try {
+                        const el = document.querySelector(`[data-chat-idx="${targetIdx}"]`);
+                        if (el && typeof el.scrollIntoView === 'function') {
+                            el.scrollIntoView({ block: 'nearest' });
+                            return;
+                        }
+                        const container = document.getElementById('pet-chat-messages');
+                        if (container) container.scrollTop = container.scrollHeight;
+                    } catch (_) {}
+                };
+
+                const now = Date.now();
+                const petTimestamp = typeof originalPet.timestamp === 'number' ? originalPet.timestamp : now;
+                const resetMessages = [...originalMessages];
+                resetMessages[petIdx] = { ...originalPet, type: 'pet', timestamp: petTimestamp, message: '', error: false, aborted: false };
+                activeSession.value = { ...currentSession, messages: resetMessages, updatedAt: now, lastAccessTime: now };
+                setTimeout(() => scrollToIndex(petIdx), 0);
+
+                const buildHistory = () => {
+                    const msgs = originalMessages.slice(0, petIdx);
+                    const cleaned = msgs
+                        .filter(m => m && (String(m.message ?? m.content ?? '').trim() || (m.imageDataUrl || (Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0))))
+                        .slice(-30)
+                        .map(m => {
+                            const role = m.type === 'pet' ? '助手' : '用户';
+                            const contentText = String(m.message ?? m.content ?? '').trim();
+                            const imageCount = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.length : (m.imageDataUrl ? 1 : 0);
+                            const content = (() => {
+                                if (contentText) return contentText;
+                                if (imageCount > 0) return imageCount === 1 ? '[图片]' : `[图片 x${imageCount}]`;
+                                return '';
+                            })();
+                            return `${role}：${content}`;
+                        })
+                        .join('\n\n');
+                    return cleaned;
+                };
+
+                const pageContent = String(sessionContextDraft?.value ?? currentSession.pageContent ?? '').trim();
+                const includeContext = !!sessionContextEnabled?.value;
+                const history = buildHistory();
+                const fromSystem = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim() || defaultSessionBotSystemPrompt;
+                let fromUser = '';
+                if (includeContext && pageContent) {
+                    fromUser += `## 页面上下文\n\n${pageContent}\n\n`;
+                }
+                if (history) {
+                    fromUser += `## 会话历史\n\n${history}\n\n`;
+                }
+                fromUser += `## 当前消息\n\n${text || '用户发送了图片，请结合图片内容回答。'}`;
+
+                const { streamPrompt } = await import('/src/services/modules/crud.js');
+                const promptUrl = getPromptUrl();
+
+                let accumulated = '';
+                if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = petTimestamp;
+                if (sessionChatStreamingType) sessionChatStreamingType.value = 'regenerate';
+                if (sessionChatSending) sessionChatSending.value = true;
+                const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                if (sessionChatAbortController) sessionChatAbortController.value = controller;
+                let streamErrorMessage = '';
+                let streamAborted = false;
+
+                try {
+                    await streamPrompt(
+                        promptUrl,
+                        {
+                            module_name: 'services.ai.chat_service',
+                            method_name: 'chat',
+                            parameters: {
+                                system: fromSystem,
+                                user: fromUser,
+                                stream: true,
+                                ...(String(sessionBotModel?.value || '').trim()
+                                    ? { model: String(sessionBotModel.value || '').trim() }
+                                    : {}),
+                                ...(images.length > 0 ? { images } : {})
+                            }
+                        },
+                        controller ? { signal: controller.signal } : {},
+                        (chunk) => {
+                            const autoScroll = shouldAutoScroll();
+                            accumulated += String(chunk || '');
+                            try {
+                                const cur = activeSession.value;
+                                const msgs = Array.isArray(cur.messages) ? [...cur.messages] : [];
+                                const targetIdx = msgs.findIndex(m => m && m.type === 'pet' && m.timestamp === petTimestamp);
+                                const useIdx = targetIdx >= 0 ? targetIdx : petIdx;
+                                if (useIdx >= 0 && msgs[useIdx] && msgs[useIdx].type === 'pet') {
+                                    msgs[useIdx] = { ...msgs[useIdx], message: accumulated, error: false, aborted: false };
+                                    activeSession.value = { ...cur, messages: msgs };
+                                    if (autoScroll) scrollToIndex(useIdx);
+                                }
+                            } catch (_) {}
+                        }
+                    );
+                } catch (e) {
+                    const aborted = _isAbortError(e);
+                    if (aborted) {
+                        streamAborted = true;
+                    } else {
+                        streamErrorMessage = String(e?.message || '请求失败');
+                    }
+                } finally {
+                    if (sessionChatSending) sessionChatSending.value = false;
+                    if (sessionChatAbortController) sessionChatAbortController.value = null;
+                    if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = null;
+                    if (sessionChatStreamingType) sessionChatStreamingType.value = '';
+                }
+
+                const finalSession = (() => {
+                    const cur = activeSession.value || currentSession;
+                    const msgs = Array.isArray(cur.messages) ? [...cur.messages] : [];
+                    const targetIdx = msgs.findIndex(m => m && m.type === 'pet' && m.timestamp === petTimestamp);
+                    const useIdx = targetIdx >= 0 ? targetIdx : petIdx;
+                    if (useIdx >= 0 && msgs[useIdx] && msgs[useIdx].type === 'pet') {
+                        const trimmed = String(accumulated || '').trim();
+                        const content = streamErrorMessage
+                            ? (trimmed || `请求失败：${streamErrorMessage}`)
+                            : (streamAborted && !trimmed ? '已停止' : trimmed);
+                        msgs[useIdx] = {
+                            ...msgs[useIdx],
+                            message: content,
+                            ...(streamErrorMessage ? { error: true } : {}),
+                            ...(streamAborted ? { aborted: true } : {})
+                        };
+                    }
+                    return { ...cur, messages: msgs, pageContent: String(sessionContextDraft?.value ?? cur.pageContent ?? '') };
+                })();
+                activeSession.value = finalSession;
+
+                try {
+                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
+                } catch (_) {}
+
+                try {
+                    const key = _sessionChatMessageKey({ timestamp: petTimestamp }, petIdx);
+                    if (!streamErrorMessage && !streamAborted && String(accumulated || '').trim()) {
+                        _setFeedbackFlag(sessionChatRegenerateFeedback, key, 1200);
+                    }
+                } catch (_) {}
+
+                if (streamErrorMessage && window.showError) {
+                    window.showError(streamErrorMessage);
+                }
+            }, '重新生成回复');
+        },
+
         retryLastSessionChatMessage: async () => {
             return safeExecute(async () => {
                 if (sessionChatSending?.value) return;
-                const text = String(sessionChatLastDraftText?.value ?? '').trim();
-                const images = Array.isArray(sessionChatLastDraftImages?.value) ? sessionChatLastDraftImages.value.filter(Boolean) : [];
-                if (!text && images.length === 0) return;
-                if (sessionChatInput) sessionChatInput.value = text;
-                if (sessionChatDraftImages) sessionChatDraftImages.value = images.slice(0, 4);
-                try {
-                    if (typeof window.aicrApp?.sendSessionChatMessage === 'function') {
-                        await window.aicrApp.sendSessionChatMessage();
+                const currentSession = activeSession?.value;
+                if (!currentSession) return;
+                const originalMessages = Array.isArray(currentSession.messages) ? currentSession.messages : [];
+                if (originalMessages.length === 0) return;
+
+                let petIdx = -1;
+                for (let i = originalMessages.length - 1; i >= 0; i--) {
+                    const m = originalMessages[i];
+                    if (m && m.type === 'pet') {
+                        petIdx = i;
+                        break;
                     }
+                }
+                if (petIdx < 0) return;
+
+                const originalPet = originalMessages[petIdx] || {};
+                if (!originalPet.error && !originalPet.aborted) return;
+
+                let userIdx = -1;
+                for (let i = petIdx - 1; i >= 0; i--) {
+                    const m = originalMessages[i];
+                    if (m && m.type !== 'pet') {
+                        userIdx = i;
+                        break;
+                    }
+                }
+                if (userIdx < 0) return;
+
+                const userMsg = originalMessages[userIdx] || {};
+                const text = String(userMsg.message ?? userMsg.content ?? '').trim();
+                const images = (() => {
+                    const list = Array.isArray(userMsg.imageDataUrls)
+                        ? userMsg.imageDataUrls.filter(Boolean)
+                        : [];
+                    const first = String(userMsg.imageDataUrl || '').trim();
+                    if (first) list.unshift(first);
+                    return Array.from(new Set(list)).slice(0, 4);
+                })();
+                if (!text && images.length === 0) return;
+
+                if (sessionChatLastDraftText) sessionChatLastDraftText.value = text;
+                if (sessionChatLastDraftImages) sessionChatLastDraftImages.value = images;
+
+                const shouldAutoScroll = () => {
+                    try {
+                        const el = document.getElementById('pet-chat-messages');
+                        if (!el) return true;
+                        const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
+                        return distance < 140;
+                    } catch (_) {
+                        return true;
+                    }
+                };
+
+                const scrollToBottom = () => {
+                    try {
+                        const el = document.getElementById('pet-chat-messages');
+                        if (el) el.scrollTop = el.scrollHeight;
+                    } catch (_) {}
+                };
+
+                const now = Date.now();
+                const petTimestamp = typeof originalPet.timestamp === 'number' ? originalPet.timestamp : now;
+                const resetMessages = [...originalMessages];
+                resetMessages[petIdx] = {
+                    ...originalPet,
+                    type: 'pet',
+                    timestamp: petTimestamp,
+                    message: '',
+                    error: false,
+                    aborted: false
+                };
+                activeSession.value = {
+                    ...currentSession,
+                    messages: resetMessages,
+                    updatedAt: now,
+                    lastAccessTime: now
+                };
+                setTimeout(scrollToBottom, 0);
+
+                const buildHistory = () => {
+                    const msgs = originalMessages.slice(0, petIdx);
+                    const cleaned = msgs
+                        .filter(m => m && (String(m.message ?? m.content ?? '').trim() || (m.imageDataUrl || (Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0))))
+                        .slice(-30)
+                        .map(m => {
+                            const role = m.type === 'pet' ? '助手' : '用户';
+                            const contentText = String(m.message ?? m.content ?? '').trim();
+                            const imageCount = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.length : (m.imageDataUrl ? 1 : 0);
+                            const content = (() => {
+                                if (contentText) return contentText;
+                                if (imageCount > 0) return imageCount === 1 ? '[图片]' : `[图片 x${imageCount}]`;
+                                return '';
+                            })();
+                            return `${role}：${content}`;
+                        })
+                        .join('\n\n');
+                    return cleaned;
+                };
+
+                const pageContent = String(sessionContextDraft?.value ?? currentSession.pageContent ?? '').trim();
+                const includeContext = !!sessionContextEnabled?.value;
+                const history = buildHistory();
+                const fromSystem = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim() || defaultSessionBotSystemPrompt;
+
+                let fromUser = '';
+                if (includeContext && pageContent) {
+                    fromUser += `## 页面上下文\n\n${pageContent}\n\n`;
+                }
+                if (history) {
+                    fromUser += `## 会话历史\n\n${history}\n\n`;
+                }
+                fromUser += `## 当前消息\n\n${text || '用户发送了图片，请结合图片内容回答。'}`;
+
+                const { streamPrompt } = await import('/src/services/modules/crud.js');
+                const promptUrl = getPromptUrl();
+
+                let accumulated = '';
+                if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = petTimestamp;
+                if (sessionChatStreamingType) sessionChatStreamingType.value = 'send';
+                if (sessionChatSending) sessionChatSending.value = true;
+                const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                if (sessionChatAbortController) sessionChatAbortController.value = controller;
+                let streamErrorMessage = '';
+                let streamAborted = false;
+
+                try {
+                    await streamPrompt(
+                        promptUrl,
+                        {
+                            module_name: 'services.ai.chat_service',
+                            method_name: 'chat',
+                            parameters: {
+                                system: fromSystem,
+                                user: fromUser,
+                                stream: true,
+                                ...(String(sessionBotModel?.value || '').trim()
+                                    ? { model: String(sessionBotModel.value || '').trim() }
+                                    : {}),
+                                ...(images.length > 0 ? { images } : {})
+                            }
+                        },
+                        controller ? { signal: controller.signal } : {},
+                        (chunk) => {
+                            const autoScroll = shouldAutoScroll();
+                            accumulated += String(chunk || '');
+                            try {
+                                const s = activeSession.value;
+                                const msgs = Array.isArray(s.messages) ? [...s.messages] : [];
+                                let idx = -1;
+                                for (let i = msgs.length - 1; i >= 0; i--) {
+                                    const m = msgs[i];
+                                    if (m && m.type === 'pet' && m.timestamp === petTimestamp) {
+                                        idx = i;
+                                        break;
+                                    }
+                                }
+                                if (idx < 0) idx = petIdx;
+                                if (idx >= 0 && msgs[idx] && msgs[idx].type === 'pet') {
+                                    msgs[idx] = { ...msgs[idx], message: accumulated, error: false, aborted: false };
+                                    activeSession.value = { ...s, messages: msgs };
+                                    if (autoScroll) scrollToBottom();
+                                }
+                            } catch (_) {}
+                        }
+                    );
+                } catch (e) {
+                    const aborted = _isAbortError(e);
+                    if (aborted) {
+                        streamAborted = true;
+                    } else {
+                        streamErrorMessage = String(e?.message || '请求失败');
+                    }
+                } finally {
+                    if (sessionChatSending) sessionChatSending.value = false;
+                    if (sessionChatAbortController) sessionChatAbortController.value = null;
+                    if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = null;
+                    if (sessionChatStreamingType) sessionChatStreamingType.value = '';
+                }
+
+                const finalSession = (() => {
+                    const s = activeSession.value || currentSession;
+                    const msgs = Array.isArray(s.messages) ? [...s.messages] : [];
+                    let idx = -1;
+                    for (let i = msgs.length - 1; i >= 0; i--) {
+                        const m = msgs[i];
+                        if (m && m.type === 'pet' && m.timestamp === petTimestamp) {
+                            idx = i;
+                            break;
+                        }
+                    }
+                    if (idx < 0) idx = petIdx;
+                    if (idx >= 0 && msgs[idx] && msgs[idx].type === 'pet') {
+                        const trimmed = String(accumulated || '').trim();
+                        const content = streamErrorMessage
+                            ? (trimmed || `请求失败：${streamErrorMessage}`)
+                            : (streamAborted && !trimmed ? '已停止' : trimmed);
+                        msgs[idx] = {
+                            ...msgs[idx],
+                            message: content,
+                            ...(streamErrorMessage ? { error: true } : {}),
+                            ...(streamAborted ? { aborted: true } : {})
+                        };
+                    }
+                    return { ...s, messages: msgs, pageContent: String(sessionContextDraft?.value ?? s.pageContent ?? '') };
+                })();
+                activeSession.value = finalSession;
+
+                try {
+                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
                 } catch (_) {}
+
+                if (streamErrorMessage && window.showError) {
+                    window.showError(streamErrorMessage);
+                }
             }, '重试会话消息');
         },
 
-        copySessionChatMessage: async (text) => {
+        copySessionChatMessage: async (text, m, idx) => {
             return safeExecute(async () => {
                 const content = String(text ?? '').trim();
                 if (!content) return;
                 if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
                     await navigator.clipboard.writeText(content);
+                    _setFeedbackFlag(sessionChatCopyFeedback, _sessionChatMessageKey(m, idx), 1200);
                     if (window.showSuccess) window.showSuccess('已复制');
                     return;
                 }
@@ -3191,6 +4432,7 @@ export const useMethods = (store) => {
                 ta.select();
                 document.execCommand('copy');
                 document.body.removeChild(ta);
+                _setFeedbackFlag(sessionChatCopyFeedback, _sessionChatMessageKey(m, idx), 1200);
                 if (window.showSuccess) window.showSuccess('已复制');
             }, '复制消息');
         },
@@ -3210,11 +4452,11 @@ export const useMethods = (store) => {
                 const now = Date.now();
                 const userMessage = {
                     type: 'user',
-                    content: text,
+                    message: text,
                     timestamp: now,
                     ...(images.length > 0 ? { imageDataUrls: images, imageDataUrl: images[0] } : {})
                 };
-                const petMessage = { type: 'pet', content: '', timestamp: now + 1 };
+                const petMessage = { type: 'pet', message: '', timestamp: now + 1 };
 
                 const prevSession = activeSession.value;
                 const prevMessages = Array.isArray(prevSession.messages) ? prevSession.messages : [];
@@ -3251,11 +4493,11 @@ export const useMethods = (store) => {
                 const buildHistory = () => {
                     const msgs = Array.isArray(nextSession.messages) ? nextSession.messages : [];
                     const cleaned = msgs
-                        .filter(m => m && (String(m.content || '').trim() || (m.imageDataUrl || (Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0))))
+                        .filter(m => m && (String(m.message ?? m.content ?? '').trim() || (m.imageDataUrl || (Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0))))
                         .slice(-30)
                         .map(m => {
                             const role = m.type === 'pet' ? '助手' : '用户';
-                            const contentText = String(m.content || '').trim();
+                            const contentText = String(m.message ?? m.content ?? '').trim();
                             const imageCount = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.length : (m.imageDataUrl ? 1 : 0);
                             const content = (() => {
                                 if (contentText) return contentText;
@@ -3282,9 +4524,11 @@ export const useMethods = (store) => {
                 fromUser += `## 当前消息\n\n${text || '用户发送了图片，请结合图片内容回答。'}`;
 
                 const { streamPrompt } = await import('/src/services/modules/crud.js');
-                const promptUrl = `${(window.API_URL || '').replace(/\/$/, '')}/prompt`;
+                const promptUrl = getPromptUrl();
 
                 let accumulated = '';
+                if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = petMessage.timestamp;
+                if (sessionChatStreamingType) sessionChatStreamingType.value = 'send';
                 if (sessionChatSending) sessionChatSending.value = true;
                 const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
                 if (sessionChatAbortController) sessionChatAbortController.value = controller;
@@ -3295,12 +4539,17 @@ export const useMethods = (store) => {
                     await streamPrompt(
                         promptUrl,
                         {
-                            fromSystem,
-                            fromUser,
-                            ...(String(sessionBotModel?.value || '').trim()
-                                ? { model: String(sessionBotModel.value || '').trim() }
-                                : {}),
-                            ...(images.length > 0 ? { images } : {})
+                            module_name: 'services.ai.chat_service',
+                            method_name: 'chat',
+                            parameters: {
+                                system: fromSystem,
+                                user: fromUser,
+                                stream: true,
+                                ...(String(sessionBotModel?.value || '').trim()
+                                    ? { model: String(sessionBotModel.value || '').trim() }
+                                    : {}),
+                                ...(images.length > 0 ? { images } : {})
+                            }
                         },
                         controller ? { signal: controller.signal } : {},
                         (chunk) => {
@@ -3311,9 +4560,9 @@ export const useMethods = (store) => {
                                 const msgs = Array.isArray(s.messages) ? [...s.messages] : [];
                                 const lastIdx = msgs.length - 1;
                                 if (lastIdx >= 0) {
-                                    const last = msgs[lastIdx];
-                                    if (last && last.type === 'pet' && last.timestamp === petMessage.timestamp) {
-                                        msgs[lastIdx] = { ...last, content: accumulated };
+                                const last = msgs[lastIdx];
+                                if (last && last.type === 'pet' && last.timestamp === petMessage.timestamp) {
+                                        msgs[lastIdx] = { ...last, message: accumulated, error: false, aborted: false };
                                         activeSession.value = { ...s, messages: msgs };
                                         if (autoScroll) scrollToBottom();
                                     }
@@ -3322,9 +4571,7 @@ export const useMethods = (store) => {
                         }
                     );
                 } catch (e) {
-                    const aborted =
-                        (e && e.name === 'AbortError') ||
-                        (e && typeof e.message === 'string' && e.message.toLowerCase().includes('aborted'));
+                    const aborted = _isAbortError(e);
                     if (aborted) {
                         streamAborted = true;
                     } else {
@@ -3333,6 +4580,8 @@ export const useMethods = (store) => {
                 } finally {
                     if (sessionChatSending) sessionChatSending.value = false;
                     if (sessionChatAbortController) sessionChatAbortController.value = null;
+                    if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = null;
+                    if (sessionChatStreamingType) sessionChatStreamingType.value = '';
                 }
 
                 const finalSession = (() => {
@@ -3348,7 +4597,7 @@ export const useMethods = (store) => {
                                 : (streamAborted && !trimmed ? '已停止' : trimmed);
                             msgs[lastIdx] = {
                                 ...last,
-                                content,
+                                message: content,
                                 ...(streamErrorMessage ? { error: true } : {}),
                                 ...(streamAborted ? { aborted: true } : {})
                             };
@@ -4036,9 +5285,13 @@ export const useMethods = (store) => {
                     const fileInfoText = `文件路径：${fileKey}\n文件名称：${payload?.name || fileKey.split('/').pop()}\n\n文件内容：\n${fileContent.substring(0, 10000)}`; // 限制内容长度避免过长
                     
                     // 调用 prompt 接口生成描述
-                    const descriptionResponse = await streamPromptJSON(`${window.API_URL}/prompt`, {
-                        fromSystem: '请根据以下文件内容生成一个简洁的文件描述（不超过200字），描述应该概括文件的主要功能和用途。',
-                        fromUser: fileInfoText
+                    const descriptionResponse = await streamPromptJSON(getPromptUrl(), {
+                        module_name: 'services.ai.chat_service',
+                        method_name: 'chat',
+                        parameters: {
+                            system: '请根据以下文件内容生成一个简洁的文件描述（不超过200字），描述应该概括文件的主要功能和用途。',
+                            user: fileInfoText
+                        }
                     });
 
                     // 提取生成的描述
@@ -6102,8 +7355,9 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
             if (session.messages && Array.isArray(session.messages) && session.messages.length > 0) {
                 const recentMessages = session.messages.slice(0, 5);
                 messageSummary = recentMessages.map((msg, idx) => {
-                    const role = msg.role === 'user' ? '用户' : '助手';
-                    const content = msg.content || '';
+                    const roleRaw = String(msg.type || msg.role || '').toLowerCase();
+                    const role = roleRaw === 'user' || roleRaw === 'me' ? '用户' : '助手';
+                    const content = String(msg.message || msg.content || msg.text || '');
                     return `${idx + 1}. ${role}: ${content}`;
                 }).join('\n');
             }
@@ -6143,9 +7397,13 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
 
             // 调用 prompt 接口
             const { streamPromptJSON } = await import('/src/services/modules/crud.js');
-            const response = await streamPromptJSON(`${window.API_URL}/prompt`, {
-                fromSystem: systemPrompt,
-                fromUser: userPrompt
+            const response = await streamPromptJSON(getPromptUrl(), {
+                module_name: 'services.ai.chat_service',
+                method_name: 'chat',
+                parameters: {
+                    system: systemPrompt,
+                    user: userPrompt
+                }
             });
 
             // 解析返回的标签

@@ -10,16 +10,15 @@
  * 
  * 统一接口和字段格式：
  * - 使用 /session/save 接口（POST）
- * - messages 格式：{type: 'user'|'pet', content: string, timestamp: number, imageDataUrl?: string}
+ * - messages 格式：{type: 'user'|'pet', message: string, timestamp: number, imageDataUrl?: string}
  * - 时间戳：毫秒数（number），不是 ISO 字符串
  * - 使用统一的认证头（X-Token）
  */
 
-import { postData, getData, deleteData } from '/src/services/index.js';
+import { postData, getData } from '/src/services/index.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
-import { getAuthHeaders } from '/src/services/helper/authUtils.js';
-import { safeExecuteAsync, createError, ErrorTypes } from '/src/utils/error.js';
-import { normalizeFilePath, normalizeFileObject, extractFileName, extractDirPath } from '/src/views/aicr/utils/fileFieldNormalizer.js';
+import { safeExecuteAsync } from '/src/utils/error.js';
+import { normalizeFileObject, extractFileName } from '/src/views/aicr/utils/fileFieldNormalizer.js';
 
 class SessionSyncService {
     constructor() {
@@ -154,7 +153,7 @@ class SessionSyncService {
      * @returns {string} 规范化后的文本内容
      */
     normalizeText(comment) {
-        return String(comment.content || comment.text || comment.message || '').trim();
+        return String(comment.message || comment.content || comment.text || '').trim();
     }
 
     /**
@@ -180,7 +179,7 @@ class SessionSyncService {
 
     /**
      * 将评论转换为消息（统一格式）
-     * 统一字段：type, content, timestamp, imageDataUrl
+     * 统一字段：type, message, timestamp, imageDataUrl
      * @param {Object} comment - 评论对象
      * @returns {Object} 消息对象（统一格式）
      */
@@ -204,8 +203,7 @@ class SessionSyncService {
             type = this.normalizeRole(comment);
         }
         
-        // 统一 content 字段
-        const content = String(comment.content || comment.text || comment.message || '').trim();
+        const message = String(comment.message || comment.content || comment.text || '').trim();
         
         // 统一 timestamp 字段（转换为毫秒数）
         const timestamp = this.normalizeTimestamp(comment.timestamp || comment.createdTime || comment.createdAt);
@@ -215,7 +213,7 @@ class SessionSyncService {
         
         return {
             type: type, // 'user' 或 'pet'
-            content: content,
+            message: message,
             timestamp: timestamp, // 毫秒数
             imageDataUrl: imageDataUrl
         };
@@ -306,8 +304,8 @@ class SessionSyncService {
             // 检查消息是否已存在（通过内容匹配，因为标准格式不包含 _aicr）
             // 使用内容和时间戳匹配，避免重复
             const existingIndex = session.messages.findIndex(m => {
-                const mContent = String(m.content || '').trim();
-                const msgContent = String(message.content || '').trim();
+                const mContent = String(m.message || m.content || '').trim();
+                const msgContent = String(message.message || '').trim();
                 const mTime = Number(m.timestamp || 0);
                 const msgTime = Number(message.timestamp || 0);
                 // 内容相同且时间戳相近（5秒内）认为是同一条消息
@@ -362,11 +360,11 @@ class SessionSyncService {
             // 由于标准格式不包含 _aicr，需要通过内容匹配
             if (comment) {
                 const targetMessage = this.commentToMessage(comment);
-                const targetContent = String(targetMessage.content || '').trim();
+                const targetContent = String(targetMessage.message || '').trim();
                 const targetTime = Number(targetMessage.timestamp || 0);
                 
                 session.messages = session.messages.filter(m => {
-                    const mContent = String(m.content || '').trim();
+                    const mContent = String(m.message || m.content || '').trim();
                     const mTime = Number(m.timestamp || 0);
                     // 内容相同且时间戳相近（5秒内）认为是同一条消息
                     return !(mContent === targetContent && Math.abs(mTime - targetTime) < 5000);
@@ -387,7 +385,7 @@ class SessionSyncService {
 
     /**
      * 规范化消息数组（确保格式统一）
-     * 统一字段：type, content, timestamp, imageDataUrl
+     * 统一字段：type, message, timestamp, imageDataUrl
      * @param {Array} messages - 消息数组
      * @returns {Array} 规范化后的消息数组
      */
@@ -415,8 +413,7 @@ class SessionSyncService {
                 type = this.normalizeRole(msg);
             }
             
-            // 统一 content 字段
-            const content = String(msg.content || msg.text || msg.message || '').trim();
+            const message = String(msg.message || msg.content || msg.text || '').trim();
             
             // 统一 timestamp 字段（转换为毫秒数）
             const timestamp = this.normalizeTimestamp(msg.timestamp || msg.createdTime || msg.createdAt || msg.ts);
@@ -426,11 +423,11 @@ class SessionSyncService {
             
             return {
                 type: type,
-                content: content,
+                message: message,
                 timestamp: timestamp,
                 imageDataUrl: imageDataUrl
             };
-        }).filter(msg => msg && msg.content); // 过滤空内容和null
+        }).filter(msg => msg && msg.message); // 过滤空内容和null
     }
 
     /**
@@ -448,12 +445,6 @@ class SessionSyncService {
             console.log(`[SessionSync] 开始删除文件夹关联会话: ${folderPath}`);
             
             // 找出所有在该文件夹下的会话
-            // 匹配规则：会话的 tags 包含该文件夹路径序列
-            // 或者简单点：将 path 转换为 tag 数组，检查 session.tags 是否以其开头
-            
-            const targetTags = this.extractTagsFromPath(folderPath + '/dummy'); // Hack to get tags for the folder itself
-            // Wait, extractTagsFromPath('a/b/c') -> ['a', 'b'] if it's a file.
-            // If I pass 'a/b/', it splits to ['a', 'b'].
             
             const folderTags = folderPath.split('/').filter(p => p && p.trim());
             
@@ -960,20 +951,21 @@ class SessionSyncService {
 
                         // 将消息转换为评论（保持字段统一）
                         const normalizedMessages = this.normalizeMessages(session.messages || []);
-                        for (let i = 0; i < normalizedMessages.length; i++) {
+                for (let i = 0; i < normalizedMessages.length; i++) {
                             const message = normalizedMessages[i];
                             let comment = {
                                 key: `comment_${sessionId}_${i}_${message.timestamp}`,
                                 // 统一的消息字段
                                 type: message.type,
-                                content: message.content,
+                                message: message.message,
+                                content: message.message,
                                 timestamp: message.timestamp,
                                 imageDataUrl: message.imageDataUrl,
                                 // 评论特有字段
                                 fileKey: filePath,
                                 status: 'pending',
                                 // 兼容字段（保留以兼容旧代码）
-                                text: message.content, // content 和 text 保持一致
+                                text: message.message, // content 和 text 保持一致
                                 author: message.type === 'pet' ? 'AI助手' : '用户',
                                 createdTime: message.timestamp, // 毫秒数
                                 createdAt: message.timestamp // 毫秒数

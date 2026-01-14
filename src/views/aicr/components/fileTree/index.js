@@ -116,7 +116,6 @@ const createFileTreeNode = () => {
                 return safeExecute(() => {
                     // 如果长按已完成，不触发点击事件
                     if (this.longPressCompleted) {
-                        console.log('[FileTreeNode] 长按已完成，跳过文件夹切换');
                         return;
                     }
                     
@@ -181,7 +180,6 @@ const createFileTreeNode = () => {
                     
                     // 检查是否正在删除中
                     if (this.isDeleting) {
-                        console.log('[长按删除] 正在删除中，忽略新的长按');
                         return;
                     }
                     
@@ -190,7 +188,6 @@ const createFileTreeNode = () => {
                     const isInteractiveElement = target.closest('button, a, [role="button"]');
                     
                     if (isInteractiveElement) {
-                        console.log('[长按删除] 点击在交互元素上，跳过长按:', target.tagName, target.className);
                         return;
                     }
                     
@@ -246,7 +243,6 @@ const createFileTreeNode = () => {
                     
                     // 检查是否正在删除中
                     if (this.isDeleting) {
-                        console.log('[长按删除] 正在删除中，忽略长按完成');
                         this.longPressCompleted = false;
                         return;
                     }
@@ -259,7 +255,6 @@ const createFileTreeNode = () => {
                         const deltaY = Math.abs(currentY - this.longPressStartPosition.y);
                         
                         if (deltaX > 10 || deltaY > 10) {
-                            console.log('[长按删除] 移动距离过大，取消删除');
                             this.longPressCompleted = false;
                             return;
                         }
@@ -288,7 +283,6 @@ const createFileTreeNode = () => {
             // 创建会话
             createSession(event, item) {
                 return safeExecute(() => {
-                    console.log('[FileTreeNode] 创建会话按钮被点击:', item);
                     event && event.stopPropagation && event.stopPropagation();
                     if (!item || !item.key) {
                         throw createError('文件信息无效', ErrorTypes.VALIDATION, '创建会话');
@@ -299,7 +293,6 @@ const createFileTreeNode = () => {
                         path: item.path,
                         originalItem: item
                     };
-                    console.log('[FileTreeNode] 发射 create-session 事件:', payload);
                     this.$emit('create-session', payload);
                 }, '创建会话');
             },
@@ -318,7 +311,6 @@ const createFileTreeNode = () => {
                         type: item.type,
                         originalItem: item
                     };
-                    console.log('[FileTreeNode] 发射 copy-as-prompt 事件:', payload);
                     this.$emit('copy-as-prompt', payload);
                 }, '复制为Prompt');
             },
@@ -335,7 +327,6 @@ const createFileTreeNode = () => {
                 return safeExecute(() => {
                     // 如果长按已完成，不触发点击事件
                     if (this.longPressCompleted) {
-                        console.log('[FileTreeNode] 长按已完成，跳过点击事件');
                         return;
                     }
                     
@@ -352,13 +343,10 @@ const createFileTreeNode = () => {
                     
                     // 添加防抖机制，避免快速连续点击
                     if (this._lastClickTime && Date.now() - this._lastClickTime < 300) {
-                        console.log('[FileTreeNode] 点击间隔过短，跳过重复选择:', keyStr);
                         return;
                     }
                     
                     this._lastClickTime = Date.now();
-                    console.log('[FileTreeNode] 选择文件:', keyStr);
-                    console.log('[FileTreeNode] 文件对象:', this.item);
                     
                     // 构建统一的文件标识符payload，确保与后端数据结构一致
                     const payload = { 
@@ -375,7 +363,6 @@ const createFileTreeNode = () => {
                         modified: this.item?.modified
                     };
                     
-                    console.log('[FileTreeNode] 文件选择payload:', payload);
                     this.$emit('file-select', payload);
                 }, '文件选择处理');
             },
@@ -1181,7 +1168,6 @@ const componentOptions = {
             // 切换收起状态
             toggleCollapse() {
                 return safeExecute(() => {
-                    console.log('[FileTree] 切换收起状态');
                     this.$emit('toggle-collapse');
                 }, '收起状态切换处理');
             },
@@ -1211,7 +1197,6 @@ const componentOptions = {
                         throw createError('文件Key无效', ErrorTypes.VALIDATION, '文件选择');
                     }
                     const keyStr = String(key);
-                    console.log('[FileTree] 选择文件:', keyStr);
                     
                     // 构建统一的文件标识符payload，与FileTreeNode组件保持一致
                     const payload = { 
@@ -1224,7 +1209,6 @@ const componentOptions = {
                         type: 'file'
                     };
                     
-                    console.log('[FileTree] 文件选择payload:', payload);
                     this.$emit('file-select', payload);
                 }, '文件选择处理');
             },
@@ -1247,7 +1231,6 @@ const componentOptions = {
                     const normalizedSelectedKey = normalize(this.selectedKey);
                     const result = normalizedKey === normalizedSelectedKey;
                     
-                    console.log('[FileTree] isFileSelected - key:', key, 'selectedKey:', this.selectedKey, 'normalized:', { key: normalizedKey, selectedKey: normalizedSelectedKey }, 'result:', result);
                     return result;
                 }, '文件选中状态检查');
             },
@@ -1573,14 +1556,10 @@ const componentOptions = {
         
         // 触发自定义事件，通知组件已加载完成
         window.dispatchEvent(new CustomEvent('FileTreeLoaded', { detail: FileTree }));
-        
-        console.log('[FileTree] 组件初始化完成');
     } catch (error) {
         console.error('FileTree 组件初始化失败:', error);
     }
 })();
-
-
 
 
 

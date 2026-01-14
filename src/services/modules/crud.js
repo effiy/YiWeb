@@ -346,7 +346,7 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'Accept': 'text/event-stream,application/json',
         ...authHeaders,  // 添加认证头
         ...options.headers,
       },
@@ -429,6 +429,83 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
       error.url = url;
       throw error;
     }
+
+    const pickTextFromResponse = (obj) => {
+      const asText = (v) => {
+        if (v === null || v === undefined) return undefined;
+        if (typeof v === 'string') return v;
+        if (Array.isArray(v)) {
+          const joined = v
+            .map(x => {
+              if (typeof x === 'string') return x;
+              if (x && typeof x === 'object' && typeof x.content === 'string') return x.content;
+              return '';
+            })
+            .join('');
+          return joined;
+        }
+        if (v && typeof v === 'object' && typeof v.content === 'string') return v.content;
+        return undefined;
+      };
+
+      if (!obj || typeof obj !== 'object') return undefined;
+
+      const candidates = [
+        obj.data && typeof obj.data === 'object' ? obj.data.message : undefined,
+        obj.data && typeof obj.data === 'object' ? obj.data.content : undefined,
+        obj.data && typeof obj.data === 'object' ? obj.data.response : undefined,
+        obj.data,
+        obj.result && typeof obj.result === 'object' ? obj.result.message : undefined,
+        obj.result && typeof obj.result === 'object' ? obj.result.content : undefined,
+        obj.message,
+        obj.content,
+        obj.response,
+        obj.text
+      ];
+
+      for (const c of candidates) {
+        const text = asText(c);
+        if (typeof text === 'string' && text !== '') return text;
+      }
+      return undefined;
+    };
+
+    const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+    if (!contentType.includes('text/event-stream')) {
+      const rawText = await response.text();
+      let content = rawText;
+      try {
+        const parsed = JSON.parse(rawText);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.type === 'error' || parsed.success === false) {
+            throw new Error(parsed.error || parsed.message || parsed.data || '请求失败');
+          }
+          const picked = pickTextFromResponse(parsed);
+          if (picked !== undefined) {
+            content = picked;
+          } else if (typeof parsed === 'string') {
+            content = parsed;
+          }
+        }
+      } catch (e) {
+        if (e && typeof e === 'object' && typeof e.message === 'string' && !e.message.includes('JSON')) {
+          throw e;
+        }
+      }
+
+      const text = typeof content === 'string' ? content : (() => {
+        try {
+          return JSON.stringify(content);
+        } catch (_) {
+          return String(content);
+        }
+      })();
+      if (onChunk && typeof onChunk === 'function') {
+        onChunk(text, text);
+      }
+      CacheManager.clear();
+      return String(text || '').trim();
+    }
     
     // 读取流式响应
     const reader = response.body.getReader();
@@ -458,14 +535,12 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
             
             const chunk = JSON.parse(dataStr);
             
-            // 解析 ollama 的原始响应格式
-            if (chunk.message && chunk.message.content) {
-              const content = chunk.message.content;
-              fullContent += content;
-              
-              // 如果有回调函数，实时传递内容块
+            const content = pickTextFromResponse(chunk);
+            if (content !== undefined) {
+              const text = String(content);
+              fullContent += text;
               if (onChunk && typeof onChunk === 'function') {
-                onChunk(content, fullContent);
+                onChunk(text, fullContent);
               }
             }
             
@@ -498,10 +573,12 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
       if (message.startsWith('data: ')) {
         try {
           const chunk = JSON.parse(message.substring(6));
-          if (chunk.message && chunk.message.content) {
-            fullContent += chunk.message.content;
+          const content = pickTextFromResponse(chunk);
+          if (content !== undefined) {
+            const text = String(content);
+            fullContent += text;
             if (onChunk && typeof onChunk === 'function') {
-              onChunk(chunk.message.content, fullContent);
+              onChunk(text, fullContent);
             }
           }
           if (chunk.type === 'error') {
@@ -575,7 +652,7 @@ function stripCodeFences(text) {
 }
 
 /**
- * 规范化 /prompt 文本响应为统一 JSON 结构：{ data: Task[] | any[] }
+ * 规范化 prompt 文本响应为统一 JSON 结构：{ data: Task[] | any[] }
  * - 先去除 <think> 标签内容
  * - 若整体是被 JSON.stringify 的字符串，先反转义
  * - 去除 Markdown 代码围栏（```json ... ```）
@@ -713,7 +790,3 @@ if (typeof window !== 'undefined') {
 // 注意：由于HTML使用普通script标签，不支持ES6模块语法
 // 如果需要ES6模块支持，请将script标签改为 type="module"
 // 或者使用动态import()语法
-
-
-
-

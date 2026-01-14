@@ -255,9 +255,16 @@
                         <div v-else-if="activeSessionError" class="pet-chat-error" role="alert" aria-live="polite">
                             <div class="error-text">{{ activeSessionError }}</div>
                         </div>
-                        <div v-else-if="!activeSession" class="pet-chat-empty" role="status">
-                            <div class="pet-chat-empty-title">未选择会话</div>
-                            <div class="pet-chat-empty-subtitle">请从左侧会话列表选择一个会话</div>
+                        <div v-else-if="!activeSession" class="pet-chat-empty">
+                            <div class="sr-only" role="status" aria-live="polite">未选择会话，从左侧会话列表选择一个会话开始聊天</div>
+                            <div class="pet-chat-empty-card">
+                                <div class="pet-chat-empty-icon" aria-hidden="true">
+                                    <i class="fas fa-comments"></i>
+                                </div>
+                                <div class="pet-chat-empty-title">未选择会话</div>
+                                <div class="pet-chat-empty-subtitle">从左侧会话列表选择一个会话开始聊天</div>
+                                <div class="pet-chat-empty-hint">也可以在左侧搜索框输入关键词快速定位</div>
+                            </div>
                         </div>
                         <div v-else>
                             <div 
@@ -268,33 +275,83 @@
                                     'is-pet': m.type === 'pet',
                                     'is-user': m.type !== 'pet',
                                     'is-error': !!m.error,
-                                    'is-aborted': !!m.aborted
+                                    'is-aborted': !!m.aborted,
+                                    'is-streaming': isSessionChatStreamingMessage(m, idx)
                                 }"
+                                :data-chat-idx="idx"
+                                :data-chat-timestamp="m.timestamp || 0"
+                                :data-chat-type="m.type === 'pet' ? 'pet' : 'user'"
                             >
                                 <div class="pet-chat-bubble">
                                     <div v-if="Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0" class="pet-chat-images">
                                         <img v-for="(src, imgIdx) in m.imageDataUrls" :key="`${m.timestamp || 0}_${imgIdx}`" class="pet-chat-image" :src="src" alt="图片消息" />
                                     </div>
                                     <img v-else-if="m.imageDataUrl" class="pet-chat-image" :src="m.imageDataUrl" alt="图片消息" />
-                                    <div v-if="m.type === 'pet' && (!m.content || !String(m.content).trim()) && sessionChatSending && idx === (sessionChatMessages(activeSession).length - 1)" class="pet-chat-typing" aria-label="生成中">...</div>
-                                    <div v-else-if="m.content && String(m.content).trim()" class="pet-chat-content md-preview-body" v-html="renderSessionChatMarkdown(m.content)"></div>
+                                    <div v-if="m.type === 'pet' && (!(m.message || m.content) || !String(m.message || m.content).trim()) && sessionChatSending && idx === (sessionChatMessages(activeSession).length - 1)" class="pet-chat-typing" aria-label="生成中">...</div>
+                                    <div v-else-if="(m.message || m.content) && String(m.message || m.content).trim() && isSessionChatStreamingMessage(m, idx)" class="pet-chat-content md-preview-body pet-chat-content-streaming" v-html="renderSessionChatStreamingHtml(m.message || m.content)"></div>
+                                    <div v-else-if="(m.message || m.content) && String(m.message || m.content).trim()" class="pet-chat-content md-preview-body" v-html="renderSessionChatMarkdown(m.message || m.content)"></div>
                                     <div class="pet-chat-meta">
-                                        <button
-                                            v-if="m.content && String(m.content).trim()"
-                                            type="button"
-                                            class="pet-chat-meta-btn"
-                                            @click="copySessionChatMessage(m.content)"
-                                            aria-label="复制消息"
-                                            title="复制"
-                                        >复制</button>
-                                        <button
-                                            v-if="m.type === 'pet' && (m.error || m.aborted) && idx === (sessionChatMessages(activeSession).length - 1)"
-                                            type="button"
-                                            class="pet-chat-meta-btn"
-                                            @click="retryLastSessionChatMessage"
-                                            aria-label="重试"
-                                            :title="m.error ? '重试' : '继续生成'"
-                                        >{{ m.error ? '重试' : '继续' }}</button>
+                                        <div class="pet-chat-meta-actions">
+                                            <button
+                                                v-if="(m.message || m.content) && String(m.message || m.content).trim()"
+                                                type="button"
+                                                class="pet-chat-meta-btn"
+                                                @click="copySessionChatMessage(m.message || m.content, m, idx)"
+                                                aria-label="复制消息"
+                                                title="复制"
+                                            >{{ sessionChatCopyButtonLabel(m, idx) }}</button>
+                                            <button
+                                                v-if="m.type !== 'pet'"
+                                                type="button"
+                                                class="pet-chat-meta-btn"
+                                                :disabled="sessionChatSending"
+                                                @click="editSessionChatMessageAt(idx)"
+                                                aria-label="编辑消息"
+                                                title="编辑"
+                                            >✏️</button>
+                                            <button
+                                                v-if="m.type !== 'pet'"
+                                                type="button"
+                                                class="pet-chat-meta-btn"
+                                                :disabled="sessionChatSending"
+                                                @click="resendSessionChatMessageAt(idx)"
+                                                aria-label="重新发送"
+                                                title="重新发送"
+                                            >📨</button>
+                                            <button
+                                                type="button"
+                                                class="pet-chat-meta-btn"
+                                                :disabled="sessionChatSending || !canMoveSessionChatMessageUp(activeSession, idx)"
+                                                @click="moveSessionChatMessageUp(idx)"
+                                                aria-label="上移消息"
+                                                title="上移"
+                                            >⬆️</button>
+                                            <button
+                                                type="button"
+                                                class="pet-chat-meta-btn"
+                                                :disabled="sessionChatSending || !canMoveSessionChatMessageDown(activeSession, idx)"
+                                                @click="moveSessionChatMessageDown(idx)"
+                                                aria-label="下移消息"
+                                                title="下移"
+                                            >⬇️</button>
+                                            <button
+                                                v-if="m.type === 'pet' && canRegenerateSessionChatMessage(activeSession, idx)"
+                                                type="button"
+                                                class="pet-chat-meta-btn"
+                                                :disabled="sessionChatSending || isSessionChatRegenerating(m, idx)"
+                                                @click="regenerateSessionChatMessageAt(idx)"
+                                                aria-label="重新生成回复"
+                                                title="重新生成"
+                                            >{{ sessionChatRegenerateButtonLabel(m, idx) }}</button>
+                                            <button
+                                                type="button"
+                                                class="pet-chat-meta-btn"
+                                                :disabled="sessionChatSending"
+                                                @click="deleteSessionChatMessageAt(idx)"
+                                                aria-label="删除消息"
+                                                title="删除"
+                                            >🗑️</button>
+                                        </div>
                                         <time class="pet-chat-time" :datetime="m.timestamp">{{ formatTime(m.timestamp) }}</time>
                                     </div>
                                 </div>
@@ -332,7 +389,7 @@
                                     @click="abortSessionChatRequest"
                                     :title="sessionChatSending ? '请求状态：生成中（点击停止）' : '请求状态：空闲'"
                                     aria-label="请求状态"
-                                >⏹️</button>
+                                >{{ sessionChatSending ? '⏸️' : '⏹️' }}</button>
                             </div>
                         </div>
 
@@ -360,14 +417,6 @@
                                     rows="2"
                                     aria-label="会话输入框"
                                 ></textarea>
-                                <button
-                                    type="button"
-                                    class="pet-chat-send-btn"
-                                    :disabled="sessionChatSending || (!String(sessionChatInput || '').trim() && !(Array.isArray(sessionChatDraftImages) && sessionChatDraftImages.length > 0))"
-                                    @click="sendSessionChatMessage"
-                                    aria-label="发送"
-                                    title="发送 (Enter)"
-                                >发送</button>
                             </div>
                         </div>
                     </div>
@@ -482,14 +531,114 @@
                                     >清除</button>
                                 </div>
 
+                                <div class="aicr-session-faq-filter-row" aria-label="常见问题标签筛选">
+                                    <div class="aicr-session-faq-filter-actions">
+                                        <button
+                                            type="button"
+                                            class="aicr-session-faq-filter-btn"
+                                            :class="{ active: !!sessionFaqTagFilterReverse }"
+                                            @click="toggleSessionFaqTagReverse"
+                                            aria-label="反选"
+                                            title="不包含选中标签"
+                                        >反选</button>
+                                        <button
+                                            type="button"
+                                            class="aicr-session-faq-filter-btn"
+                                            :class="{ active: !!sessionFaqTagFilterNoTags }"
+                                            @click="toggleSessionFaqNoTags"
+                                            aria-label="无标签"
+                                            title="只显示无标签问题"
+                                        >无标签</button>
+                                        <button
+                                            type="button"
+                                            class="aicr-session-faq-filter-btn"
+                                            :disabled="(sessionFaqSelectedTags || []).length === 0 && !sessionFaqTagFilterReverse && !sessionFaqTagFilterNoTags"
+                                            @click="clearSessionFaqTagFilters"
+                                            aria-label="清除标签筛选"
+                                            title="清除标签筛选"
+                                        >清除标签</button>
+                                        <button
+                                            type="button"
+                                            class="aicr-session-faq-filter-btn"
+                                            :class="{ active: !!sessionFaqTagManagerVisible }"
+                                            @click="toggleSessionFaqTagManager"
+                                            aria-label="标签管理"
+                                            title="标签管理"
+                                        >标签管理</button>
+                                        <button
+                                            type="button"
+                                            class="aicr-session-faq-filter-btn"
+                                            :disabled="!!sessionFaqLoading"
+                                            @click="refreshSessionFaqs"
+                                            aria-label="刷新"
+                                            title="从接口刷新"
+                                        >刷新</button>
+                                    </div>
+
+                                    <div class="aicr-session-faq-tag-search">
+                                        <input
+                                            type="text"
+                                            class="aicr-session-faq-tag-search-input"
+                                            :value="sessionFaqTagFilterSearchKeyword"
+                                            @input="sessionFaqTagFilterSearchKeyword = $event.target.value"
+                                            placeholder="搜索标签..."
+                                            aria-label="搜索标签"
+                                        />
+                                        <button
+                                            type="button"
+                                            class="aicr-session-faq-filter-btn"
+                                            :disabled="!String(sessionFaqTagFilterSearchKeyword || '').trim()"
+                                            @click="sessionFaqTagFilterSearchKeyword = ''"
+                                            aria-label="清除标签搜索"
+                                            title="清除标签搜索"
+                                        >清除</button>
+                                    </div>
+
+                                    <div class="aicr-session-faq-tag-list" role="list" aria-label="标签列表">
+                                        <button
+                                            v-for="tag in (sessionFaqVisibleTags || [])"
+                                            :key="tag"
+                                            type="button"
+                                            class="aicr-session-faq-tag"
+                                            :class="{ active: (sessionFaqSelectedTags || []).includes(tag) }"
+                                            @click="toggleSessionFaqTag(tag)"
+                                            role="listitem"
+                                            :aria-label="`筛选标签：${tag}`"
+                                        >{{ tag }}</button>
+                                        <button
+                                            v-if="(sessionFaqAllTags || []).length > (sessionFaqVisibleTags || []).length"
+                                            type="button"
+                                            class="aicr-session-faq-tag more"
+                                            @click="toggleSessionFaqTagExpanded"
+                                            role="listitem"
+                                            aria-label="展开或收起标签"
+                                        >{{ sessionFaqTagFilterExpanded ? '收起' : '更多' }}</button>
+                                    </div>
+
+                                    <div v-if="sessionFaqTagManagerVisible" class="aicr-session-faq-tag-manager" aria-label="标签管理面板">
+                                        <div class="aicr-session-faq-tag-manager-header">
+                                            <div class="aicr-session-faq-tag-manager-title">标签管理</div>
+                                            <button type="button" class="aicr-session-faq-filter-btn" @click="toggleSessionFaqTagManager" aria-label="关闭标签管理">关闭</button>
+                                        </div>
+                                        <div class="aicr-session-faq-tag-manager-list" role="list" aria-label="可管理标签列表">
+                                            <div v-for="tag in (sessionFaqAllTags || [])" :key="`mgr_${tag}`" class="aicr-session-faq-tag-manager-item" role="listitem">
+                                                <div class="aicr-session-faq-tag-manager-name">{{ tag }}</div>
+                                                <div class="aicr-session-faq-tag-manager-actions">
+                                                    <button type="button" class="aicr-session-faq-filter-btn" :disabled="!!sessionFaqLoading" @click="renameSessionFaqTag(tag)" aria-label="重命名标签">重命名</button>
+                                                    <button type="button" class="aicr-session-faq-filter-btn danger" :disabled="!!sessionFaqLoading" @click="deleteSessionFaqTag(tag)" aria-label="删除标签">删除</button>
+                                                </div>
+                                            </div>
+                                            <div v-if="(sessionFaqAllTags || []).length === 0" class="aicr-session-faq-tag-manager-empty">暂无标签</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div v-if="sessionFaqLoading" class="aicr-session-faq-status" role="status">正在加载常见问题...</div>
+                                <div v-else-if="sessionFaqError" class="aicr-session-faq-error" role="status">{{ sessionFaqError }}</div>
+
                                 <div class="aicr-session-faq-list" role="list" aria-label="常见问题列表">
                                     <div
-                                        v-for="item in (sessionFaqItems || []).filter(i => {
-                                            const kw = String(sessionFaqSearchKeyword || '').trim().toLowerCase();
-                                            if (!kw) return true;
-                                            const hay = `${String(i?.title || '')}\n${String(i?.prompt || '')}`.toLowerCase();
-                                            return hay.includes(kw);
-                                        })"
+                                        v-for="item in (filteredSessionFaqItems || [])"
                                         :key="item.key"
                                         class="aicr-session-faq-item"
                                         role="listitem"
@@ -497,22 +646,28 @@
                                         <div class="aicr-session-faq-item-header">
                                             <div class="aicr-session-faq-item-title">{{ item.title }}</div>
                                             <div class="aicr-session-faq-item-actions">
+                                                <button type="button" class="aicr-session-faq-item-btn" @click="editSessionFaqTags(item)" aria-label="标签">标签</button>
                                                 <button type="button" class="aicr-session-faq-item-btn" @click="applySessionFaqItem(item, 'insert')" aria-label="插入">插入</button>
                                                 <button type="button" class="aicr-session-faq-item-btn primary" @click="applySessionFaqItem(item, 'send')" aria-label="发送">发送</button>
                                             </div>
+                                        </div>
+                                        <div v-if="Array.isArray(item.tags) && item.tags.length > 0" class="aicr-session-faq-item-tags" aria-label="问题标签">
+                                            <button
+                                                v-for="tag in item.tags"
+                                                :key="`${item.key}_${tag}`"
+                                                type="button"
+                                                class="aicr-session-faq-item-tag"
+                                                @click="toggleSessionFaqTag(tag)"
+                                                :aria-label="`筛选标签：${tag}`"
+                                            >{{ tag }}</button>
                                         </div>
                                         <div class="aicr-session-faq-item-prompt">{{ item.prompt }}</div>
                                     </div>
 
                                     <div
-                                        v-if="(sessionFaqItems || []).filter(i => {
-                                            const kw = String(sessionFaqSearchKeyword || '').trim().toLowerCase();
-                                            if (!kw) return true;
-                                            const hay = `${String(i?.title || '')}\n${String(i?.prompt || '')}`.toLowerCase();
-                                            return hay.includes(kw);
-                                        }).length === 0"
+                                        v-if="!sessionFaqLoading && (filteredSessionFaqItems || []).length === 0"
                                         class="aicr-session-faq-empty"
-                                        role="status"
+                                        role="listitem"
                                     >
                                         未找到匹配的常见问题
                                     </div>

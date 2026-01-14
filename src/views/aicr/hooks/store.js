@@ -4,7 +4,7 @@
  */
 
 import { getData, postData } from '/src/services/index.js';
-import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
+import { buildServiceUrl } from '/src/services/helper/requestHelper.js';
 import { safeExecuteAsync, createError, ErrorTypes } from '/src/utils/error.js';
 import { getSessionSyncService } from '/src/views/aicr/services/sessionSyncService.js';
 import { 
@@ -467,6 +467,10 @@ export const createStore = () => {
     const sessionChatLastDraftImages = vueRef([]);
     const sessionChatSending = vueRef(false);
     const sessionChatAbortController = vueRef(null);
+    const sessionChatStreamingTargetTimestamp = vueRef(null);
+    const sessionChatStreamingType = vueRef('');
+    const sessionChatCopyFeedback = vueRef({});
+    const sessionChatRegenerateFeedback = vueRef({});
     const sessionContextEnabled = vueRef(true);
     const sessionContextEditorVisible = vueRef(false);
     const sessionContextDraft = vueRef('');
@@ -475,6 +479,16 @@ export const createStore = () => {
     const sessionContextOptimizeBackup = vueRef('');
     const sessionFaqVisible = vueRef(false);
     const sessionFaqSearchKeyword = vueRef('');
+    const sessionFaqItems = vueRef([]);
+    const sessionFaqLoading = vueRef(false);
+    const sessionFaqError = vueRef(null);
+    const sessionFaqSelectedTags = vueRef([]);
+    const sessionFaqTagFilterReverse = vueRef(false);
+    const sessionFaqTagFilterNoTags = vueRef(false);
+    const sessionFaqTagFilterExpanded = vueRef(false);
+    const sessionFaqTagFilterVisibleCount = vueRef(12);
+    const sessionFaqTagFilterSearchKeyword = vueRef('');
+    const sessionFaqTagManagerVisible = vueRef(false);
     const sessionSettingsVisible = vueRef(false);
     const sessionBotModel = vueRef('');
     const sessionBotSystemPrompt = vueRef('你是一个专业、简洁且可靠的 AI 助手。');
@@ -1249,7 +1263,8 @@ export const createStore = () => {
                     content: content,
                     type: 'file',
                     createdAt: node.createdAt || node.createdTime,
-                    updatedAt: node.updatedAt || node.updatedTime
+                    updatedAt: node.updatedAt || node.updatedTime,
+                    sessionKey: node.sessionKey
                 });
             }
             
@@ -1680,7 +1695,17 @@ export const createStore = () => {
                 
                 // 如果有当前选中的文件，也添加到参数中
                 if (selectedKey.value) {
-                    queryParams.key = selectedKey.value;
+                    let targetKey = selectedKey.value;
+                    try {
+                        const root = fileTree.value;
+                        const { node } = findNodeAndParentByKey(root, selectedKey.value);
+                        if (node && node.sessionKey) {
+                            targetKey = node.sessionKey;
+                        }
+                    } catch (e) {}
+
+                    queryParams.key = targetKey;
+                    queryParams.fileKey = targetKey;
                 }
                 
                 const url = buildServiceUrl('query_documents', queryParams);
@@ -1688,22 +1713,14 @@ export const createStore = () => {
                 console.log('[loadComments] 调用MongoDB接口:', url);
                 // 禁用本地缓存，确保评论列表总是从服务端获取最新数据
                 const response = await getData(url, {}, false);
-                
-                if (response && response.data && response.data.list) {
-                    // 规范化评论数据，确保字段一致性
-                    comments.value = response.data.list.map(comment => normalizeComment(comment));
-                    console.log(`[loadComments] 成功加载 ${comments.value.length} 条评论`);
-                    console.log('[loadComments] 评论数据详情:', comments.value);
-                    
-                    // 注意：初始化时不需要同步评论到会话消息，同步操作应在数据变更时（创建、更新、删除）进行
-                    // 这样可以避免初始化时产生大量不必要的 session API 调用
-                    
-                    return comments.value;
-                } else {
-                    comments.value = [];
-                    console.log('[loadComments] 没有评论数据');
-                    return [];
-                }
+
+                let list = (response && response.data && response.data.list) ? response.data.list : [];
+
+                comments.value = Array.isArray(list) ? list.map(comment => normalizeComment(comment)) : [];
+                console.log(`[loadComments] 成功加载 ${comments.value.length} 条评论`);
+                console.log('[loadComments] 评论数据详情:', comments.value);
+
+                return comments.value;
             } catch (error) {
                 console.error('[loadComments] 加载评论失败:', error);
                 comments.value = [];
@@ -1955,12 +1972,6 @@ export const createStore = () => {
                     } else {
                         s.key = rawKey;
                     }
-
-                    // 确保 id 存在，用于列表渲染和选中状态判断
-                    // 解决因 id 缺失导致列表所有项被错误高亮的问题 (undefined === undefined)
-                    if (!s.id) {
-                        s.id = s._id || s.key || `temp_${Date.now()}_${Math.random().toString(36).substr(2)}`;
-                    }
                 });
 
                 sessionList = sessionList.filter(s => s && s.key);
@@ -2039,10 +2050,6 @@ export const createStore = () => {
         sidebarWidth,
         commentsWidth,
         
-        // 项目管理
-        // projects,
-        // selectedProject,
-        
         // 搜索相关状态
         searchQuery,
         newComment,
@@ -2076,6 +2083,10 @@ export const createStore = () => {
         sessionChatLastDraftImages,
         sessionChatSending,
         sessionChatAbortController,
+        sessionChatStreamingTargetTimestamp,
+        sessionChatStreamingType,
+        sessionChatCopyFeedback,
+        sessionChatRegenerateFeedback,
         sessionContextEnabled,
         sessionContextEditorVisible,
         sessionContextDraft,
@@ -2084,6 +2095,16 @@ export const createStore = () => {
         sessionContextOptimizeBackup,
         sessionFaqVisible,
         sessionFaqSearchKeyword,
+        sessionFaqItems,
+        sessionFaqLoading,
+        sessionFaqError,
+        sessionFaqSelectedTags,
+        sessionFaqTagFilterReverse,
+        sessionFaqTagFilterNoTags,
+        sessionFaqTagFilterExpanded,
+        sessionFaqTagFilterVisibleCount,
+        sessionFaqTagFilterSearchKeyword,
+        sessionFaqTagManagerVisible,
         sessionSettingsVisible,
         sessionBotModel,
         sessionBotSystemPrompt,
@@ -2111,14 +2132,11 @@ export const createStore = () => {
         normalizeComment,
         loadComments,
         setSelectedKey,
-        normalizeKey, // 新增：统一的文件Key规范化函数
+        normalizeKey,
         toggleFolder,
         addComment,
         toggleSidebar,
         toggleComments,
-        // selectedProject, // Restored for compatibility
-        // loadProjects,
-        // setSelectedProject,
         setNewComment,
         refreshData,
         clearError,

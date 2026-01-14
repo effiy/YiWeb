@@ -48,7 +48,7 @@
                             :class="m.type === 'pet' ? 'is-pet' : 'is-user'"
                         >
                             <div class="aicr-session-chat-bubble">
-                                <div class="aicr-session-chat-content md-preview-body" v-html="renderMarkdown(m.content)"></div>
+                                <div class="aicr-session-chat-content md-preview-body" v-html="renderMarkdown(m.message || m.content)"></div>
                                 <time class="aicr-session-chat-time" :datetime="m.timestamp">
                                     {{ formatTime(m.timestamp) }}
                                 </time>
@@ -103,16 +103,6 @@
                                 rows="2"
                                 aria-label="会话输入框"
                             ></textarea>
-                            <button
-                                type="button"
-                                class="aicr-session-chat-send-btn"
-                                :disabled="sessionChatSending || !sessionChatInputText.trim()"
-                                @click="sendSessionChatMessage()"
-                                aria-label="发送"
-                                title="发送 (Enter)"
-                            >
-                                发送
-                            </button>
                         </div>
                     </div>
                 </div>

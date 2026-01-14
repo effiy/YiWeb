@@ -52,6 +52,23 @@ export const useComputed = (store) => {
                 }
             };
             const target = normalize(key);
+
+            const findSessionKeyByTreeKey = (nodes, treeKey) => {
+                if (!nodes) return null;
+                const stack = Array.isArray(nodes) ? [...nodes] : [nodes];
+                while (stack.length > 0) {
+                    const n = stack.pop();
+                    if (!n) continue;
+                    const k = normalize(n.key || n.path || n.id || '');
+                    if (k && k === treeKey) {
+                        return n.sessionKey != null ? String(n.sessionKey) : null;
+                    }
+                    if (Array.isArray(n.children) && n.children.length > 0) {
+                        for (let i = n.children.length - 1; i >= 0; i--) stack.push(n.children[i]);
+                    }
+                }
+                return null;
+            };
             
             // 更灵活的匹配逻辑：检查多个可能的标识字段
             const currentFile = store.files.value.find(f => {
@@ -87,7 +104,18 @@ export const useComputed = (store) => {
                 });
             });
             
-            return currentFile;
+            if (!currentFile) {
+                const sessionKeyFromTree = findSessionKeyByTreeKey(store.fileTree?.value, target);
+                if (sessionKeyFromTree) {
+                    return { key: target, path: target, name: target.split('/').pop() || target, sessionKey: sessionKeyFromTree };
+                }
+                return null;
+            }
+
+            if (currentFile.sessionKey) return currentFile;
+            const sessionKeyFromTree = findSessionKeyByTreeKey(store.fileTree?.value, target);
+            if (!sessionKeyFromTree) return currentFile;
+            return { ...currentFile, sessionKey: sessionKeyFromTree };
         }),
 
         /**
@@ -99,15 +127,41 @@ export const useComputed = (store) => {
             console.log('[currentComments] store.comments:', store.comments);
             
             if (!key) return [];
-            
+
+            const normalize = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+            const keyNorm = normalize(key);
+            const findSessionKeyByTreeKey = (nodes, treeKey) => {
+                if (!nodes) return null;
+                const stack = Array.isArray(nodes) ? [...nodes] : [nodes];
+                while (stack.length > 0) {
+                    const n = stack.pop();
+                    if (!n) continue;
+                    const k = normalize(n.key || n.path || n.id || '');
+                    if (k && k === treeKey) {
+                        return n.sessionKey != null ? String(n.sessionKey) : null;
+                    }
+                    if (Array.isArray(n.children) && n.children.length > 0) {
+                        for (let i = n.children.length - 1; i >= 0; i--) stack.push(n.children[i]);
+                    }
+                }
+                return null;
+            };
+            const currentFile = store.files?.value ? store.files.value.find(f => {
+                if (!f) return false;
+                const candidates = [f.key, f.path, f.name].filter(Boolean).map(normalize);
+                return candidates.includes(keyNorm);
+            }) : null;
+            const sessionKey = currentFile?.sessionKey
+                ? String(currentFile.sessionKey)
+                : findSessionKeyByTreeKey(store.fileTree?.value, keyNorm);
+            if (!sessionKey) return [];
+
             // 合并本地评论和store中的评论
             const localComments = []; // 这里可以添加本地评论逻辑
             const storeComments = store.comments?.value ? store.comments.value.filter(c => {
-                // 兼容不同的文件标识方式
-                const commentFileKey = c.fileKey || (c.fileInfo && (c.fileInfo.key || c.fileInfo.path));
+                const commentFileKey = c.fileKey;
                 console.log('[currentComments] 评论文件Key:', commentFileKey, '当前文件Key:', key);
-                const normalize = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
-                return normalize(commentFileKey) === normalize(key);
+                return String(commentFileKey || '') === sessionKey;
             }) : [];
             const allComments = [...localComments, ...storeComments];
             
@@ -205,7 +259,19 @@ export const useComputed = (store) => {
          */
         currentFileCommentCount: computed(() => {
             if (!store.selectedKey?.value || !store.comments?.value) return 0;
-            return store.comments.value.filter(c => c.key === store.selectedKey.value).length;
+            const normalize = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+            const key = store.selectedKey.value;
+            const keyNorm = normalize(key);
+            const currentFile = store.files?.value ? store.files.value.find(f => {
+                if (!f) return false;
+                const candidates = [f.key, f.path, f.name].filter(Boolean).map(normalize);
+                return candidates.includes(keyNorm);
+            }) : null;
+            const sessionKey = currentFile?.sessionKey ? String(currentFile.sessionKey) : null;
+            if (!sessionKey) return 0;
+            return store.comments.value.filter(c => {
+                return String(c.fileKey || '') === sessionKey;
+            }).length;
         }),
 
         /**
@@ -283,8 +349,5 @@ export const useComputed = (store) => {
 
     };
 };
-
-
-
 
 

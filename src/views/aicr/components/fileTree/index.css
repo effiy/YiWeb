@@ -101,7 +101,6 @@
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
-    user-select: none;
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
@@ -109,7 +108,6 @@
 
 .toolbar-group:first-child .toolbar-btn {
     width: auto;
-    min-width: fit-content;
     padding: 6px 10px;
     height: auto;
     min-height: 32px;
@@ -789,7 +787,6 @@
     background: rgba(255, 255, 255, 0.08);
     cursor: pointer;
     transition: all 0.2s;
-    user-select: none;
 }
 
 .tag-item:hover {
@@ -1376,7 +1373,6 @@
     transition: all 0.15s ease;
     font-size: 11px;
     color: var(--text-secondary);
-    user-select: none;
     position: relative;
     border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.12));
 }

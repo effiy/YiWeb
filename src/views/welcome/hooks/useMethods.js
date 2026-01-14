@@ -614,15 +614,15 @@ export const useMethods = (store) => {
             } else if (typeof card.stats === 'string') {
                 statsText = card.stats;
             }
-            // 使用流式请求处理 /prompt 接口（统一 JSON 返回）
+            // 使用流式请求处理 prompt 接口（统一 JSON 返回）
             // 兼容服务端旧协议：发送 fromUser 纯文本，同时我们仍使用统一解析器
             const { streamPromptJSON } = await import('/src/services/modules/crud.js');
             const response = await streamPromptJSON(`${window.API_URL}/`, {
-                module_name: 'services.llm.prompt_service',
-                method_name: 'stream_prompt',
+                module_name: 'services.ai.chat_service',
+                method_name: 'chat',
                 parameters: {
-                    fromSystem,
-                    fromUser: `目标:${target}\n描述:${description}\n指标:${statsText}\n功能:${feature.name} - ${feature.desc}\n卡片:${card.title}`,
+                    system: fromSystem,
+                    user: `目标:${target}\n描述:${description}\n指标:${statsText}\n功能:${feature.name} - ${feature.desc}\n卡片:${card.title}`,
                     model: 'qwq'
                 }
             });
@@ -1885,14 +1885,14 @@ export const useMethods = (store) => {
 
             const fromSystem = await window.getData(`/src/assets/prompts/target/featureCards.txt`);
             
-            // 使用流式请求处理 /prompt 接口（统一 JSON 返回，兼容旧协议）
+            // 使用流式请求处理 prompt 接口（统一 JSON 返回，兼容旧协议）
             const { streamPromptJSON } = await import('/src/services/modules/crud.js');
             const response = await streamPromptJSON(`${window.API_URL}/`, {
-                module_name: 'services.llm.prompt_service',
-                method_name: 'stream_prompt',
+                module_name: 'services.ai.chat_service',
+                method_name: 'chat',
                 parameters: {
-                    fromSystem: fromSystem,
-                    fromUser: message
+                    system: fromSystem,
+                    user: message
                 }
             });
             
@@ -2373,7 +2373,7 @@ export const useMethods = (store) => {
                 hint: '查看 httpCode/isNetwork/isCors/isTimeout 定位问题',
                 error: nerr,
                 request: {
-                    endpoint: `${window.API_URL}/prompt`,
+                    endpoint: `${window.API_URL}/`,
                     payloadMeta: {
                         fromSystemType: typeof store?.fromSystem?.value,
                         fromUserLength: (typeof message === 'string') ? message.length : 0
@@ -3191,11 +3191,14 @@ ${cardData.day ? `日期：${cardData.day}` : ''}
             // 获取系统提示词
             const fromSystem = await window.getData(`/src/assets/prompts/target/pageContext.txt`);
             
-            // 调用 prompt 接口生成 markdown 格式的页面上下文
             const { streamPromptJSON } = await import('/src/services/modules/crud.js');
-            const response = await streamPromptJSON(`${window.API_URL}/prompt`, {
-                fromSystem: fromSystem,
-                fromUser: `请根据以下卡片信息生成完整的 Markdown 格式页面上下文内容：\n\n${cardInfoText}`
+            const response = await streamPromptJSON(`${window.API_URL}/`, {
+                module_name: 'services.ai.chat_service',
+                method_name: 'chat',
+                parameters: {
+                    system: fromSystem,
+                    user: `请根据以下卡片信息生成完整的 Markdown 格式页面上下文内容：\n\n${cardInfoText}`
+                }
             });
 
             // 提取生成的 markdown 内容
@@ -3356,9 +3359,6 @@ ${cardData.day ? `日期：${cardData.day}` : ''}
     
     return methods;
 };
-
-
-
 
 
 

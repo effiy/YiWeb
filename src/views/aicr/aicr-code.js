@@ -102,6 +102,30 @@ async function createApp() {
         },
         
         methods: {
+        isUUID(v) {
+            return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
+        },
+        resolveSessionKey() {
+            const direct = this.fileInfo.sessionKey || this.currentFile?.sessionKey;
+            if (this.isUUID(direct)) return String(direct);
+            if (this.isUUID(this.fileInfo.fileKey)) return String(this.fileInfo.fileKey);
+            try {
+                const root = window.aicrStore?.fileTree?.value || window.aicrStore?.fileTree;
+                const targetTreeKey = String(this.fileInfo.fileKey || '').trim();
+                if (targetTreeKey && Array.isArray(root)) {
+                    const stack = [...root];
+                    while (stack.length) {
+                        const node = stack.pop();
+                        if (!node) continue;
+                        if (String(node.key || '') === targetTreeKey && this.isUUID(node.sessionKey)) {
+                            return String(node.sessionKey);
+                        }
+                        if (Array.isArray(node.children)) stack.push(...node.children);
+                    }
+                }
+            } catch (_) {}
+            return null;
+        },
         // 解析URL参数
         parseUrlParams() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -110,7 +134,8 @@ async function createApp() {
                 filePath: urlParams.get('filePath') || '',
                 project: urlParams.get('project') || '',
                 version: urlParams.get('version') || '',
-                fileKey: urlParams.get('fileKey') || ''
+                fileKey: urlParams.get('fileKey') || '',
+                sessionKey: urlParams.get('sessionKey') || urlParams.get('sessionkey') || ''
             };
             
             console.log('[parseUrlParams] 解析到的文件信息:', this.fileInfo);
@@ -140,6 +165,9 @@ async function createApp() {
                         // 使用 fileKey 进行精确查找
                         const loadedFile = await window.aicrStore.loadFileByKey(this.fileInfo.fileKey);
                         if (loadedFile && loadedFile.content) {
+                            if (loadedFile.sessionKey) {
+                                this.fileInfo.sessionKey = loadedFile.sessionKey;
+                            }
                             this.currentFile = {
                                 name: loadedFile.name || this.fileInfo.fileName,
                                 path: loadedFile.path || this.fileInfo.filePath,
@@ -147,8 +175,14 @@ async function createApp() {
                                 type: loadedFile.type || 'text',
                                 size: loadedFile.size || 0,
                                 lastModified: loadedFile.lastModified || new Date().toISOString(),
-                                key: loadedFile.key || this.fileInfo.fileKey
+                                key: loadedFile.key || this.fileInfo.fileKey,
+                                sessionKey: loadedFile.sessionKey
                             };
+                            const resolvedSessionKey = this.resolveSessionKey();
+                            if (resolvedSessionKey) {
+                                this.fileInfo.sessionKey = resolvedSessionKey;
+                                this.currentFile.sessionKey = resolvedSessionKey;
+                            }
                             console.log('[loadFileContent] 通过 store 加载文件成功:', this.currentFile.name);
                             return;
                         }
@@ -202,7 +236,8 @@ async function createApp() {
                         type: itemData.type || item.type || 'text',
                         size: itemData.size || item.size || 0,
                         lastModified: itemData.lastModified || item.lastModified || new Date().toISOString(),
-                        key: item.key
+                        key: item.key,
+                        sessionKey: this.resolveSessionKey()
                     };
                     
                     console.log('[loadFileContent] 文件加载成功:', this.currentFile.name, '内容长度:', content.length);
@@ -222,10 +257,12 @@ async function createApp() {
             if (!this.fileInfo.fileKey) return;
             
             try {
+                const targetKey = this.resolveSessionKey() || this.fileInfo.fileKey;
                 // 使用与主页面相同的MongoDB API
                 const queryParams = {
                     cname: 'comments',
-                    key: this.fileInfo.fileKey
+                    key: targetKey,
+                    fileKey: targetKey
                 };
                 if (this.fileInfo.version) {
                     queryParams.versionId = this.fileInfo.version;
@@ -251,7 +288,7 @@ async function createApp() {
                 } else if (data && Array.isArray(data.data)) {
                     comments = data.data;
                 }
-                
+
                 this.currentComments = comments;
                 console.log('[loadComments] 加载评论成功，数量:', comments.length);
                 
@@ -264,6 +301,7 @@ async function createApp() {
         // 处理评论提交
         async handleCommentSubmit(commentData) {
             try {
+                const targetKey = this.resolveSessionKey() || this.fileInfo.fileKey;
                 // 构建创建请求 payload
                 const payload = {
                     module_name: SERVICE_MODULE,
@@ -271,7 +309,7 @@ async function createApp() {
                     parameters: {
                         cname: 'comments',
                         data: {
-                            fileKey: this.fileInfo.fileKey,
+                            fileKey: targetKey,
                             ...commentData
                         }
                     }
@@ -556,4 +594,3 @@ function showErrorPage(error) {
         `;
     }
 }
-

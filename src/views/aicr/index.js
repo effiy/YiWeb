@@ -7,6 +7,7 @@ import { useComputed } from '/src/views/aicr/hooks/useComputed.js';
 import { useMethods } from '/src/views/aicr/hooks/useMethods.js';
 import { createBaseView } from '/src/utils/baseView.js';
 import { logInfo, logWarn, logError } from '/src/utils/log.js';
+import { formatTime as formatTimeUtil } from '/src/utils/common.js';
 
 // 获取Vue的computed函数
 const { computed } = Vue;
@@ -19,7 +20,7 @@ const { computed } = Vue;
 
         // 新增：本地评论和高亮状态
         const localState = {
-            codeComments: [] // {key, fileKey, text, comment, rangeInfo}
+            codeComments: []
         };
 
         // 监听划词评论事件
@@ -347,12 +348,30 @@ const { computed } = Vue;
                     const { fileKey, rangeInfo, comment } = e.detail;
                     logInfo('[代码审查页面] 收到代码高亮事件:', { fileKey, rangeInfo, comment });
                     
-                    if (fileKey) {
+                    const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
+                    const resolveTreeKeyFromSessionKey = (sessionKey) => {
+                        try {
+                            const target = String(sessionKey || '').trim();
+                            if (!target) return null;
+                            const root = store?.fileTree?.value;
+                            const stack = Array.isArray(root) ? [...root] : (root ? [root] : []);
+                            while (stack.length) {
+                                const node = stack.pop();
+                                if (!node) continue;
+                                if (String(node.sessionKey || '') === target) return node.key || null;
+                                if (Array.isArray(node.children)) stack.push(...node.children);
+                            }
+                        } catch (_) {}
+                        return null;
+                    };
+                    const resolvedTreeKey = (fileKey && isUUID(fileKey)) ? (resolveTreeKeyFromSessionKey(fileKey) || fileKey) : fileKey;
+
+                    if (resolvedTreeKey) {
                         // 如果当前没有选中该文件，先选中文件
-                        const needSwitchFile = store && store.selectedKey.value !== fileKey;
+                        const needSwitchFile = store && store.selectedKey.value !== resolvedTreeKey;
                         if (needSwitchFile) {
-                            logInfo('[代码审查页面] 切换到文件:', fileKey);
-                            store.setSelectedKey(fileKey);
+                            logInfo('[代码审查页面] 切换到文件:', resolvedTreeKey);
+                            store.setSelectedKey(resolvedTreeKey);
                         }
                         
                         // 发送高亮事件给代码视图组件
@@ -420,6 +439,13 @@ const { computed } = Vue;
                 }
             },
             methods: {
+                formatTime: function(timestamp) {
+                    try {
+                        return formatTimeUtil(timestamp, 'ago');
+                    } catch (_) {
+                        return '';
+                    }
+                },
                 // 添加评论提交事件处理
                 handleCommentSubmit: async function(commentData) {
                     logInfo('[主页面] 收到评论提交事件:', commentData);
@@ -779,6 +805,45 @@ const { computed } = Vue;
                         await methods.handleSessionSelect(session);
                     } catch (error) {
                         logError('[主页面] 会话选择处理失败:', error);
+                    }
+                },
+
+                focusSessionList: function() {
+                    try {
+                        const methods = useMethods(store);
+
+                        if (methods.setViewMode) {
+                            methods.setViewMode('tags');
+                        } else if (store && store.viewMode) {
+                            store.viewMode.value = 'tags';
+                        }
+
+                        if (store?.sidebarCollapsed?.value && methods.toggleSidebar) {
+                            methods.toggleSidebar();
+                        }
+
+                        this.$nextTick(() => {
+                            const sidebar = document.querySelector('.aicr-sidebar .sidebar-scroll-container');
+                            if (sidebar && typeof sidebar.scrollTo === 'function') {
+                                sidebar.scrollTo({ top: 0, behavior: 'smooth' });
+                            }
+
+                            const sessionListContainer = document.querySelector('.session-list-container');
+                            if (sessionListContainer) {
+                                sessionListContainer.classList.add('aicr-session-list-focus');
+                                setTimeout(() => {
+                                    sessionListContainer.classList.remove('aicr-session-list-focus');
+                                }, 1400);
+                            }
+
+                            const searchInput = document.querySelector('.file-tree-search-input');
+                            if (searchInput && typeof searchInput.focus === 'function') {
+                                searchInput.focus();
+                                try { searchInput.select(); } catch (_) {}
+                            }
+                        });
+                    } catch (error) {
+                        logError('[主页面] 聚焦会话列表失败:', error);
                     }
                 },
                 
@@ -1267,7 +1332,4 @@ function createResizer(sidebarElement, store, type, options) {
     
     return resizer;
 }
-
-
-
 

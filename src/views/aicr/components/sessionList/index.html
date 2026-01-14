@@ -181,7 +181,7 @@
             <label class="batch-select-all">
                 <input 
                     type="checkbox" 
-                    :checked="filteredSessions.length > 0 && filteredSessions.every(s => isSessionSelected(s.id))"
+                    :checked="filteredSessions.length > 0 && filteredSessions.every(s => isSessionSelected(s.key))"
                     @change="handleSelectAll"
                 >
                 <span>全选</span>
@@ -223,14 +223,14 @@
             <i class="fas fa-inbox"></i>
             <span>暂无会话</span>
         </div>
-        <div v-else class="session-list-items">
-            <div 
+            <div class="session-list-items">
+                <div 
                 v-for="session in filteredSessions"
-                :key="session.id"
+                :key="session.key"
                 class="session-item"
                 :class="{ 
-                    active: selectedSessionId === session.id,
-                    'batch-selected': sessionBatchMode && isSessionSelected(session.id)
+                    active: selectedSessionId === session.key,
+                    'batch-selected': sessionBatchMode && isSessionSelected(session.key)
                 }"
                 @click="handleSessionClick(session, $event)"
                 @mousedown="startLongPress(session, $event)"
@@ -248,9 +248,9 @@
                             v-if="sessionBatchMode"
                             type="checkbox"
                             class="session-batch-checkbox"
-                            :checked="isSessionSelected(session.id)"
-                            @click.stop="handleBatchSelect(session.id, $event)"
-                            :title="isSessionSelected(session.id) ? '取消选择' : '选择'"
+                            :checked="isSessionSelected(session.key)"
+                            @click.stop="handleBatchSelect(session.key, $event)"
+                            :title="isSessionSelected(session.key) ? '取消选择' : '选择'"
                             aria-label="批量选择"
                         />
                         <!-- 来自news的会话显示第一个字符图标 -->
@@ -349,4 +349,3 @@
         </div>
     </div>
 </div>
-

@@ -488,11 +488,14 @@ window.useMethods = (store, computed) => {
                 try {
                     const fromSystem = await window.getData(`/src/assets/prompts/tasks/tasks.txt`);
                     
-                    // 使用流式请求处理 /prompt 接口（统一 JSON 返回，兼容旧协议）
                     const { streamPromptJSON } = await import('/src/services/modules/crud.js');
-                    const response = await streamPromptJSON(`${window.API_URL}/prompt`, {
-                        fromSystem,
-                        fromUser: query
+                    const response = await streamPromptJSON(`${window.API_URL}/`, {
+                        module_name: 'services.ai.chat_service',
+                        method_name: 'chat',
+                        parameters: {
+                            system: fromSystem,
+                            user: query
+                        }
                     });
                     
                     if (Array.isArray(response.data) && response.data.length > 0) {
@@ -1277,11 +1280,11 @@ ${taskData.tags && taskData.tags.length > 0 ? taskData.tags.map(t => `- ${t}`).j
                 // 调用 prompt 接口生成 markdown 格式的页面上下文
                 const { streamPromptJSON } = await import('/src/services/modules/crud.js');
                 const response = await streamPromptJSON(`${window.API_URL}/`, {
-                    module_name: 'services.llm.prompt_service',
-                    method_name: 'stream_prompt',
+                    module_name: 'services.ai.chat_service',
+                    method_name: 'chat',
                     parameters: {
-                        fromSystem: fromSystem,
-                        fromUser: `请根据以下任务信息生成完整的 Markdown 格式页面上下文内容：\n\n${taskInfoText}`
+                        system: fromSystem,
+                        user: `请根据以下任务信息生成完整的 Markdown 格式页面上下文内容：\n\n${taskInfoText}`
                     }
                 });
 
@@ -1378,8 +1381,6 @@ ${taskData.tags && taskData.tags.length > 0 ? taskData.tags.map(t => `- ${t}`).j
 
     };
 }; 
-
-
 
 
 

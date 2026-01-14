@@ -144,8 +144,23 @@ class MermaidRenderer {
             };
         }
 
-        // 检查第一行是否是有效的 Mermaid 语法
-        const firstLine = cleanCode.split('\n')[0].trim();
+        // 检查第一条有效语句是否是有效的 Mermaid 语法（跳过空行和注释/指令）
+        const lines = cleanCode.split('\n');
+        let firstLine = '';
+        for (const rawLine of lines) {
+            const line = String(rawLine || '').trim();
+            if (!line) continue;
+            if (line.startsWith('%%')) continue;
+            firstLine = line;
+            break;
+        }
+
+        if (!firstLine) {
+            return {
+                valid: false,
+                error: '代码为空（仅包含空白或注释）'
+            };
+        }
         const validTypes = [
             'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 
             'stateDiagram', 'stateDiagram-v2', 'gantt', 'pie', 
@@ -431,11 +446,11 @@ ${originalCode}
             // 调用 AI API（流式请求，统一 JSON 返回）
             const { streamPromptJSON } = await import('/src/services/modules/crud.js');
             const response = await streamPromptJSON(`${window.API_URL}/`, {
-                module_name: 'services.llm.prompt_service',
-                method_name: 'stream_prompt',
+                module_name: 'services.ai.chat_service',
+                method_name: 'chat',
                 parameters: {
-                    fromSystem,
-                    fromUser
+                    system: fromSystem,
+                    user: fromUser
                 }
             });
             const fixedCode = Array.isArray(response?.data) ? response.data.join('') : (response?.data ?? '');
@@ -600,141 +615,40 @@ ${originalCode}
         } = options;
 
         const headerHtml = showHeader ? `
-            <div class="mermaid-diagram-header" style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 12px 16px;
-                background: var(--bg-tertiary, #334155);
-                border-bottom: 1px solid var(--border-primary, rgba(255, 255, 255, 0.08));
-                border-radius: 12px 12px 0 0;
-                position: relative;
-            ">
-                <div style="
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    height: 1px;
-                    background: linear-gradient(90deg, transparent 0%, var(--primary, #4f46e5) 50%, transparent 100%);
-                    opacity: 0.4;
-                "></div>
-                <div class="mermaid-diagram-info" style="display: flex; align-items: center; gap: 8px;">
-                    <div style="
-                        width: 6px;
-                        height: 6px;
-                        background: var(--primary, #4f46e5);
-                        border-radius: 50%;
-                        box-shadow: 0 0 8px var(--primary-alpha, rgba(79, 70, 229, 0.3));
-                    "></div>
-                    <span class="mermaid-diagram-label" style="
-                        font-size: 11px;
-                        font-weight: 600;
-                        color: var(--text-secondary, #cbd5e1);
-                        text-transform: uppercase;
-                        letter-spacing: 0.8px;
-                    ">${headerLabel}</span>
+            <div class="mermaid-diagram-header">
+                <div class="mermaid-diagram-info">
+                    <span class="mermaid-diagram-label">${headerLabel}</span>
                 </div>
                 ${showActions ? `
-                    <div class="mermaid-diagram-actions" style="display: flex; gap: 6px;">
+                    <div class="mermaid-diagram-actions">
                         <button class="mermaid-diagram-copy" 
-                                onclick="copyMermaidCode('${diagramId}')" 
-                                title="复制图表代码"
-                                style="
-                                    background: var(--bg-glass, rgba(255,255,255,0.03));
-                                    border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.08));
-                                    border-radius: 6px;
-                                    padding: 6px 10px;
-                                    cursor: pointer;
-                                    color: var(--text-muted, #94a3b8);
-                                    font-size: 11px;
-                                    transition: all 0.2s ease;
-                                    -webkit-backdrop-filter: blur(4px);
-                                    backdrop-filter: blur(4px);
-                                    box-shadow: var(--shadow-xs, 0 1px 2px 0 rgba(0, 0, 0, 0.4));
-                                "
-                                onmouseover="this.style.background='var(--primary-alpha, rgba(79, 70, 229, 0.1))'; this.style.borderColor='var(--primary, #4f46e5)'; this.style.color='var(--primary, #4f46e5)'; this.style.transform='translateY(-1px)'"
-                                onmouseout="this.style.background='var(--bg-glass, rgba(255,255,255,0.03))'; this.style.borderColor='var(--border-primary, rgba(255, 255, 255, 0.08))'; this.style.color='var(--text-muted, #94a3b8)'; this.style.transform='translateY(0)'">
+                                onclick="window.copyMermaidCode('${diagramId}')" 
+                                type="button"
+                                title="复制图表代码">
                             <i class="fas fa-copy"></i>
                         </button>
                         <button class="mermaid-diagram-download-svg" 
                                 onclick="window.downloadMermaidSVG('${diagramId}')" 
-                                title="下载SVG"
-                                style="
-                                    background: var(--bg-glass, rgba(255,255,255,0.03));
-                                    border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.08));
-                                    border-radius: 6px;
-                                    padding: 6px 10px;
-                                    cursor: pointer;
-                                    color: var(--text-muted, #94a3b8);
-                                    font-size: 11px;
-                                    transition: all 0.2s ease;
-                                    -webkit-backdrop-filter: blur(4px);
-                                    backdrop-filter: blur(4px);
-                                    box-shadow: var(--shadow-xs, 0 1px 2px 0 rgba(0, 0, 0, 0.4));
-                                "
-                                onmouseover="this.style.background='var(--primary-alpha, rgba(79, 70, 229, 0.1))'; this.style.borderColor='var(--primary, #4f46e5)'; this.style.color='var(--primary, #4f46e5)'; this.style.transform='translateY(-1px)'"
-                                onmouseout="this.style.background='var(--bg-glass, rgba(255,255,255,0.03))'; this.style.borderColor='var(--border-primary, rgba(255, 255, 255, 0.08))'; this.style.color='var(--text-muted, #94a3b8)'; this.style.transform='translateY(0)'">
+                                type="button"
+                                title="下载SVG">
                             <i class="fas fa-file-code"></i>
                         </button>
                         <button class="mermaid-diagram-edit" 
                                 onclick="window.openMermaidLive('${diagramId}')" 
-                                title="在 Mermaid Live Editor 中编辑"
-                                style="
-                                    background: var(--bg-glass, rgba(255,255,255,0.03));
-                                    border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.08));
-                                    border-radius: 6px;
-                                    padding: 6px 10px;
-                                    cursor: pointer;
-                                    color: var(--text-muted, #94a3b8);
-                                    font-size: 11px;
-                                    transition: all 0.2s ease;
-                                    -webkit-backdrop-filter: blur(4px);
-                                    backdrop-filter: blur(4px);
-                                    box-shadow: var(--shadow-xs, 0 1px 2px 0 rgba(0, 0, 0, 0.4));
-                                "
-                                onmouseover="this.style.background='var(--primary-alpha, rgba(79, 70, 229, 0.1))'; this.style.borderColor='var(--primary, #4f46e5)'; this.style.color='var(--primary, #4f46e5)'; this.style.transform='translateY(-1px)'"
-                                onmouseout="this.style.background='var(--bg-glass, rgba(255,255,255,0.03))'; this.style.borderColor='var(--border-primary, rgba(255, 255, 255, 0.08))'; this.style.color='var(--text-muted, #94a3b8)'; this.style.transform='translateY(0)'">
+                                type="button"
+                                title="在 Mermaid Live Editor 中编辑">
                             <i class="fas fa-external-link-alt"></i>
                         </button>
                         <button class="mermaid-diagram-download-png" 
                                 onclick="window.downloadMermaidPNG('${diagramId}')" 
-                                title="下载PNG"
-                                style="
-                                    background: var(--bg-glass, rgba(255,255,255,0.03));
-                                    border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.08));
-                                    border-radius: 6px;
-                                    padding: 6px 10px;
-                                    cursor: pointer;
-                                    color: var(--text-muted, #94a3b8);
-                                    font-size: 11px;
-                                    transition: all 0.2s ease;
-                                    -webkit-backdrop-filter: blur(4px);
-                                    backdrop-filter: blur(4px);
-                                    box-shadow: var(--shadow-xs, 0 1px 2px 0 rgba(0, 0, 0, 0.4));
-                                "
-                                onmouseover="this.style.background='var(--primary-alpha, rgba(79, 70, 229, 0.1))'; this.style.borderColor='var(--primary, #4f46e5)'; this.style.color='var(--primary, #4f46e5)'; this.style.transform='translateY(-1px)'"
-                                onmouseout="this.style.background='var(--bg-glass, rgba(255,255,255,0.03))'; this.style.borderColor='var(--border-primary, rgba(255, 255, 255, 0.08))'; this.style.color='var(--text-muted, #94a3b8)'; this.style.transform='translateY(0)'">
+                                type="button"
+                                title="下载PNG">
                             <i class="fas fa-image"></i>
                         </button>
                         <button class="mermaid-diagram-fullscreen" 
                                 onclick="window.openMermaidFullscreen('${diagramId}')" 
-                                title="全屏查看"
-                                style="
-                                    background: var(--bg-glass, rgba(255,255,255,0.03));
-                                    border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.08));
-                                    border-radius: 6px;
-                                    padding: 6px 10px;
-                                    cursor: pointer;
-                                    color: var(--text-muted, #94a3b8);
-                                    font-size: 11px;
-                                    transition: all 0.2s ease;
-                                    -webkit-backdrop-filter: blur(4px);
-                                    backdrop-filter: blur(4px);
-                                    box-shadow: var(--shadow-xs, 0 1px 2px 0 rgba(0, 0, 0, 0.4));
-                                "
-                                onmouseover="this.style.background='var(--primary-alpha, rgba(79, 70, 229, 0.1))'; this.style.borderColor='var(--primary, #4f46e5)'; this.style.color='var(--primary, #4f46e5)'; this.style.transform='translateY(-1px)'"
-                                onmouseout="this.style.background='var(--bg-glass, rgba(255,255,255,0.03))'; this.style.borderColor='var(--border-primary, rgba(255, 255, 255, 0.08))'; this.style.color='var(--text-muted, #94a3b8)'; this.style.transform='translateY(0)'">
+                                type="button"
+                                title="全屏查看">
                             <i class="fas fa-expand"></i>
                         </button>
                     </div>
@@ -743,39 +657,9 @@ ${originalCode}
         ` : '';
 
         return `
-            <div class="mermaid-diagram-wrapper" 
-                 data-source-line="${sourceLine || ''}"
-                 style="
-                     border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.08));
-                     border-radius: 12px;
-                     margin: 16px 0;
-                     background: var(--bg-secondary, #1e293b);
-                     overflow: hidden;
-                     box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.4));
-                     transition: all 0.3s ease;
-                 "
-                 onmouseover="this.style.boxShadow='var(--shadow-md, 0 4px 16px rgba(0,0,0,0.5))'"
-                 onmouseout="this.style.boxShadow='var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.4))'">
+            <div class="mermaid-diagram-wrapper" data-source-line="${sourceLine || ''}">
                 ${headerHtml}
-                <div class="mermaid-diagram-container" 
-                     id="${diagramId}" 
-                     data-mermaid-code="${this.escapeHtml(code)}"
-                     style="
-                         padding: 24px; 
-                         min-height: 120px;
-                         background: var(--bg-primary, #0f172a);
-                         position: relative;
-                     ">
-                    <div style="
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        height: 1px;
-                        background: linear-gradient(90deg, transparent 0%, var(--primary, #4f46e5) 50%, transparent 100%);
-                        opacity: 0.3;
-                    "></div>
-                    ${code}
+                <div class="mermaid-diagram-container" id="${diagramId}" data-mermaid-code="${this.escapeHtml(code)}">
                 </div>
             </div>
         `;
@@ -1113,23 +997,23 @@ window.openMermaidFullscreen = function(diagramId) {
         <div class="mermaid-fullscreen-container">
             <div class="mermaid-fullscreen-header">
                 <div class="mermaid-fullscreen-title">
-                    <i class="fas fa-expand" style="margin-right: 8px; color: var(--primary, #4f46e5);"></i>
+                    <i class="fas fa-expand mermaid-fullscreen-title-icon"></i>
                     <span>MERMAID 图表全屏查看</span>
                 </div>
                 <div class="mermaid-fullscreen-actions">
-                    <button class="mermaid-fullscreen-btn" onclick="window.downloadMermaidSVG('mermaid-fullscreen-${diagramId}')" title="下载SVG">
+                    <button class="mermaid-fullscreen-btn mermaid-fullscreen-download-svg" onclick="window.downloadMermaidSVG('mermaid-fullscreen-${diagramId}')" title="下载SVG">
                         <i class="fas fa-file-code"></i>
                     </button>
-                    <button class="mermaid-fullscreen-btn" onclick="window.downloadMermaidPNG('mermaid-fullscreen-${diagramId}')" title="下载PNG">
+                    <button class="mermaid-fullscreen-btn mermaid-fullscreen-download-png" onclick="window.downloadMermaidPNG('mermaid-fullscreen-${diagramId}')" title="下载PNG">
                         <i class="fas fa-image"></i>
                     </button>
-                    <button class="mermaid-fullscreen-btn" onclick="window.openMermaidLive('${diagramId}')" title="在 Mermaid Live Editor 中编辑">
+                    <button class="mermaid-fullscreen-btn mermaid-fullscreen-edit" onclick="window.openMermaidLive('${diagramId}')" title="在 Mermaid Live Editor 中编辑">
                         <i class="fas fa-external-link-alt"></i>
                     </button>
-                    <button class="mermaid-fullscreen-btn" onclick="window.copyMermaidCode('${diagramId}')" title="复制代码">
+                    <button class="mermaid-fullscreen-btn mermaid-fullscreen-copy" onclick="window.copyMermaidCode('${diagramId}')" title="复制代码">
                         <i class="fas fa-copy"></i>
                     </button>
-                    <button class="mermaid-fullscreen-btn" onclick="window.closeMermaidFullscreen()" title="关闭全屏">
+                    <button class="mermaid-fullscreen-btn mermaid-fullscreen-close" onclick="window.closeMermaidFullscreen()" title="关闭全屏">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -1209,6 +1093,11 @@ window.openMermaidFullscreen = function(diagramId) {
                 color: var(--text-primary, #f8fafc);
             }
 
+            .mermaid-fullscreen-title-icon {
+                margin-right: 8px;
+                color: var(--primary, #4f46e5);
+            }
+
             .mermaid-fullscreen-actions {
                 display: flex;
                 gap: 8px;
@@ -1229,14 +1118,78 @@ window.openMermaidFullscreen = function(diagramId) {
                 align-items: center;
                 justify-content: center;
                 min-width: 40px;
+                opacity: 0.85;
+            }
+
+            .mermaid-fullscreen-btn i {
+                color: currentColor;
+            }
+
+            .mermaid-fullscreen-btn:disabled {
+                cursor: not-allowed;
+                opacity: 0.75;
+                transform: none;
+                box-shadow: none;
             }
 
             .mermaid-fullscreen-btn:hover {
-                background: var(--primary-alpha, rgba(79, 70, 229, 0.1));
+                transform: scale(1.06);
+                opacity: 1;
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+            }
+
+            .mermaid-fullscreen-btn:active {
+                transform: scale(0.95);
+            }
+
+            .mermaid-fullscreen-copy {
+                border-color: rgba(79, 70, 229, 0.22);
+            }
+
+            .mermaid-fullscreen-copy:hover {
+                background: rgba(79, 70, 229, 0.12);
                 border-color: var(--primary, #4f46e5);
                 color: var(--primary, #4f46e5);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            }
+
+            .mermaid-fullscreen-download-svg {
+                border-color: rgba(56, 189, 248, 0.22);
+            }
+
+            .mermaid-fullscreen-download-svg:hover {
+                background: rgba(56, 189, 248, 0.10);
+                border-color: var(--info, #38bdf8);
+                color: var(--info, #38bdf8);
+            }
+
+            .mermaid-fullscreen-download-png {
+                border-color: rgba(34, 197, 94, 0.22);
+            }
+
+            .mermaid-fullscreen-download-png:hover {
+                background: rgba(34, 197, 94, 0.10);
+                border-color: var(--success, #22c55e);
+                color: var(--success, #22c55e);
+            }
+
+            .mermaid-fullscreen-edit {
+                border-color: rgba(245, 158, 11, 0.22);
+            }
+
+            .mermaid-fullscreen-edit:hover {
+                background: rgba(245, 158, 11, 0.10);
+                border-color: var(--warning, #f59e0b);
+                color: var(--warning, #f59e0b);
+            }
+
+            .mermaid-fullscreen-close {
+                border-color: rgba(239, 68, 68, 0.22);
+            }
+
+            .mermaid-fullscreen-close:hover {
+                background: rgba(239, 68, 68, 0.10);
+                border-color: var(--error, #ef4444);
+                color: var(--error, #ef4444);
             }
 
             .mermaid-fullscreen-content {
@@ -1567,5 +1520,3 @@ window.addMermaidFullscreenInteractions = function(containerId) {
 console.log('- window.debugMermaidRenderer() - 查看调试信息');
 console.log('- window.reRenderAllMermaid() - 重新渲染所有图表');
 console.log('- window.getMermaidStats() - 获取渲染统计');
-
-

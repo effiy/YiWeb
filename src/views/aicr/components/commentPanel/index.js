@@ -1,16 +1,16 @@
 // 代码评审评论面板组件 - 负责代码评审评论的展示和管理
 // 作者：liangliang
 
-import { safeExecute, showErrorMessage } from '/src/utils/error.js';
-import { getData, postData, updateData, deleteData, streamPromptJSON } from '/src/services/index.js';
+import { safeExecute } from '/src/utils/error.js';
+import { getData, postData } from '/src/services/index.js';
 import { defineComponent } from '/src/utils/componentLoader.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
 import { getSessionSyncService } from '/src/views/aicr/services/sessionSyncService.js';
-// const { postData } = await import('/src/services/modules/crud.js');
 
 // 新增：异步获取评论数据（从mongo api）
 async function fetchCommentsFromMongo(file) {
     try {
+        const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
         // 构建查询参数
         const queryParams = {
             cname: 'comments'
@@ -18,12 +18,11 @@ async function fetchCommentsFromMongo(file) {
         
         // 如果有文件信息，添加到参数中
         if (file) {
-            // 兼容不同的文件ID字段
-            const key = file.key || file.path;
+            const key = file.sessionKey || (isUUID(file.fileKey) ? file.fileKey : null);
             if (key) {
                 queryParams.key = key;
                 queryParams.fileKey = key;
-                console.log('[CommentPanel] 添加文件Key到参数:', key);
+                console.log('[CommentPanel] 添加文件Key到参数:', key, '原file对象:', file);
             }
         } else {
             // 如果没有文件信息，不添加key参数，这样会返回所有评论
@@ -47,7 +46,7 @@ async function fetchCommentsFromMongo(file) {
         } else if (response && Array.isArray(response.data)) {
             comments = response.data;
         }
-        
+
         // 规范化评论数据，确保字段一致性
         if (window.aicrStore && window.aicrStore.normalizeComment) {
             comments = comments.map(comment => window.aicrStore.normalizeComment(comment));
@@ -191,7 +190,12 @@ const componentOptions = {
             sessionChatMessages() {
                 const session = this.sessionChatSession;
                 const msgs = Array.isArray(session?.messages) ? session.messages : [];
-                return [...msgs].sort((a, b) => Number(a?.timestamp || 0) - Number(b?.timestamp || 0));
+                return [...msgs]
+                    .map(m => {
+                        const message = String(m?.message || m?.content || m?.text || '');
+                        return { ...m, message, content: message };
+                    })
+                    .sort((a, b) => Number(a?.timestamp || 0) - Number(b?.timestamp || 0));
             },
             renderComments() {
                 // 优先使用mongoComments，如果没有则使用props中的comments
@@ -245,6 +249,30 @@ const componentOptions = {
                 const na = this._normalizeFileKey(a);
                 const nb = this._normalizeFileKey(b);
                 return !!na && !!nb && na === nb;
+            },
+            _isUUID(v) {
+                return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
+            },
+            _resolveSessionKeyFromEventKey(eventKey) {
+                if (eventKey == null || eventKey === '') return null;
+                if (this._isUUID(eventKey)) return String(eventKey);
+                const fromFile = this.file?.sessionKey || (this._isUUID(this.file?.fileKey) ? this.file.fileKey : null);
+                return fromFile ? String(fromFile) : null;
+            },
+            _resolveTreeKeyFromSessionKey(sessionKey) {
+                try {
+                    const target = String(sessionKey || '').trim();
+                    if (!target) return null;
+                    const root = window.aicrStore?.fileTree?.value || window.aicrStore?.fileTree;
+                    const stack = Array.isArray(root) ? [...root] : (root ? [root] : []);
+                    while (stack.length) {
+                        const node = stack.pop();
+                        if (!node) continue;
+                        if (String(node.sessionKey || '') === target) return node.key || null;
+                        if (Array.isArray(node.children)) stack.push(...node.children);
+                    }
+                } catch (_) {}
+                return null;
             },
             // 将Markdown渲染为HTML（使用marked.js优化）
             renderMarkdown(text) {
@@ -381,7 +409,7 @@ const componentOptions = {
             async loadSessionChatSession(force = false) {
                 return safeExecute(async () => {
                     if (!this.isSessionChatMode) return;
-                    const fileKey = this.file?.key || this.file?.path;
+                    const fileKey = this.file?.sessionKey || (this._isUUID(this.file?.fileKey) ? this.file.fileKey : null);
                     if (!fileKey) {
                         this.sessionChatSession = null;
                         this.sessionChatError = '';
@@ -471,7 +499,7 @@ const componentOptions = {
                     const now = Date.now();
                     const userMessage = {
                         type: 'user',
-                        content: text,
+                        message: text,
                         timestamp: now
                     };
 
@@ -561,13 +589,13 @@ const componentOptions = {
                     // 优化：优先从 store 获取评论数据
                     if (!force && window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
                         const storeComments = window.aicrStore.comments.value;
-                        const key = this.file?.key || this.file?.path;
+                        const key = this.file?.sessionKey || (this._isUUID(this.file?.fileKey) ? this.file.fileKey : null);
                         
                         // 如果当前有选中的文件，过滤出该文件的评论；否则使用所有评论
                         let filteredComments = storeComments;
                         if (key) {
                             filteredComments = storeComments.filter(c => {
-                                const commentFileKey = c.fileKey || (c.fileInfo && (c.fileInfo.key || c.fileInfo.path));
+                                const commentFileKey = c.fileKey;
                                 return this._isSameFileKey(commentFileKey, key);
                             });
                         }
@@ -587,7 +615,7 @@ const componentOptions = {
                         console.log('[CommentPanel] store中没有评论数据，开始从接口加载，当前文件:', this.file);
                         
                         // 生成请求键，用于防止重复请求
-                        const key = this.file?.key || this.file?.path;
+                        const key = this.file?.sessionKey || (this._isUUID(this.file?.fileKey) ? this.file.fileKey : null);
                         const requestKey = `global_${key || 'all'}`;
                         
                         // 检查是否与上次请求相同
@@ -614,9 +642,9 @@ const componentOptions = {
                         }));
                         
                         const existing = Array.isArray(this.mongoComments) ? this.mongoComments : [];
-                        const currentFileKey = this.file?.key || this.file?.path;
+                        const currentFileKey = this.file?.sessionKey || (this._isUUID(this.file?.fileKey) ? this.file.fileKey : null);
                         const existingSameFile = currentFileKey
-                            ? existing.filter(c => this._isSameFileKey(c.fileKey || (c.fileInfo && (c.fileInfo.key || c.fileInfo.path)), currentFileKey))
+                            ? existing.filter(c => this._isSameFileKey(c.fileKey, currentFileKey))
                             : existing;
 
                         const mergedByKey = new Map();
@@ -626,7 +654,7 @@ const componentOptions = {
                                 if (!mergedByKey.has(k)) mergedByKey.set(k, c);
                                 return;
                             }
-                            const fileK = this._normalizeFileKey(c.fileKey || (c.fileInfo && (c.fileInfo.key || c.fileInfo.path)));
+                            const fileK = this._normalizeFileKey(c.fileKey);
                             const ts = c.timestamp || c.createdAt || c.createdTime || '';
                             const content = c.content || '';
                             const fallbackKey = `${fileK}__${ts}__${content}`;
@@ -716,6 +744,9 @@ const componentOptions = {
                 this.deletingComments[commentId] = true;
                 
                 try {
+                    if (Array.isArray(this.mongoComments) && this.mongoComments.length > 0) {
+                        this.mongoComments = this.mongoComments.filter(c => c && c.key !== commentId);
+                    }
                     // 触发删除事件
                     this.$emit('comment-delete', commentId);
                     // 删除状态会通过watch renderComments自动清理
@@ -887,7 +918,7 @@ const componentOptions = {
 
                         // 同步更新会话消息
                         try {
-                            const fileKey = this.file?.fileKey || this.file?.key || this.file?.path;
+                            const fileKey = this.file?.sessionKey || (this._isUUID(this.file?.fileKey) ? this.file.fileKey : null) || this.editingComment?.fileKey;
                             if (fileKey) {
                                 const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                                 const sessionSync = getSessionSyncService();
@@ -1047,10 +1078,11 @@ const componentOptions = {
             highlightCode(comment) {
                 if (!comment || !comment.rangeInfo) return;
                 
-                const fileKey = comment.fileKey || (comment.fileInfo && comment.fileInfo.path);
+                const fileKey = comment.fileKey;
+                const uiFileKey = this._isUUID(fileKey) ? (this._resolveTreeKeyFromSessionKey(fileKey) || fileKey) : fileKey;
                 const rangeInfo = comment.rangeInfo;
                 
-                if (!fileKey) return;
+                if (!uiFileKey) return;
                 
                 const normalizedRangeInfo = {
                     startLine: rangeInfo.startLine >= 1 ? rangeInfo.startLine : rangeInfo.startLine + 1,
@@ -1060,7 +1092,7 @@ const componentOptions = {
                 };
                 
                 const eventData = {
-                    fileKey: fileKey,
+                    fileKey: uiFileKey,
                     rangeInfo: normalizedRangeInfo,
                     comment: comment
                 };
@@ -1252,6 +1284,13 @@ const componentOptions = {
                 }
             } else {
                 console.warn('[CommentPanel] store初始化超时，使用默认数据');
+                if (this.isSessionChatMode) {
+                    await this.loadSessionChatSession(true);
+                } else if (this.file) {
+                    this.debouncedLoadComments();
+                } else {
+                    this.debouncedLoadComments(true);
+                }
             }
             
             // 监听文件选择变化，重新加载评论（优化：优先从 store 获取）
@@ -1265,10 +1304,9 @@ const componentOptions = {
                     }
                     // 优化：优先从 store 获取该文件的评论
                     if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
-                        const fileKey = newFile?.key || newFile?.path;
+                        const fileKey = newFile?.sessionKey || (this._isUUID(newFile?.fileKey) ? newFile.fileKey : null);
                         const filteredComments = window.aicrStore.comments.value.filter(c => {
-                            const commentFileKey = c.fileKey || (c.fileInfo && (c.fileInfo.key || c.fileInfo.path));
-                            return this._isSameFileKey(commentFileKey, fileKey);
+                            return this._isSameFileKey(c.fileKey, fileKey);
                         });
                         
                         if (filteredComments.length > 0) {
@@ -1398,10 +1436,11 @@ const componentOptions = {
                 console.log('[CommentPanel] 收到reloadComments事件:', event.detail);
                 
                 const resolvedFileKey = event.detail?.fileKey ?? event.detail?.key;
+                const resolvedSessionKey = this._resolveSessionKeyFromEventKey(resolvedFileKey);
 
                 // 防止重复触发
                 if (this._lastReloadEvent && 
-                    this._isSameFileKey(this._lastReloadEvent.fileKey, resolvedFileKey) &&
+                    this._isSameFileKey(this._lastReloadEvent.fileKey, resolvedSessionKey) &&
                     Date.now() - this._lastReloadEvent.timestamp < 500) {
                     console.log('[CommentPanel] 检测到重复的reloadComments事件，跳过处理');
                     return;
@@ -1409,12 +1448,12 @@ const componentOptions = {
                 
                 // 记录事件信息
                 this._lastReloadEvent = {
-                    fileKey: resolvedFileKey,
+                    fileKey: resolvedSessionKey,
                     timestamp: Date.now()
                 };
                 
                 const { forceReload, showAllComments, immediateReload } = event.detail || {};
-                const fileKey = resolvedFileKey;
+                const fileKey = resolvedSessionKey;
                 
                 // 优化：如果 store 中有评论数据，优先使用 store 的数据
                 if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0 && !forceReload) {
@@ -1428,8 +1467,7 @@ const componentOptions = {
                     } else {
                         // 过滤出该文件的评论
                         const filteredComments = storeComments.filter(c => {
-                            const commentFileKey = c.fileKey || (c.fileInfo && (c.fileInfo.key || c.fileInfo.path));
-                            return this._isSameFileKey(commentFileKey, fileKey);
+                            return this._isSameFileKey(c.fileKey, fileKey);
                         });
                         
                         if (filteredComments.length > 0) {
@@ -1521,6 +1559,3 @@ const componentOptions = {
         console.error('CommentPanel 组件初始化失败:', error);
     }
 })();
-
-
-

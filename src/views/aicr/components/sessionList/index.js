@@ -556,7 +556,7 @@ const componentOptions = {
                 }
                 
                 // 检查session是否存在
-                if (!session || !session.id) {
+                if (!session || !session.key) {
                     console.warn('[长按删除] session参数为空');
                     return;
                 }
@@ -632,7 +632,7 @@ const componentOptions = {
                 const sessionName = session.pageTitle || session.title || '未命名会话';
                 if (confirm(`确定删除会话 "${sessionName}" 吗？此操作不可撤销。`)) {
                     isDeleting.value = true;
-                    emit('session-delete', session.key || session.id);
+                    emit('session-delete', session.key);
                     // 延迟重置删除状态
                     setTimeout(() => {
                         isDeleting.value = false;
@@ -666,20 +666,15 @@ const componentOptions = {
                     event.stopPropagation();
                 }
                 // 切换选择状态
-                handleBatchSelect(session.id, event);
+                handleBatchSelect(session.key, event);
                 return;
             }
             
             // 非批量模式下，正常打开会话
-            console.log('[SessionList] 选中会话:', session.id, session.title);
+            console.log('[SessionList] 选中会话:', session.key, session.title);
             
             // 设置选中状态
-            // 确保 session.id 存在，避免 undefined === undefined 导致的多选问题
-            if (session.id) {
-                selectedSessionId.value = session.id;
-            } else {
-                console.warn('[SessionList] 会话缺少ID，无法设置高亮:', session);
-            }
+            selectedSessionId.value = session.key;
             
             emit('session-select', session);
         };
@@ -732,10 +727,10 @@ const componentOptions = {
 
         // 全选/取消全选
         const handleSelectAll = () => {
-            const allIds = filteredSessions.value.map(s => s.id);
+            const allIds = filteredSessions.value.map(s => s.key).filter(Boolean);
             // 检查当前是否所有筛选后的会话都被选中
             const isAllFilteredSelected = filteredSessions.value.length > 0 && 
-                                         filteredSessions.value.every(s => isSessionSelected(s.id));
+                                         filteredSessions.value.every(s => isSessionSelected(s.key));
             
             if (isAllFilteredSelected) {
                 emit('session-batch-select-all', { ids: allIds, isSelect: false });
@@ -747,7 +742,7 @@ const componentOptions = {
         // 批量删除
         const handleBatchDelete = () => {
             // 只删除当前筛选视图中选中的会话
-            const currentFilteredIds = new Set(filteredSessions.value.map(s => s.id));
+            const currentFilteredIds = new Set(filteredSessions.value.map(s => s.key).filter(Boolean));
             const idsToDelete = Array.from(props.selectedSessionKeys).filter(id => currentFilteredIds.has(id));
             
             if (idsToDelete.length === 0) return;
@@ -795,7 +790,6 @@ const componentOptions = {
             }
             return null;
         };
-        
 
         // 组件挂载时加载标签顺序
         onMounted(() => {
@@ -857,5 +851,3 @@ defineComponent(componentOptions).then(component => {
 });
 
 export default componentOptions;
-
-

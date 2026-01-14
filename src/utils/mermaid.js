@@ -156,6 +156,113 @@ function addCopyButtonFeedback(button) {
     }, 600);
 }
 
+function findMermaidActionButton(actionName, diagramId) {
+    const roots = [];
+    const fullscreenModal = document.getElementById('mermaid-fullscreen-modal');
+    if (fullscreenModal) roots.push(fullscreenModal);
+    roots.push(document);
+
+    for (const root of roots) {
+        const buttons = Array.from(root.querySelectorAll(`button[onclick*="${actionName}"]`));
+        for (const button of buttons) {
+            const onclick = button.getAttribute('onclick') || '';
+            if (onclick.includes(`'${diagramId}'`) || onclick.includes(`"${diagramId}"`)) {
+                return button;
+            }
+        }
+    }
+
+    return null;
+}
+
+function getMermaidButtonIcon(button) {
+    return button ? button.querySelector('i') : null;
+}
+
+function rememberMermaidButtonOriginal(button) {
+    if (!button) return null;
+    const icon = getMermaidButtonIcon(button);
+    if (!icon) return null;
+
+    if (typeof button._mermaidOriginalIconClass !== 'string') {
+        button._mermaidOriginalIconClass = icon.className;
+    }
+    if (typeof button._mermaidOriginalIconColor !== 'string') {
+        button._mermaidOriginalIconColor = icon.style.color || '';
+    }
+
+    return icon;
+}
+
+function restoreMermaidButton(button) {
+    if (!button) return;
+    const icon = getMermaidButtonIcon(button);
+    if (!icon) return;
+
+    if (button._mermaidRestoreTimer) {
+        clearTimeout(button._mermaidRestoreTimer);
+        button._mermaidRestoreTimer = null;
+    }
+
+    button.disabled = false;
+    button.style.transition = '';
+    button.style.transform = '';
+    button.style.opacity = '';
+
+    if (typeof button._mermaidOriginalIconClass === 'string') {
+        icon.className = button._mermaidOriginalIconClass;
+    }
+    icon.style.color = typeof button._mermaidOriginalIconColor === 'string' ? button._mermaidOriginalIconColor : '';
+    icon.style.transition = '';
+}
+
+function setMermaidButtonLoading(button) {
+    const icon = rememberMermaidButtonOriginal(button);
+    if (!button || !icon) return;
+
+    if (button._mermaidRestoreTimer) {
+        clearTimeout(button._mermaidRestoreTimer);
+        button._mermaidRestoreTimer = null;
+    }
+
+    button.disabled = true;
+    button.style.opacity = '0.85';
+    icon.className = 'fas fa-spinner fa-spin';
+    icon.style.color = '';
+}
+
+function flashMermaidButtonIcon(button, iconClass, color, durationMs = 600) {
+    const icon = rememberMermaidButtonOriginal(button);
+    if (!button || !icon) return;
+
+    if (button._mermaidRestoreTimer) {
+        clearTimeout(button._mermaidRestoreTimer);
+        button._mermaidRestoreTimer = null;
+    }
+
+    button.style.transition = 'transform 0.2s ease';
+    button.style.transform = 'scale(0.95)';
+    icon.className = iconClass;
+    icon.style.color = color;
+    icon.style.transition = 'all 0.2s ease';
+
+    button._mermaidRestoreTimer = setTimeout(() => {
+        restoreMermaidButton(button);
+    }, durationMs);
+}
+
+function setMermaidButtonSuccess(button, durationMs = 700) {
+    if (!button) return;
+    button.disabled = true;
+    flashMermaidButtonIcon(button, 'fas fa-check', 'var(--success, #22c55e)', durationMs);
+}
+
+function setMermaidButtonError(button, durationMs = 900) {
+    if (!button) return;
+    button.disabled = true;
+    flashMermaidButtonIcon(button, 'fas fa-times', 'var(--error, #ef4444)', durationMs);
+}
+
 // 全局复制 Mermaid 代码函数
 window.copyMermaidCode = async function(diagramId, options = {}) {
     const {
@@ -289,6 +396,8 @@ window.copyMermaidCode = async function(diagramId, options = {}) {
 
 // 在新标签页打开 Mermaid Live Editor 并加载图表代码
 window.openMermaidLive = function(diagramId) {
+    const editButton = findMermaidActionButton('openMermaidLive', diagramId);
+
     // 首先尝试从原始图表获取代码
     let diagram = document.getElementById(diagramId);
     
@@ -348,11 +457,17 @@ window.openMermaidLive = function(diagramId) {
         window.open(editorUrl, '_blank', 'noopener,noreferrer');
         console.log('[Mermaid] 已在 Mermaid Live Editor 中打开图表');
         showMermaidMessage('正在在新标签页打开编辑器...', 'info');
+        if (editButton) {
+            flashMermaidButtonIcon(editButton, 'fas fa-check', 'var(--success, #22c55e)', 550);
+        }
     } catch (error) {
         console.error('[Mermaid] 打开编辑器失败:', error);
         // 如果所有方法都失败，仍然打开编辑器（虽然代码不会自动填充）
         window.open('https://mermaid.live/edit', '_blank', 'noopener,noreferrer');
         showMermaidMessage('已打开编辑器，请手动粘贴代码', 'info');
+        if (editButton) {
+            flashMermaidButtonIcon(editButton, 'fas fa-check', 'var(--success, #22c55e)', 550);
+        }
     }
 };
 
@@ -361,6 +476,9 @@ window.openMermaidLive = function(diagramId) {
 
 // 下载 Mermaid SVG
 window.downloadMermaidSVG = function(diagramId, svgElement) {
+    const downloadButton = findMermaidActionButton('downloadMermaidSVG', diagramId);
+    setMermaidButtonLoading(downloadButton);
+
     try {
         // 获取 SVG 元素（优先使用传入的元素）
         let svg = svgElement;
@@ -380,6 +498,7 @@ window.downloadMermaidSVG = function(diagramId, svgElement) {
         if (!svg) {
             console.warn(`[Mermaid] 未找到图表 SVG 元素: ${diagramId}`);
             showMermaidMessage('未找到图表内容', 'error');
+            setMermaidButtonError(downloadButton);
             return;
         }
         
@@ -430,9 +549,11 @@ window.downloadMermaidSVG = function(diagramId, svgElement) {
         URL.revokeObjectURL(url);
         console.log(`[Mermaid] SVG 已下载: ${diagramId}.svg`);
         showMermaidMessage('SVG 文件下载成功', 'success');
+        setMermaidButtonSuccess(downloadButton);
     } catch (error) {
         console.error('[Mermaid] SVG 下载失败:', error);
         showMermaidMessage('SVG 下载失败: ' + error.message, 'error');
+        setMermaidButtonError(downloadButton);
     }
 };
 
@@ -651,6 +772,10 @@ function calculateSVGBounds(svg) {
 // 下载 Mermaid PNG
 window.downloadMermaidPNG = function(diagramId, svgElement, retryCount = 0) {
     const maxRetries = 2;
+    const downloadButton = findMermaidActionButton('downloadMermaidPNG', diagramId);
+    if (retryCount === 0) {
+        setMermaidButtonLoading(downloadButton);
+    }
     
     try {
         // 获取 SVG 元素（优先使用传入的元素）
@@ -658,6 +783,7 @@ window.downloadMermaidPNG = function(diagramId, svgElement, retryCount = 0) {
         if (!svg) {
             console.warn(`[Mermaid] 未找到图表 SVG 元素: ${diagramId}`);
             showMermaidMessage('未找到图表内容', 'error');
+            setMermaidButtonError(downloadButton);
             return;
         }
 
@@ -787,7 +913,14 @@ window.downloadMermaidPNG = function(diagramId, svgElement, retryCount = 0) {
                 canvas.toBlob(function(blob) {
                     if (!blob) {
                         console.error('[Mermaid] PNG 生成失败');
-                        showMermaidMessage('PNG 生成失败', 'error');
+                        if (retryCount < maxRetries) {
+                            setTimeout(() => {
+                                window.downloadMermaidPNG(diagramId, svgElement, retryCount + 1);
+                            }, 1000 * (retryCount + 1));
+                        } else {
+                            showMermaidMessage('PNG 生成失败', 'error');
+                            setMermaidButtonError(downloadButton);
+                        }
                         return;
                     }
                     
@@ -806,11 +939,19 @@ window.downloadMermaidPNG = function(diagramId, svgElement, retryCount = 0) {
                     URL.revokeObjectURL(url);
                     console.log(`[Mermaid] PNG 已下载: ${diagramId}.png`);
                     showMermaidMessage(`PNG 图片下载成功！文件大小: ${(blob.size / 1024).toFixed(1)}KB`, 'success');
+                    setMermaidButtonSuccess(downloadButton);
                 }, 'image/png', 1.0); // 使用最高质量 1.0
                 
             } catch (error) {
                 console.error('[Mermaid] PNG 绘制失败:', error);
-                showMermaidMessage('PNG 生成失败: ' + error.message, 'error');
+                if (retryCount < maxRetries) {
+                    setTimeout(() => {
+                        window.downloadMermaidPNG(diagramId, svgElement, retryCount + 1);
+                    }, 1000 * (retryCount + 1));
+                } else {
+                    showMermaidMessage('PNG 生成失败: ' + error.message, 'error');
+                    setMermaidButtonError(downloadButton);
+                }
             }
         };
         
@@ -825,6 +966,7 @@ window.downloadMermaidPNG = function(diagramId, svgElement, retryCount = 0) {
                 }, 1000 * (retryCount + 1)); // 递增延迟
             } else {
                 showMermaidMessage('SVG 图片加载失败，已达到最大重试次数', 'error');
+                setMermaidButtonError(downloadButton);
             }
         };
         
@@ -841,6 +983,7 @@ window.downloadMermaidPNG = function(diagramId, svgElement, retryCount = 0) {
             }, 1000 * (retryCount + 1)); // 递增延迟
         } else {
             showMermaidMessage('PNG 下载失败: ' + error.message + ' (已达到最大重试次数)', 'error');
+            setMermaidButtonError(downloadButton);
         }
     }
 };
@@ -1206,6 +1349,5 @@ function escapeHtml(str) {
 // 样式管理
 
 console.log('[Mermaid Utils] 工具函数已加载');
-
 
 
