@@ -364,6 +364,8 @@
                             <div class="pet-chat-toolbar-left chat-input-btn-group">
                                 <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionContextEditor" title="页面上下文" aria-label="页面上下文">📝 页面上下文</button>
                                 <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionFaq" title="常见问题" aria-label="常见问题">💡 常见问题</button>
+                                <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionChatImagePicker" title="上传图片" aria-label="上传图片">🖼️ 图片</button>
+                                <input id="pet-chat-image-input" type="file" accept="image/*" multiple style="display:none" @change="onSessionChatImageInputChange" />
                                 <button type="button" class="pet-chat-btn chat-input-btn chat-input-icon-btn" @click="openSessionSettings" title="AI 设置" aria-label="AI 设置">⚙️</button>
                             </div>
                             <div class="pet-chat-toolbar-right chat-input-btn-group">

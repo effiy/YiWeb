@@ -3332,6 +3332,51 @@ export const useMethods = (store) => {
             } catch (_) {}
         },
 
+        openSessionChatImagePicker: () => {
+            try {
+                const input = document.getElementById('pet-chat-image-input');
+                if (input && typeof input.click === 'function') input.click();
+            } catch (_) {}
+        },
+
+        onSessionChatImageInputChange: async (e) => {
+            try {
+                const input = e && e.target;
+                const files = input && input.files ? Array.from(input.files).filter(Boolean) : [];
+                if (!files || files.length === 0) return;
+
+                const current = Array.isArray(sessionChatDraftImages?.value) ? [...sessionChatDraftImages.value] : [];
+                const remaining = Math.max(0, 4 - current.length);
+                if (remaining <= 0) {
+                    if (window.showError) window.showError('最多支持 4 张图片');
+                    return;
+                }
+
+                const picked = files.slice(0, remaining);
+                const toDataUrl = (file) => new Promise((resolve, reject) => {
+                    try {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(String(reader.result || '').trim());
+                        reader.onerror = () => reject(new Error('读取图片失败'));
+                        reader.readAsDataURL(file);
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+
+                const dataUrls = await Promise.all(picked.map(toDataUrl));
+                const next = [...current, ...dataUrls.filter(v => v && v.startsWith('data:image/'))].slice(0, 4);
+                if (sessionChatDraftImages) sessionChatDraftImages.value = next;
+                if (window.showSuccess && next.length > current.length) window.showSuccess('已添加图片');
+            } catch (_) {
+            } finally {
+                try {
+                    const input = e && e.target;
+                    if (input) input.value = '';
+                } catch (_) {}
+            }
+        },
+
         removeSessionChatDraftImage: (idx) => {
             try {
                 const list = Array.isArray(sessionChatDraftImages?.value) ? [...sessionChatDraftImages.value] : [];
@@ -3840,6 +3885,37 @@ export const useMethods = (store) => {
                 })();
                 if (!text && images.length === 0) return;
 
+                const apiUrl = window.API_URL || 'https://api.effiy.cn';
+                const { postData } = await import('/src/services/index.js');
+                const uploadOne = async (src, index) => {
+                    const raw = String(src || '').trim();
+                    if (!raw) return '';
+                    if (/^https?:\/\//i.test(raw)) return raw;
+                    if (!raw.startsWith('data:image/')) {
+                        throw new Error('图片格式不支持');
+                    }
+                    const header = raw.slice(0, raw.indexOf(','));
+                    const mimeMatch = header.match(/^data:([^;]+);/i);
+                    const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+                    const extRaw = String(mime.split('/')[1] || 'png').toLowerCase();
+                    const ext = extRaw === 'jpeg' ? 'jpg' : extRaw;
+                    const filename = `aicr_${Date.now()}_${index}.${ext}`;
+                    const resp = await postData(`${apiUrl}/upload/upload-image-to-oss`, {
+                        data_url: raw,
+                        filename,
+                        directory: 'aicr/images'
+                    });
+                    const url = resp?.data?.url || resp?.data?.data?.url || resp?.url;
+                    if (!url) throw new Error('上传图片失败');
+                    return String(url);
+                };
+                const imageUrls = images.length > 0
+                    ? (await Promise.all(images.map((src, idx) => uploadOne(src, idx)))).filter(Boolean)
+                    : [];
+                if (images.length > 0 && imageUrls.length === 0) {
+                    throw new Error('上传图片失败');
+                }
+
                 const shouldAutoScroll = () => {
                     try {
                         const el = document.getElementById('pet-chat-messages');
@@ -3865,7 +3941,11 @@ export const useMethods = (store) => {
 
                 const now = Date.now();
                 const insertedPet = { type: 'pet', message: '', timestamp: now + 1 };
+                const updatedUserMsg = imageUrls.length > 0
+                    ? { ...userMsg, imageDataUrls: imageUrls, imageDataUrl: imageUrls[0] }
+                    : userMsg;
                 const nextMessages = [...originalMessages];
+                nextMessages[i] = updatedUserMsg;
                 nextMessages.splice(i + 1, 0, insertedPet);
                 const nextSession = { ...s, messages: nextMessages, updatedAt: now, lastAccessTime: now };
                 activeSession.value = nextSession;
@@ -3929,7 +4009,7 @@ export const useMethods = (store) => {
                                 ...(String(sessionBotModel?.value || '').trim()
                                     ? { model: String(sessionBotModel.value || '').trim() }
                                     : {}),
-                                ...(images.length > 0 ? { images } : {})
+                                ...(imageUrls.length > 0 ? { images: imageUrls } : {})
                             }
                         },
                         controller ? { signal: controller.signal } : {},
@@ -4450,11 +4530,42 @@ export const useMethods = (store) => {
                 if (sessionChatLastDraftImages) sessionChatLastDraftImages.value = images;
 
                 const now = Date.now();
+                const apiUrl = window.API_URL || 'https://api.effiy.cn';
+                const { postData } = await import('/src/services/index.js');
+                const uploadOne = async (src, index) => {
+                    const raw = String(src || '').trim();
+                    if (!raw) return '';
+                    if (/^https?:\/\//i.test(raw)) return raw;
+                    if (!raw.startsWith('data:image/')) {
+                        throw new Error('图片格式不支持');
+                    }
+                    const header = raw.slice(0, raw.indexOf(','));
+                    const mimeMatch = header.match(/^data:([^;]+);/i);
+                    const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+                    const extRaw = String(mime.split('/')[1] || 'png').toLowerCase();
+                    const ext = extRaw === 'jpeg' ? 'jpg' : extRaw;
+                    const filename = `aicr_${Date.now()}_${index}.${ext}`;
+                    const resp = await postData(`${apiUrl}/upload/upload-image-to-oss`, {
+                        data_url: raw,
+                        filename,
+                        directory: 'aicr/images'
+                    });
+                    const url = resp?.data?.url || resp?.data?.data?.url || resp?.url;
+                    if (!url) throw new Error('上传图片失败');
+                    return String(url);
+                };
+                const imageUrls = images.length > 0
+                    ? (await Promise.all(images.map((src, idx) => uploadOne(src, idx)))).filter(Boolean)
+                    : [];
+                if (images.length > 0 && imageUrls.length === 0) {
+                    throw new Error('上传图片失败');
+                }
+
                 const userMessage = {
                     type: 'user',
                     message: text,
                     timestamp: now,
-                    ...(images.length > 0 ? { imageDataUrls: images, imageDataUrl: images[0] } : {})
+                    ...(imageUrls.length > 0 ? { imageDataUrls: imageUrls, imageDataUrl: imageUrls[0] } : {})
                 };
                 const petMessage = { type: 'pet', message: '', timestamp: now + 1 };
 
@@ -4548,7 +4659,7 @@ export const useMethods = (store) => {
                                 ...(String(sessionBotModel?.value || '').trim()
                                     ? { model: String(sessionBotModel.value || '').trim() }
                                     : {}),
-                                ...(images.length > 0 ? { images } : {})
+                                ...(imageUrls.length > 0 ? { images: imageUrls } : {})
                             }
                         },
                         controller ? { signal: controller.signal } : {},

@@ -27,6 +27,7 @@ class SessionSyncService {
         this.syncQueue = new Map(); // 同步队列
         this.syncTimer = null;
         this.syncInterval = 1000; // 1秒处理一次同步队列
+        this._imageUploadCache = new Map();
     }
 
     /**
@@ -418,16 +419,98 @@ class SessionSyncService {
             // 统一 timestamp 字段（转换为毫秒数）
             const timestamp = this.normalizeTimestamp(msg.timestamp || msg.createdTime || msg.createdAt || msg.ts);
             
-            // 统一 imageDataUrl 字段
             const imageDataUrl = msg.imageDataUrl || msg.image || undefined;
+            const imageDataUrls = Array.isArray(msg.imageDataUrls) ? msg.imageDataUrls.filter(Boolean) : undefined;
             
             return {
                 type: type,
                 message: message,
                 timestamp: timestamp,
-                imageDataUrl: imageDataUrl
+                ...(imageDataUrl ? { imageDataUrl } : {}),
+                ...(imageDataUrls && imageDataUrls.length > 0 ? { imageDataUrls } : {})
             };
-        }).filter(msg => msg && msg.message); // 过滤空内容和null
+        }).filter(msg => {
+            if (!msg) return false;
+            const hasText = !!String(msg.message || '').trim();
+            const hasImg = !!String(msg.imageDataUrl || '').trim();
+            const hasImgs = Array.isArray(msg.imageDataUrls) && msg.imageDataUrls.length > 0;
+            return hasText || hasImg || hasImgs;
+        });
+    }
+
+    async uploadImageToOss(dataUrl, directory = 'aicr/images') {
+        const raw = String(dataUrl || '').trim();
+        if (!raw) return '';
+        if (/^https?:\/\//i.test(raw)) return raw;
+        if (!raw.startsWith('data:image/')) return '';
+
+        if (this._imageUploadCache && this._imageUploadCache.has(raw)) {
+            return await this._imageUploadCache.get(raw);
+        }
+
+        const task = (async () => {
+            const header = raw.slice(0, raw.indexOf(','));
+            const mimeMatch = header.match(/^data:([^;]+);/i);
+            const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+            const extRaw = String(mime.split('/')[1] || 'png').toLowerCase();
+            const ext = extRaw === 'jpeg' ? 'jpg' : extRaw;
+            const filename = `aicr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+            const resp = await postData(`${this.apiUrl}/upload/upload-image-to-oss`, {
+                data_url: raw,
+                filename,
+                directory
+            });
+            const url = resp?.data?.url || resp?.data?.data?.url || resp?.url;
+            if (!url) {
+                throw new Error('上传图片失败');
+            }
+            return String(url);
+        })();
+
+        if (this._imageUploadCache) this._imageUploadCache.set(raw, task);
+        try {
+            const url = await task;
+            if (this._imageUploadCache) this._imageUploadCache.set(raw, Promise.resolve(url));
+            return url;
+        } catch (e) {
+            if (this._imageUploadCache) this._imageUploadCache.delete(raw);
+            throw e;
+        }
+    }
+
+    async uploadAndReplaceMessageImages(messages) {
+        const list = Array.isArray(messages) ? messages : [];
+        if (list.length === 0) return [];
+
+        const next = [];
+        for (const msg of list) {
+            if (!msg) continue;
+            const one = { ...msg };
+
+            const urls = Array.isArray(one.imageDataUrls) ? one.imageDataUrls.filter(Boolean) : [];
+            if (urls.length > 0) {
+                const uploaded = (await Promise.all(urls.map((src) => this.uploadImageToOss(src)))).filter(Boolean);
+                if (uploaded.length > 0) {
+                    one.imageDataUrls = uploaded;
+                    one.imageDataUrl = uploaded[0];
+                } else {
+                    delete one.imageDataUrls;
+                    delete one.imageDataUrl;
+                }
+            } else if (one.imageDataUrl) {
+                const uploaded = await this.uploadImageToOss(one.imageDataUrl);
+                if (uploaded) {
+                    one.imageDataUrl = uploaded;
+                    one.imageDataUrls = [uploaded];
+                } else {
+                    delete one.imageDataUrl;
+                }
+            }
+
+            next.push(one);
+        }
+        return next;
     }
 
     /**
@@ -585,6 +668,8 @@ class SessionSyncService {
                     updatedAt: this.normalizeTimestamp(sessionData.updatedAt),
                     lastAccessTime: this.normalizeTimestamp(sessionData.lastAccessTime)
                 };
+
+                normalized.messages = await this.uploadAndReplaceMessageImages(normalized.messages);
 
                 // 如果有有效的 UUID key，也放入 normalized 数据中（虽然 update 时参数里也会传）
                 if (targetKey) {
