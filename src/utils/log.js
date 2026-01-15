@@ -32,6 +32,27 @@ function shouldDebug() {
   return !!env.DEBUG;
 }
 
+let __consolePatched = false;
+function patchConsole() {
+  if (__consolePatched) return;
+  __consolePatched = true;
+  const original = {
+    log: console.log.bind(console),
+    info: console.info.bind(console),
+    warn: console.warn.bind(console),
+    error: console.error.bind(console),
+    debug: console.debug.bind(console),
+  };
+  const gate = (fn, always) => (...args) => {
+    if (always || shouldDebug()) fn(...args);
+  };
+  console.log = gate(original.log, false);
+  console.info = gate(original.info, false);
+  console.warn = gate(original.warn, false);
+  console.debug = gate(original.debug, false);
+  console.error = gate(original.error, true);
+}
+
 function logDebug(...args) {
   if (shouldDebug()) console.debug('[DEBUG]', ...args);
 }
@@ -73,6 +94,7 @@ if (typeof window !== 'undefined') {
     window.logError = logError;
     window.timeStart = timeStart;
     window.timeEnd = timeEnd;
+    patchConsole();
 }
 
 // ES6模块导出（用于模块环境）
@@ -82,7 +104,8 @@ export {
     logWarn,
     logError,
     timeStart,
-    timeEnd
+    timeEnd,
+    patchConsole
 };
 
 // 确保在ES6模块环境中也能全局访问
@@ -95,11 +118,14 @@ if (typeof window !== 'undefined') {
     if (!window.logError) window.logError = logError;
     if (!window.timeStart) window.timeStart = timeStart;
     if (!window.timeEnd) window.timeEnd = timeEnd;
+    if (typeof window.__CONSOLE_PATCHED__ === 'undefined') {
+        window.__CONSOLE_PATCHED__ = true;
+        patchConsole();
+    }
 }
 
 // 注意：由于HTML使用普通script标签，不支持ES6模块语法
 // 如果需要ES6模块支持，请将script标签改为 type="module"
 // 或者使用动态import()语法
-
 
 

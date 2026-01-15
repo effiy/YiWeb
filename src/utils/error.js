@@ -208,9 +208,14 @@ export function handleError(error, context = '', onError = null) {
 export function showErrorMessage(errorInfo) {
     const { title, message } = errorInfo;
     
-    // 这里可以集成UI组件库的Toast或Modal
-    // 目前使用简单的alert，后续可以替换为更优雅的UI组件
-    alert(`❌ ${title}: ${message}`);
+    const text = `❌ ${title}: ${message}`;
+    try {
+        if (typeof window !== 'undefined' && typeof window.showError === 'function') {
+            window.showError(text);
+            return;
+        }
+    } catch (_) {}
+    alert(text);
 }
 
 /**
@@ -524,5 +529,4 @@ if (typeof window !== 'undefined') {
     window.safeGetPath = safeGetPath;
     window.safeArrayOperation = safeArrayOperation;
 } 
-
 
