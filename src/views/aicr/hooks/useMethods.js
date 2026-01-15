@@ -90,7 +90,16 @@ export const useMethods = (store) => {
         sessionBotModel,
         sessionBotSystemPrompt,
         sessionBotModelDraft,
-        sessionBotSystemPromptDraft
+        sessionBotSystemPromptDraft,
+        weChatSettingsVisible,
+        weChatRobotEnabled,
+        weChatRobotWebhook,
+        weChatRobotAutoForward,
+        weChatRobotEnabledDraft,
+        weChatRobotWebhookDraft,
+        weChatRobotAutoForwardDraft,
+        weChatRobots,
+        weChatRobotsDraft
     } = store;
 
     const defaultSessionBotSystemPrompt = '你是一个专业、简洁且可靠的 AI 助手。';
@@ -99,6 +108,8 @@ export const useMethods = (store) => {
     const _SESSION_CHAT_COMPOSITION_END_DELAY = 100;
     let _sessionMarkedConfigured = false;
     let _sessionMarkedRenderer = null;
+    let _sessionFaqEscHandler = null;
+    let _sessionFaqLastActiveElement = null;
     const { computed } = Vue;
 
     const getApiBaseUrl = () => {
@@ -141,6 +152,55 @@ export const useMethods = (store) => {
         } catch (_) {
             return '';
         }
+    };
+
+    const _truncateText = (v, maxLen) => {
+        const s = String(v ?? '');
+        const limit = Math.max(0, Number(maxLen) || 0);
+        if (!limit || s.length <= limit) return s;
+        return `${s.slice(0, limit)}\n\n...(内容已截断)`;
+    };
+
+    const _buildSessionChatHistoryText = (messages, endIndexExclusive) => {
+        const list = Array.isArray(messages) ? messages : [];
+        const end = Number(endIndexExclusive);
+        const upto = Number.isFinite(end) ? Math.max(0, Math.min(list.length, end)) : list.length;
+        const cleaned = list
+            .slice(0, upto)
+            .filter(m => m && (String(m.message ?? m.content ?? '').trim() || (m.imageDataUrl || (Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0))))
+            .slice(-30)
+            .map(m => {
+                const role = m.type === 'pet' ? '助手' : '用户';
+                const contentText = String(m.message ?? m.content ?? '').trim();
+                const imageCount = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.length : (m.imageDataUrl ? 1 : 0);
+                const content = (() => {
+                    if (contentText) return contentText;
+                    if (imageCount > 0) return imageCount === 1 ? '[图片]' : `[图片 x${imageCount}]`;
+                    return '';
+                })();
+                return `${role}：${content}`;
+            })
+            .join('\n\n');
+        return cleaned;
+    };
+
+    const _buildSessionChatUserPrompt = ({ text, images, pageContent, includeContext, historyText }) => {
+        const imageList = Array.isArray(images) ? images.filter(Boolean) : [];
+        if (imageList.length > 0) {
+            return String(text || '用户发送了图片，请结合图片内容回答。').trim();
+        }
+        const current = String(text || '').trim() || '请继续。';
+        const parts = [];
+        const ctx = String(pageContent || '').trim();
+        const hist = String(historyText || '').trim();
+        if (includeContext && ctx) {
+            parts.push(`## 页面上下文\n\n${_truncateText(ctx, 12000)}`);
+        }
+        if (hist) {
+            parts.push(`## 会话历史\n\n${_truncateText(hist, 12000)}`);
+        }
+        parts.push(`## 当前消息\n\n${_truncateText(current, 8000)}`);
+        return parts.join('\n\n');
     };
 
     const _sessionChatMessageKey = (m, idx) => {
@@ -231,6 +291,68 @@ export const useMethods = (store) => {
         return { start, end: start + 1 };
     };
 
+    const _scrollSessionChatToIndex = (idx) => {
+        try {
+            const i = Number(idx);
+            if (!Number.isFinite(i) || i < 0) return;
+            setTimeout(() => {
+                try {
+                    const el = document.querySelector(`[data-chat-idx="${i}"]`);
+                    if (el && typeof el.scrollIntoView === 'function') {
+                        el.scrollIntoView({ block: 'nearest' });
+                        return;
+                    }
+                    const container = document.getElementById('pet-chat-messages');
+                    if (container) container.scrollTop = container.scrollHeight;
+                } catch (_) {}
+            }, 0);
+        } catch (_) {}
+    };
+
+    const _saveActiveSession = async (nextSession) => {
+        try {
+            if (!nextSession) return;
+            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+            const sessionSync = getSessionSyncService();
+            await sessionSync.saveSession(nextSession);
+        } catch (_) {}
+    };
+
+    const _moveSessionChatMessageBlock = async (idx, direction) => {
+        const s = activeSession?.value;
+        if (!s) return;
+        const messages = Array.isArray(s.messages) ? [...s.messages] : [];
+        const i = Number(idx);
+        if (!Number.isFinite(i) || i < 0 || i >= messages.length) return;
+
+        if (String(direction) === 'up') {
+            if (i <= 0) return;
+            const nextMessages = [...messages];
+            const tmp = nextMessages[i - 1];
+            nextMessages[i - 1] = nextMessages[i];
+            nextMessages[i] = tmp;
+            const now = Date.now();
+            const nextSession = { ...s, messages: nextMessages, updatedAt: now, lastAccessTime: now };
+            activeSession.value = nextSession;
+            await _saveActiveSession(nextSession);
+            _scrollSessionChatToIndex(i - 1);
+            return;
+        }
+
+        if (String(direction) === 'down') {
+            if (i >= messages.length - 1) return;
+            const nextMessages = [...messages];
+            const tmp = nextMessages[i + 1];
+            nextMessages[i + 1] = nextMessages[i];
+            nextMessages[i] = tmp;
+            const now = Date.now();
+            const nextSession = { ...s, messages: nextMessages, updatedAt: now, lastAccessTime: now };
+            activeSession.value = nextSession;
+            await _saveActiveSession(nextSession);
+            _scrollSessionChatToIndex(i + 1);
+        }
+    };
+
     const loadSessionBotSettings = () => {
         try {
             if (sessionBotModel) {
@@ -255,6 +377,40 @@ export const useMethods = (store) => {
     };
 
     loadSessionBotSettings();
+
+    const loadWeChatSettings = () => {
+        try {
+            const raw = localStorage.getItem('aicr_wechat_robots');
+            const arr = raw ? JSON.parse(raw) : [];
+            if (Array.isArray(arr)) weChatRobots.value = arr.filter(r => r && typeof r === 'object');
+            if ((!Array.isArray(weChatRobots.value) || weChatRobots.value.length === 0)) {
+                const enabledRaw = localStorage.getItem('aicr_wechat_enabled');
+                const webhookRaw = localStorage.getItem('aicr_wechat_webhook');
+                const autoRaw = localStorage.getItem('aicr_wechat_auto_forward');
+                const enabled = enabledRaw === 'true';
+                const webhook = String(webhookRaw || '').trim();
+                const autoForward = autoRaw === 'true';
+                if (webhook) {
+                    weChatRobots.value = [{
+                        id: 'wr_' + Date.now(),
+                        name: '机器人',
+                        webhook,
+                        enabled,
+                        autoForward
+                    }];
+                }
+            }
+        } catch (_) {}
+    };
+
+    const persistWeChatSettings = () => {
+        try {
+            const arr = Array.isArray(weChatRobots?.value) ? weChatRobots.value : [];
+            localStorage.setItem('aicr_wechat_robots', JSON.stringify(arr));
+        } catch (_) {}
+    };
+
+    loadWeChatSettings();
 
     const _normalizeFaqTags = (tags) => {
         if (!tags) return [];
@@ -413,6 +569,13 @@ export const useMethods = (store) => {
     const toggleSessionFaqTagManager = () => {
         if (!sessionFaqTagManagerVisible) return;
         sessionFaqTagManagerVisible.value = !sessionFaqTagManagerVisible.value;
+    };
+
+    const _focusSessionFaqSearchInput = () => {
+        try {
+            const el = document.querySelector('.aicr-session-faq-search-input');
+            if (el && typeof el.focus === 'function') el.focus();
+        } catch (_) {}
     };
 
     const _updateFaqDocument = async (key, patch) => {
@@ -2930,6 +3093,12 @@ export const useMethods = (store) => {
             return;
         }
 
+        try {
+            if ((!store.sessions?.value || store.sessions.value.length === 0) && typeof store.loadSessions === 'function') {
+                await store.loadSessions(false);
+            }
+        } catch (_) {}
+
         let fileKey = null;
         const findNodeBySessionKey = (nodes) => {
             if (!nodes) return null;
@@ -2974,23 +3143,14 @@ export const useMethods = (store) => {
         }
 
         try {
-            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
-            const sessionSync = getSessionSyncService();
-            const fullSession =
-                (await sessionSync.getSession(targetSessionKey)) ||
-                (session.id ? await sessionSync.getSession(String(session.id)) : null) ||
-                (fileKey ? await sessionSync.getSession(String(fileKey)) : null);
-
-            const normalized = fullSession || session;
+            const normalized = { ...(session || {}), key: targetSessionKey };
             if (!normalized.messages || !Array.isArray(normalized.messages)) normalized.messages = [];
-            normalized.messages = normalized.messages
-                .map(m => ({
+            normalized.messages = normalized.messages.map(m => ({
                     type: m?.type === 'pet' ? 'pet' : 'user',
                     message: String(m?.message || m?.content || ''),
                     timestamp: typeof m?.timestamp === 'number' ? m.timestamp : Date.now(),
                     imageDataUrl: m?.imageDataUrl
-                }))
-                .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                }));
 
             if (activeSession) activeSession.value = normalized;
 
@@ -3004,11 +3164,30 @@ export const useMethods = (store) => {
 
             if (sessionContextMode) sessionContextMode.value = openContextEditor ? 'split' : (sessionContextMode.value || 'edit');
 
-            let staticFile = null;
-            if (fileKey && typeof loadFileByKey === 'function') {
-                staticFile = await loadFileByKey(fileKey);
+            const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL)) ? String(window.API_URL).replace(/\/+$/, '') : '';
+            let staticContent = '';
+            if (apiBase && fileKey) {
+                let cleanPath = String(fileKey || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                if (cleanPath.startsWith('static/')) {
+                    cleanPath = cleanPath.substring(7);
+                }
+                cleanPath = cleanPath.replace(/^\/+/, '');
+                try {
+                    const res = await fetch(`${apiBase}/read-file`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ target_file: cleanPath })
+                    });
+                    if (res.ok) {
+                        const json = await res.json();
+                        if ((json.code === 200 || json.code === 0) && json.data && json.data.content) {
+                            if (json.data.type !== 'base64') {
+                                staticContent = json.data.content;
+                            }
+                        }
+                    }
+                } catch (_) {}
             }
-            const staticContent = staticFile && typeof staticFile.content === 'string' ? staticFile.content : '';
             if (sessionContextDraft) sessionContextDraft.value = String(staticContent || '');
             if (activeSession?.value) {
                 activeSession.value = { ...activeSession.value, pageContent: String(staticContent || '') };
@@ -3437,11 +3616,31 @@ export const useMethods = (store) => {
             if (sessionSettingsVisible) sessionSettingsVisible.value = false;
             if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
             try {
+                _sessionFaqLastActiveElement = document.activeElement || null;
+            } catch (_) {
+                _sessionFaqLastActiveElement = null;
+            }
+            try {
                 const hasItems = Array.isArray(sessionFaqItems?.value) && sessionFaqItems.value.length > 0;
                 if (!hasItems) {
                     await loadSessionFaqs({ force: false });
                 }
             } catch (_) {}
+            try {
+                if (_sessionFaqEscHandler) {
+                    document.removeEventListener('keydown', _sessionFaqEscHandler);
+                    _sessionFaqEscHandler = null;
+                }
+                _sessionFaqEscHandler = (e) => {
+                    try {
+                        if (e && e.key === 'Escape') {
+                            if (sessionFaqVisible) sessionFaqVisible.value = false;
+                        }
+                    } catch (_) {}
+                };
+                document.addEventListener('keydown', _sessionFaqEscHandler);
+            } catch (_) {}
+            setTimeout(() => _focusSessionFaqSearchInput(), 0);
         },
 
         openSessionSettings: () => {
@@ -3452,21 +3651,120 @@ export const useMethods = (store) => {
             if (sessionSettingsVisible) sessionSettingsVisible.value = true;
         },
 
+        openWeChatSettings: () => {
+            if (sessionFaqVisible) sessionFaqVisible.value = false;
+            if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
+            const src = Array.isArray(weChatRobots?.value) ? weChatRobots.value : [];
+            if (weChatRobotsDraft) weChatRobotsDraft.value = src.map(r => ({ ...r }));
+            if (weChatSettingsVisible) weChatSettingsVisible.value = true;
+        },
+
         closeSessionFaq: () => {
             if (sessionFaqVisible) sessionFaqVisible.value = false;
+            try {
+                if (_sessionFaqEscHandler) {
+                    document.removeEventListener('keydown', _sessionFaqEscHandler);
+                    _sessionFaqEscHandler = null;
+                }
+            } catch (_) {}
+            try {
+                const chatInput = document.getElementById('pet-chat-input');
+                if (chatInput && typeof chatInput.focus === 'function') {
+                    chatInput.focus();
+                    _sessionFaqLastActiveElement = null;
+                    return;
+                }
+            } catch (_) {}
+            try {
+                const el = _sessionFaqLastActiveElement;
+                _sessionFaqLastActiveElement = null;
+                if (el && typeof el.focus === 'function') el.focus();
+            } catch (_) {}
+        },
+
+        clearSessionFaqSearch: () => {
+            try {
+                if (sessionFaqSearchKeyword) sessionFaqSearchKeyword.value = '';
+            } catch (_) {}
+            _focusSessionFaqSearchInput();
+        },
+
+        clearSessionFaqTagSearch: () => {
+            try {
+                if (sessionFaqTagFilterSearchKeyword) sessionFaqTagFilterSearchKeyword.value = '';
+            } catch (_) {}
+        },
+
+        addSessionFaqFromInput: async () => {
+            return safeExecute(async () => {
+                if (!window.API_URL) throw new Error('API地址未配置');
+                const el = document.querySelector('.aicr-session-faq-input');
+                const raw = String(el?.value || '').trim();
+                if (!raw) return;
+                const lines = raw.split('\n');
+                const title = String(lines[0] || '').trim();
+                const prompt = String(lines.slice(1).join('\n') || '').trim();
+                const data = {
+                    key: `faq_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                    title: title || (prompt ? prompt.slice(0, 40) : '常见问题'),
+                    prompt,
+                    tags: []
+                };
+                const payload = {
+                    module_name: SERVICE_MODULE,
+                    method_name: 'create_document',
+                    parameters: { cname: 'faqs', data }
+                };
+                await postData(`${window.API_URL}/`, payload);
+                if (el) el.value = '';
+                await loadSessionFaqs({ force: true });
+                _focusSessionFaqSearchInput();
+                if (window.showSuccess) window.showSuccess('已添加常见问题');
+            }, '新增常见问题');
+        },
+
+        deleteSessionFaqItem: async (item) => {
+            return safeExecute(async () => {
+                const key = String(item?.key || '').trim();
+                if (!key) return;
+                if (!confirm('确定要删除这条常见问题吗？')) return;
+                const payload = {
+                    module_name: SERVICE_MODULE,
+                    method_name: 'delete_document',
+                    parameters: { cname: 'faqs', key }
+                };
+                await postData(`${window.API_URL}/`, payload);
+                await loadSessionFaqs({ force: true });
+                if (window.showSuccess) window.showSuccess('已删除常见问题');
+            }, '删除常见问题');
         },
 
         closeSessionSettings: () => {
             if (sessionSettingsVisible) sessionSettingsVisible.value = false;
         },
 
+        closeWeChatSettings: () => {
+            if (weChatSettingsVisible) weChatSettingsVisible.value = false;
+        },
+
         applySessionFaqItem: (item, mode = 'insert') => {
-            const text = String(item?.prompt || '').trim();
+            const title = String(item?.title || '').trim();
+            const prompt = String(item?.prompt || '').trim();
+            const text = title && prompt ? `${title}\n\n${prompt}` : (prompt || title);
             if (!text) return;
-            if (sessionChatInput) sessionChatInput.value = text;
+            const current = String(sessionChatInput?.value || '');
+            const next = current ? `${current}\n\n${text}` : text;
+            if (sessionChatInput) sessionChatInput.value = next;
             try {
                 const el = document.getElementById('pet-chat-input');
-                if (el) el.focus();
+                if (el) {
+                    el.focus();
+                    el.style.height = 'auto';
+                    const min = 60;
+                    const max = 220;
+                    const nextH = Math.max(min, Math.min(max, el.scrollHeight || min));
+                    el.style.height = `${nextH}px`;
+                }
             } catch (_) {}
             if (String(mode) === 'send') {
                 setTimeout(() => {
@@ -3484,6 +3782,10 @@ export const useMethods = (store) => {
             if (sessionBotSystemPromptDraft) sessionBotSystemPromptDraft.value = defaultSessionBotSystemPrompt;
         },
 
+        restoreWeChatSettingsDefaults: () => {
+            if (weChatRobotsDraft) weChatRobotsDraft.value = [];
+        },
+
         saveSessionSettings: () => {
             const model = String(sessionBotModelDraft?.value || '').trim();
             const prompt = String(sessionBotSystemPromptDraft?.value || '').trim() || defaultSessionBotSystemPrompt;
@@ -3492,6 +3794,44 @@ export const useMethods = (store) => {
             persistSessionBotSettings();
             if (sessionSettingsVisible) sessionSettingsVisible.value = false;
             if (window.showSuccess) window.showSuccess('已保存');
+        },
+
+        saveWeChatSettings: () => {
+            const src = Array.isArray(weChatRobotsDraft?.value) ? weChatRobotsDraft.value : [];
+            const normalized = src
+                .map((r) => ({
+                    id: r.id || ('wr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
+                    name: String(r.name || '').trim() || '机器人',
+                    webhook: String(r.webhook || '').trim(),
+                    enabled: !!r.enabled,
+                    autoForward: !!r.autoForward
+                }))
+                .filter(r => r.webhook);
+            if (weChatRobots) weChatRobots.value = normalized;
+            persistWeChatSettings();
+            if (weChatSettingsVisible) weChatSettingsVisible.value = false;
+            if (window.showSuccess) window.showSuccess('已保存');
+        },
+
+        addWeChatRobotDraft: () => {
+            const list = Array.isArray(weChatRobotsDraft?.value) ? [...weChatRobotsDraft.value] : [];
+            const idx = list.length + 1;
+            list.push({
+                id: 'wr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                name: '机器人' + idx,
+                webhook: '',
+                enabled: true,
+                autoForward: true
+            });
+            weChatRobotsDraft.value = list;
+        },
+
+        removeWeChatRobotDraft: (index) => {
+            const i = Number(index);
+            const list = Array.isArray(weChatRobotsDraft?.value) ? [...weChatRobotsDraft.value] : [];
+            if (!Number.isFinite(i) || i < 0 || i >= list.length) return;
+            list.splice(i, 1);
+            weChatRobotsDraft.value = list;
         },
 
         closeSessionContextEditor: () => {
@@ -3785,10 +4125,9 @@ export const useMethods = (store) => {
             try {
                 const s = session || activeSession?.value;
                 const messages = Array.isArray(s?.messages) ? s.messages : [];
-                const block = _getSessionMessageMoveBlock(messages, idx);
-                if (block.start <= 0) return false;
-                const prevBlock = _getPrevSessionMessageBlock(messages, block.start);
-                return prevBlock.start >= 0;
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i <= 0) return false;
+                return i < messages.length;
             } catch (_) {
                 return false;
             }
@@ -3798,10 +4137,9 @@ export const useMethods = (store) => {
             try {
                 const s = session || activeSession?.value;
                 const messages = Array.isArray(s?.messages) ? s.messages : [];
-                const block = _getSessionMessageMoveBlock(messages, idx);
-                if (block.end < 0 || block.end >= messages.length) return false;
-                const nextBlock = _getNextSessionMessageBlock(messages, block.end);
-                return nextBlock.start >= 0;
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i < 0) return false;
+                return i < messages.length - 1;
             } catch (_) {
                 return false;
             }
@@ -3809,59 +4147,13 @@ export const useMethods = (store) => {
 
         moveSessionChatMessageUp: async (idx) => {
             return safeExecute(async () => {
-                if (sessionChatSending?.value) return;
-                const s = activeSession?.value;
-                if (!s) return;
-                const messages = Array.isArray(s.messages) ? [...s.messages] : [];
-                const block = _getSessionMessageMoveBlock(messages, idx);
-                if (block.start <= 0) return;
-                const prevBlock = _getPrevSessionMessageBlock(messages, block.start);
-                if (prevBlock.start < 0) return;
-                const prevPart = messages.slice(prevBlock.start, block.start);
-                const curPart = messages.slice(block.start, block.end);
-                const nextMessages = [
-                    ...messages.slice(0, prevBlock.start),
-                    ...curPart,
-                    ...prevPart,
-                    ...messages.slice(block.end)
-                ];
-                const now = Date.now();
-                const nextSession = { ...s, messages: nextMessages, updatedAt: now, lastAccessTime: now };
-                activeSession.value = nextSession;
-                try {
-                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
-                    const sessionSync = getSessionSyncService();
-                    await sessionSync.saveSession(nextSession);
-                } catch (_) {}
+                await _moveSessionChatMessageBlock(idx, 'up');
             }, '上移消息');
         },
 
         moveSessionChatMessageDown: async (idx) => {
             return safeExecute(async () => {
-                if (sessionChatSending?.value) return;
-                const s = activeSession?.value;
-                if (!s) return;
-                const messages = Array.isArray(s.messages) ? [...s.messages] : [];
-                const block = _getSessionMessageMoveBlock(messages, idx);
-                if (block.end < 0 || block.end >= messages.length) return;
-                const nextBlock = _getNextSessionMessageBlock(messages, block.end);
-                if (nextBlock.start < 0) return;
-                const curPart = messages.slice(block.start, block.end);
-                const nextPart = messages.slice(nextBlock.start, nextBlock.end);
-                const nextMessages = [
-                    ...messages.slice(0, block.start),
-                    ...nextPart,
-                    ...curPart,
-                    ...messages.slice(nextBlock.end)
-                ];
-                const now = Date.now();
-                const nextSession = { ...s, messages: nextMessages, updatedAt: now, lastAccessTime: now };
-                activeSession.value = nextSession;
-                try {
-                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
-                    const sessionSync = getSessionSyncService();
-                    await sessionSync.saveSession(nextSession);
-                } catch (_) {}
+                await _moveSessionChatMessageBlock(idx, 'down');
             }, '下移消息');
         },
 
@@ -3885,29 +4177,16 @@ export const useMethods = (store) => {
                 })();
                 if (!text && images.length === 0) return;
 
-                const apiUrl = window.API_URL || 'https://api.effiy.cn';
-                const { postData } = await import('/src/services/index.js');
-                const uploadOne = async (src, index) => {
+                const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                const sessionSync = getSessionSyncService();
+                const uploadOne = async (src) => {
                     const raw = String(src || '').trim();
                     if (!raw) return '';
                     if (/^https?:\/\//i.test(raw)) return raw;
                     if (!raw.startsWith('data:image/')) {
                         throw new Error('图片格式不支持');
                     }
-                    const header = raw.slice(0, raw.indexOf(','));
-                    const mimeMatch = header.match(/^data:([^;]+);/i);
-                    const mime = mimeMatch ? mimeMatch[1] : 'image/png';
-                    const extRaw = String(mime.split('/')[1] || 'png').toLowerCase();
-                    const ext = extRaw === 'jpeg' ? 'jpg' : extRaw;
-                    const filename = `aicr_${Date.now()}_${index}.${ext}`;
-                    const resp = await postData(`${apiUrl}/upload/upload-image-to-oss`, {
-                        data_url: raw,
-                        filename,
-                        directory: 'aicr/images'
-                    });
-                    const url = resp?.data?.url || resp?.data?.data?.url || resp?.url;
-                    if (!url) throw new Error('上传图片失败');
-                    return String(url);
+                    return await sessionSync.uploadImageToOss(raw, 'aicr/images');
                 };
                 const imageUrls = images.length > 0
                     ? (await Promise.all(images.map((src, idx) => uploadOne(src, idx)))).filter(Boolean)
@@ -3951,38 +4230,11 @@ export const useMethods = (store) => {
                 activeSession.value = nextSession;
                 setTimeout(() => scrollToIndex(i + 1), 0);
 
-                const buildHistory = () => {
-                    const msgs = originalMessages.slice(0, i);
-                    const cleaned = msgs
-                        .filter(m => m && (String(m.message ?? m.content ?? '').trim() || (m.imageDataUrl || (Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0))))
-                        .slice(-30)
-                        .map(m => {
-                            const role = m.type === 'pet' ? '助手' : '用户';
-                            const contentText = String(m.message ?? m.content ?? '').trim();
-                            const imageCount = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.length : (m.imageDataUrl ? 1 : 0);
-                            const content = (() => {
-                                if (contentText) return contentText;
-                                if (imageCount > 0) return imageCount === 1 ? '[图片]' : `[图片 x${imageCount}]`;
-                                return '';
-                            })();
-                            return `${role}：${content}`;
-                        })
-                        .join('\n\n');
-                    return cleaned;
-                };
-
                 const pageContent = String(sessionContextDraft?.value ?? s.pageContent ?? '').trim();
-                const includeContext = !!sessionContextEnabled?.value;
-                const history = buildHistory();
+                const includeContext = sessionContextEnabled?.value === true;
+                const history = _buildSessionChatHistoryText(originalMessages, i);
                 const fromSystem = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim() || defaultSessionBotSystemPrompt;
-                let fromUser = '';
-                if (includeContext && pageContent) {
-                    fromUser += `## 页面上下文\n\n${pageContent}\n\n`;
-                }
-                if (history) {
-                    fromUser += `## 会话历史\n\n${history}\n\n`;
-                }
-                fromUser += `## 当前消息\n\n${text || '用户发送了图片，请结合图片内容回答。'}`;
+                const fromUser = _buildSessionChatUserPrompt({ text, images: imageUrls, pageContent, includeContext, historyText: history });
 
                 const { streamPrompt } = await import('/src/services/modules/crud.js');
                 const promptUrl = getPromptUrl();
@@ -4071,7 +4323,7 @@ export const useMethods = (store) => {
                 if (streamErrorMessage && window.showError) {
                     window.showError(streamErrorMessage);
                 }
-            }, '重新发送消息');
+            }, '重新发送消息', (info) => { try { if (window.showError) window.showError(String(info?.message || '重试失败')); } catch (_) {} });
         },
 
         regenerateSessionChatMessageAt: async (idx) => {
@@ -4138,38 +4390,11 @@ export const useMethods = (store) => {
                 activeSession.value = { ...currentSession, messages: resetMessages, updatedAt: now, lastAccessTime: now };
                 setTimeout(() => scrollToIndex(petIdx), 0);
 
-                const buildHistory = () => {
-                    const msgs = originalMessages.slice(0, petIdx);
-                    const cleaned = msgs
-                        .filter(m => m && (String(m.message ?? m.content ?? '').trim() || (m.imageDataUrl || (Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0))))
-                        .slice(-30)
-                        .map(m => {
-                            const role = m.type === 'pet' ? '助手' : '用户';
-                            const contentText = String(m.message ?? m.content ?? '').trim();
-                            const imageCount = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.length : (m.imageDataUrl ? 1 : 0);
-                            const content = (() => {
-                                if (contentText) return contentText;
-                                if (imageCount > 0) return imageCount === 1 ? '[图片]' : `[图片 x${imageCount}]`;
-                                return '';
-                            })();
-                            return `${role}：${content}`;
-                        })
-                        .join('\n\n');
-                    return cleaned;
-                };
-
                 const pageContent = String(sessionContextDraft?.value ?? currentSession.pageContent ?? '').trim();
-                const includeContext = !!sessionContextEnabled?.value;
-                const history = buildHistory();
+                const includeContext = sessionContextEnabled?.value === true;
+                const history = _buildSessionChatHistoryText(originalMessages, petIdx);
                 const fromSystem = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim() || defaultSessionBotSystemPrompt;
-                let fromUser = '';
-                if (includeContext && pageContent) {
-                    fromUser += `## 页面上下文\n\n${pageContent}\n\n`;
-                }
-                if (history) {
-                    fromUser += `## 会话历史\n\n${history}\n\n`;
-                }
-                fromUser += `## 当前消息\n\n${text || '用户发送了图片，请结合图片内容回答。'}`;
+                const fromUser = _buildSessionChatUserPrompt({ text, images, pageContent, includeContext, historyText: history });
 
                 const { streamPrompt } = await import('/src/services/modules/crud.js');
                 const promptUrl = getPromptUrl();
@@ -4353,39 +4578,12 @@ export const useMethods = (store) => {
                 };
                 setTimeout(scrollToBottom, 0);
 
-                const buildHistory = () => {
-                    const msgs = originalMessages.slice(0, petIdx);
-                    const cleaned = msgs
-                        .filter(m => m && (String(m.message ?? m.content ?? '').trim() || (m.imageDataUrl || (Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0))))
-                        .slice(-30)
-                        .map(m => {
-                            const role = m.type === 'pet' ? '助手' : '用户';
-                            const contentText = String(m.message ?? m.content ?? '').trim();
-                            const imageCount = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.length : (m.imageDataUrl ? 1 : 0);
-                            const content = (() => {
-                                if (contentText) return contentText;
-                                if (imageCount > 0) return imageCount === 1 ? '[图片]' : `[图片 x${imageCount}]`;
-                                return '';
-                            })();
-                            return `${role}：${content}`;
-                        })
-                        .join('\n\n');
-                    return cleaned;
-                };
-
                 const pageContent = String(sessionContextDraft?.value ?? currentSession.pageContent ?? '').trim();
-                const includeContext = !!sessionContextEnabled?.value;
-                const history = buildHistory();
+                const includeContext = sessionContextEnabled?.value === true;
+                const history = _buildSessionChatHistoryText(originalMessages, petIdx);
                 const fromSystem = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim() || defaultSessionBotSystemPrompt;
 
-                let fromUser = '';
-                if (includeContext && pageContent) {
-                    fromUser += `## 页面上下文\n\n${pageContent}\n\n`;
-                }
-                if (history) {
-                    fromUser += `## 会话历史\n\n${history}\n\n`;
-                }
-                fromUser += `## 当前消息\n\n${text || '用户发送了图片，请结合图片内容回答。'}`;
+                const fromUser = _buildSessionChatUserPrompt({ text, images, pageContent, includeContext, historyText: history });
 
                 const { streamPrompt } = await import('/src/services/modules/crud.js');
                 const promptUrl = getPromptUrl();
@@ -4517,6 +4715,31 @@ export const useMethods = (store) => {
             }, '复制消息');
         },
 
+        sendSessionChatMessageToRobot: async (robot, m, idx) => {
+            return safeExecute(async () => {
+                const r = robot || {};
+                const webhook = String(r.webhook || '').trim();
+                if (!webhook) return;
+                const content = String((m && (m.message || m.content)) || '').trim();
+                if (!content) return;
+                const payload = { msgtype: 'text', text: { content } };
+                try {
+                    const res = await fetch(webhook, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) {
+                        const data = await res.json().catch(() => ({}));
+                        throw new Error(data?.message || `发送失败: ${res.status}`);
+                    }
+                    if (window.showSuccess) window.showSuccess('已发送到机器人');
+                } catch (e) {
+                    if (window.showError) window.showError(e?.message || '发送失败');
+                }
+            }, '发送到机器人');
+        },
+
         sendSessionChatMessage: async () => {
             return safeExecute(async () => {
                 if (!activeSession?.value) return;
@@ -4530,32 +4753,19 @@ export const useMethods = (store) => {
                 if (sessionChatLastDraftImages) sessionChatLastDraftImages.value = images;
 
                 const now = Date.now();
-                const apiUrl = window.API_URL || 'https://api.effiy.cn';
-                const { postData } = await import('/src/services/index.js');
-                const uploadOne = async (src, index) => {
+                const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                const sessionSync = getSessionSyncService();
+                const uploadOne = async (src) => {
                     const raw = String(src || '').trim();
                     if (!raw) return '';
                     if (/^https?:\/\//i.test(raw)) return raw;
                     if (!raw.startsWith('data:image/')) {
                         throw new Error('图片格式不支持');
                     }
-                    const header = raw.slice(0, raw.indexOf(','));
-                    const mimeMatch = header.match(/^data:([^;]+);/i);
-                    const mime = mimeMatch ? mimeMatch[1] : 'image/png';
-                    const extRaw = String(mime.split('/')[1] || 'png').toLowerCase();
-                    const ext = extRaw === 'jpeg' ? 'jpg' : extRaw;
-                    const filename = `aicr_${Date.now()}_${index}.${ext}`;
-                    const resp = await postData(`${apiUrl}/upload/upload-image-to-oss`, {
-                        data_url: raw,
-                        filename,
-                        directory: 'aicr/images'
-                    });
-                    const url = resp?.data?.url || resp?.data?.data?.url || resp?.url;
-                    if (!url) throw new Error('上传图片失败');
-                    return String(url);
+                    return await sessionSync.uploadImageToOss(raw, 'aicr/images');
                 };
                 const imageUrls = images.length > 0
-                    ? (await Promise.all(images.map((src, idx) => uploadOne(src, idx)))).filter(Boolean)
+                    ? (await Promise.all(images.map((src) => uploadOne(src)))).filter(Boolean)
                     : [];
                 if (images.length > 0 && imageUrls.length === 0) {
                     throw new Error('上传图片失败');
@@ -4601,38 +4811,11 @@ export const useMethods = (store) => {
                 };
                 setTimeout(scrollToBottom, 0);
 
-                const buildHistory = () => {
-                    const msgs = Array.isArray(nextSession.messages) ? nextSession.messages : [];
-                    const cleaned = msgs
-                        .filter(m => m && (String(m.message ?? m.content ?? '').trim() || (m.imageDataUrl || (Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0))))
-                        .slice(-30)
-                        .map(m => {
-                            const role = m.type === 'pet' ? '助手' : '用户';
-                            const contentText = String(m.message ?? m.content ?? '').trim();
-                            const imageCount = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.length : (m.imageDataUrl ? 1 : 0);
-                            const content = (() => {
-                                if (contentText) return contentText;
-                                if (imageCount > 0) return imageCount === 1 ? '[图片]' : `[图片 x${imageCount}]`;
-                                return '';
-                            })();
-                            return `${role}：${content}`;
-                        })
-                        .join('\n\n');
-                    return cleaned;
-                };
-
                 const pageContent = String(sessionContextDraft?.value ?? nextSession.pageContent ?? '').trim();
-                const includeContext = !!sessionContextEnabled?.value;
-                const history = buildHistory();
+                const includeContext = sessionContextEnabled?.value === true;
+                const history = _buildSessionChatHistoryText(prevMessages, prevMessages.length);
                 const fromSystem = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim() || defaultSessionBotSystemPrompt;
-                let fromUser = '';
-                if (includeContext && pageContent) {
-                    fromUser += `## 页面上下文\n\n${pageContent}\n\n`;
-                }
-                if (history) {
-                    fromUser += `## 会话历史\n\n${history}\n\n`;
-                }
-                fromUser += `## 当前消息\n\n${text || '用户发送了图片，请结合图片内容回答。'}`;
+                const fromUser = _buildSessionChatUserPrompt({ text, images: imageUrls, pageContent, includeContext, historyText: history });
 
                 const { streamPrompt } = await import('/src/services/modules/crud.js');
                 const promptUrl = getPromptUrl();
@@ -4724,10 +4907,27 @@ export const useMethods = (store) => {
                     await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
                 } catch (_) {}
 
+                try {
+                    const robots = Array.isArray(weChatRobots?.value) ? weChatRobots.value : [];
+                    const msgs = Array.isArray(finalSession.messages) ? finalSession.messages : [];
+                    const last = msgs[msgs.length - 1];
+                    const content = String(last?.message || last?.content || '').trim();
+                    if (content) {
+                        const targets = robots.filter(r => r && r.enabled && r.autoForward && r.webhook);
+                        await Promise.all(targets.map(async (r) => {
+                            await fetch(String(r.webhook), {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ msgtype: 'text', text: { content } })
+                            }).catch(() => {});
+                        }));
+                    }
+                } catch (_) {}
+
                 if (streamErrorMessage && window.showError) {
                     window.showError(streamErrorMessage);
                 }
-            }, '发送会话消息');
+            }, '发送会话消息', (info) => { try { if (window.showError) window.showError(String(info?.message || '发送失败')); } catch (_) {} });
         },
 
         canSendSessionChat: Vue.computed(() => {

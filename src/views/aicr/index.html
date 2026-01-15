@@ -290,25 +290,36 @@
                                     <div v-if="m.type === 'pet' && (!(m.message || m.content) || !String(m.message || m.content).trim()) && sessionChatSending && idx === (sessionChatMessages(activeSession).length - 1)" class="pet-chat-typing" aria-label="生成中">...</div>
                                     <div v-else-if="(m.message || m.content) && String(m.message || m.content).trim() && isSessionChatStreamingMessage(m, idx)" class="pet-chat-content md-preview-body pet-chat-content-streaming" v-html="renderSessionChatStreamingHtml(m.message || m.content)"></div>
                                     <div v-else-if="(m.message || m.content) && String(m.message || m.content).trim()" class="pet-chat-content md-preview-body" v-html="renderSessionChatMarkdown(m.message || m.content)"></div>
-                                    <div class="pet-chat-meta">
-                                        <div class="pet-chat-meta-actions">
-                                            <button
-                                                v-if="(m.message || m.content) && String(m.message || m.content).trim()"
-                                                type="button"
-                                                class="pet-chat-meta-btn"
-                                                @click="copySessionChatMessage(m.message || m.content, m, idx)"
-                                                aria-label="复制消息"
-                                                title="复制"
-                                            >{{ sessionChatCopyButtonLabel(m, idx) }}</button>
-                                            <button
-                                                v-if="m.type !== 'pet'"
-                                                type="button"
-                                                class="pet-chat-meta-btn"
-                                                :disabled="sessionChatSending"
-                                                @click="editSessionChatMessageAt(idx)"
-                                                aria-label="编辑消息"
-                                                title="编辑"
-                                            >✏️</button>
+                                        <div class="pet-chat-meta">
+                                            <div class="pet-chat-meta-actions">
+                                                <button
+                                                    v-if="(m.message || m.content) && String(m.message || m.content).trim()"
+                                                    type="button"
+                                                    class="pet-chat-meta-btn"
+                                                    @click="copySessionChatMessage(m.message || m.content, m, idx)"
+                                                    aria-label="复制消息"
+                                                    title="复制"
+                                                >{{ sessionChatCopyButtonLabel(m, idx) }}</button>
+                                                <template v-if="Array.isArray(weChatRobots) && weChatRobots.length > 0 && m.type === 'pet' && (m.message || m.content) && String(m.message || m.content).trim()">
+                                                    <button
+                                                        v-for="(bot, bi) in weChatRobots"
+                                                        :key="bot.id || ('wrb_' + bi)"
+                                                        type="button"
+                                                        class="pet-chat-meta-btn"
+                                                        :title="'发送到：' + (bot.name || '机器人')"
+                                                        :aria-label="'发送到机器人：' + (bot.name || '机器人')"
+                                                        @click="sendSessionChatMessageToRobot(bot, m, idx)"
+                                                    >{{ bot.name || '机器人' }}</button>
+                                                </template>
+                                                <button
+                                                    v-if="m.type !== 'pet'"
+                                                    type="button"
+                                                    class="pet-chat-meta-btn"
+                                                    :disabled="sessionChatSending"
+                                                    @click="editSessionChatMessageAt(idx)"
+                                                    aria-label="编辑消息"
+                                                    title="编辑"
+                                                >✏️</button>
                                             <button
                                                 v-if="m.type !== 'pet'"
                                                 type="button"
@@ -321,7 +332,6 @@
                                             <button
                                                 type="button"
                                                 class="pet-chat-meta-btn"
-                                                :disabled="sessionChatSending || !canMoveSessionChatMessageUp(activeSession, idx)"
                                                 @click="moveSessionChatMessageUp(idx)"
                                                 aria-label="上移消息"
                                                 title="上移"
@@ -329,7 +339,6 @@
                                             <button
                                                 type="button"
                                                 class="pet-chat-meta-btn"
-                                                :disabled="sessionChatSending || !canMoveSessionChatMessageDown(activeSession, idx)"
                                                 @click="moveSessionChatMessageDown(idx)"
                                                 aria-label="下移消息"
                                                 title="下移"
@@ -364,9 +373,9 @@
                             <div class="pet-chat-toolbar-left chat-input-btn-group">
                                 <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionContextEditor" title="页面上下文" aria-label="页面上下文">📝 页面上下文</button>
                                 <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionFaq" title="常见问题" aria-label="常见问题">💡 常见问题</button>
+                                <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openWeChatSettings" title="微信机器人设置" aria-label="微信机器人设置">🤖 微信机器人</button>
                                 <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionChatImagePicker" title="上传图片" aria-label="上传图片">🖼️ 图片</button>
                                 <input id="pet-chat-image-input" type="file" accept="image/*" multiple style="display:none" @change="onSessionChatImageInputChange" />
-                                <button type="button" class="pet-chat-btn chat-input-btn chat-input-icon-btn" @click="openSessionSettings" title="AI 设置" aria-label="AI 设置">⚙️</button>
                             </div>
                             <div class="pet-chat-toolbar-right chat-input-btn-group">
                                 <div class="context-switch-container" :class="{ active: sessionContextEnabled }" title="开启/关闭页面上下文">
@@ -514,164 +523,192 @@
                                 </div>
                             </div>
                             <div class="aicr-session-context-modal-content aicr-session-faq-modal-content">
-                                <div class="aicr-session-faq-search-row">
-                                    <input
-                                        type="text"
-                                        class="aicr-session-faq-search-input"
-                                        :value="sessionFaqSearchKeyword"
-                                        @input="sessionFaqSearchKeyword = $event.target.value"
-                                        placeholder="搜索常见问题..."
-                                        aria-label="搜索常见问题"
-                                    />
-                                    <button
-                                        type="button"
-                                        class="aicr-session-faq-search-clear"
-                                        :disabled="!String(sessionFaqSearchKeyword || '').trim()"
-                                        @click="sessionFaqSearchKeyword = ''"
-                                        aria-label="清除搜索"
-                                        title="清除搜索"
-                                    >清除</button>
-                                </div>
-
-                                <div class="aicr-session-faq-filter-row" aria-label="常见问题标签筛选">
-                                    <div class="aicr-session-faq-filter-actions">
-                                        <button
-                                            type="button"
-                                            class="aicr-session-faq-filter-btn"
-                                            :class="{ active: !!sessionFaqTagFilterReverse }"
-                                            @click="toggleSessionFaqTagReverse"
-                                            aria-label="反选"
-                                            title="不包含选中标签"
-                                        >反选</button>
-                                        <button
-                                            type="button"
-                                            class="aicr-session-faq-filter-btn"
-                                            :class="{ active: !!sessionFaqTagFilterNoTags }"
-                                            @click="toggleSessionFaqNoTags"
-                                            aria-label="无标签"
-                                            title="只显示无标签问题"
-                                        >无标签</button>
-                                        <button
-                                            type="button"
-                                            class="aicr-session-faq-filter-btn"
-                                            :disabled="(sessionFaqSelectedTags || []).length === 0 && !sessionFaqTagFilterReverse && !sessionFaqTagFilterNoTags"
-                                            @click="clearSessionFaqTagFilters"
-                                            aria-label="清除标签筛选"
-                                            title="清除标签筛选"
-                                        >清除标签</button>
-                                        <button
-                                            type="button"
-                                            class="aicr-session-faq-filter-btn"
-                                            :class="{ active: !!sessionFaqTagManagerVisible }"
-                                            @click="toggleSessionFaqTagManager"
-                                            aria-label="标签管理"
-                                            title="标签管理"
-                                        >标签管理</button>
-                                        <button
-                                            type="button"
-                                            class="aicr-session-faq-filter-btn"
-                                            :disabled="!!sessionFaqLoading"
-                                            @click="refreshSessionFaqs"
-                                            aria-label="刷新"
-                                            title="从接口刷新"
-                                        >刷新</button>
-                                    </div>
-
-                                    <div class="aicr-session-faq-tag-search">
-                                        <input
-                                            type="text"
-                                            class="aicr-session-faq-tag-search-input"
-                                            :value="sessionFaqTagFilterSearchKeyword"
-                                            @input="sessionFaqTagFilterSearchKeyword = $event.target.value"
-                                            placeholder="搜索标签..."
-                                            aria-label="搜索标签"
-                                        />
-                                        <button
-                                            type="button"
-                                            class="aicr-session-faq-filter-btn"
-                                            :disabled="!String(sessionFaqTagFilterSearchKeyword || '').trim()"
-                                            @click="sessionFaqTagFilterSearchKeyword = ''"
-                                            aria-label="清除标签搜索"
-                                            title="清除标签搜索"
-                                        >清除</button>
-                                    </div>
-
-                                    <div class="aicr-session-faq-tag-list" role="list" aria-label="标签列表">
-                                        <button
-                                            v-for="tag in (sessionFaqVisibleTags || [])"
-                                            :key="tag"
-                                            type="button"
-                                            class="aicr-session-faq-tag"
-                                            :class="{ active: (sessionFaqSelectedTags || []).includes(tag) }"
-                                            @click="toggleSessionFaqTag(tag)"
-                                            role="listitem"
-                                            :aria-label="`筛选标签：${tag}`"
-                                        >{{ tag }}</button>
-                                        <button
-                                            v-if="(sessionFaqAllTags || []).length > (sessionFaqVisibleTags || []).length"
-                                            type="button"
-                                            class="aicr-session-faq-tag more"
-                                            @click="toggleSessionFaqTagExpanded"
-                                            role="listitem"
-                                            aria-label="展开或收起标签"
-                                        >{{ sessionFaqTagFilterExpanded ? '收起' : '更多' }}</button>
-                                    </div>
-
-                                    <div v-if="sessionFaqTagManagerVisible" class="aicr-session-faq-tag-manager" aria-label="标签管理面板">
-                                        <div class="aicr-session-faq-tag-manager-header">
-                                            <div class="aicr-session-faq-tag-manager-title">标签管理</div>
-                                            <button type="button" class="aicr-session-faq-filter-btn" @click="toggleSessionFaqTagManager" aria-label="关闭标签管理">关闭</button>
+                                <div class="aicr-session-faq-layout">
+                                    <div class="aicr-session-faq-sidebar" aria-label="筛选与标签">
+                                        <div class="aicr-session-faq-search-row">
+                                            <input
+                                                type="text"
+                                                class="aicr-session-faq-search-input"
+                                                :value="sessionFaqSearchKeyword"
+                                                @input="sessionFaqSearchKeyword = $event.target.value"
+                                                placeholder="搜索常见问题..."
+                                                aria-label="搜索常见问题"
+                                            />
+                                            <button
+                                                type="button"
+                                                class="aicr-session-faq-search-clear"
+                                                :disabled="!String(sessionFaqSearchKeyword || '').trim()"
+                                                @click="clearSessionFaqSearch"
+                                                aria-label="清除搜索"
+                                                title="清除搜索"
+                                            >清除</button>
                                         </div>
-                                        <div class="aicr-session-faq-tag-manager-list" role="list" aria-label="可管理标签列表">
-                                            <div v-for="tag in (sessionFaqAllTags || [])" :key="`mgr_${tag}`" class="aicr-session-faq-tag-manager-item" role="listitem">
-                                                <div class="aicr-session-faq-tag-manager-name">{{ tag }}</div>
-                                                <div class="aicr-session-faq-tag-manager-actions">
-                                                    <button type="button" class="aicr-session-faq-filter-btn" :disabled="!!sessionFaqLoading" @click="renameSessionFaqTag(tag)" aria-label="重命名标签">重命名</button>
-                                                    <button type="button" class="aicr-session-faq-filter-btn danger" :disabled="!!sessionFaqLoading" @click="deleteSessionFaqTag(tag)" aria-label="删除标签">删除</button>
+
+                                        <div class="aicr-session-faq-filter-row" aria-label="常见问题标签筛选">
+                                            <div class="aicr-session-faq-filter-actions">
+                                                <button
+                                                    type="button"
+                                                    class="aicr-session-faq-filter-btn"
+                                                    :class="{ active: !!sessionFaqTagFilterReverse }"
+                                                    @click="toggleSessionFaqTagReverse"
+                                                    aria-label="反选"
+                                                    title="不包含选中标签"
+                                                >反选</button>
+                                                <button
+                                                    type="button"
+                                                    class="aicr-session-faq-filter-btn"
+                                                    :class="{ active: !!sessionFaqTagFilterNoTags }"
+                                                    @click="toggleSessionFaqNoTags"
+                                                    aria-label="无标签"
+                                                    title="只显示无标签问题"
+                                                >无标签</button>
+                                                <button
+                                                    type="button"
+                                                    class="aicr-session-faq-filter-btn"
+                                                    :disabled="(sessionFaqSelectedTags || []).length === 0 && !sessionFaqTagFilterReverse && !sessionFaqTagFilterNoTags"
+                                                    @click="clearSessionFaqTagFilters"
+                                                    aria-label="清除标签筛选"
+                                                    title="清除标签筛选"
+                                                >清除标签</button>
+                                                <button
+                                                    type="button"
+                                                    class="aicr-session-faq-filter-btn"
+                                                    :class="{ active: !!sessionFaqTagManagerVisible }"
+                                                    @click="toggleSessionFaqTagManager"
+                                                    aria-label="标签管理"
+                                                    title="标签管理"
+                                                >标签管理</button>
+                                                <button
+                                                    type="button"
+                                                    class="aicr-session-faq-filter-btn"
+                                                    :disabled="!!sessionFaqLoading"
+                                                    @click="refreshSessionFaqs"
+                                                    aria-label="刷新"
+                                                    title="从接口刷新"
+                                                >刷新</button>
+                                            </div>
+
+                                            <div class="aicr-session-faq-tag-search">
+                                                <input
+                                                    type="text"
+                                                    class="aicr-session-faq-tag-search-input"
+                                                    :value="sessionFaqTagFilterSearchKeyword"
+                                                    @input="sessionFaqTagFilterSearchKeyword = $event.target.value"
+                                                    placeholder="搜索标签..."
+                                                    aria-label="搜索标签"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    class="aicr-session-faq-filter-btn"
+                                                    :disabled="!String(sessionFaqTagFilterSearchKeyword || '').trim()"
+                                                    @click="clearSessionFaqTagSearch"
+                                                    aria-label="清除标签搜索"
+                                                    title="清除标签搜索"
+                                                >清除</button>
+                                            </div>
+
+                                            <div class="aicr-session-faq-tag-list" role="list" aria-label="标签列表">
+                                                <button
+                                                    v-for="tag in (sessionFaqVisibleTags || [])"
+                                                    :key="tag"
+                                                    type="button"
+                                                    class="aicr-session-faq-tag"
+                                                    :class="{ active: (sessionFaqSelectedTags || []).includes(tag) }"
+                                                    @click="toggleSessionFaqTag(tag)"
+                                                    role="listitem"
+                                                    :aria-label="`筛选标签：${tag}`"
+                                                >{{ tag }}</button>
+                                                <button
+                                                    v-if="(sessionFaqAllTags || []).length > (sessionFaqVisibleTags || []).length"
+                                                    type="button"
+                                                    class="aicr-session-faq-tag more"
+                                                    @click="toggleSessionFaqTagExpanded"
+                                                    role="listitem"
+                                                    aria-label="展开或收起标签"
+                                                >{{ sessionFaqTagFilterExpanded ? '收起' : '更多' }}</button>
+                                            </div>
+
+                                            <div v-if="sessionFaqTagManagerVisible" class="aicr-session-faq-tag-manager" aria-label="标签管理面板">
+                                                <div class="aicr-session-faq-tag-manager-header">
+                                                    <div class="aicr-session-faq-tag-manager-title">标签管理</div>
+                                                    <button type="button" class="aicr-session-faq-filter-btn" @click="toggleSessionFaqTagManager" aria-label="关闭标签管理">关闭</button>
+                                                </div>
+                                                <div class="aicr-session-faq-tag-manager-list" role="list" aria-label="可管理标签列表">
+                                                    <div v-for="tag in (sessionFaqAllTags || [])" :key="`mgr_${tag}`" class="aicr-session-faq-tag-manager-item" role="listitem">
+                                                        <div class="aicr-session-faq-tag-manager-name">{{ tag }}</div>
+                                                        <div class="aicr-session-faq-tag-manager-actions">
+                                                            <button type="button" class="aicr-session-faq-filter-btn" :disabled="!!sessionFaqLoading" @click="renameSessionFaqTag(tag)" aria-label="重命名标签">重命名</button>
+                                                            <button type="button" class="aicr-session-faq-filter-btn danger" :disabled="!!sessionFaqLoading" @click="deleteSessionFaqTag(tag)" aria-label="删除标签">删除</button>
+                                                        </div>
+                                                    </div>
+                                                    <div v-if="(sessionFaqAllTags || []).length === 0" class="aicr-session-faq-tag-manager-empty">暂无标签</div>
                                                 </div>
                                             </div>
-                                            <div v-if="(sessionFaqAllTags || []).length === 0" class="aicr-session-faq-tag-manager-empty">暂无标签</div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div v-if="sessionFaqLoading" class="aicr-session-faq-status" role="status">正在加载常见问题...</div>
-                                <div v-else-if="sessionFaqError" class="aicr-session-faq-error" role="status">{{ sessionFaqError }}</div>
+                                    <div class="aicr-session-faq-main" aria-label="常见问题列表">
+                                        <div class="aicr-session-faq-summary" role="status" aria-label="筛选结果">
+                                            共 {{ (sessionFaqItems || []).length }} 条，匹配 {{ (filteredSessionFaqItems || []).length }} 条
+                                        </div>
 
-                                <div class="aicr-session-faq-list" role="list" aria-label="常见问题列表">
-                                    <div
-                                        v-for="item in (filteredSessionFaqItems || [])"
-                                        :key="item.key"
-                                        class="aicr-session-faq-item"
-                                        role="listitem"
-                                    >
-                                        <div class="aicr-session-faq-item-header">
-                                            <div class="aicr-session-faq-item-title">{{ item.title }}</div>
-                                            <div class="aicr-session-faq-item-actions">
-                                                <button type="button" class="aicr-session-faq-item-btn" @click="editSessionFaqTags(item)" aria-label="标签">标签</button>
-                                                <button type="button" class="aicr-session-faq-item-btn" @click="applySessionFaqItem(item, 'insert')" aria-label="插入">插入</button>
-                                                <button type="button" class="aicr-session-faq-item-btn primary" @click="applySessionFaqItem(item, 'send')" aria-label="发送">发送</button>
+                                            <div class="aicr-session-faq-input-row" aria-label="添加常见问题">
+                                                <textarea
+                                                    class="aicr-session-faq-input"
+                                                    placeholder="输入问题内容，按 Ctrl+Enter 或 Shift+Enter 添加"
+                                                    @keydown.ctrl.enter.prevent="addSessionFaqFromInput"
+                                                    @keydown.meta.enter.prevent="addSessionFaqFromInput"
+                                                    @keydown.shift.enter.prevent="addSessionFaqFromInput"
+                                                    aria-label="新增常见问题"
+                                                ></textarea>
+                                                <div class="aicr-session-faq-input-hint">支持多行内容，首行作为标题，余下作为正文。</div>
+                                            </div>
+
+                                        <div v-if="sessionFaqLoading" class="aicr-session-faq-status" role="status">正在加载常见问题...</div>
+                                        <div v-else-if="sessionFaqError" class="aicr-session-faq-error" role="status">{{ sessionFaqError }}</div>
+
+                                        <div class="aicr-session-faq-list" role="list" aria-label="常见问题列表">
+                                            <div
+                                                v-for="item in (filteredSessionFaqItems || [])"
+                                                :key="item.key"
+                                                class="aicr-session-faq-item"
+                                                role="listitem"
+                                                tabindex="0"
+                                                @click="applySessionFaqItem(item, 'insert'); closeSessionFaq()"
+                                                @keydown.enter.prevent="applySessionFaqItem(item, 'insert'); closeSessionFaq()"
+                                                @keydown.ctrl.enter.prevent="applySessionFaqItem(item, 'send'); closeSessionFaq()"
+                                                @keydown.meta.enter.prevent="applySessionFaqItem(item, 'send'); closeSessionFaq()"
+                                            >
+                                                <div class="aicr-session-faq-item-header">
+                                                    <div class="aicr-session-faq-item-title">{{ item.title }}</div>
+                                                    <div class="aicr-session-faq-item-actions">
+                                                        <button type="button" class="aicr-session-faq-item-btn" @click.stop="editSessionFaqTags(item)" aria-label="标签">标签</button>
+                                                        <button type="button" class="aicr-session-faq-item-btn" @click.stop="applySessionFaqItem(item, 'insert'); closeSessionFaq()" aria-label="插入">插入</button>
+                                                        <button type="button" class="aicr-session-faq-item-btn primary" @click.stop="applySessionFaqItem(item, 'send'); closeSessionFaq()" aria-label="发送">发送</button>
+                                                        <button type="button" class="aicr-session-faq-item-btn danger" @click.stop="deleteSessionFaqItem(item)" aria-label="删除">删除</button>
+                                                    </div>
+                                                </div>
+                                                <div v-if="Array.isArray(item.tags) && item.tags.length > 0" class="aicr-session-faq-item-tags" aria-label="问题标签">
+                                                    <button
+                                                        v-for="tag in item.tags"
+                                                        :key="`${item.key}_${tag}`"
+                                                        type="button"
+                                                        class="aicr-session-faq-item-tag"
+                                                        @click.stop="toggleSessionFaqTag(tag)"
+                                                        :aria-label="`筛选标签：${tag}`"
+                                                    >{{ tag }}</button>
+                                                </div>
+                                                <div class="aicr-session-faq-item-prompt">{{ item.prompt }}</div>
+                                            </div>
+
+                                            <div
+                                                v-if="!sessionFaqLoading && (filteredSessionFaqItems || []).length === 0"
+                                                class="aicr-session-faq-empty"
+                                                role="listitem"
+                                            >
+                                                未找到匹配的常见问题
                                             </div>
                                         </div>
-                                        <div v-if="Array.isArray(item.tags) && item.tags.length > 0" class="aicr-session-faq-item-tags" aria-label="问题标签">
-                                            <button
-                                                v-for="tag in item.tags"
-                                                :key="`${item.key}_${tag}`"
-                                                type="button"
-                                                class="aicr-session-faq-item-tag"
-                                                @click="toggleSessionFaqTag(tag)"
-                                                :aria-label="`筛选标签：${tag}`"
-                                            >{{ tag }}</button>
-                                        </div>
-                                        <div class="aicr-session-faq-item-prompt">{{ item.prompt }}</div>
-                                    </div>
-
-                                    <div
-                                        v-if="!sessionFaqLoading && (filteredSessionFaqItems || []).length === 0"
-                                        class="aicr-session-faq-empty"
-                                        role="listitem"
-                                    >
-                                        未找到匹配的常见问题
                                     </div>
                                 </div>
                             </div>
@@ -719,6 +756,80 @@
                                         rows="10"
                                         aria-label="系统提示词"
                                     ></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="weChatSettingsVisible" class="aicr-session-context-modal" role="dialog" aria-modal="true" aria-label="微信机器人设置">
+                        <div class="aicr-session-context-modal-mask" @click="closeWeChatSettings"></div>
+                        <div class="aicr-session-context-modal-body aicr-session-settings-modal-body" tabindex="0" @keydown.esc="closeWeChatSettings">
+                            <div class="aicr-session-context-modal-header">
+                                <div class="aicr-session-context-modal-title">
+                                    🤖 微信机器人
+                                    <span class="aicr-session-context-modal-subtitle">（当前浏览器本地）</span>
+                                </div>
+                                <div class="aicr-session-context-modal-header-right">
+                                    <button type="button" class="aicr-session-context-toolbar-btn" @click="restoreWeChatSettingsDefaults" aria-label="恢复默认" title="恢复默认">恢复默认</button>
+                                    <button type="button" class="aicr-session-context-toolbar-btn primary" @click="saveWeChatSettings" aria-label="保存" title="保存">保存</button>
+                                    <button type="button" class="aicr-session-context-modal-close" @click="closeWeChatSettings" aria-label="关闭">✕</button>
+                                </div>
+                            </div>
+                            <div class="aicr-session-context-modal-content aicr-session-settings-modal-content">
+                                <div class="aicr-session-settings-field">
+                                    <button type="button" class="aicr-session-context-toolbar-btn" @click="addWeChatRobotDraft" aria-label="新增机器人" title="新增机器人">新增机器人</button>
+                                </div>
+                                <div class="aicr-session-settings-field">
+                                    <div v-for="(bot, ri) in (weChatRobotsDraft || [])" :key="bot.id || ('wr_' + ri)">
+                                        <div class="aicr-session-settings-field">
+                                            <label class="aicr-session-settings-label">名称</label>
+                                            <input
+                                                type="text"
+                                                class="aicr-session-settings-input"
+                                                :value="bot.name"
+                                                @input="weChatRobotsDraft[ri].name = $event.target.value"
+                                                placeholder="机器人名称"
+                                                autocomplete="off"
+                                                spellcheck="false"
+                                                aria-label="机器人名称"
+                                            />
+                                        </div>
+                                        <div class="aicr-session-settings-field">
+                                            <label class="aicr-session-settings-label">Webhook URL</label>
+                                            <input
+                                                type="text"
+                                                class="aicr-session-settings-input"
+                                                :value="bot.webhook"
+                                                @input="weChatRobotsDraft[ri].webhook = $event.target.value"
+                                                placeholder="企业微信机器人Webhook"
+                                                autocomplete="off"
+                                                spellcheck="false"
+                                                aria-label="Webhook"
+                                            />
+                                        </div>
+                                        <div class="aicr-session-settings-field">
+                                            <label class="aicr-session-settings-label">启用</label>
+                                            <input
+                                                type="checkbox"
+                                                :checked="!!bot.enabled"
+                                                @change="weChatRobotsDraft[ri].enabled = $event.target.checked"
+                                                aria-label="启用机器人"
+                                            />
+                                        </div>
+                                        <div class="aicr-session-settings-field">
+                                            <label class="aicr-session-settings-label">自动转发助手回复</label>
+                                            <input
+                                                type="checkbox"
+                                                :checked="!!bot.autoForward"
+                                                @change="weChatRobotsDraft[ri].autoForward = $event.target.checked"
+                                                aria-label="自动转发助手回复"
+                                            />
+                                        </div>
+                                        <div class="aicr-session-settings-field">
+                                            <button type="button" class="aicr-session-context-toolbar-btn" @click="removeWeChatRobotDraft(ri)" aria-label="删除机器人" title="删除机器人">删除</button>
+                                        </div>
+                                        <hr />
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -1,6 +1,16 @@
 @import url('/src/styles/index.css');
 @import url('/src/components/common/searchHeader/index.css');
 
+html, body {
+    height: 100%;
+}
+
+#app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
 .header-row {
     padding: 0;
 }
@@ -13,7 +23,7 @@
 /* ========== 主容器 ========== */
 .aicr-main {
     display: flex;
-    height: calc(100vh - 81px);
+    height: calc(100vh - 66px);
     background: var(--bg-primary);
     min-width: 320px;
     position: relative;
@@ -507,7 +517,7 @@
     .aicr-main {
         flex-direction: column;
         height: auto;
-        min-height: calc(100vh - 81px);
+        min-height: calc(100vh - 66px);
     }
     
     .aicr-sidebar, 
@@ -1453,12 +1463,13 @@
     padding: 16px 18px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 0;
 }
 
 .pet-chat-message {
     display: flex;
     width: 100%;
+    margin: 18px 0;
 }
 
 .pet-chat-message.is-user {
@@ -1467,6 +1478,20 @@
 
 .pet-chat-message.is-pet {
     justify-content: flex-start;
+}
+
+@supports not (gap: 1rem) {
+    .pet-chat-message {
+        margin: 18px 0;
+    }
+
+    .pet-chat-message:first-child {
+        margin-top: 0;
+    }
+
+    .pet-chat-message:last-child {
+        margin-bottom: 0;
+    }
 }
 
 .pet-chat-bubble {
@@ -2174,10 +2199,105 @@
     inset: 16px;
     max-width: 980px;
     margin: 0 auto;
+    animation: fadeInUp 0.18s ease-out;
 }
 
 .aicr-session-faq-modal-content {
     overflow: hidden;
+}
+
+.aicr-session-faq-layout {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.aicr-session-faq-sidebar {
+    width: 360px;
+    max-width: 44%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    overflow: auto;
+    padding-right: 2px;
+}
+
+.aicr-session-faq-sidebar::-webkit-scrollbar,
+.aicr-session-faq-list::-webkit-scrollbar,
+.aicr-session-faq-tag-manager-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.aicr-session-faq-sidebar::-webkit-scrollbar-track,
+.aicr-session-faq-list::-webkit-scrollbar-track,
+.aicr-session-faq-tag-manager-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.aicr-session-faq-sidebar::-webkit-scrollbar-thumb,
+.aicr-session-faq-list::-webkit-scrollbar-thumb,
+.aicr-session-faq-tag-manager-list::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.35);
+    border-radius: 999px;
+}
+
+.aicr-session-faq-sidebar::-webkit-scrollbar-thumb:hover,
+.aicr-session-faq-list::-webkit-scrollbar-thumb:hover,
+.aicr-session-faq-tag-manager-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.5);
+}
+
+.aicr-session-faq-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+}
+
+.aicr-session-faq-input-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.aicr-session-faq-input {
+    width: 100%;
+    resize: vertical;
+    min-height: 90px;
+    max-height: 220px;
+    border-radius: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(51, 65, 85, 0.85);
+    background: rgba(2, 6, 23, 0.60);
+    color: rgba(226, 232, 240, 0.95);
+    outline: none;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.aicr-session-faq-input:focus {
+    border-color: rgba(34, 211, 238, 0.45);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18);
+}
+
+.aicr-session-faq-input-hint {
+    color: rgba(148, 163, 184, 0.75);
+    font-size: 12px;
+}
+
+.aicr-session-faq-summary {
+    padding: 10px 12px;
+    border: 1px solid rgba(51, 65, 85, 0.7);
+    border-radius: 14px;
+    background: rgba(2, 6, 23, 0.2);
+    color: rgba(148, 163, 184, 0.9);
+    font-size: 13px;
 }
 
 .aicr-session-faq-search-row {
@@ -2411,7 +2531,6 @@
 }
 
 .aicr-session-faq-list {
-    margin-top: 12px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -2426,6 +2545,19 @@
     background: rgba(2, 6, 23, 0.35);
     border-radius: 14px;
     padding: 12px 14px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.12s ease, background 0.12s ease, transform 0.12s ease;
+}
+
+.aicr-session-faq-item:hover {
+    background: rgba(2, 6, 23, 0.45);
+    transform: translateY(-1px);
+}
+
+.aicr-session-faq-item:focus-visible {
+    border-color: rgba(34, 211, 238, 0.45);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.14);
 }
 
 .aicr-session-faq-item-header {
@@ -2469,6 +2601,17 @@
     display: inline-flex;
     gap: 10px;
     align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-2px);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.aicr-session-faq-item:hover .aicr-session-faq-item-actions,
+.aicr-session-faq-item:focus-within .aicr-session-faq-item-actions {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
 }
 
 .aicr-session-faq-item-btn {
@@ -2494,6 +2637,12 @@
     font-weight: 650;
 }
 
+.aicr-session-faq-item-btn.danger {
+    border-color: rgba(248, 113, 113, 0.45);
+    background: rgba(127, 29, 29, 0.30);
+    color: rgba(254, 202, 202, 0.98);
+}
+
 .aicr-session-faq-item-prompt {
     margin-top: 10px;
     color: rgba(148, 163, 184, 0.85);
@@ -2501,6 +2650,10 @@
     line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .aicr-session-faq-empty {
@@ -2509,6 +2662,24 @@
     color: rgba(148, 163, 184, 0.8);
     border: 1px dashed rgba(51, 65, 85, 0.7);
     border-radius: 14px;
+}
+
+@media (max-width: 860px) {
+    .aicr-session-faq-layout {
+        flex-direction: column;
+    }
+
+    .aicr-session-faq-sidebar {
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
+    }
+
+    .aicr-session-faq-item-actions {
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
+    }
 }
 
 .aicr-session-settings-modal-body {

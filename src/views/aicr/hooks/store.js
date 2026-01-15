@@ -494,8 +494,17 @@ export const createStore = () => {
     const sessionBotSystemPrompt = vueRef('你是一个专业、简洁且可靠的 AI 助手。');
     const sessionBotModelDraft = vueRef('');
     const sessionBotSystemPromptDraft = vueRef('');
+    const weChatSettingsVisible = vueRef(false);
+    const weChatRobotEnabled = vueRef(false);
+    const weChatRobotWebhook = vueRef('');
+    const weChatRobotAutoForward = vueRef(false);
+    const weChatRobotEnabledDraft = vueRef(false);
+    const weChatRobotWebhookDraft = vueRef('');
+    const weChatRobotAutoForwardDraft = vueRef(false);
+    const weChatRobots = vueRef([]);
+    const weChatRobotsDraft = vueRef([]);
     
-    // 标签过滤相关状态（参考 YiPet 项目）
+    // 标签过滤相关状态
     const tagFilterReverse = vueRef(false); // 是否反向过滤会话
     const tagFilterNoTags = vueRef(false); // 是否筛选无标签的会话
     const tagFilterExpanded = vueRef(false); // 标签列表是否展开
@@ -2110,6 +2119,15 @@ export const createStore = () => {
         sessionBotSystemPrompt,
         sessionBotModelDraft,
         sessionBotSystemPromptDraft,
+        weChatSettingsVisible,
+        weChatRobotEnabled,
+        weChatRobotWebhook,
+        weChatRobotAutoForward,
+        weChatRobotEnabledDraft,
+        weChatRobotWebhookDraft,
+        weChatRobotAutoForwardDraft,
+        weChatRobots,
+        weChatRobotsDraft,
         
         // 标签过滤相关状态
         tagFilterReverse,

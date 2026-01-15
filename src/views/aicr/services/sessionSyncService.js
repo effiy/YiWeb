@@ -461,7 +461,19 @@ class SessionSyncService {
                 filename,
                 directory
             });
-            const url = resp?.data?.url || resp?.data?.data?.url || resp?.url;
+            const pickUrl = (r) => {
+                if (!r) return '';
+                if (typeof r === 'string') return r;
+                const d = r.data;
+                if (typeof d === 'string') return d;
+                if (typeof r.url === 'string') return r.url;
+                if (d && typeof d.url === 'string') return d.url;
+                const dd = d && d.data;
+                if (typeof dd === 'string') return dd;
+                if (dd && typeof dd.url === 'string') return dd.url;
+                return '';
+            };
+            const url = pickUrl(resp);
             if (!url) {
                 throw new Error('上传图片失败');
             }
