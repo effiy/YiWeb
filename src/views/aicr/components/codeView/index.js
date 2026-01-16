@@ -71,6 +71,7 @@ const componentOptions = {
         data() {
             return {
                 highlightedLines: [],
+                _lastFileIdentity: '',
                 // 划词评论与手动Markdown弹框
                 showManualImprovementModal: false,
                 manualCommentText: '',
@@ -175,11 +176,21 @@ const componentOptions = {
             // 监听文件变化，清除高亮并处理文件加载
             file: {
                 handler(newFile, oldFile) {
-                    // 当文件变化时，清除之前的高亮
-                    if (newFile !== oldFile) {
-                        console.log('[CodeView] 文件变化，清除高亮');
+                    const nextIdentity = newFile
+                        ? `${newFile?.key || ''}::${newFile?.sessionKey || ''}::${newFile?.fileKey || ''}::${newFile?.path || ''}::${newFile?.name || ''}`
+                        : '';
+                    
+                    const identityChanged = nextIdentity !== this._lastFileIdentity;
+                    if (identityChanged) {
+                        this._lastFileIdentity = nextIdentity;
                         this.clearHighlight();
-                        
+                    }
+                    
+                    if (!newFile) {
+                        return;
+                    }
+                    
+                    if (identityChanged || newFile !== oldFile) {
                         // 处理新文件的key信息
                         if (newFile) {
                             console.log('[CodeView] 新文件信息:', {
@@ -763,7 +774,7 @@ const componentOptions = {
                 this.highlightTargetLine(lineNumber);
                 
                 // 使用优化的滚动方法
-                this.scrollToCommentPosition(lineNumber, null);
+                this.scrollToCommentPosition(lineNumber, null, true);
                 
                 // 更新视觉反馈
                 this.showScrollFeedback(`已定位到第 ${lineNumber} 行`);
@@ -1944,8 +1955,30 @@ const componentOptions = {
             // 响应外部的代码高亮事件（增强版：支持评论定位和自动打开）
             handleHighlightEvent(detail) {
                 return safeExecute(() => {
+                    const currentKeys = new Set();
+                    if (this.file) {
+                        const candidates = [
+                            this.file.key,
+                            this.file.sessionKey,
+                            this.file.fileKey,
+                            this.file.path
+                        ];
+                        candidates.forEach((v) => {
+                            const s = String(v || '').trim();
+                            if (s) currentKeys.add(s);
+                        });
+                    }
+                    const targetKey = detail && detail.fileKey ? String(detail.fileKey) : null;
+                    
+                    // 如果事件指定了文件且与当前文件不匹配，则忽略该次高亮（避免切换文件过程中错误高亮）
+                    if (targetKey && currentKeys.size > 0 && !currentKeys.has(targetKey)) {
+                        console.log('[CodeView] 忽略非当前文件的高亮事件', { currentKeys: Array.from(currentKeys), targetKey });
+                        return;
+                    }
+                    
                     const range = detail && detail.rangeInfo ? detail.rangeInfo : null;
                     const comment = detail && detail.comment ? detail.comment : null;
+                    const doScroll = !!(detail && detail.scroll === true);
                     
                     if (!range) {
                         console.warn('[CodeView] 高亮事件缺少rangeInfo:', detail);
@@ -1961,15 +1994,18 @@ const componentOptions = {
                     this.highlightedLines = [];
                     for (let i = start; i <= end; i++) this.highlightedLines.push(i);
                     
-                    // 不需要自动滚动，仅高亮
-                    console.log('[CodeView] 已高亮代码行，不执行滚动');
+                    if (doScroll) {
+                        this._scrollToLine(start);
+                        this.showScrollFeedback(`已定位到第 ${start} 行`);
+                    } else {
+                        console.log('[CodeView] 已高亮代码行');
+                    }
                     
                 }, '处理代码高亮事件');
             },
             
             // 滚动到评论位置并可选择性打开评论详情
-            scrollToCommentPosition(startLine, comment = null) {
-                // 仅更新高亮行，不再执行滚动查找逻辑
+            scrollToCommentPosition(startLine, comment = null, doScroll = false) {
                 this.highlightedLines = [];
                 if (comment && comment.rangeInfo) {
                     const start = Number(comment.rangeInfo.startLine) || 1;
@@ -1977,11 +2013,25 @@ const componentOptions = {
                     for (let i = start; i <= end; i++) {
                         this.highlightedLines.push(i);
                     }
+                    if (doScroll) this._scrollToLine(start);
                 } else if (startLine) {
-                    this.highlightedLines.push(Number(startLine));
+                    const n = Number(startLine);
+                    this.highlightedLines.push(n);
+                    if (doScroll) this._scrollToLine(n);
                 }
-                
-                console.log('[CodeView] 已高亮位置 (不滚动):', { startLine, comment: comment?.key });
+                console.log('[CodeView] 已高亮位置:', { startLine, comment: comment?.key, doScroll });
+            },
+            
+            _scrollToLine(lineNumber) {
+                try {
+                    if (this.shouldShowMarkdownPreview) return;
+                    const container = this.$el && this.$el.querySelector('.code-block');
+                    if (!container) return;
+                    const target = container.querySelector(`code[data-line="${lineNumber}"]`) || document.getElementById(`L${lineNumber}`);
+                    if (target && typeof target.scrollIntoView === 'function') {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                } catch (_) {}
             },
             
             // 自动打开指定评论的详情
@@ -4133,9 +4183,3 @@ const componentOptions = {
         }));
     }
 })();
-
-
-
-
-
-

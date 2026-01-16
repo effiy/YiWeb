@@ -16,25 +16,25 @@
                 {{ file.path || file.name }}
             </div>
             <div class="code-actions">
-                <button type="button" v-if="!isEditingFile" class="action-button preview-toggle-button" @click="startEditFile" :disabled="!file" title="编辑文件">
-                    <i class="fas fa-pen"></i><span>编辑</span>
+                <button type="button" v-if="!isEditingFile" class="action-button preview-toggle-button" @click="startEditFile" :disabled="!file" title="编辑文件" aria-label="编辑文件">
+                    <i class="fas fa-pen"></i>
                 </button>
                 <template v-else>
-                    <button type="button" class="action-button save-button" :disabled="editSaving" @click="saveEditedFile" :title="editSaving ? '保存中' : '保存修改'">
-                        <i class="fas" :class="editSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i><span>{{ editSaving ? '保存中' : '保存' }}</span>
+                    <button type="button" class="action-button save-button" :disabled="editSaving" @click="saveEditedFile" :title="editSaving ? '保存中' : '保存修改'" aria-label="保存修改">
+                        <i class="fas" :class="editSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
                     </button>
-                    <button type="button" class="action-button cancel-button" :disabled="editSaving" @click="cancelEditFile" title="取消编辑">
-                        <i class="fas fa-times"></i><span>取消</span>
+                    <button type="button" class="action-button cancel-button" :disabled="editSaving" @click="cancelEditFile" title="取消编辑" aria-label="取消编辑">
+                        <i class="fas fa-times"></i>
                     </button>
                 </template>
-                <button type="button" v-if="!isEditingFile && !hideJumpButton" class="action-button jump-button" @click="jumpToCodePage" :disabled="!file" title="跳转到代码页">
-                    <i class="fas fa-external-link-alt"></i><span>跳转</span>
+                <button type="button" v-if="!isEditingFile && !hideJumpButton" class="action-button jump-button" @click="jumpToCodePage" :disabled="!file" title="跳转到代码页" aria-label="跳转到代码页">
+                    <i class="fas fa-external-link-alt"></i>
                 </button>
-                <button type="button" v-if="!isEditingFile" class="action-button" @click="downloadCurrentFile" :disabled="!file" title="下载文件">
-                    <i class="fas fa-download"></i><span>下载</span>
+                <button type="button" v-if="!isEditingFile" class="action-button" @click="downloadCurrentFile" :disabled="!file" title="下载文件" aria-label="下载文件">
+                    <i class="fas fa-download"></i>
                 </button>
-                <button type="button" v-if="!isEditingFile" class="action-button" @click="copyEntireFile" :disabled="!file" title="复制代码">
-                    <i class="fas fa-copy"></i><span>复制</span>
+                <button type="button" v-if="!isEditingFile" class="action-button" @click="copyEntireFile" :disabled="!file" title="复制代码" aria-label="复制代码">
+                    <i class="fas fa-copy"></i>
                 </button>
             </div>
         </div>
@@ -65,6 +65,7 @@
             <code 
                 v-for="(line, index) in codeLines" 
                 :key="index + 1"
+                :id="'L' + (index + 1)"
                 :class="['code-line', highlightedLines.includes(index + 1) ? 'highlight' : '']"
                 :data-line="index + 1"
             >

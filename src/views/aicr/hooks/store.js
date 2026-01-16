@@ -1713,7 +1713,6 @@ export const createStore = () => {
                         }
                     } catch (e) {}
 
-                    queryParams.key = targetKey;
                     queryParams.fileKey = targetKey;
                 }
                 

@@ -120,10 +120,36 @@ export const useComputed = (store) => {
 
         /**
          * 当前文件的评论
+         * 在会话模式下，返回与当前会话相关的评论
          */
         currentComments: computed(() => {
+            const viewMode = store.viewMode?.value || 'tree';
+            const activeSession = store.activeSession?.value;
+            
+            // 会话模式下，如果有activeSession，返回与该会话相关的评论
+            if (viewMode === 'tags' && activeSession) {
+                const sessionKey = activeSession.id || activeSession.key;
+                if (sessionKey) {
+                    const storeComments = store.comments?.value ? store.comments.value.filter(c => {
+                        const commentFileKey = c.fileKey;
+                        return String(commentFileKey || '') === String(sessionKey);
+                    }) : [];
+                    
+                    console.log('[currentComments] 会话模式 - 会话Key:', sessionKey);
+                    console.log('[currentComments] 会话模式 - 评论数量:', storeComments.length);
+                    
+                    return storeComments.map(comment => ({
+                        ...comment,
+                        key: comment.key || `comment_${Date.now()}_${Math.random()}`
+                    }));
+                }
+                // 如果没有sessionKey，返回空数组，让评论面板自己加载
+                return [];
+            }
+            
+            // 树形视图模式下的原有逻辑
             const key = store.selectedKey?.value;
-            console.log('[currentComments] 当前文件Key:', key);
+            console.log('[currentComments] 树形模式 - 当前文件Key:', key);
             console.log('[currentComments] store.comments:', store.comments);
             
             if (!key) return [];

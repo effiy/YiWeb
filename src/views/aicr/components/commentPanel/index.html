@@ -44,65 +44,164 @@
                         <div 
                             v-for="(m, idx) in sessionChatMessages" 
                             :key="`${m.timestamp || 0}_${idx}`"
-                            class="aicr-session-chat-message"
-                            :class="m.type === 'pet' ? 'is-pet' : 'is-user'"
+                            class="pet-chat-message"
+                            :class="{
+                                'is-pet': m.type === 'pet',
+                                'is-user': m.type !== 'pet',
+                                'is-error': !!m.error,
+                                'is-aborted': !!m.aborted,
+                                'is-streaming': isSessionChatStreamingMessage(m, idx)
+                            }"
+                            :data-chat-idx="idx"
+                            :data-chat-timestamp="m.timestamp || 0"
+                            :data-chat-type="m.type === 'pet' ? 'pet' : 'user'"
                         >
-                            <div class="aicr-session-chat-bubble">
-                                <div class="aicr-session-chat-content md-preview-body" v-html="renderMarkdown(m.message || m.content)"></div>
-                                <time class="aicr-session-chat-time" :datetime="m.timestamp">
-                                    {{ formatTime(m.timestamp) }}
-                                </time>
+                            <div class="pet-chat-bubble">
+                                <div v-if="Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0" class="pet-chat-images">
+                                    <img v-for="(src, imgIdx) in m.imageDataUrls" :key="`${m.timestamp || 0}_${imgIdx}`" class="pet-chat-image" :src="src" alt="图片消息" />
+                                </div>
+                                <img v-else-if="m.imageDataUrl" class="pet-chat-image" :src="m.imageDataUrl" alt="图片消息" />
+                                <div v-if="m.type === 'pet' && (!(m.message || m.content) || !String(m.message || m.content).trim()) && sessionChatSending && idx === (sessionChatMessages.length - 1)" class="pet-chat-typing" aria-label="生成中">...</div>
+                                <div v-else-if="(m.message || m.content) && String(m.message || m.content).trim() && isSessionChatStreamingMessage(m, idx)" class="pet-chat-content md-preview-body pet-chat-content-streaming" v-html="renderSessionChatStreamingHtml(m.message || m.content)"></div>
+                                <div v-else-if="(m.message || m.content) && String(m.message || m.content).trim()" class="pet-chat-content md-preview-body" v-html="renderSessionChatMarkdown(m.message || m.content)"></div>
+                                <div class="pet-chat-meta">
+                                    <div class="pet-chat-meta-actions">
+                                        <button
+                                            v-if="(m.message || m.content) && String(m.message || m.content).trim()"
+                                            type="button"
+                                            class="pet-chat-meta-btn"
+                                            @click="copySessionChatMessage(m.message || m.content, m, idx)"
+                                            aria-label="复制消息"
+                                            title="复制"
+                                        >{{ sessionChatCopyButtonLabel(m, idx) }}</button>
+                                        <template v-if="Array.isArray(sessionChatWeChatRobots) && sessionChatWeChatRobots.length > 0 && m.type === 'pet' && (m.message || m.content) && String(m.message || m.content).trim()">
+                                            <button
+                                                v-for="(bot, bi) in sessionChatWeChatRobots"
+                                                :key="bot.id || ('wrb_' + bi)"
+                                                type="button"
+                                                class="pet-chat-meta-btn"
+                                                :title="'发送到：' + (bot.name || '机器人')"
+                                                :aria-label="'发送到机器人：' + (bot.name || '机器人')"
+                                                @click="sendSessionChatMessageToRobot(bot, m, idx)"
+                                            >{{ bot.name || '机器人' }}</button>
+                                        </template>
+                                        <button
+                                            v-if="m.type !== 'pet'"
+                                            type="button"
+                                            class="pet-chat-meta-btn"
+                                            :disabled="sessionChatSending"
+                                            @click="editSessionChatMessageAt(idx)"
+                                            aria-label="编辑消息"
+                                            title="编辑"
+                                        >✏️</button>
+                                        <button
+                                            v-if="m.type !== 'pet'"
+                                            type="button"
+                                            class="pet-chat-meta-btn"
+                                            :disabled="sessionChatSending"
+                                            @click="resendSessionChatMessageAt(idx)"
+                                            aria-label="重新发送"
+                                            title="重新发送"
+                                        >📨</button>
+                                        <button
+                                            type="button"
+                                            class="pet-chat-meta-btn"
+                                            @click="moveSessionChatMessageUp(idx)"
+                                            aria-label="上移消息"
+                                            title="上移"
+                                        >⬆️</button>
+                                        <button
+                                            type="button"
+                                            class="pet-chat-meta-btn"
+                                            @click="moveSessionChatMessageDown(idx)"
+                                            aria-label="下移消息"
+                                            title="下移"
+                                        >⬇️</button>
+                                        <button
+                                            v-if="m.type === 'pet' && canRegenerateSessionChatMessage(idx)"
+                                            type="button"
+                                            class="pet-chat-meta-btn"
+                                            :disabled="sessionChatSending || isSessionChatRegenerating(m, idx)"
+                                            @click="regenerateSessionChatMessageAt(idx)"
+                                            aria-label="重新生成回复"
+                                            title="重新生成"
+                                        >{{ sessionChatRegenerateButtonLabel(m, idx) }}</button>
+                                        <button
+                                            type="button"
+                                            class="pet-chat-meta-btn"
+                                            :disabled="sessionChatSending"
+                                            @click="deleteSessionChatMessageAt(idx)"
+                                            aria-label="删除消息"
+                                            title="删除"
+                                        >🗑️</button>
+                                    </div>
+                                    <time class="pet-chat-time" :datetime="m.timestamp">{{ formatTime(m.timestamp) }}</time>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="aicr-session-chat-input-container">
-                        <div class="aicr-session-chat-toolbar">
-                            <div class="aicr-session-chat-btn-group">
-                                <button type="button" class="aicr-session-chat-btn aicr-session-chat-icon-btn" title="提及" aria-label="提及">
-                                    @
-                                </button>
-                                <button type="button" class="aicr-session-chat-btn aicr-session-chat-text-btn" @click="openSessionChatContextEditor" title="页面上下文" aria-label="页面上下文">
-                                    📝 页面上下文
-                                </button>
-                                <button type="button" class="aicr-session-chat-btn aicr-session-chat-text-btn" title="常见问题" aria-label="常见问题" @click="openSessionChatFaq">
-                                    💡 常见问题
-                                </button>
-                                <button type="button" class="aicr-session-chat-btn aicr-session-chat-icon-btn" title="AI 设置" aria-label="AI 设置" @click="openSessionChatSettings">
-                                    ⚙️
-                                </button>
+                    <div class="pet-chat-input-container chat-input-container">
+                        <div class="pet-chat-toolbar chat-input-toolbar">
+                            <div class="pet-chat-toolbar-left chat-input-btn-group">
+                                <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionChatContextEditor" title="页面上下文" aria-label="页面上下文">📝 页面上下文</button>
+                                <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionChatFaq" title="常见问题" aria-label="常见问题">💡 常见问题</button>
+                                <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionChatWeChatSettings" title="微信机器人设置" aria-label="微信机器人设置">🤖 微信机器人</button>
+                                <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionChatImagePicker" title="上传图片" aria-label="上传图片">🖼️ 图片</button>
+                                <input id="session-chat-image-input" type="file" accept="image/*" multiple style="display:none" @change="onSessionChatImageInputChange" />
                             </div>
-
-                            <div class="aicr-session-chat-btn-group">
+                            <div class="pet-chat-toolbar-right chat-input-btn-group">
+                                <div class="context-switch-container" :class="{ active: sessionChatIncludePageContext }" title="开启/关闭页面上下文">
+                                    <span class="context-switch-label">页面上下文</span>
+                                    <label class="context-switch-wrapper" for="session-chat-context-switch">
+                                        <div class="context-switch-thumb"></div>
+                                    </label>
+                                    <input
+                                        id="session-chat-context-switch"
+                                        class="context-switch-input"
+                                        type="checkbox"
+                                        :checked="sessionChatIncludePageContext"
+                                        @change="sessionChatIncludePageContext = $event.target.checked"
+                                        aria-label="页面上下文开关"
+                                    />
+                                </div>
                                 <button
                                     type="button"
-                                    class="aicr-session-chat-btn aicr-session-chat-context-switch"
-                                    :class="{ active: sessionChatIncludePageContext }"
-                                    @click="sessionChatIncludePageContext = !sessionChatIncludePageContext"
-                                    title="上下文开关"
-                                    aria-label="上下文开关"
-                                >
-                                    {{ sessionChatIncludePageContext ? '上下文: 开' : '上下文: 关' }}
-                                </button>
-                                <button type="button" class="aicr-session-chat-btn aicr-session-chat-status-btn" disabled title="请求状态：空闲" aria-label="请求状态">
-                                    ⏹️
-                                </button>
-                                <button type="button" class="aicr-session-chat-btn aicr-session-chat-clear-btn" title="清除输入" aria-label="清除输入" @click="sessionChatInputText = ''">
-                                    🧹 清除输入
-                                </button>
+                                    class="chat-input-status-btn"
+                                    :class="{ active: sessionChatSending }"
+                                    :disabled="!sessionChatSending"
+                                    @click="abortSessionChatRequest"
+                                    :title="sessionChatSending ? '请求状态：生成中（点击停止）' : '请求状态：空闲'"
+                                    aria-label="请求状态"
+                                >{{ sessionChatSending ? '⏸️' : '⏹️' }}</button>
                             </div>
                         </div>
 
-                        <div class="aicr-session-chat-input-wrapper">
+                        <div class="chat-input-wrapper">
+                            <div v-if="Array.isArray(sessionChatDraftImages) && sessionChatDraftImages.length > 0" class="pet-chat-draft-images" aria-label="待发送图片">
+                                <div v-for="(src, imgIdx) in sessionChatDraftImages" :key="`draft_${imgIdx}`" class="pet-chat-draft-image">
+                                    <img class="pet-chat-draft-image-preview" :src="src" alt="待发送图片" />
+                                    <button type="button" class="pet-chat-draft-image-remove" @click="removeSessionChatDraftImage(imgIdx)" aria-label="移除图片" title="移除">✕</button>
+                                </div>
+                                <button type="button" class="pet-chat-draft-images-clear" @click="clearSessionChatDraftImages" aria-label="清空图片" title="清空图片">清空图片</button>
+                            </div>
+
+                            <div class="pet-chat-input-row">
                             <textarea
-                                class="aicr-session-chat-textarea"
+                                    id="session-chat-input"
+                                    class="pet-chat-textarea chat-message-input"
                                 :value="sessionChatInputText"
-                                @input="sessionChatInputText = $event.target.value"
+                                    @input="onSessionChatInput"
                                 @keydown="onSessionChatKeydown"
+                                    @compositionstart="onSessionChatCompositionStart"
+                                    @compositionupdate="onSessionChatCompositionUpdate"
+                                    @compositionend="onSessionChatCompositionEnd"
+                                    @paste="onSessionChatPaste"
                                 placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
                                 rows="2"
                                 aria-label="会话输入框"
                             ></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -110,8 +209,166 @@
         </div>
 
         <div v-else>
-            <!-- 评论列表 -->
-            <div v-if="renderComments && renderComments.length > 0" class="comment-list" role="list">
+            <!-- 会话模式下的评论列表（以会话消息格式显示，包含完整的聊天功能） -->
+            <div v-if="isSessionChatMode" class="aicr-session-chat-body comment-chat-mode">
+                <!-- 评论消息列表 -->
+                <div v-if="commentsAsSessionMessages && commentsAsSessionMessages.length > 0" class="aicr-session-chat-messages comment-list-as-messages" role="log" aria-live="polite">
+                    <div 
+                        v-for="(m, idx) in commentsAsSessionMessages" 
+                        :key="`comment_${m._commentKey || m.key}_${idx}`"
+                        class="pet-chat-message"
+                        :class="{
+                            'is-pet': m.type === 'pet',
+                            'is-user': m.type !== 'pet',
+                            'is-comment': m._isComment,
+                            'is-error': !!m.error,
+                            'is-aborted': !!m.aborted,
+                            'is-streaming': isSessionChatStreamingMessage(m, idx)
+                        }"
+                        :data-chat-idx="idx"
+                        :data-chat-timestamp="m.timestamp || 0"
+                        :data-chat-type="m.type === 'pet' ? 'pet' : 'user'"
+                    >
+                        <div class="pet-chat-bubble">
+                            <div v-if="Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0" class="pet-chat-images">
+                                <img v-for="(src, imgIdx) in m.imageDataUrls" :key="`${m.timestamp || 0}_${imgIdx}`" class="pet-chat-image" :src="src" alt="图片消息" />
+                            </div>
+                            <img v-else-if="m.imageDataUrl" class="pet-chat-image" :src="m.imageDataUrl" alt="图片消息" />
+                            <div v-if="m.type === 'pet' && (!(m.message || m.content) || !String(m.message || m.content).trim()) && sessionChatSending && idx === (commentsAsSessionMessages.length - 1)" class="pet-chat-typing" aria-label="生成中">...</div>
+                            <div v-else-if="(m.message || m.content) && String(m.message || m.content).trim() && isSessionChatStreamingMessage(m, idx)" class="pet-chat-content md-preview-body pet-chat-content-streaming" v-html="renderSessionChatStreamingHtml(m.message || m.content)"></div>
+                            <div v-else-if="(m.message || m.content) && String(m.message || m.content).trim()" class="pet-chat-content md-preview-body" v-html="renderSessionChatMarkdown(m.message || m.content)"></div>
+                            <div class="pet-chat-meta">
+                                <div class="pet-chat-meta-actions">
+                                    <button
+                                        v-if="(m.message || m.content) && String(m.message || m.content).trim()"
+                                        type="button"
+                                        class="pet-chat-meta-btn"
+                                        @click="copyCommentAsMessage(m, idx)"
+                                        aria-label="复制消息"
+                                        title="复制"
+                                    >{{ sessionChatCopyButtonLabel(m, idx) }}</button>
+                                    <template v-if="Array.isArray(sessionChatWeChatRobots) && sessionChatWeChatRobots.length > 0 && m.type === 'pet' && (m.message || m.content) && String(m.message || m.content).trim()">
+                                        <button
+                                            v-for="(bot, bi) in sessionChatWeChatRobots"
+                                            :key="bot.id || ('wrb_' + bi)"
+                                            type="button"
+                                            class="pet-chat-meta-btn"
+                                            :title="'发送到：' + (bot.name || '机器人')"
+                                            :aria-label="'发送到机器人：' + (bot.name || '机器人')"
+                                            @click="sendSessionChatMessageToRobot(bot, m, idx)"
+                                        >{{ bot.name || '机器人' }}</button>
+                                    </template>
+                                    <button
+                                        v-if="m.type !== 'pet' && m._isComment"
+                                        type="button"
+                                        class="pet-chat-meta-btn"
+                                        :disabled="sessionChatSending"
+                                        @click="editCommentAsMessage(m)"
+                                        aria-label="编辑评论"
+                                        title="编辑"
+                                    >✏️</button>
+                                    <button
+                                        v-if="m.type !== 'pet' && m._isComment"
+                                        type="button"
+                                        class="pet-chat-meta-btn"
+                                        :disabled="sessionChatSending"
+                                        @click="deleteCommentAsMessage(m)"
+                                        aria-label="删除评论"
+                                        title="删除"
+                                    >🗑️</button>
+                                    <button
+                                        v-if="m.type === 'pet' && canRegenerateSessionChatMessage(idx)"
+                                        type="button"
+                                        class="pet-chat-meta-btn"
+                                        :disabled="sessionChatSending || isSessionChatRegenerating(m, idx)"
+                                        @click="regenerateSessionChatMessageAt(idx)"
+                                        aria-label="重新生成回复"
+                                        title="重新生成"
+                                    >{{ sessionChatRegenerateButtonLabel(m, idx) }}</button>
+                                </div>
+                                <time class="pet-chat-time" :datetime="m.timestamp">{{ formatTime(m.timestamp) }}</time>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 空状态提示 -->
+                <div v-else class="no-comments-state" role="status">
+                    <div class="no-comments-icon" aria-hidden="true">
+                        <i class="fas fa-comment-slash"></i>
+                    </div>
+                    <div class="no-comments-title">暂无评论</div>
+                    <div class="no-comments-subtitle">开始对话，添加第一条消息</div>
+                </div>
+                
+                <!-- 评论列表的输入框（类似会话聊天） -->
+                <div class="pet-chat-input-container chat-input-container comment-chat-input">
+                    <div class="pet-chat-toolbar chat-input-toolbar">
+                        <div class="pet-chat-toolbar-left chat-input-btn-group">
+                            <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionChatContextEditor" title="页面上下文" aria-label="页面上下文">📝 页面上下文</button>
+                            <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionChatFaq" title="常见问题" aria-label="常见问题">💡 常见问题</button>
+                            <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionChatWeChatSettings" title="微信机器人设置" aria-label="微信机器人设置">🤖 微信机器人</button>
+                            <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openSessionChatImagePicker" title="上传图片" aria-label="上传图片">🖼️ 图片</button>
+                            <input id="comment-chat-image-input" type="file" accept="image/*" multiple style="display:none" @change="onSessionChatImageInputChange" />
+                        </div>
+                        <div class="pet-chat-toolbar-right chat-input-btn-group">
+                            <div class="context-switch-container" :class="{ active: sessionChatIncludePageContext }" title="开启/关闭页面上下文">
+                                <span class="context-switch-label">页面上下文</span>
+                                <label class="context-switch-wrapper" for="comment-chat-context-switch">
+                                    <div class="context-switch-thumb"></div>
+                                </label>
+                                <input
+                                    id="comment-chat-context-switch"
+                                    class="context-switch-input"
+                                    type="checkbox"
+                                    :checked="sessionChatIncludePageContext"
+                                    @change="sessionChatIncludePageContext = $event.target.checked"
+                                    aria-label="页面上下文开关"
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                class="chat-input-status-btn"
+                                :class="{ active: sessionChatSending }"
+                                :disabled="!sessionChatSending"
+                                @click="abortSessionChatRequest"
+                                :title="sessionChatSending ? '请求状态：生成中（点击停止）' : '请求状态：空闲'"
+                                aria-label="请求状态"
+                            >{{ sessionChatSending ? '⏸️' : '⏹️' }}</button>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-wrapper">
+                        <div v-if="Array.isArray(sessionChatDraftImages) && sessionChatDraftImages.length > 0" class="pet-chat-draft-images" aria-label="待发送图片">
+                            <div v-for="(src, imgIdx) in sessionChatDraftImages" :key="`draft_${imgIdx}`" class="pet-chat-draft-image">
+                                <img class="pet-chat-draft-image-preview" :src="src" alt="待发送图片" />
+                                <button type="button" class="pet-chat-draft-image-remove" @click="removeSessionChatDraftImage(imgIdx)" aria-label="移除图片" title="移除">✕</button>
+                            </div>
+                            <button type="button" class="pet-chat-draft-images-clear" @click="clearSessionChatDraftImages" aria-label="清空图片" title="清空图片">清空图片</button>
+                        </div>
+
+                        <div class="pet-chat-input-row">
+                            <textarea
+                                id="comment-chat-input"
+                                class="pet-chat-textarea chat-message-input"
+                                :value="sessionChatInputText"
+                                @input="onSessionChatInput"
+                                @keydown="onSessionChatKeydown"
+                                @compositionstart="onSessionChatCompositionStart"
+                                @compositionupdate="onSessionChatCompositionUpdate"
+                                @compositionend="onSessionChatCompositionEnd"
+                                @paste="onSessionChatPaste"
+                                placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
+                                rows="2"
+                                aria-label="评论聊天输入框"
+                            ></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 传统评论列表（非会话模式） -->
+            <div v-else-if="!isSessionChatMode && renderComments && renderComments.length > 0" class="comment-list" role="list">
                 <!-- 调试信息 -->
                 <div v-if="false" class="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 12px;">
                     <p>调试信息:</p>
@@ -158,12 +415,26 @@
 
                     <!-- 评论内容 -->
                     <div class="comment-body">
+                        <!-- 图片消息（类似会话聊天） -->
+                        <div v-if="Array.isArray(comment.imageDataUrls) && comment.imageDataUrls.length > 0" class="pet-chat-images comment-images">
+                            <img v-for="(src, imgIdx) in comment.imageDataUrls" :key="`${comment.key}_img_${imgIdx}`" class="pet-chat-image" :src="src" alt="评论图片" />
+                        </div>
+                        <img v-else-if="comment.imageDataUrl" class="pet-chat-image comment-image" :src="comment.imageDataUrl" alt="评论图片" />
+                        
                         <div v-if="comment.text" class="comment-quote">
                             <div class="quote-header">
                                 <i class="fas fa-quote-left"></i>
                                 <span>引用代码</span>
                             </div>
-                            <pre class="quote-code">{{ comment.text }}</pre>
+                            <pre 
+                                class="quote-code"
+                                role="button"
+                                tabindex="0"
+                                title="打开并定位到引用位置"
+                                @click="openFileAtAnchor(comment)"
+                                @keydown.enter="openFileAtAnchor(comment)"
+                                @keydown.space.prevent="openFileAtAnchor(comment)"
+                            >{{ comment.text }}</pre>
                         </div>
                         <!-- 评论内容展示 -->
                         <div class="comment-content md-preview-body" v-html="renderMarkdown(comment.content)"></div>
@@ -177,53 +448,89 @@
                             <pre class="improvement-code">{{ comment.improvementText }}</pre>
                         </div>
                         
-                        <!-- 评论操作 -->
-                        <div class="comment-actions">
+                        <!-- 评论操作（类似会话聊天的操作按钮） -->
+                        <div class="comment-actions comment-chat-actions">
+                            <!-- 复制消息按钮 -->
+                            <button 
+                                type="button"
+                                @click="copyCommentContent(comment)"
+                                class="pet-chat-meta-btn comment-action-btn"
+                                title="复制内容"
+                                aria-label="复制内容"
+                            >
+                                {{ getCommentCopyButtonLabel(comment) }}
+                            </button>
+                            
+                            <!-- 发送到机器人按钮 -->
+                            <template v-if="Array.isArray(sessionChatWeChatRobots) && sessionChatWeChatRobots.length > 0 && comment.author !== '手动评论'">
+                                <button
+                                    v-for="(bot, bi) in sessionChatWeChatRobots"
+                                    :key="bot.id || ('wrb_' + bi)"
+                                    type="button"
+                                    class="pet-chat-meta-btn comment-action-btn"
+                                    :title="'发送到：' + (bot.name || '机器人')"
+                                    :aria-label="'发送到机器人：' + (bot.name || '机器人')"
+                                    @click="sendCommentToRobot(bot, comment)"
+                                >{{ bot.name || '机器人' }}</button>
+                            </template>
+                            
+                            <!-- 回复按钮 -->
+                            <button 
+                                type="button"
+                                @click="replyToComment(comment)"
+                                class="pet-chat-meta-btn comment-action-btn"
+                                title="回复评论"
+                                aria-label="回复评论"
+                            >
+                                💬 回复
+                            </button>
+                            
+                            <!-- 编辑按钮 -->
+                            <button 
+                                type="button"
+                                v-if="comment.author === '手动评论'"
+                                @click="openCommentEditor(comment)"
+                                class="pet-chat-meta-btn comment-action-btn"
+                                title="编辑评论"
+                                aria-label="编辑评论"
+                            >
+                                ✏️ 编辑
+                            </button>
+                            
+                            <!-- 状态切换按钮 -->
                             <button 
                                 type="button"
                                 v-if="comment.status === 'pending'"
                                 @click="resolveComment(comment.key)"
-                                class="action-button resolve-button"
+                                class="pet-chat-meta-btn comment-action-btn action-resolve"
                                 title="标记为已解决"
+                                aria-label="标记为已解决"
                             >
-                                <i class="fas fa-check"></i>
-                                解决
+                                ✓ 解决
                             </button>
                             
                             <button 
                                 type="button"
                                 v-if="comment.status === 'resolved'"
                                 @click="reopenComment(comment.key)"
-                                class="action-button reopen-button"
+                                class="pet-chat-meta-btn comment-action-btn action-reopen"
                                 title="重新打开"
+                                aria-label="重新打开"
                             >
-                                <i class="fas fa-undo"></i>
-                                重开
+                                ↺ 重开
                             </button>
                             
-                            <button 
-                                type="button"
-                                v-if="comment.author === '手动评论'"
-                                @click="openCommentEditor(comment)"
-                                class="action-button resolve-button"
-                                title="编辑评论"
-                            >
-                                <i class="fas fa-edit"></i>
-                                编辑
-                            </button>
-                            
+                            <!-- 删除按钮 -->
                             <button 
                                 type="button"
                                 @click="deleteComment(comment.key)"
-                                class="action-button resolve-button"
+                                class="pet-chat-meta-btn comment-action-btn action-delete"
                                 :class="{ 'deleting': deletingComments[comment.key] }"
                                 :disabled="deletingComments[comment.key]"
                                 title="删除评论"
                                 :aria-label="`删除评论 ${comment.author}`"
                             >
-                                <i class="fas" :class="deletingComments[comment.key] ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
-                                <span v-if="!deletingComments[comment.key]">删除</span>
-                                <span v-else>删除中...</span>
+                                🗑️ {{ deletingComments[comment.key] ? '删除中...' : '删除' }}
                             </button>
                         </div>
                     </div>
@@ -253,41 +560,288 @@
                 <div class="no-comments-title">暂无评论</div>
                 <div class="no-comments-subtitle">开始代码评审，添加第一个评论</div>
             </div>
+            
+            <!-- 传统评论列表的聊天输入框（类似会话聊天） -->
+            <div v-if="!isSessionChatMode && file" class="comment-chat-input-container">
+                <div class="pet-chat-input-container chat-input-container">
+                    <div class="pet-chat-toolbar chat-input-toolbar">
+                        <div class="pet-chat-toolbar-left chat-input-btn-group">
+                            <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openCommentChatContextEditor" title="评论上下文" aria-label="评论上下文">📝 评论上下文</button>
+                            <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openCommentChatFaq" title="常见问题" aria-label="常见问题">💡 常见问题</button>
+                            <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openCommentChatWeChatSettings" title="微信机器人设置" aria-label="微信机器人设置">🤖 微信机器人</button>
+                            <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn" @click="openCommentChatImagePicker" title="上传图片" aria-label="上传图片">🖼️ 图片</button>
+                            <input id="traditional-comment-image-input" type="file" accept="image/*" multiple style="display:none" @change="onCommentChatImageInputChange" />
+                        </div>
+                        <div class="pet-chat-toolbar-right chat-input-btn-group">
+                            <div class="context-switch-container" :class="{ active: commentChatIncludeContext }" title="开启/关闭评论上下文">
+                                <span class="context-switch-label">评论上下文</span>
+                                <label class="context-switch-wrapper" for="comment-chat-context-switch">
+                                    <div class="context-switch-thumb"></div>
+                                </label>
+                                <input
+                                    id="comment-chat-context-switch"
+                                    class="context-switch-input"
+                                    type="checkbox"
+                                    :checked="commentChatIncludeContext"
+                                    @change="commentChatIncludeContext = $event.target.checked"
+                                    aria-label="评论上下文开关"
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                class="chat-input-status-btn"
+                                :class="{ active: commentChatSending }"
+                                :disabled="!commentChatSending"
+                                @click="abortCommentChatRequest"
+                                :title="commentChatSending ? '请求状态：生成中（点击停止）' : '请求状态：空闲'"
+                                aria-label="请求状态"
+                            >{{ commentChatSending ? '⏸️' : '⏹️' }}</button>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-wrapper">
+                        <div v-if="Array.isArray(commentChatDraftImages) && commentChatDraftImages.length > 0" class="pet-chat-draft-images" aria-label="待发送图片">
+                            <div v-for="(src, imgIdx) in commentChatDraftImages" :key="`draft_${imgIdx}`" class="pet-chat-draft-image">
+                                <img class="pet-chat-draft-image-preview" :src="src" alt="待发送图片" />
+                                <button type="button" class="pet-chat-draft-image-remove" @click="removeCommentChatDraftImage(imgIdx)" aria-label="移除图片" title="移除">✕</button>
+                            </div>
+                            <button type="button" class="pet-chat-draft-images-clear" @click="clearCommentChatDraftImages" aria-label="清空图片" title="清空图片">清空图片</button>
+                        </div>
+
+                        <div class="pet-chat-input-row">
+                            <textarea
+                                id="traditional-comment-chat-input"
+                                class="pet-chat-textarea chat-message-input"
+                                :value="commentChatInputText"
+                                @input="onCommentChatInput"
+                                @keydown="onCommentChatKeydown"
+                                @compositionstart="onCommentChatCompositionStart"
+                                @compositionupdate="onCommentChatCompositionUpdate"
+                                @compositionend="onCommentChatCompositionEnd"
+                                @paste="onCommentChatPaste"
+                                placeholder="输入评论... (Enter 发送, Shift+Enter 换行)"
+                                rows="2"
+                                aria-label="评论聊天输入框"
+                            ></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 传统评论列表的上下文编辑器 -->
+    <div v-if="commentChatContextEditorVisible" class="aicr-session-context-modal" role="dialog" aria-modal="true" aria-label="评论上下文编辑器">
+        <div class="aicr-session-context-modal-mask" @click="closeCommentChatContextEditor"></div>
+        <div class="aicr-session-context-modal-body">
+            <div class="aicr-session-context-modal-header">
+                <div class="aicr-session-context-modal-title">
+                    评论上下文
+                    <span class="aicr-session-context-modal-subtitle">（Markdown）</span>
+                </div>
+                <div class="aicr-session-context-modal-header-right">
+                    <div class="aicr-session-context-mode-group" role="tablist" aria-label="上下文视图切换">
+                        <button
+                            type="button"
+                            class="aicr-session-context-mode-btn"
+                            :class="{ active: commentChatContextEditMode === 'split' }"
+                            @click="commentChatContextEditMode = 'split'"
+                            role="tab"
+                            aria-label="并排"
+                        >并排</button>
+                        <button
+                            type="button"
+                            class="aicr-session-context-mode-btn"
+                            :class="{ active: commentChatContextEditMode === 'edit' }"
+                            @click="commentChatContextEditMode = 'edit'"
+                            role="tab"
+                            aria-label="仅编辑"
+                        >仅编辑</button>
+                        <button
+                            type="button"
+                            class="aicr-session-context-mode-btn"
+                            :class="{ active: commentChatContextEditMode === 'preview' }"
+                            @click="commentChatContextEditMode = 'preview'"
+                            role="tab"
+                            aria-label="仅预览"
+                        >仅预览</button>
+                    </div>
+                    <button type="button" class="aicr-session-context-toolbar-btn" @click="copyCommentChatContext" title="复制内容" aria-label="复制内容">复制</button>
+                    <button type="button" class="aicr-session-context-toolbar-btn primary" @click="saveCommentChatContext" title="保存修改" aria-label="保存修改">保存</button>
+                    <button type="button" class="aicr-session-context-modal-close" @click="closeCommentChatContextEditor" aria-label="关闭">✕</button>
+                </div>
+            </div>
+            <div class="aicr-session-context-modal-content">
+                <div class="aicr-session-context-editor-body" :data-mode="commentChatContextEditMode">
+                    <div v-if="commentChatContextEditMode === 'split'" class="aicr-session-context-split">
+                        <textarea
+                            class="aicr-session-context-textarea"
+                            :value="commentChatEditingContext"
+                            @input="commentChatEditingContext = $event.target.value"
+                            aria-label="评论上下文内容"
+                        ></textarea>
+                        <div
+                            class="aicr-session-context-preview md-preview-body"
+                            v-html="renderMarkdown(commentChatEditingContext)"
+                            aria-label="评论上下文预览"
+                        ></div>
+                    </div>
+                    <textarea
+                        v-else-if="commentChatContextEditMode === 'edit'"
+                        class="aicr-session-context-textarea"
+                        :value="commentChatEditingContext"
+                        @input="commentChatEditingContext = $event.target.value"
+                        aria-label="评论上下文内容"
+                    ></textarea>
+                    <div
+                        v-else
+                        class="aicr-session-context-preview md-preview-body"
+                        v-html="renderMarkdown(commentChatEditingContext)"
+                        aria-label="评论上下文预览"
+                    ></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 传统评论列表的常见问题面板（复用会话聊天的逻辑） -->
+    <div v-if="commentChatFaqVisible" class="aicr-session-context-modal" role="dialog" aria-modal="true" aria-label="常见问题">
+        <div class="aicr-session-context-modal-mask" @click="closeCommentChatFaq"></div>
+        <div class="aicr-session-context-modal-body aicr-session-faq-modal-body">
+            <div class="aicr-session-context-modal-header">
+                <div class="aicr-session-context-modal-title">
+                    💡 常见问题
+                    <span class="aicr-session-context-modal-subtitle">（一键插入评论）</span>
+                </div>
+                <div class="aicr-session-context-modal-header-right">
+                    <button type="button" class="aicr-session-context-modal-close" @click="closeCommentChatFaq" aria-label="关闭">✕</button>
+                </div>
+            </div>
+            <div class="aicr-session-context-modal-content">
+                <div class="aicr-session-faq-empty">常见问题功能即将推出</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 传统评论列表的微信机器人设置 -->
+    <div v-if="commentChatWeChatSettingsVisible" class="aicr-session-context-modal" role="dialog" aria-modal="true" aria-label="微信机器人设置">
+        <div class="aicr-session-context-modal-mask" @click="closeCommentChatWeChatSettings"></div>
+        <div class="aicr-session-context-modal-body aicr-session-settings-modal-body">
+            <div class="aicr-session-context-modal-header">
+                <div class="aicr-session-context-modal-title">
+                    🤖 微信机器人
+                    <span class="aicr-session-context-modal-subtitle">（当前浏览器本地）</span>
+                </div>
+                <div class="aicr-session-context-modal-header-right">
+                    <button type="button" class="aicr-session-context-toolbar-btn primary" @click="saveCommentChatWeChatSettings" aria-label="保存" title="保存">保存</button>
+                    <button type="button" class="aicr-session-context-modal-close" @click="closeCommentChatWeChatSettings" aria-label="关闭">✕</button>
+                </div>
+            </div>
+            <div class="aicr-session-context-modal-content aicr-session-settings-modal-content">
+                <div class="aicr-session-settings-field">
+                    <p>微信机器人设置与会话聊天共享，请在会话视图中配置。</p>
+                    <button type="button" class="aicr-session-context-toolbar-btn" @click="closeCommentChatWeChatSettings" aria-label="关闭">知道了</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 传统评论列表的AI设置 -->
+    <div v-if="commentChatSettingsVisible" class="aicr-session-context-modal" role="dialog" aria-modal="true" aria-label="AI设置">
+        <div class="aicr-session-context-modal-mask" @click="closeCommentChatSettings"></div>
+        <div class="aicr-session-context-modal-body aicr-session-settings-modal-body">
+            <div class="aicr-session-context-modal-header">
+                <div class="aicr-session-context-modal-title">
+                    ⚙️ AI 设置
+                    <span class="aicr-session-context-modal-subtitle">（当前浏览器本地）</span>
+                </div>
+                <div class="aicr-session-context-modal-header-right">
+                    <button type="button" class="aicr-session-context-toolbar-btn primary" @click="saveCommentChatSettings" aria-label="保存" title="保存">保存</button>
+                    <button type="button" class="aicr-session-context-modal-close" @click="closeCommentChatSettings" aria-label="关闭">✕</button>
+                </div>
+            </div>
+            <div class="aicr-session-context-modal-content aicr-session-settings-modal-content">
+                <div class="aicr-session-settings-field">
+                    <p>AI 设置与会话聊天共享，请在会话视图中配置。</p>
+                    <button type="button" class="aicr-session-context-toolbar-btn" @click="closeCommentChatSettings" aria-label="关闭">知道了</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- 会话页面上下文编辑器 -->
-    <div v-if="sessionChatShowContextEditor" class="session-context-modal" @click="closeSessionChatContextEditor">
-        <div class="session-context-modal-content" @click.stop>
-            <div class="session-context-modal-header">
-                <div class="session-context-modal-title">页面上下文</div>
-                <div class="session-context-modal-actions">
-                    <div class="session-context-mode-toggle" role="tablist" aria-label="页面上下文视图切换">
-                        <button type="button" class="session-context-mode-btn" :class="{ active: sessionChatContextEditMode === 'edit' }" @click="toggleSessionChatContextEditMode('edit')" role="tab" :aria-selected="sessionChatContextEditMode === 'edit'">编辑</button>
-                        <button type="button" class="session-context-mode-btn" :class="{ active: sessionChatContextEditMode === 'preview' }" @click="toggleSessionChatContextEditMode('preview')" role="tab" :aria-selected="sessionChatContextEditMode === 'preview'">预览</button>
+    <div v-if="sessionChatContextEditorVisible" class="aicr-session-context-modal" role="dialog" aria-modal="true" aria-label="页面上下文编辑器">
+        <div class="aicr-session-context-modal-mask" @click="closeSessionChatContextEditor"></div>
+        <div class="aicr-session-context-modal-body">
+            <div class="aicr-session-context-modal-header">
+                <div class="aicr-session-context-modal-title">
+                    页面上下文
+                    <span class="aicr-session-context-modal-subtitle">（Markdown）</span>
+                </div>
+                <div class="aicr-session-context-modal-header-right">
+                    <div class="aicr-session-context-mode-group" role="tablist" aria-label="上下文视图切换">
+                        <button
+                            type="button"
+                            class="aicr-session-context-mode-btn"
+                            :class="{ active: sessionChatContextEditMode === 'split' }"
+                            @click="sessionChatContextEditMode = 'split'"
+                            role="tab"
+                            :aria-selected="sessionChatContextEditMode === 'split'"
+                            aria-label="并排"
+                        >并排</button>
+                        <button
+                            type="button"
+                            class="aicr-session-context-mode-btn"
+                            :class="{ active: sessionChatContextEditMode === 'edit' }"
+                            @click="sessionChatContextEditMode = 'edit'"
+                            role="tab"
+                            :aria-selected="sessionChatContextEditMode === 'edit'"
+                            aria-label="仅编辑"
+                        >仅编辑</button>
+                        <button
+                            type="button"
+                            class="aicr-session-context-mode-btn"
+                            :class="{ active: sessionChatContextEditMode === 'preview' }"
+                            @click="sessionChatContextEditMode = 'preview'"
+                            role="tab"
+                            :aria-selected="sessionChatContextEditMode === 'preview'"
+                            aria-label="仅预览"
+                        >仅预览</button>
                     </div>
-                    <button type="button" class="session-context-close-btn" @click="closeSessionChatContextEditor" aria-label="关闭" title="关闭">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <button type="button" class="aicr-session-context-toolbar-btn" @click="copySessionChatContextDraft" title="复制内容" aria-label="复制内容">复制</button>
+                    <button type="button" class="aicr-session-context-toolbar-btn primary" @click="saveSessionChatPageContext" title="保存修改" aria-label="保存修改">保存</button>
+                    <button type="button" class="aicr-session-context-modal-close" @click="closeSessionChatContextEditor" aria-label="关闭">✕</button>
                 </div>
             </div>
-            <div class="session-context-modal-body">
+            <div class="aicr-session-context-modal-content">
+                <div class="aicr-session-context-editor-body" :data-mode="sessionChatContextEditMode">
+                    <div v-if="sessionChatContextEditMode === 'split'" class="aicr-session-context-split">
+                        <textarea
+                            class="aicr-session-context-textarea"
+                            :value="sessionChatEditingPageContent"
+                            @input="sessionChatEditingPageContent = $event.target.value"
+                            aria-label="页面上下文内容"
+                        ></textarea>
+                        <div
+                            class="aicr-session-context-preview md-preview-body"
+                            v-html="renderSessionChatMarkdown(sessionChatEditingPageContent)"
+                            aria-label="页面上下文预览"
+                        ></div>
+                    </div>
                 <textarea
-                    v-if="sessionChatContextEditMode === 'edit'"
-                    class="session-context-textarea"
-                    v-model="sessionChatEditingPageContent"
-                    rows="14"
-                    aria-label="页面上下文编辑框"
+                        v-else-if="sessionChatContextEditMode === 'edit'"
+                        class="aicr-session-context-textarea"
+                        :value="sessionChatEditingPageContent"
+                        @input="sessionChatEditingPageContent = $event.target.value"
+                        aria-label="页面上下文内容"
                 ></textarea>
-                <div v-else class="session-context-preview md-preview-body" v-html="renderMarkdown(sessionChatEditingPageContent)"></div>
+                    <div
+                        v-else
+                        class="aicr-session-context-preview md-preview-body"
+                        v-html="renderSessionChatMarkdown(sessionChatEditingPageContent)"
+                        aria-label="页面上下文预览"
+                    ></div>
             </div>
-            <div class="session-context-modal-footer">
-                <button type="button" class="session-context-save-btn" :disabled="sessionChatSavingContext" @click="saveSessionChatPageContext" aria-label="保存">
-                    保存
-                </button>
-                <button type="button" class="session-context-cancel-btn" @click="closeSessionChatContextEditor" aria-label="取消">
-                    取消
-                </button>
             </div>
         </div>
     </div>
@@ -428,3 +982,4 @@
         </div>
     </div>
 </aside>
+

@@ -105,6 +105,9 @@ const { computed } = Vue;
                 // 会话批量选择相关状态
                 sessionBatchMode: store.sessionBatchMode,
                 selectedSessionKeys: store.selectedSessionKeys,
+                // 微信机器人相关状态
+                weChatRobots: store.weChatRobots,
+                sessionChatDraftImages: store.sessionChatDraftImages,
             },
             onMounted: (mountedApp) => {
                 logInfo('[代码审查页面] 应用已挂载');
@@ -343,9 +346,27 @@ const { computed } = Vue;
                     }
                 });
                 
+                // 切换文件时清空代码高亮
+                Vue.watch(() => store.selectedKey?.value, (newKey, oldKey) => {
+                    try {
+                        if (newKey !== oldKey) {
+                            logInfo('[代码审查页面] 文件已切换，清空代码高亮');
+                            window.dispatchEvent(new CustomEvent('clearCodeHighlight'));
+                            // 清除挂起的高亮/评论定位参数，避免误用到新文件
+                            window.__aicrPendingHighlightRangeInfo = null;
+                            window.__aicrPendingCommentKey = null;
+                        }
+                    } catch (e) {
+                        logWarn('[代码审查页面] 清空高亮时出现异常', e?.message || e);
+                    }
+                });
+                
                 // 监听评论区的代码高亮事件
                 window.addEventListener('highlightCodeLines', (e) => {
-                    const { fileKey, rangeInfo, comment } = e.detail;
+                    const detail = e && e.detail ? e.detail : {};
+                    if (detail.__aicrForwarded === true) return;
+                    
+                    const { fileKey, rangeInfo, comment } = detail;
                     logInfo('[代码审查页面] 收到代码高亮事件:', { fileKey, rangeInfo, comment });
                     
                     const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
@@ -379,16 +400,9 @@ const { computed } = Vue;
                         const delay = needSwitchFile ? 500 : 100;
                         setTimeout(() => {
                             window.dispatchEvent(new CustomEvent('highlightCodeLines', { 
-                                detail: { rangeInfo, comment } 
+                                detail: { fileKey: resolvedTreeKey, rangeInfo, comment, __aicrForwarded: true } 
                             }));
                         }, delay);
-                    } else {
-                        // 如果没有文件Key，直接发送事件（可能是当前文件）
-                        setTimeout(() => {
-                            window.dispatchEvent(new CustomEvent('highlightCodeLines', { 
-                                detail: { rangeInfo, comment } 
-                            }));
-                        }, 100);
                     }
                 });
             },
@@ -1035,6 +1049,213 @@ const { computed } = Vue;
                     }
                 },
                 
+                // 会话消息相关方法
+                sessionChatMessages: function(session) {
+                    const methods = useMethods(store);
+                    return methods.sessionChatMessages(session);
+                },
+                
+                isSessionChatStreamingMessage: function(m, idx) {
+                    const methods = useMethods(store);
+                    return methods.isSessionChatStreamingMessage(m, idx);
+                },
+                
+                canRegenerateSessionChatMessage: function(session, idx) {
+                    const methods = useMethods(store);
+                    return methods.canRegenerateSessionChatMessage(session, idx);
+                },
+                
+                copySessionChatMessage: async function(text, m, idx) {
+                    const methods = useMethods(store);
+                    await methods.copySessionChatMessage(text, m, idx);
+                },
+                
+                sessionChatCopyButtonLabel: function(m, idx) {
+                    const methods = useMethods(store);
+                    return methods.sessionChatCopyButtonLabel(m, idx);
+                },
+                
+                sessionChatRegenerateButtonLabel: function(m, idx) {
+                    const methods = useMethods(store);
+                    return methods.sessionChatRegenerateButtonLabel(m, idx);
+                },
+                
+                isSessionChatRegenerating: function(m, idx) {
+                    const methods = useMethods(store);
+                    return methods.isSessionChatRegenerating(m, idx);
+                },
+                
+                editSessionChatMessageAt: async function(idx) {
+                    const methods = useMethods(store);
+                    await methods.editSessionChatMessageAt(idx);
+                },
+                
+                resendSessionChatMessageAt: async function(idx) {
+                    const methods = useMethods(store);
+                    await methods.resendSessionChatMessageAt(idx);
+                },
+                
+                regenerateSessionChatMessageAt: async function(idx) {
+                    const methods = useMethods(store);
+                    await methods.regenerateSessionChatMessageAt(idx);
+                },
+                
+                deleteSessionChatMessageAt: async function(idx) {
+                    const methods = useMethods(store);
+                    await methods.deleteSessionChatMessageAt(idx);
+                },
+                
+                moveSessionChatMessageUp: async function(idx) {
+                    const methods = useMethods(store);
+                    await methods.moveSessionChatMessageUp(idx);
+                },
+                
+                moveSessionChatMessageDown: async function(idx) {
+                    const methods = useMethods(store);
+                    await methods.moveSessionChatMessageDown(idx);
+                },
+                
+                sendSessionChatMessageToRobot: async function(bot, m, idx) {
+                    const methods = useMethods(store);
+                    await methods.sendSessionChatMessageToRobot(bot, m, idx);
+                },
+                
+                renderSessionChatMarkdown: function(text) {
+                    const methods = useMethods(store);
+                    return methods.renderSessionChatMarkdown(text);
+                },
+                
+                renderSessionChatStreamingHtml: function(text) {
+                    const methods = useMethods(store);
+                    return methods.renderSessionChatStreamingHtml(text);
+                },
+                
+                // 会话上下文和设置相关方法
+                openSessionContextEditor: function() {
+                    const methods = useMethods(store);
+                    methods.openSessionContextEditor();
+                },
+                
+                closeSessionContextEditor: function() {
+                    const methods = useMethods(store);
+                    methods.closeSessionContextEditor();
+                },
+                
+                setSessionContextEnabled: function(enabled) {
+                    const methods = useMethods(store);
+                    methods.setSessionContextEnabled(enabled);
+                },
+                
+                openSessionFaq: function() {
+                    const methods = useMethods(store);
+                    methods.openSessionFaq();
+                },
+                
+                closeSessionFaq: function() {
+                    const methods = useMethods(store);
+                    methods.closeSessionFaq();
+                },
+                
+                openWeChatSettings: function() {
+                    const methods = useMethods(store);
+                    methods.openWeChatSettings();
+                },
+                
+                closeWeChatSettings: function() {
+                    const methods = useMethods(store);
+                    methods.closeWeChatSettings();
+                },
+                
+                abortSessionChatRequest: function() {
+                    const methods = useMethods(store);
+                    methods.abortSessionChatRequest();
+                },
+                
+                onSessionChatInput: function(e) {
+                    const methods = useMethods(store);
+                    methods.onSessionChatInput(e);
+                },
+                
+                onSessionChatKeydown: function(e) {
+                    const methods = useMethods(store);
+                    methods.onSessionChatKeydown(e);
+                },
+                
+                onSessionChatCompositionStart: function() {
+                    const methods = useMethods(store);
+                    methods.onSessionChatCompositionStart();
+                },
+                
+                onSessionChatCompositionUpdate: function() {
+                    const methods = useMethods(store);
+                    methods.onSessionChatCompositionUpdate();
+                },
+                
+                onSessionChatCompositionEnd: function() {
+                    const methods = useMethods(store);
+                    methods.onSessionChatCompositionEnd();
+                },
+                
+                onSessionChatPaste: function(e) {
+                    const methods = useMethods(store);
+                    methods.onSessionChatPaste(e);
+                },
+                
+                onSessionChatImageInputChange: function(e) {
+                    const methods = useMethods(store);
+                    methods.onSessionChatImageInputChange(e);
+                },
+                
+                openSessionChatImagePicker: function() {
+                    const methods = useMethods(store);
+                    methods.openSessionChatImagePicker();
+                },
+                
+                removeSessionChatDraftImage: function(idx) {
+                    const methods = useMethods(store);
+                    methods.removeSessionChatDraftImage(idx);
+                },
+                
+                clearSessionChatDraftImages: function() {
+                    const methods = useMethods(store);
+                    methods.clearSessionChatDraftImages();
+                },
+                
+                sendSessionChatMessage: async function() {
+                    const methods = useMethods(store);
+                    await methods.sendSessionChatMessage();
+                },
+                
+                saveSessionContext: async function() {
+                    const methods = useMethods(store);
+                    await methods.saveSessionContext();
+                },
+                
+                setSessionContextMode: function(mode) {
+                    const methods = useMethods(store);
+                    methods.setSessionContextMode(mode);
+                },
+                
+                copySessionContextDraft: async function() {
+                    const methods = useMethods(store);
+                    await methods.copySessionContextDraft();
+                },
+                
+                optimizeSessionContextDraft: async function() {
+                    const methods = useMethods(store);
+                    await methods.optimizeSessionContextDraft();
+                },
+                
+                undoOptimizeSessionContextDraft: function() {
+                    const methods = useMethods(store);
+                    methods.undoOptimizeSessionContextDraft();
+                },
+                
+                setSessionContextDraft: function(value) {
+                    const methods = useMethods(store);
+                    methods.setSessionContextDraft(value);
+                },
+                
                 // 处理会话批量选择
                 handleSessionBatchSelect: function(sessionId) {
                     logInfo('[主页面] 切换会话选择状态:', sessionId);
@@ -1332,4 +1553,3 @@ function createResizer(sidebarElement, store, type, options) {
     
     return resizer;
 }
-

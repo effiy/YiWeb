@@ -1477,6 +1477,138 @@
     margin-top: 4px;
 }
 
+/* 评论聊天操作按钮样式（类似会话聊天） */
+.comment-chat-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: rgba(30, 41, 59, 0.3);
+    border-radius: 6px;
+    border: 1px solid rgba(79, 70, 229, 0.1);
+}
+
+.comment-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 4px;
+    background: rgba(51, 65, 85, 0.4);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.comment-action-btn:hover:not(:disabled) {
+    background: rgba(79, 70, 229, 0.15);
+    border-color: rgba(79, 70, 229, 0.4);
+    color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
+}
+
+.comment-action-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.comment-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.comment-action-btn.action-resolve {
+    color: var(--success, #10b981);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.comment-action-btn.action-resolve:hover:not(:disabled) {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.5);
+    color: var(--success, #10b981);
+}
+
+.comment-action-btn.action-reopen {
+    color: var(--warning, #f59e0b);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.comment-action-btn.action-reopen:hover:not(:disabled) {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.5);
+    color: var(--warning, #f59e0b);
+}
+
+.comment-action-btn.action-delete {
+    color: var(--danger, #ef4444);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.comment-action-btn.action-delete:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: var(--danger, #ef4444);
+}
+
+.comment-action-btn.deleting {
+    opacity: 0.6;
+    cursor: wait;
+    pointer-events: none;
+}
+
+/* 评论图片样式（类似会话聊天） */
+.comment-images,
+.comment-image {
+    margin-bottom: 12px;
+}
+
+/* 传统评论列表的聊天输入容器 */
+.comment-chat-input-container {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(79, 70, 229, 0.1);
+}
+
+.comment-chat-input-container .pet-chat-input-container {
+    background: rgba(30, 41, 59, 0.4);
+    border-radius: 8px;
+    border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+.comment-chat-input-container .pet-chat-toolbar {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(79, 70, 229, 0.1);
+}
+
+.comment-chat-input-container .chat-input-wrapper {
+    padding: 12px;
+}
+
+/* 会话模式下的评论聊天容器 */
+.comment-chat-mode {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.comment-list-as-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    min-height: 300px;
+    max-height: calc(100vh - 350px);
+}
+
+.comment-chat-mode .comment-chat-input {
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
 .action-button {
     background: none;
     border: 1px solid var(--border-primary);

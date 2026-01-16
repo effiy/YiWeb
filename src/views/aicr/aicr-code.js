@@ -261,7 +261,6 @@ async function createApp() {
                 // 使用与主页面相同的MongoDB API
                 const queryParams = {
                     cname: 'comments',
-                    key: targetKey,
                     fileKey: targetKey
                 };
                 if (this.fileInfo.version) {

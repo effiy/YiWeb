@@ -2686,7 +2686,7 @@ export const useMethods = (store) => {
                 // 构建获取评论的URL
                 const queryUrl = buildServiceUrl('query_documents', {
                     cname: 'comments',
-                    ...(targetKey ? { key: targetKey, fileKey: targetKey } : {})
+                    ...(targetKey ? { fileKey: targetKey } : {})
                 });
                 
                 console.log('[加载评论] 调用获取评论接口:', queryUrl);

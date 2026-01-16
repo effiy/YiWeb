@@ -20,12 +20,11 @@ async function fetchCommentsFromMongo(file) {
         if (file) {
             const key = file.sessionKey || (isUUID(file.fileKey) ? file.fileKey : null);
             if (key) {
-                queryParams.key = key;
                 queryParams.fileKey = key;
                 console.log('[CommentPanel] 添加文件Key到参数:', key, '原file对象:', file);
             }
         } else {
-            // 如果没有文件信息，不添加key参数，这样会返回所有评论
+            // 如果没有文件信息，不添加fileKey参数，这样会返回所有评论
             console.log('[CommentPanel] 没有文件信息，将加载所有评论');
         }
         
@@ -106,6 +105,10 @@ const componentOptions = {
             viewMode: {
                 type: String,
                 default: 'tree'
+            },
+            activeSession: {
+                type: Object,
+                default: null
             }
         },
         emits: [
@@ -121,6 +124,7 @@ const componentOptions = {
                 // 评论数据
                 mongoComments: [],
                 fileComments: [],
+                commentsCache: {},
                 
                 // 加载状态
                 commentsLoading: false,
@@ -176,11 +180,44 @@ const componentOptions = {
                 sessionChatError: '',
                 sessionChatInputText: '',
                 sessionChatIncludePageContext: true,
-                sessionChatShowContextEditor: false,
-                sessionChatContextEditMode: 'edit',
+                sessionChatContextEditorVisible: false,
+                sessionChatContextEditMode: 'split',
                 sessionChatEditingPageContent: '',
                 sessionChatSavingContext: false,
-                sessionChatSending: false
+                sessionChatSending: false,
+                sessionChatDraftImages: [],
+                sessionChatAbortController: null,
+                sessionChatStreamingTargetTimestamp: null,
+                sessionChatStreamingType: '',
+                sessionChatCopyFeedback: {},
+                sessionChatRegenerateFeedback: {},
+                sessionChatWeChatRobots: [],
+                sessionChatContextEditorVisible: false,
+                sessionChatFaqVisible: false,
+                sessionChatSettingsVisible: false,
+                sessionChatWeChatSettingsVisible: false,
+                _sessionMarkedConfigured: false,
+                _sessionMarkedRenderer: null,
+                
+                // 传统评论列表的复制反馈状态
+                commentCopyFeedback: {},
+                // 评论回复输入状态
+                commentReplyInputs: {},
+                
+                // 传统评论列表的聊天功能状态
+                commentChatInputText: '',
+                commentChatIncludeContext: true,
+                commentChatSending: false,
+                commentChatDraftImages: [],
+                commentChatAbortController: null,
+                commentChatContextEditorVisible: false,
+                commentChatContextEditMode: 'split',
+                commentChatEditingContext: '',
+                commentChatFaqVisible: false,
+                commentChatWeChatSettingsVisible: false,
+                commentChatSettingsVisible: false,
+                _commentChatIsComposing: false,
+                _commentChatCompositionEndTime: 0
             };
         },
         computed: {
@@ -202,8 +239,11 @@ const componentOptions = {
                 const mongoComments = this.mongoComments && Array.isArray(this.mongoComments) ? this.mongoComments : [];
                 const propsComments = this.comments && Array.isArray(this.comments) ? this.comments : [];
                 
-                // 如果mongoComments有数据，使用mongoComments；否则使用propsComments
-                const commentsToRender = mongoComments.length > 0 ? mongoComments : propsComments;
+                // 优先使用mongoComments（即使为空数组，也优先使用，因为可能刚删除了一条）
+                // 只有当mongoComments从未被初始化过（为undefined或null）时，才使用propsComments
+                const commentsToRender = (this.mongoComments !== undefined && this.mongoComments !== null) 
+                    ? mongoComments 
+                    : (propsComments.length > 0 ? propsComments : mongoComments);
                 
                 console.log('[CommentPanel] renderComments - mongoComments:', mongoComments.length);
                 console.log('[CommentPanel] renderComments - props comments:', propsComments.length);
@@ -231,6 +271,39 @@ const componentOptions = {
                 }
                 
                 return comments;
+            },
+            // 将评论转换为会话消息格式（用于在会话模式下显示）
+            commentsAsSessionMessages() {
+                if (!this.isSessionChatMode) return [];
+                const comments = this.renderComments || [];
+                return comments.map((comment, idx) => {
+                    // 判断评论类型：用户评论或AI回复
+                    const isUserComment = comment.author !== 'AI助手' && comment.author !== 'pet' && !comment.type || comment.type !== 'pet';
+                    const type = isUserComment ? 'user' : 'pet';
+                    
+                    // 构建消息内容
+                    let message = String(comment.content || '').trim();
+                    if (comment.text) {
+                        message = `引用代码：\n\`\`\`\n${comment.text}\n\`\`\`\n\n${message}`;
+                    }
+                    if (comment.improvementText) {
+                        message += `\n\n改进代码：\n\`\`\`\n${comment.improvementText}\n\`\`\``;
+                    }
+                    
+                    return {
+                        ...comment,
+                        type,
+                        message,
+                        content: message,
+                        timestamp: comment.timestamp || comment.createdAt || Date.now(),
+                        // 保留原始评论信息
+                        _isComment: true,
+                        _commentKey: comment.key,
+                        _commentAuthor: comment.author,
+                        _commentStatus: comment.status,
+                        _commentType: comment.type
+                    };
+                }).sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
             }
         },
         methods: {
@@ -274,6 +347,222 @@ const componentOptions = {
                 } catch (_) {}
                 return null;
             },
+            // 转义HTML
+            _escapeHtml(str) {
+                if (typeof str !== 'string') return '';
+                return str
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            },
+
+            // 清理URL
+            _sanitizeUrl(url) {
+                if (typeof url !== 'string') return '';
+                try {
+                    const u = new URL(url);
+                    if (u.protocol === 'http:' || u.protocol === 'https:') return url;
+                    return '';
+                } catch (_) {
+                    return '';
+                }
+            },
+
+            // 渲染会话聊天Markdown
+            renderSessionChatMarkdown(text) {
+                return safeExecute(() => {
+                    const raw = text == null ? '' : String(text);
+                    if (!raw) return '';
+                    if (typeof window.marked === 'undefined') {
+                        return raw
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/\n/g, '<br/>');
+                    }
+                    if (!this._sessionMarkedConfigured) {
+                        try {
+                            const renderer = new window.marked.Renderer();
+                            const originalCodeRenderer = renderer.code.bind(renderer);
+
+                            renderer.html = (html) => {
+                                return this._escapeHtml(html);
+                            };
+
+                            renderer.link = (href, title, text) => {
+                                const safeHref = this._sanitizeUrl(href);
+                                const safeText = this._escapeHtml(text == null ? '' : String(text));
+                                if (!safeHref) return safeText;
+                                const safeTitle = title == null ? '' : String(title);
+                                const titleAttr = safeTitle ? ` title="${this._escapeHtml(safeTitle)}"` : '';
+                                return `<a href="${this._escapeHtml(safeHref)}"${titleAttr} target="_blank" rel="noopener noreferrer">${safeText}</a>`;
+                            };
+
+                            renderer.image = (href, title, text) => {
+                                const safeHref = this._sanitizeUrl(href);
+                                const alt = this._escapeHtml(text == null ? '' : String(text));
+                                if (!safeHref) return alt;
+                                const safeTitle = title == null ? '' : String(title);
+                                const titleAttr = safeTitle ? ` title="${this._escapeHtml(safeTitle)}"` : '';
+                                return `<img src="${this._escapeHtml(safeHref)}" alt="${alt}" loading="lazy"${titleAttr} />`;
+                            };
+
+                            renderer.code = (code, language, isEscaped) => {
+                                const lang = String(language || '').trim().toLowerCase();
+                                const src = String(code || '');
+                                if (lang === 'mermaid') {
+                                    const diagramId = `aicr-chat-mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+                                    const diagramCode = String(src || '').trim();
+                                    if (window.mermaidRenderer && typeof window.mermaidRenderer.createDiagramContainer === 'function' && typeof window.mermaidRenderer.renderDiagram === 'function') {
+                                        const container = window.mermaidRenderer.createDiagramContainer(diagramId, diagramCode, {
+                                            showHeader: false,
+                                            showActions: true,
+                                            headerLabel: 'MERMAID 图表',
+                                            sourceLine: null
+                                        });
+                                        setTimeout(() => {
+                                            try {
+                                                window.mermaidRenderer.renderDiagram(diagramId, diagramCode, { showLoading: false });
+                                            } catch (_) {}
+                                        }, 0);
+                                        return container;
+                                    }
+                                    return `<pre class="md-code"><code class="language-mermaid">${this._escapeHtml(diagramCode)}</code></pre>`;
+                                }
+
+                                if (window.hljs) {
+                                    const desiredLanguage = lang || 'plaintext';
+                                    const validLanguage = window.hljs.getLanguage(desiredLanguage) ? desiredLanguage : 'plaintext';
+                                    try {
+                                        const highlighted = window.hljs.highlight(src, { language: validLanguage }).value;
+                                        return `<pre><code class="hljs language-${validLanguage}">${highlighted}</code></pre>`;
+                                    } catch (_) {}
+                                }
+
+                                return originalCodeRenderer(src, language, isEscaped);
+                            };
+
+                            this._sessionMarkedRenderer = renderer;
+                            this._sessionMarkedConfigured = true;
+                        } catch (_) {
+                            this._sessionMarkedRenderer = null;
+                            this._sessionMarkedConfigured = true;
+                        }
+                    }
+
+                    try {
+                        if (typeof window.marked.parse === 'function') {
+                            return window.marked.parse(raw, {
+                                renderer: this._sessionMarkedRenderer || undefined,
+                                breaks: true,
+                                gfm: true
+                            });
+                        }
+                        return window.marked(raw);
+                    } catch (_) {
+                        return raw
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/\n/g, '<br/>');
+                    }
+                }, '渲染会话聊天Markdown');
+            },
+
+            // 渲染流式HTML
+            renderSessionChatStreamingHtml(text) {
+                return safeExecute(() => {
+                    const raw = text == null ? '' : String(text);
+                    if (!raw) return '';
+                    return this._escapeHtml(raw).replace(/\n/g, '<br/>');
+                }, '渲染流式HTML');
+            },
+
+            // 判断是否为流式消息
+            isSessionChatStreamingMessage(m, idx) {
+                try {
+                    if (!m || !m.type || m.type !== 'pet') return false;
+                    if (this.sessionChatStreamingTargetTimestamp && m.timestamp === this.sessionChatStreamingTargetTimestamp) {
+                        return this.sessionChatSending && String(this.sessionChatStreamingType || '').trim() !== '';
+                    }
+                    return false;
+                } catch (_) {
+                    return false;
+                }
+            },
+
+            // 判断是否正在重新生成
+            isSessionChatRegenerating(m, idx) {
+                try {
+                    if (String(this.sessionChatStreamingType || '') !== 'regenerate') return false;
+                    return this.isSessionChatStreamingMessage(m, idx);
+                } catch (_) {
+                    return false;
+                }
+            },
+
+            // 复制按钮标签
+            sessionChatCopyButtonLabel(m, idx) {
+                try {
+                    const key = this._sessionChatMessageKey(m, idx);
+                    const map = this.sessionChatCopyFeedback || {};
+                    const expiresAt = map[key];
+                    if (typeof expiresAt === 'number' && Date.now() < expiresAt) return '已复制';
+                    return '复制';
+                } catch (_) {
+                    return '复制';
+                }
+            },
+
+            // 重新生成按钮标签
+            sessionChatRegenerateButtonLabel(m, idx) {
+                try {
+                    if (String(this.sessionChatStreamingType || '') === 'regenerate' && this.isSessionChatStreamingMessage(m, idx)) {
+                        return '生成中';
+                    }
+                    const key = this._sessionChatMessageKey(m, idx);
+                    const map = this.sessionChatRegenerateFeedback || {};
+                    const expiresAt = map[key];
+                    if (typeof expiresAt === 'number' && Date.now() < expiresAt) return '已生成';
+                    return '重新生成';
+                } catch (_) {
+                    return '重新生成';
+                }
+            },
+
+            // 获取消息键
+            _sessionChatMessageKey(m, idx) {
+                try {
+                    return `${m.timestamp || 0}_${idx || 0}`;
+                } catch (_) {
+                    return `${Date.now()}_${idx || 0}`;
+                }
+            },
+
+            // 判断是否可以重新生成（保留原实现用于会话消息）
+            _canRegenerateSessionChatMessageForSession(idx) {
+                try {
+                    if (!this.sessionChatSession) return false;
+                    const msgs = Array.isArray(this.sessionChatSession.messages) ? this.sessionChatSession.messages : [];
+                    if (idx < 0 || idx >= msgs.length) return false;
+                    const m = msgs[idx];
+                    if (!m || m.type !== 'pet') return false;
+                    let userIdx = -1;
+                    for (let i = idx - 1; i >= 0; i--) {
+                        const msg = msgs[i];
+                        if (msg && msg.type !== 'pet') {
+                            userIdx = i;
+                            break;
+                        }
+                    }
+                    return userIdx >= 0;
+                } catch (_) {
+                    return false;
+                }
+            },
+
             // 将Markdown渲染为HTML（使用marked.js优化）
             renderMarkdown(text) {
                 return safeExecute(() => {
@@ -409,7 +698,15 @@ const componentOptions = {
             async loadSessionChatSession(force = false) {
                 return safeExecute(async () => {
                     if (!this.isSessionChatMode) return;
-                    const fileKey = this.file?.sessionKey || (this._isUUID(this.file?.fileKey) ? this.file.fileKey : null);
+                    
+                    // 优先使用 activeSession prop，如果没有则从 file prop 获取
+                    let fileKey = null;
+                    if (this.activeSession) {
+                        fileKey = this.activeSession.id || this.activeSession.key;
+                    } else if (this.file) {
+                        fileKey = this.file?.sessionKey || (this._isUUID(this.file?.fileKey) ? this.file.fileKey : null);
+                    }
+                    
                     if (!fileKey) {
                         this.sessionChatSession = null;
                         this.sessionChatError = '';
@@ -444,13 +741,26 @@ const componentOptions = {
             },
 
             openSessionChatContextEditor() {
-                this.sessionChatShowContextEditor = true;
-                this.sessionChatContextEditMode = 'edit';
+                this.sessionChatContextEditorVisible = true;
+                this.sessionChatContextEditMode = 'split';
                 this.sessionChatEditingPageContent = String(this.sessionChatSession?.pageContent || '');
             },
 
             closeSessionChatContextEditor() {
-                this.sessionChatShowContextEditor = false;
+                this.sessionChatContextEditorVisible = false;
+            },
+
+            copySessionChatContextDraft() {
+                return safeExecute(async () => {
+                    try {
+                        const content = String(this.sessionChatEditingPageContent || '').trim();
+                        if (!content) return;
+                        await navigator.clipboard.writeText(content);
+                        if (window.showSuccess) window.showSuccess('已复制');
+                    } catch (e) {
+                        if (window.showError) window.showError('复制失败');
+                    }
+                }, '复制上下文内容');
             },
 
             openSessionChatFaq() {
@@ -474,7 +784,7 @@ const componentOptions = {
                     if (!this.sessionChatSession) return;
                     const content = String(this.sessionChatEditingPageContent ?? '');
                     if (content === String(this.sessionChatSession.pageContent || '')) {
-                        this.sessionChatShowContextEditor = false;
+                        this.sessionChatContextEditorVisible = false;
                         return;
                     }
 
@@ -483,55 +793,226 @@ const componentOptions = {
                     const updated = { ...this.sessionChatSession, pageContent: content, updatedAt: Date.now(), lastAccessTime: Date.now() };
                     await sessionSync.saveSession(updated);
                     this.sessionChatSession = updated;
-                    this.sessionChatShowContextEditor = false;
+                    this.sessionChatContextEditorVisible = false;
+                    this.sessionChatSavingContext = false;
                 }, '保存页面上下文');
             },
 
             async sendSessionChatMessage(payload = {}) {
                 return safeExecute(async () => {
-                    if (!this.sessionChatSession) return;
+                    // 在评论列表模式下，如果没有会话则自动创建一个
+                    if (!this.sessionChatSession) {
+                        // 如果在会话模式下且有file信息，尝试创建或加载会话
+                        if (this.isSessionChatMode && this.file) {
+                            await this.loadSessionChatSession(true);
+                        }
+                        // 如果还是没有会话，则无法发送消息
+                        if (!this.sessionChatSession) {
+                            if (window.showError) window.showError('无法发送消息：未找到或创建会话');
+                            return;
+                        }
+                    }
                     if (this.sessionChatSending) return;
-
                     const rawText = typeof payload.text === 'string' ? payload.text : this.sessionChatInputText;
                     const text = String(rawText || '').trim();
-                    if (!text) return;
+                    const images = Array.isArray(this.sessionChatDraftImages) ? this.sessionChatDraftImages.filter(Boolean).slice(0, 4) : [];
+                    if (!text && images.length === 0) return;
 
                     const now = Date.now();
+                    const sessionSync = getSessionSyncService();
+                    const uploadOne = async (src) => {
+                        const raw = String(src || '').trim();
+                        if (!raw) return '';
+                        if (/^https?:\/\//i.test(raw)) return raw;
+                        if (!raw.startsWith('data:image/')) {
+                            throw new Error('图片格式不支持');
+                        }
+                        return await sessionSync.uploadImageToOss(raw, 'aicr/images');
+                    };
+                    const imageUrls = images.length > 0
+                        ? (await Promise.all(images.map((src) => uploadOne(src)))).filter(Boolean)
+                        : [];
+                    if (images.length > 0 && imageUrls.length === 0) {
+                        throw new Error('上传图片失败');
+                    }
+
                     const userMessage = {
                         type: 'user',
                         message: text,
-                        timestamp: now
+                        timestamp: now,
+                        ...(imageUrls.length > 0 ? { imageDataUrls: imageUrls, imageDataUrl: imageUrls[0] } : {})
                     };
+                    const petMessage = { type: 'pet', message: '', timestamp: now + 1 };
 
-                    this.sessionChatSending = true;
-                    this.sessionChatInputText = '';
-
-                    const sessionSync = getSessionSyncService();
                     const prevSession = this.sessionChatSession;
+                    const prevMessages = Array.isArray(prevSession.messages) ? prevSession.messages : [];
                     const nextSession = {
                         ...prevSession,
-                        messages: [...(Array.isArray(prevSession.messages) ? prevSession.messages : []), userMessage],
+                        messages: [...prevMessages, userMessage, petMessage],
                         updatedAt: now,
                         lastAccessTime: now
                     };
+
                     this.sessionChatSession = nextSession;
-                    this.$nextTick(() => {
+                    this.sessionChatInputText = '';
+                    this.sessionChatDraftImages = [];
+
+                    const shouldAutoScroll = () => {
+                        try {
+                            const el = this.$el && this.$el.querySelector('.aicr-session-chat-messages');
+                            if (!el) return true;
+                            const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
+                            return distance < 140;
+                        } catch (_) {
+                            return true;
+                        }
+                    };
+
+                    const scrollToBottom = () => {
                         try {
                             const el = this.$el && this.$el.querySelector('.aicr-session-chat-messages');
                             if (el) el.scrollTop = el.scrollHeight;
                         } catch (_) {}
-                    });
+                    };
+                    setTimeout(scrollToBottom, 0);
+
+                    const pageContent = String(this.sessionChatEditingPageContent || nextSession.pageContent || '').trim();
+                    const includeContext = this.sessionChatIncludePageContext === true;
+                    const history = this._buildSessionChatHistoryText(prevMessages, prevMessages.length);
+                    const defaultSystemPrompt = '你是一个有用的AI助手。';
+                    const fromSystem = defaultSystemPrompt;
+                    const fromUser = this._buildSessionChatUserPrompt({ text, images: imageUrls, pageContent, includeContext, historyText: history });
+
+                    const { streamPrompt } = await import('/src/services/modules/crud.js');
+                    const { getPromptUrl } = await import('/src/services/helper/requestHelper.js');
+                    const promptUrl = getPromptUrl();
+
+                    let accumulated = '';
+                    this.sessionChatStreamingTargetTimestamp = petMessage.timestamp;
+                    this.sessionChatStreamingType = 'send';
+                    this.sessionChatSending = true;
+                    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                    this.sessionChatAbortController = controller;
+                    let streamErrorMessage = '';
+                    let streamAborted = false;
 
                     try {
-                        await sessionSync.saveSession(nextSession);
+                        await streamPrompt(
+                            promptUrl,
+                            {
+                                module_name: 'services.ai.chat_service',
+                                method_name: 'chat',
+                                parameters: {
+                                    system: fromSystem,
+                                    user: fromUser,
+                                    stream: true,
+                                    ...(imageUrls.length > 0 ? { images: imageUrls } : {})
+                                }
+                            },
+                            controller ? { signal: controller.signal } : {},
+                            (chunk) => {
+                                const autoScroll = shouldAutoScroll();
+                                accumulated += String(chunk || '');
+                                try {
+                                    const s = this.sessionChatSession;
+                                    const msgs = Array.isArray(s.messages) ? [...s.messages] : [];
+                                    const lastIdx = msgs.length - 1;
+                                    if (lastIdx >= 0) {
+                                        const last = msgs[lastIdx];
+                                        if (last && last.type === 'pet' && last.timestamp === petMessage.timestamp) {
+                                            msgs[lastIdx] = { ...last, message: accumulated, error: false, aborted: false };
+                                            this.sessionChatSession = { ...s, messages: msgs };
+                                            if (autoScroll) scrollToBottom();
+                                        }
+                                    }
+                                } catch (_) {}
+                            }
+                        );
                     } catch (e) {
-                        this.sessionChatSession = prevSession;
-                        this.sessionChatInputText = text;
-                        throw e;
+                        const aborted = this._isAbortError(e);
+                        if (aborted) {
+                            streamAborted = true;
+                        } else {
+                            streamErrorMessage = String(e?.message || '请求失败');
+                        }
                     } finally {
                         this.sessionChatSending = false;
+                        this.sessionChatAbortController = null;
+                        this.sessionChatStreamingTargetTimestamp = null;
+                        this.sessionChatStreamingType = '';
                     }
-                }, '发送会话消息');
+
+                    const finalSession = (() => {
+                        const s = this.sessionChatSession || nextSession;
+                        const msgs = Array.isArray(s.messages) ? [...s.messages] : [];
+                        const lastIdx = msgs.length - 1;
+                        if (lastIdx >= 0) {
+                            const last = msgs[lastIdx];
+                            if (last && last.type === 'pet' && last.timestamp === petMessage.timestamp) {
+                                const trimmed = String(accumulated || '').trim();
+                                const content = streamErrorMessage
+                                    ? (trimmed || `请求失败：${streamErrorMessage}`)
+                                    : (streamAborted && !trimmed ? '已停止' : trimmed);
+                                msgs[lastIdx] = {
+                                    ...last,
+                                    message: content,
+                                    ...(streamErrorMessage ? { error: true } : {}),
+                                    ...(streamAborted ? { aborted: true } : {})
+                                };
+                            }
+                        }
+                        return { ...s, messages: msgs, pageContent: String(this.sessionChatEditingPageContent || s.pageContent || '') };
+                    })();
+                    this.sessionChatSession = finalSession;
+
+                    try {
+                        await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
+                    } catch (_) {}
+
+                    if (streamErrorMessage && window.showError) {
+                        window.showError(streamErrorMessage);
+                    }
+                }, '发送会话消息', (info) => { try { if (window.showError) window.showError(String(info?.message || '发送失败')); } catch (_) {} });
+            },
+
+            // 构建会话历史文本
+            _buildSessionChatHistoryText(messages, beforeIdx) {
+                try {
+                    const msgs = Array.isArray(messages) ? messages.slice(0, beforeIdx) : [];
+                    return msgs.map(m => {
+                        const role = m.type === 'pet' ? 'assistant' : 'user';
+                        const content = String(m.message || m.content || '').trim();
+                        return `${role}: ${content}`;
+                    }).join('\n\n');
+                } catch (_) {
+                    return '';
+                }
+            },
+
+            // 构建用户提示
+            _buildSessionChatUserPrompt({ text, images, pageContent, includeContext, historyText }) {
+                try {
+                    const parts = [];
+                    if (historyText) parts.push(`历史对话：\n${historyText}`);
+                    if (includeContext && pageContent) parts.push(`页面上下文：\n${pageContent}`);
+                    if (text) parts.push(`用户消息：${text}`);
+                    if (images && images.length > 0) parts.push(`图片：${images.length}张`);
+                    return parts.join('\n\n');
+                } catch (_) {
+                    return String(text || '');
+                }
+            },
+
+            // 判断是否为中止错误
+            _isAbortError(e) {
+                try {
+                    if (!e) return false;
+                    if (e.name === 'AbortError') return true;
+                    if (String(e.message || '').includes('aborted')) return true;
+                    return false;
+                } catch (_) {
+                    return false;
+                }
             },
 
             onSessionChatKeydown(e) {
@@ -547,6 +1028,800 @@ const componentOptions = {
                         this.sessionChatInputText = '';
                     }
                 } catch (_) {}
+            },
+
+            onSessionChatInput(e) {
+                try {
+                    if (e && e.target) {
+                        this.sessionChatInputText = String(e.target.value || '');
+                    }
+                } catch (_) {}
+            },
+
+            onSessionChatCompositionStart() {},
+            onSessionChatCompositionUpdate() {},
+            onSessionChatCompositionEnd() {},
+
+            onSessionChatPaste(e) {
+                try {
+                    const items = e.clipboardData?.items;
+                    if (!items) return;
+                    for (let i = 0; i < items.length; i++) {
+                        const item = items[i];
+                        if (item.type.indexOf('image') !== -1) {
+                            e.preventDefault();
+                            const file = item.getAsFile();
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                    const dataUrl = event.target?.result;
+                                    if (dataUrl) {
+                                        this.sessionChatDraftImages = [...(this.sessionChatDraftImages || []), dataUrl];
+                                    }
+                                };
+                                reader.readAsDataURL(file);
+                            }
+                            break;
+                        }
+                    }
+                } catch (_) {}
+            },
+
+            openSessionChatImagePicker() {
+                try {
+                    const input = document.getElementById('session-chat-image-input');
+                    if (input) input.click();
+                } catch (_) {}
+            },
+
+            onSessionChatImageInputChange(e) {
+                try {
+                    const files = e.target?.files;
+                    if (!files || files.length === 0) return;
+                    const readers = [];
+                    for (let i = 0; i < Math.min(files.length, 4); i++) {
+                        const file = files[i];
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                const dataUrl = event.target?.result;
+                                if (dataUrl) {
+                                    this.sessionChatDraftImages = [...(this.sessionChatDraftImages || []), dataUrl];
+                                }
+                            };
+                            reader.readAsDataURL(file);
+                            readers.push(reader);
+                        }
+                    }
+                    e.target.value = '';
+                } catch (_) {}
+            },
+
+            removeSessionChatDraftImage(idx) {
+                try {
+                    const images = Array.isArray(this.sessionChatDraftImages) ? [...this.sessionChatDraftImages] : [];
+                    if (idx >= 0 && idx < images.length) {
+                        images.splice(idx, 1);
+                        this.sessionChatDraftImages = images;
+                    }
+                } catch (_) {}
+            },
+
+            clearSessionChatDraftImages() {
+                this.sessionChatDraftImages = [];
+            },
+
+            abortSessionChatRequest() {
+                try {
+                    const controller = this.sessionChatAbortController;
+                    if (controller && typeof controller.abort === 'function') {
+                        controller.abort();
+                    }
+                } catch (_) {}
+            },
+
+            copySessionChatMessage(text, m, idx) {
+                return safeExecute(async () => {
+                    try {
+                        const content = String(text || '').trim();
+                        if (!content) return;
+                        await navigator.clipboard.writeText(content);
+                        const key = this._sessionChatMessageKey(m, idx);
+                        this.sessionChatCopyFeedback = {
+                            ...(this.sessionChatCopyFeedback || {}),
+                            [key]: Date.now() + 2000
+                        };
+                    } catch (e) {
+                        console.error('[CommentPanel] 复制失败:', e);
+                    }
+                }, '复制会话消息');
+            },
+
+            sendSessionChatMessageToRobot(bot, m, idx) {
+                return safeExecute(async () => {
+                    try {
+                        const content = String(m.message || m.content || '').trim();
+                        if (!content || !bot || !bot.webhook) return;
+                        await fetch(String(bot.webhook), {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ msgtype: 'text', text: { content } })
+                        });
+                        if (window.showSuccess) window.showSuccess('已发送到机器人');
+                    } catch (e) {
+                        if (window.showError) window.showError('发送失败：' + (e?.message || '未知错误'));
+                    }
+                }, '发送到机器人');
+            },
+
+            editSessionChatMessageAt(idx) {
+                return safeExecute(() => {
+                    if (!this.sessionChatSession) return;
+                    const msgs = Array.isArray(this.sessionChatSession.messages) ? this.sessionChatSession.messages : [];
+                    if (idx < 0 || idx >= msgs.length) return;
+                    const m = msgs[idx];
+                    if (!m || m.type === 'pet') return;
+                    const text = String(m.message || m.content || '').trim();
+                    this.sessionChatInputText = text;
+                    const images = Array.isArray(m.imageDataUrls) ? m.imageDataUrls : (m.imageDataUrl ? [m.imageDataUrl] : []);
+                    this.sessionChatDraftImages = images;
+                    this.deleteSessionChatMessageAt(idx);
+                }, '编辑消息');
+            },
+
+            resendSessionChatMessageAt(idx) {
+                return safeExecute(async () => {
+                    if (this.sessionChatSending) return;
+                    if (!this.sessionChatSession) return;
+                    const msgs = Array.isArray(this.sessionChatSession.messages) ? [...this.sessionChatSession.messages] : [];
+                    if (idx < 0 || idx >= msgs.length) return;
+                    const userMsg = msgs[idx];
+                    if (!userMsg || userMsg.type === 'pet') return;
+                    const text = String(userMsg.message || userMsg.content || '').trim();
+                    const images = Array.isArray(userMsg.imageDataUrls) ? userMsg.imageDataUrls : (userMsg.imageDataUrl ? [userMsg.imageDataUrl] : []);
+                    if (!text && images.length === 0) return;
+                    this.sessionChatInputText = text;
+                    this.sessionChatDraftImages = images;
+                    await this.sendSessionChatMessage({ text });
+                    this.deleteSessionChatMessageAt(idx);
+                }, '重新发送消息');
+            },
+
+            moveSessionChatMessageUp(idx) {
+                return safeExecute(() => {
+                    if (!this.sessionChatSession || idx <= 0) return;
+                    const msgs = Array.isArray(this.sessionChatSession.messages) ? [...this.sessionChatSession.messages] : [];
+                    if (idx >= msgs.length) return;
+                    [msgs[idx - 1], msgs[idx]] = [msgs[idx], msgs[idx - 1]];
+                    this.sessionChatSession = { ...this.sessionChatSession, messages: msgs, updatedAt: Date.now() };
+                    this._saveSessionChatSession();
+                }, '上移消息');
+            },
+
+            moveSessionChatMessageDown(idx) {
+                return safeExecute(() => {
+                    if (!this.sessionChatSession) return;
+                    const msgs = Array.isArray(this.sessionChatSession.messages) ? [...this.sessionChatSession.messages] : [];
+                    if (idx < 0 || idx >= msgs.length - 1) return;
+                    [msgs[idx], msgs[idx + 1]] = [msgs[idx + 1], msgs[idx]];
+                    this.sessionChatSession = { ...this.sessionChatSession, messages: msgs, updatedAt: Date.now() };
+                    this._saveSessionChatSession();
+                }, '下移消息');
+            },
+
+            regenerateSessionChatMessageAt(idx) {
+                return safeExecute(async () => {
+                    if (this.sessionChatSending) return;
+                    if (!this.sessionChatSession) return;
+                    const msgs = Array.isArray(this.sessionChatSession.messages) ? [...this.sessionChatSession.messages] : [];
+                    if (idx < 0 || idx >= msgs.length) return;
+                    const petMsg = msgs[idx];
+                    if (!petMsg || petMsg.type !== 'pet') return;
+                    let userIdx = -1;
+                    for (let i = idx - 1; i >= 0; i--) {
+                        if (msgs[i] && msgs[i].type !== 'pet') {
+                            userIdx = i;
+                            break;
+                        }
+                    }
+                    if (userIdx < 0) return;
+                    const userMsg = msgs[userIdx];
+                    const text = String(userMsg.message || userMsg.content || '').trim();
+                    const images = Array.isArray(userMsg.imageDataUrls) ? userMsg.imageDataUrls : (userMsg.imageDataUrl ? [userMsg.imageDataUrl] : []);
+                    msgs[idx] = { ...petMsg, message: '', error: false, aborted: false };
+                    this.sessionChatSession = { ...this.sessionChatSession, messages: msgs, updatedAt: Date.now() };
+                    this.sessionChatInputText = text;
+                    this.sessionChatDraftImages = images;
+                    await this.sendSessionChatMessage({ text });
+                }, '重新生成回复');
+            },
+
+            deleteSessionChatMessageAt(idx) {
+                return safeExecute(async () => {
+                    if (!this.sessionChatSession) return;
+                    const msgs = Array.isArray(this.sessionChatSession.messages) ? [...this.sessionChatSession.messages] : [];
+                    if (idx < 0 || idx >= msgs.length) return;
+                    const msg = msgs[idx];
+                    
+                    // 如果是评论转换的消息，删除原始评论
+                    if (msg._isComment && msg._commentKey) {
+                        await this.deleteComment(msg._commentKey);
+                        return;
+                    }
+                    
+                    // 否则删除会话消息
+                    msgs.splice(idx, 1);
+                    this.sessionChatSession = { ...this.sessionChatSession, messages: msgs, updatedAt: Date.now() };
+                    this._saveSessionChatSession();
+                }, '删除消息');
+            },
+            
+            // 评论在会话模式下的操作方法
+            copyCommentAsMessage(comment, idx) {
+                return safeExecute(async () => {
+                    try {
+                        let content = String(comment.content || '').trim();
+                        if (comment.text) {
+                            content = `引用代码：\n\`\`\`\n${comment.text}\n\`\`\`\n\n${content}`;
+                        }
+                        if (comment.improvementText) {
+                            content += `\n\n改进代码：\n\`\`\`\n${comment.improvementText}\n\`\`\``;
+                        }
+                        if (!content) return;
+                        await navigator.clipboard.writeText(content);
+                        const key = `comment_${comment.key}_${idx}`;
+                        this.sessionChatCopyFeedback = {
+                            ...(this.sessionChatCopyFeedback || {}),
+                            [key]: Date.now() + 2000
+                        };
+                        if (window.showSuccess) window.showSuccess('已复制');
+                    } catch (e) {
+                        if (window.showError) window.showError('复制失败');
+                    }
+                }, '复制评论');
+            },
+            
+            editCommentAsMessage(comment) {
+                return safeExecute(() => {
+                    // 打开评论编辑器
+                    this.openCommentEditor(comment);
+                }, '编辑评论');
+            },
+            
+            deleteCommentAsMessage(comment) {
+                return safeExecute(async () => {
+                    await this.deleteComment(comment.key);
+                }, '删除评论');
+            },
+            
+            // 传统评论列表的会话聊天功能
+            copyCommentContent(comment) {
+                return safeExecute(async () => {
+                    try {
+                        let content = String(comment.content || '').trim();
+                        if (comment.text) {
+                            content = `引用代码：\n\`\`\`\n${comment.text}\n\`\`\`\n\n${content}`;
+                        }
+                        if (comment.improvementText) {
+                            content += `\n\n改进代码：\n\`\`\`\n${comment.improvementText}\n\`\`\``;
+                        }
+                        if (!content) return;
+                        await navigator.clipboard.writeText(content);
+                        
+                        // 使用反馈状态
+                        if (!this.commentCopyFeedback) this.commentCopyFeedback = {};
+                        this.commentCopyFeedback[comment.key] = Date.now() + 2000;
+                        this.$forceUpdate();
+                        
+                        if (window.showSuccess) window.showSuccess('已复制');
+                    } catch (e) {
+                        if (window.showError) window.showError('复制失败');
+                    }
+                }, '复制评论内容');
+            },
+            
+            getCommentCopyButtonLabel(comment) {
+                if (!this.commentCopyFeedback) return '📋 复制';
+                const expireTime = this.commentCopyFeedback[comment.key];
+                if (expireTime && Date.now() < expireTime) {
+                    return '✓ 已复制';
+                }
+                return '📋 复制';
+            },
+            
+            replyToComment(comment) {
+                return safeExecute(async () => {
+                    // 构建回复内容
+                    let replyContent = `> 回复 @${comment.author}:\n> `;
+                    if (comment.text) {
+                        replyContent += `引用代码:\n> \`\`\`\n> ${comment.text.split('\n').join('\n> ')}\n> \`\`\`\n> \n> `;
+                    }
+                    replyContent += `${String(comment.content || '').split('\n').join('\n> ')}\n\n`;
+                    
+                    // 创建新评论作为回复
+                    const newCommentData = {
+                        author: '手动评论',
+                        content: replyContent,
+                        timestamp: Date.now(),
+                        fileKey: this.file?.sessionKey || this.file?.fileKey,
+                        status: 'pending',
+                        type: 'discussion',
+                        replyTo: comment.key
+                    };
+                    
+                    // 滚动到底部并聚焦
+                    this.$nextTick(() => {
+                        try {
+                            const container = this.$el?.querySelector('.comment-list');
+                            if (container) container.scrollTop = container.scrollHeight;
+                        } catch (_) {}
+                    });
+                    
+                    // 保存评论
+                    await this.saveNewComment(newCommentData);
+                    
+                    if (window.showSuccess) window.showSuccess('回复已添加');
+                }, '回复评论');
+            },
+            
+            async saveNewComment(commentData) {
+                try {
+                    const url = buildServiceUrl('upsert_document', { cname: 'comments' });
+                    const response = await postData(url, commentData);
+                    
+                    // 刷新评论列表
+                    this.debouncedLoadComments();
+                    
+                    return response;
+                } catch (error) {
+                    console.error('[CommentPanel] 保存评论失败:', error);
+                    if (window.showError) window.showError('保存评论失败：' + (error?.message || '未知错误'));
+                    throw error;
+                }
+            },
+            
+            sendCommentToRobot(bot, comment) {
+                return safeExecute(async () => {
+                    try {
+                        let content = String(comment.content || '').trim();
+                        if (comment.text) {
+                            content = `引用代码：\n\`\`\`\n${comment.text}\n\`\`\`\n\n${content}`;
+                        }
+                        if (comment.improvementText) {
+                            content += `\n\n改进代码：\n\`\`\`\n${comment.improvementText}\n\`\`\``;
+                        }
+                        if (!content || !bot || !bot.webhook) return;
+                        
+                        await fetch(String(bot.webhook), {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ msgtype: 'text', text: { content } })
+                        });
+                        
+                        if (window.showSuccess) window.showSuccess('已发送到机器人');
+                    } catch (e) {
+                        if (window.showError) window.showError('发送失败：' + (e?.message || '未知错误'));
+                    }
+                }, '发送到机器人');
+            },
+            
+            // 传统评论列表的聊天输入控制
+            onCommentChatInput(e) {
+                try {
+                    if (e && e.target) {
+                        this.commentChatInputText = String(e.target.value || '');
+                    }
+                } catch (_) {}
+            },
+            
+            onCommentChatKeydown(e) {
+                try {
+                    if (!e) return;
+                    if (e.isComposing || this._commentChatIsComposing) return;
+                    if (e.key === 'Enter' && this._commentChatCompositionEndTime > 0) {
+                        if (Date.now() - this._commentChatCompositionEndTime < 300) return;
+                    }
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendCommentChatMessage();
+                        this._commentChatCompositionEndTime = 0;
+                        return;
+                    }
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        this.commentChatInputText = '';
+                        this.commentChatDraftImages = [];
+                    }
+                } catch (_) {}
+            },
+            
+            onCommentChatCompositionStart() {
+                this._commentChatIsComposing = true;
+                this._commentChatCompositionEndTime = 0;
+            },
+            
+            onCommentChatCompositionUpdate() {
+                this._commentChatIsComposing = true;
+                this._commentChatCompositionEndTime = 0;
+            },
+            
+            onCommentChatCompositionEnd() {
+                this._commentChatIsComposing = false;
+                this._commentChatCompositionEndTime = Date.now();
+            },
+            
+            onCommentChatPaste(e) {
+                try {
+                    const items = e.clipboardData?.items;
+                    if (!items) return;
+                    for (let i = 0; i < items.length; i++) {
+                        const item = items[i];
+                        if (item.type.indexOf('image') !== -1) {
+                            e.preventDefault();
+                            const file = item.getAsFile();
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                    const dataUrl = event.target?.result;
+                                    if (dataUrl) {
+                                        this.commentChatDraftImages = [...(this.commentChatDraftImages || []), dataUrl];
+                                    }
+                                };
+                                reader.readAsDataURL(file);
+                            }
+                        }
+                    }
+                } catch (_) {}
+            },
+            
+            openCommentChatImagePicker() {
+                try {
+                    const input = document.getElementById('traditional-comment-image-input');
+                    if (input && typeof input.click === 'function') input.click();
+                } catch (_) {}
+            },
+            
+            onCommentChatImageInputChange(e) {
+                try {
+                    const files = e.target?.files;
+                    if (!files || files.length === 0) return;
+                    const readers = [];
+                    for (let i = 0; i < Math.min(files.length, 4); i++) {
+                        const file = files[i];
+                        if (file && file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                const dataUrl = event.target?.result;
+                                if (dataUrl) {
+                                    this.commentChatDraftImages = [...(this.commentChatDraftImages || []), dataUrl].slice(0, 4);
+                                }
+                            };
+                            reader.readAsDataURL(file);
+                            readers.push(reader);
+                        }
+                    }
+                    e.target.value = '';
+                } catch (_) {}
+            },
+            
+            removeCommentChatDraftImage(idx) {
+                try {
+                    const images = Array.isArray(this.commentChatDraftImages) ? [...this.commentChatDraftImages] : [];
+                    if (idx >= 0 && idx < images.length) {
+                        images.splice(idx, 1);
+                        this.commentChatDraftImages = images;
+                    }
+                } catch (_) {}
+            },
+            
+            clearCommentChatDraftImages() {
+                this.commentChatDraftImages = [];
+            },
+            
+            abortCommentChatRequest() {
+                try {
+                    const controller = this.commentChatAbortController;
+                    if (controller && typeof controller.abort === 'function') {
+                        controller.abort();
+                    }
+                } catch (_) {}
+            },
+            
+            // 发送评论聊天消息（AI回复）
+            async sendCommentChatMessage() {
+                return safeExecute(async () => {
+                    if (this.commentChatSending) return;
+                    const text = String(this.commentChatInputText || '').trim();
+                    const images = Array.isArray(this.commentChatDraftImages) ? this.commentChatDraftImages.filter(Boolean).slice(0, 4) : [];
+                    if (!text && images.length === 0) return;
+                    
+                    const now = Date.now();
+                    
+                    // 上传图片
+                    const sessionSync = getSessionSyncService();
+                    const uploadOne = async (src) => {
+                        const raw = String(src || '').trim();
+                        if (!raw) return '';
+                        if (/^https?:\/\//i.test(raw)) return raw;
+                        if (!raw.startsWith('data:image/')) {
+                            throw new Error('图片格式不支持');
+                        }
+                        return await sessionSync.uploadImageToOss(raw, 'aicr/images');
+                    };
+                    const imageUrls = images.length > 0
+                        ? (await Promise.all(images.map((src) => uploadOne(src)))).filter(Boolean)
+                        : [];
+                    if (images.length > 0 && imageUrls.length === 0) {
+                        throw new Error('上传图片失败');
+                    }
+                    
+                    // 创建用户评论
+                    const userComment = {
+                        author: '手动评论',
+                        content: text,
+                        timestamp: now,
+                        fileKey: this.file?.sessionKey || this.file?.fileKey,
+                        status: 'pending',
+                        type: 'discussion',
+                        ...(imageUrls.length > 0 ? { imageDataUrls: imageUrls, imageDataUrl: imageUrls[0] } : {})
+                    };
+                    
+                    // 保存用户评论
+                    await this.saveNewComment(userComment);
+                    
+                    // 创建AI回复评论（占位）
+                    const aiComment = {
+                        author: 'AI助手',
+                        content: '',
+                        timestamp: now + 1,
+                        fileKey: this.file?.sessionKey || this.file?.fileKey,
+                        status: 'pending',
+                        type: 'pet'
+                    };
+                    
+                    // 临时添加到列表
+                    this.mongoComments = [...(this.mongoComments || []), aiComment];
+                    
+                    // 清空输入
+                    this.commentChatInputText = '';
+                    this.commentChatDraftImages = [];
+                    
+                    // 滚动到底部
+                    this.$nextTick(() => {
+                        try {
+                            const container = this.$el?.querySelector('.comment-list');
+                            if (container) container.scrollTop = container.scrollHeight;
+                        } catch (_) {}
+                    });
+                    
+                    // 调用AI生成回复
+                    this.commentChatSending = true;
+                    try {
+                        const controller = new AbortController();
+                        this.commentChatAbortController = controller;
+                        
+                        // 构建上下文
+                        let contextText = '';
+                        if (this.commentChatIncludeContext && this.file) {
+                            contextText = `文件：${this.file.name || this.file.path || ''}\n`;
+                            if (this.file.content) {
+                                contextText += `\n代码内容：\n\`\`\`\n${this.file.content}\n\`\`\`\n`;
+                            }
+                        }
+                        
+                        // 构建历史评论
+                        const history = (this.renderComments || [])
+                            .slice(-10) // 只取最近10条
+                            .map(c => `${c.author}: ${c.content}`)
+                            .join('\n\n');
+                        
+                        const prompt = [
+                            contextText,
+                            history ? `历史评论：\n${history}` : '',
+                            `用户问题：${text}`
+                        ].filter(Boolean).join('\n\n');
+                        
+                        // 调用AI接口
+                        const { postData } = await import('/src/services/index.js');
+                        const response = await postData(
+                            buildServiceUrl('ai_chat', {}),
+                            { prompt },
+                            { signal: controller.signal }
+                        );
+                        
+                        const aiReply = String(response?.data?.reply || response?.reply || '').trim();
+                        if (!aiReply) throw new Error('AI 未返回回复');
+                        
+                        // 更新AI评论
+                        aiComment.content = aiReply;
+                        await this.saveNewComment(aiComment);
+                        
+                        // 刷新列表
+                        this.debouncedLoadComments();
+                        
+                    } catch (e) {
+                        if (e.name === 'AbortError') {
+                            aiComment.content = '已停止';
+                            aiComment.status = 'closed';
+                        } else {
+                            aiComment.content = `生成失败：${e?.message || '未知错误'}`;
+                            aiComment.status = 'closed';
+                            if (window.showError) window.showError('AI 回复失败：' + (e?.message || '未知错误'));
+                        }
+                        // 更新失败的评论
+                        this.mongoComments = (this.mongoComments || []).map(c => 
+                            c.timestamp === aiComment.timestamp ? aiComment : c
+                        );
+                    } finally {
+                        this.commentChatSending = false;
+                        this.commentChatAbortController = null;
+                    }
+                }, '发送评论聊天消息');
+            },
+            
+            // 传统评论列表的模态框控制
+            openCommentChatContextEditor() {
+                this.commentChatContextEditorVisible = true;
+                this.commentChatContextEditMode = 'split';
+                this.commentChatEditingContext = this.file?.content || '';
+            },
+            
+            closeCommentChatContextEditor() {
+                this.commentChatContextEditorVisible = false;
+            },
+            
+            saveCommentChatContext() {
+                // 这里可以实现保存上下文到文件的逻辑
+                if (window.showSuccess) window.showSuccess('上下文已保存');
+                this.commentChatContextEditorVisible = false;
+            },
+            
+            openCommentChatFaq() {
+                this.commentChatFaqVisible = true;
+            },
+            
+            closeCommentChatFaq() {
+                this.commentChatFaqVisible = false;
+            },
+            
+            openCommentChatWeChatSettings() {
+                this.commentChatWeChatSettingsVisible = true;
+            },
+            
+            closeCommentChatWeChatSettings() {
+                this.commentChatWeChatSettingsVisible = false;
+            },
+            
+            openCommentChatSettings() {
+                this.commentChatSettingsVisible = true;
+            },
+            
+            closeCommentChatSettings() {
+                this.commentChatSettingsVisible = false;
+            },
+            
+            copyCommentChatContext() {
+                return safeExecute(async () => {
+                    try {
+                        const content = String(this.commentChatEditingContext || '').trim();
+                        if (!content) return;
+                        await navigator.clipboard.writeText(content);
+                        if (window.showSuccess) window.showSuccess('已复制');
+                    } catch (e) {
+                        if (window.showError) window.showError('复制失败');
+                    }
+                }, '复制上下文');
+            },
+            
+            saveCommentChatWeChatSettings() {
+                if (window.showSuccess) window.showSuccess('设置与会话聊天共享');
+                this.commentChatWeChatSettingsVisible = false;
+            },
+            
+            saveCommentChatSettings() {
+                if (window.showSuccess) window.showSuccess('设置与会话聊天共享');
+                this.commentChatSettingsVisible = false;
+            },
+            
+            sessionChatCopyButtonLabel(m, idx) {
+                const key = m._isComment ? `comment_${m._commentKey}_${idx}` : this._sessionChatMessageKey(m, idx);
+                const feedback = this.sessionChatCopyFeedback || {};
+                const expireTime = feedback[key];
+                if (expireTime && Date.now() < expireTime) {
+                    return '已复制';
+                }
+                return '复制';
+            },
+            
+            isSessionChatStreamingMessage(m, idx) {
+                if (m._isComment) return false; // 评论不支持流式显示
+                return this.sessionChatStreamingTargetTimestamp === m.timestamp && this.sessionChatStreamingType === 'message';
+            },
+            
+            canRegenerateSessionChatMessage(idx) {
+                // 在评论模式下，使用 commentsAsSessionMessages
+                if (this.isSessionChatMode && this.commentsAsSessionMessages && this.commentsAsSessionMessages.length > 0) {
+                    const msgs = this.commentsAsSessionMessages || [];
+                    if (idx < 0 || idx >= msgs.length) return false;
+                    const m = msgs[idx];
+                    if (m._isComment) return false; // 评论不支持重新生成
+                    return m.type === 'pet';
+                }
+                // 在会话模式下，使用 sessionChatMessages
+                return this._canRegenerateSessionChatMessageForSession(idx);
+            },
+            
+            isSessionChatRegenerating(m, idx) {
+                if (m._isComment) return false;
+                return this.sessionChatRegenerateFeedback && this.sessionChatRegenerateFeedback[`${m.timestamp}_${idx}`];
+            },
+            
+            sessionChatRegenerateButtonLabel(m, idx) {
+                if (this.isSessionChatRegenerating(m, idx)) {
+                    return '重新生成中...';
+                }
+                return '重新生成';
+            },
+
+            async _saveSessionChatSession() {
+                try {
+                    if (!this.sessionChatSession) return;
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.saveSession({ ...this.sessionChatSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
+                } catch (_) {}
+            },
+
+            openSessionChatFaq() {
+                this.sessionChatFaqVisible = true;
+            },
+
+            closeSessionChatFaq() {
+                this.sessionChatFaqVisible = false;
+            },
+
+            openSessionChatSettings() {
+                this.sessionChatSettingsVisible = true;
+            },
+
+            closeSessionChatSettings() {
+                this.sessionChatSettingsVisible = false;
+            },
+
+            openSessionChatWeChatSettings() {
+                this.sessionChatWeChatSettingsVisible = true;
+            },
+
+            closeSessionChatWeChatSettings() {
+                this.sessionChatWeChatSettingsVisible = false;
+            },
+
+            loadWeChatSettings() {
+                try {
+                    const raw = localStorage.getItem('aicr_wechat_robots');
+                    const arr = raw ? JSON.parse(raw) : [];
+                    if (Array.isArray(arr)) {
+                        this.sessionChatWeChatRobots = arr.filter(r => r && typeof r === 'object' && r.enabled);
+                    }
+                    if ((!Array.isArray(this.sessionChatWeChatRobots) || this.sessionChatWeChatRobots.length === 0)) {
+                        const enabledRaw = localStorage.getItem('aicr_wechat_enabled');
+                        const webhookRaw = localStorage.getItem('aicr_wechat_webhook');
+                        const autoRaw = localStorage.getItem('aicr_wechat_auto_forward');
+                        const enabled = enabledRaw === 'true';
+                        const webhook = String(webhookRaw || '').trim();
+                        const autoForward = autoRaw === 'true';
+                        if (webhook && enabled) {
+                            this.sessionChatWeChatRobots = [{
+                                id: 'wr_' + Date.now(),
+                                name: '机器人',
+                                webhook,
+                                enabled,
+                                autoForward
+                            }];
+                        }
+                    }
+                } catch (_) {
+                    this.sessionChatWeChatRobots = [];
+                }
             },
             // 测试方法
             testMethod() {
@@ -743,18 +2018,60 @@ const componentOptions = {
                 // 设置删除状态
                 this.deletingComments[commentId] = true;
                 
+                // 保存原始评论列表，以便删除失败时恢复
+                const originalComments = Array.isArray(this.mongoComments) ? [...this.mongoComments] : [];
+                
                 try {
+                    // 先乐观更新UI，立即从本地移除（提升用户体验）
                     if (Array.isArray(this.mongoComments) && this.mongoComments.length > 0) {
                         this.mongoComments = this.mongoComments.filter(c => c && c.key !== commentId);
                     }
-                    // 触发删除事件
+                    
+                    // 同时从store中移除（如果存在）
+                    if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value) {
+                        window.aicrStore.comments.value = window.aicrStore.comments.value.filter(c => c && c.key !== commentId);
+                    }
+                    
+                    // 触发删除事件（会调用API删除并重新加载）
                     this.$emit('comment-delete', commentId);
+                    
+                    // 等待删除完成后，从store重新加载评论数据
+                    setTimeout(() => {
+                        // 优先从store获取最新数据
+                        if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value) {
+                            const storeComments = window.aicrStore.comments.value;
+                            const fileKey = this.file?.sessionKey || (this._isUUID(this.file?.fileKey) ? this.file.fileKey : null);
+                            
+                            if (fileKey) {
+                                // 过滤出该文件的评论
+                                const filteredComments = storeComments.filter(c => {
+                                    return this._isSameFileKey(c.fileKey, fileKey);
+                                });
+                                this.mongoComments = filteredComments;
+                                console.log('[CommentPanel] 删除后从store恢复评论，数量:', filteredComments.length);
+                            } else {
+                                // 显示所有评论
+                                this.mongoComments = [...storeComments];
+                                console.log('[CommentPanel] 删除后从store恢复所有评论，数量:', storeComments.length);
+                            }
+                        } else {
+                            // 如果store中没有数据，重新加载
+                            this.debouncedLoadComments(true);
+                        }
+                    }, 300);
+                    
                     // 删除状态会通过watch renderComments自动清理
                 } catch (error) {
                     console.error('[CommentPanel] 删除评论失败:', error);
+                    // 恢复原始评论列表
+                    this.mongoComments = originalComments;
                     // 清除删除状态
                     if (this.deletingComments[commentId]) {
                         delete this.deletingComments[commentId];
+                    }
+                    // 显示错误提示
+                    if (window.showError) {
+                        window.showError('删除评论失败：' + (error?.message || '未知错误'));
                     }
                 } finally {
                     // 重置对话框数据
@@ -1099,6 +2416,44 @@ const componentOptions = {
                 
                 window.dispatchEvent(new CustomEvent('highlightCodeLines', { detail: eventData }));
             },
+            
+            openFileAtAnchor(comment) {
+                return safeExecute(() => {
+                    if (!comment) return;
+                    const rawKey = comment.fileKey || (comment.fileInfo && comment.fileInfo.key) || null;
+                    const uiFileKey = this._isUUID(rawKey) ? (this._resolveTreeKeyFromSessionKey(rawKey) || rawKey) : rawKey;
+                    if (!uiFileKey) return;
+                    
+                    const startLine = Number(comment?.rangeInfo?.startLine) >= 1 ? Number(comment.rangeInfo.startLine) : 1;
+                    const endLine = Number(comment?.rangeInfo?.endLine) >= 1 ? Number(comment.rangeInfo.endLine) : startLine;
+                    
+                    const store = window.aicrStore;
+                    const normalizedKey = this._normalizeFileKey(uiFileKey);
+                    
+                    const dispatchScrollEvent = () => {
+                        try { window.location.hash = `#L${startLine}`; } catch (_) {}
+                        const eventData = {
+                            fileKey: normalizedKey,
+                            rangeInfo: { startLine, endLine },
+                            comment,
+                            scroll: true
+                        };
+                        window.dispatchEvent(new CustomEvent('highlightCodeLines', { detail: eventData }));
+                    };
+                    
+                    if (store && typeof store.setSelectedKey === 'function') {
+                        if (store.selectedKey && store.selectedKey.value !== normalizedKey) {
+                            store.setSelectedKey(normalizedKey);
+                        }
+                        if (typeof store.loadFileByKey === 'function') {
+                            store.loadFileByKey(normalizedKey).finally(dispatchScrollEvent);
+                            return;
+                        }
+                    }
+                    
+                    dispatchScrollEvent();
+                }, '打开引用代码定位');
+            },
 
             // 立即添加新评论到本地数据
             addCommentToLocalData(commentData) {
@@ -1265,6 +2620,9 @@ const componentOptions = {
             if (window.aicrStore) {
                 console.log('[CommentPanel] store已初始化，开始加载数据');
 
+                // 加载微信机器人配置
+                this.loadWeChatSettings();
+
                 if (this.isSessionChatMode) {
                     await this.loadSessionChatSession(true);
                 } else {
@@ -1301,6 +2659,11 @@ const componentOptions = {
                     if (this.isSessionChatMode) {
                         this.loadSessionChatSession(true);
                         return;
+                    }
+                    const cacheKey = newFile?.sessionKey || (this._isUUID(newFile?.fileKey) ? newFile.fileKey : null);
+                    if (cacheKey && Array.isArray(this.commentsCache[cacheKey]) && this.commentsCache[cacheKey].length > 0) {
+                        console.log('[CommentPanel] 使用缓存的文件评论，数量:', this.commentsCache[cacheKey].length);
+                        this.mongoComments = [...this.commentsCache[cacheKey]];
                     }
                     // 优化：优先从 store 获取该文件的评论
                     if (window.aicrStore && window.aicrStore.comments && window.aicrStore.comments.value && window.aicrStore.comments.value.length > 0) {
@@ -1355,6 +2718,13 @@ const componentOptions = {
                     }
                 }
             });
+
+            // 监听 activeSession 变化，在会话模式下重新加载会话数据
+            this.$watch('activeSession', (newSession, oldSession) => {
+                if (this.isSessionChatMode && newSession !== oldSession) {
+                    this.loadSessionChatSession(true);
+                }
+            }, { deep: true });
             
             // 监听评论数据变化
             this.$watch('comments', async (newComments, oldComments) => {
@@ -1365,10 +2735,7 @@ const componentOptions = {
                         this.mongoComments = [...incoming];
                         return;
                     }
-                    const existing = Array.isArray(this.mongoComments) ? this.mongoComments : [];
-                    if (existing.length === 0) {
-                        this.mongoComments = [];
-                    }
+                    return;
                 }
             });
             
@@ -1383,7 +2750,17 @@ const componentOptions = {
                 });
             }, { deep: true });
 
+            this.$watch('mongoComments', (list) => {
+                const key = this.file?.sessionKey || (this._isUUID(this.file?.fileKey) ? this.file.fileKey : null);
+                if (key) {
+                    this.commentsCache[key] = Array.isArray(list) ? [...list] : [];
+                    console.log('[CommentPanel] 已缓存评论数据，key:', key, '数量:', this.commentsCache[key].length);
+                }
+            });
             console.log('[CommentPanel] 组件挂载完成');
+            
+            // 加载微信机器人设置
+            this.loadWeChatSettings();
             
             // 监听项目/版本变化事件
             window.addEventListener('projectReady', (event) => {
