@@ -836,13 +836,11 @@
                     </div>
                 </div>
             </section>
-            <!-- 评论面板：在树形视图和会话视图下都显示，支持会话聊天功能 -->
-            <aside class="aicr-comments" aria-label="评论区" v-show="!commentsCollapsed" :style="{ width: commentsWidth + 'px' }">
+            <aside class="aicr-comments" aria-label="评论区" v-show="viewMode === 'tree' && !commentsCollapsed" :style="{ width: commentsWidth + 'px' }">
                 <div class="sidebar-scroll-container">
                     <comment-panel 
                         :comments="currentComments" 
-                        :file="viewMode === 'tree' ? currentFile : (activeSession ? { sessionKey: activeSession.id || activeSession.key, fileKey: activeSession.id || activeSession.key } : null)"
-                        :active-session="viewMode === 'tags' ? activeSession : null"
+                        :file="currentFile"
                         :view-mode="viewMode"
                         :new-comment="newComment" 
                         :loading="loading" 
@@ -861,7 +859,7 @@
             <!-- 评论区收起按钮 (展开时显示，跟随评论区宽度) -->
             <div 
                 class="comments-toggle" 
-                v-show="!commentsCollapsed"
+                v-show="viewMode === 'tree' && !commentsCollapsed"
                 @click="toggleComments"
                 title="收起评论区"
                 :style="{ right: (commentsWidth - 14) + 'px', left: 'auto' }">
@@ -872,7 +870,7 @@
             <button 
                 type="button"
                 class="comments-expand-handle" 
-                v-show="commentsCollapsed"
+                v-show="viewMode === 'tree' && commentsCollapsed"
                 @click="toggleComments"
                 aria-label="展开评论区"
                 title="展开评论区">
@@ -915,3 +913,4 @@
     <script type="module" src="../../utils/performance.js"></script>
 </body>
 </html>
+
