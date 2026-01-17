@@ -547,6 +547,30 @@
     background: rgba(16, 185, 129, 0.15);
 }
 
+/* ========== 高亮状态（用于视图切换时的锚定效果） ========== */
+.file-tree-item.highlight-file {
+    background: rgba(79, 70, 229, 0.25);
+    color: var(--text-primary);
+    font-weight: 600;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.4);
+    animation: highlightFilePulse 2s ease-out;
+}
+
+@keyframes highlightFilePulse {
+    0% {
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.6);
+        background: rgba(79, 70, 229, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+        background: rgba(79, 70, 229, 0.2);
+    }
+    100% {
+        box-shadow: none;
+        background: rgba(79, 70, 229, 0.15);
+    }
+}
+
 /* ========== 文件夹样式 ========== */
 .folder-item {
     font-weight: 500;

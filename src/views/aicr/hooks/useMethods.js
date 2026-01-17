@@ -3067,27 +3067,86 @@ export const useMethods = (store) => {
 
             const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL)) ? String(window.API_URL).replace(/\/+$/, '') : '';
             let staticContent = '';
-            if (apiBase && fileKey) {
-                let cleanPath = String(fileKey || '').replace(/\\/g, '/').replace(/^\/+/, '');
-                if (cleanPath.startsWith('static/')) {
-                    cleanPath = cleanPath.substring(7);
-                }
-                cleanPath = cleanPath.replace(/^\/+/, '');
-                try {
-                    const res = await fetch(`${apiBase}/read-file`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ target_file: cleanPath })
-                    });
-                    if (res.ok) {
-                        const json = await res.json();
-                        if ((json.code === 200 || json.code === 0) && json.data && json.data.content) {
-                            if (json.data.type !== 'base64') {
-                                staticContent = json.data.content;
-                            }
-                        }
+
+            // 确保一定会调用 read-file 接口
+            if (apiBase) {
+                let cleanPath = '';
+
+                // 优先使用 fileKey
+                if (fileKey) {
+                    cleanPath = String(fileKey || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                    if (cleanPath.startsWith('static/')) {
+                        cleanPath = cleanPath.substring(7);
                     }
-                } catch (_) { }
+                    cleanPath = cleanPath.replace(/^\/+/, '');
+                } else {
+                    // 如果没有 fileKey，从会话信息构建路径
+                    const tags = Array.isArray(session.tags) ? session.tags : [];
+                    let currentPath = '';
+                    tags.forEach((folderName) => {
+                        if (!folderName || (folderName.toLowerCase && folderName.toLowerCase() === 'default')) return;
+                        currentPath = currentPath ? currentPath + '/' + folderName : folderName;
+                    });
+                    let fileName = session.title || session.pageTitle || 'Untitled';
+                    fileName = String(fileName).replace(/\//g, '-');
+                    cleanPath = currentPath ? currentPath + '/' + fileName : fileName;
+                    cleanPath = cleanPath.replace(/\\/g, '/').replace(/^\/+/, '');
+                    if (cleanPath.startsWith('static/')) {
+                        cleanPath = cleanPath.substring(7);
+                    }
+                    cleanPath = cleanPath.replace(/^\/+/, '');
+                }
+
+                // 如果 cleanPath 仍然为空，使用会话的 pageDescription 或其他信息
+                if (!cleanPath) {
+                    const pageDesc = session.pageDescription || '';
+                    if (pageDesc && pageDesc.includes('文件：')) {
+                        cleanPath = pageDesc.replace('文件：', '').trim();
+                        cleanPath = cleanPath.replace(/\\/g, '/').replace(/^\/+/, '');
+                        if (cleanPath.startsWith('static/')) {
+                            cleanPath = cleanPath.substring(7);
+                        }
+                        cleanPath = cleanPath.replace(/^\/+/, '');
+                    }
+                }
+
+                // 如果还是没有路径，使用会话的 key 作为文件名（作为最后的备选方案）
+                if (!cleanPath && targetSessionKey) {
+                    cleanPath = `session_${targetSessionKey}.txt`;
+                }
+
+                // 确保有路径后才调用接口
+                if (cleanPath) {
+                    try {
+                        console.log('[selectSessionForChat] 调用 read-file 接口，路径:', cleanPath);
+                        const res = await fetch(`${apiBase}/read-file`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ target_file: cleanPath })
+                        });
+                        if (res.ok) {
+                            const json = await res.json();
+                            if ((json.code === 200 || json.code === 0) && json.data && json.data.content) {
+                                if (json.data.type !== 'base64') {
+                                    staticContent = json.data.content;
+                                    console.log('[selectSessionForChat] read-file 接口调用成功，内容长度:', staticContent.length);
+                                } else {
+                                    console.log('[selectSessionForChat] read-file 接口返回 base64 类型，跳过');
+                                }
+                            } else {
+                                console.warn('[selectSessionForChat] read-file 接口返回异常:', json);
+                            }
+                        } else {
+                            console.warn('[selectSessionForChat] read-file 接口调用失败，状态码:', res.status);
+                        }
+                    } catch (error) {
+                        console.error('[selectSessionForChat] read-file 接口调用异常:', error);
+                    }
+                } else {
+                    console.warn('[selectSessionForChat] 无法确定文件路径，跳过 read-file 接口调用');
+                }
+            } else {
+                console.warn('[selectSessionForChat] API_URL 未配置，跳过 read-file 接口调用');
             }
             if (sessionContextDraft) sessionContextDraft.value = String(staticContent || '');
             if (activeSession?.value) {
@@ -5634,6 +5693,22 @@ export const useMethods = (store) => {
                         }
                     }
 
+                    // 保存当前选中的会话（如果从会话视图切换到文件视图）
+                    let pendingSessionKey = null;
+                    if (previousMode === 'tags' && mode === 'tree') {
+                        // 优先使用 activeSession，否则使用 externalSelectedSessionId
+                        if (activeSession && activeSession.value) {
+                            const sessionKey = activeSession.value.key || activeSession.value.id;
+                            if (sessionKey) {
+                                pendingSessionKey = String(sessionKey);
+                                console.log('[useMethods] 保存当前选中的会话Key:', pendingSessionKey);
+                            }
+                        } else if (store.externalSelectedSessionId && store.externalSelectedSessionId.value) {
+                            pendingSessionKey = String(store.externalSelectedSessionId.value);
+                            console.log('[useMethods] 保存当前选中的会话Key（从externalSelectedSessionId）:', pendingSessionKey);
+                        }
+                    }
+
                     if (previousMode !== mode) {
                         try {
                             if (mode === 'tree' && typeof window.aicrApp?.abortSessionChatRequest === 'function') {
@@ -5641,10 +5716,14 @@ export const useMethods = (store) => {
                             }
                         } catch (_) { }
 
-                        if (typeof setSelectedKey === 'function') {
-                            setSelectedKey(null);
-                        } else if (selectedKey) {
-                            selectedKey.value = null;
+                        // 只有在不是从会话视图切换到树形视图时才清空selectedKey
+                        // 如果是从会话视图切换到树形视图，我们会在后面根据会话选中对应的文件
+                        if (!(previousMode === 'tags' && mode === 'tree' && pendingSessionKey)) {
+                            if (typeof setSelectedKey === 'function') {
+                                setSelectedKey(null);
+                            } else if (selectedKey) {
+                                selectedKey.value = null;
+                            }
                         }
 
                         if (typeof setNewComment === 'function') {
@@ -5708,7 +5787,7 @@ export const useMethods = (store) => {
                         if (pendingFileKey) {
                             // 等待DOM更新完成
                             await new Promise(resolve => setTimeout(resolve, 100));
-                            
+
                             try {
                                 // 从文件树中查找对应的sessionKey
                                 const normalize = (v) => {
@@ -5719,10 +5798,10 @@ export const useMethods = (store) => {
                                     s = s.replace(/\/\/+/g, '/');
                                     return s;
                                 };
-                                
+
                                 const targetTreeKey = normalize(pendingFileKey);
                                 let targetSessionKey = null;
-                                
+
                                 // 在文件树中查找对应的sessionKey
                                 const findSessionKeyByTreeKey = (nodes, treeKey) => {
                                     if (!nodes) return null;
@@ -5740,49 +5819,47 @@ export const useMethods = (store) => {
                                     }
                                     return null;
                                 };
-                                
+
                                 targetSessionKey = findSessionKeyByTreeKey(store.fileTree?.value, targetTreeKey);
-                                
+
                                 if (targetSessionKey) {
                                     console.log('[useMethods] 找到对应的sessionKey:', targetSessionKey);
-                                    
+
                                     // 在会话列表中查找对应的会话
                                     const sessions = store.sessions?.value || [];
                                     const targetSession = sessions.find(s => {
                                         const sessionKey = String(s.key || s.id || '');
                                         return sessionKey === targetSessionKey;
                                     });
-                                    
+
                                     if (targetSession) {
                                         console.log('[useMethods] 找到对应的会话，准备选中并滚动:', targetSession.key);
-                                        
+
                                         // 设置外部选中的会话ID（用于更新sessionList组件的选中状态）
                                         if (store.externalSelectedSessionId) {
                                             store.externalSelectedSessionId.value = targetSessionKey;
                                         }
-                                        
-                                        // 触发会话选择事件
-                                        if (typeof handleSessionSelect === 'function') {
-                                            await handleSessionSelect(targetSession);
-                                        }
-                                        
+
+                                        // 直接调用 selectSessionForChat 选择会话（确保调用 read-file 接口）
+                                        await selectSessionForChat(targetSession, { toggleActive: false, openContextEditor: false });
+
                                         // 等待DOM更新后滚动到位置
                                         await new Promise(resolve => setTimeout(resolve, 200));
-                                        
+
                                         // 滚动到对应的会话项
                                         const sessionKey = targetSession.key || targetSession.id;
                                         const sessionItem = document.querySelector(`.session-item[data-key="${sessionKey}"], .session-item[data-session-key="${sessionKey}"]`);
-                                        
+
                                         if (sessionItem) {
                                             // 滚动到会话项位置
                                             sessionItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                            
+
                                             // 添加高亮效果
                                             sessionItem.classList.add('highlight-session');
                                             setTimeout(() => {
                                                 sessionItem.classList.remove('highlight-session');
                                             }, 2000);
-                                            
+
                                             console.log('[useMethods] 已滚动到会话位置:', sessionKey);
                                         } else {
                                             // 如果通过data-key没找到，尝试通过标题匹配（作为备选方案）
@@ -5805,7 +5882,7 @@ export const useMethods = (store) => {
                                                 }
                                             }
                                         }
-                                        
+
                                         // 清理外部选中的会话ID（延迟清理，确保组件已更新）
                                         setTimeout(() => {
                                             if (store.externalSelectedSessionId) {
@@ -5821,6 +5898,158 @@ export const useMethods = (store) => {
                             } catch (error) {
                                 console.error('[useMethods] 选中对应会话失败:', error);
                             }
+                        }
+                    }
+
+                    // 如果切换到树形视图，尝试选中对应的文件
+                    if (mode === 'tree' && pendingSessionKey) {
+                        // 等待DOM更新完成
+                        await new Promise(resolve => setTimeout(resolve, 100));
+
+                        try {
+                            // 在文件树中查找对应的文件节点
+                            const findNodeBySessionKey = (nodes, targetSessionKey) => {
+                                if (!nodes) return null;
+                                const stack = Array.isArray(nodes) ? [...nodes] : [nodes];
+                                while (stack.length > 0) {
+                                    const n = stack.pop();
+                                    if (!n) continue;
+                                    if (n.type === 'file') {
+                                        const nodeSessionKey = String(n.sessionKey || '');
+                                        if (nodeSessionKey === targetSessionKey) {
+                                            return n;
+                                        }
+                                    }
+                                    if (Array.isArray(n.children) && n.children.length > 0) {
+                                        for (let i = n.children.length - 1; i >= 0; i--) stack.push(n.children[i]);
+                                    }
+                                }
+                                return null;
+                            };
+
+                            const targetNode = findNodeBySessionKey(store.fileTree?.value, pendingSessionKey);
+
+                            if (targetNode && targetNode.key) {
+                                const targetFileKey = targetNode.key;
+                                console.log('[useMethods] 找到对应的文件节点，准备选中并滚动:', targetFileKey);
+
+                                // 展开所有父文件夹，确保文件可见
+                                const expandParentFolders = (nodes, targetKey) => {
+                                    if (!nodes) return false;
+                                    const stack = Array.isArray(nodes) ? [...nodes] : [nodes];
+                                    const path = [];
+
+                                    const findPath = (nodeList, target, currentPath = []) => {
+                                        for (const node of nodeList) {
+                                            if (!node) continue;
+                                            const nodeKey = node.key || '';
+
+                                            if (node.type === 'file' && nodeKey === target) {
+                                                return [...currentPath];
+                                            }
+
+                                            if (node.type === 'folder' && node.children) {
+                                                const newPath = [...currentPath, nodeKey];
+                                                const found = findPath(node.children, target, newPath);
+                                                if (found) return found;
+                                            }
+                                        }
+                                        return null;
+                                    };
+
+                                    const folderPath = findPath(stack, targetKey);
+                                    if (folderPath && folderPath.length > 0) {
+                                        folderPath.forEach(folderKey => {
+                                            if (expandedFolders && !expandedFolders.value.has(folderKey)) {
+                                                if (typeof toggleFolder === 'function') {
+                                                    toggleFolder(folderKey);
+                                                } else if (expandedFolders.value instanceof Set) {
+                                                    expandedFolders.value.add(folderKey);
+                                                }
+                                            }
+                                        });
+                                    }
+                                };
+
+                                // 展开父文件夹
+                                expandParentFolders(store.fileTree?.value, targetFileKey);
+
+                                // 选中文件
+                                if (typeof setSelectedKey === 'function') {
+                                    setSelectedKey(targetFileKey);
+                                } else if (selectedKey) {
+                                    selectedKey.value = targetFileKey;
+                                }
+
+                                // 调用 loadFileByKey 确保 read-file 接口被调用
+                                if (typeof loadFileByKey === 'function') {
+                                    try {
+                                        console.log('[useMethods] 调用 loadFileByKey 加载文件内容:', targetFileKey);
+                                        await loadFileByKey(targetFileKey);
+                                    } catch (error) {
+                                        console.warn('[useMethods] loadFileByKey 调用失败:', error);
+                                    }
+                                }
+
+                                // 等待DOM更新后滚动到位置
+                                await new Promise(resolve => setTimeout(resolve, 300));
+
+                                // 滚动到对应的文件项
+                                const normalize = (v) => {
+                                    if (!v) return '';
+                                    let s = String(v).replace(/\\/g, '/');
+                                    s = s.replace(/^\.\//, '');
+                                    s = s.replace(/^\/+/, '');
+                                    s = s.replace(/\/\/+/g, '/');
+                                    return s;
+                                };
+
+                                const normalizedTargetKey = normalize(targetFileKey);
+
+                                // 优先通过 data-key 属性查找
+                                const fileItem = document.querySelector(`.file-tree-item.file-item[data-key="${targetFileKey}"], .file-tree-item.file-item[data-file-key="${targetFileKey}"]`);
+
+                                if (fileItem) {
+                                    // 滚动到文件项位置
+                                    fileItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                                    // 添加高亮效果
+                                    fileItem.classList.add('highlight-file');
+                                    setTimeout(() => {
+                                        fileItem.classList.remove('highlight-file');
+                                    }, 2000);
+
+                                    console.log('[useMethods] 已滚动到文件位置:', targetFileKey);
+                                } else {
+                                    // 如果通过data-key没找到，尝试通过文件名匹配（作为备选方案）
+                                    console.warn('[useMethods] 未找到文件项，尝试通过文件名匹配');
+                                    const fileItems = document.querySelectorAll('.file-tree-item.file-item');
+                                    for (const item of fileItems) {
+                                        const fileNameElement = item.querySelector('.file-name');
+                                        if (fileNameElement) {
+                                            const itemName = fileNameElement.textContent?.trim();
+                                            const targetName = targetNode.name || targetFileKey.split('/').pop();
+                                            if (itemName === targetName) {
+                                                // 进一步验证：检查data-session-key是否匹配
+                                                const itemSessionKey = item.getAttribute('data-session-key');
+                                                if (!itemSessionKey || itemSessionKey === pendingSessionKey) {
+                                                    item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                    item.classList.add('highlight-file');
+                                                    setTimeout(() => {
+                                                        item.classList.remove('highlight-file');
+                                                    }, 2000);
+                                                    console.log('[useMethods] 已滚动到文件位置（通过文件名匹配）:', targetFileKey);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                console.warn('[useMethods] 未找到对应的文件节点，sessionKey:', pendingSessionKey);
+                            }
+                        } catch (error) {
+                            console.error('[useMethods] 选中对应文件失败:', error);
                         }
                     }
 

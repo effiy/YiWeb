@@ -733,6 +733,9 @@ const createFileTreeNode = () => {
                 <!-- 文件 -->
                 <div 
                     v-else
+                    :data-key="item.key"
+                    :data-file-key="item.key"
+                    :data-session-key="item.sessionKey"
                     :class="['file-tree-item', 'file-item', { 
                         selected: isFileSelected(item.key),
                         'batch-selected': batchMode && isFileSelected(item.key)
