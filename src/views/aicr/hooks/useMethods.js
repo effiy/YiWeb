@@ -5684,6 +5684,29 @@ export const useMethods = (store) => {
                     viewMode.value = mode;
                     console.log('[useMethods] 视图模式已切换:', previousMode, '->', mode);
 
+                    // 在切换视图前，将 activeSession 的最新消息同步到 store.sessions
+                    if (activeSession?.value && store.sessions?.value) {
+                        const activeKey = String(activeSession.value.key || activeSession.value.id || '');
+                        if (activeKey) {
+                            const activeMessages = activeSession.value.messages;
+                            if (Array.isArray(activeMessages)) {
+                                const sessionIndex = store.sessions.value.findIndex(s => {
+                                    const sKey = String(s.key || s.id || '');
+                                    return sKey === activeKey;
+                                });
+                                if (sessionIndex !== -1) {
+                                    // 更新 store.sessions 中对应会话的 messages
+                                    store.sessions.value[sessionIndex] = {
+                                        ...store.sessions.value[sessionIndex],
+                                        messages: activeMessages,
+                                        updatedAt: activeSession.value.updatedAt || Date.now()
+                                    };
+                                    console.log('[useMethods] 已同步 activeSession 的消息到 store.sessions，消息数量:', activeMessages.length);
+                                }
+                            }
+                        }
+                    }
+
                     // 保存当前选中的文件Key（如果从文件视图切换到会话视图）
                     let pendingFileKey = null;
                     if (previousMode === 'tree' && mode === 'tags') {
@@ -5695,13 +5718,16 @@ export const useMethods = (store) => {
 
                     // 保存当前选中的会话（如果从会话视图切换到文件视图）
                     let pendingSessionKey = null;
+                    let pendingSessionMessages = null;
                     if (previousMode === 'tags' && mode === 'tree') {
                         // 优先使用 activeSession，否则使用 externalSelectedSessionId
                         if (activeSession && activeSession.value) {
                             const sessionKey = activeSession.value.key || activeSession.value.id;
                             if (sessionKey) {
                                 pendingSessionKey = String(sessionKey);
-                                console.log('[useMethods] 保存当前选中的会话Key:', pendingSessionKey);
+                                // 保存当前的消息，以便后续使用
+                                pendingSessionMessages = activeSession.value.messages;
+                                console.log('[useMethods] 保存当前选中的会话Key:', pendingSessionKey, '消息数量:', pendingSessionMessages?.length || 0);
                             }
                         } else if (store.externalSelectedSessionId && store.externalSelectedSessionId.value) {
                             pendingSessionKey = String(store.externalSelectedSessionId.value);
@@ -5732,12 +5758,18 @@ export const useMethods = (store) => {
                             newComment.value = '';
                         }
 
-                        if (activeSession) activeSession.value = null;
-                        if (activeSessionError) activeSessionError.value = null;
-                        if (activeSessionLoading) activeSessionLoading.value = false;
-                        if (sessionChatInput) sessionChatInput.value = '';
-                        if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
-                        if (sessionContextDraft) sessionContextDraft.value = '';
+                        // 只有在没有待处理的会话/文件时才清空会话状态
+                        // 如果有待处理的会话/文件，保留当前状态以便后续同步
+                        const hasPendingSync = (previousMode === 'tree' && mode === 'tags' && pendingFileKey) ||
+                            (previousMode === 'tags' && mode === 'tree' && pendingSessionKey);
+                        if (!hasPendingSync) {
+                            if (activeSession) activeSession.value = null;
+                            if (activeSessionError) activeSessionError.value = null;
+                            if (activeSessionLoading) activeSessionLoading.value = false;
+                            if (sessionChatInput) sessionChatInput.value = '';
+                            if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
+                            if (sessionContextDraft) sessionContextDraft.value = '';
+                        }
 
                         window.dispatchEvent(new CustomEvent('clearCodeHighlight'));
                         setTimeout(() => {
@@ -5827,10 +5859,22 @@ export const useMethods = (store) => {
 
                                     // 在会话列表中查找对应的会话
                                     const sessions = store.sessions?.value || [];
-                                    const targetSession = sessions.find(s => {
+                                    let targetSession = sessions.find(s => {
                                         const sessionKey = String(s.key || s.id || '');
                                         return sessionKey === targetSessionKey;
                                     });
+
+                                    // 如果当前有 activeSession 且与目标会话相同，使用 activeSession 的 messages（保留最新聊天记录）
+                                    if (targetSession && activeSession?.value) {
+                                        const activeKey = String(activeSession.value.key || activeSession.value.id || '');
+                                        if (activeKey === targetSessionKey) {
+                                            const activeMessages = activeSession.value.messages;
+                                            if (Array.isArray(activeMessages) && activeMessages.length > 0) {
+                                                console.log('[useMethods] 使用 activeSession 的最新 messages，数量:', activeMessages.length);
+                                                targetSession = { ...targetSession, messages: activeMessages };
+                                            }
+                                        }
+                                    }
 
                                     if (targetSession) {
                                         console.log('[useMethods] 找到对应的会话，准备选中并滚动:', targetSession.key);
