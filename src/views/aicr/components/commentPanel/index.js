@@ -17,7 +17,11 @@ async function fetchCommentsFromMongo(file) {
 
         // 如果有文件信息，添加到参数中
         if (file) {
-            const sessionKey = file.sessionKey || null;
+            const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
+            // 约定：file.key 必须与会话 key(sessionKey/UUID)一致，但为了兼容边缘场景这里做兜底
+            const sessionKey = (file.sessionKey && isUUID(file.sessionKey))
+                ? String(file.sessionKey)
+                : (file.key && isUUID(file.key) ? String(file.key) : null);
             if (sessionKey) {
                 queryParams.fileKey = sessionKey;
                 console.log('[CommentPanel] 添加文件Key到参数(sessionKey):', sessionKey, '原file对象:', file);
@@ -394,15 +398,20 @@ const componentOptions = {
         // 统一获取当前session的key：优先使用activeSession的key，否则使用file.sessionKey
         // 可以传入可选的file参数来获取指定文件的sessionKey
         _getCurrentSessionKey(file = null) {
+            const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
             // 优先使用 activeSession 的 key
             if (this.activeSession) {
                 const sessionKey = this.activeSession.id || this.activeSession.key || this.activeSession.sessionKey;
-                if (sessionKey) return String(sessionKey);
+                if (sessionKey && isUUID(sessionKey)) return String(sessionKey);
             }
             // 使用传入的file参数，或者使用this.file的sessionKey
             const targetFile = file || this.file;
-            if (targetFile?.sessionKey) {
+            if (targetFile?.sessionKey && isUUID(targetFile.sessionKey)) {
                 return String(targetFile.sessionKey);
+            }
+            // 兜底：如果只传了 file.key（且是 UUID），也视为 sessionKey
+            if (targetFile?.key && isUUID(targetFile.key)) {
+                return String(targetFile.key);
             }
             return null;
         },
@@ -3144,15 +3153,6 @@ const componentOptions = {
             const resolvedFileKey = hasFileKeyParam ? (detail.fileKey ?? detail.key) : undefined;
             const resolvedSessionKey = hasFileKeyParam ? this._resolveSessionKeyFromEventKey(resolvedFileKey) : undefined;
             const effectiveSessionKey = (resolvedSessionKey === undefined) ? this._getCurrentSessionKey() : resolvedSessionKey;
-
-            // 防止重复触发
-            if (this._lastReloadEvent &&
-                this._isSameFileKey(this._lastReloadEvent.fileKey, effectiveSessionKey) &&
-                Date.now() - this._lastReloadEvent.timestamp < 500) {
-                console.log('[CommentPanel] 检测到重复的reloadComments事件，跳过处理');
-                return;
-            }
-
             // 记录事件信息
             this._lastReloadEvent = {
                 fileKey: effectiveSessionKey,

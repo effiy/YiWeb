@@ -168,6 +168,8 @@ async function createApp() {
                             if (loadedFile.sessionKey) {
                                 this.fileInfo.sessionKey = loadedFile.sessionKey;
                             }
+                            const resolvedSessionKey = this.resolveSessionKey() || loadedFile.sessionKey || this.fileInfo.sessionKey || '';
+                            const treeKey = loadedFile.key || loadedFile.path || this.fileInfo.fileKey || '';
                             this.currentFile = {
                                 name: loadedFile.name || this.fileInfo.fileName,
                                 path: loadedFile.path || this.fileInfo.filePath,
@@ -175,13 +177,16 @@ async function createApp() {
                                 type: loadedFile.type || 'text',
                                 size: loadedFile.size || 0,
                                 lastModified: loadedFile.lastModified || new Date().toISOString(),
-                                key: loadedFile.key || this.fileInfo.fileKey,
-                                sessionKey: loadedFile.sessionKey
+                                // 约定：file.key 与会话 key(sessionKey/UUID)一致
+                                key: resolvedSessionKey,
+                                sessionKey: resolvedSessionKey,
+                                // 额外保留 treeKey，用于文件树/静态文件定位
+                                treeKey: treeKey
                             };
-                            const resolvedSessionKey = this.resolveSessionKey();
                             if (resolvedSessionKey) {
                                 this.fileInfo.sessionKey = resolvedSessionKey;
                                 this.currentFile.sessionKey = resolvedSessionKey;
+                                this.currentFile.key = resolvedSessionKey;
                             }
                             console.log('[loadFileContent] 通过 store 加载文件成功:', this.currentFile.name);
                             return;
@@ -236,8 +241,10 @@ async function createApp() {
                         type: itemData.type || item.type || 'text',
                         size: itemData.size || item.size || 0,
                         lastModified: itemData.lastModified || item.lastModified || new Date().toISOString(),
-                        key: item.key,
-                        sessionKey: this.resolveSessionKey()
+                        // 约定：file.key 与会话 key(sessionKey/UUID)一致
+                        key: this.resolveSessionKey(),
+                        sessionKey: this.resolveSessionKey(),
+                        treeKey: item.key || item.path || itemData.path || this.fileInfo.fileKey
                     };
                     
                     console.log('[loadFileContent] 文件加载成功:', this.currentFile.name, '内容长度:', content.length);

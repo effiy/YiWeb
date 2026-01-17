@@ -107,15 +107,36 @@ export const useComputed = (store) => {
             if (!currentFile) {
                 const sessionKeyFromTree = findSessionKeyByTreeKey(store.fileTree?.value, target);
                 if (sessionKeyFromTree) {
-                    return { key: target, path: target, name: target.split('/').pop() || target, sessionKey: sessionKeyFromTree };
+                    // 约定：file.key 必须与会话 key(sessionKey/UUID)一致
+                    // 同时保留 treeKey/path 用于文件树定位与静态文件加载
+                    return {
+                        key: String(sessionKeyFromTree),
+                        sessionKey: String(sessionKeyFromTree),
+                        treeKey: target,
+                        path: target,
+                        name: target.split('/').pop() || target
+                    };
                 }
                 return null;
             }
 
-            if (currentFile.sessionKey) return currentFile;
-            const sessionKeyFromTree = findSessionKeyByTreeKey(store.fileTree?.value, target);
-            if (!sessionKeyFromTree) return currentFile;
-            return { ...currentFile, sessionKey: sessionKeyFromTree };
+            const sessionKeyFromTree = currentFile.sessionKey || findSessionKeyByTreeKey(store.fileTree?.value, target);
+            if (!sessionKeyFromTree) {
+                // 尽量补齐 treeKey，避免下游误把 key 当路径
+                return { ...currentFile, treeKey: currentFile.treeKey || currentFile.path || target };
+            }
+
+            // 统一 file 对象结构：
+            // - key / sessionKey：会话 UUID
+            // - treeKey：文件树 key（通常是路径）
+            // - path：静态文件路径（通常同 treeKey）
+            return {
+                ...currentFile,
+                sessionKey: String(sessionKeyFromTree),
+                key: String(sessionKeyFromTree),
+                treeKey: currentFile.treeKey || currentFile.path || target,
+                path: currentFile.path || target
+            };
         }),
 
         /**

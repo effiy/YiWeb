@@ -1218,17 +1218,23 @@ const componentOptions = {
 
                 console.log('[jumpToCodePage] 当前文件信息:', this.file);
 
+                // 统一约定：
+                // - this.file.key === sessionKey(UUID)
+                // - this.file.treeKey / this.file.path === 文件树key/路径（用于加载静态文件）
+                const treeKey = this.file.treeKey || this.file.path || this.file.name || '';
+                const sessionKey = this.file.sessionKey || this.file.key || '';
+
                 // 构建跳转URL，传递文件信息
                 const params = new URLSearchParams({
-                    key: this.file.key || this.file.name || this.file.path,
+                    // aicr-code 页仍然用 key/fileKey 做“树key定位”
+                    key: treeKey,
                     fileName: this.file.name || this.file.path || '',
                     filePath: this.file.path || this.file.name || ''
                 });
 
-                // 如果文件有 key 信息，也传递过去（用于精确查找）
-                if (this.file.key) {
-                    params.set('fileKey', this.file.key);
-                }
+                if (treeKey) params.set('fileKey', treeKey);
+                // 额外传递 sessionKey，确保评论/会话关联一致
+                if (sessionKey) params.set('sessionKey', sessionKey);
 
                 const jumpUrl = `/src/views/aicr/aicr-code.html?${params.toString()}`;
                 console.log('[jumpToCodePage] 跳转URL:', jumpUrl);
@@ -1284,7 +1290,7 @@ const componentOptions = {
             this.saveError = '';
             try {
                 // 获取文件路径
-                const targetFile = this.file.path || this.file.key;
+                const targetFile = this.file.path || this.file.treeKey || '';
 
                 console.log('[saveEditedFile] 保存参数:', {
                     targetFile,
@@ -1331,8 +1337,9 @@ const componentOptions = {
                 try {
                     const store = window.aicrStore;
                     if (store && Array.isArray(store.files?.value)) {
+                        const treeKey = this.file.treeKey || this.file.path || '';
                         const idx = store.files.value.findIndex(f => {
-                            return f.key === this.file.key || f.path === this.file.path;
+                            return (treeKey && (f.key === treeKey || f.path === treeKey)) || (this.file.path && f.path === this.file.path);
                         });
                         if (idx >= 0) {
                             const prev = store.files.value[idx];
@@ -1347,7 +1354,10 @@ const componentOptions = {
 
                 // 发射文件保存成功事件
                 this.$emit('file-saved', {
-                    fileKey: this.file.key,
+                    // fileKey 用于定位文件内容（树key/路径）
+                    fileKey: this.file.treeKey || this.file.path || '',
+                    // sessionKey 用于会话/评论关联
+                    sessionKey: this.file.sessionKey || this.file.key || '',
                     filePath: targetFile,
                     content: content,
                     lastModified: new Date().toISOString()
@@ -1961,6 +1971,7 @@ const componentOptions = {
                         this.file.key,
                         this.file.sessionKey,
                         this.file.fileKey,
+                        this.file.treeKey,
                         this.file.path
                     ];
                     candidates.forEach((v) => {
@@ -2558,7 +2569,10 @@ const componentOptions = {
 
                 // 重构：comment 的 fileKey 必须是对应 session 的 key（sessionKey）
                 const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
-                const sessionKey = this.file?.sessionKey || null;
+                // 约定：this.file.key 必须与会话 key(sessionKey/UUID)一致，但这里做兜底以避免边缘场景拿不到 sessionKey
+                const sessionKey = (this.file?.sessionKey && isUUID(this.file.sessionKey))
+                    ? String(this.file.sessionKey)
+                    : (this.file?.key && isUUID(this.file.key) ? String(this.file.key) : null);
 
                 if (!sessionKey || !isUUID(sessionKey)) {
                     throw new Error('无法找到有效的 sessionKey，评论无法提交');
@@ -3015,7 +3029,8 @@ const componentOptions = {
                 // 触发重新加载评论
                 this.$emit('reload-comments', {
                     forceReload: true,
-                    fileKey: this.file ? (this.file.sessionKey || this.file.fileKey || this.file.key || this.file.id) : null
+                    // 统一：评论关联只看 sessionKey（UUID）
+                    sessionKey: this.file ? (this.file.sessionKey || this.file.key || null) : null
                 });
 
                 hideGlobalLoading();
@@ -3090,7 +3105,8 @@ const componentOptions = {
                 // 触发重新加载评论
                 this.$emit('reload-comments', {
                     forceReload: true,
-                    fileKey: this.file ? (this.file.sessionKey || this.file.fileKey || this.file.key) : null
+                    // 统一：评论关联只看 sessionKey（UUID）
+                    sessionKey: this.file ? (this.file.sessionKey || this.file.key || null) : null
                 });
 
                 hideGlobalLoading();
@@ -3731,7 +3747,7 @@ const componentOptions = {
                 console.log('[CodeView] 使用全局store加载文件');
 
                 // 使用文件的key进行精确加载
-                const fileKey = file.key;
+                const fileKey = file?.treeKey || file?.path || null;
 
                 if (fileKey) {
                     console.log('[CodeView] 通过store加载文件:', { fileKey });
@@ -3742,7 +3758,8 @@ const componentOptions = {
                                 console.log('[CodeView] 文件加载成功:', loadedFile.name, '内容长度:', loadedFile.content.length);
 
                                 // 更新当前文件对象的内容
-                                if (this.file && (this.file.key === fileKey)) {
+                                const currentTreeKey = this.file?.treeKey || this.file?.path || null;
+                                if (this.file && currentTreeKey && (currentTreeKey === fileKey)) {
                                     // 使用Vue的响应式API强制更新
                                     const originalFile = this.file;
                                     const updatedFile = { ...originalFile, content: loadedFile.content };
@@ -3902,7 +3919,8 @@ const componentOptions = {
                 this.$forceUpdate();
             },
             reloadFile: () => {
-                if (this.file && this.file.key) {
+                const treeKey = this.file?.treeKey || this.file?.path;
+                if (this.file && treeKey) {
                     console.log('[CodeView] 重新加载文件:', this.file.name);
                     this.triggerFileLoad(this.file);
                 } else {

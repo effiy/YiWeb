@@ -2042,9 +2042,6 @@ export const useMethods = (store) => {
                 if (!window.API_URL) {
                     throw createError('API地址未配置，无法提交评论', ErrorTypes.API, '评论提交');
                 }
-
-                // 调用API提交评论
-                // const { postData } = await import('/src/services/modules/crud.js');
                 const payload = {
                     module_name: SERVICE_MODULE,
                     method_name: 'create_document',
@@ -2078,20 +2075,6 @@ export const useMethods = (store) => {
                 }
 
                 showSuccessMessage('评论添加成功');
-
-                // 立即触发评论面板刷新，确保新评论能够显示
-                // 注释掉立即刷新，因为这会导致 CommentPanel 从 store 加载旧数据，覆盖掉下面 addCommentToLocalData 添加的本地数据
-                // 真正的刷新应该在 store 更新后进行（见下方的 reloadCommentsWithRetry）
-                /*
-                console.log('[评论提交] 立即触发评论面板刷新');
-                window.dispatchEvent(new CustomEvent('reloadComments', {
-                    detail: { 
-                        fileKey: selectedKey.value,
-                        forceReload: true,
-                        immediateReload: true // 标记立即刷新，不使用防抖
-                    }
-                }));
-                */
 
                 // 立即在UI中显示新评论
                 let commentAdded = false;
@@ -2609,17 +2592,17 @@ export const useMethods = (store) => {
 
                 console.log('[加载评论] 调用获取评论接口:', queryUrl);
 
-                const { getData } = await import('/src/services/modules/crud.js');
-                const response = await getData(queryUrl);
+                // const { getData } = await import('/src/services/modules/crud.js');
+                // const response = await getData(queryUrl);
 
-                // 更新评论数据
-                if (response && response.data && response.data.list) {
-                    comments.value = response.data.list;
-                    console.log('[加载评论] 评论数据更新成功，数量:', comments.value.length);
-                } else {
-                    comments.value = [];
-                    console.log('[加载评论] 没有评论数据');
-                }
+                // // 更新评论数据
+                // if (response && response.data && response.data.list) {
+                //     comments.value = response.data.list;
+                //     console.log('[加载评论] 评论数据更新成功，数量:', comments.value.length);
+                // } else {
+                //     comments.value = [];
+                //     console.log('[加载评论] 没有评论数据');
+                // }
 
             } catch (error) {
                 console.error('[加载评论] 加载失败:', error);
