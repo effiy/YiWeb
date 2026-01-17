@@ -383,12 +383,6 @@
 
                         <!-- 评论操作（类似会话聊天的操作按钮） -->
                         <div class="comment-actions comment-chat-actions">
-                            <!-- 复制消息按钮 -->
-                            <button type="button" @click="copyCommentContent(comment)"
-                                class="chat-meta-btn comment-action-btn" title="复制内容" aria-label="复制内容">
-                                {{ getCommentCopyButtonLabel(comment) }}
-                            </button>
-
                             <!-- 发送到机器人按钮 -->
                             <template
                                 v-if="Array.isArray(sessionChatWeChatRobots) && sessionChatWeChatRobots.length > 0 && comment.author !== '手动评论'">
@@ -397,12 +391,6 @@
                                     :title="'发送到：' + (bot.name || '机器人')" :aria-label="'发送到机器人：' + (bot.name || '机器人')"
                                     @click="sendCommentToRobot(bot, comment)">{{ bot.name || '机器人' }}</button>
                             </template>
-
-                            <!-- 回复按钮 -->
-                            <button type="button" @click="replyToComment(comment)"
-                                class="chat-meta-btn comment-action-btn" title="回复评论" aria-label="回复评论">
-                                💬 回复
-                            </button>
 
                             <!-- 编辑按钮 -->
                             <button type="button" v-if="comment.author === '手动评论'" @click="openCommentEditor(comment)"
