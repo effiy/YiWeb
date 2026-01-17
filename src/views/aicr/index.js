@@ -134,6 +134,7 @@ const { computed } = Vue;
                 // 会话批量选择相关状态
                 sessionBatchMode: store.sessionBatchMode,
                 selectedSessionKeys: store.selectedSessionKeys,
+                externalSelectedSessionId: store.externalSelectedSessionId,
             },
             onMounted: (mountedApp) => {
                 logInfo('[代码审查页面] 应用已挂载');

@@ -412,6 +412,25 @@
     box-shadow: 0 0 0 1px var(--primary, #6366f1);
 }
 
+.session-item.highlight-session {
+    border-color: var(--primary, #6366f1);
+    background: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 0 2px var(--primary, #6366f1), 0 8px 24px rgba(99, 102, 241, 0.4);
+    animation: highlightPulse 2s ease-out;
+}
+
+@keyframes highlightPulse {
+    0% {
+        box-shadow: 0 0 0 2px var(--primary, #6366f1), 0 8px 24px rgba(99, 102, 241, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 0 2px var(--primary, #6366f1), 0 8px 24px rgba(99, 102, 241, 0.3);
+    }
+    100% {
+        box-shadow: 0 0 0 1px var(--primary, #6366f1), 0 8px 20px rgba(99, 102, 241, 0.2);
+    }
+}
+
 .session-item-header {
     display: flex;
     align-items: center;

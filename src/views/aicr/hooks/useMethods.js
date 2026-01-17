@@ -5625,6 +5625,15 @@ export const useMethods = (store) => {
                     viewMode.value = mode;
                     console.log('[useMethods] 视图模式已切换:', previousMode, '->', mode);
 
+                    // 保存当前选中的文件Key（如果从文件视图切换到会话视图）
+                    let pendingFileKey = null;
+                    if (previousMode === 'tree' && mode === 'tags') {
+                        if (selectedKey && selectedKey.value) {
+                            pendingFileKey = selectedKey.value;
+                            console.log('[useMethods] 保存当前选中的文件Key:', pendingFileKey);
+                        }
+                    }
+
                     if (previousMode !== mode) {
                         try {
                             if (mode === 'tree' && typeof window.aicrApp?.abortSessionChatRequest === 'function') {
@@ -5693,6 +5702,125 @@ export const useMethods = (store) => {
                             }
                         } else {
                             console.log('[useMethods] 切换到标签视图，会话数据已存在，跳过加载');
+                        }
+
+                        // 如果有待处理的文件Key，尝试选中对应的会话
+                        if (pendingFileKey) {
+                            // 等待DOM更新完成
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                            
+                            try {
+                                // 从文件树中查找对应的sessionKey
+                                const normalize = (v) => {
+                                    if (!v) return '';
+                                    let s = String(v).replace(/\\/g, '/');
+                                    s = s.replace(/^\.\//, '');
+                                    s = s.replace(/^\/+/, '');
+                                    s = s.replace(/\/\/+/g, '/');
+                                    return s;
+                                };
+                                
+                                const targetTreeKey = normalize(pendingFileKey);
+                                let targetSessionKey = null;
+                                
+                                // 在文件树中查找对应的sessionKey
+                                const findSessionKeyByTreeKey = (nodes, treeKey) => {
+                                    if (!nodes) return null;
+                                    const stack = Array.isArray(nodes) ? [...nodes] : [nodes];
+                                    while (stack.length > 0) {
+                                        const n = stack.pop();
+                                        if (!n) continue;
+                                        const k = normalize(n.key || n.path || n.id || '');
+                                        if (k && k === treeKey) {
+                                            return n.sessionKey != null ? String(n.sessionKey) : null;
+                                        }
+                                        if (Array.isArray(n.children) && n.children.length > 0) {
+                                            for (let i = n.children.length - 1; i >= 0; i--) stack.push(n.children[i]);
+                                        }
+                                    }
+                                    return null;
+                                };
+                                
+                                targetSessionKey = findSessionKeyByTreeKey(store.fileTree?.value, targetTreeKey);
+                                
+                                if (targetSessionKey) {
+                                    console.log('[useMethods] 找到对应的sessionKey:', targetSessionKey);
+                                    
+                                    // 在会话列表中查找对应的会话
+                                    const sessions = store.sessions?.value || [];
+                                    const targetSession = sessions.find(s => {
+                                        const sessionKey = String(s.key || s.id || '');
+                                        return sessionKey === targetSessionKey;
+                                    });
+                                    
+                                    if (targetSession) {
+                                        console.log('[useMethods] 找到对应的会话，准备选中并滚动:', targetSession.key);
+                                        
+                                        // 设置外部选中的会话ID（用于更新sessionList组件的选中状态）
+                                        if (store.externalSelectedSessionId) {
+                                            store.externalSelectedSessionId.value = targetSessionKey;
+                                        }
+                                        
+                                        // 触发会话选择事件
+                                        if (typeof handleSessionSelect === 'function') {
+                                            await handleSessionSelect(targetSession);
+                                        }
+                                        
+                                        // 等待DOM更新后滚动到位置
+                                        await new Promise(resolve => setTimeout(resolve, 200));
+                                        
+                                        // 滚动到对应的会话项
+                                        const sessionKey = targetSession.key || targetSession.id;
+                                        const sessionItem = document.querySelector(`.session-item[data-key="${sessionKey}"], .session-item[data-session-key="${sessionKey}"]`);
+                                        
+                                        if (sessionItem) {
+                                            // 滚动到会话项位置
+                                            sessionItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            
+                                            // 添加高亮效果
+                                            sessionItem.classList.add('highlight-session');
+                                            setTimeout(() => {
+                                                sessionItem.classList.remove('highlight-session');
+                                            }, 2000);
+                                            
+                                            console.log('[useMethods] 已滚动到会话位置:', sessionKey);
+                                        } else {
+                                            // 如果通过data-key没找到，尝试通过标题匹配（作为备选方案）
+                                            console.warn('[useMethods] 未找到会话项，尝试通过标题匹配');
+                                            const sessionItems = document.querySelectorAll('.session-item');
+                                            for (const item of sessionItems) {
+                                                const titleElement = item.querySelector('.session-title-text');
+                                                if (titleElement && targetSession.pageTitle) {
+                                                    const itemTitle = titleElement.textContent?.trim();
+                                                    const targetTitle = targetSession.pageTitle?.trim();
+                                                    if (itemTitle === targetTitle) {
+                                                        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                        item.classList.add('highlight-session');
+                                                        setTimeout(() => {
+                                                            item.classList.remove('highlight-session');
+                                                        }, 2000);
+                                                        console.log('[useMethods] 已滚动到会话位置（通过标题匹配）');
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        
+                                        // 清理外部选中的会话ID（延迟清理，确保组件已更新）
+                                        setTimeout(() => {
+                                            if (store.externalSelectedSessionId) {
+                                                store.externalSelectedSessionId.value = null;
+                                            }
+                                        }, 1000);
+                                    } else {
+                                        console.warn('[useMethods] 未找到对应的会话，sessionKey:', targetSessionKey);
+                                    }
+                                } else {
+                                    console.warn('[useMethods] 未找到对应的sessionKey，文件Key:', pendingFileKey);
+                                }
+                            } catch (error) {
+                                console.error('[useMethods] 选中对应会话失败:', error);
+                            }
                         }
                     }
 

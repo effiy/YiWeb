@@ -65,6 +65,11 @@ const componentOptions = {
         isAllSessionsSelected: {
             type: Boolean,
             default: false
+        },
+        // 外部选中的会话ID（用于从文件视图切换时自动选中）
+        externalSelectedSessionId: {
+            type: [String, null],
+            default: null
         }
     },
     emits: ['session-select', 'session-delete', 'session-create', 'tag-select', 'tag-clear', 'search-change', 'toggle-collapse', 
@@ -74,6 +79,14 @@ const componentOptions = {
             'session-import-file', 'session-export', 'toggle-batch-mode'],
     setup(props, { emit }) {
         const selectedSessionId = ref(null);
+        
+        // 监听外部选中的会话ID，自动更新内部选中状态
+        Vue.watch(() => props.externalSelectedSessionId, (newId) => {
+            if (newId) {
+                selectedSessionId.value = newId;
+                console.log('[SessionList] 外部选中会话ID已更新:', newId);
+            }
+        }, { immediate: true });
         
         // 导入相关
         const sessionImportInput = ref(null);

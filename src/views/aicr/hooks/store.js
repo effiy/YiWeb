@@ -445,6 +445,8 @@ export const createStore = () => {
     // 会话批量选择相关状态
     const sessionBatchMode = vueRef(false);
     const selectedSessionKeys = vueRef(new Set());
+    // 外部选中的会话ID（用于从文件视图切换时自动选中）
+    const externalSelectedSessionId = vueRef(null);
 
     // 视图模式：'tree' 树形视图，'tags' 标签视图
     const viewMode = vueRef('tree');
@@ -2151,6 +2153,7 @@ export const createStore = () => {
         // 会话批量选择相关状态
         sessionBatchMode,
         selectedSessionKeys,
+        externalSelectedSessionId,
 
         // 视图模式
         viewMode,

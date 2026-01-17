@@ -227,6 +227,8 @@
                 <div 
                 v-for="session in filteredSessions"
                 :key="session.key"
+                :data-key="session.key"
+                :data-session-key="session.key"
                 class="session-item"
                 :class="{ 
                     active: selectedSessionId === session.key,
