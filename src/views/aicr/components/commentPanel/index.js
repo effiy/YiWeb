@@ -149,11 +149,13 @@ const componentOptions = {
             editingCommentAuthor: '',
             editingCommentTimestamp: '',
             editingCommentText: '',
+            editingCommentContent: '', // 评论内容（简洁模式）
             editingRangeInfo: { startLine: 1, endLine: 1 },
             editingImprovementText: '',
             editingCommentType: '',
             editingCommentStatus: 'pending',
             editingSaving: false,
+            showImprovementSection: false, // 是否展开改进代码区
             editingCommentContextEditorVisible: false, // 上下文编辑器
             editingCommentContextEditMode: 'split',
             editingCommentEditingContext: '',
@@ -2094,12 +2096,12 @@ const componentOptions = {
 
 
 
-        // 打开评论编辑器（消息对话模式）
+        // 打开评论编辑器（简洁表单模式）
         openCommentEditor(comment) {
             return safeExecute(() => {
                 if (!comment || !comment.key) return;
 
-                console.log('[CommentPanel] 打开评论编辑器（消息对话模式）:', comment);
+                console.log('[CommentPanel] 打开评论编辑器:', comment);
 
                 // 设置编辑状态
                 this.editingComment = { ...comment };
@@ -2113,55 +2115,41 @@ const componentOptions = {
                     this.editingCommentTimestamp = new Date().toISOString().slice(0, 16);
                 }
 
+                // 设置引用代码（只读展示）
                 this.editingCommentText = comment.text ? comment.text.trim() : '';
                 this.editingRangeInfo = comment.rangeInfo ? { ...comment.rangeInfo } : { startLine: 1, endLine: 1 };
+
+                // 设置评论内容（可编辑）
+                this.editingCommentContent = comment.content ? String(comment.content).trim() : '';
+
+                // 设置改进代码
                 this.editingImprovementText = comment.improvementText ? comment.improvementText.trim() : '';
+                // 如果有改进代码，默认展开该区域
+                this.showImprovementSection = !!this.editingImprovementText;
+
+                // 设置评论类型和状态
                 this.editingCommentType = comment.type || '';
                 this.editingCommentStatus = comment.status || 'pending';
                 this.editingSaving = false;
 
-                // 初始化消息列表（从评论内容创建初始消息）
-                const timestamp = comment.timestamp || Date.now();
-                let content = String(comment.content || '').trim();
-                if (comment.text) {
-                    content = `引用代码：\n\`\`\`\n${comment.text}\n\`\`\`\n\n${content}`;
-                }
-                if (comment.improvementText) {
-                    content += `\n\n改进代码：\n\`\`\`\n${comment.improvementText}\n\`\`\``;
-                }
-
-                this.editingCommentMessages = [{
-                    type: 'user',
-                    message: content,
-                    content: content,
-                    timestamp: timestamp,
-                    author: comment.author || '手动评论',
-                    _isOriginal: true
-                }];
-
-                // 重置输入状态
-                this.editingCommentInputText = '';
-                this.editingCommentDraftImages = [];
-                this.editingCommentSending = false;
-                this.editingCommentIncludeContext = true;
-                this.editingCommentCopyFeedback = {};
-
                 // 显示编辑器
                 this.showCommentEditor = true;
 
-                // 聚焦到输入框
+                // 聚焦到内容输入框
                 this.$nextTick(() => {
-                    const textarea = document.querySelector('#editing-comment-chat-input');
+                    const textarea = this.$refs.commentEditorTextarea;
                     if (textarea) {
                         textarea.focus();
-                    }
-                    // 滚动到底部
-                    const messagesEl = document.querySelector('.editing-comment-messages');
-                    if (messagesEl) {
-                        messagesEl.scrollTop = messagesEl.scrollHeight;
+                        // 将光标移到末尾
+                        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
                     }
                 });
             }, '打开评论编辑器');
+        },
+
+        // 切换改进代码区域展开/收起
+        toggleImprovementSection() {
+            this.showImprovementSection = !this.showImprovementSection;
         },
 
         // 关闭评论编辑器
@@ -2178,46 +2166,27 @@ const componentOptions = {
                 this.editingCommentAuthor = '';
                 this.editingCommentTimestamp = '';
                 this.editingCommentText = '';
+                this.editingCommentContent = '';
                 this.editingRangeInfo = { startLine: 1, endLine: 1 };
                 this.editingImprovementText = '';
                 this.editingCommentType = '';
                 this.editingCommentStatus = 'pending';
                 this.editingSaving = false;
+                this.showImprovementSection = false;
                 this.editingCommentContextEditorVisible = false;
                 this.editingCommentCopyFeedback = {};
             }, '关闭评论编辑器');
         },
 
-        // 保存编辑后的评论（从消息列表中提取内容）
+        // 保存编辑后的评论（简洁表单模式）
         async saveEditedComment() {
             return safeExecute(async () => {
                 if (!this.editingComment || !this.editingComment.key) return;
 
-                // 从消息列表中提取最新的内容
-                const messages = Array.isArray(this.editingCommentMessages) ? this.editingCommentMessages : [];
-                let newContent = '';
+                // 直接使用 editingCommentContent 作为评论内容
+                let newContent = (this.editingCommentContent || '').trim();
 
-                if (messages.length > 0) {
-                    // 获取最后一条用户消息的内容
-                    const sortedMessages = [...messages].sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
-                    const lastUserMessage = [...sortedMessages].reverse().find(m => m.type === 'user');
-                    if (lastUserMessage) {
-                        newContent = String(lastUserMessage.message || lastUserMessage.content || '').trim();
-                    } else {
-                        // 如果没有用户消息，使用最后一条消息
-                        const lastMessage = sortedMessages[sortedMessages.length - 1];
-                        if (lastMessage) {
-                            newContent = String(lastMessage.message || lastMessage.content || '').trim();
-                        }
-                    }
-                }
-
-                // 如果没有从消息中提取到内容，使用旧的editingCommentContent作为后备
-                if (!newContent && this.editingCommentContent) {
-                    newContent = (this.editingCommentContent || '').trim();
-                }
-
-                // 如果还是没有内容，使用原始评论内容
+                // 如果没有内容，使用原始评论内容
                 if (!newContent && this.editingComment && this.editingComment.content) {
                     newContent = String(this.editingComment.content || '').trim();
                 }
