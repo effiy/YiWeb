@@ -257,7 +257,8 @@ async function createApp() {
             if (!this.fileInfo.fileKey) return;
             
             try {
-                const targetKey = this.resolveSessionKey() || this.fileInfo.fileKey;
+                const targetKey = this.resolveSessionKey();
+                if (!targetKey) return;
                 // 使用与主页面相同的MongoDB API
                 const queryParams = {
                     cname: 'comments',
@@ -300,7 +301,12 @@ async function createApp() {
         // 处理评论提交
         async handleCommentSubmit(commentData) {
             try {
-                const targetKey = this.resolveSessionKey() || this.fileInfo.fileKey;
+                // 确保使用UUID格式的fileKey
+                const targetKey = this.resolveSessionKey();
+                if (!targetKey || !this.isUUID(targetKey)) {
+                    throw new Error('无法找到有效的文件UUID，评论无法提交');
+                }
+                
                 // 构建创建请求 payload
                 const payload = {
                     module_name: SERVICE_MODULE,
@@ -308,7 +314,7 @@ async function createApp() {
                     parameters: {
                         cname: 'comments',
                         data: {
-                            fileKey: targetKey,
+                            fileKey: targetKey, // 确保是UUID格式
                             ...commentData
                         }
                     }

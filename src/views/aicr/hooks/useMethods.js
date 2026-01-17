@@ -8,9 +8,9 @@
  */
 import { safeExecute, createError, ErrorTypes, showSuccessMessage } from '/src/utils/error.js';
 import { getData, postData, deleteData, batchOperations } from '/src/services/index.js';
-import { 
-    normalizeFilePath, 
-    normalizeFileObject, 
+import {
+    normalizeFilePath,
+    normalizeFileObject,
     normalizeTreeNode,
     extractFileName
 } from '/src/views/aicr/utils/fileFieldNormalizer.js';
@@ -18,7 +18,7 @@ import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHel
 import { getFileDeleteService, buildFileTreeFromSessions } from './store.js';
 
 export const useMethods = (store) => {
-    const { 
+    const {
         fileTree,
         comments,
         selectedKey,
@@ -39,7 +39,7 @@ export const useMethods = (store) => {
         createFile,
         renameItem,
         deleteItem,
-         // 本地持久化
+        // 本地持久化
         // 会话相关方法
         loadSessions,
 
@@ -50,7 +50,7 @@ export const useMethods = (store) => {
         files,
         // 视图模式
         viewMode,
-        
+
         // 会话批量选择相关状态
         sessionBatchMode,
         selectedSessionKeys,
@@ -225,9 +225,9 @@ export const useMethods = (store) => {
                     const next = { ...cur };
                     delete next[key];
                     refMap.value = next;
-                } catch (_) {}
+                } catch (_) { }
             }, Math.max(0, expiresAt - Date.now()) + 20);
-        } catch (_) {}
+        } catch (_) { }
     };
 
     const _isStreamingMessage = (m) => {
@@ -304,9 +304,9 @@ export const useMethods = (store) => {
                     }
                     const container = document.getElementById('pet-chat-messages');
                     if (container) container.scrollTop = container.scrollHeight;
-                } catch (_) {}
+                } catch (_) { }
             }, 0);
-        } catch (_) {}
+        } catch (_) { }
     };
 
     const _saveActiveSession = async (nextSession) => {
@@ -315,7 +315,7 @@ export const useMethods = (store) => {
             const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
             const sessionSync = getSessionSyncService();
             await sessionSync.saveSession(nextSession);
-        } catch (_) {}
+        } catch (_) { }
     };
 
     const _moveSessionChatMessageBlock = async (idx, direction) => {
@@ -366,14 +366,14 @@ export const useMethods = (store) => {
                     sessionBotSystemPrompt.value = normalized || defaultSessionBotSystemPrompt;
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
     };
 
     const persistSessionBotSettings = () => {
         try {
             if (sessionBotModel) localStorage.setItem('aicr_session_bot_model', String(sessionBotModel.value || '').trim());
             if (sessionBotSystemPrompt) localStorage.setItem('aicr_session_bot_system_prompt', String(sessionBotSystemPrompt.value || '').trim());
-        } catch (_) {}
+        } catch (_) { }
     };
 
     loadSessionBotSettings();
@@ -400,14 +400,14 @@ export const useMethods = (store) => {
                     }];
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
     };
 
     const persistWeChatSettings = () => {
         try {
             const arr = Array.isArray(weChatRobots?.value) ? weChatRobots.value : [];
             localStorage.setItem('aicr_wechat_robots', JSON.stringify(arr));
-        } catch (_) {}
+        } catch (_) { }
     };
 
     loadWeChatSettings();
@@ -575,7 +575,7 @@ export const useMethods = (store) => {
         try {
             const el = document.querySelector('.aicr-session-faq-search-input');
             if (el && typeof el.focus === 'function') el.focus();
-        } catch (_) {}
+        } catch (_) { }
     };
 
     const _updateFaqDocument = async (key, patch) => {
@@ -724,7 +724,7 @@ export const useMethods = (store) => {
     const handleSearchInput = (event) => {
         return safeExecute(() => {
             const value = event.target.value;
-            
+
             // 添加安全检查
             if (searchQuery && typeof searchQuery.value !== 'undefined') {
                 searchQuery.value = value;
@@ -732,17 +732,17 @@ export const useMethods = (store) => {
                 console.warn('[搜索输入] searchQuery未定义或无效');
                 return;
             }
-            
+
             // 清除之前的定时器
             if (searchTimeout) {
                 clearTimeout(searchTimeout);
             }
-            
+
             // 设置防抖搜索
             searchTimeout = setTimeout(() => {
                 performSearch(value);
             }, 300);
-            
+
             console.log('[搜索输入] 搜索关键词:', value);
         }, '搜索输入处理');
     };
@@ -758,15 +758,15 @@ export const useMethods = (store) => {
                 clearSearchResults();
                 return;
             }
-            
+
             console.log('[搜索执行] 执行搜索:', query);
-            
+
             // 这里可以实现具体的搜索逻辑
             // 例如：搜索文件、评论、代码内容等
             searchInFileTree(query);
             searchInComments(query);
             searchInCode(query);
-            
+
         }, '搜索执行');
     };
 
@@ -780,7 +780,7 @@ export const useMethods = (store) => {
             // 实现文件树搜索逻辑
         }, '文件树搜索');
     };
-    
+
     /**
      * 处理文件树搜索变化
      * @param {string} query - 搜索关键词
@@ -838,17 +838,17 @@ export const useMethods = (store) => {
             if (messageInput) {
                 messageInput.value = '';
             }
-            
+
             // 清空搜索状态 - 添加安全检查
             if (searchQuery && typeof searchQuery.value !== 'undefined') {
                 searchQuery.value = '';
             } else {
                 console.warn('[清除搜索] searchQuery未定义或无效');
             }
-            
+
             // 清除搜索结果
             clearSearchResults();
-            
+
             console.log('[清除搜索] 搜索已清除');
         }, '清除搜索');
     };
@@ -865,13 +865,13 @@ export const useMethods = (store) => {
                 console.warn('[handleDeleteItem] 缺少 key 或 itemId:', payload);
                 return;
             }
-            
+
             if (!confirm('确定删除该项及其子项？此操作不可撤销。')) return;
-            
+
             // 统一传递 key 参数
             await deleteItem({ key });
             showSuccessMessage('删除成功');
-            
+
             // 若删除的是当前选中文件，则清空选择
             if (selectedKey && selectedKey.value && (selectedKey.value === key || selectedKey.value.startsWith(key + '/'))) {
                 setSelectedKey(null);
@@ -886,13 +886,13 @@ export const useMethods = (store) => {
     const handleTagSelect = (tag) => {
         return safeExecute(() => {
             if (!store.selectedSessionTags) return;
-            
+
             // 如果传入的是数组（来自文件树的多选或排序更新），直接替换
             if (Array.isArray(tag)) {
                 store.selectedSessionTags.value = tag;
                 return;
             }
-            
+
             // 单个标签切换
             const currentTags = new Set(store.selectedSessionTags.value || []);
             if (currentTags.has(tag)) {
@@ -901,7 +901,7 @@ export const useMethods = (store) => {
                 currentTags.add(tag);
             }
             store.selectedSessionTags.value = Array.from(currentTags);
-            
+
             console.log('[TagSelect] 选中标签:', store.selectedSessionTags.value);
         }, '处理标签选择');
     };
@@ -1055,12 +1055,12 @@ export const useMethods = (store) => {
                 if (entries.length === 0) {
                     throw createError('ZIP 中未发现文件', ErrorTypes.VALIDATION, '项目上传');
                 }
-                
+
                 // 过滤规则
                 const MAX_SIZE = 1 * 1024 * 1024; // 1MB (所有文件)
                 const EXCLUDED_DIRS = ['.git', 'node_modules', '.svn', '.hg', '__MACOSX'];
                 const EXCLUDED_FILES = ['.DS_Store', 'Thumbs.db'];
-                
+
                 // 图片文件类型检测
                 const isImageFile = (filename) => {
                     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg', '.ico', '.tiff', '.tif', '.jfif', '.pjpeg', '.pjp'];
@@ -1079,7 +1079,7 @@ export const useMethods = (store) => {
 
                 let STRIP_PREFIX = '';
                 const normalizedAll = entries.map(e => normalizePathForFilter(e.path)).filter(Boolean);
-                
+
                 if (normalizedAll.length > 0) {
                     // 检测所有文件路径是否都在一个共同的根目录下
                     const firstLevelDirs = new Set();
@@ -1089,7 +1089,7 @@ export const useMethods = (store) => {
                             firstLevelDirs.add(parts[0]);
                         }
                     });
-                    
+
                     // 如果所有文件都在同一个根目录下，剥离这个根目录
                     if (firstLevelDirs.size === 1) {
                         const commonRootDir = Array.from(firstLevelDirs)[0];
@@ -1109,22 +1109,22 @@ export const useMethods = (store) => {
                 for (const { path, file } of entries) {
                     let normPath = normalizePathForFilter(path);
                     const originalPath = normPath;
-                    
+
                     // 特别关注 MoreButton.vue 的处理过程
                     if (path.includes('MoreButton.vue')) {
                         console.log(`[文件处理] 开始处理 MoreButton.vue: 原始路径="${path}", 规范化后="${normPath}"`);
                     }
-                    
+
                     if (STRIP_PREFIX && normPath.startsWith(STRIP_PREFIX)) {
                         normPath = normPath.slice(STRIP_PREFIX.length);
                         console.log(`[文件处理] 路径剥离: "${originalPath}" -> "${normPath}"`);
-                        
+
                         // 特别关注 MoreButton.vue 的路径剥离
                         if (path.includes('MoreButton.vue')) {
                             console.log(`[文件处理] MoreButton.vue 路径剥离: "${originalPath}" -> "${normPath}"`);
                         }
                     }
-                    
+
                     if (!normPath) {
                         console.log(`[文件处理] 跳过空路径文件: "${originalPath}"`);
                         if (path.includes('MoreButton.vue')) {
@@ -1132,7 +1132,7 @@ export const useMethods = (store) => {
                         }
                         continue;
                     }
-                    
+
                     // 目录/文件名过滤
                     if (hasExcludedSegment(normPath) || isExcludedFile(normPath)) {
                         console.log(`[文件处理] 跳过排除文件: "${normPath}"`);
@@ -1142,7 +1142,7 @@ export const useMethods = (store) => {
                         skippedExcluded++;
                         continue;
                     }
-                    
+
                     // 图片文件过滤
                     const filename = normPath.split('/').pop();
                     if (isImageFile(filename)) {
@@ -1153,13 +1153,13 @@ export const useMethods = (store) => {
                         skippedImages++;
                         continue;
                     }
-                    
+
                     // 特别关注深层次文件
                     if (normPath.includes('/') && normPath.split('/').length > 3) {
                         console.log(`[文件处理] 处理深层次文件: "${normPath}" (${normPath.split('/').length} 层)`);
                         deepFilesProcessed++;
                     }
-                    
+
                     // 特别关注 MoreButton.vue 文件
                     if (normPath.includes('MoreButton.vue')) {
                         console.log(`[文件处理] 发现 MoreButton.vue 文件: "${originalPath}" -> "${normPath}"`);
@@ -1176,7 +1176,7 @@ export const useMethods = (store) => {
                             size = 0;
                         }
                     }
-                    
+
                     // 文件大小过滤
                     if (size > MAX_SIZE) {
                         const sizeMB = (size / (1024 * 1024)).toFixed(2);
@@ -1218,19 +1218,19 @@ export const useMethods = (store) => {
                         size: payloadSize,
                         type: 'file'
                     });
-                    
+
                     if (normalizedFile) {
                         filesPayload.push(normalizedFile);
                     }
                     processed++;
-                    
+
                     // 特别确认 MoreButton.vue 的处理结果
                     if (path.includes('MoreButton.vue')) {
                         console.log(`[文件处理] ✅ MoreButton.vue 成功添加到文件载荷: "${normPath}"`);
                         console.log(`[文件处理] MoreButton.vue 内容长度: ${(content || '').length} 字符`);
                     }
                 }
-                
+
                 // 输出处理统计信息
                 console.log(`[文件处理统计] 总文件数: ${entries.length}`);
                 console.log(`[文件处理统计] 成功处理: ${processed}`);
@@ -1240,7 +1240,7 @@ export const useMethods = (store) => {
                 console.log(`[文件处理统计] 跳过大文件(>1MB): ${skippedLarge}`);
                 console.log(`[文件处理统计] MoreButton.vue 处理: ${moreButtonProcessed ? '是' : '否'}`);
                 console.log(`[文件处理统计] 最终文件载荷数量: ${filesPayload.length}`);
-                
+
                 // 专门检查 MoreButton.vue 是否在文件载荷中
                 const moreButtonInPayload = filesPayload.find(f => f.name === 'MoreButton.vue' || f.path.includes('MoreButton.vue'));
                 if (moreButtonInPayload) {
@@ -1255,29 +1255,29 @@ export const useMethods = (store) => {
                 const root = { key: 'root', name: 'root', type: 'folder', path: 'root', children: [] };
                 const folderMap = new Map();
                 folderMap.set('', root);
-                
+
                 // 使用统一的路径规范化函数
                 const normalizePath = (path) => normalizeFilePath(path);
-                
+
                 // 确保路径规范化
                 const removeProjectIdPrefix = (path) => normalizeFilePath(path);
-                
+
                 // 用于跟踪所有文件路径，避免创建与文件同名的文件夹
                 const filePathsSet = new Set();
-                
+
                 // 改进的文件夹确保函数 - 修复递归创建逻辑
                 const ensureFolder = (folderPath) => {
                     const norm = normalizePath(folderPath);
-                    
+
                     // 如果路径为空，返回根节点
                     if (!norm) return root;
-                    
-                    
+
+
                     const folderKeyWithoutProjectId = removeProjectIdPrefix(norm);
-                    
+
                     // 如果已经存在，直接返回
                     if (folderMap.has(folderKeyWithoutProjectId)) return folderMap.get(folderKeyWithoutProjectId);
-                    
+
                     // 检查是否与文件路径冲突（避免创建与文件同名的文件夹）
                     if (filePathsSet.has(folderKeyWithoutProjectId)) {
                         console.warn(`[ensureFolder] 跳过创建文件夹 "${folderKeyWithoutProjectId}"，因为已存在同名文件`);
@@ -1285,22 +1285,22 @@ export const useMethods = (store) => {
                         const parentPath = folderKeyWithoutProjectId.split('/').slice(0, -1).join('/');
                         return ensureFolder(parentPath);
                     }
-                    
+
                     // 递归创建父目录
                     const pathSegments = folderKeyWithoutProjectId.split('/').filter(Boolean);
                     let currentPath = '';
                     let parent = root;
-                    
+
                     // 特别关注深层次路径
                     if (pathSegments.length > 3) {
                         console.log(`[ensureFolder] 创建深层次路径: ${folderIdWithoutProjectId} (${pathSegments.length} 层)`);
                     }
-                    
+
                     // 逐级创建路径中的每个文件夹
                     for (let i = 0; i < pathSegments.length; i++) {
                         const segment = pathSegments[i];
                         currentPath = currentPath ? `${currentPath}/${segment}` : segment;
-                        
+
                         // 检查当前路径是否与文件路径冲突
                         if (filePathsSet.has(currentPath)) {
                             console.warn(`[ensureFolder] 跳过创建文件夹 "${currentPath}"，因为已存在同名文件`);
@@ -1314,7 +1314,7 @@ export const useMethods = (store) => {
                                 break;
                             }
                         }
-                        
+
                         if (!folderMap.has(currentPath)) {
                             // 使用统一的节点规范化工具创建文件夹节点
                             const node = normalizeTreeNode({
@@ -1323,12 +1323,12 @@ export const useMethods = (store) => {
                                 type: 'folder',
                                 children: []
                             });
-                            
+
                             if (node) {
                                 parent.children.push(node);
                                 folderMap.set(currentPath, node);
                             }
-                            
+
                             // 特别关注深层次文件夹的创建
                             if (pathSegments.length > 3) {
                                 console.log(`[ensureFolder] 创建深层次文件夹: ${currentPath} (第 ${i + 1} 层)`);
@@ -1336,13 +1336,13 @@ export const useMethods = (store) => {
                         }
                         parent = folderMap.get(currentPath);
                     }
-                    
+
                     return parent;
                 };
-                
+
                 // 处理所有文件，确保其父目录存在
                 console.log(`[文件树构建] 开始处理 ${filesPayload.length} 个文件`);
-                
+
                 // 首先收集所有文件路径，用于检查文件夹与文件同名冲突
                 for (const f of filesPayload) {
                     const filePath = normalizePath(f.path);
@@ -1355,7 +1355,7 @@ export const useMethods = (store) => {
                     }
                 }
                 console.log(`[文件树构建] 已收集 ${filePathsSet.size} 个文件路径用于冲突检查`);
-                
+
                 let deepFilesInTree = 0;
                 let moreButtonInTree = false;
                 for (const f of filesPayload) {
@@ -1364,45 +1364,45 @@ export const useMethods = (store) => {
                         console.warn('[文件树构建] 跳过无效路径的文件:', f);
                         continue;
                     }
-                    
-                    
+
+
                     const filePathWithoutProjectId = removeProjectIdPrefix(filePath);
-                    
-                    
+
+
                     const pathSegments = filePathWithoutProjectId.split('/').filter(Boolean);
-                    const dir = pathSegments.length > 1 
-                        ? pathSegments.slice(0, -1).join('/') 
+                    const dir = pathSegments.length > 1
+                        ? pathSegments.slice(0, -1).join('/')
                         : '';
-                    
+
                     // 特别关注深层次文件
                     if (pathSegments.length > 3) {
                         console.log(`[文件树构建] 处理深层次文件: ${filePathWithoutProjectId} (${pathSegments.length} 层), 父目录: ${dir || '根目录'}`);
                         deepFilesInTree++;
                     }
-                    
+
                     // 特别关注 MoreButton.vue 文件
                     if (f.name === 'MoreButton.vue' || filePathWithoutProjectId.includes('MoreButton.vue')) {
                         console.log(`[文件树构建] 发现 MoreButton.vue 文件: ${filePathWithoutProjectId}, 父目录: ${dir || '根目录'}`);
                         moreButtonInTree = true;
                     }
-                    
+
                     // 确保父目录存在
                     const parent = ensureFolder(dir);
-                    
+
                     // 检查父目录中是否已存在同名文件或文件夹
-                    const existingFileItem = parent.children.find(child => 
+                    const existingFileItem = parent.children.find(child =>
                         (child.name === f.name) && child.type === 'file'
                     );
-                    
-                    const existingFolderItem = parent.children.find(child => 
+
+                    const existingFolderItem = parent.children.find(child =>
                         (child.name === f.name) && child.type === 'folder'
                     );
-                    
+
                     if (existingFileItem) {
                         console.warn(`[文件树构建] 跳过重复文件: ${filePathWithoutProjectId}`);
                         continue;
                     }
-                    
+
                     if (existingFolderItem) {
                         // 如果存在同名文件夹，说明文件路径结构错误
                         // 不应该将文件添加到同名文件夹中，而应该跳过或报错
@@ -1411,7 +1411,7 @@ export const useMethods = (store) => {
                         // 跳过该文件，避免创建冲突
                         continue;
                     }
-                    
+
                     // 使用统一的节点规范化工具创建文件节点
                     const fileNode = normalizeTreeNode({
                         key: filePathWithoutProjectId,
@@ -1420,37 +1420,37 @@ export const useMethods = (store) => {
                         size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)),
                         modified: Date.now()
                     });
-                    
+
                     if (fileNode) {
                         parent.children.push(fileNode);
                     }
-                    
+
                     // 特别关注深层次文件的添加过程
                     if (pathSegments.length > 3) {
                         console.log(`[文件树构建] 成功添加深层次文件: ${f.name} 到父目录: ${dir || '根目录'}`);
                         console.log(`[文件树构建] 父目录当前子节点数量: ${parent.children.length}`);
                     }
                 }
-                
+
                 console.log(`[文件树构建] 文件树构建完成，共创建 ${folderMap.size} 个文件夹节点`);
                 console.log(`[文件树构建统计] 深层次文件添加到树中: ${deepFilesInTree}`);
                 console.log(`[文件树构建统计] MoreButton.vue 添加到树中: ${moreButtonInTree ? '是' : '否'}`);
 
                 // 覆盖导入：采用并集策略，已存在的文件覆盖，不存在的文件补充
                 // 提示：前面已导入 CRUD
-                
+
                 // 1. 从 fileTree 中提取现有的文件列表，用于判断是更新还是新增，以及构建完整的文件树
                 // 不再调用 projectFiles 接口，直接从内存中的文件树提取
                 let existingFilesMap = new Map(); // key -> { key, ... }
                 let allFilesForTree = [...filesPayload]; // 包含所有文件（现有 + 新导入）用于构建文件树
-                
+
                 try {
                     // 从 fileTree 中提取所有文件节点
                     const extractFilesFromTree = (nodes) => {
                         const fileList = [];
                         const traverse = (node) => {
                             if (!node || typeof node !== 'object') return;
-                            
+
                             // 如果是文件节点，添加到列表
                             if (node.type === 'file' || (node.type !== 'folder' && !node.children)) {
                                 const fileKey = node.key || node.path || node.fileKey || '';
@@ -1465,26 +1465,26 @@ export const useMethods = (store) => {
                                     });
                                 }
                             }
-                            
+
                             // 递归处理子节点
                             if (node.children && Array.isArray(node.children)) {
                                 node.children.forEach(child => traverse(child));
                             }
                         };
-                        
+
                         if (Array.isArray(nodes)) {
                             nodes.forEach(node => traverse(node));
                         } else if (nodes) {
                             traverse(nodes);
                         }
-                        
+
                         return fileList;
                     };
-                    
+
                     // 从当前文件树中提取现有文件
                     const root = Array.isArray(fileTree.value) ? fileTree.value[0] : fileTree.value;
                     const existingFilesList = root ? extractFilesFromTree(root) : [];
-                    
+
                     for (const doc of existingFilesList) {
                         const fileKey = doc?.fileKey || doc?.key || doc?.path;
                         if (fileKey) {
@@ -1492,13 +1492,13 @@ export const useMethods = (store) => {
                                 key: fileKey,
                                 ...doc
                             });
-                            
+
                             // 如果现有文件不在新导入的文件列表中，添加到文件树构建列表
                             const isInNewFiles = filesPayload.some(f => {
                                 const newFileKey = f.fileKey || f.key || f.path;
                                 return newFileKey === fileKey;
                             });
-                            
+
                             if (!isInNewFiles) {
                                 // 现有文件不在新导入列表中，需要保留在文件树中
                                 allFilesForTree.push({
@@ -1523,23 +1523,23 @@ export const useMethods = (store) => {
                 const mergedRoot = { key: 'root', name: 'root', type: 'folder', path: 'root', children: [] };
                 const mergedFolderMap = new Map();
                 mergedFolderMap.set('', mergedRoot);
-                
+
                 // 用于跟踪所有文件路径，避免创建与文件同名的文件夹（用于最终文件树构建）
                 const mergedFilePathsSet = new Set();
-                
+
                 // 使用统一的规范化函数
                 const normalizePathForTree = (path) => normalizeFilePath(path);
                 const removeProjectIdPrefixForTree = (path) => normalizeFilePath(path);
-                
+
                 const ensureFolderForTree = (folderPath) => {
                     const norm = normalizePathForTree(folderPath);
                     if (!norm) return mergedRoot;
-                    
+
                     const folderIdWithoutProjectId = removeProjectIdPrefixForTree(norm);
                     if (mergedFolderMap.has(folderIdWithoutProjectId)) {
                         return mergedFolderMap.get(folderIdWithoutProjectId);
                     }
-                    
+
                     // 检查是否与文件路径冲突（避免创建与文件同名的文件夹）
                     if (mergedFilePathsSet.has(folderIdWithoutProjectId)) {
                         console.warn(`[ensureFolderForTree] 跳过创建文件夹 "${folderIdWithoutProjectId}"，因为已存在同名文件`);
@@ -1547,15 +1547,15 @@ export const useMethods = (store) => {
                         const parentPath = folderIdWithoutProjectId.split('/').slice(0, -1).join('/');
                         return ensureFolderForTree(parentPath);
                     }
-                    
+
                     const pathSegments = folderIdWithoutProjectId.split('/').filter(Boolean);
                     let currentPath = '';
                     let parent = mergedRoot;
-                    
+
                     for (let i = 0; i < pathSegments.length; i++) {
                         const segment = pathSegments[i];
                         currentPath = currentPath ? `${currentPath}/${segment}` : segment;
-                        
+
                         // 检查当前路径是否与文件路径冲突
                         if (mergedFilePathsSet.has(currentPath)) {
                             console.warn(`[ensureFolderForTree] 跳过创建文件夹 "${currentPath}"，因为已存在同名文件`);
@@ -1569,7 +1569,7 @@ export const useMethods = (store) => {
                                 break;
                             }
                         }
-                        
+
                         if (!mergedFolderMap.has(currentPath)) {
                             // 使用统一的节点规范化工具创建文件夹节点
                             const node = normalizeTreeNode({
@@ -1578,7 +1578,7 @@ export const useMethods = (store) => {
                                 type: 'folder',
                                 children: []
                             });
-                            
+
                             if (node) {
                                 parent.children.push(node);
                                 mergedFolderMap.set(currentPath, node);
@@ -1586,10 +1586,10 @@ export const useMethods = (store) => {
                         }
                         parent = mergedFolderMap.get(currentPath);
                     }
-                    
+
                     return parent;
                 };
-                
+
                 // 首先收集所有文件路径，用于检查文件夹与文件同名冲突（用于最终文件树构建）
                 for (const f of allFilesForTree) {
                     const filePath = normalizePathForTree(f.path);
@@ -1600,31 +1600,31 @@ export const useMethods = (store) => {
                     }
                 }
                 console.log(`[文件树合并] 已收集 ${mergedFilePathsSet.size} 个文件路径用于冲突检查`);
-                
+
                 // 处理所有文件（现有 + 新导入）构建完整的文件树
                 console.log(`[文件树合并] 开始处理 ${allFilesForTree.length} 个文件构建完整文件树`);
                 for (const f of allFilesForTree) {
                     const filePath = normalizePathForTree(f.path);
                     if (!filePath) continue;
-                    
+
                     const filePathWithoutProjectId = removeProjectIdPrefixForTree(filePath);
                     const pathSegments = filePathWithoutProjectId.split('/').filter(Boolean);
-                    const dir = pathSegments.length > 1 
-                        ? pathSegments.slice(0, -1).join('/') 
+                    const dir = pathSegments.length > 1
+                        ? pathSegments.slice(0, -1).join('/')
                         : '';
-                    
+
                     const parent = ensureFolderForTree(dir);
-                    
+
                     // 检查文件节点是否已存在（避免重复）
-                    const existingFileNode = parent.children.find(child => 
+                    const existingFileNode = parent.children.find(child =>
                         child.name === f.name && child.type === 'file'
                     );
-                    
+
                     // 检查父目录中是否已存在同名文件夹（避免文件与文件夹同名冲突）
-                    const existingFolderNode = parent.children.find(child => 
+                    const existingFolderNode = parent.children.find(child =>
                         child.name === f.name && child.type === 'folder'
                     );
-                    
+
                     if (existingFolderNode) {
                         // 如果存在同名文件夹，说明文件路径结构错误
                         // 不应该将文件添加到同名文件夹中，而应该跳过或报错
@@ -1633,7 +1633,7 @@ export const useMethods = (store) => {
                         // 跳过该文件，避免创建冲突
                         continue;
                     }
-                    
+
                     if (!existingFileNode) {
                         // 使用统一的节点规范化工具创建文件节点
                         const fileNode = normalizeTreeNode({
@@ -1643,7 +1643,7 @@ export const useMethods = (store) => {
                             size: (Number.isFinite(f.size) ? f.size : ((f.content || '').length)),
                             modified: Date.now()
                         });
-                        
+
                         if (fileNode) {
                             parent.children.push(fileNode);
                         }
@@ -1654,7 +1654,7 @@ export const useMethods = (store) => {
                         existingFileNode.modified = Date.now();
                     }
                 }
-                
+
                 console.log(`[文件树合并] 合并完成，共 ${mergedFolderMap.size} 个文件夹节点`);
 
                 // 3. 更新文件树到数据库
@@ -1667,19 +1667,19 @@ export const useMethods = (store) => {
                 let filesCreated = 0;
                 let filesFailed = 0;
                 const failedFiles = [];
-                
+
                 // 导入会话同步服务（与新建文件保持一致）
                 const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                 const sessionSync = getSessionSyncService();
-                
+
                 for (const payload of filesPayload) {
                     try {
                         const fileKey = payload.fileKey || payload.key || payload.path;
                         const existingFile = existingFilesMap.get(fileKey);
                         const isFile = payload.type === 'file' || (!payload.type && fileKey && !fileKey.endsWith('/'));
-                        
+
                         const isExistingFile = existingFile && existingFile.key;
-                        
+
                         // 仅处理文件，忽略文件夹
                         if (isFile && fileKey) {
                             try {
@@ -1688,7 +1688,7 @@ export const useMethods = (store) => {
                                 if (normalizedFileObj) {
                                     // 强制更新模式 (Upsert)，确保覆盖旧内容
                                     await sessionSync.syncFileToSession(normalizedFileObj, false, true);
-                                    
+
                                     filesUploaded++;
                                     if (isExistingFile) {
                                         filesUpdated++;
@@ -1703,12 +1703,12 @@ export const useMethods = (store) => {
                                 filesFailed++;
                             }
                         }
-                        
+
                         // 统计深层次文件保存
                         if (payload.path && payload.path.includes('/') && payload.path.split('/').length > 3) {
                             deepFilesSaved++;
                         }
-                        
+
                         // 统计 MoreButton.vue 保存
                         if (payload.name === 'MoreButton.vue' || payload.path.includes('MoreButton.vue')) {
                             moreButtonSaved = true;
@@ -1727,7 +1727,7 @@ export const useMethods = (store) => {
                 console.log(`[数据库保存统计] 上传失败: ${filesFailed} 个文件`);
                 console.log(`[数据库保存统计] 深层次文件保存: ${deepFilesSaved}`);
                 console.log(`[数据库保存统计] MoreButton.vue 保存: ${moreButtonSaved ? '是' : '否'}`);
-                
+
                 if (failedFiles.length > 0) {
                     console.log(`[数据库保存统计] 失败文件列表:`, failedFiles);
                 }
@@ -1737,29 +1737,29 @@ export const useMethods = (store) => {
                     if (typeof store.loadProjects === 'function') {
                         await store.loadProjects();
                     }
-                } catch (_) {}
+                } catch (_) { }
 
                 // 更新选择到刚上传的项目
-                
+
 
                 // 加载界面所需数据（上传项目后需要重新加载，使用 forceClear: true）
                 await Promise.all([
                     loadFileTree(true),  // forceClear: true，上传后需要重新加载
                     loadFiles(),
-                    (async () => { try { await loadComments(); } catch (_) {} })()
+                    (async () => { try { await loadComments(); } catch (_) { } })()
                 ]);
-                
+
                 // 刷新会话列表（转换成树文件后需要刷新）
                 try {
                     if (typeof store.loadSessions === 'function') {
                         await store.loadSessions(true);
                     }
-                } catch (_) {}
+                } catch (_) { }
 
                 // 广播项目就绪事件
                 try {
-                    window.dispatchEvent(new CustomEvent('projectReady', { detail: { } }));
-                } catch (_) {}
+                    window.dispatchEvent(new CustomEvent('projectReady', { detail: {} }));
+                } catch (_) { }
 
                 const { showSuccess, showWarning } = await import('/src/utils/message.js');
                 let msg = `导入完成：成功处理 ${filesUploaded} 个文件`;
@@ -1781,14 +1781,14 @@ export const useMethods = (store) => {
                     msg += `，跳过大文件(>1MB) ${skippedLarge} 个`;
                 }
                 msg += `。已切换到新项目`;
-                
+
                 if (filesFailed > 0) {
                     showWarning(msg);
                 } else {
                     showSuccess(msg);
                 }
             } finally {
-                try { if (__uploadLoadingShown) hideGlobalLoading(); } catch (_) {}
+                try { if (__uploadLoadingShown) hideGlobalLoading(); } catch (_) { }
             }
         }, '项目上传');
     };
@@ -1819,7 +1819,7 @@ export const useMethods = (store) => {
     const handleFileSelect = (key) => {
         return safeExecute(async () => {
             console.log('[文件选择] 收到文件选择请求:', key);
-            
+
             // 支持对象入参：优先使用 key，最后是 name
             let targetKey = key;
             if (key && typeof key === 'object') {
@@ -1827,7 +1827,7 @@ export const useMethods = (store) => {
                 // 优先使用 key，最后是 name
                 targetKey = node.key || node.name || '';
                 console.log('[文件选择] 从对象中提取文件Key:', targetKey, '原始对象:', node);
-                
+
                 // 如果有 key 信息，保存到全局变量供后续使用
                 if (node.key) {
                     window.__aicrPendingFileKey = node.key;
@@ -1935,21 +1935,11 @@ export const useMethods = (store) => {
                 // 设置loading状态
                 loading.value = true;
                 console.log('[评论提交] 设置loading状态');
-                
+
                 // 显示全局loading
                 const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                 showGlobalLoading('正在提交评论...');
                 console.log('[评论提交] 显示全局loading');
-
-                // 从选择器获取项目信息
-                const projectSelect = document.getElementById('projectSelect');
-                const versionSelect = document.getElementById('versionSelect');
-                
-                let versionId = null;
-                
-                if (versionSelect) {
-                    versionId = versionSelect.value;
-                }
 
                 // 规范化时间戳（转换为毫秒数）
                 const now = Date.now();
@@ -1963,7 +1953,7 @@ export const useMethods = (store) => {
                         timestamp = commentData.timestamp < 1e12 ? commentData.timestamp * 1000 : commentData.timestamp;
                     }
                 }
-                
+
                 // 统一 type 字段（从 role 或 author 推断）
                 let type;
                 if (commentData.type) {
@@ -1976,33 +1966,39 @@ export const useMethods = (store) => {
                     const author = String(commentData.author || '').toLowerCase();
                     type = (author.includes('ai') || author.includes('助手') || author.includes('assistant')) ? 'pet' : 'user';
                 }
-                
+
                 // 统一 content 字段
                 const content = String(commentData.content || commentData.text || '').trim();
-                
-                 let targetFileKey = selectedKey.value;
-                 if (store && store.fileTree && store.fileTree.value && selectedKey.value) {
-                     try {
-                         const root = store.fileTree.value;
-                         const { node } = findNodeAndParentByKey(root, selectedKey.value);
-                         if (node && node.sessionKey) {
-                             targetFileKey = node.sessionKey;
-                             console.log('[评论提交] 使用 sessionKey 作为 fileKey:', targetFileKey);
-                         }
-                     } catch (e) {}
-                 }
-                 if (store && store.files && store.files.value && selectedKey.value && targetFileKey === selectedKey.value) {
-                     const currentFile = store.files.value.find(f => f.key === selectedKey.value || f.path === selectedKey.value);
-                     if (currentFile && currentFile.sessionKey) {
-                         targetFileKey = currentFile.sessionKey;
-                         console.log('[评论提交] 使用 sessionKey 作为 fileKey:', targetFileKey);
-                     }
-                 }
- 
+
+                // 重构：comment 的 fileKey 必须是对应 session 的 key（sessionKey）
+                const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
+                let targetFileKey = null;
+
+                // 只从 fileTree 中查找 sessionKey
+                if (store && store.fileTree && store.fileTree.value && selectedKey.value) {
+                    try {
+                        const root = store.fileTree.value;
+                        const { node } = findNodeAndParentByKey(root, selectedKey.value);
+                        if (node && node.sessionKey && isUUID(node.sessionKey)) {
+                            targetFileKey = node.sessionKey;
+                            console.log('[评论提交] 使用 sessionKey 作为 fileKey:', targetFileKey);
+                        } else {
+                            console.warn('[评论提交] 无法从fileTree找到sessionKey');
+                        }
+                    } catch (e) {
+                        console.warn('[评论提交] 查找sessionKey失败:', e);
+                    }
+                }
+
+                // 如果最终还是没有 sessionKey，抛出错误
+                if (!targetFileKey || !isUUID(targetFileKey)) {
+                    throw createError('无法找到有效的 sessionKey，评论无法提交', ErrorTypes.VALIDATION, '评论提交');
+                }
+
                 // 构建评论数据（保留评论特有字段，同时包含统一的消息字段）
                 // 如果有 rangeInfo，说明 text 字段存储的是引用代码，应该保留原有的 text 值
                 const textValue = (commentData.rangeInfo && commentData.text) ? commentData.text : content;
-                
+
                 let comment = {
                     ...commentData,
                     // 统一的消息字段
@@ -2011,7 +2007,6 @@ export const useMethods = (store) => {
                     timestamp: timestamp,
                     // 保留评论特有字段
                     fileKey: targetFileKey,
-                    versionId: versionId,
                     // 兼容字段（保留原有字段以兼容旧代码）
                     // 如果有 rangeInfo，保留原有的 text（引用代码），否则使用 content
                     text: textValue,
@@ -2020,7 +2015,7 @@ export const useMethods = (store) => {
                     // author 字段保留（用于显示）
                     author: commentData.author || (type === 'pet' ? 'AI助手' : '用户')
                 };
-                
+
                 // 使用规范化函数确保字段一致性
                 if (store && store.normalizeComment) {
                     comment = store.normalizeComment(comment);
@@ -2061,7 +2056,7 @@ export const useMethods = (store) => {
                 const result = await postData(`${window.API_URL}/`, payload);
 
                 console.log('[评论提交] API调用成功:', result);
-                
+
                 // 同步评论到会话消息（确保使用规范化后的评论）
                 if (targetFileKey) {
                     try {
@@ -2081,7 +2076,7 @@ export const useMethods = (store) => {
                         console.warn('[评论提交] 同步评论到会话消息失败（已忽略）:', syncError?.message);
                     }
                 }
-                
+
                 showSuccessMessage('评论添加成功');
 
                 // 立即触发评论面板刷新，确保新评论能够显示
@@ -2100,7 +2095,7 @@ export const useMethods = (store) => {
 
                 // 立即在UI中显示新评论
                 let commentAdded = false;
-                
+
                 // 方法1：通过ref直接调用组件方法
                 if (window.aicrApp && window.aicrApp.$refs) {
                     const commentPanelRef = window.aicrApp.$refs['comment-panel'];
@@ -2116,7 +2111,7 @@ export const useMethods = (store) => {
                 } else {
                     console.log('[评论提交] 方法1失败：无法获取aicrApp或$refs');
                 }
-                
+
                 // 方法2：通过全局方法调用
                 if (!commentAdded) {
                     try {
@@ -2137,7 +2132,7 @@ export const useMethods = (store) => {
                         console.log('[评论提交] 方法2失败:', error);
                     }
                 }
-                
+
                 // 方法3：通过全局事件传递新评论数据
                 if (!commentAdded) {
                     console.log('[评论提交] 方法3：通过全局事件传递新评论数据');
@@ -2145,15 +2140,7 @@ export const useMethods = (store) => {
                         detail: { comment: comment }
                     }));
                 }
-                
-                // 方法4：备用方案：直接触发重新加载评论
-                if (!commentAdded) {
-                    console.log('[评论提交] 方法4：使用备用方案：触发重新加载评论');
-                    window.dispatchEvent(new CustomEvent('reloadComments', {
-                        detail: { forceReload: true }
-                    }));
-                }
-                
+
                 // 方法5：额外确保comment-panel同步 - 增加延迟确保事件被正确处理
                 console.log('[评论提交] 方法5：额外确保comment-panel同步');
                 setTimeout(() => {
@@ -2161,75 +2148,18 @@ export const useMethods = (store) => {
                         detail: { comment: comment }
                     }));
                 }, 100);
-                
-                // 方法6：最终备用方案 - 强制重新加载
-                setTimeout(() => {
-                    console.log('[评论提交] 方法6：最终备用方案 - 强制重新加载');
-                    window.dispatchEvent(new CustomEvent('reloadComments', {
-                        detail: { forceReload: true }
-                    }));
-                }, 1000);
 
                 // 清空评论输入
                 setNewComment('');
 
-                // 重新加载评论数据 - 增加延迟和重试机制
+                // 重新加载评论数据（只调用一次查询接口）
                 console.log('[评论提交] 开始重新加载评论数据');
-                
-                // 延迟重新加载，确保数据库写入完成
-                const reloadCommentsWithRetry = async (retryCount = 0) => {
+                setTimeout(async () => {
                     try {
-                        console.log(`[评论提交] 第${retryCount + 1}次尝试重新加载评论`);
-                        await loadComments();
-                        
-                        // 触发评论面板重新加载mongoComments
-                        console.log('[评论提交] 触发评论面板重新加载');
-                        window.dispatchEvent(new CustomEvent('reloadComments', {
-                            detail: { forceReload: true }
-                        }));
-                        
-                        // 验证评论是否成功加载
-                        setTimeout(async () => {
-                            try {
-                                // 验证评论是否已加载
-                                const { getData: verifyGetData } = await import('/src/services/modules/crud.js');
-                                const verifyUrl = buildServiceUrl('query_documents', {
-                                    cname: 'comments',
-                                    ...(targetFileKey ? { key: targetFileKey, fileKey: targetFileKey } : {})
-                                });
-                                const verifyResponse = await verifyGetData(verifyUrl);
-                                const newComments = verifyResponse.data.list || [];
-                                
-                                console.log('[评论提交] 验证评论加载结果:', newComments.length, '条评论');
-                                
-                                // 如果评论数量没有增加，且还有重试次数，则重试
-                                if (newComments.length <= comments.value.length && retryCount < 2) {
-                                    console.log('[评论提交] 评论数量未增加，准备重试');
-                                    setTimeout(() => {
-                                        reloadCommentsWithRetry(retryCount + 1);
-                                    }, 1000); // 1秒后重试
-                                } else {
-                                    console.log('[评论提交] 评论重新加载完成');
-                                }
-                            } catch (error) {
-                                console.error('[评论提交] 验证评论加载失败:', error);
-                            }
-                        }, 500);
-                        
+                        await loadComments(); // 唯一一次查询 comments
                     } catch (error) {
-                        console.error(`[评论提交] 第${retryCount + 1}次重新加载失败:`, error);
-                        if (retryCount < 2) {
-                            console.log('[评论提交] 准备重试重新加载');
-                            setTimeout(() => {
-                                reloadCommentsWithRetry(retryCount + 1);
-                            }, 1000); // 1秒后重试
-                        }
+                        console.error('[评论提交] 重新加载评论失败:', error);
                     }
-                };
-                
-                // 延迟500ms后开始重新加载，确保数据库写入完成
-                setTimeout(() => {
-                    reloadCommentsWithRetry();
                 }, 500);
 
             } catch (error) {
@@ -2239,7 +2169,7 @@ export const useMethods = (store) => {
                 // 清除loading状态
                 loading.value = false;
                 console.log('[评论提交] 清除loading状态');
-                
+
                 // 隐藏全局loading
                 try {
                     const { hideGlobalLoading } = await import('/src/utils/loading.js');
@@ -2288,7 +2218,7 @@ export const useMethods = (store) => {
                     }
                     return;
                 }
-                
+
                 items.forEach(item => {
                     if (item.type === 'folder') {
                         expandedFolders.value.add(item.key);
@@ -2344,16 +2274,6 @@ export const useMethods = (store) => {
                 const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                 showGlobalLoading('正在删除评论...');
                 console.log('[评论删除] 显示全局loading');
-                
-                // 从选择器获取项目信息
-                const projectSelect = document.getElementById('projectSelect');
-                const versionSelect = document.getElementById('versionSelect');
-                
-                let versionId = null;
-                
-                if (versionSelect) {
-                    versionId = versionSelect.value;
-                }
 
                 // 构建删除接口URL
                 const payload = {
@@ -2361,8 +2281,7 @@ export const useMethods = (store) => {
                     method_name: 'delete_document',
                     parameters: {
                         cname: 'comments',
-                        key: commentId,
-                        ...(versionId ? { versionId } : {})
+                        key: commentId
                     }
                 };
 
@@ -2373,7 +2292,7 @@ export const useMethods = (store) => {
 
                 if (resp && resp.success !== false) {
                     console.log('[评论删除] 删除成功:', resp);
-                    
+
                     // 立即从本地store中移除，确保UI立即更新
                     if (comments && comments.value) {
                         const initialLength = comments.value.length;
@@ -2383,21 +2302,9 @@ export const useMethods = (store) => {
                 } else {
                     throw new Error(resp?.message || '删除失败');
                 }
-                
-                // 同步删除会话消息
-                if (selectedKey.value) {
-                    try {
-                        const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
-                        const sessionSync = getSessionSyncService();
-                        
-                        const targetKey = commentForSync?.fileKey || commentForSync?.key || selectedKey.value;
-                        await sessionSync.deleteCommentMessage(commentId, targetKey, commentForSync);
-                        console.log('[评论删除] 会话消息已删除');
-                    } catch (syncError) {
-                        console.warn('[评论删除] 删除会话消息失败（已忽略）:', syncError?.message);
-                    }
-                }
-                
+
+                // 注意：删除评论不需要查询 sessions 接口，已移除同步删除会话消息的逻辑
+
                 // 显示成功消息
                 const { showSuccess } = await import('/src/utils/message.js');
                 showSuccess('评论删除成功');
@@ -2411,13 +2318,37 @@ export const useMethods = (store) => {
                 // 重新加载评论数据
                 console.log('[评论删除] 重新加载评论数据');
                 await loadComments();
-                
+
                 // 触发评论面板重新加载mongoComments
                 console.log('[评论删除] 触发评论面板重新加载');
                 setTimeout(() => {
                     console.log('[评论删除] 发送reloadComments事件');
+                    // 关键修复：reloadComments 事件必须携带 fileKey（sessionKey）或显式声明 showAllComments
+                    // 否则 CommentPanel 会把 fileKey 当成 null 并清空列表，造成“删除一条后全空”
+                    const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
+                    let sessionKey = null;
+                    try {
+                        // 优先：从 fileTree 中根据 selectedKey 找到 sessionKey（最可靠）
+                        if (store && store.fileTree && store.fileTree.value && selectedKey?.value) {
+                            const root = store.fileTree.value;
+                            const { node } = findNodeAndParentByKey(root, selectedKey.value);
+                            if (node?.sessionKey && isUUID(node.sessionKey)) {
+                                sessionKey = node.sessionKey;
+                            }
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                    // 兜底：如果评论对象里带有合法的 fileKey（sessionKey），也可使用
+                    if (!sessionKey && commentForSync?.fileKey && isUUID(commentForSync.fileKey)) {
+                        sessionKey = commentForSync.fileKey;
+                    }
+
                     window.dispatchEvent(new CustomEvent('reloadComments', {
-                        detail: { 
+                        detail: {
+                            // 让 CommentPanel 按当前文件刷新；若拿不到 sessionKey，则显式请求“加载全部”
+                            fileKey: sessionKey,
+                            showAllComments: !sessionKey,
                             forceReload: true,
                             immediateReload: true
                         }
@@ -2462,16 +2393,6 @@ export const useMethods = (store) => {
                 const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                 showGlobalLoading('正在解决评论...');
                 console.log('[评论解决] 显示全局loading');
-                
-                // 从选择器获取项目信息
-                const projectSelect = document.getElementById('projectSelect');
-                const versionSelect = document.getElementById('versionSelect');
-                
-                let versionId = null;
-                
-                if (versionSelect) {
-                    versionId = versionSelect.value;
-                }
 
                 // 构建解决评论的URL
                 const payload = {
@@ -2481,14 +2402,13 @@ export const useMethods = (store) => {
                         cname: 'comments',
                         data: {
                             key: commentId,
-                            status: 'resolved',
-                            ...(versionId ? { versionId } : {})
+                            status: 'resolved'
                         }
                     }
                 };
-                
+
                 console.log('[评论解决] 调用解决接口 payload:', payload);
-                
+
                 const { postData } = await import('/src/services/modules/crud.js');
                 const result = await postData(`${window.API_URL}/`, payload);
 
@@ -2499,13 +2419,11 @@ export const useMethods = (store) => {
                 if (selectedKey.value) {
                     console.log('[评论解决] 重新加载评论数据');
                     await loadComments();
-                    
+
                     // 触发评论面板重新加载mongoComments
                     console.log('[评论解决] 触发评论面板重新加载');
                     setTimeout(() => {
-                        window.dispatchEvent(new CustomEvent('reloadComments', {
-                            detail: { versionId }
-                        }));
+                        window.dispatchEvent(new CustomEvent('reloadComments', {}));
                     }, 200); // 增加延迟时间到200ms
                 }
 
@@ -2547,7 +2465,7 @@ export const useMethods = (store) => {
                 const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                 showGlobalLoading('正在重新打开评论...');
                 console.log('[评论重新打开] 显示全局loading');
-                
+
                 // 构建重新打开评论的URL
                 const reopenPayload = {
                     module_name: SERVICE_MODULE,
@@ -2560,9 +2478,9 @@ export const useMethods = (store) => {
                         }
                     }
                 };
-                
+
                 console.log('[评论重新打开] 调用重新打开接口 payload:', reopenPayload);
-                
+
                 const { postData } = await import('/src/services/modules/crud.js');
                 const result = await postData(`${window.API_URL}/`, reopenPayload);
 
@@ -2573,12 +2491,12 @@ export const useMethods = (store) => {
                 if (selectedKey.value) {
                     console.log('[评论重新打开] 重新加载评论数据');
                     await loadComments();
-                    
+
                     // 触发评论面板重新加载mongoComments
                     console.log('[评论重新打开] 触发评论面板重新加载');
                     setTimeout(() => {
                         window.dispatchEvent(new CustomEvent('reloadComments', {
-                            detail: { }
+                            detail: {}
                         }));
                     }, 200); // 增加延迟时间到200ms
                 }
@@ -2605,12 +2523,12 @@ export const useMethods = (store) => {
     const initializeProjectRootDirectory = async () => {
         return safeExecuteAsync(async () => {
             console.log('[初始化根目录] 开始初始化项目');
-            
+
             try {
                 // 导入会话同步服务
                 const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                 const sessionSync = getSessionSyncService();
-                
+
                 // 创建 README.md 文件对象
                 const readmeFile = {
                     key: 'README.md',
@@ -2619,13 +2537,13 @@ export const useMethods = (store) => {
                     content: `# New Project\n\n项目描述：这是一个新创建的项目。\n\n## 开始使用\n\n请在此处添加项目的使用说明。`,
                     type: 'file'
                 };
-                
+
                 // 同步到会话 (forceUpdate = true)
                 console.log('[初始化根目录]正在创建README.md会话...');
                 await sessionSync.syncFileToSession(readmeFile, false, true);
-                
+
                 console.log('[初始化根目录] 项目初始化完成 (README.md 已创建)');
-                
+
             } catch (error) {
                 console.error('[初始化根目录] 初始化失败:', error);
                 throw error;
@@ -2640,21 +2558,21 @@ export const useMethods = (store) => {
     const handleReloadComments = async (detail) => {
         return safeExecute(async () => {
             console.log('[评论重新加载] 收到重新加载评论的请求:', detail);
-            
+
             try {
                 // 调用加载评论方法
                 await loadComments();
-                
+
                 console.log('[评论重新加载] 评论重新加载完成');
-                
+
             } catch (error) {
                 console.error('[评论重新加载] 重新加载评论失败:', error);
-                
+
                 // 显示错误消息
                 try {
                     const { showError } = await import('/src/utils/message.js');
                     showError('重新加载评论失败: ' + error.message);
-                } catch (_) {}
+                } catch (_) { }
             }
         }, '评论重新加载处理');
     };
@@ -2671,7 +2589,7 @@ export const useMethods = (store) => {
             }
 
             console.log('[加载评论] 开始加载评论数据...');
-            
+
             try {
                 let targetKey = selectedKey.value;
                 if (selectedKey.value && store && store.fileTree && store.fileTree.value) {
@@ -2681,16 +2599,16 @@ export const useMethods = (store) => {
                         if (node && node.sessionKey) {
                             targetKey = node.sessionKey;
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 }
                 // 构建获取评论的URL
                 const queryUrl = buildServiceUrl('query_documents', {
                     cname: 'comments',
                     ...(targetKey ? { fileKey: targetKey } : {})
                 });
-                
+
                 console.log('[加载评论] 调用获取评论接口:', queryUrl);
-                
+
                 const { getData } = await import('/src/services/modules/crud.js');
                 const response = await getData(queryUrl);
 
@@ -2793,23 +2711,23 @@ export const useMethods = (store) => {
     const handleSessionBatchSelect = (sessionId) => {
         return safeExecute(() => {
             const { sessionBatchMode, selectedSessionKeys } = store;
-            
+
             if (!sessionBatchMode || !sessionBatchMode.value) {
                 console.warn('[会话批量] 未开启批量模式');
                 return;
             }
-            
+
             if (!selectedSessionKeys || !selectedSessionKeys.value) {
                 console.warn('[会话批量] selectedSessionKeys 未初始化');
                 return;
             }
-            
+
             if (selectedSessionKeys.value.has(sessionId)) {
                 selectedSessionKeys.value.delete(sessionId);
             } else {
                 selectedSessionKeys.value.add(sessionId);
             }
-            
+
             console.log('[会话批量] 当前选中数量:', selectedSessionKeys.value.size);
         }, '会话批量选择');
     };
@@ -2821,9 +2739,9 @@ export const useMethods = (store) => {
     const handleToggleSelectAllSessions = (payload) => {
         return safeExecute(() => {
             const { selectedSessionKeys, sessions } = store;
-            
+
             if (!selectedSessionKeys || !selectedSessionKeys.value) return;
-            
+
             // 1. 如果传入了具体的ID列表（通常来自 filteredSessions）
             if (payload && Array.isArray(payload.ids)) {
                 const { ids, isSelect } = payload;
@@ -2835,15 +2753,15 @@ export const useMethods = (store) => {
                 console.log('[会话批量] 指定范围全选/取消:', isSelect, '数量:', ids.length);
                 return;
             }
-            
+
             // 2. 如果没有传入参数，则根据当前选中状态切换（全选所有/清空）
             // 这种情况下，我们只能操作 store.sessions 中的所有会话
             const allSessions = sessions.value || [];
             const allIds = allSessions.map(s => s && s.key).filter(Boolean);
-            
+
             // 检查是否已全选 (所有有效ID都在选中集合中)
             const isAllSelected = allIds.length > 0 && allIds.every(id => selectedSessionKeys.value.has(id));
-            
+
             if (isAllSelected) {
                 // 取消全选
                 selectedSessionKeys.value.clear();
@@ -2863,10 +2781,10 @@ export const useMethods = (store) => {
     const handleBatchDeleteSessions = async (payloadIds) => {
         return safeExecute(async () => {
             const { selectedSessionKeys } = store;
-            
+
             // 确定要删除的ID列表
             let keysToDelete = [];
-            
+
             // 检查 payloadIds 是否为数组且不为空
             // 注意：payloadIds 可能是 event 对象，所以要严格检查是否为数组
             if (Array.isArray(payloadIds) && payloadIds.length > 0) {
@@ -2879,22 +2797,22 @@ export const useMethods = (store) => {
                 }
                 keysToDelete = Array.from(selectedSessionKeys.value);
             }
-            
+
             const count = keysToDelete.length;
             if (count === 0) return;
 
             if (!confirm(`确定要删除选中的 ${count} 个会话吗？此操作不可撤销。`)) {
                 return;
             }
-            
+
             console.log('[会话批量] 开始删除, 数量:', count);
-            
+
             const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
             const sessionSync = getSessionSyncService();
-            
+
             let successCount = 0;
             let failCount = 0;
-            
+
             // 批量删除
             // 为了避免请求过多，可以分组处理或串行处理
             // 这里使用 Promise.all 并发处理，但建议数量大时分批
@@ -2915,9 +2833,9 @@ export const useMethods = (store) => {
                     return { success: false, key, reason: e.message };
                 }
             });
-            
+
             const results = await Promise.all(deletePromises);
-            
+
             results.forEach(res => {
                 if (res.success) {
                     successCount++;
@@ -2931,14 +2849,14 @@ export const useMethods = (store) => {
                     }
                 }
             });
-            
+
             // 更新本地 sessions 列表
             // 过滤掉已删除的
             const deletedKeys = new Set(results.filter(r => r.success).map(r => r.key));
             if (store.sessions && store.sessions.value) {
                 store.sessions.value = store.sessions.value.filter(s => !deletedKeys.has(s.key) && !deletedKeys.has(s.id));
             }
-            
+
             // 提示结果
             let msg = `批量删除完成: 成功 ${successCount} 个`;
             if (failCount > 0) {
@@ -2947,12 +2865,12 @@ export const useMethods = (store) => {
             } else {
                 if (window.showSuccess) window.showSuccess(msg);
             }
-            
+
             // 如果全部删除了，退出批量模式
             if (selectedSessionKeys.value.size === 0) {
                 // toggleSessionBatchMode(); // 可选：保持批量模式还是退出？通常保持方便继续操作，但如果空了就无所谓
             }
-            
+
         }, '批量删除会话');
     };
 
@@ -2966,14 +2884,14 @@ export const useMethods = (store) => {
                 console.warn('[批量选择] 未开启批量模式');
                 return;
             }
-            
+
             if (!selectedKeys || !selectedKeys.value) {
                 console.warn('[批量选择] selectedKeys 未初始化');
                 return;
             }
 
             const normalizedKey = normalizeKey ? normalizeKey(key) : String(key || '');
-            
+
             if (selectedKeys.value.has(normalizedKey)) {
                 selectedKeys.value.delete(normalizedKey);
                 console.log('[批量选择] 取消选中文件:', normalizedKey);
@@ -2981,7 +2899,7 @@ export const useMethods = (store) => {
                 selectedKeys.value.add(normalizedKey);
                 console.log('[批量选择] 选中文件:', normalizedKey);
             }
-            
+
             console.log('[批量选择] 当前选中文件数:', selectedKeys.value.size);
         }, '文件选择切换');
     };
@@ -3097,7 +3015,7 @@ export const useMethods = (store) => {
             if ((!store.sessions?.value || store.sessions.value.length === 0) && typeof store.loadSessions === 'function') {
                 await store.loadSessions(false);
             }
-        } catch (_) {}
+        } catch (_) { }
 
         let fileKey = null;
         const findNodeBySessionKey = (nodes) => {
@@ -3146,11 +3064,11 @@ export const useMethods = (store) => {
             const normalized = { ...(session || {}), key: targetSessionKey };
             if (!normalized.messages || !Array.isArray(normalized.messages)) normalized.messages = [];
             normalized.messages = normalized.messages.map(m => ({
-                    type: m?.type === 'pet' ? 'pet' : 'user',
-                    message: String(m?.message || m?.content || ''),
-                    timestamp: typeof m?.timestamp === 'number' ? m.timestamp : Date.now(),
-                    imageDataUrl: m?.imageDataUrl
-                }));
+                type: m?.type === 'pet' ? 'pet' : 'user',
+                message: String(m?.message || m?.content || ''),
+                timestamp: typeof m?.timestamp === 'number' ? m.timestamp : Date.now(),
+                imageDataUrl: m?.imageDataUrl
+            }));
 
             if (activeSession) activeSession.value = normalized;
 
@@ -3159,7 +3077,7 @@ export const useMethods = (store) => {
                     const saved = localStorage.getItem('aicr_context_switch_enabled');
                     if (saved === '0') sessionContextEnabled.value = false;
                     if (saved === '1') sessionContextEnabled.value = true;
-                } catch (_) {}
+                } catch (_) { }
             }
 
             if (sessionContextMode) sessionContextMode.value = openContextEditor ? 'split' : (sessionContextMode.value || 'edit');
@@ -3186,7 +3104,7 @@ export const useMethods = (store) => {
                             }
                         }
                     }
-                } catch (_) {}
+                } catch (_) { }
             }
             if (sessionContextDraft) sessionContextDraft.value = String(staticContent || '');
             if (activeSession?.value) {
@@ -3297,7 +3215,7 @@ export const useMethods = (store) => {
                 }
             }, '切换会话列表');
         },
-        
+
         handleSessionSelect: async (session) => {
             return safeExecute(async () => {
                 await selectSessionForChat(session, { toggleActive: false, openContextEditor: false });
@@ -3382,7 +3300,7 @@ export const useMethods = (store) => {
                                     setTimeout(() => {
                                         try {
                                             window.mermaidRenderer.renderDiagram(diagramId, diagramCode, { showLoading: false });
-                                        } catch (_) {}
+                                        } catch (_) { }
                                     }, 0);
                                     return container;
                                 }
@@ -3395,7 +3313,7 @@ export const useMethods = (store) => {
                                 try {
                                     const highlighted = window.hljs.highlight(src, { language: validLanguage }).value;
                                     return `<pre><code class="hljs language-${validLanguage}">${highlighted}</code></pre>`;
-                                } catch (_) {}
+                                } catch (_) { }
                             }
 
                             return originalCodeRenderer(src, language, isEscaped);
@@ -3457,7 +3375,7 @@ export const useMethods = (store) => {
                     const next = Math.max(min, Math.min(max, el.scrollHeight || min));
                     el.style.height = `${next}px`;
                 }
-            } catch (_) {}
+            } catch (_) { }
         },
 
         onSessionChatCompositionStart: () => {
@@ -3503,19 +3421,19 @@ export const useMethods = (store) => {
                             current.push(dataUrl);
                             if (sessionChatDraftImages) sessionChatDraftImages.value = current;
                             if (window.showSuccess) window.showSuccess('已添加图片');
-                        } catch (_) {}
+                        } catch (_) { }
                     };
                     reader.readAsDataURL(file);
                     break;
                 }
-            } catch (_) {}
+            } catch (_) { }
         },
 
         openSessionChatImagePicker: () => {
             try {
                 const input = document.getElementById('pet-chat-image-input');
                 if (input && typeof input.click === 'function') input.click();
-            } catch (_) {}
+            } catch (_) { }
         },
 
         onSessionChatImageInputChange: async (e) => {
@@ -3552,7 +3470,7 @@ export const useMethods = (store) => {
                 try {
                     const input = e && e.target;
                     if (input) input.value = '';
-                } catch (_) {}
+                } catch (_) { }
             }
         },
 
@@ -3563,7 +3481,7 @@ export const useMethods = (store) => {
                 if (!Number.isFinite(i) || i < 0 || i >= list.length) return;
                 list.splice(i, 1);
                 if (sessionChatDraftImages) sessionChatDraftImages.value = list;
-            } catch (_) {}
+            } catch (_) { }
         },
 
         clearSessionChatDraftImages: () => {
@@ -3580,7 +3498,7 @@ export const useMethods = (store) => {
             sessionContextEnabled.value = !sessionContextEnabled.value;
             try {
                 localStorage.setItem('aicr_context_switch_enabled', sessionContextEnabled.value ? '1' : '0');
-            } catch (_) {}
+            } catch (_) { }
         },
 
         setSessionContextEnabled: (enabled) => {
@@ -3588,7 +3506,7 @@ export const useMethods = (store) => {
             sessionContextEnabled.value = !!enabled;
             try {
                 localStorage.setItem('aicr_context_switch_enabled', sessionContextEnabled.value ? '1' : '0');
-            } catch (_) {}
+            } catch (_) { }
         },
 
         openSessionContextEditor: async () => {
@@ -3625,7 +3543,7 @@ export const useMethods = (store) => {
                 if (!hasItems) {
                     await loadSessionFaqs({ force: false });
                 }
-            } catch (_) {}
+            } catch (_) { }
             try {
                 if (_sessionFaqEscHandler) {
                     document.removeEventListener('keydown', _sessionFaqEscHandler);
@@ -3636,10 +3554,10 @@ export const useMethods = (store) => {
                         if (e && e.key === 'Escape') {
                             if (sessionFaqVisible) sessionFaqVisible.value = false;
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 };
                 document.addEventListener('keydown', _sessionFaqEscHandler);
-            } catch (_) {}
+            } catch (_) { }
             setTimeout(() => _focusSessionFaqSearchInput(), 0);
         },
 
@@ -3666,7 +3584,7 @@ export const useMethods = (store) => {
                     document.removeEventListener('keydown', _sessionFaqEscHandler);
                     _sessionFaqEscHandler = null;
                 }
-            } catch (_) {}
+            } catch (_) { }
             try {
                 const chatInput = document.getElementById('pet-chat-input');
                 if (chatInput && typeof chatInput.focus === 'function') {
@@ -3674,25 +3592,25 @@ export const useMethods = (store) => {
                     _sessionFaqLastActiveElement = null;
                     return;
                 }
-            } catch (_) {}
+            } catch (_) { }
             try {
                 const el = _sessionFaqLastActiveElement;
                 _sessionFaqLastActiveElement = null;
                 if (el && typeof el.focus === 'function') el.focus();
-            } catch (_) {}
+            } catch (_) { }
         },
 
         clearSessionFaqSearch: () => {
             try {
                 if (sessionFaqSearchKeyword) sessionFaqSearchKeyword.value = '';
-            } catch (_) {}
+            } catch (_) { }
             _focusSessionFaqSearchInput();
         },
 
         clearSessionFaqTagSearch: () => {
             try {
                 if (sessionFaqTagFilterSearchKeyword) sessionFaqTagFilterSearchKeyword.value = '';
-            } catch (_) {}
+            } catch (_) { }
         },
 
         addSessionFaqFromInput: async () => {
@@ -3765,14 +3683,14 @@ export const useMethods = (store) => {
                     const nextH = Math.max(min, Math.min(max, el.scrollHeight || min));
                     el.style.height = `${nextH}px`;
                 }
-            } catch (_) {}
+            } catch (_) { }
             if (String(mode) === 'send') {
                 setTimeout(() => {
                     try {
                         if (typeof window.aicrApp?.sendSessionChatMessage === 'function') {
                             window.aicrApp.sendSessionChatMessage();
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }, 0);
             }
         },
@@ -3981,9 +3899,9 @@ export const useMethods = (store) => {
                             el.style.height = '60px';
                             el.blur();
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
-            } catch (_) {}
+            } catch (_) { }
         },
 
         abortSessionChatRequest: () => {
@@ -3992,7 +3910,7 @@ export const useMethods = (store) => {
                 if (controller && typeof controller.abort === 'function') {
                     controller.abort();
                 }
-            } catch (_) {}
+            } catch (_) { }
         },
 
         isSessionChatStreamingMessage: (m, idx) => {
@@ -4087,8 +4005,8 @@ export const useMethods = (store) => {
                 try {
                     const el = document.getElementById('pet-chat-input');
                     if (el && typeof el.focus === 'function') el.focus();
-                } catch (_) {}
-            } catch (_) {}
+                } catch (_) { }
+            } catch (_) { }
         },
 
         deleteSessionChatMessageAt: async (idx) => {
@@ -4117,7 +4035,7 @@ export const useMethods = (store) => {
                     const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     await sessionSync.saveSession(nextSession);
-                } catch (_) {}
+                } catch (_) { }
             }, '删除消息');
         },
 
@@ -4215,7 +4133,7 @@ export const useMethods = (store) => {
                         }
                         const container = document.getElementById('pet-chat-messages');
                         if (container) container.scrollTop = container.scrollHeight;
-                    } catch (_) {}
+                    } catch (_) { }
                 };
 
                 const now = Date.now();
@@ -4277,7 +4195,7 @@ export const useMethods = (store) => {
                                     activeSession.value = { ...cur, messages: msgs };
                                     if (autoScroll) scrollToIndex(targetIdx);
                                 }
-                            } catch (_) {}
+                            } catch (_) { }
                         }
                     );
                 } catch (e) {
@@ -4318,12 +4236,12 @@ export const useMethods = (store) => {
                     const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
-                } catch (_) {}
+                } catch (_) { }
 
                 if (streamErrorMessage && window.showError) {
                     window.showError(streamErrorMessage);
                 }
-            }, '重新发送消息', (info) => { try { if (window.showError) window.showError(String(info?.message || '重试失败')); } catch (_) {} });
+            }, '重新发送消息', (info) => { try { if (window.showError) window.showError(String(info?.message || '重试失败')); } catch (_) { } });
         },
 
         regenerateSessionChatMessageAt: async (idx) => {
@@ -4380,7 +4298,7 @@ export const useMethods = (store) => {
                         }
                         const container = document.getElementById('pet-chat-messages');
                         if (container) container.scrollTop = container.scrollHeight;
-                    } catch (_) {}
+                    } catch (_) { }
                 };
 
                 const now = Date.now();
@@ -4438,7 +4356,7 @@ export const useMethods = (store) => {
                                     activeSession.value = { ...cur, messages: msgs };
                                     if (autoScroll) scrollToIndex(useIdx);
                                 }
-                            } catch (_) {}
+                            } catch (_) { }
                         }
                     );
                 } catch (e) {
@@ -4480,14 +4398,14 @@ export const useMethods = (store) => {
                     const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
-                } catch (_) {}
+                } catch (_) { }
 
                 try {
                     const key = _sessionChatMessageKey({ timestamp: petTimestamp }, petIdx);
                     if (!streamErrorMessage && !streamAborted && String(accumulated || '').trim()) {
                         _setFeedbackFlag(sessionChatRegenerateFeedback, key, 1200);
                     }
-                } catch (_) {}
+                } catch (_) { }
 
                 if (streamErrorMessage && window.showError) {
                     window.showError(streamErrorMessage);
@@ -4556,7 +4474,7 @@ export const useMethods = (store) => {
                     try {
                         const el = document.getElementById('pet-chat-messages');
                         if (el) el.scrollTop = el.scrollHeight;
-                    } catch (_) {}
+                    } catch (_) { }
                 };
 
                 const now = Date.now();
@@ -4634,7 +4552,7 @@ export const useMethods = (store) => {
                                     activeSession.value = { ...s, messages: msgs };
                                     if (autoScroll) scrollToBottom();
                                 }
-                            } catch (_) {}
+                            } catch (_) { }
                         }
                     );
                 } catch (e) {
@@ -4683,7 +4601,7 @@ export const useMethods = (store) => {
                     const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
-                } catch (_) {}
+                } catch (_) { }
 
                 if (streamErrorMessage && window.showError) {
                     window.showError(streamErrorMessage);
@@ -4807,7 +4725,7 @@ export const useMethods = (store) => {
                     try {
                         const el = document.getElementById('pet-chat-messages');
                         if (el) el.scrollTop = el.scrollHeight;
-                    } catch (_) {}
+                    } catch (_) { }
                 };
                 setTimeout(scrollToBottom, 0);
 
@@ -4854,14 +4772,14 @@ export const useMethods = (store) => {
                                 const msgs = Array.isArray(s.messages) ? [...s.messages] : [];
                                 const lastIdx = msgs.length - 1;
                                 if (lastIdx >= 0) {
-                                const last = msgs[lastIdx];
-                                if (last && last.type === 'pet' && last.timestamp === petMessage.timestamp) {
+                                    const last = msgs[lastIdx];
+                                    if (last && last.type === 'pet' && last.timestamp === petMessage.timestamp) {
                                         msgs[lastIdx] = { ...last, message: accumulated, error: false, aborted: false };
                                         activeSession.value = { ...s, messages: msgs };
                                         if (autoScroll) scrollToBottom();
                                     }
                                 }
-                            } catch (_) {}
+                            } catch (_) { }
                         }
                     );
                 } catch (e) {
@@ -4905,7 +4823,7 @@ export const useMethods = (store) => {
                     const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
-                } catch (_) {}
+                } catch (_) { }
 
                 try {
                     const robots = Array.isArray(weChatRobots?.value) ? weChatRobots.value : [];
@@ -4919,15 +4837,15 @@ export const useMethods = (store) => {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ msgtype: 'text', text: { content } })
-                            }).catch(() => {});
+                            }).catch(() => { });
                         }));
                     }
-                } catch (_) {}
+                } catch (_) { }
 
                 if (streamErrorMessage && window.showError) {
                     window.showError(streamErrorMessage);
                 }
-            }, '发送会话消息', (info) => { try { if (window.showError) window.showError(String(info?.message || '发送失败')); } catch (_) {} });
+            }, '发送会话消息', (info) => { try { if (window.showError) window.showError(String(info?.message || '发送失败')); } catch (_) { } });
         },
 
         canSendSessionChat: Vue.computed(() => {
@@ -4941,15 +4859,15 @@ export const useMethods = (store) => {
                 return false;
             }
         }),
-        
+
         handleSessionDelete: async (sessionKey) => {
             return safeExecute(async () => {
                 console.log('[handleSessionDelete] 删除会话:', sessionKey);
-                
+
                 // 1. 获取会话对象 (仅通过 key 查找)
                 const sessions = store.sessions?.value || [];
                 let session = sessions.find(s => s && s.key === sessionKey);
-                
+
                 // 尝试在文件树中查找对应的节点，以便复用文件删除逻辑
                 // 确保文件树已加载
                 if (!fileTree.value || fileTree.value.length === 0) {
@@ -4958,7 +4876,7 @@ export const useMethods = (store) => {
                         await loadFileTree();
                     }
                 }
-                
+
                 // 递归查找节点
                 const findNode = (nodes) => {
                     if (!nodes || !Array.isArray(nodes)) return null;
@@ -4967,7 +4885,7 @@ export const useMethods = (store) => {
                         if (node.key === sessionKey) return node;
                         // 兼容 sessionKey 匹配
                         if (node.sessionKey === sessionKey) return node;
-                        
+
                         if (node.children) {
                             const found = findNode(node.children);
                             if (found) return found;
@@ -4975,20 +4893,20 @@ export const useMethods = (store) => {
                     }
                     return null;
                 };
-                
+
                 const node = findNode(fileTree.value);
-                
+
                 if (node) {
-                     console.log('[handleSessionDelete] 找到对应文件节点，使用文件删除逻辑:', node.key);
-                     const itemId = node.key;
-                     if (!confirm('确定删除该会话及其对应文件？此操作不可撤销。')) return;
-                     
-                     // 调用 store 的 deleteItem
-                     if (deleteItem) {
+                    console.log('[handleSessionDelete] 找到对应文件节点，使用文件删除逻辑:', node.key);
+                    const itemId = node.key;
+                    if (!confirm('确定删除该会话及其对应文件？此操作不可撤销。')) return;
+
+                    // 调用 store 的 deleteItem
+                    if (deleteItem) {
                         await deleteItem({ itemId });
                         showSuccessMessage('删除成功');
-                     }
-                     return;
+                    }
+                    return;
                 }
 
                 console.warn('[handleSessionDelete] 未找到对应文件节点，回退到普通会话删除逻辑');
@@ -5004,7 +4922,7 @@ export const useMethods = (store) => {
                             console.warn('[handleSessionDelete] 获取会话信息失败:', e);
                         }
                     }
-                    
+
                     if (!confirm('确定删除该会话？此操作不可撤销。')) return;
 
                     // 判断是否为树文件类型的会话（通过URL判断）
@@ -5014,17 +4932,17 @@ export const useMethods = (store) => {
                         }
                         return; // 阻止删除
                     }
-                    
+
                     // 使用 SessionSyncService 删除会话
                     const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     await sessionSync.deleteSession(sessionKey);
-                    
+
                     // 从列表中移除
                     if (store.sessions && store.sessions.value && Array.isArray(store.sessions.value)) {
                         store.sessions.value = store.sessions.value.filter(s => s && s.key !== sessionKey);
                     }
-                    
+
                     if (window.showSuccess) {
                         window.showSuccess('会话已删除');
                     }
@@ -5036,7 +4954,7 @@ export const useMethods = (store) => {
                 }
             }, '删除会话');
         },
-        
+
         handleSessionCreate: async () => {
             return safeExecute(async () => {
                 console.log('[handleSessionCreate] 创建新会话');
@@ -5047,7 +4965,7 @@ export const useMethods = (store) => {
                 }
             }, '创建会话');
         },
-        
+
         handleTagSelect: (tags) => {
             return safeExecute(() => {
                 if (store.selectedSessionTags) {
@@ -5055,7 +4973,7 @@ export const useMethods = (store) => {
                 }
             }, '选择标签');
         },
-        
+
         handleTagClear: () => {
             return safeExecute(() => {
                 if (store.selectedSessionTags) {
@@ -5063,7 +4981,7 @@ export const useMethods = (store) => {
                 }
             }, '清除标签');
         },
-        
+
         handleTagFilterReverse: (reverse) => {
             return safeExecute(() => {
                 if (store.tagFilterReverse) {
@@ -5071,7 +4989,7 @@ export const useMethods = (store) => {
                 }
             }, '切换反向过滤');
         },
-        
+
         handleTagFilterNoTags: (noTags) => {
             return safeExecute(() => {
                 if (store.tagFilterNoTags) {
@@ -5079,7 +4997,7 @@ export const useMethods = (store) => {
                 }
             }, '切换无标签筛选');
         },
-        
+
         handleTagFilterExpand: (expanded) => {
             return safeExecute(() => {
                 if (store.tagFilterExpanded) {
@@ -5087,7 +5005,7 @@ export const useMethods = (store) => {
                 }
             }, '切换标签展开/折叠');
         },
-        
+
         handleTagFilterSearch: (keyword) => {
             return safeExecute(() => {
                 if (store.tagFilterSearchKeyword) {
@@ -5095,7 +5013,7 @@ export const useMethods = (store) => {
                 }
             }, '标签搜索');
         },
-        
+
         handleSessionSearchChange: (query) => {
             return safeExecute(() => {
                 if (store.sessionSearchQuery) {
@@ -5103,7 +5021,7 @@ export const useMethods = (store) => {
                 }
             }, '会话搜索变化');
         },
-        
+
         // 切换会话收藏状态
         handleSessionToggleFavorite: async (sessionKey) => {
             return safeExecute(async () => {
@@ -5112,7 +5030,7 @@ export const useMethods = (store) => {
                     // 找到会话
                     const sessions = store.sessions?.value || [];
                     let session = sessions.find(s => s && s.key === sessionKey);
-                    
+
                     if (!session) {
                         try {
                             const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
@@ -5126,11 +5044,11 @@ export const useMethods = (store) => {
                     if (!session) {
                         throw new Error('会话不存在');
                     }
-                    
+
                     // 切换收藏状态
                     const newFavoriteState = !(session.isFavorite || false);
                     session.isFavorite = newFavoriteState;
-                    
+
                     // 更新后端
                     // const { postData } = await import('/src/services/index.js');
                     const updateData = {
@@ -5149,12 +5067,12 @@ export const useMethods = (store) => {
                         }
                     };
                     await postData(`${window.API_URL}/`, payload);
-                    
+
                     // 更新本地状态
                     if (store.sessions && store.sessions.value) {
                         store.sessions.value = [...store.sessions.value];
                     }
-                    
+
                     if (window.showSuccess) {
                         window.showSuccess(newFavoriteState ? '已收藏' : '已取消收藏');
                     }
@@ -5166,7 +5084,7 @@ export const useMethods = (store) => {
                 }
             }, '切换收藏状态');
         },
-        
+
         // 会话收藏（别名，用于模板中）
         handleSessionFavorite: async (sessionKey) => {
             return safeExecute(async () => {
@@ -5175,7 +5093,7 @@ export const useMethods = (store) => {
                     // 找到会话
                     const sessions = store.sessions?.value || [];
                     let session = sessions.find(s => s && s.key === sessionKey);
-                    
+
                     if (!session) {
                         try {
                             const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
@@ -5189,11 +5107,11 @@ export const useMethods = (store) => {
                     if (!session) {
                         throw new Error('会话不存在');
                     }
-                    
+
                     // 切换收藏状态
                     const newFavoriteState = !(session.isFavorite || false);
                     session.isFavorite = newFavoriteState;
-                    
+
                     // 更新后端
                     // const { postData } = await import('/src/services/index.js');
                     const updateData = {
@@ -5212,12 +5130,12 @@ export const useMethods = (store) => {
                         }
                     };
                     await postData(`${window.API_URL}/`, payload);
-                    
+
                     // 更新本地状态
                     if (store.sessions && store.sessions.value) {
                         store.sessions.value = [...store.sessions.value];
                     }
-                    
+
                     if (window.showSuccess) {
                         window.showSuccess(newFavoriteState ? '已收藏' : '已取消收藏');
                     }
@@ -5229,16 +5147,16 @@ export const useMethods = (store) => {
                 }
             }, '切换收藏状态');
         },
-        
+
         // 编辑会话标题
         handleSessionEdit: async (sessionKey) => {
             return safeExecute(async () => {
                 console.log('[handleSessionEdit] 编辑会话:', sessionKey);
-                
+
                 // 1. 获取会话对象 (仅通过 key 查找)
                 const sessions = store.sessions?.value || [];
                 let session = sessions.find(s => s && s.key === sessionKey);
-                
+
                 // 尝试在文件树中查找对应的节点，以便复用文件重命名逻辑
                 // 确保文件树已加载
                 if (!fileTree.value || fileTree.value.length === 0) {
@@ -5247,7 +5165,7 @@ export const useMethods = (store) => {
                         await loadFileTree();
                     }
                 }
-                
+
                 // 递归查找节点
                 const findNode = (nodes) => {
                     if (!nodes || !Array.isArray(nodes)) return null;
@@ -5256,7 +5174,7 @@ export const useMethods = (store) => {
                         if (node.key === sessionKey) return node;
                         // 兼容 sessionKey 匹配
                         if (node.sessionKey === sessionKey) return node;
-                        
+
                         if (node.children) {
                             const found = findNode(node.children);
                             if (found) return found;
@@ -5264,27 +5182,27 @@ export const useMethods = (store) => {
                     }
                     return null;
                 };
-                
+
                 const node = findNode(fileTree.value);
-                
+
                 if (node) {
-                     console.log('[handleSessionEdit] 找到对应文件节点，使用文件重命名逻辑:', node.key);
-                     const itemId = node.key;
-                     const oldName = node.name;
-                     const newName = window.prompt('输入新名称：', oldName || '');
-                     if (!newName) return;
-                     
-                     // 调用 store 的 renameItem
-                     if (renameItem) {
+                    console.log('[handleSessionEdit] 找到对应文件节点，使用文件重命名逻辑:', node.key);
+                    const itemId = node.key;
+                    const oldName = node.name;
+                    const newName = window.prompt('输入新名称：', oldName || '');
+                    if (!newName) return;
+
+                    // 调用 store 的 renameItem
+                    if (renameItem) {
                         await renameItem({ itemId, newName });
                         showSuccessMessage('重命名成功');
-                     }
-                     return;
+                    }
+                    return;
                 }
-                
+
                 // 如果未找到文件节点，回退到简单标题更新逻辑
                 console.warn('[handleSessionEdit] 未找到对应文件节点，回退到简单标题更新逻辑');
-                
+
                 try {
                     if (!session) {
                         try {
@@ -5299,19 +5217,19 @@ export const useMethods = (store) => {
                     if (!session) {
                         throw new Error('会话不存在');
                     }
-                    
+
                     const currentTitle = session.pageTitle || session.title || '';
-                    
+
                     // 使用 prompt 获取新标题
                     const newTitle = prompt('请输入新标题:', currentTitle);
                     if (newTitle === null) {
                         return; // 用户取消
                     }
-                    
+
                     if (newTitle.trim() === '') {
                         throw new Error('标题不能为空');
                     }
-                    
+
                     // 更新后端
                     const updateData = {
                         key: sessionKey,
@@ -5329,16 +5247,16 @@ export const useMethods = (store) => {
                         }
                     };
                     await postData(`${window.API_URL}/`, payload);
-                    
+
                     // 更新本地状态
                     session.pageTitle = newTitle.trim();
                     session.title = newTitle.trim();
-                    
+
                     // 更新本地状态
                     if (store.sessions && store.sessions.value) {
                         store.sessions.value = [...store.sessions.value];
                     }
-                    
+
                     if (window.showSuccess) {
                         window.showSuccess('标题已更新');
                     }
@@ -5350,7 +5268,7 @@ export const useMethods = (store) => {
                 }
             }, '编辑会话');
         },
-        
+
         // 管理会话标签（参考 YiPet 的实现）
         handleSessionManageTags: async (sessionKey) => {
             return safeExecute(async () => {
@@ -5358,7 +5276,7 @@ export const useMethods = (store) => {
                 try {
                     const sessions = store.sessions?.value || [];
                     let session = sessions.find(s => s && s.key === sessionKey);
-                    
+
                     if (!session) {
                         try {
                             const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
@@ -5372,7 +5290,7 @@ export const useMethods = (store) => {
                     if (!session) {
                         throw new Error('会话不存在');
                     }
-                    
+
                     // 打开标签管理弹窗（传递 store 引用）
                     await openTagManager(session.key, session, store);
                 } catch (error) {
@@ -5383,7 +5301,7 @@ export const useMethods = (store) => {
                 }
             }, '管理标签');
         },
-        
+
         // 会话标签管理（别名，用于模板中）
         handleSessionTag: async (sessionKey) => {
             return safeExecute(async () => {
@@ -5391,7 +5309,7 @@ export const useMethods = (store) => {
                 try {
                     const sessions = store.sessions?.value || [];
                     let session = sessions.find(s => s && s.key === sessionKey);
-                    
+
                     if (!session) {
                         try {
                             const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
@@ -5405,7 +5323,7 @@ export const useMethods = (store) => {
                     if (!session) {
                         throw new Error('会话不存在');
                     }
-                    
+
                     // 打开标签管理弹窗
                     await openTagManager(session.key, session, store);
                 } catch (error) {
@@ -5416,7 +5334,7 @@ export const useMethods = (store) => {
                 }
             }, '管理标签');
         },
-        
+
         // 创建会话副本
         handleSessionDuplicate: async (sessionKey) => {
             return safeExecute(async () => {
@@ -5424,7 +5342,7 @@ export const useMethods = (store) => {
                 try {
                     const sessions = store.sessions?.value || [];
                     let sourceSession = sessions.find(s => s && s.key === sessionKey);
-                    
+
                     if (!sourceSession) {
                         try {
                             const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
@@ -5438,11 +5356,11 @@ export const useMethods = (store) => {
                     if (!sourceSession) {
                         throw new Error('会话不存在');
                     }
-                    
+
                     // 生成新会话ID
                     const newSessionKey = `${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
                     const now = Date.now();
-                    
+
                     // 创建副本
                     const duplicatedSession = {
                         key: newSessionKey,
@@ -5458,7 +5376,7 @@ export const useMethods = (store) => {
                         updatedAt: now,
                         lastAccessTime: now
                     };
-                    
+
                     // 保存到后端
                     // const { postData } = await import('/src/services/index.js');
                     // await postData(`${window.API_URL}/session/save`, duplicatedSession);
@@ -5472,17 +5390,17 @@ export const useMethods = (store) => {
                         }
                     };
                     await postData(`${window.API_URL}/`, payload);
-                    
+
                     // 添加到本地列表
                     if (store.sessions && store.sessions.value) {
                         store.sessions.value = [duplicatedSession, ...store.sessions.value];
                     }
-                    
+
                     // 重新加载会话列表
                     if (store.loadSessions && typeof store.loadSessions === 'function') {
                         await store.loadSessions(true);
                     }
-                    
+
                     if (window.showSuccess) {
                         window.showSuccess('会话副本已创建');
                     }
@@ -5494,7 +5412,7 @@ export const useMethods = (store) => {
                 }
             }, '创建副本');
         },
-        
+
         handleSessionContext: async (sessionKey) => {
             return safeExecute(async () => {
                 try {
@@ -5517,7 +5435,7 @@ export const useMethods = (store) => {
                 }
             }, '打开页面上下文');
         },
-        
+
         // 打开会话URL（如果URL以https://开头）
         handleSessionOpenUrl: async (sessionKey) => {
             return safeExecute(async () => {
@@ -5528,7 +5446,7 @@ export const useMethods = (store) => {
                     if (!session || !session.url || !session.url.startsWith('https://')) {
                         return;
                     }
-                    
+
                     window.open(session.url, '_blank');
                 } catch (error) {
                     console.error('[handleSessionOpenUrl] 打开URL失败:', error);
@@ -5538,27 +5456,27 @@ export const useMethods = (store) => {
                 }
             }, '打开URL');
         },
-        
-        
+
+
         handleCreateSession: async (payload) => {
             console.log('[handleCreateSession] 收到创建会话请求:', payload);
             return safeExecute(async () => {
                 const fileKey = payload?.key || payload?.fileKey || payload?.path;
-            console.log('[handleCreateSession] 文件Key:', fileKey);
-            if (!fileKey) {
-                console.error('[handleCreateSession] 无效的文件Key');
-                if (window.showError) {
-                    window.showError('无效的文件Key');
+                console.log('[handleCreateSession] 文件Key:', fileKey);
+                if (!fileKey) {
+                    console.error('[handleCreateSession] 无效的文件Key');
+                    if (window.showError) {
+                        window.showError('无效的文件Key');
+                    }
+                    return;
                 }
-                return;
-            }
 
                 try {
                     // 显示加载状态
                     if (window.showGlobalLoading) {
                         window.showGlobalLoading('正在获取文件内容并生成会话描述...');
                     }
-                    
+
                     // 获取文件内容
                     let fileContent = '';
                     let fileData = null;
@@ -5591,10 +5509,10 @@ export const useMethods = (store) => {
 
                     // 调用 prompt 接口生成描述
                     const { streamPromptJSON } = await import('/src/services/modules/crud.js');
-                    
+
                     // 构建用于生成描述的 prompt
                     const fileInfoText = `文件路径：${fileKey}\n文件名称：${payload?.name || fileKey.split('/').pop()}\n\n文件内容：\n${fileContent.substring(0, 10000)}`; // 限制内容长度避免过长
-                    
+
                     // 调用 prompt 接口生成描述
                     const descriptionResponse = await streamPromptJSON(getPromptUrl(), {
                         module_name: 'services.ai.chat_service',
@@ -5625,7 +5543,7 @@ export const useMethods = (store) => {
 
                     // 生成会话 ID（使用 fileKey 作为基础）
                     const sessionId = `${Date.now()}_${fileKey.replace(/[^a-zA-Z0-9]/g, '_')}`;
-                    
+
                     // 获取当前时间戳
                     const now = Date.now();
 
@@ -5663,7 +5581,7 @@ export const useMethods = (store) => {
                     if (window.hideGlobalLoading) {
                         window.hideGlobalLoading();
                     }
-                    
+
                     if (saveResult && saveResult.success !== false) {
                         if (window.showSuccess) {
                             window.showSuccess(`已成功创建 YiPet 会话：${fileKey}`);
@@ -5729,7 +5647,7 @@ export const useMethods = (store) => {
                             if (mode === 'tree' && typeof window.aicrApp?.abortSessionChatRequest === 'function') {
                                 window.aicrApp.abortSessionChatRequest();
                             }
-                        } catch (_) {}
+                        } catch (_) { }
 
                         if (typeof setSelectedKey === 'function') {
                             setSelectedKey(null);
@@ -5763,15 +5681,15 @@ export const useMethods = (store) => {
                             }));
                         }, 0);
                     }
-                    
+
                     // 如果切换到标签视图，自动加载会话数据
                     if (mode === 'tags') {
                         // 检查会话数据是否已存在，如果存在则不需要重新加载
                         const hasSessions = store.sessions && store.sessions.value && store.sessions.value.length > 0;
-                        
+
                         if (!hasSessions) {
                             console.log('[useMethods] 切换到标签视图，自动加载会话数据');
-                            
+
                             // 加载会话数据
                             if (loadSessions && typeof loadSessions === 'function') {
                                 try {
@@ -5806,12 +5724,12 @@ export const useMethods = (store) => {
                                 const w = store.sidebarWidth?.value;
                                 if (typeof w === 'number' && w > 0) sidebar.style.width = `${w}px`;
                             }
-                        } catch (_) {}
+                        } catch (_) { }
                     }, 0);
                 }
             }, '视图模式切换');
         },
-        
+
         // 从会话视图返回文件树视图
         handleSessionViewBack: () => {
             return safeExecute(() => {
@@ -5820,7 +5738,7 @@ export const useMethods = (store) => {
                     if (typeof window.aicrApp?.abortSessionChatRequest === 'function') {
                         window.aicrApp.abortSessionChatRequest();
                     }
-                } catch (_) {}
+                } catch (_) { }
                 if (viewMode) {
                     viewMode.value = 'tree';
                 }
@@ -5862,11 +5780,11 @@ export const useMethods = (store) => {
                         const sidebar = document.querySelector('.aicr-sidebar');
                         const w = store.sidebarWidth?.value;
                         if (sidebar && typeof w === 'number' && w > 0) sidebar.style.width = `${w}px`;
-                    } catch (_) {}
+                    } catch (_) { }
                 }, 0);
             }, '返回文件树视图');
         },
-        
+
         // 切换会话批量选择模式
         toggleSessionBatchMode: () => {
             return safeExecute(() => {
@@ -5879,7 +5797,7 @@ export const useMethods = (store) => {
                 }
             }, '切换会话批量选择模式');
         },
-        
+
         // 切换会话选择状态（批量选择）
         toggleSessionSelection: (sessionId) => {
             return safeExecute(() => {
@@ -5887,7 +5805,7 @@ export const useMethods = (store) => {
                     console.warn('[useMethods] selectedSessionKeys 未初始化');
                     return;
                 }
-                
+
                 if (selectedSessionKeys.value.has(sessionId)) {
                     selectedSessionKeys.value.delete(sessionId);
                 } else {
@@ -5896,7 +5814,7 @@ export const useMethods = (store) => {
                 console.log('[useMethods] 会话选择状态已切换:', sessionId, '选中数量:', selectedSessionKeys.value.size);
             }, '切换会话选择状态');
         },
-        
+
         // 全选/取消全选会话
         toggleSelectAllSessions: (ids, isSelect) => {
             return safeExecute(() => {
@@ -5904,34 +5822,34 @@ export const useMethods = (store) => {
                     console.warn('[useMethods] 会话列表为空');
                     return;
                 }
-                
+
                 if (!selectedSessionKeys || !selectedSessionKeys.value) {
                     console.warn('[useMethods] selectedSessionKeys 未初始化');
                     return;
                 }
-                
+
                 // 如果传入了 ids，使用 ids，否则使用所有会话
                 let targetSessions = [];
                 if (ids && Array.isArray(ids) && ids.length > 0) {
-                     targetSessions = store.sessions.value.filter(s => ids.includes(s.key || s.id));
+                    targetSessions = store.sessions.value.filter(s => ids.includes(s.key || s.id));
                 } else {
-                     targetSessions = store.sessions.value;
+                    targetSessions = store.sessions.value;
                 }
-                
+
                 if (targetSessions.length === 0) {
                     return;
                 }
-                
+
                 // 如果 explicit isSelect provided, use it
                 // If not provided (undefined), toggle based on current state (legacy behavior)
                 let shouldSelect = isSelect;
-                
+
                 if (typeof shouldSelect !== 'boolean') {
                     // Legacy toggle logic
                     const allSelected = targetSessions.every(session => selectedSessionKeys.value.has(session.key));
                     shouldSelect = !allSelected;
                 }
-                
+
                 if (shouldSelect) {
                     // 全选
                     targetSessions.forEach(session => {
@@ -5947,7 +5865,7 @@ export const useMethods = (store) => {
                 }
             }, '全选/取消全选会话');
         },
-        
+
         // 处理会话导入（触发文件选择对话框）
         handleSessionImport: () => {
             return safeExecute(() => {
@@ -5964,7 +5882,7 @@ export const useMethods = (store) => {
                 }
             }, '触发会话导入');
         },
-        
+
         // 处理会话导入文件
         handleSessionImportFile: async (event) => {
             return safeExecuteAsync(async () => {
@@ -5973,16 +5891,16 @@ export const useMethods = (store) => {
                     console.warn('[useMethods] 未选择文件');
                     return;
                 }
-                
+
                 console.log('[useMethods] 导入会话文件:', file.name);
-                
+
                 const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                 showGlobalLoading('正在导入会话...');
-                
+
                 try {
                     const fileContent = await file.text();
                     let sessionsData = [];
-                    
+
                     // 解析文件内容
                     if (file.name.endsWith('.json')) {
                         sessionsData = JSON.parse(fileContent);
@@ -5994,7 +5912,7 @@ export const useMethods = (store) => {
                         const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip;
                         const zip = await JSZip.loadAsync(file);
                         const fileNames = Object.keys(zip.files);
-                        
+
                         for (const fileName of fileNames) {
                             if (fileName.endsWith('.json')) {
                                 const content = await zip.files[fileName].async('string');
@@ -6007,14 +5925,14 @@ export const useMethods = (store) => {
                             }
                         }
                     }
-                    
+
                     console.log('[useMethods] 导入会话');
-                    
+
                     // 导入会话到服务器
                     const { postData } = await import('/src/services/index.js');
                     let successCount = 0;
                     let failCount = 0;
-                    
+
                     // 从文件路径提取标签的辅助函数（与 sessionSyncService 保持一致）
                     const extractTagsFromPath = (filePath) => {
                         if (!filePath) return [];
@@ -6024,57 +5942,57 @@ export const useMethods = (store) => {
                         const dirs = parts.slice(0, -1);
                         return dirs;
                     };
-                    
+
                     for (const session of sessionsData) {
                         try {
                             // 确保 tags 字段存在且为数组
                             if (!session.tags || !Array.isArray(session.tags)) {
                                 session.tags = [];
                             }
-                            
+
                             // 规范化标签：去除空值和无效值，trim处理
                             session.tags = session.tags
                                 .map(tag => (typeof tag === 'string' ? tag.trim() : String(tag || '').trim()))
                                 .filter(tag => tag.length > 0);
-                            
+
                             // 如果标签为空，尝试从 pageDescription 中提取路径并生成标签
                             if (session.tags.length === 0 && session.pageDescription) {
                                 const pathMatch = session.pageDescription.match(/文件[：:]\s*(.+)/);
                                 if (pathMatch && pathMatch[1]) {
                                     const filePath = pathMatch[1].trim();
                                     const extractedTags = extractTagsFromPath(filePath);
-                                    
+
                                     // 如果从路径提取到标签，使用这些标签
                                     if (extractedTags.length > 0) {
                                         session.tags = extractedTags;
                                         console.log('[useMethods] 从 pageDescription 提取标签:', session.key, extractedTags);
                                     }
-                                    
+
                                 }
                                 // 无法从 pageDescription 提取路径，标签保持为空
                             }
-                            
+
                             // 确保 "knowledge" 标签是第一个标签
                             const knowledgeTag = 'knowledge';
                             // 移除所有已存在的 knowledge 标签（无论位置）
                             session.tags = session.tags.filter(tag => tag !== knowledgeTag);
                             // 在开头添加 knowledge 标签
                             session.tags.unshift(knowledgeTag);
-                            
+
                             // 确保 tags 数组被正确设置（防止被覆盖）
                             if (!Array.isArray(session.tags) || session.tags.length === 0 || session.tags[0] !== knowledgeTag) {
                                 console.warn('[useMethods] 标签数组异常，重新设置:', session.key, session.tags);
                                 session.tags = [knowledgeTag, ...session.tags.filter(tag => tag !== knowledgeTag)];
                             }
-                            
+
                             console.log('[useMethods] 确保 knowledge 标签在第一个位置:', session.key, session.tags);
-                            
+
                             // 确保保存时包含完整的 tags 数组
                             const sessionToSave = {
                                 ...session,
                                 tags: session.tags // 明确设置 tags 字段
                             };
-                            
+
                             // 检查会话是否存在
                             const checkUrl = buildServiceUrl('query_documents', {
                                 cname: 'sessions',
@@ -6113,14 +6031,14 @@ export const useMethods = (store) => {
                             failCount++;
                         }
                     }
-                    
+
                     // 刷新会话列表
                     if (loadSessions && typeof loadSessions === 'function') {
                         await loadSessions(true);
                     }
-                    
+
                     hideGlobalLoading();
-                    
+
                     if (window.showSuccess) {
                         window.showSuccess(`导入完成：成功 ${successCount} 个，失败 ${failCount} 个`);
                     }
@@ -6133,7 +6051,7 @@ export const useMethods = (store) => {
                 }
             }, '处理会话导入文件');
         },
-        
+
         // 处理会话导出
         handleSessionExport: async () => {
             return safeExecuteAsync(async () => {
@@ -6144,12 +6062,12 @@ export const useMethods = (store) => {
                     }
                     return;
                 }
-                
+
                 console.log('[useMethods] 导出会话，数量:', store.sessions.value.length);
-                
+
                 const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                 showGlobalLoading('正在导出会话...');
-                
+
                 try {
                     // 确定要导出的会话
                     let sessionsToExport = [];
@@ -6160,7 +6078,7 @@ export const useMethods = (store) => {
                         // 导出所有会话
                         sessionsToExport = store.sessions.value;
                     }
-                    
+
                     if (sessionsToExport.length === 0) {
                         hideGlobalLoading();
                         if (window.showError) {
@@ -6168,7 +6086,7 @@ export const useMethods = (store) => {
                         }
                         return;
                     }
-                    
+
                     // 生成导出数据
                     const exportData = {
                         version: '1.0',
@@ -6176,7 +6094,7 @@ export const useMethods = (store) => {
                         count: sessionsToExport.length,
                         sessions: sessionsToExport
                     };
-                    
+
                     // 创建 JSON 文件并下载
                     const jsonStr = JSON.stringify(exportData, null, 2);
                     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -6188,9 +6106,9 @@ export const useMethods = (store) => {
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                    
+
                     hideGlobalLoading();
-                    
+
                     if (window.showSuccess) {
                         window.showSuccess(`成功导出 ${sessionsToExport.length} 个会话`);
                     }
@@ -6203,7 +6121,7 @@ export const useMethods = (store) => {
                 }
             }, '处理会话导出');
         },
-        
+
         // 批量删除会话（参考 YiPet 的实现）
         handleBatchDeleteSessions: async () => {
             return safeExecuteAsync(async () => {
@@ -6213,12 +6131,12 @@ export const useMethods = (store) => {
                     }
                     return;
                 }
-                
+
                 // 检查并过滤掉树文件类型的会话
                 const sessionKeys = Array.from(selectedSessionKeys.value);
                 const treeFileSessionKeys = [];
                 const allowedSessionKeys = [];
-                
+
                 // 从会话列表中检查每个会话
                 if (store.sessions && store.sessions.value && Array.isArray(store.sessions.value)) {
                     for (const sessionKey of sessionKeys) {
@@ -6247,7 +6165,7 @@ export const useMethods = (store) => {
                         }
                     }
                 }
-                
+
                 // 如果有树文件类型的会话，提示用户
                 if (treeFileSessionKeys.length > 0) {
                     if (window.showError) {
@@ -6264,16 +6182,16 @@ export const useMethods = (store) => {
                         return;
                     }
                 }
-                
+
                 const count = allowedSessionKeys.length;
                 const confirmMessage = `确定要删除选中的 ${count} 个会话吗？此操作不可撤销。`;
                 if (!confirm(confirmMessage)) {
                     return;
                 }
-                
+
                 const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                 showGlobalLoading(`正在删除 ${count} 个会话...`);
-                
+
                 try {
                     // 使用标准服务接口逐个删除（只删除允许删除的会话）
                     let deletedCount = 0;
@@ -6299,27 +6217,27 @@ export const useMethods = (store) => {
                             failedCount++;
                         }
                     }
-                    
+
                     if (deletedCount > 0) {
                         // 清空选中状态
                         if (selectedSessionKeys) {
                             selectedSessionKeys.value.clear();
                         }
-                        
+
                         // 退出批量模式
                         if (sessionBatchMode) {
                             sessionBatchMode.value = false;
                         }
-                        
+
                         // 刷新会话列表
                         if (loadSessions && typeof loadSessions === 'function') {
                             await loadSessions(true);
                         } else if (store && store.loadSessions && typeof store.loadSessions === 'function') {
                             await store.loadSessions(true);
                         }
-                        
+
                         hideGlobalLoading();
-                        
+
                         if (window.showSuccess) {
                             let successMessage = `已成功删除 ${deletedCount} 个会话`;
                             if (treeFileSessionKeys.length > 0) {
@@ -6342,7 +6260,7 @@ export const useMethods = (store) => {
                 }
             }, '批量删除会话');
         },
-        
+
         /**
          * 处理复制为Prompt
          * @param {Object} payload - 文件信息
@@ -6380,10 +6298,10 @@ export const useMethods = (store) => {
                 // 格式化为Prompt
                 // 使用简单的 XML 格式 <file path="...">...</file>
                 const promptText = `<file path="${path}">\n${content}\n</file>`;
-                
+
                 // 写入剪贴板
                 await navigator.clipboard.writeText(promptText);
-                
+
                 if (window.showSuccess) {
                     window.showSuccess(`${name} 已复制为 Prompt`);
                 }
@@ -6409,14 +6327,14 @@ export const useMethods = (store) => {
                     alert('没有可导出的会话');
                     return;
                 }
-                
+
                 try {
                     const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                     showGlobalLoading('正在导出会话...');
-                    
+
                     const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip || (await import('jszip')).default;
                     const zip = new JSZip();
-                    
+
                     // 导出所有会话为 JSON 文件
                     store.sessions.value.forEach(session => {
                         let fileName = session.title || session.pageTitle || 'Untitled';
@@ -6424,7 +6342,7 @@ export const useMethods = (store) => {
                         const content = JSON.stringify(session, null, 2);
                         zip.file(`${fileName}.json`, content);
                     });
-                    
+
                     const content = await zip.generateAsync({ type: 'blob' });
                     const url = URL.createObjectURL(content);
                     const link = document.createElement('a');
@@ -6434,7 +6352,7 @@ export const useMethods = (store) => {
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
-                    
+
                     hideGlobalLoading();
                     if (window.showSuccess) window.showSuccess('导出成功');
                 } catch (error) {
@@ -6450,49 +6368,49 @@ export const useMethods = (store) => {
             return safeExecute(async () => {
                 const file = event.target.files[0];
                 if (!file) return;
-                
+
                 try {
                     const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
                     showGlobalLoading('正在导入会话...');
-                    
+
                     const sessionSync = (await import('/src/views/aicr/services/sessionSyncService.js')).getSessionSyncService();
-                    
+
                     if (file.name.endsWith('.json')) {
                         const text = await file.text();
                         const sessionData = JSON.parse(text);
-                        
+
                         await sessionSync.syncFileToSession({
                             name: file.name,
                             content: JSON.stringify(sessionData),
                             type: 'file'
                         }, false, true); // isUpdate=false, isImport=true
                     } else if (file.name.endsWith('.zip')) {
-                         const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip || (await import('jszip')).default;
-                         const zip = await JSZip.loadAsync(file);
-                         
-                         const promises = [];
-                         zip.forEach((relativePath, zipEntry) => {
-                             if (!zipEntry.dir && zipEntry.name.endsWith('.json')) {
-                                 promises.push(async () => {
-                                     const text = await zipEntry.async('string');
-                                     try {
-                                         // verify json
-                                         JSON.parse(text);
-                                         await sessionSync.syncFileToSession({
-                                             name: zipEntry.name.split('/').pop(),
-                                             content: text,
-                                             type: 'file'
-                                         }, false, true);
-                                     } catch (e) {
-                                         console.warn('Skipping invalid JSON:', zipEntry.name);
-                                     }
-                                 });
-                             }
-                         });
-                         
-                         await Promise.all(promises.map(p => p()));
+                        const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip || (await import('jszip')).default;
+                        const zip = await JSZip.loadAsync(file);
+
+                        const promises = [];
+                        zip.forEach((relativePath, zipEntry) => {
+                            if (!zipEntry.dir && zipEntry.name.endsWith('.json')) {
+                                promises.push(async () => {
+                                    const text = await zipEntry.async('string');
+                                    try {
+                                        // verify json
+                                        JSON.parse(text);
+                                        await sessionSync.syncFileToSession({
+                                            name: zipEntry.name.split('/').pop(),
+                                            content: text,
+                                            type: 'file'
+                                        }, false, true);
+                                    } catch (e) {
+                                        console.warn('Skipping invalid JSON:', zipEntry.name);
+                                    }
+                                });
+                            }
+                        });
+
+                        await Promise.all(promises.map(p => p()));
                     }
-                    
+
                     if (store.loadSessions) {
                         await store.loadSessions(true);
                     }
@@ -6504,132 +6422,132 @@ export const useMethods = (store) => {
                 }
             }, '导入会话文件');
         },
-        
+
         // 标签管理
         openTagManager,
         closeTagManager
     };
 
-/**
- * 标签管理相关函数（参考 YiPet 的实现）
- */
+    /**
+     * 标签管理相关函数（参考 YiPet 的实现）
+     */
 
-function getTagManagerStore(modal, store) {
-    return store || modal?._store || window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
-}
-
-function findSessionBySessionId(store, sessionId) {
-    const normalizedSessionId = sessionId == null ? '' : String(sessionId);
-    const sessions = store?.sessions?.value || [];
-    return sessions.find(s => {
-        if (!s) return false;
-        const key = s.key == null ? '' : String(s.key);
-        const id = s.id == null ? '' : String(s.id);
-        return key === normalizedSessionId || id === normalizedSessionId;
-    });
-}
-
-// 打开标签管理弹窗
-async function openTagManager(sessionId, session, store) {
-    if (!sessionId || !session) {
-        console.warn('会话不存在，无法管理标签:', sessionId);
-        return;
+    function getTagManagerStore(modal, store) {
+        return store || modal?._store || window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
     }
 
-    // 创建标签副本，避免直接修改 session.tags
-    const currentTags = [...(session.tags || [])];
-
-    // 创建标签管理弹窗
-    ensureTagManagerUi();
-    const modal = document.querySelector('#aicr-tag-manager');
-    if (!modal) {
-        console.error('标签管理弹窗未找到');
-        return;
-    }
-    
-    modal._store = store;
-    modal._currentTags = currentTags;
-
-    // 显示弹窗
-    modal.style.display = 'flex';
-    modal.dataset.sessionId = sessionId;
-    
-    // 加载当前标签
-    loadTagsIntoManager(sessionId, currentTags, modal);
-
-    // 添加关闭事件
-    const closeBtn = modal.querySelector('.tag-manager-close');
-    if (closeBtn) {
-        closeBtn.onclick = () => closeTagManager(sessionId, store);
+    function findSessionBySessionId(store, sessionId) {
+        const normalizedSessionId = sessionId == null ? '' : String(sessionId);
+        const sessions = store?.sessions?.value || [];
+        return sessions.find(s => {
+            if (!s) return false;
+            const key = s.key == null ? '' : String(s.key);
+            const id = s.id == null ? '' : String(s.id);
+            return key === normalizedSessionId || id === normalizedSessionId;
+        });
     }
 
-    // 添加保存事件
-    const saveBtn = modal.querySelector('.tag-manager-save');
-    if (saveBtn) {
-        saveBtn.onclick = () => saveTags(sessionId, store);
-    }
+    // 打开标签管理弹窗
+    async function openTagManager(sessionId, session, store) {
+        if (!sessionId || !session) {
+            console.warn('会话不存在，无法管理标签:', sessionId);
+            return;
+        }
 
-    // 添加输入框回车事件（兼容中文输入法）
-    const tagInput = modal.querySelector('.tag-manager-input');
-    if (tagInput) {
-        // 确保输入法组合状态已初始化
-        if (tagInput._isComposing === undefined) {
-            tagInput._isComposing = false;
-            tagInput.addEventListener('compositionstart', () => {
-                tagInput._isComposing = true;
-            });
-            tagInput.addEventListener('compositionend', () => {
+        // 创建标签副本，避免直接修改 session.tags
+        const currentTags = [...(session.tags || [])];
+
+        // 创建标签管理弹窗
+        ensureTagManagerUi();
+        const modal = document.querySelector('#aicr-tag-manager');
+        if (!modal) {
+            console.error('标签管理弹窗未找到');
+            return;
+        }
+
+        modal._store = store;
+        modal._currentTags = currentTags;
+
+        // 显示弹窗
+        modal.style.display = 'flex';
+        modal.dataset.sessionId = sessionId;
+
+        // 加载当前标签
+        loadTagsIntoManager(sessionId, currentTags, modal);
+
+        // 添加关闭事件
+        const closeBtn = modal.querySelector('.tag-manager-close');
+        if (closeBtn) {
+            closeBtn.onclick = () => closeTagManager(sessionId, store);
+        }
+
+        // 添加保存事件
+        const saveBtn = modal.querySelector('.tag-manager-save');
+        if (saveBtn) {
+            saveBtn.onclick = () => saveTags(sessionId, store);
+        }
+
+        // 添加输入框回车事件（兼容中文输入法）
+        const tagInput = modal.querySelector('.tag-manager-input');
+        if (tagInput) {
+            // 确保输入法组合状态已初始化
+            if (tagInput._isComposing === undefined) {
                 tagInput._isComposing = false;
-            });
-        }
-        
-        // 添加回车键事件处理
-        const existingHandler = tagInput._enterKeyHandler;
-        if (existingHandler) {
-            tagInput.removeEventListener('keydown', existingHandler);
-        }
-        
-        const enterKeyHandler = (e) => {
-            // 如果在输入法组合过程中，忽略回车键
-            if (tagInput._isComposing) {
-                return;
+                tagInput.addEventListener('compositionstart', () => {
+                    tagInput._isComposing = true;
+                });
+                tagInput.addEventListener('compositionend', () => {
+                    tagInput._isComposing = false;
+                });
             }
-            
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addTagFromInput(sessionId, modal, store);
+
+            // 添加回车键事件处理
+            const existingHandler = tagInput._enterKeyHandler;
+            if (existingHandler) {
+                tagInput.removeEventListener('keydown', existingHandler);
+            }
+
+            const enterKeyHandler = (e) => {
+                // 如果在输入法组合过程中，忽略回车键
+                if (tagInput._isComposing) {
+                    return;
+                }
+
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addTagFromInput(sessionId, modal, store);
+                }
+            };
+
+            tagInput._enterKeyHandler = enterKeyHandler;
+            tagInput.addEventListener('keydown', enterKeyHandler);
+
+            tagInput.focus();
+        }
+
+        // ESC 键关闭
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeTagManager(sessionId, store);
             }
         };
-        
-        tagInput._enterKeyHandler = enterKeyHandler;
-        tagInput.addEventListener('keydown', enterKeyHandler);
-        
-        tagInput.focus();
-    }
 
-    // ESC 键关闭
-    const escHandler = (e) => {
-        if (e.key === 'Escape') {
-            closeTagManager(sessionId, store);
+        // 移除旧的监听器（如果有）
+        if (modal._escHandler) {
+            document.removeEventListener('keydown', modal._escHandler);
         }
-    };
-    
-    // 移除旧的监听器（如果有）
-    if (modal._escHandler) {
-        document.removeEventListener('keydown', modal._escHandler);
+
+        modal._escHandler = escHandler;
+        document.addEventListener('keydown', escHandler);
     }
-    
-    modal._escHandler = escHandler;
-    document.addEventListener('keydown', escHandler);
-}
 
-// 确保标签管理UI存在
-function ensureTagManagerUi() {
-    if (document.querySelector('#aicr-tag-manager')) return;
+    // 确保标签管理UI存在
+    function ensureTagManagerUi() {
+        if (document.querySelector('#aicr-tag-manager')) return;
 
-    const modal = document.createElement('div');
-    modal.id = 'aicr-tag-manager';
-    modal.style.cssText = `
+        const modal = document.createElement('div');
+        modal.id = 'aicr-tag-manager';
+        modal.style.cssText = `
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
@@ -6642,20 +6560,20 @@ function ensureTagManagerUi() {
         justify-content: center !important;
         z-index: 10000 !important;
     `;
-    
-    // 点击背景关闭
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            const sessionId = modal.dataset.sessionId;
-            if (sessionId) {
-                const store = getTagManagerStore(modal);
-                closeTagManager(sessionId, store);
-            }
-        }
-    });
 
-    const panel = document.createElement('div');
-    panel.style.cssText = `
+        // 点击背景关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                const sessionId = modal.dataset.sessionId;
+                if (sessionId) {
+                    const store = getTagManagerStore(modal);
+                    closeTagManager(sessionId, store);
+                }
+            }
+        });
+
+        const panel = document.createElement('div');
+        panel.style.cssText = `
         background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%) !important;
         border-radius: 24px !important;
         padding: 32px !important;
@@ -6669,9 +6587,9 @@ function ensureTagManagerUi() {
         color: #f8fafc !important;
     `;
 
-    // 标题
-    const header = document.createElement('div');
-    header.style.cssText = `
+        // 标题
+        const header = document.createElement('div');
+        header.style.cssText = `
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
@@ -6679,10 +6597,10 @@ function ensureTagManagerUi() {
         padding-bottom: 16px !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
     `;
-    
-    const title = document.createElement('h3');
-    title.textContent = '管理标签';
-    title.style.cssText = `
+
+        const title = document.createElement('h3');
+        title.textContent = '管理标签';
+        title.style.cssText = `
         margin: 0 !important;
         font-size: 18px !important;
         font-weight: 600 !important;
@@ -6690,12 +6608,12 @@ function ensureTagManagerUi() {
         letter-spacing: -0.01em !important;
     `;
 
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'tag-manager-close';
-    closeBtn.innerHTML = '<i class="fas fa-times"></i>'; // 使用 FontAwesome 图标
-    if (!closeBtn.querySelector('i')) closeBtn.innerHTML = '✕'; // Fallback
-    
-    closeBtn.style.cssText = `
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'tag-manager-close';
+        closeBtn.innerHTML = '<i class="fas fa-times"></i>'; // 使用 FontAwesome 图标
+        if (!closeBtn.querySelector('i')) closeBtn.innerHTML = '✕'; // Fallback
+
+        closeBtn.style.cssText = `
         background: transparent !important;
         border: none !important;
         font-size: 16px !important;
@@ -6710,32 +6628,32 @@ function ensureTagManagerUi() {
         border-radius: 50% !important;
         transition: all 0.2s ease !important;
     `;
-    closeBtn.addEventListener('mouseenter', () => {
-        closeBtn.style.background = 'rgba(255, 255, 255, 0.1)';
-        closeBtn.style.color = '#f8fafc';
-    });
-    closeBtn.addEventListener('mouseleave', () => {
-        closeBtn.style.background = 'transparent';
-        closeBtn.style.color = '#94a3b8';
-    });
+        closeBtn.addEventListener('mouseenter', () => {
+            closeBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+            closeBtn.style.color = '#f8fafc';
+        });
+        closeBtn.addEventListener('mouseleave', () => {
+            closeBtn.style.background = 'transparent';
+            closeBtn.style.color = '#94a3b8';
+        });
 
-    header.appendChild(title);
-    header.appendChild(closeBtn);
+        header.appendChild(title);
+        header.appendChild(closeBtn);
 
-    // 输入区域
-    const inputGroup = document.createElement('div');
-    inputGroup.className = 'tag-manager-input-group';
-    inputGroup.style.cssText = `
+        // 输入区域
+        const inputGroup = document.createElement('div');
+        inputGroup.className = 'tag-manager-input-group';
+        inputGroup.style.cssText = `
         display: flex !important;
         gap: 12px !important;
         margin-bottom: 24px !important;
     `;
 
-    const tagInput = document.createElement('input');
-    tagInput.className = 'tag-manager-input';
-    tagInput.type = 'text';
-    tagInput.placeholder = '输入标签名称，按回车添加';
-    tagInput.style.cssText = `
+        const tagInput = document.createElement('input');
+        tagInput.className = 'tag-manager-input';
+        tagInput.type = 'text';
+        tagInput.placeholder = '输入标签名称，按回车添加';
+        tagInput.style.cssText = `
         flex: 1 !important;
         padding: 12px 16px !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -6747,29 +6665,29 @@ function ensureTagManagerUi() {
         transition: all 0.2s ease !important;
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2) !important;
     `;
-    
-    tagInput._isComposing = false;
-    tagInput.addEventListener('compositionstart', () => {
-        tagInput._isComposing = true;
-    });
-    tagInput.addEventListener('compositionend', () => {
-        tagInput._isComposing = false;
-    });
-    
-    tagInput.addEventListener('focus', () => {
-        tagInput.style.borderColor = '#6366f1';
-        tagInput.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.25)';
-        tagInput.style.background = 'rgba(15, 23, 42, 0.8) !important';
-    });
-    tagInput.addEventListener('blur', () => {
-        tagInput.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-        tagInput.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
-        tagInput.style.background = 'rgba(15, 23, 42, 0.6) !important';
-    });
 
-    const addBtn = document.createElement('button');
-    addBtn.textContent = '添加';
-    addBtn.style.cssText = `
+        tagInput._isComposing = false;
+        tagInput.addEventListener('compositionstart', () => {
+            tagInput._isComposing = true;
+        });
+        tagInput.addEventListener('compositionend', () => {
+            tagInput._isComposing = false;
+        });
+
+        tagInput.addEventListener('focus', () => {
+            tagInput.style.borderColor = '#6366f1';
+            tagInput.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.25)';
+            tagInput.style.background = 'rgba(15, 23, 42, 0.8) !important';
+        });
+        tagInput.addEventListener('blur', () => {
+            tagInput.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            tagInput.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
+            tagInput.style.background = 'rgba(15, 23, 42, 0.6) !important';
+        });
+
+        const addBtn = document.createElement('button');
+        addBtn.textContent = '添加';
+        addBtn.style.cssText = `
         padding: 12px 24px !important;
         background: #4f46e5 !important;
         color: white !important;
@@ -6781,27 +6699,27 @@ function ensureTagManagerUi() {
         transition: all 0.2s ease !important;
         box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.1), 0 2px 4px -1px rgba(79, 70, 229, 0.06) !important;
     `;
-    addBtn.addEventListener('mouseenter', () => {
-        addBtn.style.background = '#4338ca';
-        addBtn.style.transform = 'translateY(-1px)';
-    });
-    addBtn.addEventListener('mouseleave', () => {
-        addBtn.style.background = '#4f46e5';
-        addBtn.style.transform = 'translateY(0)';
-    });
-    addBtn.addEventListener('click', () => {
-        const sessionId = modal.dataset.sessionId;
-        if (sessionId) {
-            const store = getTagManagerStore(modal);
-            addTagFromInput(sessionId, modal, store);
-        }
-    });
+        addBtn.addEventListener('mouseenter', () => {
+            addBtn.style.background = '#4338ca';
+            addBtn.style.transform = 'translateY(-1px)';
+        });
+        addBtn.addEventListener('mouseleave', () => {
+            addBtn.style.background = '#4f46e5';
+            addBtn.style.transform = 'translateY(0)';
+        });
+        addBtn.addEventListener('click', () => {
+            const sessionId = modal.dataset.sessionId;
+            if (sessionId) {
+                const store = getTagManagerStore(modal);
+                addTagFromInput(sessionId, modal, store);
+            }
+        });
 
-    // 智能生成标签按钮
-    const smartGenerateBtn = document.createElement('button');
-    smartGenerateBtn.className = 'tag-manager-smart-generate';
-    smartGenerateBtn.textContent = '✨ 智能生成';
-    smartGenerateBtn.style.cssText = `
+        // 智能生成标签按钮
+        const smartGenerateBtn = document.createElement('button');
+        smartGenerateBtn.className = 'tag-manager-smart-generate';
+        smartGenerateBtn.textContent = '✨ 智能生成';
+        smartGenerateBtn.style.cssText = `
         padding: 12px 24px !important;
         background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%) !important;
         color: white !important;
@@ -6814,36 +6732,36 @@ function ensureTagManagerUi() {
         white-space: nowrap !important;
         box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.2), 0 2px 4px -1px rgba(139, 92, 246, 0.1) !important;
     `;
-    smartGenerateBtn.addEventListener('mouseenter', () => {
-        if (!smartGenerateBtn.disabled) {
-            smartGenerateBtn.style.filter = 'brightness(1.1)';
-            smartGenerateBtn.style.transform = 'translateY(-1px)';
-            smartGenerateBtn.style.boxShadow = '0 10px 15px -3px rgba(139, 92, 246, 0.3), 0 4px 6px -2px rgba(139, 92, 246, 0.1) !important';
-        }
-    });
-    smartGenerateBtn.addEventListener('mouseleave', () => {
-        if (!smartGenerateBtn.disabled) {
-            smartGenerateBtn.style.filter = 'brightness(1)';
-            smartGenerateBtn.style.transform = 'translateY(0)';
-            smartGenerateBtn.style.boxShadow = '0 4px 6px -1px rgba(139, 92, 246, 0.2), 0 2px 4px -1px rgba(139, 92, 246, 0.1) !important';
-        }
-    });
-    smartGenerateBtn.addEventListener('click', () => {
-        const sessionId = modal.dataset.sessionId;
-        if (sessionId) {
-            const store = getTagManagerStore(modal);
-            generateSmartTags(sessionId, smartGenerateBtn, modal, store);
-        }
-    });
+        smartGenerateBtn.addEventListener('mouseenter', () => {
+            if (!smartGenerateBtn.disabled) {
+                smartGenerateBtn.style.filter = 'brightness(1.1)';
+                smartGenerateBtn.style.transform = 'translateY(-1px)';
+                smartGenerateBtn.style.boxShadow = '0 10px 15px -3px rgba(139, 92, 246, 0.3), 0 4px 6px -2px rgba(139, 92, 246, 0.1) !important';
+            }
+        });
+        smartGenerateBtn.addEventListener('mouseleave', () => {
+            if (!smartGenerateBtn.disabled) {
+                smartGenerateBtn.style.filter = 'brightness(1)';
+                smartGenerateBtn.style.transform = 'translateY(0)';
+                smartGenerateBtn.style.boxShadow = '0 4px 6px -1px rgba(139, 92, 246, 0.2), 0 2px 4px -1px rgba(139, 92, 246, 0.1) !important';
+            }
+        });
+        smartGenerateBtn.addEventListener('click', () => {
+            const sessionId = modal.dataset.sessionId;
+            if (sessionId) {
+                const store = getTagManagerStore(modal);
+                generateSmartTags(sessionId, smartGenerateBtn, modal, store);
+            }
+        });
 
-    inputGroup.appendChild(tagInput);
-    inputGroup.appendChild(addBtn);
-    inputGroup.appendChild(smartGenerateBtn);
+        inputGroup.appendChild(tagInput);
+        inputGroup.appendChild(addBtn);
+        inputGroup.appendChild(smartGenerateBtn);
 
-    // 快捷标签按钮容器
-    const quickTagsContainer = document.createElement('div');
-    quickTagsContainer.className = 'tag-manager-quick-tags';
-    quickTagsContainer.style.cssText = `
+        // 快捷标签按钮容器
+        const quickTagsContainer = document.createElement('div');
+        quickTagsContainer.className = 'tag-manager-quick-tags';
+        quickTagsContainer.style.cssText = `
         display: flex !important;
         flex-wrap: wrap !important;
         gap: 10px !important;
@@ -6854,55 +6772,55 @@ function ensureTagManagerUi() {
         border: 1px dashed rgba(51, 65, 85, 0.5) !important;
     `;
 
-    // 获取所有标签（与标签筛选模块保持一致）
-    const getAllTags = () => {
-        const store = getTagManagerStore(modal);
-        const sessions = store?.sessions?.value || [];
-        
-        // 提取所有标签
-        const tagSet = new Set();
-        sessions.forEach(session => {
-            if (session && session.tags && Array.isArray(session.tags)) {
-                session.tags.forEach(tag => {
-                    if (tag && tag.trim()) {
-                        tagSet.add(tag.trim());
-                    }
-                });
+        // 获取所有标签（与标签筛选模块保持一致）
+        const getAllTags = () => {
+            const store = getTagManagerStore(modal);
+            const sessions = store?.sessions?.value || [];
+
+            // 提取所有标签
+            const tagSet = new Set();
+            sessions.forEach(session => {
+                if (session && session.tags && Array.isArray(session.tags)) {
+                    session.tags.forEach(tag => {
+                        if (tag && tag.trim()) {
+                            tagSet.add(tag.trim());
+                        }
+                    });
+                }
+            });
+
+            // 按字母顺序排序
+            const allTagsArray = Array.from(tagSet);
+            allTagsArray.sort();
+
+            const defaultOrder = allTagsArray;
+
+            // 应用保存的标签顺序（从 localStorage）
+            try {
+                const saved = localStorage.getItem('aicr_tag_order');
+                const savedOrder = saved ? JSON.parse(saved) : null;
+                if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+                    // 使用保存的顺序，但只包含当前存在的标签
+                    const orderedTags = savedOrder.filter(tag => tagSet.has(tag));
+                    // 添加新标签（不在保存顺序中的）到末尾，按字母顺序
+                    const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
+                    return [...orderedTags, ...newTags];
+                }
+            } catch (e) {
+                console.warn('[标签管理] 加载标签顺序失败:', e);
             }
-        });
-        
-        // 按字母顺序排序
-        const allTagsArray = Array.from(tagSet);
-        allTagsArray.sort();
-        
-        const defaultOrder = allTagsArray;
-        
-        // 应用保存的标签顺序（从 localStorage）
-        try {
-            const saved = localStorage.getItem('aicr_tag_order');
-            const savedOrder = saved ? JSON.parse(saved) : null;
-            if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
-                // 使用保存的顺序，但只包含当前存在的标签
-                const orderedTags = savedOrder.filter(tag => tagSet.has(tag));
-                // 添加新标签（不在保存顺序中的）到末尾，按字母顺序
-                const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
-                return [...orderedTags, ...newTags];
-            }
-        } catch (e) {
-            console.warn('[标签管理] 加载标签顺序失败:', e);
-        }
-        
-        return defaultOrder;
-    };
-    
-    // 获取所有标签
-    const quickTags = getAllTags();
-    
-    // 如果没有标签，显示提示
-    if (quickTags.length === 0) {
-        const emptyHint = document.createElement('div');
-        emptyHint.textContent = '暂无可用标签';
-        emptyHint.style.cssText = `
+
+            return defaultOrder;
+        };
+
+        // 获取所有标签
+        const quickTags = getAllTags();
+
+        // 如果没有标签，显示提示
+        if (quickTags.length === 0) {
+            const emptyHint = document.createElement('div');
+            emptyHint.textContent = '暂无可用标签';
+            emptyHint.style.cssText = `
             width: 100% !important;
             text-align: center !important;
             color: #94a3b8 !important;
@@ -6910,21 +6828,21 @@ function ensureTagManagerUi() {
             font-size: 13px !important;
             font-weight: 500 !important;
         `;
-        quickTagsContainer.appendChild(emptyHint);
-    } else {
-        // 获取当前会话的标签（用于判断快捷标签是否已添加）
-        const sessionId = modal.dataset.sessionId;
-        const store = getTagManagerStore(modal);
-        const session = findSessionBySessionId(store, sessionId);
-        const currentTags = session?.tags || [];
-        
-        quickTags.forEach(tagName => {
-            const isAdded = currentTags && currentTags.includes(tagName);
-            const quickTagBtn = document.createElement('button');
-            quickTagBtn.textContent = tagName;
-            quickTagBtn.className = 'tag-manager-quick-tag-btn';
-            quickTagBtn.dataset.tagName = tagName;
-            quickTagBtn.style.cssText = `
+            quickTagsContainer.appendChild(emptyHint);
+        } else {
+            // 获取当前会话的标签（用于判断快捷标签是否已添加）
+            const sessionId = modal.dataset.sessionId;
+            const store = getTagManagerStore(modal);
+            const session = findSessionBySessionId(store, sessionId);
+            const currentTags = session?.tags || [];
+
+            quickTags.forEach(tagName => {
+                const isAdded = currentTags && currentTags.includes(tagName);
+                const quickTagBtn = document.createElement('button');
+                quickTagBtn.textContent = tagName;
+                quickTagBtn.className = 'tag-manager-quick-tag-btn';
+                quickTagBtn.dataset.tagName = tagName;
+                quickTagBtn.style.cssText = `
                 padding: 8px 16px !important;
                 background: ${isAdded ? 'rgba(99, 102, 241, 0.2)' : 'rgba(30, 41, 59, 0.6)'} !important;
                 color: ${isAdded ? '#a5b4fc' : '#94a3b8'} !important;
@@ -6937,42 +6855,42 @@ function ensureTagManagerUi() {
                 opacity: ${isAdded ? '0.8' : '1'} !important;
                 box-shadow: ${isAdded ? 'none' : '0 1px 2px 0 rgba(0, 0, 0, 0.2)'} !important;
             `;
-            
-            if (!isAdded) {
-                quickTagBtn.addEventListener('mouseenter', () => {
-                    quickTagBtn.style.background = 'rgba(51, 65, 85, 0.8)';
-                    quickTagBtn.style.borderColor = '#6366f1';
-                    quickTagBtn.style.color = '#f8fafc';
-                    quickTagBtn.style.transform = 'translateY(-1px)';
-                    quickTagBtn.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.3)';
-                });
-                quickTagBtn.addEventListener('mouseleave', () => {
-                    quickTagBtn.style.background = 'rgba(30, 41, 59, 0.6)';
-                    quickTagBtn.style.borderColor = 'rgba(51, 65, 85, 0.5)';
-                    quickTagBtn.style.color = '#94a3b8';
-                    quickTagBtn.style.transform = 'translateY(0)';
-                    quickTagBtn.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
-                });
-            }
-            
-            quickTagBtn.addEventListener('click', () => {
-                if (isAdded || quickTagBtn.style.cursor === 'not-allowed') {
-                    return;
-                }
-                const sessionId = modal.dataset.sessionId;
-                if (sessionId) {
-                    const store = getTagManagerStore(modal);
-                    addQuickTag(sessionId, tagName, modal, store);
-                }
-            });
-            quickTagsContainer.appendChild(quickTagBtn);
-        });
-    }
 
-    // 标签列表
-    const tagsContainer = document.createElement('div');
-    tagsContainer.className = 'tag-manager-tags';
-    tagsContainer.style.cssText = `
+                if (!isAdded) {
+                    quickTagBtn.addEventListener('mouseenter', () => {
+                        quickTagBtn.style.background = 'rgba(51, 65, 85, 0.8)';
+                        quickTagBtn.style.borderColor = '#6366f1';
+                        quickTagBtn.style.color = '#f8fafc';
+                        quickTagBtn.style.transform = 'translateY(-1px)';
+                        quickTagBtn.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.3)';
+                    });
+                    quickTagBtn.addEventListener('mouseleave', () => {
+                        quickTagBtn.style.background = 'rgba(30, 41, 59, 0.6)';
+                        quickTagBtn.style.borderColor = 'rgba(51, 65, 85, 0.5)';
+                        quickTagBtn.style.color = '#94a3b8';
+                        quickTagBtn.style.transform = 'translateY(0)';
+                        quickTagBtn.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
+                    });
+                }
+
+                quickTagBtn.addEventListener('click', () => {
+                    if (isAdded || quickTagBtn.style.cursor === 'not-allowed') {
+                        return;
+                    }
+                    const sessionId = modal.dataset.sessionId;
+                    if (sessionId) {
+                        const store = getTagManagerStore(modal);
+                        addQuickTag(sessionId, tagName, modal, store);
+                    }
+                });
+                quickTagsContainer.appendChild(quickTagBtn);
+            });
+        }
+
+        // 标签列表
+        const tagsContainer = document.createElement('div');
+        tagsContainer.className = 'tag-manager-tags';
+        tagsContainer.style.cssText = `
         min-height: 100px !important;
         max-height: 300px !important;
         overflow-y: auto !important;
@@ -6983,17 +6901,17 @@ function ensureTagManagerUi() {
         border: 1px dashed rgba(255, 255, 255, 0.1) !important;
     `;
 
-    // 底部按钮
-    const footer = document.createElement('div');
-    footer.style.cssText = `
+        // 底部按钮
+        const footer = document.createElement('div');
+        footer.style.cssText = `
         display: flex !important;
         justify-content: flex-end !important;
         gap: 12px !important;
     `;
 
-    const cancelBtn = document.createElement('button');
-    cancelBtn.textContent = '取消';
-    cancelBtn.style.cssText = `
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = '取消';
+        cancelBtn.style.cssText = `
         padding: 12px 24px !important;
         background: transparent !important;
         color: #94a3b8 !important;
@@ -7005,28 +6923,28 @@ function ensureTagManagerUi() {
         transition: all 0.2s ease !important;
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
     `;
-    cancelBtn.addEventListener('mouseenter', () => {
-        cancelBtn.style.background = 'rgba(255, 255, 255, 0.05)';
-        cancelBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-        cancelBtn.style.color = '#f8fafc';
-    });
-    cancelBtn.addEventListener('mouseleave', () => {
-        cancelBtn.style.background = 'transparent';
-        cancelBtn.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-        cancelBtn.style.color = '#94a3b8';
-    });
-    cancelBtn.addEventListener('click', () => {
-        const sessionId = modal.dataset.sessionId;
-        if (sessionId) {
-            const store = getTagManagerStore(modal);
-            closeTagManager(sessionId, store);
-        }
-    });
+        cancelBtn.addEventListener('mouseenter', () => {
+            cancelBtn.style.background = 'rgba(255, 255, 255, 0.05)';
+            cancelBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            cancelBtn.style.color = '#f8fafc';
+        });
+        cancelBtn.addEventListener('mouseleave', () => {
+            cancelBtn.style.background = 'transparent';
+            cancelBtn.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            cancelBtn.style.color = '#94a3b8';
+        });
+        cancelBtn.addEventListener('click', () => {
+            const sessionId = modal.dataset.sessionId;
+            if (sessionId) {
+                const store = getTagManagerStore(modal);
+                closeTagManager(sessionId, store);
+            }
+        });
 
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'tag-manager-save';
-    saveBtn.textContent = '保存';
-    saveBtn.style.cssText = `
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'tag-manager-save';
+        saveBtn.textContent = '保存';
+        saveBtn.style.cssText = `
         padding: 12px 24px !important;
         background: #4f46e5 !important;
         color: white !important;
@@ -7038,31 +6956,31 @@ function ensureTagManagerUi() {
         transition: all 0.2s ease !important;
         box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.1), 0 2px 4px -1px rgba(79, 70, 229, 0.06) !important;
     `;
-    saveBtn.addEventListener('mouseenter', () => {
-        saveBtn.style.background = '#4338ca';
-        saveBtn.style.transform = 'translateY(-1px)';
-    });
-    saveBtn.addEventListener('mouseleave', () => {
-        saveBtn.style.background = '#4f46e5';
-        saveBtn.style.transform = 'translateY(0)';
-    });
+        saveBtn.addEventListener('mouseenter', () => {
+            saveBtn.style.background = '#4338ca';
+            saveBtn.style.transform = 'translateY(-1px)';
+        });
+        saveBtn.addEventListener('mouseleave', () => {
+            saveBtn.style.background = '#4f46e5';
+            saveBtn.style.transform = 'translateY(0)';
+        });
 
-    footer.appendChild(cancelBtn);
-    footer.appendChild(saveBtn);
+        footer.appendChild(cancelBtn);
+        footer.appendChild(saveBtn);
 
-    panel.appendChild(header);
-    panel.appendChild(inputGroup);
-    panel.appendChild(quickTagsContainer);
-    panel.appendChild(tagsContainer);
-    panel.appendChild(footer);
-    modal.appendChild(panel);
-    document.body.appendChild(modal);
-    
-    // 添加拖拽样式（通过 style 标签注入）
-    if (!document.getElementById('tag-manager-drag-styles')) {
-        const style = document.createElement('style');
-        style.id = 'tag-manager-drag-styles';
-        style.textContent = `
+        panel.appendChild(header);
+        panel.appendChild(inputGroup);
+        panel.appendChild(quickTagsContainer);
+        panel.appendChild(tagsContainer);
+        panel.appendChild(footer);
+        modal.appendChild(panel);
+        document.body.appendChild(modal);
+
+        // 添加拖拽样式（通过 style 标签注入）
+        if (!document.getElementById('tag-manager-drag-styles')) {
+            const style = document.createElement('style');
+            style.id = 'tag-manager-drag-styles';
+            style.textContent = `
             .tag-manager-tag-item.tag-dragging {
                 opacity: 0.5 !important;
                 transform: scale(0.95) !important;
@@ -7123,56 +7041,56 @@ function ensureTagManagerUi() {
                 border-radius: 3px !important;
             }
         `;
-        document.head.appendChild(style);
+            document.head.appendChild(style);
+        }
     }
-}
 
-// 加载标签到管理器
-function loadTagsIntoManager(sessionId, tags, modal) {
-    if (!modal) {
-        modal = document.querySelector('#aicr-tag-manager');
-    }
-    if (!modal) return;
+    // 加载标签到管理器
+    function loadTagsIntoManager(sessionId, tags, modal) {
+        if (!modal) {
+            modal = document.querySelector('#aicr-tag-manager');
+        }
+        if (!modal) return;
 
-    const tagsContainer = modal.querySelector('.tag-manager-tags');
-    if (!tagsContainer) return;
+        const tagsContainer = modal.querySelector('.tag-manager-tags');
+        if (!tagsContainer) return;
 
-    tagsContainer.innerHTML = '';
+        tagsContainer.innerHTML = '';
 
-    if (!tags || tags.length === 0) {
-        const emptyMsg = document.createElement('div');
-        emptyMsg.textContent = '暂无标签';
-        emptyMsg.style.cssText = `
+        if (!tags || tags.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.textContent = '暂无标签';
+            emptyMsg.style.cssText = `
             text-align: center !important;
             color: #94a3b8 !important;
             padding: 20px !important;
             font-size: 14px !important;
             font-weight: 500 !important;
         `;
-        tagsContainer.appendChild(emptyMsg);
-        return;
-    }
+            tagsContainer.appendChild(emptyMsg);
+            return;
+        }
 
-    // 标签颜色方案（更丰富的配色 - 柔和风格 - 深色适配）
-    const tagColors = [
-        { bg: 'rgba(99, 102, 241, 0.2)', text: '#e0e7ff', border: 'rgba(99, 102, 241, 0.4)' }, // Indigo
-        { bg: 'rgba(34, 197, 94, 0.2)', text: '#dcfce7', border: 'rgba(34, 197, 94, 0.4)' }, // Green
-        { bg: 'rgba(245, 158, 11, 0.2)', text: '#fef3c7', border: 'rgba(245, 158, 11, 0.4)' }, // Amber
-        { bg: 'rgba(239, 68, 68, 0.2)', text: '#fee2e2', border: 'rgba(239, 68, 68, 0.4)' }, // Red
-        { bg: 'rgba(139, 92, 246, 0.2)', text: '#ede9fe', border: 'rgba(139, 92, 246, 0.4)' }, // Violet
-        { bg: 'rgba(6, 182, 212, 0.2)', text: '#cffafe', border: 'rgba(6, 182, 212, 0.4)' }, // Cyan
-        { bg: 'rgba(236, 72, 153, 0.2)', text: '#fce7f3', border: 'rgba(236, 72, 153, 0.4)' }, // Pink
-        { bg: 'rgba(20, 184, 166, 0.2)', text: '#ccfbf1', border: 'rgba(20, 184, 166, 0.4)' }  // Teal
-    ];
-    
-    tags.forEach((tag, index) => {
-        const colorScheme = tagColors[index % tagColors.length];
-        const tagItem = document.createElement('div');
-        tagItem.className = 'tag-manager-tag-item';
-        tagItem.dataset.tagName = tag;
-        tagItem.dataset.tagIndex = index;
-        tagItem.draggable = true;
-        tagItem.style.cssText = `
+        // 标签颜色方案（更丰富的配色 - 柔和风格 - 深色适配）
+        const tagColors = [
+            { bg: 'rgba(99, 102, 241, 0.2)', text: '#e0e7ff', border: 'rgba(99, 102, 241, 0.4)' }, // Indigo
+            { bg: 'rgba(34, 197, 94, 0.2)', text: '#dcfce7', border: 'rgba(34, 197, 94, 0.4)' }, // Green
+            { bg: 'rgba(245, 158, 11, 0.2)', text: '#fef3c7', border: 'rgba(245, 158, 11, 0.4)' }, // Amber
+            { bg: 'rgba(239, 68, 68, 0.2)', text: '#fee2e2', border: 'rgba(239, 68, 68, 0.4)' }, // Red
+            { bg: 'rgba(139, 92, 246, 0.2)', text: '#ede9fe', border: 'rgba(139, 92, 246, 0.4)' }, // Violet
+            { bg: 'rgba(6, 182, 212, 0.2)', text: '#cffafe', border: 'rgba(6, 182, 212, 0.4)' }, // Cyan
+            { bg: 'rgba(236, 72, 153, 0.2)', text: '#fce7f3', border: 'rgba(236, 72, 153, 0.4)' }, // Pink
+            { bg: 'rgba(20, 184, 166, 0.2)', text: '#ccfbf1', border: 'rgba(20, 184, 166, 0.4)' }  // Teal
+        ];
+
+        tags.forEach((tag, index) => {
+            const colorScheme = tagColors[index % tagColors.length];
+            const tagItem = document.createElement('div');
+            tagItem.className = 'tag-manager-tag-item';
+            tagItem.dataset.tagName = tag;
+            tagItem.dataset.tagIndex = index;
+            tagItem.draggable = true;
+            tagItem.style.cssText = `
             display: inline-flex !important;
             align-items: center !important;
             gap: 6px !important;
@@ -7190,12 +7108,12 @@ function loadTagsIntoManager(sessionId, tags, modal) {
             user-select: none !important;
         `;
 
-        const tagText = document.createElement('span');
-        tagText.textContent = tag;
+            const tagText = document.createElement('span');
+            tagText.textContent = tag;
 
-        const removeBtn = document.createElement('button');
-        removeBtn.innerHTML = '✕';
-        removeBtn.style.cssText = `
+            const removeBtn = document.createElement('button');
+            removeBtn.innerHTML = '✕';
+            removeBtn.style.cssText = `
             background: rgba(255, 255, 255, 0.1) !important;
             border: none !important;
             color: ${colorScheme.text} !important;
@@ -7213,255 +7131,255 @@ function loadTagsIntoManager(sessionId, tags, modal) {
             flex-shrink: 0 !important;
             opacity: 0.7 !important;
         `;
-        removeBtn.addEventListener('mouseenter', () => {
-            removeBtn.style.background = 'rgba(255, 255, 255, 0.25)';
-            removeBtn.style.transform = 'scale(1.1)';
-            removeBtn.style.opacity = '1';
-        });
-        removeBtn.addEventListener('mouseleave', () => {
-            removeBtn.style.background = 'rgba(255, 255, 255, 0.1)';
-            removeBtn.style.transform = 'scale(1)';
-            removeBtn.style.opacity = '0.7';
-        });
-        removeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault(); // 防止触发拖拽
-            const sessionId = modal.dataset.sessionId;
-            if (sessionId) {
-                const store = getTagManagerStore(modal);
-                removeTag(sessionId, index, modal, store);
-            }
-        });
-        
-        // 防止删除按钮触发拖拽
-        removeBtn.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-        });
-
-        // 拖拽开始
-        tagItem.addEventListener('dragstart', (e) => {
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', tag);
-            e.dataTransfer.setData('application/tag-index', index.toString());
-            tagItem.classList.add('tag-dragging');
-            
-            // 设置自定义拖拽图像
-            const dragImage = tagItem.cloneNode(true);
-            dragImage.style.opacity = '0.8';
-            dragImage.style.transform = 'rotate(3deg)';
-            dragImage.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.3)';
-            dragImage.style.position = 'absolute';
-            dragImage.style.top = '-1000px';
-            document.body.appendChild(dragImage);
-            e.dataTransfer.setDragImage(dragImage, e.offsetX, e.offsetY);
-            
-            setTimeout(() => {
-                if (dragImage.parentNode) {
-                    dragImage.parentNode.removeChild(dragImage);
-                }
-            }, 0);
-        });
-
-        // 拖拽结束
-        tagItem.addEventListener('dragend', (e) => {
-            tagItem.classList.remove('tag-dragging');
-            
-            // 移除所有拖拽相关的样式
-            const allTagItems = tagsContainer.querySelectorAll('.tag-manager-tag-item');
-            allTagItems.forEach(item => {
-                item.classList.remove('tag-drag-over-top', 'tag-drag-over-bottom', 'tag-drag-hover');
+            removeBtn.addEventListener('mouseenter', () => {
+                removeBtn.style.background = 'rgba(255, 255, 255, 0.25)';
+                removeBtn.style.transform = 'scale(1.1)';
+                removeBtn.style.opacity = '1';
             });
-        });
+            removeBtn.addEventListener('mouseleave', () => {
+                removeBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+                removeBtn.style.transform = 'scale(1)';
+                removeBtn.style.opacity = '0.7';
+            });
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault(); // 防止触发拖拽
+                const sessionId = modal.dataset.sessionId;
+                if (sessionId) {
+                    const store = getTagManagerStore(modal);
+                    removeTag(sessionId, index, modal, store);
+                }
+            });
 
-        // 拖拽经过
-        tagItem.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            e.dataTransfer.dropEffect = 'move';
-            
-            if (tagItem.classList.contains('tag-dragging')) {
-                return;
-            }
-            
-            const rect = tagItem.getBoundingClientRect();
-            const midY = rect.top + rect.height / 2;
-            
-            // 移除所有拖拽指示样式
-            const allTagItems = tagsContainer.querySelectorAll('.tag-manager-tag-item');
-            allTagItems.forEach(item => {
-                if (!item.classList.contains('tag-dragging')) {
+            // 防止删除按钮触发拖拽
+            removeBtn.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+            });
+
+            // 拖拽开始
+            tagItem.addEventListener('dragstart', (e) => {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', tag);
+                e.dataTransfer.setData('application/tag-index', index.toString());
+                tagItem.classList.add('tag-dragging');
+
+                // 设置自定义拖拽图像
+                const dragImage = tagItem.cloneNode(true);
+                dragImage.style.opacity = '0.8';
+                dragImage.style.transform = 'rotate(3deg)';
+                dragImage.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.3)';
+                dragImage.style.position = 'absolute';
+                dragImage.style.top = '-1000px';
+                document.body.appendChild(dragImage);
+                e.dataTransfer.setDragImage(dragImage, e.offsetX, e.offsetY);
+
+                setTimeout(() => {
+                    if (dragImage.parentNode) {
+                        dragImage.parentNode.removeChild(dragImage);
+                    }
+                }, 0);
+            });
+
+            // 拖拽结束
+            tagItem.addEventListener('dragend', (e) => {
+                tagItem.classList.remove('tag-dragging');
+
+                // 移除所有拖拽相关的样式
+                const allTagItems = tagsContainer.querySelectorAll('.tag-manager-tag-item');
+                allTagItems.forEach(item => {
                     item.classList.remove('tag-drag-over-top', 'tag-drag-over-bottom', 'tag-drag-hover');
-                }
+                });
             });
-            
-            // 根据鼠标位置显示插入位置指示
-            if (e.clientY < midY) {
-                tagItem.classList.add('tag-drag-over-top');
-                tagItem.classList.remove('tag-drag-over-bottom');
-            } else {
-                tagItem.classList.add('tag-drag-over-bottom');
-                tagItem.classList.remove('tag-drag-over-top');
-            }
-            
-            tagItem.classList.add('tag-drag-hover');
-        });
 
-        // 拖拽离开
-        tagItem.addEventListener('dragleave', (e) => {
-            const rect = tagItem.getBoundingClientRect();
-            const x = e.clientX;
-            const y = e.clientY;
-            
-            if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-                tagItem.classList.remove('tag-drag-over-top', 'tag-drag-over-bottom', 'tag-drag-hover');
-            }
-        });
+            // 拖拽经过
+            tagItem.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = 'move';
 
-        // 放置
-        tagItem.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const draggedTag = e.dataTransfer.getData('text/plain');
-            const draggedIndex = parseInt(e.dataTransfer.getData('application/tag-index') || '0', 10);
-            const targetIndex = parseInt(tagItem.dataset.tagIndex || '0', 10);
-            
-            if (draggedTag === tag || draggedIndex === targetIndex) {
-                return;
-            }
-            
-            const sessionId = modal.dataset.sessionId;
-            if (!sessionId) return;
-            
-            // 使用临时标签数据
-            if (!modal._currentTags) return;
-            const currentTags = modal._currentTags;
-            
-            // 计算新的插入位置
-            const rect = tagItem.getBoundingClientRect();
-            const midY = rect.top + rect.height / 2;
-            let insertIndex = targetIndex;
-            if (e.clientY < midY) {
-                insertIndex = targetIndex;
-            } else {
-                insertIndex = targetIndex + 1;
-            }
-            
-            // 调整插入位置（如果拖拽的元素在目标位置之前，需要减1）
-            if (draggedIndex < insertIndex) {
-                insertIndex -= 1;
-            }
-            
-            // 重新排序标签数组
-            const newTags = [...currentTags];
-            newTags.splice(draggedIndex, 1);
-            newTags.splice(insertIndex, 0, draggedTag);
-            
-            // 更新临时标签
-            modal._currentTags = newTags;
-            
-            // 重新加载标签列表
-            loadTagsIntoManager(sessionId, newTags, modal);
-            
-            // 更新快捷标签按钮状态
-            updateQuickTagButtons(modal, newTags);
-        });
+                if (tagItem.classList.contains('tag-dragging')) {
+                    return;
+                }
 
-        tagItem.appendChild(tagText);
-        tagItem.appendChild(removeBtn);
-        tagsContainer.appendChild(tagItem);
-    });
+                const rect = tagItem.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
 
-    // 更新快捷标签按钮状态
-    updateQuickTagButtons(modal, tags);
-}
-
-// 更新快捷标签按钮状态
-function updateQuickTagButtons(modal, currentTags) {
-    if (!modal) return;
-    
-    const quickTagButtons = modal.querySelectorAll('.tag-manager-quick-tag-btn');
-    quickTagButtons.forEach(btn => {
-        const tagName = btn.dataset.tagName;
-        const isAdded = currentTags && currentTags.includes(tagName);
-        
-        if (isAdded) {
-            btn.style.background = 'rgba(99, 102, 241, 0.2)';
-            btn.style.color = '#a5b4fc';
-            btn.style.borderColor = 'rgba(99, 102, 241, 0.3)';
-            btn.style.opacity = '0.8';
-            btn.style.cursor = 'not-allowed';
-            btn.style.boxShadow = 'none';
-        } else {
-            btn.style.background = 'rgba(30, 41, 59, 0.6)';
-            btn.style.color = '#94a3b8';
-            btn.style.borderColor = 'rgba(51, 65, 85, 0.5)';
-            btn.style.opacity = '1';
-            btn.style.cursor = 'pointer';
-            btn.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
-        }
-    });
-}
-
-// 刷新快捷标签列表（当标签变化时）
-function refreshQuickTags(modal) {
-    if (!modal) return;
-    
-    const quickTagsContainer = modal.querySelector('.tag-manager-quick-tags');
-    if (!quickTagsContainer) return;
-    
-    // 获取所有标签（与标签筛选模块保持一致）
-    const getAllTags = () => {
-        const store = getTagManagerStore(modal);
-        const sessions = store?.sessions?.value || [];
-        
-        // 提取所有标签
-        const tagSet = new Set();
-        sessions.forEach(session => {
-            if (session && session.tags && Array.isArray(session.tags)) {
-                session.tags.forEach(tag => {
-                    if (tag && tag.trim()) {
-                        tagSet.add(tag.trim());
+                // 移除所有拖拽指示样式
+                const allTagItems = tagsContainer.querySelectorAll('.tag-manager-tag-item');
+                allTagItems.forEach(item => {
+                    if (!item.classList.contains('tag-dragging')) {
+                        item.classList.remove('tag-drag-over-top', 'tag-drag-over-bottom', 'tag-drag-hover');
                     }
                 });
+
+                // 根据鼠标位置显示插入位置指示
+                if (e.clientY < midY) {
+                    tagItem.classList.add('tag-drag-over-top');
+                    tagItem.classList.remove('tag-drag-over-bottom');
+                } else {
+                    tagItem.classList.add('tag-drag-over-bottom');
+                    tagItem.classList.remove('tag-drag-over-top');
+                }
+
+                tagItem.classList.add('tag-drag-hover');
+            });
+
+            // 拖拽离开
+            tagItem.addEventListener('dragleave', (e) => {
+                const rect = tagItem.getBoundingClientRect();
+                const x = e.clientX;
+                const y = e.clientY;
+
+                if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+                    tagItem.classList.remove('tag-drag-over-top', 'tag-drag-over-bottom', 'tag-drag-hover');
+                }
+            });
+
+            // 放置
+            tagItem.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const draggedTag = e.dataTransfer.getData('text/plain');
+                const draggedIndex = parseInt(e.dataTransfer.getData('application/tag-index') || '0', 10);
+                const targetIndex = parseInt(tagItem.dataset.tagIndex || '0', 10);
+
+                if (draggedTag === tag || draggedIndex === targetIndex) {
+                    return;
+                }
+
+                const sessionId = modal.dataset.sessionId;
+                if (!sessionId) return;
+
+                // 使用临时标签数据
+                if (!modal._currentTags) return;
+                const currentTags = modal._currentTags;
+
+                // 计算新的插入位置
+                const rect = tagItem.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                let insertIndex = targetIndex;
+                if (e.clientY < midY) {
+                    insertIndex = targetIndex;
+                } else {
+                    insertIndex = targetIndex + 1;
+                }
+
+                // 调整插入位置（如果拖拽的元素在目标位置之前，需要减1）
+                if (draggedIndex < insertIndex) {
+                    insertIndex -= 1;
+                }
+
+                // 重新排序标签数组
+                const newTags = [...currentTags];
+                newTags.splice(draggedIndex, 1);
+                newTags.splice(insertIndex, 0, draggedTag);
+
+                // 更新临时标签
+                modal._currentTags = newTags;
+
+                // 重新加载标签列表
+                loadTagsIntoManager(sessionId, newTags, modal);
+
+                // 更新快捷标签按钮状态
+                updateQuickTagButtons(modal, newTags);
+            });
+
+            tagItem.appendChild(tagText);
+            tagItem.appendChild(removeBtn);
+            tagsContainer.appendChild(tagItem);
+        });
+
+        // 更新快捷标签按钮状态
+        updateQuickTagButtons(modal, tags);
+    }
+
+    // 更新快捷标签按钮状态
+    function updateQuickTagButtons(modal, currentTags) {
+        if (!modal) return;
+
+        const quickTagButtons = modal.querySelectorAll('.tag-manager-quick-tag-btn');
+        quickTagButtons.forEach(btn => {
+            const tagName = btn.dataset.tagName;
+            const isAdded = currentTags && currentTags.includes(tagName);
+
+            if (isAdded) {
+                btn.style.background = 'rgba(99, 102, 241, 0.2)';
+                btn.style.color = '#a5b4fc';
+                btn.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+                btn.style.opacity = '0.8';
+                btn.style.cursor = 'not-allowed';
+                btn.style.boxShadow = 'none';
+            } else {
+                btn.style.background = 'rgba(30, 41, 59, 0.6)';
+                btn.style.color = '#94a3b8';
+                btn.style.borderColor = 'rgba(51, 65, 85, 0.5)';
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
             }
         });
-        
-        // 按字母顺序排序
-        const allTagsArray = Array.from(tagSet);
-        allTagsArray.sort();
-        
-        const defaultOrder = allTagsArray;
-        
-        // 应用保存的标签顺序（从 localStorage）
-        try {
-            const saved = localStorage.getItem('aicr_tag_order');
-            const savedOrder = saved ? JSON.parse(saved) : null;
-            if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
-                // 使用保存的顺序，但只包含当前存在的标签
-                const orderedTags = savedOrder.filter(tag => tagSet.has(tag));
-                // 添加新标签（不在保存顺序中的）到末尾，按字母顺序
-                const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
-                return [...orderedTags, ...newTags];
+    }
+
+    // 刷新快捷标签列表（当标签变化时）
+    function refreshQuickTags(modal) {
+        if (!modal) return;
+
+        const quickTagsContainer = modal.querySelector('.tag-manager-quick-tags');
+        if (!quickTagsContainer) return;
+
+        // 获取所有标签（与标签筛选模块保持一致）
+        const getAllTags = () => {
+            const store = getTagManagerStore(modal);
+            const sessions = store?.sessions?.value || [];
+
+            // 提取所有标签
+            const tagSet = new Set();
+            sessions.forEach(session => {
+                if (session && session.tags && Array.isArray(session.tags)) {
+                    session.tags.forEach(tag => {
+                        if (tag && tag.trim()) {
+                            tagSet.add(tag.trim());
+                        }
+                    });
+                }
+            });
+
+            // 按字母顺序排序
+            const allTagsArray = Array.from(tagSet);
+            allTagsArray.sort();
+
+            const defaultOrder = allTagsArray;
+
+            // 应用保存的标签顺序（从 localStorage）
+            try {
+                const saved = localStorage.getItem('aicr_tag_order');
+                const savedOrder = saved ? JSON.parse(saved) : null;
+                if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+                    // 使用保存的顺序，但只包含当前存在的标签
+                    const orderedTags = savedOrder.filter(tag => tagSet.has(tag));
+                    // 添加新标签（不在保存顺序中的）到末尾，按字母顺序
+                    const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
+                    return [...orderedTags, ...newTags];
+                }
+            } catch (e) {
+                console.warn('[标签管理] 加载标签顺序失败:', e);
             }
-        } catch (e) {
-            console.warn('[标签管理] 加载标签顺序失败:', e);
-        }
-        
-        return defaultOrder;
-    };
-    
-    // 获取所有标签
-    const quickTags = getAllTags();
-    
-    // 清空现有按钮
-    quickTagsContainer.innerHTML = '';
-    
-    // 如果没有标签，显示提示
-    if (quickTags.length === 0) {
-        const emptyHint = document.createElement('div');
-        emptyHint.textContent = '暂无可用标签';
-        emptyHint.style.cssText = `
+
+            return defaultOrder;
+        };
+
+        // 获取所有标签
+        const quickTags = getAllTags();
+
+        // 清空现有按钮
+        quickTagsContainer.innerHTML = '';
+
+        // 如果没有标签，显示提示
+        if (quickTags.length === 0) {
+            const emptyHint = document.createElement('div');
+            emptyHint.textContent = '暂无可用标签';
+            emptyHint.style.cssText = `
             width: 100% !important;
             text-align: center !important;
             color: #94a3b8 !important;
@@ -7469,24 +7387,24 @@ function refreshQuickTags(modal) {
             font-size: 13px !important;
             font-weight: 500 !important;
         `;
-        quickTagsContainer.appendChild(emptyHint);
-        return;
-    }
-    
-    // 获取当前会话的标签
-    const sessionId = modal.dataset.sessionId;
-    const store = getTagManagerStore(modal);
-    const session = findSessionBySessionId(store, sessionId);
-    const currentTags = session?.tags || [];
-    
-    // 创建快捷标签按钮
-    quickTags.forEach(tagName => {
-        const isAdded = currentTags && currentTags.includes(tagName);
-        const quickTagBtn = document.createElement('button');
-        quickTagBtn.textContent = tagName;
-        quickTagBtn.className = 'tag-manager-quick-tag-btn';
-        quickTagBtn.dataset.tagName = tagName;
-        quickTagBtn.style.cssText = `
+            quickTagsContainer.appendChild(emptyHint);
+            return;
+        }
+
+        // 获取当前会话的标签
+        const sessionId = modal.dataset.sessionId;
+        const store = getTagManagerStore(modal);
+        const session = findSessionBySessionId(store, sessionId);
+        const currentTags = session?.tags || [];
+
+        // 创建快捷标签按钮
+        quickTags.forEach(tagName => {
+            const isAdded = currentTags && currentTags.includes(tagName);
+            const quickTagBtn = document.createElement('button');
+            quickTagBtn.textContent = tagName;
+            quickTagBtn.className = 'tag-manager-quick-tag-btn';
+            quickTagBtn.dataset.tagName = tagName;
+            quickTagBtn.style.cssText = `
             padding: 8px 16px !important;
             background: ${isAdded ? 'rgba(99, 102, 241, 0.2)' : 'rgba(30, 41, 59, 0.6)'} !important;
             color: ${isAdded ? '#a5b4fc' : '#94a3b8'} !important;
@@ -7499,151 +7417,151 @@ function refreshQuickTags(modal) {
             opacity: ${isAdded ? '0.8' : '1'} !important;
             box-shadow: ${isAdded ? 'none' : '0 1px 2px 0 rgba(0, 0, 0, 0.2)'} !important;
         `;
-        
-        if (!isAdded) {
-            quickTagBtn.addEventListener('mouseenter', () => {
-                quickTagBtn.style.background = 'rgba(51, 65, 85, 0.8)';
-                quickTagBtn.style.borderColor = '#6366f1';
-                quickTagBtn.style.color = '#f8fafc';
-                quickTagBtn.style.transform = 'translateY(-1px)';
-                quickTagBtn.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.3)';
-            });
-            quickTagBtn.addEventListener('mouseleave', () => {
-                quickTagBtn.style.background = 'rgba(30, 41, 59, 0.6)';
-                quickTagBtn.style.borderColor = 'rgba(51, 65, 85, 0.5)';
-                quickTagBtn.style.color = '#94a3b8';
-                quickTagBtn.style.transform = 'translateY(0)';
-                quickTagBtn.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
-            });
-        }
-        
-        quickTagBtn.addEventListener('click', () => {
-            if (isAdded || quickTagBtn.style.cursor === 'not-allowed') {
-                return;
+
+            if (!isAdded) {
+                quickTagBtn.addEventListener('mouseenter', () => {
+                    quickTagBtn.style.background = 'rgba(51, 65, 85, 0.8)';
+                    quickTagBtn.style.borderColor = '#6366f1';
+                    quickTagBtn.style.color = '#f8fafc';
+                    quickTagBtn.style.transform = 'translateY(-1px)';
+                    quickTagBtn.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.3)';
+                });
+                quickTagBtn.addEventListener('mouseleave', () => {
+                    quickTagBtn.style.background = 'rgba(30, 41, 59, 0.6)';
+                    quickTagBtn.style.borderColor = 'rgba(51, 65, 85, 0.5)';
+                    quickTagBtn.style.color = '#94a3b8';
+                    quickTagBtn.style.transform = 'translateY(0)';
+                    quickTagBtn.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
+                });
             }
-            const sessionId = modal.dataset.sessionId;
-            if (sessionId) {
-                const store = getTagManagerStore(modal);
-                addQuickTag(sessionId, tagName, modal, store);
-            }
+
+            quickTagBtn.addEventListener('click', () => {
+                if (isAdded || quickTagBtn.style.cursor === 'not-allowed') {
+                    return;
+                }
+                const sessionId = modal.dataset.sessionId;
+                if (sessionId) {
+                    const store = getTagManagerStore(modal);
+                    addQuickTag(sessionId, tagName, modal, store);
+                }
+            });
+
+            quickTagsContainer.appendChild(quickTagBtn);
         });
-        
-        quickTagsContainer.appendChild(quickTagBtn);
-    });
-}
-
-// 从输入框添加标签
-function addTagFromInput(sessionId, modal, store) {
-    if (!modal) {
-        modal = document.querySelector('#aicr-tag-manager');
     }
-    if (!modal) return;
 
-    const tagInput = modal.querySelector('.tag-manager-input');
-    if (!tagInput) return;
+    // 从输入框添加标签
+    function addTagFromInput(sessionId, modal, store) {
+        if (!modal) {
+            modal = document.querySelector('#aicr-tag-manager');
+        }
+        if (!modal) return;
 
-    const tagName = tagInput.value.trim();
-    if (!tagName) return;
+        const tagInput = modal.querySelector('.tag-manager-input');
+        if (!tagInput) return;
 
-    // 使用临时标签数据
-    if (!modal._currentTags) modal._currentTags = [];
-    const currentTags = modal._currentTags;
+        const tagName = tagInput.value.trim();
+        if (!tagName) return;
 
-    // 检查标签是否已存在
-    if (currentTags.includes(tagName)) {
+        // 使用临时标签数据
+        if (!modal._currentTags) modal._currentTags = [];
+        const currentTags = modal._currentTags;
+
+        // 检查标签是否已存在
+        if (currentTags.includes(tagName)) {
+            tagInput.value = '';
+            tagInput.focus();
+            return;
+        }
+
+        // 添加标签
+        currentTags.push(tagName);
         tagInput.value = '';
         tagInput.focus();
-        return;
+
+        // 重新加载标签列表
+        loadTagsIntoManager(sessionId, currentTags, modal);
+
+        // 更新快捷标签按钮状态
+        updateQuickTagButtons(modal, currentTags);
+
+        // 如果添加了新标签，刷新快捷标签列表
+        setTimeout(() => {
+            refreshQuickTags(modal);
+        }, 100);
     }
 
-    // 添加标签
-    currentTags.push(tagName);
-    tagInput.value = '';
-    tagInput.focus();
+    // 添加快捷标签
+    function addQuickTag(sessionId, tagName, modal, store) {
+        if (!modal) {
+            modal = document.querySelector('#aicr-tag-manager');
+        }
+        if (!modal) return;
 
-    // 重新加载标签列表
-    loadTagsIntoManager(sessionId, currentTags, modal);
-    
-    // 更新快捷标签按钮状态
-    updateQuickTagButtons(modal, currentTags);
-    
-    // 如果添加了新标签，刷新快捷标签列表
-    setTimeout(() => {
-        refreshQuickTags(modal);
-    }, 100);
-}
+        // 使用临时标签数据
+        if (!modal._currentTags) modal._currentTags = [];
+        const currentTags = modal._currentTags;
 
-// 添加快捷标签
-function addQuickTag(sessionId, tagName, modal, store) {
-    if (!modal) {
-        modal = document.querySelector('#aicr-tag-manager');
-    }
-    if (!modal) return;
+        // 检查标签是否已存在
+        if (currentTags.includes(tagName)) {
+            return;
+        }
 
-    // 使用临时标签数据
-    if (!modal._currentTags) modal._currentTags = [];
-    const currentTags = modal._currentTags;
+        // 添加标签
+        currentTags.push(tagName);
 
-    // 检查标签是否已存在
-    if (currentTags.includes(tagName)) {
-        return;
+        // 重新加载标签列表
+        loadTagsIntoManager(sessionId, currentTags, modal);
+
+        // 更新快捷标签按钮状态
+        updateQuickTagButtons(modal, currentTags);
     }
 
-    // 添加标签
-    currentTags.push(tagName);
+    // 删除标签
+    function removeTag(sessionId, index, modal, store) {
+        if (!modal) {
+            modal = document.querySelector('#aicr-tag-manager');
+        }
+        if (!modal) return;
 
-    // 重新加载标签列表
-    loadTagsIntoManager(sessionId, currentTags, modal);
-    
-    // 更新快捷标签按钮状态
-    updateQuickTagButtons(modal, currentTags);
-}
+        // 使用临时标签数据
+        if (!modal._currentTags) return;
+        const currentTags = modal._currentTags;
 
-// 删除标签
-function removeTag(sessionId, index, modal, store) {
-    if (!modal) {
-        modal = document.querySelector('#aicr-tag-manager');
-    }
-    if (!modal) return;
+        currentTags.splice(index, 1);
+        loadTagsIntoManager(sessionId, currentTags, modal);
 
-    // 使用临时标签数据
-    if (!modal._currentTags) return;
-    const currentTags = modal._currentTags;
+        // 更新快捷标签按钮状态
+        updateQuickTagButtons(modal, currentTags);
 
-    currentTags.splice(index, 1);
-    loadTagsIntoManager(sessionId, currentTags, modal);
-    
-    // 更新快捷标签按钮状态
-    updateQuickTagButtons(modal, currentTags);
-    
-    // 如果删除的标签不再被任何会话使用，刷新快捷标签列表
-    setTimeout(() => {
-        refreshQuickTags(modal);
-    }, 100);
-}
-
-// 智能生成标签
-async function generateSmartTags(sessionId, buttonElement, modal, store) {
-    if (!sessionId) {
-        console.warn('会话不存在，无法生成标签:', sessionId);
-        return;
+        // 如果删除的标签不再被任何会话使用，刷新快捷标签列表
+        setTimeout(() => {
+            refreshQuickTags(modal);
+        }, 100);
     }
 
-    store = getTagManagerStore(modal, store);
-    const session = findSessionBySessionId(store, sessionId);
-    if (!session) {
-        console.warn('会话不存在，无法生成标签:', sessionId);
-        return;
-    }
+    // 智能生成标签
+    async function generateSmartTags(sessionId, buttonElement, modal, store) {
+        if (!sessionId) {
+            console.warn('会话不存在，无法生成标签:', sessionId);
+            return;
+        }
 
-    if (!modal) {
-        modal = document.querySelector('#aicr-tag-manager');
-    }
-    
-    if (!modal) {
-        console.error('标签管理弹窗未找到');
-        return;
-    }
+        store = getTagManagerStore(modal, store);
+        const session = findSessionBySessionId(store, sessionId);
+        if (!session) {
+            console.warn('会话不存在，无法生成标签:', sessionId);
+            return;
+        }
+
+        if (!modal) {
+            modal = document.querySelector('#aicr-tag-manager');
+        }
+
+        if (!modal) {
+            console.error('标签管理弹窗未找到');
+            return;
+        }
 
         // 禁用按钮，显示加载状态
         if (buttonElement) {
@@ -7654,13 +7572,13 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
             const originalText = buttonElement.textContent;
             buttonElement.textContent = '生成中...';
         }
-        
+
         try {
             // 收集页面上下文信息
             const pageTitle = session.pageTitle || '当前页面';
             const pageUrl = session.url || window.location.href;
             const pageDescription = session.pageDescription || '';
-            
+
             // 获取会话消息摘要（取前5条消息作为上下文）
             let messageSummary = '';
             if (session.messages && Array.isArray(session.messages) && session.messages.length > 0) {
@@ -7727,10 +7645,10 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
             } else if (response.response) {
                 content = Array.isArray(response.response) ? response.response.join('') : String(response.response);
             }
-            
+
             if (content) {
                 const trimmedContent = content.trim();
-                
+
                 // 尝试解析 JSON 格式
                 try {
                     const parsed = JSON.parse(trimmedContent);
@@ -7768,13 +7686,13 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
             if (addedCount > 0) {
                 // 重新加载标签列表
                 loadTagsIntoManager(sessionId, tagsList, modal);
-                
+
                 // 更新快捷标签按钮状态和列表
                 updateQuickTagButtons(modal, tagsList);
                 setTimeout(() => {
                     refreshQuickTags(modal);
                 }, 100);
-                
+
                 console.log(`成功生成并添加 ${addedCount} 个标签:`, generatedTags.filter(tag => tagsList.includes(tag.trim())));
             } else {
                 console.log('生成的标签都已存在，未添加新标签');
@@ -7782,18 +7700,18 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
 
         } catch (error) {
             console.error('智能生成标签失败:', error);
-            
+
             // 在弹框内显示错误提示
             const existingError = modal.querySelector('.tag-error-message');
             if (existingError) {
                 existingError.remove();
             }
-            
+
             const errorDiv = document.createElement('div');
             errorDiv.className = 'tag-error-message';
             const errorMessage = error.message || '未知错误';
-            const errorText = errorMessage.includes('Failed to fetch') 
-                ? '网络连接失败，请检查网络后重试' 
+            const errorText = errorMessage.includes('Failed to fetch')
+                ? '网络连接失败，请检查网络后重试'
                 : `生成标签失败：${errorMessage}`;
             errorDiv.textContent = errorText;
             errorDiv.style.cssText = `
@@ -7808,7 +7726,7 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
                 box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1) !important;
                 animation: fadeIn 0.3s ease !important;
             `;
-            
+
             const inputGroup = modal.querySelector('.tag-manager-input-group');
             if (inputGroup && inputGroup.parentNode) {
                 const tagsContainer = modal.querySelector('.tag-manager-tags');
@@ -7817,7 +7735,7 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
                 } else {
                     inputGroup.parentNode.insertBefore(errorDiv, inputGroup.nextSibling);
                 }
-                
+
                 // 3秒后自动移除错误提示
                 setTimeout(() => {
                     if (errorDiv.parentNode) {
@@ -7843,244 +7761,244 @@ async function generateSmartTags(sessionId, buttonElement, modal, store) {
         }
     }
 
-// 保存标签
-async function saveTags(sessionId, store) {
-    if (!sessionId) {
-        console.warn('会话不存在，无法保存标签:', sessionId);
-        return;
-    }
-
-    let sessionRef = null;
-    let previousTags = null;
-
-    try {
-        const modalEl = document.querySelector('#aicr-tag-manager');
-        store = getTagManagerStore(modalEl, store);
-        const session = findSessionBySessionId(store, sessionId);
-        if (!session) {
-            throw new Error('会话不存在');
-        }
-        sessionRef = session;
-        previousTags = Array.isArray(session.tags) ? [...session.tags] : [];
-
-        if (store.loadSessions && (!store.sessions?.value || store.sessions.value.length === 0)) {
-            await store.loadSessions(false);
+    // 保存标签
+    async function saveTags(sessionId, store) {
+        if (!sessionId) {
+            console.warn('会话不存在，无法保存标签:', sessionId);
+            return;
         }
 
-        let oldPath = null;
-        let fileNode = null;
-        
-        const findNode = (nodes) => {
-            if (!nodes) return null;
-            if (Array.isArray(nodes)) {
-                for (const node of nodes) {
-                    const res = findNode(node);
-                    if (res) return res;
+        let sessionRef = null;
+        let previousTags = null;
+
+        try {
+            const modalEl = document.querySelector('#aicr-tag-manager');
+            store = getTagManagerStore(modalEl, store);
+            const session = findSessionBySessionId(store, sessionId);
+            if (!session) {
+                throw new Error('会话不存在');
+            }
+            sessionRef = session;
+            previousTags = Array.isArray(session.tags) ? [...session.tags] : [];
+
+            if (store.loadSessions && (!store.sessions?.value || store.sessions.value.length === 0)) {
+                await store.loadSessions(false);
+            }
+
+            let oldPath = null;
+            let fileNode = null;
+
+            const findNode = (nodes) => {
+                if (!nodes) return null;
+                if (Array.isArray(nodes)) {
+                    for (const node of nodes) {
+                        const res = findNode(node);
+                        if (res) return res;
+                    }
+                } else {
+                    if (nodes.sessionKey === sessionId) return nodes;
+                    if (nodes.children) return findNode(nodes.children);
                 }
-            } else {
-                if (nodes.sessionKey === sessionId) return nodes;
-                if (nodes.children) return findNode(nodes.children);
-            }
-            return null;
-        };
-        
-        if (store.fileTree && store.fileTree.value) {
-            fileNode = findNode(store.fileTree.value);
-            if (fileNode) {
-                oldPath = fileNode.key;
-            }
-        }
-        
-        if (!fileNode && store.loadFileTree) {
-            await store.loadFileTree();
+                return null;
+            };
+
             if (store.fileTree && store.fileTree.value) {
                 fileNode = findNode(store.fileTree.value);
                 if (fileNode) {
                     oldPath = fileNode.key;
                 }
             }
-        }
 
-        let newTags = [];
-        if (modalEl && modalEl._currentTags) {
-             newTags = [...modalEl._currentTags];
-        } else if (session.tags) {
-             newTags = [...session.tags];
-        }
-
-        const normalizedTags = newTags
-            .map(tag => tag ? tag.trim() : '')
-            .filter(tag => tag.length > 0);
-        const uniqueTags = [...new Set(normalizedTags)];
-        
-        const sessionsList = store.sessions?.value || [];
-
-        const oldSessionKey = String(session.key || session.id || sessionId || '');
-        const { sessionPathMap: oldMap } = buildFileTreeFromSessions(sessionsList);
-
-        const draftSessions = sessionsList.map(s => (s === session ? { ...s, tags: uniqueTags } : s));
-        const { sessionPathMap: newMap } = buildFileTreeFromSessions(draftSessions);
-
-        const safeToken = (value) => {
-            const str = String(value ?? '');
-            return str.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 48) || 'x';
-        };
-
-        const buildTmpPath = (path, token) => {
-            const parts = String(path || '').split('/');
-            const fileName = parts.pop() || '';
-            const dir = parts.join('/');
-            const tmpName = `${fileName}.__tmp__${safeToken(token)}__${Date.now()}`;
-            return dir ? `${dir}/${tmpName}` : tmpName;
-        };
-
-        const fileDeleteService = getFileDeleteService();
-        const renamePlans = [];
-
-        for (const s of sessionsList) {
-            if (!s) continue;
-            const sessionKey = String(s.key || s.id || '');
-            if (!sessionKey) continue;
-
-            const oldPathByRule = oldMap.get(sessionKey) || null;
-            const newPathByRule = newMap.get(sessionKey) || null;
-            if (!oldPathByRule || !newPathByRule) continue;
-            if (oldPathByRule === newPathByRule) continue;
-
-            const candidates = [String(oldPathByRule)];
-            if (sessionKey === oldSessionKey) {
-                if (oldPath) candidates.unshift(String(oldPath));
-            }
-            const uniqueCandidates = Array.from(new Set(candidates)).filter(Boolean);
-
-            renamePlans.push({
-                sessionKey,
-                candidates: uniqueCandidates,
-                oldPath: String(oldPathByRule),
-                newPath: String(newPathByRule),
-                tmpPath: buildTmpPath(oldPathByRule, sessionKey)
-            });
-        }
-
-        if (!newMap.get(oldSessionKey)) {
-            throw new Error('无法计算新路径，已取消保存以保持结构一致');
-        }
-
-        const staged = [];
-        const moved = [];
-        try {
-            for (const plan of renamePlans) {
-                let actualOldPath = null;
-                for (const candidate of plan.candidates) {
-                    const res = await fileDeleteService.renameFile(candidate, plan.tmpPath);
-                    if (res.success) {
-                        actualOldPath = candidate;
-                        break;
+            if (!fileNode && store.loadFileTree) {
+                await store.loadFileTree();
+                if (store.fileTree && store.fileTree.value) {
+                    fileNode = findNode(store.fileTree.value);
+                    if (fileNode) {
+                        oldPath = fileNode.key;
                     }
                 }
-                if (!actualOldPath) {
-                    throw new Error(`静态文件移动失败，已取消保存以保持结构一致: ${plan.oldPath} -> ${plan.newPath}`);
-                }
-                staged.push({ ...plan, actualOldPath });
             }
 
-            for (const plan of staged) {
-                const res = await fileDeleteService.renameFile(plan.tmpPath, plan.newPath);
-                if (!res.success) {
-                    throw new Error(`静态文件移动失败，已取消保存以保持结构一致: ${plan.actualOldPath} -> ${plan.newPath}`);
-                }
-                moved.push(plan);
+            let newTags = [];
+            if (modalEl && modalEl._currentTags) {
+                newTags = [...modalEl._currentTags];
+            } else if (session.tags) {
+                newTags = [...session.tags];
             }
-        } catch (e) {
+
+            const normalizedTags = newTags
+                .map(tag => tag ? tag.trim() : '')
+                .filter(tag => tag.length > 0);
+            const uniqueTags = [...new Set(normalizedTags)];
+
+            const sessionsList = store.sessions?.value || [];
+
+            const oldSessionKey = String(session.key || session.id || sessionId || '');
+            const { sessionPathMap: oldMap } = buildFileTreeFromSessions(sessionsList);
+
+            const draftSessions = sessionsList.map(s => (s === session ? { ...s, tags: uniqueTags } : s));
+            const { sessionPathMap: newMap } = buildFileTreeFromSessions(draftSessions);
+
+            const safeToken = (value) => {
+                const str = String(value ?? '');
+                return str.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 48) || 'x';
+            };
+
+            const buildTmpPath = (path, token) => {
+                const parts = String(path || '').split('/');
+                const fileName = parts.pop() || '';
+                const dir = parts.join('/');
+                const tmpName = `${fileName}.__tmp__${safeToken(token)}__${Date.now()}`;
+                return dir ? `${dir}/${tmpName}` : tmpName;
+            };
+
+            const fileDeleteService = getFileDeleteService();
+            const renamePlans = [];
+
+            for (const s of sessionsList) {
+                if (!s) continue;
+                const sessionKey = String(s.key || s.id || '');
+                if (!sessionKey) continue;
+
+                const oldPathByRule = oldMap.get(sessionKey) || null;
+                const newPathByRule = newMap.get(sessionKey) || null;
+                if (!oldPathByRule || !newPathByRule) continue;
+                if (oldPathByRule === newPathByRule) continue;
+
+                const candidates = [String(oldPathByRule)];
+                if (sessionKey === oldSessionKey) {
+                    if (oldPath) candidates.unshift(String(oldPath));
+                }
+                const uniqueCandidates = Array.from(new Set(candidates)).filter(Boolean);
+
+                renamePlans.push({
+                    sessionKey,
+                    candidates: uniqueCandidates,
+                    oldPath: String(oldPathByRule),
+                    newPath: String(newPathByRule),
+                    tmpPath: buildTmpPath(oldPathByRule, sessionKey)
+                });
+            }
+
+            if (!newMap.get(oldSessionKey)) {
+                throw new Error('无法计算新路径，已取消保存以保持结构一致');
+            }
+
+            const staged = [];
+            const moved = [];
             try {
-                for (let i = moved.length - 1; i >= 0; i--) {
-                    const plan = moved[i];
-                    await fileDeleteService.renameFile(plan.newPath, plan.actualOldPath);
+                for (const plan of renamePlans) {
+                    let actualOldPath = null;
+                    for (const candidate of plan.candidates) {
+                        const res = await fileDeleteService.renameFile(candidate, plan.tmpPath);
+                        if (res.success) {
+                            actualOldPath = candidate;
+                            break;
+                        }
+                    }
+                    if (!actualOldPath) {
+                        throw new Error(`静态文件移动失败，已取消保存以保持结构一致: ${plan.oldPath} -> ${plan.newPath}`);
+                    }
+                    staged.push({ ...plan, actualOldPath });
                 }
-                for (let i = staged.length - 1; i >= 0; i--) {
-                    const plan = staged[i];
-                    const wasMoved = moved.some(m => m.sessionKey === plan.sessionKey);
-                    if (wasMoved) continue;
-                    await fileDeleteService.renameFile(plan.tmpPath, plan.actualOldPath);
+
+                for (const plan of staged) {
+                    const res = await fileDeleteService.renameFile(plan.tmpPath, plan.newPath);
+                    if (!res.success) {
+                        throw new Error(`静态文件移动失败，已取消保存以保持结构一致: ${plan.actualOldPath} -> ${plan.newPath}`);
+                    }
+                    moved.push(plan);
                 }
-            } catch (rollbackError) { }
-            throw e;
-        }
+            } catch (e) {
+                try {
+                    for (let i = moved.length - 1; i >= 0; i--) {
+                        const plan = moved[i];
+                        await fileDeleteService.renameFile(plan.newPath, plan.actualOldPath);
+                    }
+                    for (let i = staged.length - 1; i >= 0; i--) {
+                        const plan = staged[i];
+                        const wasMoved = moved.some(m => m.sessionKey === plan.sessionKey);
+                        if (wasMoved) continue;
+                        await fileDeleteService.renameFile(plan.tmpPath, plan.actualOldPath);
+                    }
+                } catch (rollbackError) { }
+                throw e;
+            }
 
-        session.tags = uniqueTags;
-        session.updatedAt = Date.now();
+            session.tags = uniqueTags;
+            session.updatedAt = Date.now();
 
-        // 更新后端（标准服务接口）
-        const payload = {
-            module_name: SERVICE_MODULE,
-            method_name: 'update_document',
-            parameters: {
-                cname: 'sessions',
-                key: sessionId,
-                data: {
+            // 更新后端（标准服务接口）
+            const payload = {
+                module_name: SERVICE_MODULE,
+                method_name: 'update_document',
+                parameters: {
+                    cname: 'sessions',
                     key: sessionId,
-                    tags: session.tags,
-                    updatedAt: Date.now()
+                    data: {
+                        key: sessionId,
+                        tags: session.tags,
+                        updatedAt: Date.now()
+                    }
                 }
+            };
+            await postData(`${window.API_URL}/`, payload);
+
+            // 更新本地状态
+            if (store.sessions && store.sessions.value) {
+                store.sessions.value = [...store.sessions.value];
             }
-        };
-        await postData(`${window.API_URL}/`, payload);
 
-        // 更新本地状态
-        if (store.sessions && store.sessions.value) {
-            store.sessions.value = [...store.sessions.value];
-        }
-
-        // 刷新文件树以反映标签更改（目录结构变化）
-        if (store.loadFileTree) {
-            await store.loadFileTree();
-        }
-
-        // 关闭弹窗
-        closeTagManager(sessionId, store);
-
-        if (window.showSuccess) {
-            window.showSuccess('标签已保存');
-        }
-        console.log('标签已保存:', session.tags);
-    } catch (error) {
-        console.error('保存标签失败:', error);
-        try {
-            if (sessionRef && Array.isArray(previousTags)) {
-                sessionRef.tags = previousTags;
-            }
-            if (store && store.loadFileTree) {
+            // 刷新文件树以反映标签更改（目录结构变化）
+            if (store.loadFileTree) {
                 await store.loadFileTree();
             }
-        } catch (e) { }
-        if (window.showError) {
-            window.showError('保存标签失败，请重试');
+
+            // 关闭弹窗
+            closeTagManager(sessionId, store);
+
+            if (window.showSuccess) {
+                window.showSuccess('标签已保存');
+            }
+            console.log('标签已保存:', session.tags);
+        } catch (error) {
+            console.error('保存标签失败:', error);
+            try {
+                if (sessionRef && Array.isArray(previousTags)) {
+                    sessionRef.tags = previousTags;
+                }
+                if (store && store.loadFileTree) {
+                    await store.loadFileTree();
+                }
+            } catch (e) { }
+            if (window.showError) {
+                window.showError('保存标签失败，请重试');
+            }
         }
     }
-}
 
-// 关闭标签管理器（放弃未保存的更改）
-async function closeTagManager(sessionId, store) {
-    const modal = document.querySelector('#aicr-tag-manager');
-    if (modal) {
-        // 清理临时数据
-        if (modal._currentTags) {
-             delete modal._currentTags;
-        }
+    // 关闭标签管理器（放弃未保存的更改）
+    async function closeTagManager(sessionId, store) {
+        const modal = document.querySelector('#aicr-tag-manager');
+        if (modal) {
+            // 清理临时数据
+            if (modal._currentTags) {
+                delete modal._currentTags;
+            }
 
-        if (modal._escHandler) {
-            document.removeEventListener('keydown', modal._escHandler);
-            delete modal._escHandler;
-        }
-        
-        modal.style.display = 'none';
-        
-        const tagInput = modal.querySelector('.tag-manager-input');
-        if (tagInput) {
-            tagInput.value = '';
+            if (modal._escHandler) {
+                document.removeEventListener('keydown', modal._escHandler);
+                delete modal._escHandler;
+            }
+
+            modal.style.display = 'none';
+
+            const tagInput = modal.querySelector('.tag-manager-input');
+            if (tagInput) {
+                tagInput.value = '';
+            }
         }
     }
-}
 
 
 

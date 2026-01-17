@@ -1659,6 +1659,22 @@ export const createStore = () => {
             }
         }
         
+        // 确保 fileKey 必须是 sessionKey（UUID格式）
+        // 重构：comment 的 fileKey 必须是对应 session 的 key
+        const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
+        let fileKey = comment.fileKey;
+        
+        // 只接受 UUID 格式的 fileKey（即 sessionKey），否则设为 null
+        if (fileKey && isUUID(fileKey)) {
+            // 已经是 UUID 格式（sessionKey），保持原样
+        } else {
+            // 如果不是 UUID 格式，设为 null（不再尝试查找或转换）
+            if (fileKey) {
+                console.warn('[normalizeComment] fileKey 不是 sessionKey（UUID格式），将被设置为 null:', fileKey);
+            }
+            fileKey = null;
+        }
+        
         // 返回规范化后的评论，确保所有相关字段保持一致
         // 如果存在 rangeInfo，说明 text 字段存储的是引用代码，应该保留原有的 text 值
         // 否则，text 和 content 保持一致
@@ -1670,6 +1686,8 @@ export const createStore = () => {
             type: type,
             content: content,
             timestamp: timestamp,
+            // 确保 fileKey 是 UUID 格式或 null
+            fileKey: fileKey,
             // 兼容字段（保持与 content 和 timestamp 一致）
             // 如果有 rangeInfo，保留原有的 text（引用代码），否则使用 content
             text: textValue,
@@ -1702,18 +1720,22 @@ export const createStore = () => {
                     cname: 'comments'
                 };
                 
-                // 如果有当前选中的文件，也添加到参数中
+                // 如果有当前选中的文件，仅使用 sessionKey 作为 fileKey
                 if (selectedKey.value) {
-                    let targetKey = selectedKey.value;
+                    let sessionKey = null;
                     try {
                         const root = fileTree.value;
                         const { node } = findNodeAndParentByKey(root, selectedKey.value);
                         if (node && node.sessionKey) {
-                            targetKey = node.sessionKey;
+                            sessionKey = node.sessionKey;
                         }
                     } catch (e) {}
 
-                    queryParams.fileKey = targetKey;
+                    if (sessionKey) {
+                        queryParams.fileKey = sessionKey;
+                    } else {
+                        console.warn('[loadComments] 未找到 sessionKey，跳过 fileKey 参数');
+                    }
                 }
                 
                 const url = buildServiceUrl('query_documents', queryParams);

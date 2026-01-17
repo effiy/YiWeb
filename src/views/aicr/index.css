@@ -324,23 +324,6 @@ html, body {
 /* 级联容器样式 */
 .cascader-container { position: relative; }
 .cascader { display: inline-flex; align-items: center; gap: 8px; }
-.project-select { 
-    min-width: 140px;
-    height: 32px;
-    padding: 6px 12px;
-    font-size: 13px;
-    line-height: 1.5;
-    border-radius: 6px;
-}
-.version-select { 
-    min-width: 140px;
-    height: 32px;
-    padding: 6px 12px;
-    font-size: 13px;
-    line-height: 1.5;
-    border-radius: 6px;
-}
-
 .project-btn {
     position: relative;
     display: flex;
@@ -392,98 +375,6 @@ html, body {
         transform: scale(1);
     }
 }
-
-/* 版本选择器样式 */
-.version-selector-container {
-    position: relative;
-}
-
-.version-selector {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-/* 项目内联版本选择器在筛选行的布局优化 */
-/* 删除项目内联版本选择器的旧样式，改用级联 */
-
-.version-select {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm, 0.5rem);
-    min-width: 160px;
-    height: 32px;
-    justify-content: space-between;
-    transition: all var(--duration-fast) var(--ease-smooth);
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 6px;
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: var(--font-weight-medium);
-    padding: 6px 32px 6px 12px;
-    cursor: pointer;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 16px;
-    box-sizing: border-box;
-}
-
-.version-select.version-loading {
-    background: rgba(79, 172, 254, 0.1);
-    border-color: rgba(79, 172, 254, 0.3);
-    color: var(--primary-blue);
-}
-
-.version-select:focus {
-    outline: none;
-    border-color: var(--primary-blue);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.35);
-}
-
-.version-select:hover:not(:disabled) {
-    background: rgba(255,255,255,0.15);
-    border-color: rgba(255,255,255,0.3);
-    color: var(--text-primary);
-}
-
-.version-select.active {
-    background: var(--primary-blue);
-    border-color: var(--primary-blue);
-    color: #fff;
-}
-
-.version-select.active:hover {
-    background: var(--primary-cyan);
-    border-color: var(--primary-cyan);
-}
-
-.version-select:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: rgba(255,255,255,0.05);
-    border-color: rgba(255,255,255,0.1);
-    color: var(--text-secondary);
-}
-
-.version-select option {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    padding: var(--spacing-2) var(--spacing-3);
-}
-
-.version-select option:disabled {
-    color: var(--text-secondary);
-    font-style: italic;
-}
-
-/* 版本选择器样式已更新为select元素 */
 
 /* 按钮动画 */
 @keyframes filterButtonSlideIn {
@@ -985,11 +876,6 @@ html, body {
     }
     
     .project-btn {
-        min-width: 100%;
-        justify-content: space-between;
-    }
-    
-    .version-select {
         min-width: 100%;
         justify-content: space-between;
     }

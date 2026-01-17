@@ -1033,12 +1033,17 @@ class SessionSyncService {
                     const sessionId = String(session.id || '');
                     const filePath = this.extractFilePathFromSessionKey(sessionId);
                     
+                    // 获取UUID格式的sessionKey（优先使用session.key，否则使用sessionId如果它是UUID）
+                    const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
+                    const sessionKey = (session.key && isUUID(session.key)) ? session.key : (isUUID(sessionId) ? sessionId : null);
+                    
                     if (filePath) {
                         // 转换为文件
                         const file = {
-                            fileKey: filePath,
+                            fileKey: sessionKey || filePath, // 优先使用UUID格式的sessionKey
                             key: filePath,
                             path: filePath,
+                            sessionKey: sessionKey, // 添加sessionKey字段
                             name: session.pageTitle || session.title || filePath.split('/').pop() || '未命名文件',
                             content: String(session.pageContent || ''),
                             createdAt: this.normalizeTimestamp(session.createdAt),
@@ -1058,8 +1063,8 @@ class SessionSyncService {
                                 content: message.message,
                                 timestamp: message.timestamp,
                                 imageDataUrl: message.imageDataUrl,
-                                // 评论特有字段
-                                fileKey: filePath,
+                                // 评论特有字段 - 使用UUID格式的sessionKey作为fileKey
+                                fileKey: sessionKey || filePath, // 优先使用UUID格式的sessionKey
                                 status: 'pending',
                                 // 兼容字段（保留以兼容旧代码）
                                 text: message.message, // content 和 text 保持一致
@@ -1068,6 +1073,7 @@ class SessionSyncService {
                                 createdAt: message.timestamp // 毫秒数
                             };
                             // 使用规范化函数确保字段一致性（如果可用）
+                            // normalizeComment 会进一步验证和转换 fileKey 为 UUID 格式
                             if (window.aicrStore && window.aicrStore.normalizeComment) {
                                 comment = window.aicrStore.normalizeComment(comment);
                             }

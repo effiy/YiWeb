@@ -69,27 +69,27 @@ export const useComputed = (store) => {
                 }
                 return null;
             };
-            
+
             // 更灵活的匹配逻辑：检查多个可能的标识字段
             const currentFile = store.files.value.find(f => {
                 if (!f) return false;
-                
+
                 // 检查多个可能的标识字段
                 const candidates = [
                     f.key,
                     f.path,
                     f.name
                 ].filter(Boolean).map(normalize);
-                
+
                 // 检查是否与目标匹配
                 return candidates.some(c => {
                     // 完全匹配
                     if (c === target) return true;
-                    
+
                     // 路径匹配：检查是否是父子路径关系
                     if (c.endsWith('/' + target) && target && target.length > 0) return true;
                     if (target.endsWith('/' + c) && c && c.length > 0) return true;
-                    
+
                     // 文件名匹配：检查文件名是否相同
                     const cName = c.split('/').pop();
                     const targetName = target.split('/').pop();
@@ -99,11 +99,11 @@ export const useComputed = (store) => {
                         const targetPath = target.substring(0, target.lastIndexOf('/'));
                         return cPath === targetPath || (!cPath && !targetPath);
                     }
-                    
+
                     return false;
                 });
             });
-            
+
             if (!currentFile) {
                 const sessionKeyFromTree = findSessionKeyByTreeKey(store.fileTree?.value, target);
                 if (sessionKeyFromTree) {
@@ -125,7 +125,7 @@ export const useComputed = (store) => {
         currentComments: computed(() => {
             const viewMode = store.viewMode?.value || 'tree';
             const activeSession = store.activeSession?.value;
-            
+
             // 会话模式下，如果有activeSession，返回与该会话相关的评论
             if (viewMode === 'tags' && activeSession) {
                 const sessionKey = activeSession.id || activeSession.key;
@@ -134,10 +134,10 @@ export const useComputed = (store) => {
                         const commentFileKey = c.fileKey;
                         return String(commentFileKey || '') === String(sessionKey);
                     }) : [];
-                    
+
                     console.log('[currentComments] 会话模式 - 会话Key:', sessionKey);
                     console.log('[currentComments] 会话模式 - 评论数量:', storeComments.length);
-                    
+
                     return storeComments.map(comment => ({
                         ...comment,
                         key: comment.key || `comment_${Date.now()}_${Math.random()}`
@@ -146,12 +146,12 @@ export const useComputed = (store) => {
                 // 如果没有sessionKey，返回空数组，让评论面板自己加载
                 return [];
             }
-            
+
             // 树形视图模式下的原有逻辑
             const key = store.selectedKey?.value;
             console.log('[currentComments] 树形模式 - 当前文件Key:', key);
             console.log('[currentComments] store.comments:', store.comments);
-            
+
             if (!key) return [];
 
             const normalize = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
@@ -190,12 +190,12 @@ export const useComputed = (store) => {
                 return String(commentFileKey || '') === sessionKey;
             }) : [];
             const allComments = [...localComments, ...storeComments];
-            
+
             console.log('[currentComments] 本地评论数量:', localComments.length);
             console.log('[currentComments] store评论数量:', storeComments.length);
             console.log('[currentComments] 总评论数量:', allComments.length);
             console.log('[currentComments] 所有评论详情:', allComments);
-            
+
             // 确保返回的评论有正确的key属性
             return allComments.map(comment => ({
                 ...comment,
@@ -208,7 +208,7 @@ export const useComputed = (store) => {
          */
         fileTreeStats: computed(() => {
             const stats = { folders: 0, files: 0 };
-            
+
             const countItems = (items) => {
                 if (!Array.isArray(items)) {
                     // 如果是单个节点，直接处理
@@ -222,7 +222,7 @@ export const useComputed = (store) => {
                     }
                     return;
                 }
-                
+
                 items.forEach(item => {
                     if (item.type === 'folder') {
                         stats.folders++;
@@ -234,11 +234,11 @@ export const useComputed = (store) => {
                     }
                 });
             };
-            
+
             if (store.fileTree?.value) {
                 countItems(store.fileTree.value);
             }
-            
+
             return stats;
         }),
 
@@ -309,14 +309,6 @@ export const useComputed = (store) => {
 
 
         /**
-         * 是否已选择项目
-         */
-        // isProjectSelected: computed(() => {
-        //     return !!store.selectedProject?.value;
-        // }),
-
-
-        /**
          * 当前项目信息
          */
         // currentProject: computed(() => {
@@ -332,11 +324,11 @@ export const useComputed = (store) => {
             // 添加调试信息
             console.log('[searchQueryValue] searchQuery状态:', store.searchQuery);
             console.log('[searchQueryValue] searchQuery.value:', store.searchQuery?.value);
-            
+
             // 安全地获取搜索查询值
             const query = store.searchQuery && typeof store.searchQuery.value !== 'undefined' ? store.searchQuery.value : '';
             console.log('[searchQueryValue] 返回的查询值:', query);
-            
+
             return query;
         }),
 
