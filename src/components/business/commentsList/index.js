@@ -505,10 +505,14 @@ const componentOptions = {
                 else if (Array.isArray(res)) list = res;
                 else if (res && Array.isArray(res.data)) list = res.data;
                 // 简单排序：时间倒序
-                this.comments = (list || []).map(c => ({
-                    ...c,
-                    key: c.key || c.id || `comment_${Date.now()}_${Math.random()}`
-                })).sort((a, b) => {
+                const normalize = window?.aicrStore?.normalizeComment;
+                this.comments = (list || []).map(c => {
+                    const withKey = {
+                        ...c,
+                        key: c.key || c.id || `comment_${Date.now()}_${Math.random()}`
+                    };
+                    return (typeof normalize === 'function') ? normalize(withKey) : withKey;
+                }).sort((a, b) => {
                     const ta = new Date(a.timestamp || a.createdAt || 0).getTime();
                     const tb = new Date(b.timestamp || b.createdAt || 0).getTime();
                     return tb - ta;

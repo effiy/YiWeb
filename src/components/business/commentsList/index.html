@@ -1,6 +1,7 @@
 <!-- 新闻页评论列表（样式复用 AICR 评论面板） -->
-<aside class="comment-panel-container" :class="{ 'collapsed': internalCollapsed }" role="complementary" aria-label="新闻评论列表">
-  
+<aside class="comment-panel-container" :class="{ 'collapsed': internalCollapsed }" role="complementary"
+  aria-label="新闻评论列表">
+
 
   <!-- 加载状态 -->
   <div v-if="loading" class="loading-container" role="status" aria-live="polite">
@@ -28,18 +29,14 @@
 
     <!-- 评论列表 -->
     <div v-if="comments && comments.length > 0" class="comment-list" role="list">
-      <article 
-        v-for="comment in comments" 
-        :key="comment.key"
-        class="comment-item"
-        :class="getCommentStatusClass(comment.status)"
-        role="listitem"
-        @click="openInAicr(comment)"
+      <article v-for="comment in comments" :key="comment.key" class="comment-item"
+        :class="getCommentStatusClass(comment.status)" role="listitem" @click="openInAicr(comment)"
         :title="'在AICR中打开相关文件'">
         <div class="comment-header-section">
           <div class="comment-meta">
             <div class="comment-author-info">
-              <div class="comment-avatar" :style="getAuthorAvatar(comment.author)">{{ getAuthorAvatar(comment.author).text }}</div>
+              <div class="comment-avatar" :style="getAuthorAvatar(comment.author)">{{
+                getAuthorAvatar(comment.author).text }}</div>
               <div class="comment-author-details">
                 <span class="comment-author">{{ comment.author || '匿名' }}</span>
                 <time class="comment-time" :datetime="comment.timestamp">{{ formatTime(comment.timestamp) }}</time>
@@ -59,14 +56,15 @@
         </div>
 
         <div class="comment-body">
-          <div v-if="comment.text" class="comment-quote">
+          <div v-if="comment.text && comment.text !== comment.content" class="comment-quote">
             <div class="quote-header">
               <i class="fas fa-quote-left"></i>
               <span>引用</span>
             </div>
             <pre class="quote-code">{{ comment.text }}</pre>
           </div>
-          <div v-if="comment.content" class="comment-content md-preview-body" v-html="renderMarkdown(comment.content)"></div>
+          <div v-if="comment.content" class="comment-content md-preview-body" v-html="renderMarkdown(comment.content)">
+          </div>
           <div v-if="comment.improvementText" class="comment-improvement">
             <div class="improvement-header">
               <i class="fas fa-magic"></i>
@@ -88,7 +86,3 @@
     </div>
   </div>
 </aside>
-
-
-
-

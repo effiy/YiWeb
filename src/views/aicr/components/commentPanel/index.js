@@ -2785,7 +2785,8 @@ const componentOptions = {
                     : (timestamp < 1e12 ? timestamp * 1000 : timestamp);
 
                 if (content) newComment.content = content;
-                if (!newComment.text) newComment.text = quotedText || content;
+                // text 表示“引用代码”，不要兜底成 content，否则会出现“引用代码/被评论内容不一致”
+                if (!newComment.text) newComment.text = quotedText;
                 newComment.timestamp = normalizedTimestamp;
                 newComment.createdTime = normalizedTimestamp; // 毫秒数
                 newComment.createdAt = normalizedTimestamp; // 毫秒数

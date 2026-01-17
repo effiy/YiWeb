@@ -360,7 +360,7 @@
                         <img v-else-if="comment.imageDataUrl" class="chat-image comment-image"
                             :src="comment.imageDataUrl" alt="评论图片" />
 
-                        <div v-if="comment.text" class="comment-quote">
+                        <div v-if="comment.text && comment.text !== comment.content" class="comment-quote">
                             <div class="quote-header">
                                 <i class="fas fa-quote-left"></i>
                                 <span>引用代码</span>
