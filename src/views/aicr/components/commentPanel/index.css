@@ -1284,6 +1284,9 @@
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
+    white-space: pre-wrap; /* 支持自动换行 */
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 /* 移除点击效果 */

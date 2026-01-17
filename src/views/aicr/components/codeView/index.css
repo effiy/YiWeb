@@ -2324,15 +2324,15 @@
     border: none;
     border-radius: 0;
     overflow-x: auto;
-    white-space: pre; /* 保持预格式化，确保缩进正确显示 */
+    white-space: pre-wrap; /* 支持自动换行，同时保持缩进 */
     cursor: default;
     transition: all 0.2s ease;
     /* 优化缩进显示 */
     -moz-tab-size: 4;
     tab-size: 4;
-    word-wrap: normal;
-    word-break: normal;
-    overflow-wrap: normal;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 /* 移除点击效果 */
@@ -2874,8 +2874,9 @@
     font-size: 12px;
     line-height: 2; /* 增加行高，提高可读性 */
     color: var(--text-primary);
-    white-space: pre; /* 与编辑态保持一致的换行与缩进呈现 */
+    white-space: pre-wrap; /* 支持自动换行，同时保持缩进 */
     word-break: break-word;
+    overflow-wrap: break-word;
     /* 移除高度限制和滚动条 */
     max-height: none;
     overflow: visible;

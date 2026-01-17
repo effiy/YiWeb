@@ -2645,7 +2645,8 @@ const componentOptions = {
                             detail: {
                                 fileKey: comment.fileKey,
                                 rangeInfo: comment.rangeInfo,
-                                comment: comment
+                                comment: comment,
+                                _forwarded: true // 标记为已转发，避免 index.js 重复处理
                             }
                         }));
                     }
@@ -3329,7 +3330,8 @@ const componentOptions = {
                 window.dispatchEvent(new CustomEvent('highlightCodeLines', {
                     detail: {
                         fileKey: comment.fileKey,
-                        rangeInfo: comment.rangeInfo
+                        rangeInfo: comment.rangeInfo,
+                        _forwarded: true // 标记为已转发，避免 index.js 重复处理
                     }
                 }));
             }
@@ -4077,17 +4079,47 @@ const componentOptions = {
             this._unhandledRejectionHandler = null;
         }
 
-
-        // 清理窗口大小变化监听器
-        if (this._resizeHandler) {
-            window.removeEventListener('resize', this._resizeHandler);
-            this._resizeHandler = null;
+        // 修复：使用正确的变量名 _resizeListener（与 mounted 中注册时一致）
+        if (this._resizeListener) {
+            window.removeEventListener('resize', this._resizeListener);
+            this._resizeListener = null;
         }
 
         // 清理定时器
         if (this._resizeTimer) {
             clearTimeout(this._resizeTimer);
             this._resizeTimer = null;
+        }
+
+        // 清理 ESC 键监听器
+        if (this._escListener) {
+            window.removeEventListener('keydown', this._escListener);
+            this._escListener = null;
+        }
+
+        // 清理选择变化监听器
+        if (this._selListener) {
+            document.removeEventListener('selectionchange', this._selListener);
+            this._selListener = null;
+        }
+
+        // 清理鼠标松开监听器
+        if (this._mouseupListener) {
+            document.removeEventListener('mouseup', this._mouseupListener, true);
+            this._mouseupListener = null;
+        }
+
+        // 清理键盘松开监听器
+        if (this._keyupListener) {
+            document.removeEventListener('keyup', this._keyupListener, true);
+            this._keyupListener = null;
+        }
+
+        // 清理滚动/窗口调整监听器
+        if (this._scrollListener) {
+            window.removeEventListener('scroll', this._scrollListener, { capture: true });
+            window.removeEventListener('resize', this._scrollListener);
+            this._scrollListener = null;
         }
 
         if (this._hlListener) {

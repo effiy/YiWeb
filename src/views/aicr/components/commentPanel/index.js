@@ -3058,15 +3058,10 @@ const componentOptions = {
         // 加载微信机器人设置
         this.loadWeChatSettings();
 
-        // 监听项目/版本变化事件
-        window.addEventListener('projectReady', (event) => {
-            console.log('[CommentPanel] 收到项目就绪事件:', event.detail);
-            // 使用防抖重新加载评论数据
-            this.debouncedLoadComments();
-        });
+        // 注意：projectReady 监听已合并到下方统一处理，避免重复监听
 
         // 监听 CodeView 发来的评论更新请求（在弹框内编辑时触发）
-        window.addEventListener('updateComment', async (event) => {
+        this._updateCommentListener = async (event) => {
             try {
                 const payload = event.detail || {};
                 if (!payload || !payload.key) return;
@@ -3087,14 +3082,15 @@ const componentOptions = {
             } catch (e) {
                 console.error('[CommentPanel] 处理评论更新请求失败:', e);
             }
-        });
+        };
+        window.addEventListener('updateComment', this._updateCommentListener);
 
         // 监听addNewComment事件，处理从codeView组件发送的新评论
         // 使用防抖机制避免重复添加
         let _lastAddNewCommentTime = 0;
         let _lastAddNewCommentKey = null;
         let _lastAddNewCommentContent = null;
-        window.addEventListener('addNewComment', (event) => {
+        this._addNewCommentListener = (event) => {
             console.log('[CommentPanel] 收到addNewComment事件');
             const { comment } = event.detail;
 
@@ -3137,13 +3133,16 @@ const componentOptions = {
 
             console.log('[CommentPanel] 添加新评论到本地数据:', comment);
             this.addCommentToLocalData(comment);
-        });
+        };
+        window.addEventListener('addNewComment', this._addNewCommentListener);
 
-        window.addEventListener('resetAicrComments', () => {
+        this._resetAicrCommentsListener = () => {
             this.resetToInitialState();
-        });
+        };
+        window.addEventListener('resetAicrComments', this._resetAicrCommentsListener);
+
         // 监听reloadComments事件，重新加载评论数据
-        window.addEventListener('reloadComments', (event) => {
+        this._reloadCommentsListener = (event) => {
             console.log('[CommentPanel] 收到reloadComments事件:', event.detail);
 
             const detail = event.detail || {};
@@ -3173,10 +3172,11 @@ const componentOptions = {
                     this.debouncedLoadComments(true);
                 }
             }
-        });
+        };
+        window.addEventListener('reloadComments', this._reloadCommentsListener);
 
         // 监听projectReady事件，当项目准备就绪时重新加载评论
-        window.addEventListener('projectReady', (event) => {
+        this._projectReadyListener = (event) => {
             console.log('[CommentPanel] 收到projectReady事件');
 
             // 防止重复触发
@@ -3196,12 +3196,35 @@ const componentOptions = {
                 console.log('[CommentPanel] 项目准备就绪，开始加载评论数据');
                 this.debouncedLoadComments();
             }, 200);
-        });
+        };
+        window.addEventListener('projectReady', this._projectReadyListener);
     },
 
     beforeDestroy() {
         // 清理所有定时器和缓存
         this.cleanupAllTimers();
+
+        // 清理事件监听器
+        if (this._updateCommentListener) {
+            window.removeEventListener('updateComment', this._updateCommentListener);
+            this._updateCommentListener = null;
+        }
+        if (this._addNewCommentListener) {
+            window.removeEventListener('addNewComment', this._addNewCommentListener);
+            this._addNewCommentListener = null;
+        }
+        if (this._resetAicrCommentsListener) {
+            window.removeEventListener('resetAicrComments', this._resetAicrCommentsListener);
+            this._resetAicrCommentsListener = null;
+        }
+        if (this._reloadCommentsListener) {
+            window.removeEventListener('reloadComments', this._reloadCommentsListener);
+            this._reloadCommentsListener = null;
+        }
+        if (this._projectReadyListener) {
+            window.removeEventListener('projectReady', this._projectReadyListener);
+            this._projectReadyListener = null;
+        }
     }
 };
 
