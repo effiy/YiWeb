@@ -327,6 +327,35 @@ const componentOptions = {
                 return 'text';
             }
         },
+        // 格式化文件名显示：优先显示文件名，长路径显示最后几级
+        displayFileName() {
+            if (!this.file) return '';
+            const path = this.file.path || this.file.name || '';
+            const name = this.file.name || '';
+
+            // 如果有独立的 name 且与 path 不同，优先使用 name
+            if (name && name !== path) {
+                return name;
+            }
+
+            // 如果路径为空，返回默认值
+            if (!path) return '未命名文件';
+
+            // 处理路径：如果路径太长，只显示最后两级
+            const pathParts = path.split('/').filter(p => p);
+            if (pathParts.length <= 2) {
+                return path;
+            }
+
+            // 显示最后两级路径，用 ... 表示前面的路径
+            const lastTwo = pathParts.slice(-2).join('/');
+            return `.../${lastTwo}`;
+        },
+        // 完整的文件路径（用于 title 提示）
+        fullFilePath() {
+            if (!this.file) return '';
+            return this.file.path || this.file.name || '';
+        },
         canSubmitManualComment() {
             try {
                 const len = (this.manualCommentText || '').trim().length;
@@ -1036,9 +1065,6 @@ const componentOptions = {
                     // 为长内容添加折叠功能
                     this.addCollapseToLongContent();
 
-                    // 为表格添加折叠功能
-                    this.addCollapseToTables();
-
                     // 为图片添加点击预览功能
                     const images = this.$el?.querySelectorAll('.markdown-preview-content img');
                     images?.forEach(img => {
@@ -1673,10 +1699,6 @@ const componentOptions = {
                 return match;
             });
 
-            // 为表格添加折叠功能 - 默认展开
-            html = html.replace(/<table>/g, '<div class="md-table-wrapper"><table>');
-            html = html.replace(/<\/table>/g, '</table><button class="collapse-toggle" onclick="this.parentElement.classList.toggle(\'collapsed\')"><i class="fas fa-chevron-up"></i> 折叠表格</button></div>');
-
             return html;
         },
 
@@ -1706,31 +1728,6 @@ const componentOptions = {
             });
         },
 
-        // 为表格添加折叠功能 - 默认展开
-        addCollapseToTables() {
-            const tableWrappers = this.$el?.querySelectorAll('.md-table-wrapper');
-            tableWrappers?.forEach(wrapper => {
-                const toggleBtn = wrapper.querySelector('.collapse-toggle');
-                if (toggleBtn) {
-                    // 确保初始状态是展开的（没有 collapsed 类）
-                    if (!wrapper.classList.contains('collapsed')) {
-                        toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 折叠表格';
-                    }
-
-                    toggleBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const isCollapsed = wrapper.classList.contains('collapsed');
-                        if (isCollapsed) {
-                            wrapper.classList.remove('collapsed');
-                            toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 折叠表格';
-                        } else {
-                            wrapper.classList.add('collapsed');
-                            toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i> 展开表格';
-                        }
-                    });
-                }
-            });
-        },
 
         // 全局函数：切换内容折叠 - 默认展开
         toggleContentCollapse(elementId) {

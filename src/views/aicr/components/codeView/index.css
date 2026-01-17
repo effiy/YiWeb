@@ -1297,16 +1297,32 @@
     color: var(--text-primary);
     font-size: 14px;
     max-width: 60%;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     letter-spacing: 0.3px;
+    cursor: default;
+    transition: color 0.2s ease;
+}
+
+.code-header .file-name:hover {
+    color: var(--primary);
 }
 
 .code-header .file-name i {
     color: var(--primary);
     font-size: 16px;
     opacity: 0.9;
+    flex-shrink: 0;
+}
+
+.code-header .file-name .file-name-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
 }
 
 .code-actions {
@@ -4024,9 +4040,14 @@
         gap: var(--spacing-sm);
     }
     
-    .file-name {
-        padding: 3px var(--spacing-xs);
+    .code-header .file-name {
+        max-width: 100%;
         font-size: 11px;
+        padding: 3px var(--spacing-xs);
+    }
+    
+    .code-header .file-name .file-name-text {
+        max-width: 100%;
     }
     
     .code-content {
@@ -4083,6 +4104,16 @@
         flex-direction: column;
         align-items: flex-start;
         gap: var(--spacing-xs);
+    }
+    
+    .code-header .file-name {
+        max-width: 100%;
+        font-size: 12px;
+        width: 100%;
+    }
+    
+    .code-header .file-name .file-name-text {
+        max-width: calc(100% - 24px); /* 减去图标宽度 */
     }
     
     /* 移除.code-actions相关内容 */
