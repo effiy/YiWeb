@@ -435,6 +435,16 @@ const componentOptions = {
             const text = (this.quickCommentText || '').trim();
             return text.length > 0 && text.length <= 2000;
         },
+        canSubmitAiComment() {
+            // 更严格的结果检查：确保结果存在且非空
+            const result = this.quickCommentAiResult;
+            const hasResult = result &&
+                typeof result === 'string' &&
+                result.trim().length > 0;
+            const notSubmitting = !this.quickCommentSubmitting;
+            const notGenerating = !this.quickCommentAiGenerating;
+            return hasResult && notSubmitting && notGenerating;
+        },
         quickCommentPosition() {
             return {
                 left: `${this.quickCommentPositionData.left}px`,
@@ -3572,7 +3582,17 @@ const componentOptions = {
                 'explain': '请解释这段代码的功能和工作原理',
                 'bug': '请检查这段代码中可能存在的 bug 或错误'
             };
-            this.quickCommentAiPrompt = presets[preset] || '';
+            const prompt = presets[preset] || '';
+            if (!prompt) {
+                console.warn('[CodeView] 未知的预设类型:', preset);
+                return;
+            }
+
+            console.log('[CodeView] 使用 AI 预设:', preset, prompt);
+            this.quickCommentAiPrompt = prompt;
+            // 清空之前的错误信息
+            this.quickCommentAiError = '';
+
             this.$nextTick(() => {
                 this.generateAiComment();
             });
@@ -3582,8 +3602,9 @@ const componentOptions = {
             // Cmd/Ctrl + Enter 生成或提交
             if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
                 event.preventDefault();
-                if (this.quickCommentAiResult && !this.quickCommentAiGenerating) {
-                    this.submitAiComment();
+                event.stopPropagation();
+                if (this.quickCommentAiResult && !this.quickCommentAiGenerating && !this.quickCommentSubmitting) {
+                    this.submitAiComment(event);
                 } else if (this.quickCommentAiPrompt.trim() && !this.quickCommentAiGenerating) {
                     this.generateAiComment();
                 }
@@ -3613,6 +3634,9 @@ const componentOptions = {
             this.quickCommentAiError = '';
             this.quickCommentAiResult = '';
 
+            // 将 accumulated 提升到函数作用域，以便在 catch 和 finally 中访问
+            let accumulated = '';
+
             try {
                 const { streamPrompt } = await import('/src/services/modules/crud.js');
                 const apiUrl = `${String(window.API_URL || '').trim().replace(/\/$/, '')}/`;
@@ -3635,8 +3659,6 @@ const componentOptions = {
                 const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
                 this.quickCommentAiAbortController = controller;
 
-                let accumulated = '';
-
                 await streamPrompt(
                     apiUrl,
                     {
@@ -3651,11 +3673,26 @@ const componentOptions = {
                     controller ? { signal: controller.signal } : {},
                     (chunk) => {
                         accumulated += String(chunk || '');
+                        // 确保结果被正确设置
                         this.quickCommentAiResult = accumulated;
                     }
                 );
 
-                console.log('[CodeView] AI 评论生成完成:', accumulated.substring(0, 100));
+                // 确保最终结果被正确设置
+                if (accumulated && accumulated.trim()) {
+                    this.quickCommentAiResult = accumulated.trim();
+                    console.log('[CodeView] AI 评论生成完成:', {
+                        length: this.quickCommentAiResult.length,
+                        preview: this.quickCommentAiResult.substring(0, 100),
+                        prompt: this.quickCommentAiPrompt
+                    });
+                } else {
+                    console.warn('[CodeView] AI 评论生成完成但结果为空:', {
+                        accumulatedLength: accumulated?.length,
+                        accumulated: accumulated?.substring(0, 100)
+                    });
+                    this.quickCommentAiError = 'AI 生成结果为空，请重试';
+                }
 
             } catch (error) {
                 // 检查是否为中止错误
@@ -3665,16 +3702,35 @@ const componentOptions = {
 
                 if (isAbort) {
                     console.log('[CodeView] AI 生成已停止');
-                    if (!this.quickCommentAiResult) {
-                        this.quickCommentAiResult = '';
+                    // 如果中止时已经有部分结果，保留它
+                    if (!this.quickCommentAiResult && accumulated) {
+                        this.quickCommentAiResult = accumulated.trim();
                     }
                 } else {
                     console.error('[CodeView] AI 评论生成失败:', error);
                     this.quickCommentAiError = error.message || 'AI 生成失败，请重试';
+                    // 如果失败时已经有部分结果，保留它
+                    if (accumulated && accumulated.trim()) {
+                        this.quickCommentAiResult = accumulated.trim();
+                    }
                 }
             } finally {
                 this.quickCommentAiGenerating = false;
                 this.quickCommentAiAbortController = null;
+
+                // 最终检查：确保结果被正确设置
+                if (accumulated && accumulated.trim() && !this.quickCommentAiResult) {
+                    console.warn('[CodeView] 检测到结果未设置，手动设置');
+                    this.quickCommentAiResult = accumulated.trim();
+                }
+
+                // 输出最终状态用于调试
+                console.log('[CodeView] AI 生成完成，最终状态:', {
+                    hasResult: !!(this.quickCommentAiResult && this.quickCommentAiResult.trim()),
+                    resultLength: this.quickCommentAiResult?.length || 0,
+                    hasError: !!this.quickCommentAiError,
+                    prompt: this.quickCommentAiPrompt
+                });
             }
         },
 
@@ -3720,22 +3776,63 @@ const componentOptions = {
         },
 
         async submitAiComment(event) {
+            console.log('[CodeView] submitAiComment 被调用', {
+                event: !!event,
+                quickCommentAiResult: this.quickCommentAiResult?.substring?.(0, 50),
+                quickCommentSubmitting: this.quickCommentSubmitting,
+                quickCommentAiGenerating: this.quickCommentAiGenerating
+            });
+
+            // 阻止默认行为和事件冒泡
             if (event) {
                 event.preventDefault();
                 event.stopPropagation();
             }
 
-            const content = (this.quickCommentAiResult || '').trim();
-            if (!content) {
-                this.quickCommentAiError = 'AI 评论内容为空';
+            // 检查是否正在提交或生成中
+            if (this.quickCommentSubmitting || this.quickCommentAiGenerating) {
+                console.warn('[CodeView] 正在提交或生成中，忽略点击');
                 return;
             }
+
+            // 更严格的内容检查
+            const result = this.quickCommentAiResult;
+            let content = '';
+
+            if (result && typeof result === 'string') {
+                content = result.trim();
+            } else if (result) {
+                // 如果不是字符串，尝试转换
+                content = String(result).trim();
+            }
+
+            if (!content || content.length === 0) {
+                this.quickCommentError = 'AI 评论内容为空，无法提交';
+                console.warn('[CodeView] AI 评论内容为空，无法提交', {
+                    resultType: typeof result,
+                    resultLength: result?.length,
+                    resultPreview: result?.substring?.(0, 50)
+                });
+                return;
+            }
+
+            console.log('[CodeView] 开始提交 AI 评论:', {
+                hasContent: !!content,
+                contentLength: content.length,
+                hasPrompt: !!this.quickCommentAiPrompt
+            });
 
             // 将 AI 结果作为评论内容提交
             this.quickCommentText = content;
             // 保存 AI prompt 以便在提交时包含到评论对象中
             this._pendingAiPrompt = (this.quickCommentAiPrompt || '').trim();
-            await this.submitQuickComment();
+
+            try {
+                await this.submitQuickComment();
+            } catch (error) {
+                console.error('[CodeView] 提交 AI 评论失败:', error);
+                this.quickCommentError = `提交失败: ${error.message || '未知错误'}`;
+            }
         },
 
         calculateQuickCommentPosition(rect) {

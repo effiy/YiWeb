@@ -263,11 +263,10 @@
 
                     <!-- AI 模式下的提交按钮 -->
                     <template v-if="quickCommentMode === 'ai'">
-                        <button type="button" class="quick-comment-submit-btn"
-                            :class="{ 'loading': quickCommentSubmitting }"
-                            :disabled="!quickCommentAiResult || quickCommentSubmitting || quickCommentAiGenerating"
-                            @click="submitAiComment">
-                            <i :class="quickCommentSubmitting ? 'fas fa-spinner' : 'fas fa-check'"></i>
+                        <button type="button" class="quick-comment-submit-btn ai-submit-btn"
+                            :class="{ 'loading': quickCommentSubmitting, 'ready': canSubmitAiComment }"
+                            :disabled="!canSubmitAiComment" @click="submitAiComment($event)">
+                            <i :class="quickCommentSubmitting ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
                             <span>{{ quickCommentSubmitting ? '提交中...' : '采纳' }}</span>
                         </button>
                     </template>
@@ -282,20 +281,6 @@
                         </button>
                     </template>
                 </div>
-            </div>
-
-            <!-- 调整大小手柄 - 四个角 -->
-            <div class="quick-comment-resize-handle resize-handle-se" @mousedown="startResizeQuickComment($event, 'se')"
-                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整大小">
-            </div>
-            <div class="quick-comment-resize-handle resize-handle-sw" @mousedown="startResizeQuickComment($event, 'sw')"
-                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整大小">
-            </div>
-            <div class="quick-comment-resize-handle resize-handle-ne" @mousedown="startResizeQuickComment($event, 'ne')"
-                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整大小">
-            </div>
-            <div class="quick-comment-resize-handle resize-handle-nw" @mousedown="startResizeQuickComment($event, 'nw')"
-                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整大小">
             </div>
         </div>
 

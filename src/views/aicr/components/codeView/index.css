@@ -5539,8 +5539,8 @@
     padding: 10px 12px;
     border-radius: 6px;
     border: 1px solid rgba(82, 82, 91, 0.3);
-    max-height: 150px;
-    min-height: 30px;
+    max-height: 220px;
+    min-height: 40px;
     /* 自定义滚动条样式 */
     scrollbar-width: thin;
     scrollbar-color: rgba(161, 161, 170, 0.4) rgba(0, 0, 0, 0.1);
@@ -5625,6 +5625,8 @@
         transparent 0%, 
         rgba(255, 255, 255, 0.02) 100%);
     border-top: 1px solid rgba(82, 82, 91, 0.2);
+    position: relative;
+    z-index: 30;
 }
 
 .quick-comment-hint {
@@ -6162,7 +6164,8 @@
     align-items: center;
     gap: 8px;
     position: relative;
-    z-index: 15;
+    z-index: 40;
+    pointer-events: auto;
 }
 
 /* 展开按钮 */
@@ -6205,12 +6208,13 @@
     border-radius: 8px;
     color: #ffffff;
     position: relative;
-    z-index: 20;
+    z-index: 50;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+    pointer-events: auto;
 }
 
 .quick-comment-submit-btn:hover:not(:disabled) {
@@ -6229,6 +6233,22 @@
     cursor: not-allowed;
     background: rgba(82, 82, 91, 0.5);
     box-shadow: none;
+}
+
+.quick-comment-submit-btn.ready {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.35);
+    animation: pulse-ready 2s ease-in-out infinite;
+}
+
+.quick-comment-submit-btn.ready:hover {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.45);
+}
+
+@keyframes pulse-ready {
+    0%, 100% { box-shadow: 0 2px 8px rgba(34, 197, 94, 0.35); }
+    50% { box-shadow: 0 4px 16px rgba(34, 197, 94, 0.5); }
 }
 
 .quick-comment-submit-btn i {
