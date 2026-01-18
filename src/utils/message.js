@@ -17,14 +17,21 @@ const MESSAGE_TYPES = {
  * 消息配置
  */
 const MESSAGE_CONFIG = {
-    duration: 3000,
+    duration: 4000, // 默认显示时长（毫秒）- 至少3秒，设置为4秒更友好
+    minDuration: 3000, // 最小显示时长（毫秒）- 确保至少显示3秒
     position: 'top-right',
     maxCount: 5,
     margin: 24, // 距离边缘的边距（优化为更舒适的间距）
     safeZone: 80, // 安全区域高度（避免被浏览器地址栏和固定导航栏遮挡）
     gap: 12, // 消息之间的间距
     minDistanceFromTop: 20, // 距离顶部的最小距离
-    minDistanceFromRight: 20 // 距离右侧的最小距离
+    minDistanceFromRight: 20, // 距离右侧的最小距离
+    showProgress: true, // 显示进度条
+    showCloseButton: true, // 显示关闭按钮
+    animationDuration: 400, // 动画时长（毫秒）- 增加动画时长，让进入更平滑
+    enterAnimationDuration: 400, // 进入动画时长（毫秒）
+    exitAnimationDuration: 300, // 退出动画时长（毫秒）
+    hoverPause: true // 悬停时暂停倒计时
 };
 
 /**
@@ -265,58 +272,195 @@ const updateMessagePosition = () => {
 };
 
 /**
- * 创建消息元素
+ * 创建消息元素（重构优化版）
  * @param {string} message - 消息内容
  * @param {string} type - 消息类型
+ * @param {number} duration - 显示时长
  * @returns {HTMLElement} 消息元素
  */
-const createMessageElement = (message, type) => {
+const createMessageElement = (message, type, duration) => {
     const messageEl = document.createElement('div');
     messageEl.className = `message message-${type}`;
+    messageEl.setAttribute('data-message-type', type);
+
+    // 基础样式
     messageEl.style.cssText = `
+        position: relative;
         background: ${getMessageColor(type)};
         color: white;
-        padding: 12px 16px;
-        margin-bottom: 8px;
-        border-radius: 6px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 14px 16px;
+        padding-right: ${MESSAGE_CONFIG.showCloseButton ? '40px' : '16px'};
+        margin-bottom: 0;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
         font-size: 14px;
         line-height: 1.5;
         pointer-events: auto;
         cursor: pointer;
-        transition: all 0.3s ease;
-        transform: translateX(100%);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateX(120%);
         opacity: 0;
         word-wrap: break-word;
         overflow-wrap: break-word;
         word-break: break-word;
         white-space: pre-wrap;
         max-width: 100%;
-        min-width: 200px;
+        min-width: 240px;
         width: fit-content;
+        overflow: hidden;
+    `;
+
+    // 创建内容区域
+    const contentWrapper = document.createElement('div');
+    contentWrapper.style.cssText = `
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        position: relative;
+        z-index: 2;
     `;
 
     // 添加图标
     const icon = document.createElement('i');
     icon.className = `fas ${getMessageIcon(type)}`;
-    icon.style.marginRight = '8px';
-    icon.style.flexShrink = '0';
+    icon.style.cssText = `
+        margin-top: 2px;
+        flex-shrink: 0;
+        font-size: 16px;
+        opacity: 0.95;
+    `;
 
     // 创建文本容器
     const textContainer = document.createElement('span');
     textContainer.textContent = message;
-    textContainer.style.flex = '1';
-    textContainer.style.minWidth = '0';
-
-    // 创建内容包装器
-    const contentWrapper = document.createElement('div');
-    contentWrapper.style.display = 'flex';
-    contentWrapper.style.alignItems = 'flex-start';
-    contentWrapper.style.gap = '8px';
+    textContainer.style.cssText = `
+        flex: 1;
+        min-width: 0;
+        line-height: 1.5;
+    `;
 
     contentWrapper.appendChild(icon);
     contentWrapper.appendChild(textContainer);
     messageEl.appendChild(contentWrapper);
+
+    // 添加关闭按钮
+    if (MESSAGE_CONFIG.showCloseButton) {
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'message-close-btn';
+        closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        closeBtn.style.cssText = `
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            opacity: 0;
+            transition: all 0.2s ease;
+            z-index: 10;
+            font-size: 12px;
+        `;
+
+        closeBtn.addEventListener('mouseenter', () => {
+            closeBtn.style.background = 'rgba(255, 255, 255, 0.25)';
+            closeBtn.style.transform = 'scale(1.1)';
+        });
+
+        closeBtn.addEventListener('mouseleave', () => {
+            closeBtn.style.background = 'rgba(255, 255, 255, 0.15)';
+            closeBtn.style.transform = 'scale(1)';
+        });
+
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            hideMessage(messageEl);
+        });
+
+        messageEl.appendChild(closeBtn);
+
+        // 悬停时显示关闭按钮
+        messageEl.addEventListener('mouseenter', () => {
+            closeBtn.style.opacity = '1';
+        });
+
+        messageEl.addEventListener('mouseleave', () => {
+            closeBtn.style.opacity = '0';
+        });
+    }
+
+    // 添加进度条
+    if (MESSAGE_CONFIG.showProgress && duration > 0) {
+        const progressBar = document.createElement('div');
+        progressBar.className = 'message-progress';
+        // 进度条时长 = 显示时长 + 进入动画时长（确保进度条在进入动画完成后开始）
+        const progressDuration = duration + MESSAGE_CONFIG.enterAnimationDuration;
+        progressBar.style.cssText = `
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.3);
+            width: 100%;
+            transform-origin: left;
+            transform: scaleX(1);
+            transition: transform linear;
+            transition-duration: ${progressDuration}ms;
+            transition-delay: ${MESSAGE_CONFIG.enterAnimationDuration}ms;
+            z-index: 1;
+        `;
+
+        messageEl.appendChild(progressBar);
+
+        // 开始进度条动画（延迟到进入动画完成后）
+        setTimeout(() => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    progressBar.style.transform = 'scaleX(0)';
+                });
+            });
+        }, MESSAGE_CONFIG.enterAnimationDuration);
+
+        // 悬停时暂停进度条
+        if (MESSAGE_CONFIG.hoverPause) {
+            let progressPaused = false;
+            let remainingTime = duration;
+            let pauseStartTime = 0;
+
+            messageEl.addEventListener('mouseenter', () => {
+                if (!progressPaused) {
+                    const computedStyle = window.getComputedStyle(progressBar);
+                    const transform = computedStyle.transform;
+                    const scaleX = transform === 'none' ? 1 : parseFloat(transform.split(',')[0].split('(')[1]);
+                    const elapsed = (1 - scaleX) * duration;
+                    remainingTime = duration - elapsed;
+
+                    progressBar.style.transition = 'none';
+                    progressBar.style.transform = `scaleX(${scaleX})`;
+                    progressPaused = true;
+                    pauseStartTime = Date.now();
+                }
+            });
+
+            messageEl.addEventListener('mouseleave', () => {
+                if (progressPaused) {
+                    const pausedDuration = Date.now() - pauseStartTime;
+                    remainingTime = Math.max(0, remainingTime - pausedDuration);
+
+                    progressBar.style.transition = `transform ${remainingTime}ms linear`;
+                    progressBar.style.transform = 'scaleX(0)';
+                    progressPaused = false;
+                }
+            });
+        }
+    }
 
     return messageEl;
 };
@@ -359,18 +503,21 @@ const getMessageIcon = (type) => {
 const createComplexMessageElement = (config) => {
     const messageEl = document.createElement('div');
     messageEl.className = `message message-${config.type || 'info'} complex-message`;
+    messageEl.setAttribute('data-message-type', config.type || 'info');
     messageEl.style.cssText = `
+        position: relative;
         background: ${getMessageColor(config.type || 'info')};
         color: white;
         padding: 16px;
-        margin-bottom: 8px;
+        padding-right: ${MESSAGE_CONFIG.showCloseButton ? '40px' : '16px'};
+        margin-bottom: 0;
         border-radius: 8px;
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         font-size: 14px;
         line-height: 1.5;
         pointer-events: auto;
-        transition: all 0.3s ease;
-        transform: translateX(100%);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateX(120%);
         opacity: 0;
         word-wrap: break-word;
         overflow-wrap: break-word;
@@ -379,6 +526,7 @@ const createComplexMessageElement = (config) => {
         max-width: 100%;
         min-width: 250px;
         width: fit-content;
+        overflow: hidden;
     `;
 
     // 创建头部
@@ -415,29 +563,51 @@ const createComplexMessageElement = (config) => {
     header.appendChild(titleSection);
 
     // 关闭按钮
-    if (config.showClose !== false) {
+    if (config.showClose !== false && MESSAGE_CONFIG.showCloseButton) {
         const closeBtn = document.createElement('button');
+        closeBtn.className = 'message-close-btn';
         closeBtn.innerHTML = '<i class="fas fa-times"></i>';
         closeBtn.style.cssText = `
-            background: none;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.15);
             border: none;
+            border-radius: 4px;
             color: white;
             cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
-            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            opacity: 0;
+            transition: all 0.2s ease;
+            z-index: 10;
             font-size: 12px;
         `;
         closeBtn.addEventListener('mouseenter', () => {
-            closeBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            closeBtn.style.background = 'rgba(255, 255, 255, 0.25)';
+            closeBtn.style.transform = 'scale(1.1)';
         });
         closeBtn.addEventListener('mouseleave', () => {
-            closeBtn.style.backgroundColor = 'transparent';
+            closeBtn.style.background = 'rgba(255, 255, 255, 0.15)';
+            closeBtn.style.transform = 'scale(1)';
         });
-        closeBtn.addEventListener('click', () => {
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             hideMessage(messageEl);
         });
-        header.appendChild(closeBtn);
+        messageEl.appendChild(closeBtn);
+
+        // 悬停时显示关闭按钮
+        messageEl.addEventListener('mouseenter', () => {
+            closeBtn.style.opacity = '1';
+        });
+        messageEl.addEventListener('mouseleave', () => {
+            closeBtn.style.opacity = '0';
+        });
     }
 
     messageEl.appendChild(header);
@@ -501,6 +671,74 @@ const createComplexMessageElement = (config) => {
         messageEl.appendChild(actionsContainer);
     }
 
+    // 添加进度条（如果启用）
+    const complexDuration = config.duration !== undefined ? config.duration : MESSAGE_CONFIG.duration;
+    if (MESSAGE_CONFIG.showProgress && complexDuration > 0 && complexDuration !== 0) {
+        const progressBar = document.createElement('div');
+        progressBar.className = 'message-progress';
+        // 进度条时长 = 显示时长 + 进入动画时长
+        const progressDuration = complexDuration + MESSAGE_CONFIG.enterAnimationDuration;
+        progressBar.style.cssText = `
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.3);
+            width: 100%;
+            transform-origin: left;
+            transform: scaleX(1);
+            transition: transform linear;
+            transition-duration: ${progressDuration}ms;
+            transition-delay: ${MESSAGE_CONFIG.enterAnimationDuration}ms;
+            z-index: 1;
+            border-radius: 0 0 8px 8px;
+        `;
+
+        messageEl.appendChild(progressBar);
+
+        // 开始进度条动画（延迟到进入动画完成后）
+        setTimeout(() => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    progressBar.style.transform = 'scaleX(0)';
+                });
+            });
+        }, MESSAGE_CONFIG.enterAnimationDuration);
+
+        // 悬停时暂停进度条
+        if (MESSAGE_CONFIG.hoverPause) {
+            let progressPaused = false;
+            let remainingTime = duration;
+            let pauseStartTime = 0;
+
+            messageEl.addEventListener('mouseenter', () => {
+                if (!progressPaused) {
+                    const computedStyle = window.getComputedStyle(progressBar);
+                    const transform = computedStyle.transform;
+                    const scaleX = transform === 'none' ? 1 : parseFloat(transform.split(',')[0].split('(')[1]);
+                    const elapsed = (1 - scaleX) * duration;
+                    remainingTime = duration - elapsed;
+
+                    progressBar.style.transition = 'none';
+                    progressBar.style.transform = `scaleX(${scaleX})`;
+                    progressPaused = true;
+                    pauseStartTime = Date.now();
+                }
+            });
+
+            messageEl.addEventListener('mouseleave', () => {
+                if (progressPaused) {
+                    const pausedDuration = Date.now() - pauseStartTime;
+                    remainingTime = Math.max(0, remainingTime - pausedDuration);
+
+                    progressBar.style.transition = `transform ${remainingTime}ms linear`;
+                    progressBar.style.transform = 'scaleX(0)';
+                    progressPaused = false;
+                }
+            });
+        }
+    }
+
     return messageEl;
 };
 
@@ -518,25 +756,63 @@ const showComplexMessage = (config) => {
     // 确保位置正确
     updateMessagePosition();
 
-    // 动画显示
-    setTimeout(() => {
-        messageEl.style.transform = 'translateX(0)';
-        messageEl.style.opacity = '1';
-    }, 10);
+    // 优化动画显示 - 使用更平滑的进入动画
+    messageEl.style.transition = `all ${MESSAGE_CONFIG.enterAnimationDuration}ms cubic-bezier(0.34, 1.56, 0.64, 1)`;
 
-    // 自动隐藏
-    if (config.duration !== 0) {
-        const duration = config.duration || MESSAGE_CONFIG.duration;
-        setTimeout(() => {
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            messageEl.style.transform = 'translateX(0)';
+            messageEl.style.opacity = '1';
+            messageEl.classList.add('message-visible');
+        });
+    });
+
+    // 自动隐藏（支持悬停暂停）
+    let hideTimer = null;
+    if (duration !== 0 && duration > 0) {
+        // 延迟隐藏，确保进入动画完成后再开始倒计时
+        const delayBeforeCountdown = MESSAGE_CONFIG.enterAnimationDuration;
+        hideTimer = setTimeout(() => {
             hideMessage(messageEl);
-        }, duration);
+        }, duration + delayBeforeCountdown);
+        messageEl._hideTimer = hideTimer;
+        messageEl._startTime = Date.now() + delayBeforeCountdown;
+
+        // 悬停时暂停自动隐藏
+        if (MESSAGE_CONFIG.hoverPause) {
+            let pauseStartTime = 0;
+            let remainingTime = duration;
+
+            messageEl.addEventListener('mouseenter', () => {
+                if (hideTimer) {
+                    clearTimeout(hideTimer);
+                    const elapsed = Date.now() - messageEl._startTime;
+                    remainingTime = Math.max(0, duration - elapsed);
+                    pauseStartTime = Date.now();
+                }
+            });
+
+            messageEl.addEventListener('mouseleave', () => {
+                if (remainingTime > 0) {
+                    const pausedDuration = Date.now() - pauseStartTime;
+                    remainingTime = Math.max(0, remainingTime - pausedDuration);
+                    hideTimer = setTimeout(() => {
+                        hideMessage(messageEl);
+                    }, remainingTime);
+                    messageEl._hideTimer = hideTimer;
+                }
+            });
+        }
     }
 
-    // 限制最大数量
+    // 限制最大数量 - 优化堆叠动画
     const messages = container.querySelectorAll('.message');
     if (messages.length > MESSAGE_CONFIG.maxCount) {
         const oldestMessage = messages[0];
         hideMessage(oldestMessage);
+    } else {
+        // 更新其他消息的位置，创建堆叠效果
+        updateMessageStack();
     }
 
     // 开发环境才输出详细日志（检查是否在开发环境）
@@ -549,6 +825,16 @@ const showComplexMessage = (config) => {
 };
 
 /**
+ * 确保时长至少为最小时长
+ * @param {number} duration - 原始时长
+ * @returns {number} 调整后的时长
+ */
+const ensureMinDuration = (duration) => {
+    if (duration === 0) return 0; // 0 表示不自动隐藏
+    return Math.max(duration || MESSAGE_CONFIG.duration, MESSAGE_CONFIG.minDuration);
+};
+
+/**
  * 显示消息
  * @param {string|Object} messageOrConfig - 消息内容或配置对象
  * @param {string} type - 消息类型
@@ -558,6 +844,10 @@ export const showMessage = (messageOrConfig, type = MESSAGE_TYPES.INFO, duration
     // 支持对象配置
     if (typeof messageOrConfig === 'object') {
         const config = messageOrConfig;
+        // 确保复杂消息的时长也至少为最小时长
+        if (config.duration !== undefined && config.duration !== 0) {
+            config.duration = ensureMinDuration(config.duration);
+        }
         return showComplexMessage(config);
     }
 
@@ -565,8 +855,11 @@ export const showMessage = (messageOrConfig, type = MESSAGE_TYPES.INFO, duration
     const message = messageOrConfig;
     if (!message) return;
 
+    // 确保时长至少为最小时长
+    const finalDuration = ensureMinDuration(duration);
+
     const container = createMessageContainer();
-    const messageEl = createMessageElement(message, type);
+    const messageEl = createMessageElement(message, type, finalDuration);
 
     // 添加到容器
     container.appendChild(messageEl);
@@ -574,23 +867,39 @@ export const showMessage = (messageOrConfig, type = MESSAGE_TYPES.INFO, duration
     // 确保位置正确
     updateMessagePosition();
 
-    // 动画显示
-    setTimeout(() => {
-        messageEl.style.transform = 'translateX(0)';
-        messageEl.style.opacity = '1';
-    }, 10);
+    // 优化动画显示 - 使用更平滑的进入动画
+    messageEl.style.transition = `all ${MESSAGE_CONFIG.enterAnimationDuration}ms cubic-bezier(0.34, 1.56, 0.64, 1)`;
 
-    // 点击关闭
-    messageEl.addEventListener('click', () => {
-        hideMessage(messageEl);
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            messageEl.style.transform = 'translateX(0)';
+            messageEl.style.opacity = '1';
+            messageEl.classList.add('message-visible');
+        });
+    });
+
+    // 点击关闭（排除关闭按钮）
+    messageEl.addEventListener('click', (e) => {
+        if (!e.target.closest('.message-close-btn')) {
+            hideMessage(messageEl);
+        }
     }, { passive: true });
 
-    // 自动隐藏
-    if (duration > 0) {
-        setTimeout(() => {
+    // 自动隐藏 - 确保至少显示最小时长
+    let hideTimer = null;
+    if (finalDuration > 0) {
+        // 延迟隐藏，确保进入动画完成后再开始倒计时
+        const delayBeforeCountdown = MESSAGE_CONFIG.enterAnimationDuration;
+        hideTimer = setTimeout(() => {
             hideMessage(messageEl);
-        }, duration);
+        }, finalDuration + delayBeforeCountdown);
+
+        // 保存 timer 以便悬停时暂停
+        messageEl._hideTimer = hideTimer;
     }
+
+    // 记录开始时间（考虑进入动画延迟）
+    messageEl._startTime = Date.now() + MESSAGE_CONFIG.enterAnimationDuration;
 
     // 限制最大数量
     const messages = container.querySelectorAll('.message');
@@ -610,18 +919,48 @@ export const showMessage = (messageOrConfig, type = MESSAGE_TYPES.INFO, duration
 };
 
 /**
- * 隐藏消息
+ * 更新消息堆叠效果
+ */
+const updateMessageStack = () => {
+    if (!messageContainer) return;
+
+    const messages = Array.from(messageContainer.querySelectorAll('.message'));
+    messages.forEach((msg, index) => {
+        // 为每个消息添加轻微的偏移，创建堆叠效果
+        const offset = index * 2;
+        msg.style.marginBottom = `${MESSAGE_CONFIG.gap + offset}px`;
+    });
+};
+
+/**
+ * 隐藏消息（优化版）
  * @param {HTMLElement} messageEl - 消息元素
  */
 const hideMessage = (messageEl) => {
-    messageEl.style.transform = 'translateX(100%)';
-    messageEl.style.opacity = '0';
+    if (!messageEl || !messageEl.parentNode) return;
 
+    // 清除定时器
+    if (messageEl._hideTimer) {
+        clearTimeout(messageEl._hideTimer);
+        messageEl._hideTimer = null;
+    }
+
+    // 添加退出动画类
+    messageEl.classList.add('message-exiting');
+    messageEl.style.transition = `all ${MESSAGE_CONFIG.exitAnimationDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+    messageEl.style.transform = 'translateX(120%)';
+    messageEl.style.opacity = '0';
+    messageEl.style.marginBottom = '0';
+    messageEl.style.marginTop = `-${messageEl.offsetHeight}px`;
+
+    // 移除元素并更新堆叠
     setTimeout(() => {
         if (messageEl.parentNode) {
             messageEl.parentNode.removeChild(messageEl);
+            // 更新剩余消息的堆叠
+            updateMessageStack();
         }
-    }, 300);
+    }, MESSAGE_CONFIG.exitAnimationDuration);
 };
 
 /**
