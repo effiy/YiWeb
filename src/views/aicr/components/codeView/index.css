@@ -4481,7 +4481,8 @@
     position: relative;
 }
 
-#comment-action-container::before {
+/* 箭头指示器 - 默认在右侧（指向左侧的选择区域） */
+#comment-action-container::after {
     content: '';
     position: absolute;
     right: -6px;
@@ -4492,11 +4493,11 @@
     border-left: 6px solid rgba(79, 70, 229, 0.3);
     border-top: 4px solid transparent;
     border-bottom: 4px solid transparent;
+    transition: all 0.3s ease;
+    z-index: 1;
 }
 
-/* 移除hover效果，容器应该始终可见 */
-
-/* 容器动画效果 - 左边定位优化版本 */
+/* 容器动画效果 - 优化版本 */
 @keyframes containerSlideIn {
     0% {
         opacity: 0;
@@ -4516,26 +4517,25 @@
     animation: containerSlideIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* 容器内部光效 */
-#comment-action-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+/* 容器内部光效（使用背景渐变实现，避免与箭头冲突） */
+#comment-action-container {
     background: linear-gradient(135deg, 
+        rgba(30, 41, 59, 0.95) 0%, 
+        rgba(51, 65, 85, 0.9) 100%),
+        linear-gradient(135deg, 
         rgba(79, 70, 229, 0.08) 0%, 
         rgba(99, 102, 241, 0.05) 50%, 
         transparent 100%);
-    border-radius: 20px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
 }
 
-#comment-action-container:hover::before {
-    opacity: 1;
+#comment-action-container:hover {
+    background: linear-gradient(135deg, 
+        rgba(30, 41, 59, 0.98) 0%, 
+        rgba(51, 65, 85, 0.95) 100%),
+        linear-gradient(135deg, 
+        rgba(79, 70, 229, 0.12) 0%, 
+        rgba(99, 102, 241, 0.08) 50%, 
+        transparent 100%);
 }
 
 /* 右边定位时的特殊样式 */
@@ -4544,17 +4544,11 @@
     border-right: 1px solid rgba(79, 70, 229, 0.15);
 }
 
-#comment-action-container.position-right::before {
-    content: '';
-    position: absolute;
-    left: -6px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 0;
-    height: 0;
-    border-right: 6px solid rgba(79, 70, 229, 0.3);
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
+#comment-action-container.position-right::after {
+    right: -6px;
+    left: auto;
+    border-left: 6px solid rgba(79, 70, 229, 0.3);
+    border-right: none;
 }
 
 /* 左边定位时的特殊样式 */
@@ -4563,45 +4557,63 @@
     border-left: 1px solid rgba(79, 70, 229, 0.15);
 }
 
-#comment-action-container.position-left::before {
-    content: '';
-    position: absolute;
+#comment-action-container.position-left::after {
+    left: -6px;
+    right: auto;
+    border-right: 6px solid rgba(79, 70, 229, 0.3);
+    border-left: none;
+}
+
+/* 上方定位时的特殊样式 */
+#comment-action-container.position-top,
+#comment-action-container.position-top-right,
+#comment-action-container.position-top-left {
+    border-bottom: 2px solid rgba(79, 70, 229, 0.3);
+    border-top: 1px solid rgba(79, 70, 229, 0.15);
+}
+
+#comment-action-container.position-top::after,
+#comment-action-container.position-top-right::after,
+#comment-action-container.position-top-left::after {
+    top: -6px;
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    border-bottom: 6px solid rgba(79, 70, 229, 0.3);
+    border-top: none;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+}
+
+/* 下方定位时的特殊样式 */
+#comment-action-container.position-bottom {
+    border-top: 2px solid rgba(79, 70, 229, 0.3);
+    border-bottom: 1px solid rgba(79, 70, 229, 0.15);
+}
+
+#comment-action-container.position-bottom::after {
+    bottom: -6px;
+    top: auto;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    border-top: 6px solid rgba(79, 70, 229, 0.3);
+    border-bottom: none;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+}
+
+/* 降级方案样式 */
+#comment-action-container.position-fallback {
+    border-left: 2px solid rgba(79, 70, 229, 0.3);
+}
+
+#comment-action-container.position-fallback::after {
     right: -6px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 0;
-    height: 0;
+    left: auto;
     border-left: 6px solid rgba(79, 70, 229, 0.3);
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
-}
-
-/* 居中定位时的特殊样式 */
-#comment-action-container.position-center {
-    border-left: 1px solid rgba(79, 70, 229, 0.15);
-    border-right: 1px solid rgba(79, 70, 229, 0.15);
-}
-
-/* 容器边框光效 */
-#comment-action-container::after {
-    content: '';
-    position: absolute;
-    top: -1px;
-    left: -1px;
-    right: -1px;
-    bottom: -1px;
-    background: linear-gradient(135deg, 
-        rgba(79, 70, 229, 0.3) 0%, 
-        rgba(99, 102, 241, 0.2) 50%, 
-        rgba(139, 92, 246, 0.1) 100%);
-    border-radius: 21px;
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-#comment-action-container:hover::after {
-    opacity: 1;
+    border-right: none;
 }
 
 /* 容器状态指示器 */

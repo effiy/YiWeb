@@ -1337,6 +1337,26 @@ const componentOptions = {
                         // 光标定位在文件内容的最前面
                         ta.setSelectionRange(0, 0);
                         ta.scrollTop = 0;
+
+                        // 为 textarea 添加选择事件监听器，支持编辑模式下的评论功能
+                        if (!ta._selectionListenerBound) {
+                            // 鼠标选择事件
+                            ta.addEventListener('mouseup', () => {
+                                setTimeout(() => this.onSelectionChange(), 10);
+                            });
+                            // 键盘选择事件
+                            ta.addEventListener('keyup', (e) => {
+                                const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'];
+                                if (e.shiftKey || keys.includes(e.key)) {
+                                    setTimeout(() => this.onSelectionChange(), 10);
+                                }
+                            });
+                            // 选择变化事件（某些浏览器支持）
+                            ta.addEventListener('select', () => {
+                                setTimeout(() => this.onSelectionChange(), 10);
+                            });
+                            ta._selectionListenerBound = true;
+                        }
                     }
                 });
             } catch (_) { }
@@ -1345,12 +1365,16 @@ const componentOptions = {
             this.isEditingFile = false;
             this.editingFileContent = '';
             this.saveError = '';
+            // 隐藏评论按钮
+            this.hideSelectionButton();
         },
         async saveEditedFile() {
             if (!this.file) return;
             const content = String(this.editingFileContent ?? '');
             if (content === (this.file.content || '')) {
                 this.isEditingFile = false;
+                // 隐藏评论按钮
+                this.hideSelectionButton();
                 return;
             }
             this.editSaving = true;
@@ -1418,6 +1442,8 @@ const componentOptions = {
                 this.isEditingFile = false;
                 this.editingFileContent = '';
                 this.saveError = '';
+                // 隐藏评论按钮
+                this.hideSelectionButton();
 
                 // 发射文件保存成功事件
                 this.$emit('file-saved', {
@@ -2275,6 +2301,56 @@ const componentOptions = {
         // 监听选择变化并定位"评论"按钮
         onSelectionChange() {
             try {
+                // 如果是编辑模式，处理 textarea 中的选择
+                if (this.isEditingFile) {
+                    const textarea = this.$el && this.$el.querySelector('.edit-textarea');
+                    if (!textarea) {
+                        const withinGrace = Date.now() - this._lastShowTs < 250;
+                        if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                        return;
+                    }
+
+                    const start = textarea.selectionStart || 0;
+                    const end = textarea.selectionEnd || 0;
+
+                    // 检查是否有选择（非折叠选择）
+                    if (start === end) {
+                        const withinGrace = Date.now() - this._lastShowTs < 250;
+                        if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                        return;
+                    }
+
+                    // 获取选择的文本
+                    const selectedText = textarea.value.substring(start, end).trim();
+                    if (!selectedText) {
+                        const withinGrace = Date.now() - this._lastShowTs < 250;
+                        if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                        return;
+                    }
+
+                    // 保存选择信息
+                    this.lastSelectionText = selectedText;
+                    this.lastSelectionRange = this.getTextareaSelectionLineRange(textarea, start, end);
+
+                    console.log('[CodeView] 检测到编辑模式下的有效选择:', {
+                        text: selectedText.substring(0, 50) + (selectedText.length > 50 ? '...' : ''),
+                        textLength: selectedText.length,
+                        range: this.lastSelectionRange
+                    });
+
+                    // 计算按钮位置（基于 textarea 的选中区域）
+                    const rect = this.getTextareaSelectionRect(textarea, start, end);
+                    if (rect && rect.width && rect.height) {
+                        this._lastSelectionRect = rect;
+                        this.positionSelectionButton(rect);
+                    } else {
+                        const withinGrace = Date.now() - this._lastShowTs < 250;
+                        if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                    }
+                    return;
+                }
+
+                // 非编辑模式：处理 DOM 选择
                 const sel = window.getSelection();
                 if (!sel || sel.rangeCount === 0) {
                     const withinGrace = Date.now() - this._lastShowTs < 250;
@@ -2383,6 +2459,124 @@ const componentOptions = {
             return null;
         },
 
+        // 获取 textarea 中选择的行号范围
+        getTextareaSelectionLineRange(textarea, start, end) {
+            if (!textarea || start === undefined || end === undefined) return null;
+
+            try {
+                const text = textarea.value;
+                const textBeforeStart = text.substring(0, start);
+                const textBeforeEnd = text.substring(0, end);
+
+                // 计算开始行号（从1开始）
+                const startLine = (textBeforeStart.match(/\n/g) || []).length + 1;
+                // 计算结束行号
+                const endLine = (textBeforeEnd.match(/\n/g) || []).length + 1;
+
+                return {
+                    startLine: Math.min(startLine, endLine),
+                    endLine: Math.max(startLine, endLine)
+                };
+            } catch (e) {
+                console.error('[CodeView] 计算 textarea 行号范围失败:', e);
+            }
+
+            return null;
+        },
+
+        // 获取 textarea 中选择区域的矩形位置（用于定位评论按钮）
+        getTextareaSelectionRect(textarea, start, end) {
+            if (!textarea || start === undefined || end === undefined) return null;
+
+            try {
+                const text = textarea.value;
+                const textBeforeStart = text.substring(0, start);
+                const selectedText = text.substring(start, end);
+
+                // 获取 textarea 的样式和位置
+                const textareaRect = textarea.getBoundingClientRect();
+                const computedStyle = window.getComputedStyle(textarea);
+                const lineHeight = parseFloat(computedStyle.lineHeight) || parseFloat(computedStyle.fontSize) * 1.2;
+                const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+                const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+                const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+                const fontSize = parseFloat(computedStyle.fontSize) || 14;
+                const fontFamily = computedStyle.fontFamily || 'monospace';
+                const textareaWidth = textareaRect.width - paddingLeft - paddingRight;
+
+                // 计算行数
+                const linesBeforeStart = (textBeforeStart.match(/\n/g) || []).length;
+                const linesInSelection = (selectedText.match(/\n/g) || []).length;
+                const totalLines = linesInSelection + 1;
+
+                // 创建临时测量元素（用于精确测量文本宽度）
+                const measureEl = document.createElement('div');
+                measureEl.style.position = 'absolute';
+                measureEl.style.visibility = 'hidden';
+                measureEl.style.whiteSpace = 'pre-wrap';
+                measureEl.style.wordWrap = 'break-word';
+                measureEl.style.fontSize = fontSize + 'px';
+                measureEl.style.fontFamily = fontFamily;
+                measureEl.style.padding = '0';
+                measureEl.style.margin = '0';
+                measureEl.style.border = 'none';
+                measureEl.style.width = textareaWidth + 'px';
+                measureEl.style.lineHeight = lineHeight + 'px';
+                document.body.appendChild(measureEl);
+
+                // 计算选择区域的起始位置
+                const lastNewlineIndex = textBeforeStart.lastIndexOf('\n');
+                const textInCurrentLine = textBeforeStart.substring(Math.max(0, lastNewlineIndex + 1));
+                
+                // 测量当前行中选中文本之前的宽度
+                measureEl.textContent = textInCurrentLine;
+                const textWidthBeforeSelection = Math.min(measureEl.offsetWidth, textareaWidth);
+
+                // 计算选择区域的宽度（对于多行选择，使用最大宽度）
+                let maxSelectionWidth = 0;
+                const selectedLines = selectedText.split('\n');
+                
+                for (const line of selectedLines) {
+                    measureEl.textContent = line;
+                    const lineWidth = measureEl.offsetWidth;
+                    maxSelectionWidth = Math.max(maxSelectionWidth, lineWidth);
+                }
+
+                // 如果选择跨越多行，宽度应该是整个 textarea 的宽度
+                const selectionWidth = linesInSelection > 0 ? textareaWidth : Math.min(maxSelectionWidth, textareaWidth);
+
+                document.body.removeChild(measureEl);
+
+                // 计算选择区域的边界
+                const selectionTop = textareaRect.top + paddingTop + (linesBeforeStart * lineHeight);
+                const selectionLeft = textareaRect.left + paddingLeft + textWidthBeforeSelection;
+                const selectionHeight = totalLines * lineHeight;
+                const selectionRight = selectionLeft + selectionWidth;
+                const selectionBottom = selectionTop + selectionHeight;
+
+                return {
+                    top: selectionTop,
+                    left: selectionLeft,
+                    right: selectionRight,
+                    bottom: selectionBottom,
+                    width: selectionWidth,
+                    height: selectionHeight
+                };
+            } catch (e) {
+                console.error('[CodeView] 计算 textarea 选择位置失败:', e);
+                // 降级方案：使用 textarea 的中心位置
+                const textareaRect = textarea.getBoundingClientRect();
+                return {
+                    top: textareaRect.top + textareaRect.height / 2 - 10,
+                    left: textareaRect.left + textareaRect.width / 2 - 50,
+                    right: textareaRect.left + textareaRect.width / 2 + 50,
+                    bottom: textareaRect.top + textareaRect.height / 2 + 10,
+                    width: 100,
+                    height: 20
+                };
+            }
+        },
+
         getActionContainer() {
             // 首先尝试在当前组件内查找容器（确保在视图内）
             let container = this.$el && this.$el.querySelector('#comment-action-container');
@@ -2423,33 +2617,189 @@ const componentOptions = {
             }
             return container;
         },
+        // 计算评论按钮的最佳位置
+        calculateOptimalButtonPosition(rect) {
+            if (!rect || !rect.width || !rect.height) {
+                return null;
+            }
+
+            const padding = 12; // 按钮与选择区域的间距
+            const buttonWidth = 160; // 按钮的预估宽度
+            const buttonHeight = 40; // 按钮的预估高度
+            const minDistanceFromEdge = 16; // 距离视口边缘的最小距离
+
+            const vw = window.innerWidth || document.documentElement.clientWidth;
+            const vh = window.innerHeight || document.documentElement.clientHeight;
+
+            // getBoundingClientRect 返回的坐标已经是相对于视口的，不需要加 scroll
+            const viewportRect = {
+                top: rect.top,
+                bottom: rect.bottom,
+                left: rect.left,
+                right: rect.right,
+                width: rect.width || (rect.right - rect.left),
+                height: rect.height || (rect.bottom - rect.top)
+            };
+
+            // 计算选择区域的中心点
+            const centerX = viewportRect.left + viewportRect.width / 2;
+            const centerY = viewportRect.top + viewportRect.height / 2;
+
+            // 定义位置策略：按优先级排序
+            const strategies = [
+                {
+                    name: 'right',
+                    calculate: () => ({
+                        left: viewportRect.right + padding,
+                        top: centerY - buttonHeight / 2,
+                        align: 'left'
+                    })
+                },
+                {
+                    name: 'left',
+                    calculate: () => ({
+                        left: viewportRect.left - buttonWidth - padding,
+                        top: centerY - buttonHeight / 2,
+                        align: 'right'
+                    })
+                },
+                {
+                    name: 'top',
+                    calculate: () => ({
+                        left: centerX - buttonWidth / 2,
+                        top: viewportRect.top - buttonHeight - padding,
+                        align: 'center'
+                    })
+                },
+                {
+                    name: 'bottom',
+                    calculate: () => ({
+                        left: centerX - buttonWidth / 2,
+                        top: viewportRect.bottom + padding,
+                        align: 'center'
+                    })
+                },
+                {
+                    name: 'top-right',
+                    calculate: () => ({
+                        left: viewportRect.right + padding,
+                        top: viewportRect.top - buttonHeight / 2,
+                        align: 'left'
+                    })
+                },
+                {
+                    name: 'top-left',
+                    calculate: () => ({
+                        left: viewportRect.left - buttonWidth - padding,
+                        top: viewportRect.top - buttonHeight / 2,
+                        align: 'right'
+                    })
+                }
+            ];
+
+            // 评估每个位置策略的可行性
+            let bestStrategy = null;
+            let bestScore = -1;
+
+            for (const strategy of strategies) {
+                const pos = strategy.calculate();
+                
+                // 检查是否在视口内
+                const fitsInViewport = 
+                    pos.left >= minDistanceFromEdge &&
+                    pos.left + buttonWidth <= vw - minDistanceFromEdge &&
+                    pos.top >= minDistanceFromEdge &&
+                    pos.top + buttonHeight <= vh - minDistanceFromEdge;
+
+                if (!fitsInViewport) {
+                    // 如果超出视口，尝试调整位置
+                    pos.left = Math.max(minDistanceFromEdge, Math.min(pos.left, vw - buttonWidth - minDistanceFromEdge));
+                    pos.top = Math.max(minDistanceFromEdge, Math.min(pos.top, vh - buttonHeight - minDistanceFromEdge));
+                }
+
+                // 计算分数：优先选择不遮挡选择区域且位置合理的策略
+                let score = 0;
+                
+                // 检查是否遮挡选择区域
+                const overlapsSelection = !(
+                    pos.left + buttonWidth < viewportRect.left ||
+                    pos.left > viewportRect.right ||
+                    pos.top + buttonHeight < viewportRect.top ||
+                    pos.top > viewportRect.bottom
+                );
+
+                if (!overlapsSelection) score += 100;
+                if (fitsInViewport) score += 50;
+                
+                // 偏好右侧位置（更符合阅读习惯）
+                if (strategy.name === 'right') score += 30;
+                if (strategy.name === 'left') score += 20;
+                
+                // 偏好水平对齐（相对于垂直对齐）
+                if (strategy.name.includes('top') || strategy.name.includes('bottom')) {
+                    score += 10;
+                }
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestStrategy = { ...pos, strategy: strategy.name };
+                }
+            }
+
+            // 如果所有策略都不理想，使用降级方案
+            if (!bestStrategy || bestScore < 50) {
+                bestStrategy = {
+                    left: Math.min(viewportRect.right + padding, vw - buttonWidth - minDistanceFromEdge),
+                    top: Math.max(minDistanceFromEdge, Math.min(centerY - buttonHeight / 2, vh - buttonHeight - minDistanceFromEdge)),
+                    strategy: 'fallback'
+                };
+            }
+
+            // 返回 fixed 定位坐标（已经是相对于视口的）
+            return {
+                left: bestStrategy.left,
+                top: bestStrategy.top,
+                strategy: bestStrategy.strategy
+            };
+        },
+
         positionSelectionButton(rect) {
             console.log('[CodeView] 定位评论按钮', rect);
             const container = this.getActionContainer();
 
             // 保存当前选择的文本，防止按钮点击时选区丢失
-            const currentSelection = window.getSelection();
-            if (currentSelection && !currentSelection.isCollapsed) {
-                // 获取选择的原始文本
-                const rawText = String(currentSelection.toString() || '').trim();
-
-                // 从选择的文本中提取纯代码内容（去除行号）
-                const cleanText = this.extractCodeContent(currentSelection);
-
-                // 计算选择范围（用于评论定位）
-                const currentRange = currentSelection.rangeCount > 0 ? currentSelection.getRangeAt(0) : null;
-                const rangeInfo = this.getSelectionLineRange(currentRange);
-
-                // 更新保存的选择信息
-                this.lastSelectionText = cleanText;
-                this.lastSelectionRange = rangeInfo;
-
-                console.log('[CodeView] 在按钮定位时保存选择信息:', {
-                    raw: rawText.substring(0, 50) + (rawText.length > 50 ? '...' : ''),
-                    clean: cleanText.substring(0, 50) + (cleanText.length > 50 ? '...' : ''),
-                    cleanLength: cleanText.length,
-                    range: rangeInfo
+            if (this.isEditingFile) {
+                // 编辑模式：从 textarea 获取选择信息（已在 onSelectionChange 中保存）
+                // 这里只需要确保信息已保存即可
+                console.log('[CodeView] 编辑模式下使用已保存的选择信息:', {
+                    text: this.lastSelectionText ? this.lastSelectionText.substring(0, 50) + (this.lastSelectionText.length > 50 ? '...' : '') : '',
+                    range: this.lastSelectionRange
                 });
+            } else {
+                // 非编辑模式：从 DOM 选择获取信息
+                const currentSelection = window.getSelection();
+                if (currentSelection && !currentSelection.isCollapsed) {
+                    // 获取选择的原始文本
+                    const rawText = String(currentSelection.toString() || '').trim();
+
+                    // 从选择的文本中提取纯代码内容（去除行号）
+                    const cleanText = this.extractCodeContent(currentSelection);
+
+                    // 计算选择范围（用于评论定位）
+                    const currentRange = currentSelection.rangeCount > 0 ? currentSelection.getRangeAt(0) : null;
+                    const rangeInfo = this.getSelectionLineRange(currentRange);
+
+                    // 更新保存的选择信息
+                    this.lastSelectionText = cleanText;
+                    this.lastSelectionRange = rangeInfo;
+
+                    console.log('[CodeView] 在按钮定位时保存选择信息:', {
+                        raw: rawText.substring(0, 50) + (rawText.length > 50 ? '...' : ''),
+                        clean: cleanText.substring(0, 50) + (cleanText.length > 50 ? '...' : ''),
+                        cleanLength: cleanText.length,
+                        range: rangeInfo
+                    });
+                }
             }
 
             // 重建按钮以确保事件监听正确绑定
@@ -2466,26 +2816,42 @@ const componentOptions = {
             });
             container.appendChild(btn);
 
-            // 计算位置（避免超出视口边界）
-            const padding = 8;
-            const vw = window.innerWidth || document.documentElement.clientWidth;
-            const vh = window.innerHeight || document.documentElement.clientHeight;
-            let left = Math.min(rect.right + padding, vw - 180);
-            let top = Math.max(10, Math.min(rect.top, vh - 48));
+            // 使用优化的位置计算
+            const optimalPosition = this.calculateOptimalButtonPosition(rect);
+            
+            if (!optimalPosition) {
+                console.warn('[CodeView] 无法计算按钮位置，使用默认位置');
+                // 降级方案
+                const vw = window.innerWidth || document.documentElement.clientWidth;
+                const vh = window.innerHeight || document.documentElement.clientHeight;
+                optimalPosition = {
+                    left: Math.min(rect.right + 12, vw - 180),
+                    top: Math.max(16, Math.min(rect.top, vh - 56)),
+                    strategy: 'fallback'
+                };
+            }
 
             // 应用样式
             container.style.position = 'fixed';
-            container.style.left = `${left}px`;
-            container.style.top = `${top}px`;
+            container.style.left = `${optimalPosition.left}px`;
+            container.style.top = `${optimalPosition.top}px`;
             container.style.display = 'flex';
             container.style.opacity = '1';
             container.style.pointerEvents = 'auto';
+            
+            // 根据位置策略添加相应的类名（用于CSS样式调整）
+            container.classList.remove('position-right', 'position-left', 'position-top', 'position-bottom');
+            container.classList.add(`position-${optimalPosition.strategy}`);
             container.classList.add('visible');
 
             // 记录状态
             this._lastShowTs = Date.now();
             this._buttonVisible = true;
-            console.log('[CodeView] 评论按钮已显示', { left, top });
+            console.log('[CodeView] 评论按钮已显示', { 
+                left: optimalPosition.left, 
+                top: optimalPosition.top,
+                strategy: optimalPosition.strategy
+            });
         },
         hideSelectionButton() {
             console.log('[CodeView] 隐藏评论按钮');
