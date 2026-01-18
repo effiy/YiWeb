@@ -5559,6 +5559,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    position: relative;
+    z-index: 15;
 }
 
 /* 展开按钮 */
@@ -5600,6 +5602,8 @@
     border: none;
     border-radius: 8px;
     color: #ffffff;
+    position: relative;
+    z-index: 20;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -5730,20 +5734,25 @@
     opacity: 1;
 }
 
-/* 调整大小手柄 */
+/* 调整大小手柄 - 四个角 */
 .quick-comment-resize-handle {
     position: absolute;
-    bottom: 0;
-    right: 0;
     width: 20px;
     height: 20px;
-    cursor: nwse-resize;
-    z-index: 10;
+    z-index: 5;
     background: transparent;
+    pointer-events: auto;
+}
+
+/* 右下角 (southeast) */
+.resize-handle-se {
+    bottom: 0;
+    right: 0;
+    cursor: nwse-resize;
     border-radius: 12px 0 12px 0;
 }
 
-.quick-comment-resize-handle::before {
+.resize-handle-se::before {
     content: '';
     position: absolute;
     bottom: 4px;
@@ -5756,15 +5765,114 @@
     transition: border-color 0.15s ease;
 }
 
-.quick-comment-resize-handle:hover::before {
+.resize-handle-se:hover::before {
     border-color: transparent transparent rgba(161, 161, 170, 0.7) transparent;
 }
 
-.quick-comment-resize-handle.resizing {
+.resize-handle-se.resizing {
     cursor: nwse-resize;
 }
 
-.quick-comment-resize-handle.resizing::before {
+.resize-handle-se.resizing::before {
+    border-color: transparent transparent rgba(167, 139, 250, 0.8) transparent;
+}
+
+/* 左下角 (southwest) */
+.resize-handle-sw {
+    bottom: 0;
+    left: 0;
+    cursor: nesw-resize;
+    border-radius: 0 12px 0 12px;
+}
+
+.resize-handle-sw::before {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 0 12px 12px;
+    border-color: transparent transparent transparent rgba(161, 161, 170, 0.4);
+    transition: border-color 0.15s ease;
+}
+
+.resize-handle-sw:hover::before {
+    border-color: transparent transparent transparent rgba(161, 161, 170, 0.7);
+}
+
+.resize-handle-sw.resizing {
+    cursor: nesw-resize;
+}
+
+.resize-handle-sw.resizing::before {
+    border-color: transparent transparent transparent rgba(167, 139, 250, 0.8);
+}
+
+/* 右上角 (northeast) */
+.resize-handle-ne {
+    top: 0;
+    right: 0;
+    cursor: nesw-resize;
+    border-radius: 0 12px 0 12px;
+}
+
+.resize-handle-ne::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 12px 0 0 12px;
+    border-color: rgba(161, 161, 170, 0.4) transparent transparent transparent;
+    transition: border-color 0.15s ease;
+}
+
+.resize-handle-ne:hover::before {
+    border-color: rgba(161, 161, 170, 0.7) transparent transparent transparent;
+}
+
+.resize-handle-ne.resizing {
+    cursor: nesw-resize;
+}
+
+.resize-handle-ne.resizing::before {
+    border-color: rgba(167, 139, 250, 0.8) transparent transparent transparent;
+}
+
+/* 左上角 (northwest) */
+.resize-handle-nw {
+    top: 0;
+    left: 0;
+    cursor: nwse-resize;
+    border-radius: 12px 0 12px 0;
+}
+
+.resize-handle-nw::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 12px 0 0 12px;
+    border-color: transparent transparent rgba(161, 161, 170, 0.4) transparent;
+    transition: border-color 0.15s ease;
+}
+
+.resize-handle-nw:hover::before {
+    border-color: transparent transparent rgba(161, 161, 170, 0.7) transparent;
+}
+
+.resize-handle-nw.resizing {
+    cursor: nwse-resize;
+}
+
+.resize-handle-nw.resizing::before {
     border-color: transparent transparent rgba(167, 139, 250, 0.8) transparent;
 }
 

@@ -3121,8 +3121,13 @@ const componentOptions = {
             this.isDraggingQuickComment = false;
         },
 
-        // 调整大小功能
-        startResizeQuickComment(event) {
+        // 调整大小功能 - 支持四个方向
+        startResizeQuickComment(event, direction) {
+            // 如果点击的是按钮或其他交互元素，不触发调整大小
+            if (event.target.closest('button') || event.target.closest('.quick-comment-actions')) {
+                return;
+            }
+
             event.preventDefault();
             event.stopPropagation();
 
@@ -3145,23 +3150,94 @@ const componentOptions = {
 
                 const deltaX = e.clientX - startX;
                 const deltaY = e.clientY - startY;
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+                const padding = 16;
 
-                let newWidth = startWidth + deltaX;
-                let newHeight = startHeight + deltaY;
+                let newWidth = startWidth;
+                let newHeight = startHeight;
+                let newLeft = startLeft;
+                let newTop = startTop;
 
-                // 限制最小和最大尺寸
-                newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
-                newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
+                // 根据方向计算新的尺寸和位置
+                switch (direction) {
+                    case 'se': // 右下角：只改变宽度和高度
+                        newWidth = startWidth + deltaX;
+                        newHeight = startHeight + deltaY;
+                        break;
+                    case 'sw': // 左下角：改变左边、宽度和高度
+                        newWidth = startWidth - deltaX;
+                        newHeight = startHeight + deltaY;
+                        newLeft = startLeft + deltaX;
+                        break;
+                    case 'ne': // 右上角：改变顶部、宽度和高度
+                        newWidth = startWidth + deltaX;
+                        newHeight = startHeight - deltaY;
+                        newTop = startTop + deltaY;
+                        break;
+                    case 'nw': // 左上角：改变左边、顶部、宽度和高度
+                        newWidth = startWidth - deltaX;
+                        newHeight = startHeight - deltaY;
+                        newLeft = startLeft + deltaX;
+                        newTop = startTop + deltaY;
+                        break;
+                }
 
-                // 确保不超出视口
-                const maxAllowedWidth = window.innerWidth - this.quickCommentPositionData.left - 16;
-                const maxAllowedHeight = window.innerHeight - this.quickCommentPositionData.top - 16;
+                // 限制最小尺寸
+                newWidth = Math.max(minWidth, newWidth);
+                newHeight = Math.max(minHeight, newHeight);
 
-                newWidth = Math.min(newWidth, maxAllowedWidth);
-                newHeight = Math.min(newHeight, maxAllowedHeight);
+                // 限制最大尺寸（基于视口）
+                newWidth = Math.min(newWidth, vw - padding * 2);
+                newHeight = Math.min(newHeight, vh - padding * 2);
+
+                // 根据方向调整位置，确保不超出视口
+                if (direction === 'sw' || direction === 'nw') {
+                    // 左侧调整：确保左边界不超出
+                    const minLeft = padding;
+                    const maxLeft = vw - newWidth - padding;
+                    newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
+                    // 如果位置被限制，调整宽度
+                    if (direction === 'sw') {
+                        newWidth = startWidth - (newLeft - startLeft);
+                    } else {
+                        newWidth = startWidth - (newLeft - startLeft);
+                    }
+                } else {
+                    // 右侧固定：确保右边界不超出
+                    const maxWidth = vw - newLeft - padding;
+                    newWidth = Math.min(newWidth, maxWidth);
+                }
+
+                if (direction === 'ne' || direction === 'nw') {
+                    // 顶部调整：确保上边界不超出
+                    const minTop = padding;
+                    const maxTop = vh - newHeight - padding;
+                    newTop = Math.max(minTop, Math.min(newTop, maxTop));
+                    // 如果位置被限制，调整高度
+                    if (direction === 'ne') {
+                        newHeight = startHeight - (newTop - startTop);
+                    } else {
+                        newHeight = startHeight - (newTop - startTop);
+                    }
+                } else {
+                    // 底部固定：确保下边界不超出
+                    const maxHeight = vh - newTop - padding;
+                    newHeight = Math.min(newHeight, maxHeight);
+                }
+
+                // 最终尺寸限制（确保满足最小尺寸）
+                newWidth = Math.max(minWidth, newWidth);
+                newHeight = Math.max(minHeight, newHeight);
+
+                // 最终位置限制（确保容器完全在视口内）
+                newLeft = Math.max(padding, Math.min(newLeft, vw - newWidth - padding));
+                newTop = Math.max(padding, Math.min(newTop, vh - newHeight - padding));
 
                 this.quickCommentPositionData.width = newWidth;
                 this.quickCommentPositionData.height = newHeight;
+                this.quickCommentPositionData.left = newLeft;
+                this.quickCommentPositionData.top = newTop;
             };
 
             const onMouseUp = () => {
@@ -3332,7 +3408,12 @@ const componentOptions = {
             }
         },
 
-        async submitAiComment() {
+        async submitAiComment(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
             const content = (this.quickCommentAiResult || '').trim();
             if (!content) {
                 this.quickCommentAiError = 'AI 评论内容为空';
