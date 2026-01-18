@@ -119,6 +119,8 @@ const componentOptions = {
             quickCommentAiError: '',
             quickCommentAiGenerating: false,
             quickCommentAiAbortController: null,
+            _currentPresetType: null, // 当前使用的预设类型
+            _currentSystemPrompt: null, // 当前使用的系统提示词
 
             // 评论详情弹窗相关数据
             showCommentDetailPopup: false,
@@ -3577,21 +3579,64 @@ const componentOptions = {
 
         useAiPreset(preset) {
             const presets = {
-                'review': '请审查这段代码，指出潜在的问题和改进建议',
-                'improve': '请为这段代码提供优化和改进建议',
-                'explain': '请解释这段代码的功能和工作原理',
-                'bug': '请检查这段代码中可能存在的 bug 或错误'
+                'review': {
+                    prompt: '请审查这段代码，指出潜在的问题和改进建议',
+                    systemPrompt: `你是一个专业的代码审查助手。用户会提供一段代码，请审查代码并指出潜在的问题和改进建议。
+要求：
+1. 评论要专业、具体、有建设性
+2. 使用 Markdown 格式，保持简洁
+3. 指出代码中的潜在问题、性能问题、安全问题等
+4. 提供具体的改进建议
+5. 评论语言与用户输入语言保持一致`
+                },
+                'improve': {
+                    prompt: '请为这段代码提供优化和改进建议，包括性能优化、代码质量提升、最佳实践等',
+                    systemPrompt: `你是一个专业的代码优化助手。用户会提供一段代码，请提供优化和改进建议。
+要求：
+1. 分析代码的性能瓶颈和优化空间
+2. 提供具体的优化建议和改进方案
+3. 如果适用，可以提供改进后的代码示例（使用代码块格式）
+4. 使用 Markdown 格式，保持结构清晰
+5. 评论语言与用户输入语言保持一致
+6. 确保输出的是可以直接使用的评论内容，不要包含额外的说明文字`
+                },
+                'explain': {
+                    prompt: '请详细解释这段代码的功能、工作原理、设计思路和关键逻辑',
+                    systemPrompt: `你是一个专业的代码解释助手。用户会提供一段代码，请详细解释代码的功能和工作原理。
+要求：
+1. 解释代码的整体功能和目的
+2. 说明代码的工作原理和关键逻辑
+3. 解释重要的设计思路和实现细节
+4. 使用 Markdown 格式，保持结构清晰
+5. 评论语言与用户输入语言保持一致
+6. 确保输出的是可以直接使用的评论内容，不要包含额外的说明文字`
+                },
+                'bug': {
+                    prompt: '请检查这段代码中可能存在的 bug、错误或潜在问题',
+                    systemPrompt: `你是一个专业的代码调试助手。用户会提供一段代码，请检查代码中可能存在的 bug 或错误。
+要求：
+1. 仔细分析代码逻辑，找出可能的 bug
+2. 指出边界条件处理问题
+3. 检查类型错误、空值处理等问题
+4. 使用 Markdown 格式，保持简洁
+5. 评论语言与用户输入语言保持一致`
+                }
             };
-            const prompt = presets[preset] || '';
-            if (!prompt) {
+
+            const presetConfig = presets[preset];
+            if (!presetConfig) {
                 console.warn('[CodeView] 未知的预设类型:', preset);
                 return;
             }
 
-            console.log('[CodeView] 使用 AI 预设:', preset, prompt);
-            this.quickCommentAiPrompt = prompt;
-            // 清空之前的错误信息
+            console.log('[CodeView] 使用 AI 预设:', preset, presetConfig.prompt);
+            this.quickCommentAiPrompt = presetConfig.prompt;
+            // 保存预设类型和系统提示词，供 generateAiComment 使用
+            this._currentPresetType = preset;
+            this._currentSystemPrompt = presetConfig.systemPrompt;
+            // 清空之前的错误信息和结果
             this.quickCommentAiError = '';
+            this.quickCommentAiResult = '';
 
             this.$nextTick(() => {
                 this.generateAiComment();
@@ -3641,19 +3686,23 @@ const componentOptions = {
                 const { streamPrompt } = await import('/src/services/modules/crud.js');
                 const apiUrl = `${String(window.API_URL || '').trim().replace(/\/$/, '')}/`;
 
-                // 构建系统提示
-                const systemPrompt = `你是一个专业的代码审查助手。用户会提供一段代码，请根据用户的要求给出评论或建议。
+                // 使用预设的系统提示词，如果没有则使用默认的
+                const systemPrompt = this._currentSystemPrompt || `你是一个专业的代码审查助手。用户会提供一段代码，请根据用户的要求给出评论或建议。
 要求：
 1. 评论要专业、具体、有建设性
 2. 使用 Markdown 格式，保持简洁
 3. 如果是代码改进建议，可以提供改进后的代码示例
-4. 评论语言与用户输入语言保持一致`;
+4. 评论语言与用户输入语言保持一致
+5. 确保输出的是可以直接使用的评论内容，不要包含额外的说明文字`;
 
                 // 构建用户提示
                 const codeContext = this.quickCommentQuote
                     ? `\n\n代码片段：\n\`\`\`\n${this.quickCommentQuote}\n\`\`\``
                     : '';
                 const userPrompt = `${prompt}${codeContext}`;
+
+                // 清空预设相关的临时变量（在生成完成后）
+                const presetType = this._currentPresetType;
 
                 // 创建 AbortController
                 const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -3680,14 +3729,28 @@ const componentOptions = {
 
                 // 确保最终结果被正确设置
                 if (accumulated && accumulated.trim()) {
-                    this.quickCommentAiResult = accumulated.trim();
+                    // 清理结果：移除可能的代码块标记和多余说明
+                    let cleanedResult = accumulated.trim();
+
+                    // 移除可能的 JSON 包装或其他格式标记
+                    cleanedResult = cleanedResult
+                        .replace(/^```[\w]*\n?/g, '')
+                        .replace(/\n?```$/g, '')
+                        .trim();
+
+                    // 移除可能的 "评论："、"建议：" 等前缀
+                    cleanedResult = cleanedResult.replace(/^(评论|建议|说明|解释)[：:]\s*/i, '');
+
+                    this.quickCommentAiResult = cleanedResult;
                     console.log('[CodeView] AI 评论生成完成:', {
+                        presetType: presetType,
                         length: this.quickCommentAiResult.length,
                         preview: this.quickCommentAiResult.substring(0, 100),
                         prompt: this.quickCommentAiPrompt
                     });
                 } else {
                     console.warn('[CodeView] AI 评论生成完成但结果为空:', {
+                        presetType: presetType,
                         accumulatedLength: accumulated?.length,
                         accumulated: accumulated?.substring(0, 100)
                     });
@@ -3721,13 +3784,22 @@ const componentOptions = {
                 // 最终检查：确保结果被正确设置
                 if (accumulated && accumulated.trim() && !this.quickCommentAiResult) {
                     console.warn('[CodeView] 检测到结果未设置，手动设置');
-                    this.quickCommentAiResult = accumulated.trim();
+                    let cleanedResult = accumulated.trim()
+                        .replace(/^```[\w]*\n?/g, '')
+                        .replace(/\n?```$/g, '')
+                        .trim();
+                    this.quickCommentAiResult = cleanedResult;
                 }
+
+                // 清空预设相关的临时变量
+                this._currentPresetType = null;
+                this._currentSystemPrompt = null;
 
                 // 输出最终状态用于调试
                 console.log('[CodeView] AI 生成完成，最终状态:', {
                     hasResult: !!(this.quickCommentAiResult && this.quickCommentAiResult.trim()),
                     resultLength: this.quickCommentAiResult?.length || 0,
+                    resultPreview: this.quickCommentAiResult?.substring(0, 50),
                     hasError: !!this.quickCommentAiError,
                     prompt: this.quickCommentAiPrompt
                 });
@@ -3776,62 +3848,160 @@ const componentOptions = {
         },
 
         async submitAiComment(event) {
-            console.log('[CodeView] submitAiComment 被调用', {
-                event: !!event,
-                quickCommentAiResult: this.quickCommentAiResult?.substring?.(0, 50),
-                quickCommentSubmitting: this.quickCommentSubmitting,
-                quickCommentAiGenerating: this.quickCommentAiGenerating
-            });
-
             // 阻止默认行为和事件冒泡
             if (event) {
                 event.preventDefault();
                 event.stopPropagation();
             }
 
-            // 检查是否正在提交或生成中
-            if (this.quickCommentSubmitting || this.quickCommentAiGenerating) {
-                console.warn('[CodeView] 正在提交或生成中，忽略点击');
-                return;
-            }
-
-            // 更严格的内容检查
-            const result = this.quickCommentAiResult;
-            let content = '';
-
-            if (result && typeof result === 'string') {
-                content = result.trim();
-            } else if (result) {
-                // 如果不是字符串，尝试转换
-                content = String(result).trim();
-            }
-
-            if (!content || content.length === 0) {
-                this.quickCommentError = 'AI 评论内容为空，无法提交';
-                console.warn('[CodeView] AI 评论内容为空，无法提交', {
-                    resultType: typeof result,
-                    resultLength: result?.length,
-                    resultPreview: result?.substring?.(0, 50)
-                });
-                return;
-            }
-
-            console.log('[CodeView] 开始提交 AI 评论:', {
-                hasContent: !!content,
-                contentLength: content.length,
-                hasPrompt: !!this.quickCommentAiPrompt
+            console.log('[CodeView] submitAiComment 被调用', {
+                quickCommentAiResult: this.quickCommentAiResult?.substring?.(0, 80),
+                quickCommentSubmitting: this.quickCommentSubmitting,
+                quickCommentAiGenerating: this.quickCommentAiGenerating
             });
 
-            // 将 AI 结果作为评论内容提交
-            this.quickCommentText = content;
-            // 保存 AI prompt 以便在提交时包含到评论对象中
-            this._pendingAiPrompt = (this.quickCommentAiPrompt || '').trim();
+            // 检查是否正在提交或生成中
+            if (this.quickCommentSubmitting) {
+                console.warn('[CodeView] 正在提交中，忽略点击');
+                return;
+            }
+            if (this.quickCommentAiGenerating) {
+                console.warn('[CodeView] 正在生成中，忽略点击');
+                return;
+            }
+
+            // 获取 AI 结果
+            const result = this.quickCommentAiResult;
+            if (!result || typeof result !== 'string' || !result.trim()) {
+                this.quickCommentError = 'AI 评论内容为空，无法提交';
+                console.warn('[CodeView] AI 评论内容为空，无法提交');
+                return;
+            }
+
+            const content = result.trim();
+            console.log('[CodeView] 开始提交 AI 评论，内容长度:', content.length);
+
+            // 直接在这里执行提交逻辑，不依赖 submitQuickComment
+            this.quickCommentSubmitting = true;
+            this.quickCommentError = '';
 
             try {
-                await this.submitQuickComment();
+                // 显示提交状态
+                const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
+                showGlobalLoading('正在提交评论...');
+
+                // 获取 sessionKey
+                const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
+                const sessionKey = (this.file?.sessionKey && isUUID(this.file.sessionKey))
+                    ? String(this.file.sessionKey)
+                    : (this.file?.key && isUUID(this.file.key) ? String(this.file.key) : null);
+
+                if (!sessionKey || !isUUID(sessionKey)) {
+                    throw new Error('无法找到有效的 sessionKey，评论无法提交');
+                }
+
+                // 获取行范围信息
+                const rangeInfo = this.lastSelectionRange || { startLine: 1, endLine: 1 };
+                const startLine = rangeInfo.startLine || 1;
+                const endLine = rangeInfo.endLine || startLine;
+
+                // 构建评论数据
+                const comment = {
+                    content: content,
+                    text: this.quickCommentQuote || this.lastSelectionText || '',
+                    rangeInfo: this.lastSelectionRange ? { ...this.lastSelectionRange } : {
+                        startLine,
+                        endLine,
+                        startColumn: 0,
+                        endColumn: 0
+                    },
+                    fileKey: sessionKey,
+                    author: 'AI 评论',
+                    fromSystem: null,
+                    status: 'pending',
+                    timestamp: Date.now(),
+                    createdTime: Date.now(),
+                    createdAt: Date.now()
+                };
+
+                // 如果有 AI prompt，将其添加到评论对象中
+                const aiPrompt = (this.quickCommentAiPrompt || '').trim();
+                if (aiPrompt) {
+                    comment.aiPrompt = aiPrompt;
+                }
+
+                console.log('[CodeView] 准备提交 AI 评论:', {
+                    fileKey: comment.fileKey,
+                    contentLength: comment.content?.length,
+                    hasAiPrompt: !!comment.aiPrompt,
+                    rangeInfo: comment.rangeInfo
+                });
+
+                // 验证API地址配置
+                if (!window.API_URL) {
+                    throw new Error('API地址未配置，无法提交评论');
+                }
+
+                // 调用API提交评论
+                const { postData } = await import('/src/services/modules/crud.js');
+                const SERVICE_MODULE = window.SERVICE_MODULE || 'aicr';
+                const result = await postData(`${window.API_URL}/`, {
+                    module_name: SERVICE_MODULE,
+                    method_name: 'create_document',
+                    parameters: {
+                        cname: 'comments',
+                        data: comment
+                    }
+                });
+
+                console.log('[CodeView] AI 评论提交成功:', result);
+
+                // 显示成功消息
+                const { showSuccess } = await import('/src/utils/message.js');
+                showSuccess('AI 评论添加成功');
+
+                // 通知评论面板刷新
+                window.dispatchEvent(new CustomEvent('reloadComments', {
+                    detail: {
+                        forceReload: true,
+                        showAllComments: false,
+                        immediateReload: true,
+                        fileKey: comment.fileKey
+                    }
+                }));
+
+                // 延迟后高亮刚添加的评论位置
+                setTimeout(() => {
+                    if (comment.rangeInfo && comment.fileKey) {
+                        window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                            detail: {
+                                fileKey: comment.fileKey,
+                                rangeInfo: comment.rangeInfo,
+                                comment: comment,
+                                _forwarded: true
+                            }
+                        }));
+                    }
+                }, 500);
+
+                hideGlobalLoading();
+                this.closeQuickComment();
+
+                // 清空选择状态
+                this.lastSelectionText = '';
+                this.lastSelectionRange = null;
+
             } catch (error) {
                 console.error('[CodeView] 提交 AI 评论失败:', error);
                 this.quickCommentError = `提交失败: ${error.message || '未知错误'}`;
+
+                // 隐藏loading
+                try {
+                    const { hideGlobalLoading } = await import('/src/utils/loading.js');
+                    hideGlobalLoading();
+                } catch (_) { }
+            } finally {
+                this.quickCommentSubmitting = false;
             }
         },
 
