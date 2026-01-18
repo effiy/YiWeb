@@ -96,6 +96,15 @@ const componentOptions = {
             _lastShowTs: 0,
             _buttonVisible: false,
 
+            // Quick Comment 内联输入框（Cursor Quick Edit 风格）
+            showQuickComment: false,
+            quickCommentText: '',
+            quickCommentQuote: '',
+            quickCommentError: '',
+            quickCommentSubmitting: false,
+            quickCommentAnimating: false,
+            quickCommentPositionData: { left: 0, top: 0 },
+
             // 评论详情弹窗相关数据
             showCommentDetailPopup: false,
             currentCommentDetail: null,
@@ -405,6 +414,24 @@ const componentOptions = {
                 console.error('[CodeView] canSubmitManualComment计算失败:', error);
                 return false;
             }
+        },
+        // Quick Comment 相关计算属性
+        canSubmitQuickComment() {
+            const text = (this.quickCommentText || '').trim();
+            return text.length > 0 && text.length <= 2000;
+        },
+        quickCommentPosition() {
+            return {
+                left: `${this.quickCommentPositionData.left}px`,
+                top: `${this.quickCommentPositionData.top}px`
+            };
+        },
+        quickCommentQuoteDisplay() {
+            const quote = this.quickCommentQuote || '';
+            if (quote.length > 150) {
+                return quote.substring(0, 150) + '...';
+            }
+            return quote;
         },
         manualCommentPreviewHtml() {
             try {
@@ -2527,7 +2554,7 @@ const componentOptions = {
                 // 计算选择区域的起始位置
                 const lastNewlineIndex = textBeforeStart.lastIndexOf('\n');
                 const textInCurrentLine = textBeforeStart.substring(Math.max(0, lastNewlineIndex + 1));
-                
+
                 // 测量当前行中选中文本之前的宽度
                 measureEl.textContent = textInCurrentLine;
                 const textWidthBeforeSelection = Math.min(measureEl.offsetWidth, textareaWidth);
@@ -2535,7 +2562,7 @@ const componentOptions = {
                 // 计算选择区域的宽度（对于多行选择，使用最大宽度）
                 let maxSelectionWidth = 0;
                 const selectedLines = selectedText.split('\n');
-                
+
                 for (const line of selectedLines) {
                     measureEl.textContent = line;
                     const lineWidth = measureEl.offsetWidth;
@@ -2703,9 +2730,9 @@ const componentOptions = {
 
             for (const strategy of strategies) {
                 const pos = strategy.calculate();
-                
+
                 // 检查是否在视口内
-                const fitsInViewport = 
+                const fitsInViewport =
                     pos.left >= minDistanceFromEdge &&
                     pos.left + buttonWidth <= vw - minDistanceFromEdge &&
                     pos.top >= minDistanceFromEdge &&
@@ -2719,7 +2746,7 @@ const componentOptions = {
 
                 // 计算分数：优先选择不遮挡选择区域且位置合理的策略
                 let score = 0;
-                
+
                 // 检查是否遮挡选择区域
                 const overlapsSelection = !(
                     pos.left + buttonWidth < viewportRect.left ||
@@ -2730,11 +2757,11 @@ const componentOptions = {
 
                 if (!overlapsSelection) score += 100;
                 if (fitsInViewport) score += 50;
-                
+
                 // 偏好右侧位置（更符合阅读习惯）
                 if (strategy.name === 'right') score += 30;
                 if (strategy.name === 'left') score += 20;
-                
+
                 // 偏好水平对齐（相对于垂直对齐）
                 if (strategy.name.includes('top') || strategy.name.includes('bottom')) {
                     score += 10;
@@ -2818,7 +2845,7 @@ const componentOptions = {
 
             // 使用优化的位置计算
             const optimalPosition = this.calculateOptimalButtonPosition(rect);
-            
+
             if (!optimalPosition) {
                 console.warn('[CodeView] 无法计算按钮位置，使用默认位置');
                 // 降级方案
@@ -2838,7 +2865,7 @@ const componentOptions = {
             container.style.display = 'flex';
             container.style.opacity = '1';
             container.style.pointerEvents = 'auto';
-            
+
             // 根据位置策略添加相应的类名（用于CSS样式调整）
             container.classList.remove('position-right', 'position-left', 'position-top', 'position-bottom');
             container.classList.add(`position-${optimalPosition.strategy}`);
@@ -2847,8 +2874,8 @@ const componentOptions = {
             // 记录状态
             this._lastShowTs = Date.now();
             this._buttonVisible = true;
-            console.log('[CodeView] 评论按钮已显示', { 
-                left: optimalPosition.left, 
+            console.log('[CodeView] 评论按钮已显示', {
+                left: optimalPosition.left,
                 top: optimalPosition.top,
                 strategy: optimalPosition.strategy
             });
@@ -2873,9 +2900,9 @@ const componentOptions = {
         handleSelectionCommentClick() {
             console.log('[CodeView] 处理评论按钮点击，当前保存的选择文本:', this.lastSelectionText);
 
-            // 由于评论者功能已移除，直接打开手动评论弹框
-            console.log('[CodeView] 打开手动评论弹框');
-            this.openManualImprovementModal();
+            // 使用 Quick Comment 内联输入框（Cursor Quick Edit 风格）
+            console.log('[CodeView] 打开 Quick Comment 内联输入框');
+            this.openQuickComment();
         },
         openManualImprovementModal() {
             this.showManualImprovementModal = true;
@@ -2907,6 +2934,328 @@ const componentOptions = {
             this.editingImprovementText = '';
             this.showImprovementSection = false;
             this.manualCommentText = '';
+        },
+
+        // ===== Quick Comment 内联输入框方法（Cursor Quick Edit 风格）=====
+        openQuickComment() {
+            // 优先使用选中文本的位置，其次使用评论按钮位置
+            let referenceRect = null;
+
+            // 尝试获取当前选区的位置
+            const selection = window.getSelection();
+            if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                referenceRect = range.getBoundingClientRect();
+            }
+
+            // 如果没有选区位置，使用评论按钮位置
+            if (!referenceRect || referenceRect.width === 0) {
+                const container = document.getElementById('comment-action-container');
+                if (container) {
+                    referenceRect = container.getBoundingClientRect();
+                }
+            }
+
+            // 计算 Quick Comment 的最佳位置
+            if (referenceRect && referenceRect.width > 0) {
+                this.calculateQuickCommentPosition(referenceRect);
+            } else {
+                // 没有参考位置时使用视口中心
+                this.quickCommentPositionData = {
+                    left: Math.max(16, (window.innerWidth - 400) / 2),
+                    top: Math.max(100, (window.innerHeight - 300) / 3)
+                };
+            }
+
+            // 隐藏评论按钮
+            this.hideSelectionButton();
+
+            // 设置引用代码
+            this.quickCommentQuote = this.lastSelectionText || '';
+            this.quickCommentText = '';
+            this.quickCommentError = '';
+            this.quickCommentSubmitting = false;
+
+            // 显示并触发动画
+            this.quickCommentAnimating = true;
+            this.showQuickComment = true;
+
+            // 聚焦输入框
+            this.$nextTick(() => {
+                const textarea = this.$refs.quickCommentTextarea;
+                if (textarea) {
+                    textarea.focus();
+                }
+                // 动画完成后移除动画类
+                setTimeout(() => {
+                    this.quickCommentAnimating = false;
+                }, 200);
+
+                // 添加点击外部关闭的监听
+                this._quickCommentOutsideClickHandler = (e) => {
+                    const container = this.$el?.querySelector('.quick-comment-container');
+                    if (container && !container.contains(e.target)) {
+                        this.closeQuickComment();
+                    }
+                };
+                // 延迟添加监听，避免当前点击立即触发关闭
+                setTimeout(() => {
+                    if (this.showQuickComment) {
+                        document.addEventListener('mousedown', this._quickCommentOutsideClickHandler);
+                    }
+                }, 100);
+            });
+
+            console.log('[CodeView] Quick Comment 已打开');
+        },
+
+        closeQuickComment() {
+            this.showQuickComment = false;
+            this.quickCommentText = '';
+            this.quickCommentQuote = '';
+            this.quickCommentError = '';
+            this.quickCommentSubmitting = false;
+
+            // 移除点击外部关闭的监听
+            document.removeEventListener('mousedown', this._quickCommentOutsideClickHandler);
+            this._quickCommentOutsideClickHandler = null;
+
+            console.log('[CodeView] Quick Comment 已关闭');
+        },
+
+        calculateQuickCommentPosition(rect) {
+            const padding = 16;
+            const containerWidth = 400;
+            const containerHeight = 300; // 预估高度（包括引用区域）
+            const vw = window.innerWidth || document.documentElement.clientWidth;
+            const vh = window.innerHeight || document.documentElement.clientHeight;
+            const minEdgeDistance = 16;
+
+            // 计算选区的中心点
+            const selectionCenterY = rect.top + rect.height / 2;
+
+            let left, top;
+            let placement = 'right'; // 记录放置位置
+
+            // 策略1：优先在选区右侧显示（最符合阅读习惯）
+            if (rect.right + padding + containerWidth < vw - minEdgeDistance) {
+                left = rect.right + padding;
+                // 垂直居中对齐选区
+                top = selectionCenterY - containerHeight / 2;
+                placement = 'right';
+            }
+            // 策略2：在选区下方显示
+            else if (rect.bottom + padding + containerHeight < vh - minEdgeDistance) {
+                // 水平居中于选区
+                left = rect.left + (rect.width - containerWidth) / 2;
+                top = rect.bottom + padding;
+                placement = 'bottom';
+            }
+            // 策略3：在选区左侧显示
+            else if (rect.left - padding - containerWidth > minEdgeDistance) {
+                left = rect.left - containerWidth - padding;
+                top = selectionCenterY - containerHeight / 2;
+                placement = 'left';
+            }
+            // 策略4：在选区上方显示
+            else if (rect.top - padding - containerHeight > minEdgeDistance) {
+                left = rect.left + (rect.width - containerWidth) / 2;
+                top = rect.top - containerHeight - padding;
+                placement = 'top';
+            }
+            // 策略5：居中显示（降级方案）
+            else {
+                left = (vw - containerWidth) / 2;
+                top = Math.max(minEdgeDistance, rect.bottom + padding);
+                placement = 'center';
+            }
+
+            // 确保不超出视口边界
+            left = Math.max(minEdgeDistance, Math.min(left, vw - containerWidth - minEdgeDistance));
+            top = Math.max(minEdgeDistance, Math.min(top, vh - containerHeight - minEdgeDistance));
+
+            this.quickCommentPositionData = { left, top, placement };
+            console.log('[CodeView] Quick Comment 位置计算:', { left, top, placement, rect });
+        },
+
+        handleQuickCommentKeydown(event) {
+            // Cmd/Ctrl + Enter 提交
+            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                event.preventDefault();
+                if (this.canSubmitQuickComment && !this.quickCommentSubmitting) {
+                    this.submitQuickComment();
+                }
+                return;
+            }
+
+            // Esc 关闭
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                this.closeQuickComment();
+                return;
+            }
+        },
+
+        autoResizeQuickCommentTextarea() {
+            const textarea = this.$refs.quickCommentTextarea;
+            if (textarea) {
+                textarea.style.height = 'auto';
+                const newHeight = Math.min(Math.max(textarea.scrollHeight, 80), 200);
+                textarea.style.height = `${newHeight}px`;
+            }
+        },
+
+        expandToFullEditor() {
+            // 将当前内容转移到完整编辑器
+            this.manualCommentText = this.quickCommentText;
+            this.manualQuotedCode = this.quickCommentQuote;
+
+            // 关闭 Quick Comment
+            this.showQuickComment = false;
+            this.quickCommentText = '';
+            this.quickCommentQuote = '';
+
+            // 打开完整编辑器
+            this.showManualImprovementModal = true;
+            this.manualCommentError = '';
+            this.manualEditorView = 'edit';
+
+            this.$nextTick(() => {
+                const ta = this.$el && this.$el.querySelector('.manual-improvement-input');
+                if (ta) ta.focus();
+            });
+
+            console.log('[CodeView] 展开到完整编辑器');
+        },
+
+        async submitQuickComment() {
+            const content = (this.quickCommentText || '').trim();
+            if (!content) {
+                this.quickCommentError = '评论内容不能为空';
+                return;
+            }
+            if (content.length > 2000) {
+                this.quickCommentError = '评论过长（最多 2000 字）';
+                return;
+            }
+
+            this.quickCommentSubmitting = true;
+            this.quickCommentError = '';
+
+            try {
+                // 显示提交状态
+                const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
+                showGlobalLoading('正在提交评论...');
+
+                // 获取 sessionKey（与 submitManualImprovement 保持一致）
+                const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
+                const sessionKey = (this.file?.sessionKey && isUUID(this.file.sessionKey))
+                    ? String(this.file.sessionKey)
+                    : (this.file?.key && isUUID(this.file.key) ? String(this.file.key) : null);
+
+                if (!sessionKey || !isUUID(sessionKey)) {
+                    throw new Error('无法找到有效的 sessionKey，评论无法提交');
+                }
+
+                // 获取行范围信息
+                const rangeInfo = this.lastSelectionRange || { startLine: 1, endLine: 1 };
+                const startLine = rangeInfo.startLine || 1;
+                const endLine = rangeInfo.endLine || startLine;
+
+                // 构建评论数据（与 submitManualImprovement 保持一致）
+                let comment = {
+                    content,
+                    text: this.quickCommentQuote || this.lastSelectionText || '',
+                    rangeInfo: this.lastSelectionRange ? { ...this.lastSelectionRange } : {
+                        startLine,
+                        endLine,
+                        startColumn: 0,
+                        endColumn: 0
+                    },
+                    fileKey: sessionKey,
+                    author: '手动评论',
+                    fromSystem: null,
+                    status: 'pending',
+                    timestamp: Date.now()
+                };
+
+                console.log('[CodeView] 准备提交 Quick Comment，文件Key:', comment.fileKey);
+
+                // 规范化评论数据
+                if (window.aicrStore && window.aicrStore.normalizeComment) {
+                    comment = window.aicrStore.normalizeComment(comment);
+                } else {
+                    comment.createdTime = comment.timestamp;
+                    comment.createdAt = comment.timestamp;
+                }
+
+                // 验证API地址配置
+                if (!window.API_URL) {
+                    throw new Error('API地址未配置，无法提交评论');
+                }
+
+                // 调用API提交评论（使用与 submitManualImprovement 相同的接口）
+                const { postData } = await import('/src/services/modules/crud.js');
+                const SERVICE_MODULE = window.SERVICE_MODULE || 'aicr';
+                const result = await postData(`${window.API_URL}/`, {
+                    module_name: SERVICE_MODULE,
+                    method_name: 'create_document',
+                    parameters: {
+                        cname: 'comments',
+                        data: comment
+                    }
+                });
+
+                console.log('[CodeView] Quick Comment 提交成功:', result);
+
+                // 显示成功消息
+                const { showSuccess } = await import('/src/utils/message.js');
+                showSuccess('评论添加成功');
+
+                // 通知评论面板刷新
+                window.dispatchEvent(new CustomEvent('reloadComments', {
+                    detail: {
+                        forceReload: true,
+                        showAllComments: false,
+                        immediateReload: true,
+                        fileKey: comment.fileKey
+                    }
+                }));
+
+                // 延迟后高亮刚添加的评论位置
+                setTimeout(() => {
+                    if (comment.rangeInfo && comment.fileKey) {
+                        console.log('[CodeView] 高亮新添加的评论位置:', comment.rangeInfo);
+                        window.dispatchEvent(new CustomEvent('highlightCodeLines', {
+                            detail: {
+                                fileKey: comment.fileKey,
+                                rangeInfo: comment.rangeInfo,
+                                comment: comment,
+                                _forwarded: true
+                            }
+                        }));
+                    }
+                }, 500);
+
+                hideGlobalLoading();
+                this.closeQuickComment();
+
+                // 清空选择状态
+                this.lastSelectionText = '';
+                this.lastSelectionRange = null;
+
+            } catch (error) {
+                console.error('[CodeView] Quick Comment 提交失败:', error);
+                this.quickCommentError = `提交失败: ${error.message}`;
+
+                // 隐藏loading
+                try {
+                    const { hideGlobalLoading } = await import('/src/utils/loading.js');
+                    hideGlobalLoading();
+                } catch (_) { }
+            } finally {
+                this.quickCommentSubmitting = false;
+            }
         },
 
         // 打开编辑评论弹框（复用 manual-improvement-modal）

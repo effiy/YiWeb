@@ -4442,43 +4442,28 @@
 
 /* ========== 滚动条样式 ========== */
 
-/* ========== 评论操作容器 - 重构优化版本 ========== */
+/* ========== 评论操作容器 - Cursor Quick Edit 风格 ========== */
 #comment-action-container {
-    position: fixed; /* 改为 fixed 定位，确保不受父容器影响 */
-    /* 移除默认的 top/right 定位，由 JavaScript 动态设置 */
-    z-index: 999997; /* 提高层级，确保不被评论区遮挡 */
-    display: none; /* 默认隐藏，无划词不显示 */
-    gap: 8px;
-    opacity: 0; /* 默认透明 */
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    pointer-events: none; /* 默认不响应事件 */
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
-    padding: 8px 12px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, 
-        rgba(30, 41, 59, 0.95) 0%, 
-        rgba(51, 65, 85, 0.9) 100%);
-    border: 1px solid rgba(79, 70, 229, 0.15);
+    position: fixed;
+    z-index: 999997;
+    display: none;
+    opacity: 0;
+    transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+    pointer-events: none;
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    backdrop-filter: blur(12px) saturate(180%);
+    padding: 4px;
+    border-radius: 8px;
+    background: linear-gradient(165deg, 
+        rgba(24, 24, 27, 0.95) 0%, 
+        rgba(39, 39, 42, 0.92) 100%);
+    border: 1px solid rgba(82, 82, 91, 0.5);
     box-shadow: 
-        0 8px 24px rgba(0, 0, 0, 0.3),
-        0 3px 8px rgba(79, 70, 229, 0.1),
-        0 1px 2px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    transform: translateY(0) scale(1);
-    animation: containerSlideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    min-width: 160px;
-    max-width: 240px;
-    flex-wrap: nowrap;
-    align-items: center;
-    justify-content: center;
+        0 8px 24px -4px rgba(0, 0, 0, 0.4),
+        0 4px 8px -2px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.05);
+    transform: translateY(-4px) scale(0.96);
     will-change: transform, opacity;
-    transform-style: preserve-3d;
-    backface-visibility: hidden;
-    /* 添加左边定位的视觉优化 */
-    border-left: 2px solid rgba(79, 70, 229, 0.3);
-    /* 添加指向选中文本的视觉指示 */
-    position: relative;
 }
 
 /* 箭头指示器 - 默认在右侧（指向左侧的选择区域） */
@@ -4777,136 +4762,63 @@
     transform: scale(0.95);
 }
 
-/* 主按钮样式 - 重构优化 */
+/* 主按钮样式 - Cursor Quick Edit 风格 */
 .comment-action-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: auto;
-    min-width: 90px;
-    height: 32px;
+    gap: 6px;
+    height: 28px;
     padding: 0 12px;
     border-radius: 6px;
-    background: linear-gradient(135deg, rgba(79, 70, 229, 0.9) 0%, rgba(99, 102, 241, 0.8) 100%);
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
     color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: none;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    font-size: 13px;
-    box-shadow: 
-        0 3px 8px rgba(79, 70, 229, 0.25),
-        0 1px 3px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transition: all 0.15s cubic-bezier(0.32, 0.72, 0, 1);
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
     position: relative;
     overflow: hidden;
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
-    font-weight: 500;
-    letter-spacing: 0.3px;
     white-space: nowrap;
 }
 
-/* 按钮内部光效 */
-.comment-action-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.15) 0%, 
-        rgba(255, 255, 255, 0.05) 50%, 
-        transparent 100%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    border-radius: 12px;
-}
-
-/* 按钮点击波纹效果 */
-.comment-action-btn::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    opacity: 0;
-}
-
-/* 悬停效果 - 优化版本 */
+/* 悬停效果 */
 .comment-action-btn:hover {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.95) 0%, rgba(139, 92, 246, 0.85) 100%);
-    transform: translateY(-1px) scale(1.03);
-    box-shadow: 
-        0 6px 16px rgba(79, 70, 229, 0.35),
-        0 2px 6px rgba(0, 0, 0, 0.12),
-        inset 0 1px 0 rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.25);
-}
-
-.comment-action-btn:hover::before {
-    opacity: 1;
-}
-
-.comment-action-btn:hover::after {
-    width: 120%;
-    height: 120%;
-    opacity: 1;
+    background: linear-gradient(135deg, #9333ea 0%, #8b5cf6 100%);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    transform: translateY(-1px);
 }
 
 /* 点击效果 */
 .comment-action-btn:active {
-    transform: translateY(0) scale(0.95);
-    transition: all 0.1s ease;
-    box-shadow: 
-        0 2px 8px rgba(79, 70, 229, 0.3),
-        0 1px 2px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
 }
 
 /* 焦点效果 */
 .comment-action-btn:focus {
     outline: none;
     box-shadow: 
-        0 0 0 3px rgba(79, 70, 229, 0.3),
-        0 4px 12px rgba(79, 70, 229, 0.3),
-        0 2px 4px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        0 0 0 2px rgba(139, 92, 246, 0.3),
+        0 2px 8px rgba(139, 92, 246, 0.3);
 }
 
-/* 按钮图标样式 - 优化 */
+/* 按钮图标样式 */
 .comment-action-btn i {
-    position: relative;
-    z-index: 2;
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
-    margin-right: 4px;
-    font-size: 12px;
+    font-size: 11px;
+    transition: transform 0.15s ease;
 }
 
 .comment-action-btn:hover i {
-    transform: scale(1.1) rotate(5deg);
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    transform: scale(1.1);
 }
 
 /* 按钮文本样式 */
 .comment-action-btn .button-text {
-    position: relative;
-    z-index: 2;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
-    letter-spacing: 0.2px;
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
-}
-
-.comment-action-btn:hover .button-text {
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 /* 按钮状态变体 - 重构优化 */
@@ -5028,6 +4940,449 @@
     }
     to {
         transform: rotate(360deg);
+    }
+}
+
+/* ========== Quick Comment 内联输入框（Cursor Quick Edit 风格） ========== */
+.quick-comment-container {
+    position: fixed;
+    z-index: 999998;
+    display: none;
+    flex-direction: column;
+    min-width: 360px;
+    max-width: 480px;
+    background: linear-gradient(165deg, 
+        rgba(24, 24, 27, 0.97) 0%, 
+        rgba(39, 39, 42, 0.95) 50%, 
+        rgba(24, 24, 27, 0.97) 100%);
+    border: 1px solid rgba(82, 82, 91, 0.5);
+    border-radius: 12px;
+    box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        0 12px 24px -8px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+    transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow: hidden;
+}
+
+.quick-comment-container.visible {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* 入场动画 */
+@keyframes quickCommentSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.quick-comment-container.animate-in {
+    animation: quickCommentSlideIn 0.2s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* 头部区域 */
+.quick-comment-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.04) 0%, 
+        transparent 100%);
+    border-bottom: 1px solid rgba(82, 82, 91, 0.3);
+}
+
+.quick-comment-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fafafa;
+    letter-spacing: -0.01em;
+}
+
+.quick-comment-title i {
+    font-size: 14px;
+    color: #a78bfa;
+}
+
+.quick-comment-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #71717a;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.quick-comment-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fafafa;
+}
+
+.quick-comment-close i {
+    font-size: 12px;
+}
+
+/* 代码引用区域（可选） */
+.quick-comment-quote {
+    padding: 8px 14px;
+    background: rgba(39, 39, 42, 0.5);
+    border-bottom: 1px solid rgba(82, 82, 91, 0.2);
+    max-height: 80px;
+    overflow: hidden;
+}
+
+.quick-comment-quote-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #71717a;
+    margin-bottom: 6px;
+}
+
+.quick-comment-quote-label i {
+    font-size: 10px;
+    color: #a78bfa;
+}
+
+.quick-comment-quote-code {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #a1a1aa;
+    white-space: pre;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(82, 82, 91, 0.2);
+}
+
+/* 输入区域 */
+.quick-comment-body {
+    padding: 12px 14px;
+}
+
+.quick-comment-input-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.quick-comment-textarea {
+    width: 100%;
+    min-height: 80px;
+    max-height: 200px;
+    padding: 12px 14px;
+    background: rgba(39, 39, 42, 0.6);
+    border: 1px solid rgba(82, 82, 91, 0.4);
+    border-radius: 10px;
+    color: #fafafa;
+    font-size: 13px;
+    font-family: inherit;
+    line-height: 1.6;
+    resize: none;
+    transition: all 0.2s ease;
+}
+
+.quick-comment-textarea::placeholder {
+    color: #52525b;
+}
+
+.quick-comment-textarea:focus {
+    outline: none;
+    border-color: rgba(139, 92, 246, 0.5);
+    background: rgba(39, 39, 42, 0.8);
+    box-shadow: 
+        0 0 0 3px rgba(139, 92, 246, 0.1),
+        inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 底部操作栏 */
+.quick-comment-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: linear-gradient(180deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.02) 100%);
+    border-top: 1px solid rgba(82, 82, 91, 0.2);
+}
+
+.quick-comment-hint {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #52525b;
+}
+
+.quick-comment-hint .separator {
+    margin: 0 4px;
+    color: #3f3f46;
+}
+
+.quick-comment-hint kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 18px;
+    padding: 0 5px;
+    background: rgba(39, 39, 42, 0.8);
+    border: 1px solid rgba(82, 82, 91, 0.5);
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: inherit;
+    color: #a1a1aa;
+}
+
+.quick-comment-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 展开按钮 */
+.quick-comment-expand-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    background: transparent;
+    border: 1px solid rgba(82, 82, 91, 0.4);
+    border-radius: 8px;
+    color: #a1a1aa;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.quick-comment-expand-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(82, 82, 91, 0.6);
+    color: #fafafa;
+}
+
+.quick-comment-expand-btn i {
+    font-size: 11px;
+}
+
+/* 提交按钮 */
+.quick-comment-submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 16px;
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+}
+
+.quick-comment-submit-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #9333ea 0%, #8b5cf6 100%);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);
+    transform: translateY(-1px);
+}
+
+.quick-comment-submit-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.25);
+}
+
+.quick-comment-submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(82, 82, 91, 0.5);
+    box-shadow: none;
+}
+
+.quick-comment-submit-btn i {
+    font-size: 12px;
+}
+
+.quick-comment-submit-btn.loading i {
+    animation: spin 1s linear infinite;
+}
+
+/* 错误提示 */
+.quick-comment-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 8px;
+    color: #f87171;
+    font-size: 12px;
+}
+
+.quick-comment-error i {
+    font-size: 12px;
+}
+
+/* 成功状态 */
+.quick-comment-container.success {
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.quick-comment-container.success .quick-comment-header {
+    background: linear-gradient(180deg, 
+        rgba(34, 197, 94, 0.08) 0%, 
+        transparent 100%);
+}
+
+/* 不同放置位置的微调 */
+.quick-comment-container[data-placement="right"] {
+    transform-origin: left center;
+}
+
+.quick-comment-container[data-placement="left"] {
+    transform-origin: right center;
+}
+
+.quick-comment-container[data-placement="bottom"] {
+    transform-origin: top center;
+}
+
+.quick-comment-container[data-placement="top"] {
+    transform-origin: bottom center;
+}
+
+/* 箭头指示器（可选，指向选区） */
+.quick-comment-container::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(135deg, 
+        rgba(24, 24, 27, 0.97) 0%, 
+        rgba(39, 39, 42, 0.95) 100%);
+    border: 1px solid rgba(82, 82, 91, 0.5);
+    transform: rotate(45deg);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.quick-comment-container[data-placement="right"]::before {
+    left: -5px;
+    top: 50%;
+    margin-top: -4px;
+    border-right: none;
+    border-top: none;
+    opacity: 1;
+}
+
+.quick-comment-container[data-placement="left"]::before {
+    right: -5px;
+    top: 50%;
+    margin-top: -4px;
+    border-left: none;
+    border-bottom: none;
+    opacity: 1;
+}
+
+.quick-comment-container[data-placement="bottom"]::before {
+    top: -5px;
+    left: 50%;
+    margin-left: -4px;
+    border-bottom: none;
+    border-right: none;
+    opacity: 1;
+}
+
+.quick-comment-container[data-placement="top"]::before {
+    bottom: -5px;
+    left: 50%;
+    margin-left: -4px;
+    border-top: none;
+    border-left: none;
+    opacity: 1;
+}
+
+/* 响应式设计 */
+@media (max-width: 640px) {
+    .quick-comment-container {
+        min-width: 300px;
+        max-width: calc(100vw - 32px);
+    }
+    
+    .quick-comment-textarea {
+        min-height: 60px;
+    }
+    
+    .quick-comment-hint {
+        display: none;
+    }
+    
+    .quick-comment-expand-btn span {
+        display: none;
+    }
+    
+    .quick-comment-submit-btn span {
+        display: none;
+    }
+    
+    .quick-comment-expand-btn,
+    .quick-comment-submit-btn {
+        padding: 0 10px;
+    }
+}
+
+/* 高对比度模式 */
+@media (prefers-contrast: high) {
+    .quick-comment-container {
+        border-width: 2px;
+    }
+    
+    .quick-comment-textarea {
+        border-width: 2px;
+    }
+}
+
+/* 减少动画模式 */
+@media (prefers-reduced-motion: reduce) {
+    .quick-comment-container {
+        transition: none;
+    }
+    
+    .quick-comment-container.animate-in {
+        animation: none;
     }
 }
 

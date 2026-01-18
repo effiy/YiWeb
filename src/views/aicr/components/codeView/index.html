@@ -105,6 +105,64 @@
         <!-- 划词评论按钮容器（全局唯一，通过脚本定位） -->
         <div id="comment-action-container"></div>
 
+        <!-- Quick Comment 内联输入框（Cursor Quick Edit 风格） -->
+        <div v-if="showQuickComment" class="quick-comment-container"
+            :class="{ 'visible': showQuickComment, 'animate-in': quickCommentAnimating }" :style="quickCommentPosition"
+            :data-placement="quickCommentPositionData.placement || 'right'" @keydown.esc.stop="closeQuickComment">
+            <div class="quick-comment-header">
+                <div class="quick-comment-title">
+                    <i class="fas fa-comment-dots"></i>
+                    <span>添加评论</span>
+                </div>
+                <button type="button" class="quick-comment-close" @click="closeQuickComment" title="关闭 (Esc)"
+                    aria-label="关闭">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div v-if="quickCommentQuote" class="quick-comment-quote">
+                <div class="quick-comment-quote-label">
+                    <i class="fas fa-code"></i>
+                    <span>引用代码</span>
+                </div>
+                <div class="quick-comment-quote-code">{{ quickCommentQuoteDisplay }}</div>
+            </div>
+
+            <div class="quick-comment-body">
+                <div class="quick-comment-input-wrapper">
+                    <textarea ref="quickCommentTextarea" class="quick-comment-textarea" v-model="quickCommentText"
+                        placeholder="输入评论内容..." @keydown="handleQuickCommentKeydown"
+                        @input="autoResizeQuickCommentTextarea"></textarea>
+
+                    <div v-if="quickCommentError" class="quick-comment-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>{{ quickCommentError }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-comment-footer">
+                <div class="quick-comment-hint">
+                    <kbd>⌘</kbd><span>+</span><kbd>↵</kbd>
+                    <span>提交</span>
+                    <span class="separator">·</span>
+                    <kbd>Esc</kbd>
+                    <span>关闭</span>
+                </div>
+                <div class="quick-comment-actions">
+                    <button type="button" class="quick-comment-expand-btn" @click="expandToFullEditor" title="展开完整编辑器">
+                        <i class="fas fa-expand-alt"></i>
+                        <span>展开</span>
+                    </button>
+                    <button type="button" class="quick-comment-submit-btn"
+                        :class="{ 'loading': quickCommentSubmitting }"
+                        :disabled="!canSubmitQuickComment || quickCommentSubmitting" @click="submitQuickComment">
+                        <i :class="quickCommentSubmitting ? 'fas fa-spinner' : 'fas fa-paper-plane'"></i>
+                        <span>{{ quickCommentSubmitting ? '提交中...' : '提交' }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- 手动评论弹框（支持新建和编辑模式） -->
         <div v-if="showManualImprovementModal" class="manual-improvement-modal" role="dialog"
