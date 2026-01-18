@@ -1790,6 +1790,13 @@ const componentOptions = {
 
         // 后处理Markdown HTML，添加额外的样式和功能
         postProcessMarkdownHtml(html) {
+            // 处理 think 标签 - 默认折叠（不添加 open 属性）
+            html = html.replace(/<think[^>]*>(.*?)<\/think>/gis, (match, content) => {
+                const uniqueId = `think-content-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                // 不添加 open 属性，details 默认折叠
+                return `<details class="think-content" id="${uniqueId}"><summary class="think-summary"><i class="fas fa-lightbulb"></i> 思考过程</summary><div class="think-body">${content}</div></details>`;
+            });
+
             // 为标题添加锚点链接
             html = html.replace(/<h([1-6])>(.+?)<\/h[1-6]>/g, (match, level, content) => {
                 const id = content.toLowerCase()

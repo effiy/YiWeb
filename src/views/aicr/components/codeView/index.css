@@ -291,10 +291,7 @@
 }
 
 .markdown-preview-content h3::before {
-    content: '▶';
-    position: absolute;
-    left: -20px;
-    top: 50%;
+    display: none;
     transform: translateY(-50%);
     font-size: 0.8em;
     color: var(--primary);
@@ -781,6 +778,93 @@
     background: var(--primary);
     color: white;
     border-color: var(--primary);
+}
+
+/* Think 标签折叠功能 - 默认折叠 */
+.markdown-preview-content .think-content {
+    margin: 12px 0;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.05);
+    overflow: hidden;
+}
+
+
+.markdown-preview-content .think-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    background: rgba(139, 92, 246, 0.08);
+    border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    font-size: 13px;
+    font-weight: 500;
+    color: #a78bfa;
+    transition: all 0.2s ease;
+    list-style: none;
+}
+
+.markdown-preview-content .think-summary::-webkit-details-marker {
+    display: none;
+}
+
+.markdown-preview-content .think-summary::marker {
+    display: none;
+}
+
+.markdown-preview-content .think-summary::before {
+    display: none;
+}
+
+
+.markdown-preview-content .think-summary:hover {
+    background: rgba(139, 92, 246, 0.12);
+    color: #c4b5fd;
+}
+
+.markdown-preview-content .think-summary i {
+    font-size: 12px;
+    color: #a78bfa;
+}
+
+.markdown-preview-content .think-body {
+    padding: 12px 14px;
+    color: #d4d4d8;
+    font-size: 13px;
+    line-height: 1.6;
+    background: rgba(24, 24, 27, 0.3);
+}
+
+.markdown-preview-content .think-body p {
+    margin: 0 0 8px 0;
+}
+
+.markdown-preview-content .think-body p:last-child {
+    margin-bottom: 0;
+}
+
+.markdown-preview-content .think-body code {
+    background: rgba(39, 39, 42, 0.6);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 12px;
+    color: #fafafa;
+}
+
+.markdown-preview-content .think-body pre {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.markdown-preview-content .think-body pre code {
+    background: transparent;
+    padding: 0;
 }
 
 /* 表格折叠功能 */
@@ -5472,6 +5556,117 @@
 }
 
 .ai-result-text pre code {
+    background: transparent;
+    padding: 0;
+}
+
+/* Think 标签在 AI 结果中的样式 */
+.ai-result-text .think-content,
+.quick-comment-ai-result .think-content,
+.manual-ai-result .think-content {
+    margin: 12px 0;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.05);
+    overflow: hidden;
+}
+
+.ai-result-text .think-summary,
+.quick-comment-ai-result .think-summary,
+.manual-ai-result .think-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    background: rgba(139, 92, 246, 0.08);
+    border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    font-size: 13px;
+    font-weight: 500;
+    color: #a78bfa;
+    transition: all 0.2s ease;
+    list-style: none;
+}
+
+.ai-result-text .think-summary::-webkit-details-marker,
+.quick-comment-ai-result .think-summary::-webkit-details-marker,
+.manual-ai-result .think-summary::-webkit-details-marker {
+    display: none;
+}
+
+.ai-result-text .think-summary::marker,
+.quick-comment-ai-result .think-summary::marker,
+.manual-ai-result .think-summary::marker {
+    display: none;
+}
+
+.ai-result-text .think-summary::before,
+.quick-comment-ai-result .think-summary::before,
+.manual-ai-result .think-summary::before {
+    display: none;
+}
+
+.ai-result-text .think-summary:hover,
+.quick-comment-ai-result .think-summary:hover,
+.manual-ai-result .think-summary:hover {
+    background: rgba(139, 92, 246, 0.12);
+    color: #c4b5fd;
+}
+
+.ai-result-text .think-summary i,
+.quick-comment-ai-result .think-summary i,
+.manual-ai-result .think-summary i {
+    font-size: 12px;
+    color: #a78bfa;
+}
+
+.ai-result-text .think-body,
+.quick-comment-ai-result .think-body,
+.manual-ai-result .think-body {
+    padding: 12px 14px;
+    color: #d4d4d8;
+    font-size: 13px;
+    line-height: 1.6;
+    background: rgba(24, 24, 27, 0.3);
+}
+
+.ai-result-text .think-body p,
+.quick-comment-ai-result .think-body p,
+.manual-ai-result .think-body p {
+    margin: 0 0 8px 0;
+}
+
+.ai-result-text .think-body p:last-child,
+.quick-comment-ai-result .think-body p:last-child,
+.manual-ai-result .think-body p:last-child {
+    margin-bottom: 0;
+}
+
+.ai-result-text .think-body code,
+.quick-comment-ai-result .think-body code,
+.manual-ai-result .think-body code {
+    background: rgba(39, 39, 42, 0.6);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 12px;
+    color: #fafafa;
+}
+
+.ai-result-text .think-body pre,
+.quick-comment-ai-result .think-body pre,
+.manual-ai-result .think-body pre {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.ai-result-text .think-body pre code,
+.quick-comment-ai-result .think-body pre code,
+.manual-ai-result .think-body pre code {
     background: transparent;
     padding: 0;
 }

@@ -1401,6 +1401,91 @@
     color: inherit;
 }
 
+/* Think 标签折叠功能 - 默认折叠 */
+.md-preview-body .think-content {
+    margin: 12px 0;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.05);
+    overflow: hidden;
+}
+
+.md-preview-body .think-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    background: rgba(139, 92, 246, 0.08);
+    border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    font-size: 13px;
+    font-weight: 500;
+    color: #a78bfa;
+    transition: all 0.2s ease;
+    list-style: none;
+}
+
+.md-preview-body .think-summary::-webkit-details-marker {
+    display: none;
+}
+
+.md-preview-body .think-summary::marker {
+    display: none;
+}
+
+.md-preview-body .think-summary::before {
+    display: none;
+}
+
+.md-preview-body .think-summary:hover {
+    background: rgba(139, 92, 246, 0.12);
+    color: #c4b5fd;
+}
+
+.md-preview-body .think-summary i {
+    font-size: 12px;
+    color: #a78bfa;
+}
+
+.md-preview-body .think-body {
+    padding: 12px 14px;
+    color: #d4d4d8;
+    font-size: 13px;
+    line-height: 1.6;
+    background: rgba(24, 24, 27, 0.3);
+}
+
+.md-preview-body .think-body p {
+    margin: 0 0 8px 0;
+}
+
+.md-preview-body .think-body p:last-child {
+    margin-bottom: 0;
+}
+
+.md-preview-body .think-body code {
+    background: rgba(39, 39, 42, 0.6);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 12px;
+    color: #fafafa;
+}
+
+.md-preview-body .think-body pre {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.md-preview-body .think-body pre code {
+    background: transparent;
+    padding: 0;
+}
+
 /* JSON内容悬停效果 */
 .md-preview-body pre.md-code.json-content:hover {
     background: linear-gradient(135deg, rgba(79,70,229,0.12) 0%, rgba(99,102,241,0.08) 50%, rgba(139,92,246,0.05) 100%);

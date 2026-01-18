@@ -236,6 +236,13 @@ const componentOptions = {
                     return `\n<p><img src="${url}" alt="image" class="md-image"\/><\/p>\n`;
                 });
 
+                // 后处理：处理 think 标签 - 默认折叠
+                html = html.replace(/<think[^>]*>(.*?)<\/think>/gis, (match, content) => {
+                    const uniqueId = `think-content-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    // 不添加 open 属性，details 默认折叠
+                    return `<details class="think-content" id="${uniqueId}"><summary class="think-summary"><i class="fas fa-lightbulb"></i> 思考过程</summary><div class="think-body">${content}</div></details>`;
+                });
+
                 return html;
             }, 'Markdown渲染(CommentsList)');
         },
