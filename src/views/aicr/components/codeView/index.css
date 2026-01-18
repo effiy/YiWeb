@@ -3357,6 +3357,26 @@
     padding: 14px 16px;
     background: var(--bg-tertiary);
     border-bottom: 1px solid var(--border-primary);
+    cursor: grab;
+    user-select: none;
+    transition: background 0.2s ease;
+}
+
+.manual-improvement-header:hover {
+    background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+}
+
+.manual-improvement-header:active {
+    cursor: grabbing;
+}
+
+.manual-improvement-header.dragging {
+    cursor: grabbing !important;
+    background: var(--bg-hover, rgba(255, 255, 255, 0.08));
+}
+
+.manual-improvement-header.dragging .manual-improvement-title {
+    opacity: 0.8;
 }
 
 .manual-improvement-title {
@@ -4119,6 +4139,8 @@
 .manual-resize-handle.resize-handle-w.resizing::before {
     background: rgba(167, 139, 250, 0.8);
 }
+
+@media (max-width: 640px) {
     .manual-improvement-input {
         min-height: 0;
     }
@@ -5410,16 +5432,34 @@
         rgba(255, 255, 255, 0.04) 0%, 
         transparent 100%);
     border-bottom: 1px solid rgba(82, 82, 91, 0.3);
-    cursor: move;
+    cursor: grab;
     user-select: none;
+    transition: background 0.2s ease;
 }
 
-.quick-comment-header.dragging {
+.quick-comment-header:hover {
+    background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.06) 0%, 
+        rgba(255, 255, 255, 0.02) 100%);
+}
+
+.quick-comment-header:active {
     cursor: grabbing;
 }
 
+.quick-comment-header.dragging {
+    cursor: grabbing !important;
+    background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.08) 0%, 
+        rgba(255, 255, 255, 0.04) 100%);
+}
+
 .quick-comment-header.dragging .quick-comment-title {
-    opacity: 0.7;
+    opacity: 0.8;
+}
+
+.quick-comment-header.dragging .quick-comment-title i {
+    opacity: 0.6;
 }
 
 .quick-comment-title {
@@ -5462,11 +5502,13 @@
 
 /* 代码引用区域（可选） */
 .quick-comment-quote {
-    padding: 8px 14px;
-    background: rgba(39, 39, 42, 0.5);
-    border-bottom: 1px solid rgba(82, 82, 91, 0.2);
-    max-height: 80px;
-    overflow: hidden;
+    padding: 10px 14px;
+    background: rgba(39, 39, 42, 0.6);
+    border-bottom: 1px solid rgba(82, 82, 91, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 40px;
 }
 
 .quick-comment-quote-label {
@@ -5475,7 +5517,7 @@
     gap: 6px;
     font-size: 11px;
     color: #71717a;
-    margin-bottom: 6px;
+    flex-shrink: 0;
 }
 
 .quick-comment-quote-label i {
@@ -5486,15 +5528,50 @@
 .quick-comment-quote-code {
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
     font-size: 11px;
-    line-height: 1.5;
-    color: #a1a1aa;
-    white-space: pre;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 6px 8px;
+    line-height: 1.6;
+    color: #d4d4d8;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    overflow-y: auto;
+    overflow-x: auto;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px 12px;
     border-radius: 6px;
-    border: 1px solid rgba(82, 82, 91, 0.2);
+    border: 1px solid rgba(82, 82, 91, 0.3);
+    max-height: 150px;
+    min-height: 30px;
+    /* 自定义滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(161, 161, 170, 0.4) rgba(0, 0, 0, 0.1);
+    /* Tab 缩进 */
+    -moz-tab-size: 4;
+    tab-size: 4;
+}
+
+.quick-comment-quote-code::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.quick-comment-quote-code::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.quick-comment-quote-code::-webkit-scrollbar-thumb {
+    background: rgba(161, 161, 170, 0.4);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.quick-comment-quote-code::-webkit-scrollbar-thumb:hover {
+    background: rgba(161, 161, 170, 0.6);
+}
+
+.quick-comment-quote-code::-webkit-scrollbar-corner {
+    background: rgba(0, 0, 0, 0.1);
 }
 
 /* 输入区域 */
@@ -5795,6 +5872,12 @@
 .ai-action-btn:hover {
     color: #fafafa;
     background: rgba(255, 255, 255, 0.1);
+}
+
+/* 清空按钮特殊样式 */
+.ai-action-btn:first-child:hover {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.15);
 }
 
 .ai-action-btn i {
@@ -6398,29 +6481,32 @@
 /* 调整大小手柄 - 四条边 */
 /* 上边 (north) */
 .resize-handle-n {
-    top: 0;
+    top: -5px;
     left: 20px;
     right: 20px;
-    height: 8px;
+    height: 10px;
     cursor: ns-resize;
-    border-radius: 0;
+    z-index: 6;
 }
 
 .resize-handle-n::before {
     content: '';
     position: absolute;
-    top: 50%;
+    top: 5px;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: 40px;
-    height: 3px;
-    background: rgba(161, 161, 170, 0.4);
+    transform: translateX(-50%);
+    width: 50px;
+    height: 4px;
+    background: rgba(161, 161, 170, 0.5);
     border-radius: 2px;
-    transition: background 0.15s ease;
+    transition: all 0.15s ease;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
 }
 
 .resize-handle-n:hover::before {
-    background: rgba(161, 161, 170, 0.7);
+    background: rgba(161, 161, 170, 0.8);
+    width: 60px;
+    height: 5px;
 }
 
 .resize-handle-n.resizing {
@@ -6428,34 +6514,40 @@
 }
 
 .resize-handle-n.resizing::before {
-    background: rgba(167, 139, 250, 0.8);
+    background: rgba(167, 139, 250, 0.9);
+    width: 60px;
+    height: 5px;
+    box-shadow: 0 0 8px rgba(167, 139, 250, 0.4);
 }
 
 /* 下边 (south) */
 .resize-handle-s {
-    bottom: 0;
+    bottom: -5px;
     left: 20px;
     right: 20px;
-    height: 8px;
+    height: 10px;
     cursor: ns-resize;
-    border-radius: 0;
+    z-index: 6;
 }
 
 .resize-handle-s::before {
     content: '';
     position: absolute;
-    top: 50%;
+    top: 5px;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: 40px;
-    height: 3px;
-    background: rgba(161, 161, 170, 0.4);
+    transform: translateX(-50%);
+    width: 50px;
+    height: 4px;
+    background: rgba(161, 161, 170, 0.5);
     border-radius: 2px;
-    transition: background 0.15s ease;
+    transition: all 0.15s ease;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
 }
 
 .resize-handle-s:hover::before {
-    background: rgba(161, 161, 170, 0.7);
+    background: rgba(161, 161, 170, 0.8);
+    width: 60px;
+    height: 5px;
 }
 
 .resize-handle-s.resizing {
@@ -6463,34 +6555,40 @@
 }
 
 .resize-handle-s.resizing::before {
-    background: rgba(167, 139, 250, 0.8);
+    background: rgba(167, 139, 250, 0.9);
+    width: 60px;
+    height: 5px;
+    box-shadow: 0 0 8px rgba(167, 139, 250, 0.4);
 }
 
 /* 右边 (east) */
 .resize-handle-e {
     top: 20px;
     bottom: 20px;
-    right: 0;
-    width: 8px;
+    right: -5px;
+    width: 10px;
     cursor: ew-resize;
-    border-radius: 0;
+    z-index: 6;
 }
 
 .resize-handle-e::before {
     content: '';
     position: absolute;
     top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 3px;
-    height: 40px;
-    background: rgba(161, 161, 170, 0.4);
+    right: 5px;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 50px;
+    background: rgba(161, 161, 170, 0.5);
     border-radius: 2px;
-    transition: background 0.15s ease;
+    transition: all 0.15s ease;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
 }
 
 .resize-handle-e:hover::before {
-    background: rgba(161, 161, 170, 0.7);
+    background: rgba(161, 161, 170, 0.8);
+    width: 5px;
+    height: 60px;
 }
 
 .resize-handle-e.resizing {
@@ -6498,34 +6596,40 @@
 }
 
 .resize-handle-e.resizing::before {
-    background: rgba(167, 139, 250, 0.8);
+    background: rgba(167, 139, 250, 0.9);
+    width: 5px;
+    height: 60px;
+    box-shadow: 0 0 8px rgba(167, 139, 250, 0.4);
 }
 
 /* 左边 (west) */
 .resize-handle-w {
     top: 20px;
     bottom: 20px;
-    left: 0;
-    width: 8px;
+    left: -5px;
+    width: 10px;
     cursor: ew-resize;
-    border-radius: 0;
+    z-index: 6;
 }
 
 .resize-handle-w::before {
     content: '';
     position: absolute;
     top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 3px;
-    height: 40px;
-    background: rgba(161, 161, 170, 0.4);
+    left: 5px;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 50px;
+    background: rgba(161, 161, 170, 0.5);
     border-radius: 2px;
-    transition: background 0.15s ease;
+    transition: all 0.15s ease;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
 }
 
 .resize-handle-w:hover::before {
-    background: rgba(161, 161, 170, 0.7);
+    background: rgba(161, 161, 170, 0.8);
+    width: 5px;
+    height: 60px;
 }
 
 .resize-handle-w.resizing {
@@ -6533,7 +6637,10 @@
 }
 
 .resize-handle-w.resizing::before {
-    background: rgba(167, 139, 250, 0.8);
+    background: rgba(167, 139, 250, 0.9);
+    width: 5px;
+    height: 60px;
+    box-shadow: 0 0 8px rgba(167, 139, 250, 0.4);
 }
 
 /* 响应式设计 */
