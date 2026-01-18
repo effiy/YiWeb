@@ -106,11 +106,15 @@
         <div id="comment-action-container"></div>
 
 
-        <!-- 未选评论者时的手动评论弹框 -->
-        <div v-if="showManualImprovementModal" class="manual-improvement-modal" role="dialog" aria-label="手动填写评论内容">
-            <div class="manual-improvement-content">
+        <!-- 手动评论弹框（支持新建和编辑模式） -->
+        <div v-if="showManualImprovementModal" class="manual-improvement-modal" role="dialog"
+            :aria-label="isEditingCommentMode ? '编辑评论' : '填写评论内容'">
+            <div class="manual-improvement-content" :class="{ 'editing-mode': isEditingCommentMode }">
                 <div class="manual-improvement-header">
-                    <h3 class="manual-improvement-title">填写评论内容</h3>
+                    <h3 class="manual-improvement-title">
+                        <i class="fas" :class="isEditingCommentMode ? 'fa-edit' : 'fa-comment-alt'"></i>
+                        {{ isEditingCommentMode ? '编辑评论' : '填写评论内容' }}
+                    </h3>
                     <button type="button" class="close-btn" @click="closeManualImprovementModal" title="关闭"
                         aria-label="关闭">
                         <i class="fas fa-times"></i>
@@ -119,7 +123,7 @@
                 <div class="manual-improvement-body">
                     <!-- 被评论的代码展示区域 -->
                     <div class="manual-quoted-code-section" v-if="manualQuotedCode">
-                        <label class="manual-quoted-code-label"><i class="fas fa-quote-left"></i> 被评论的内容</label>
+                        <label class="manual-quoted-code-label"><i class="fas fa-quote-left"></i> 引用代码</label>
                         <div class="manual-quoted-code-content">
                             <pre><code>{{ manualQuotedCode }}</code></pre>
                         </div>
@@ -156,7 +160,7 @@
                             </div>
                             <div class="md-editor-body">
                                 <textarea class="manual-improvement-input" v-show="manualEditorView === 'edit'"
-                                    v-model="manualCommentText" placeholder="请输入要发布的评论内容，支持Markdown语法" rows="10"
+                                    v-model="manualCommentText" placeholder="请输入评论内容，支持Markdown语法" rows="10"
                                     @keydown="handleManualKeydown"></textarea>
                                 <div class="md-preview-body" v-show="manualEditorView === 'preview'"
                                     v-html="manualCommentPreviewHtml"></div>
@@ -168,12 +172,18 @@
                     </div>
                 </div>
                 <div class="manual-improvement-actions">
+                    <span class="manual-hint" v-if="isEditingCommentMode">
+                        <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 保存 · <kbd>Esc</kbd> 关闭
+                    </span>
                     <button type="button" class="action-button cancel" @click="closeManualImprovementModal">
                         <i class="fas fa-times"></i> 取消
                     </button>
-                    <button type="button" class="action-button confirm" :disabled="!canSubmitManualComment"
-                        @click="submitManualImprovement">
-                        <i class="fas fa-paper-plane"></i> 提交
+                    <button type="button" class="action-button confirm"
+                        :disabled="!canSubmitManualComment || manualSubmitting"
+                        @click="isEditingCommentMode ? submitEditedComment() : submitManualImprovement()">
+                        <i class="fas"
+                            :class="manualSubmitting ? 'fa-spinner fa-spin' : (isEditingCommentMode ? 'fa-save' : 'fa-paper-plane')"></i>
+                        {{ manualSubmitting ? '保存中...' : (isEditingCommentMode ? '保存' : '提交') }}
                     </button>
                 </div>
             </div>

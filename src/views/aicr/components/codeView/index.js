@@ -82,6 +82,16 @@ const componentOptions = {
             manualSubmitting: false,
             lastSelectionText: '',
             lastSelectionRange: null, // 用于评论定位，不在界面显示
+
+            // 编辑评论模式相关
+            isEditingCommentMode: false, // 是否为编辑模式
+            editingCommentData: null, // 正在编辑的评论数据
+            editingCommentAuthor: '',
+            editingCommentTimestamp: '',
+            editingCommentType: '',
+            editingCommentStatus: 'pending',
+            editingImprovementText: '',
+            showImprovementSection: false, // 是否展开改进代码区
             _containerHover: false,
             _lastShowTs: 0,
             _buttonVisible: false,
@@ -150,6 +160,37 @@ const componentOptions = {
             sessionContextDraftLocal: '',
             sessionContextEditorViewLocal: 'edit',
         };
+    },
+    created() {
+        // 在组件创建时注册编辑评论事件监听器（确保尽早注册）
+        this._openEditCommentListener = (event) => {
+            try {
+                const comment = event.detail?.comment;
+                if (comment) {
+                    console.log('[CodeView] 收到编辑评论事件:', comment);
+                    // 使用 $nextTick 确保组件已完全初始化
+                    this.$nextTick(() => {
+                        if (this && typeof this.openEditCommentModal === 'function') {
+                            this.openEditCommentModal(comment);
+                        } else if (this && typeof this.openEditCommentModal === 'function') {
+                            // 备用：直接调用
+                            this.openEditCommentModal(comment);
+                        } else {
+                            console.error('[CodeView] 组件实例或方法不可用', {
+                                hasThis: !!this,
+                                hasMethod: typeof this.openEditCommentModal === 'function'
+                            });
+                        }
+                    });
+                } else {
+                    console.warn('[CodeView] 编辑评论事件缺少评论数据');
+                }
+            } catch (error) {
+                console.error('[CodeView] 处理编辑评论事件时出错:', error);
+            }
+        };
+        window.addEventListener('openEditCommentModal', this._openEditCommentListener);
+        console.log('[CodeView] 已在 created 钩子中注册编辑评论事件监听器');
     },
     watch: {
         activeSession: {
@@ -2489,6 +2530,183 @@ const componentOptions = {
             // 清空选择状态，确保下次打开时重新选择
             this.lastSelectionText = '';
             this.lastSelectionRange = null;
+
+            // 清理编辑模式状态
+            this.isEditingCommentMode = false;
+            this.editingCommentData = null;
+            this.editingCommentAuthor = '';
+            this.editingCommentTimestamp = '';
+            this.editingCommentType = '';
+            this.editingCommentStatus = 'pending';
+            this.editingImprovementText = '';
+            this.showImprovementSection = false;
+            this.manualCommentText = '';
+        },
+
+        // 打开编辑评论弹框（复用 manual-improvement-modal）
+        openEditCommentModal(comment) {
+            if (!comment || !comment.key) {
+                console.error('[CodeView] 无法编辑评论：评论数据无效', comment);
+                return;
+            }
+
+            console.log('[CodeView] 打开编辑评论弹框:', comment);
+            console.log('[CodeView] 组件状态:', {
+                hasEl: !!this.$el,
+                isMounted: this.$el && this.$el.isConnected,
+                showModal: this.showManualImprovementModal
+            });
+
+            // 确保组件已挂载
+            if (!this.$el) {
+                console.warn('[CodeView] 组件尚未挂载，等待挂载后再打开弹框');
+                this.$nextTick(() => {
+                    this.openEditCommentModal(comment);
+                });
+                return;
+            }
+
+            // 设置编辑模式标志
+            this.isEditingCommentMode = true;
+            this.editingCommentData = { ...comment };
+
+            // 设置评论内容
+            this.manualCommentText = comment.content ? String(comment.content).trim() : '';
+            this.manualQuotedCode = comment.text ? comment.text.trim() : '';
+
+            // 设置行范围信息
+            if (comment.rangeInfo) {
+                this.lastSelectionRange = { ...comment.rangeInfo };
+            }
+
+            // 显示弹框
+            this.showManualImprovementModal = true;
+            this.manualCommentError = '';
+            this.manualEditorView = 'edit';
+
+            // 聚焦到输入框
+            this.$nextTick(() => {
+                try {
+                    const ta = this.$el && this.$el.querySelector('.manual-improvement-input');
+                    if (ta) {
+                        ta.focus();
+                        ta.setSelectionRange(ta.value.length, ta.value.length);
+                    }
+                } catch (_) { }
+            });
+        },
+
+        // 提交编辑后的评论
+        async submitEditedComment() {
+            const content = (this.manualCommentText || '').trim();
+            if (!content) {
+                this.manualCommentError = '评论内容不能为空';
+                return;
+            }
+
+            if (!this.editingCommentData || !this.editingCommentData.key) {
+                this.manualCommentError = '编辑数据无效';
+                return;
+            }
+
+            try {
+                this.manualSubmitting = true;
+                this.manualCommentError = '';
+                const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
+                showGlobalLoading('正在保存评论...');
+
+                // 验证API地址配置
+                if (!window.API_URL) {
+                    throw new Error('API地址未配置，无法保存评论');
+                }
+
+                // 获取有效的 sessionKey
+                const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
+                let updateFileKey = (this.file?.sessionKey && isUUID(this.file.sessionKey))
+                    ? String(this.file.sessionKey)
+                    : (this.file?.key && isUUID(this.file.key) ? String(this.file.key) : null);
+
+                if (!updateFileKey || !isUUID(updateFileKey)) {
+                    const existingFileKey = this.editingCommentData?.fileKey;
+                    if (existingFileKey && isUUID(existingFileKey)) {
+                        updateFileKey = existingFileKey;
+                    } else {
+                        throw new Error('无法找到有效的 sessionKey，评论无法更新');
+                    }
+                }
+
+                // 保留原始的 rangeInfo
+                const originalRangeInfo = this.editingCommentData.rangeInfo || this.lastSelectionRange || { startLine: 1, endLine: 1 };
+
+                // 构建更新数据
+                const originalAuthor = this.editingCommentData.author;
+                const finalAuthor = originalAuthor === '手动评论' ? '手动评论' : (this.editingCommentAuthor || originalAuthor);
+
+                const updateDataPayload = {
+                    key: this.editingCommentData.key,
+                    author: finalAuthor,
+                    content: content,
+                    text: this.manualQuotedCode || this.editingCommentData.text || '', // 引用代码
+                    rangeInfo: originalRangeInfo,
+                    fileKey: updateFileKey,
+                    updatedAt: new Date().toISOString()
+                };
+
+                // 调用API更新评论
+                const { postData } = await import('/src/services/modules/crud.js');
+                const result = await postData(`${window.API_URL}/`, {
+                    module_name: SERVICE_MODULE,
+                    method_name: 'update_document',
+                    parameters: {
+                        cname: 'comments',
+                        data: updateDataPayload
+                    }
+                });
+
+                console.log('[CodeView] 评论更新成功:', result);
+
+                // 显示成功消息
+                const { showSuccess } = await import('/src/utils/message.js');
+                showSuccess('评论保存成功');
+
+                // 通知评论面板刷新
+                window.dispatchEvent(new CustomEvent('reloadComments', {
+                    detail: {
+                        forceReload: true,
+                        showAllComments: false,
+                        immediateReload: true,
+                        fileKey: updateFileKey
+                    }
+                }));
+
+                // 同步更新会话消息
+                try {
+                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    const updatedComment = {
+                        ...this.editingCommentData,
+                        ...updateDataPayload
+                    };
+                    await sessionSync.syncCommentToMessage(updatedComment, updateFileKey, false);
+                    console.log('[CodeView] 会话消息已同步更新');
+                } catch (syncError) {
+                    console.warn('[CodeView] 同步会话消息失败（已忽略）:', syncError?.message);
+                }
+
+                hideGlobalLoading();
+                this.closeManualImprovementModal();
+
+            } catch (error) {
+                console.error('[CodeView] 评论更新失败:', error);
+                this.manualCommentError = `保存失败: ${error.message}`;
+
+                try {
+                    const { hideGlobalLoading } = await import('/src/utils/loading.js');
+                    hideGlobalLoading();
+                } catch (_) { }
+            } finally {
+                this.manualSubmitting = false;
+            }
         },
         setManualEditorView(view) {
             this.manualEditorView = view === 'preview' ? 'preview' : 'edit';
@@ -2533,7 +2751,12 @@ const componentOptions = {
         handleManualKeydown(e) {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
                 e.preventDefault();
-                this.submitManualImprovement();
+                // 根据模式选择提交方法
+                if (this.isEditingCommentMode) {
+                    this.submitEditedComment();
+                } else {
+                    this.submitManualImprovement();
+                }
             }
             if (e.key === 'Escape') {
                 e.preventDefault();
@@ -4070,6 +4293,12 @@ const componentOptions = {
         });
     },
     beforeUnmount() {
+        // 清理编辑评论事件监听器
+        if (this._openEditCommentListener) {
+            window.removeEventListener('openEditCommentModal', this._openEditCommentListener);
+            this._openEditCommentListener = null;
+        }
+
         // 清理Promise拒绝处理器
         if (this._unhandledRejectionHandler) {
             window.removeEventListener('unhandledrejection', this._unhandledRejectionHandler);

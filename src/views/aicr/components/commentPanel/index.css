@@ -661,8 +661,9 @@
 .comment-meta {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     gap: 12px;
+    position: relative;
 }
 
 .comment-author-info {
@@ -1476,53 +1477,66 @@
 .comment-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
-    margin-top: 4px;
+    align-items: center;
+    gap: 6px;
+    margin-top: 0;
+    flex-shrink: 0;
 }
 
-/* 评论聊天操作按钮样式（类似会话聊天） */
+/* 评论聊天操作按钮样式（优化后的头部按钮样式） */
 .comment-chat-actions {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-    padding: 8px 10px;
-    background: rgba(30, 41, 59, 0.3);
-    border-radius: 6px;
-    border: 1px solid rgba(79, 70, 229, 0.1);
+    align-items: center;
+    gap: 4px;
+    margin-top: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+/* 鼠标悬停时显示操作按钮 */
+.comment-item:hover .comment-chat-actions,
+.comment-chat-actions:focus-within {
+    opacity: 1;
 }
 
 .comment-action-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
-    padding: 4px 10px;
-    font-size: 12px;
-    border: 1px solid rgba(148, 163, 184, 0.3);
+    padding: 4px 8px;
+    font-size: 11px;
+    border: 1px solid transparent;
     border-radius: 4px;
-    background: rgba(51, 65, 85, 0.4);
-    color: var(--text-secondary);
+    background: transparent;
+    color: var(--text-muted, #94a3b8);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
+    min-width: auto;
+    line-height: 1.4;
 }
 
 .comment-action-btn:hover:not(:disabled) {
-    background: rgba(79, 70, 229, 0.15);
-    border-color: rgba(79, 70, 229, 0.4);
-    color: var(--primary);
+    background: rgba(79, 70, 229, 0.1);
+    border-color: rgba(79, 70, 229, 0.2);
+    color: var(--primary, #6366f1);
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
 }
 
 .comment-action-btn:active:not(:disabled) {
     transform: translateY(0);
-    box-shadow: none;
+    background: rgba(79, 70, 229, 0.15);
 }
 
 .comment-action-btn:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
+    transform: none;
 }
 
 .comment-action-btn.action-resolve {
@@ -1549,7 +1563,17 @@
 
 .comment-action-btn.action-delete {
     color: var(--danger, #ef4444);
-    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.comment-action-btn.action-delete:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: var(--danger, #ef4444);
+}
+
+.comment-action-btn.action-delete.deleting {
+    opacity: 0.6;
+    cursor: wait;
 }
 
 .comment-action-btn.action-delete:hover:not(:disabled) {
@@ -2200,20 +2224,15 @@
         font-size: 13px; 
     }
     
-    .comment-badges {
-        gap: 4px;
+    .comment-chat-actions {
+        opacity: 1; /* 移动端始终显示 */
+        gap: 3px;
     }
     
-    .comment-type,
-    .comment-status {
-        font-size: 9px;
-        padding: 1px 4px;
-        gap: 2px;
-    }
-    
-    .comment-type i,
-    .comment-status i {
-        font-size: 7px;
+    .comment-action-btn {
+        padding: 3px 6px;
+        font-size: 10px;
+        gap: 3px;
     }
     
     .file-info {

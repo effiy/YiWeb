@@ -335,16 +335,22 @@
                                 </div>
                             </div>
 
-                            <!-- 评论类型和状态 -->
-                            <div class="comment-badges">
-                                <span v-if="comment.type" class="comment-type" :class="`type-${comment.type}`">
-                                    <i :class="getCommentTypeIcon(comment.type)"></i>
-                                    {{ getCommentTypeLabel(comment.type) }}
-                                </span>
-                                <span v-if="comment.status" class="comment-status" :class="`status-${comment.status}`">
-                                    <i :class="getCommentStatusIcon(comment.status)"></i>
-                                    {{ getCommentStatusLabel(comment.status) }}
-                                </span>
+                            <!-- 评论操作按钮 -->
+                            <div class="comment-actions comment-chat-actions">
+                                <!-- 编辑按钮 -->
+                                <button type="button" v-if="comment.author === '手动评论'" @click="openCommentEditor(comment)"
+                                    class="chat-meta-btn comment-action-btn" title="编辑评论" aria-label="编辑评论">
+                                    ✏️ 编辑
+                                </button>
+
+                                <!-- 删除按钮 -->
+                                <button type="button" @click="deleteComment(comment.key)"
+                                    class="chat-meta-btn comment-action-btn action-delete"
+                                    :class="{ 'deleting': deletingComments[comment.key] }"
+                                    :disabled="deletingComments[comment.key]" title="删除评论"
+                                    :aria-label="`删除评论 ${comment.author}`">
+                                    🗑️ {{ deletingComments[comment.key] ? '删除中...' : '删除' }}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -379,47 +385,6 @@
                                 <span>改进代码</span>
                             </div>
                             <pre class="improvement-code">{{ comment.improvementText }}</pre>
-                        </div>
-
-                        <!-- 评论操作（类似会话聊天的操作按钮） -->
-                        <div class="comment-actions comment-chat-actions">
-                            <!-- 发送到机器人按钮 -->
-                            <template
-                                v-if="Array.isArray(sessionChatWeChatRobots) && sessionChatWeChatRobots.length > 0 && comment.author !== '手动评论'">
-                                <button v-for="(bot, bi) in sessionChatWeChatRobots" :key="bot.id || ('wrb_' + bi)"
-                                    type="button" class="chat-meta-btn comment-action-btn"
-                                    :title="'发送到：' + (bot.name || '机器人')" :aria-label="'发送到机器人：' + (bot.name || '机器人')"
-                                    @click="sendCommentToRobot(bot, comment)">{{ bot.name || '机器人' }}</button>
-                            </template>
-
-                            <!-- 编辑按钮 -->
-                            <button type="button" v-if="comment.author === '手动评论'" @click="openCommentEditor(comment)"
-                                class="chat-meta-btn comment-action-btn" title="编辑评论" aria-label="编辑评论">
-                                ✏️ 编辑
-                            </button>
-
-                            <!-- 状态切换按钮 -->
-                            <button type="button" v-if="comment.status === 'pending'"
-                                @click="resolveComment(comment.key)"
-                                class="chat-meta-btn comment-action-btn action-resolve" title="标记为已解决"
-                                aria-label="标记为已解决">
-                                ✓ 解决
-                            </button>
-
-                            <button type="button" v-if="comment.status === 'resolved'"
-                                @click="reopenComment(comment.key)"
-                                class="chat-meta-btn comment-action-btn action-reopen" title="重新打开" aria-label="重新打开">
-                                ↺ 重开
-                            </button>
-
-                            <!-- 删除按钮 -->
-                            <button type="button" @click="deleteComment(comment.key)"
-                                class="chat-meta-btn comment-action-btn action-delete"
-                                :class="{ 'deleting': deletingComments[comment.key] }"
-                                :disabled="deletingComments[comment.key]" title="删除评论"
-                                :aria-label="`删除评论 ${comment.author}`">
-                                🗑️ {{ deletingComments[comment.key] ? '删除中...' : '删除' }}
-                            </button>
                         </div>
                     </div>
                 </article>
@@ -625,118 +590,6 @@
                     <div v-else class="aicr-session-context-preview md-preview-body"
                         v-html="renderSessionChatMarkdown(sessionChatEditingPageContent)" aria-label="页面上下文预览"></div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 评论编辑模态框（简洁表单模式） -->
-    <div v-if="showCommentEditor" class="comment-editor-modal-v2" @click="closeCommentEditor">
-        <div class="comment-editor-panel" @click.stop @keydown="onCommentEditKeydown">
-            <!-- 顶部标题栏 -->
-            <div class="editor-v2-header">
-                <h3 class="editor-v2-title">
-                    <i class="fas fa-edit"></i>
-                    编辑评论
-                </h3>
-                <div class="editor-v2-actions">
-                    <button type="button" class="editor-v2-btn editor-v2-btn-save" 
-                        @click="saveEditedComment" :disabled="editingSaving"
-                        title="保存 (Ctrl/Cmd + Enter)">
-                        <i class="fas" :class="editingSaving ? 'fa-spinner fa-spin' : 'fa-check'"></i>
-                        {{ editingSaving ? '保存中...' : '保存' }}
-                    </button>
-                    <button type="button" class="editor-v2-btn editor-v2-btn-close" 
-                        @click="closeCommentEditor" title="关闭 (Esc)">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- 主体内容区 -->
-            <div class="editor-v2-body">
-                <!-- 引用代码区（只读） -->
-                <div v-if="editingCommentText && editingCommentText.trim()" class="editor-v2-section editor-v2-quoted">
-                    <div class="editor-v2-section-header">
-                        <i class="fas fa-code"></i>
-                        <span>引用代码</span>
-                        <span class="editor-v2-line-info" v-if="editingRangeInfo">
-                            第 {{ editingRangeInfo.startLine }}-{{ editingRangeInfo.endLine }} 行
-                        </span>
-                    </div>
-                    <pre class="editor-v2-code-block">{{ editingCommentText }}</pre>
-                </div>
-
-                <!-- 评论内容编辑区 -->
-                <div class="editor-v2-section editor-v2-content">
-                    <div class="editor-v2-section-header">
-                        <i class="fas fa-comment-alt"></i>
-                        <span>评论内容</span>
-                    </div>
-                    <textarea 
-                        ref="commentEditorTextarea"
-                        v-model="editingCommentContent" 
-                        class="editor-v2-textarea"
-                        placeholder="输入评论内容..."
-                        @keydown.ctrl.enter="saveEditedComment"
-                        @keydown.meta.enter="saveEditedComment"
-                    ></textarea>
-                </div>
-
-                <!-- 改进代码区（可选） -->
-                <div class="editor-v2-section editor-v2-improvement">
-                    <div class="editor-v2-section-header editor-v2-section-header-toggle" 
-                        @click="toggleImprovementSection">
-                        <i class="fas fa-magic"></i>
-                        <span>改进代码</span>
-                        <span class="editor-v2-optional">（可选）</span>
-                        <i class="fas editor-v2-toggle-icon" 
-                            :class="showImprovementSection ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-                    </div>
-                    <textarea 
-                        v-if="showImprovementSection"
-                        v-model="editingImprovementText" 
-                        class="editor-v2-textarea editor-v2-code-textarea"
-                        placeholder="输入改进后的代码..."
-                    ></textarea>
-                </div>
-
-                <!-- 元数据区 -->
-                <div class="editor-v2-section editor-v2-meta">
-                    <div class="editor-v2-meta-row">
-                        <div class="editor-v2-meta-item">
-                            <label><i class="fas fa-user"></i> 评论者</label>
-                            <input type="text" v-model="editingCommentAuthor" placeholder="评论者" />
-                        </div>
-                        <div class="editor-v2-meta-item">
-                            <label><i class="fas fa-tag"></i> 类型</label>
-                            <select v-model="editingCommentType">
-                                <option value="">无</option>
-                                <option value="suggestion">💡 建议</option>
-                                <option value="question">❓ 问题</option>
-                                <option value="bug">🐛 错误</option>
-                                <option value="discussion">💬 讨论</option>
-                                <option value="praise">👍 表扬</option>
-                                <option value="nitpick">🔍 细节</option>
-                            </select>
-                        </div>
-                        <div class="editor-v2-meta-item">
-                            <label><i class="fas fa-flag"></i> 状态</label>
-                            <select v-model="editingCommentStatus">
-                                <option value="pending">⏳ 待处理</option>
-                                <option value="resolved">✅ 已解决</option>
-                                <option value="closed">🔒 已关闭</option>
-                                <option value="wontfix">🚫 不修复</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 底部提示 -->
-            <div class="editor-v2-footer">
-                <span class="editor-v2-hint">
-                    <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 保存 · <kbd>Esc</kbd> 关闭
-                </span>
             </div>
         </div>
     </div>

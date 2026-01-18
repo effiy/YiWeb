@@ -2096,244 +2096,40 @@ const componentOptions = {
 
 
 
-        // 打开评论编辑器（简洁表单模式）
+        // 打开评论编辑器（通过事件触发 CodeView 的弹框）
         openCommentEditor(comment) {
             return safeExecute(() => {
-                if (!comment || !comment.key) return;
-
-                console.log('[CommentPanel] 打开评论编辑器:', comment);
-
-                // 设置编辑状态
-                this.editingComment = { ...comment };
-                this.editingCommentAuthor = comment.author ? comment.author.trim() : '';
-
-                // 处理时间戳
-                if (comment.timestamp) {
-                    const date = new Date(comment.timestamp);
-                    this.editingCommentTimestamp = date.toISOString().slice(0, 16);
-                } else {
-                    this.editingCommentTimestamp = new Date().toISOString().slice(0, 16);
+                if (!comment || !comment.key) {
+                    console.warn('[CommentPanel] 无法打开编辑器：评论数据无效', comment);
+                    return;
                 }
 
-                // 设置引用代码（只读展示）
-                this.editingCommentText = comment.text ? comment.text.trim() : '';
-                this.editingRangeInfo = comment.rangeInfo ? { ...comment.rangeInfo } : { startLine: 1, endLine: 1 };
+                console.log('[CommentPanel] 打开评论编辑器，通过事件触发 CodeView:', comment);
+                console.log('[CommentPanel] 评论 key:', comment.key, '评论内容:', comment.content?.substring(0, 50));
 
-                // 设置评论内容（可编辑）
-                this.editingCommentContent = comment.content ? String(comment.content).trim() : '';
-
-                // 设置改进代码
-                this.editingImprovementText = comment.improvementText ? comment.improvementText.trim() : '';
-                // 如果有改进代码，默认展开该区域
-                this.showImprovementSection = !!this.editingImprovementText;
-
-                // 设置评论类型和状态
-                this.editingCommentType = comment.type || '';
-                this.editingCommentStatus = comment.status || 'pending';
-                this.editingSaving = false;
-
-                // 显示编辑器
-                this.showCommentEditor = true;
-
-                // 聚焦到内容输入框
-                this.$nextTick(() => {
-                    const textarea = this.$refs.commentEditorTextarea;
-                    if (textarea) {
-                        textarea.focus();
-                        // 将光标移到末尾
-                        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-                    }
+                // 通过全局事件通知 CodeView 组件打开编辑弹框
+                const event = new CustomEvent('openEditCommentModal', {
+                    detail: { comment: { ...comment } },
+                    bubbles: true,
+                    cancelable: true
                 });
+
+                console.log('[CommentPanel] 触发事件:', event.type, 'detail:', event.detail);
+                const dispatched = window.dispatchEvent(event);
+                console.log('[CommentPanel] 事件已分发，是否被阻止:', !dispatched);
             }, '打开评论编辑器');
         },
 
-        // 切换改进代码区域展开/收起
+        // 切换改进代码区域展开/收起（保留兼容性）
         toggleImprovementSection() {
             this.showImprovementSection = !this.showImprovementSection;
         },
 
-        // 关闭评论编辑器
+        // 关闭评论编辑器（保留兼容性，但现在编辑在 CodeView 中处理）
         closeCommentEditor() {
-            return safeExecute(() => {
-                console.log('[CommentPanel] 关闭评论编辑器');
-
-                this.showCommentEditor = false;
-                this.editingComment = null;
-                this.editingCommentMessages = [];
-                this.editingCommentInputText = '';
-                this.editingCommentDraftImages = [];
-                this.editingCommentSending = false;
-                this.editingCommentAuthor = '';
-                this.editingCommentTimestamp = '';
-                this.editingCommentText = '';
-                this.editingCommentContent = '';
-                this.editingRangeInfo = { startLine: 1, endLine: 1 };
-                this.editingImprovementText = '';
-                this.editingCommentType = '';
-                this.editingCommentStatus = 'pending';
-                this.editingSaving = false;
-                this.showImprovementSection = false;
-                this.editingCommentContextEditorVisible = false;
-                this.editingCommentCopyFeedback = {};
-            }, '关闭评论编辑器');
-        },
-
-        // 保存编辑后的评论（简洁表单模式）
-        async saveEditedComment() {
-            return safeExecute(async () => {
-                if (!this.editingComment || !this.editingComment.key) return;
-
-                // 直接使用 editingCommentContent 作为评论内容
-                let newContent = (this.editingCommentContent || '').trim();
-
-                // 如果没有内容，使用原始评论内容
-                if (!newContent && this.editingComment && this.editingComment.content) {
-                    newContent = String(this.editingComment.content || '').trim();
-                }
-
-                // 验证评论者姓名
-                const newAuthor = (this.editingCommentAuthor || '').trim();
-                if (!newAuthor) {
-                    alert('评论者姓名不能为空');
-                    return;
-                }
-
-                // 防重复
-                if (this.editingSaving) return;
-                this.editingSaving = true;
-
-                // 验证API地址配置
-                if (!window.API_URL) {
-                    this.editingSaving = false;
-                    throw new Error('API地址未配置，无法保存评论');
-                }
-
-                // 组装URL
-                // let url = `${window.API_URL}/mongodb/?cname=comments`; // Deprecated
-
-                try {
-                    // const { updateData } = await import('/src/services/modules/crud.js');
-
-                    // 构建更新数据
-                    // 如果是手动评论，保持author为"手动评论"
-                    const originalAuthor = this.editingComment.author;
-                    const finalAuthor = originalAuthor === '手动评论' ? '手动评论' : newAuthor;
-                    // 保留原始的 rangeInfo，因为用户不再可以编辑行号
-                    const originalRangeInfo = this.editingComment.rangeInfo || { startLine: 1, endLine: 1 };
-
-                    // 重构：comment 的 fileKey 必须是对应 session 的 key（sessionKey）
-                    let updateFileKey = this._getCurrentSessionKey();
-                    if (!updateFileKey || !this._isUUID(updateFileKey)) {
-                        // 如果当前没有 sessionKey，尝试从编辑中的评论获取（但必须是 UUID 格式）
-                        const existingFileKey = this.editingComment?.fileKey;
-                        if (existingFileKey && this._isUUID(existingFileKey)) {
-                            updateFileKey = existingFileKey;
-                        } else {
-                            throw new Error('无法找到有效的 sessionKey，评论无法更新');
-                        }
-                    }
-
-                    // 构建更新Payload
-                    const updateDataPayload = {
-                        key: this.editingComment.key,
-                        author: finalAuthor,
-                        content: newContent,
-                        text: newContent, // 确保 text 与 content 保持一致
-                        rangeInfo: originalRangeInfo,
-                        improvementText: this.editingImprovementText ? this.editingImprovementText.trim() : null,
-                        type: this.editingCommentType || null,
-                        status: this.editingCommentStatus,
-                        fileKey: updateFileKey, // 确保使用UUID格式的fileKey
-                        updatedAt: new Date().toISOString()
-                    };
-
-                    // 规范化评论数据，确保字段一致性
-                    if (window.aicrStore && window.aicrStore.normalizeComment) {
-                        // updateDataPayload = window.aicrStore.normalizeComment(updateDataPayload);
-                        // 注意：normalizeComment可能会覆盖某些字段，这里主要需要更新特定字段
-                    }
-
-                    const payload = {
-                        module_name: SERVICE_MODULE,
-                        method_name: 'update_document',
-                        parameters: {
-                            cname: 'comments',
-                            data: updateDataPayload
-                        }
-                    };
-
-                    const result = await postData(`${window.API_URL}/`, payload);
-                    console.log('[CommentPanel] 评论更新成功:', result);
-
-                    // 构建更新后的评论对象
-                    const updatedCommentData = window.aicrStore && window.aicrStore.normalizeComment
-                        ? window.aicrStore.normalizeComment({
-                            ...this.editingComment,
-                            ...updateDataPayload
-                        })
-                        : {
-                            ...this.editingComment,
-                            author: finalAuthor,
-                            content: newContent,
-                            text: newContent, // 确保 text 与 content 保持一致
-                            rangeInfo: originalRangeInfo,
-                            improvementText: this.editingImprovementText ? this.editingImprovementText.trim() : null,
-                            type: this.editingCommentType || null,
-                            status: this.editingCommentStatus
-                        };
-
-                    // 本地同步更新，提升体验
-                    const idx = this.mongoComments.findIndex(c => c.key === this.editingComment.key);
-                    if (idx !== -1) {
-                        this.mongoComments[idx] = updatedCommentData;
-                    } else {
-                        // 如果本地没有找到，添加到列表（虽然不应该发生）
-                        console.warn('[CommentPanel] 本地未找到评论，添加到列表');
-                        this.mongoComments = [updatedCommentData, ...this.mongoComments];
-                    }
-
-                    // 同步更新会话消息
-                    try {
-                        // 重构：统一使用_getCurrentSessionKey获取session的key
-                        const fileKey = this._getCurrentSessionKey();
-                        if (fileKey) {
-                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
-                            const sessionSync = getSessionSyncService();
-                            const updatedComment = {
-                                ...updatedCommentData,
-                                fileKey: fileKey,
-                                key: this.editingComment.key
-                            };
-                            await sessionSync.syncCommentToMessage(updatedComment, fileKey, false);
-                            console.log('[CommentPanel] 会话消息已同步更新');
-                        }
-                    } catch (syncError) {
-                        console.warn('[CommentPanel] 同步会话消息失败（已忽略）:', syncError?.message);
-                    }
-
-                    // 关闭编辑器
-                    this.closeCommentEditor();
-
-                    // 不立即重新加载，因为本地已经更新了
-                    // 如果需要确保数据同步，可以延迟加载（但应该避免重复）
-                    // this.debouncedLoadComments();
-                } catch (error) {
-                    console.error('[CommentPanel] 评论更新失败:', error);
-                    alert('保存失败：' + (error?.message || '未知错误'));
-                    this.editingSaving = false;
-                }
-            }, '保存编辑后的评论');
-        },
-
-        // 评论编辑键盘事件（作者：liangliang）
-        onCommentEditKeydown(event) {
-            if (event.key === 'Escape') {
-                event.preventDefault();
-                this.closeCommentEditor();
-            } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-                event.preventDefault();
-                this.saveEditedComment();
-            }
+            console.log('[CommentPanel] closeCommentEditor 已移至 CodeView 处理');
+            this.showCommentEditor = false;
+            this.editingComment = null;
         },
 
         // ========== 编辑评论消息对话相关方法 ==========
