@@ -294,6 +294,19 @@
             <div class="quick-comment-resize-handle resize-handle-nw" @mousedown="startResizeQuickComment($event, 'nw')"
                 :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整大小">
             </div>
+            <!-- 调整大小手柄 - 四条边 -->
+            <div class="quick-comment-resize-handle resize-handle-n" @mousedown="startResizeQuickComment($event, 'n')"
+                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整高度">
+            </div>
+            <div class="quick-comment-resize-handle resize-handle-s" @mousedown="startResizeQuickComment($event, 's')"
+                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整高度">
+            </div>
+            <div class="quick-comment-resize-handle resize-handle-e" @mousedown="startResizeQuickComment($event, 'e')"
+                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整宽度">
+            </div>
+            <div class="quick-comment-resize-handle resize-handle-w" @mousedown="startResizeQuickComment($event, 'w')"
+                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整宽度">
+            </div>
         </div>
 
         <!-- 手动评论弹框（支持新建和编辑模式） -->
@@ -375,6 +388,32 @@
                             :class="manualSubmitting ? 'fa-spinner fa-spin' : (isEditingCommentMode ? 'fa-save' : 'fa-paper-plane')"></i>
                         {{ manualSubmitting ? '保存中...' : (isEditingCommentMode ? '保存' : '提交') }}
                     </button>
+                </div>
+                <!-- 调整大小手柄 - 四个角 -->
+                <div class="manual-resize-handle resize-handle-se" @mousedown="startResizeManualModal($event, 'se')"
+                    :class="{ 'resizing': isResizingManualModal }" title="拖拽调整大小">
+                </div>
+                <div class="manual-resize-handle resize-handle-sw" @mousedown="startResizeManualModal($event, 'sw')"
+                    :class="{ 'resizing': isResizingManualModal }" title="拖拽调整大小">
+                </div>
+                <div class="manual-resize-handle resize-handle-ne" @mousedown="startResizeManualModal($event, 'ne')"
+                    :class="{ 'resizing': isResizingManualModal }" title="拖拽调整大小">
+                </div>
+                <div class="manual-resize-handle resize-handle-nw" @mousedown="startResizeManualModal($event, 'nw')"
+                    :class="{ 'resizing': isResizingManualModal }" title="拖拽调整大小">
+                </div>
+                <!-- 调整大小手柄 - 四条边 -->
+                <div class="manual-resize-handle resize-handle-n" @mousedown="startResizeManualModal($event, 'n')"
+                    :class="{ 'resizing': isResizingManualModal }" title="拖拽调整高度">
+                </div>
+                <div class="manual-resize-handle resize-handle-s" @mousedown="startResizeManualModal($event, 's')"
+                    :class="{ 'resizing': isResizingManualModal }" title="拖拽调整高度">
+                </div>
+                <div class="manual-resize-handle resize-handle-e" @mousedown="startResizeManualModal($event, 'e')"
+                    :class="{ 'resizing': isResizingManualModal }" title="拖拽调整宽度">
+                </div>
+                <div class="manual-resize-handle resize-handle-w" @mousedown="startResizeManualModal($event, 'w')"
+                    :class="{ 'resizing': isResizingManualModal }" title="拖拽调整宽度">
                 </div>
             </div>
         </div>
@@ -559,6 +598,14 @@
 
                 <!-- 查看模式 -->
                 <div v-else class="comment-view-content modern-content">
+                    <!-- AI 提示内容展示（如果有） -->
+                    <div v-if="currentCommentDetail.aiPrompt" class="comment-ai-prompt">
+                        <div class="ai-prompt-header">
+                            <i class="fas fa-wand-magic-sparkles"></i>
+                            <span>AI 提示</span>
+                        </div>
+                        <div class="ai-prompt-content">{{ currentCommentDetail.aiPrompt }}</div>
+                    </div>
                     <!-- 主要评论内容 -->
                     <div class="primary-content">
                         <div class="comment-content enhanced-content md-preview-body" v-html="currentCommentDetailHtml">

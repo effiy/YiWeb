@@ -106,6 +106,9 @@ const componentOptions = {
             quickCommentPositionData: { left: 0, top: 0, width: 440, height: 400 },
             isDraggingQuickComment: false,
             isResizingQuickComment: false,
+            // Manual Modal 调整大小相关
+            manualModalSize: { width: null, height: null }, // null 表示使用默认值
+            isResizingManualModal: false,
             // AI 评论相关
             quickCommentMode: 'ai', // 'ai' | 'manual'
             quickCommentAiPrompt: '',
@@ -1606,7 +1609,7 @@ const componentOptions = {
                 // 使用marked.js渲染
                 let html = marked.parse(processedText, markedOptions);
 
-                // 后处理：添加自定义样式类和行号信息
+                // 后处理：添加自定义样式类和行号信息（注意：aiPrompt 需要在调用时传入）
                 html = this.postProcessMarkdownHtml(html);
 
                 // 处理 Mermaid 图表
@@ -2935,6 +2938,12 @@ const componentOptions = {
             this.manualEditorView = 'edit';
             this.$nextTick(() => {
                 try {
+                    // 应用保存的尺寸（如果有）
+                    const modalContent = this.$el?.querySelector('.manual-improvement-content');
+                    if (modalContent && this.manualModalSize.width && this.manualModalSize.height) {
+                        modalContent.style.width = `${this.manualModalSize.width}px`;
+                        modalContent.style.height = `${this.manualModalSize.height}px`;
+                    }
                     const ta = this.$el && this.$el.querySelector('.manual-improvement-input');
                     if (ta) ta.focus();
                 } catch (_) { }
@@ -2947,6 +2956,8 @@ const componentOptions = {
             // 清空选择状态，确保下次打开时重新选择
             this.lastSelectionText = '';
             this.lastSelectionRange = null;
+            // 重置调整大小状态
+            this.isResizingManualModal = false;
 
             // 清理编辑模式状态
             this.isEditingCommentMode = false;
@@ -3063,6 +3074,8 @@ const componentOptions = {
             this.quickCommentAiResult = '';
             this.quickCommentAiError = '';
             this.quickCommentAiGenerating = false;
+            // 清空临时保存的 AI prompt
+            this._pendingAiPrompt = null;
 
             // 移除点击外部关闭的监听
             document.removeEventListener('mousedown', this._quickCommentOutsideClickHandler);
@@ -3188,6 +3201,20 @@ const componentOptions = {
                         newLeft = startLeft + deltaX;
                         newTop = startTop + deltaY;
                         break;
+                    case 'n': // 上边：只改变高度和顶部位置
+                        newHeight = startHeight - deltaY;
+                        newTop = startTop + deltaY;
+                        break;
+                    case 's': // 下边：只改变高度
+                        newHeight = startHeight + deltaY;
+                        break;
+                    case 'e': // 右边：只改变宽度
+                        newWidth = startWidth + deltaX;
+                        break;
+                    case 'w': // 左边：改变宽度和左边位置
+                        newWidth = startWidth - deltaX;
+                        newLeft = startLeft + deltaX;
+                        break;
                 }
 
                 // 限制最小尺寸
@@ -3199,36 +3226,32 @@ const componentOptions = {
                 newHeight = Math.min(newHeight, vh - padding * 2);
 
                 // 根据方向调整位置，确保不超出视口
-                if (direction === 'sw' || direction === 'nw') {
+                if (direction === 'sw' || direction === 'nw' || direction === 'w') {
                     // 左侧调整：确保左边界不超出
                     const minLeft = padding;
                     const maxLeft = vw - newWidth - padding;
                     newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
                     // 如果位置被限制，调整宽度
-                    if (direction === 'sw') {
-                        newWidth = startWidth - (newLeft - startLeft);
-                    } else {
+                    if (direction === 'sw' || direction === 'nw' || direction === 'w') {
                         newWidth = startWidth - (newLeft - startLeft);
                     }
-                } else {
-                    // 右侧固定：确保右边界不超出
+                } else if (direction !== 'n' && direction !== 's') {
+                    // 右侧固定：确保右边界不超出（排除上下方向）
                     const maxWidth = vw - newLeft - padding;
                     newWidth = Math.min(newWidth, maxWidth);
                 }
 
-                if (direction === 'ne' || direction === 'nw') {
+                if (direction === 'ne' || direction === 'nw' || direction === 'n') {
                     // 顶部调整：确保上边界不超出
                     const minTop = padding;
                     const maxTop = vh - newHeight - padding;
                     newTop = Math.max(minTop, Math.min(newTop, maxTop));
                     // 如果位置被限制，调整高度
-                    if (direction === 'ne') {
-                        newHeight = startHeight - (newTop - startTop);
-                    } else {
+                    if (direction === 'ne' || direction === 'nw' || direction === 'n') {
                         newHeight = startHeight - (newTop - startTop);
                     }
-                } else {
-                    // 底部固定：确保下边界不超出
+                } else if (direction !== 'e' && direction !== 'w') {
+                    // 底部固定：确保下边界不超出（排除左右方向）
                     const maxHeight = vh - newTop - padding;
                     newHeight = Math.min(newHeight, maxHeight);
                 }
@@ -3259,6 +3282,101 @@ const componentOptions = {
 
         stopResizeQuickComment() {
             this.isResizingQuickComment = false;
+        },
+
+        // Manual Modal 调整大小功能
+        startResizeManualModal(event, direction) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            this.isResizingManualModal = true;
+
+            const modalContent = this.$el?.querySelector('.manual-improvement-content');
+            if (!modalContent) return;
+
+            const startX = event.clientX;
+            const startY = event.clientY;
+            const startWidth = modalContent.offsetWidth;
+            const startHeight = modalContent.offsetHeight;
+
+            const minWidth = 600;
+            const minHeight = 400;
+            const maxWidth = window.innerWidth - 40;
+            const maxHeight = window.innerHeight - 40;
+
+            const onMouseMove = (e) => {
+                if (!this.isResizingManualModal) return;
+
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+                const padding = 20;
+
+                let newWidth = startWidth;
+                let newHeight = startHeight;
+
+                // 根据方向计算新的尺寸
+                switch (direction) {
+                    case 'se': // 右下角
+                        newWidth = startWidth + deltaX;
+                        newHeight = startHeight + deltaY;
+                        break;
+                    case 'sw': // 左下角
+                        newWidth = startWidth - deltaX;
+                        newHeight = startHeight + deltaY;
+                        break;
+                    case 'ne': // 右上角
+                        newWidth = startWidth + deltaX;
+                        newHeight = startHeight - deltaY;
+                        break;
+                    case 'nw': // 左上角
+                        newWidth = startWidth - deltaX;
+                        newHeight = startHeight - deltaY;
+                        break;
+                    case 'n': // 上边
+                        newHeight = startHeight - deltaY;
+                        break;
+                    case 's': // 下边
+                        newHeight = startHeight + deltaY;
+                        break;
+                    case 'e': // 右边
+                        newWidth = startWidth + deltaX;
+                        break;
+                    case 'w': // 左边
+                        newWidth = startWidth - deltaX;
+                        break;
+                }
+
+                // 限制最小和最大尺寸
+                newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+                newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
+
+                // 保存尺寸
+                this.manualModalSize = {
+                    width: newWidth,
+                    height: newHeight
+                };
+
+                // 应用样式
+                if (modalContent) {
+                    modalContent.style.width = `${newWidth}px`;
+                    modalContent.style.height = `${newHeight}px`;
+                }
+            };
+
+            const onMouseUp = () => {
+                this.isResizingManualModal = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        },
+
+        stopResizeManualModal() {
+            this.isResizingManualModal = false;
         },
 
         setQuickCommentMode(mode) {
@@ -3429,6 +3547,8 @@ const componentOptions = {
 
             // 将 AI 结果作为评论内容提交
             this.quickCommentText = content;
+            // 保存 AI prompt 以便在提交时包含到评论对象中
+            this._pendingAiPrompt = (this.quickCommentAiPrompt || '').trim();
             await this.submitQuickComment();
         },
 
@@ -3550,8 +3670,16 @@ const componentOptions = {
             this.manualEditorView = 'edit';
 
             this.$nextTick(() => {
-                const ta = this.$el && this.$el.querySelector('.manual-improvement-input');
-                if (ta) ta.focus();
+                try {
+                    // 应用保存的尺寸（如果有）
+                    const modalContent = this.$el?.querySelector('.manual-improvement-content');
+                    if (modalContent && this.manualModalSize.width && this.manualModalSize.height) {
+                        modalContent.style.width = `${this.manualModalSize.width}px`;
+                        modalContent.style.height = `${this.manualModalSize.height}px`;
+                    }
+                    const ta = this.$el && this.$el.querySelector('.manual-improvement-input');
+                    if (ta) ta.focus();
+                } catch (_) { }
             });
 
             console.log('[CodeView] 展开到完整编辑器');
@@ -3607,6 +3735,11 @@ const componentOptions = {
                     status: 'pending',
                     timestamp: Date.now()
                 };
+
+                // 如果有 AI prompt，将其添加到评论对象中
+                if (this._pendingAiPrompt) {
+                    comment.aiPrompt = this._pendingAiPrompt;
+                }
 
                 console.log('[CodeView] 准备提交 Quick Comment:', {
                     fileKey: comment.fileKey,
@@ -3685,6 +3818,8 @@ const componentOptions = {
                 } catch (_) { }
             } finally {
                 this.quickCommentSubmitting = false;
+                // 清空临时保存的 AI prompt
+                this._pendingAiPrompt = null;
             }
         },
 
@@ -3735,6 +3870,12 @@ const componentOptions = {
             // 聚焦到输入框
             this.$nextTick(() => {
                 try {
+                    // 应用保存的尺寸（如果有）
+                    const modalContent = this.$el?.querySelector('.manual-improvement-content');
+                    if (modalContent && this.manualModalSize.width && this.manualModalSize.height) {
+                        modalContent.style.width = `${this.manualModalSize.width}px`;
+                        modalContent.style.height = `${this.manualModalSize.height}px`;
+                    }
                     const ta = this.$el && this.$el.querySelector('.manual-improvement-input');
                     if (ta) {
                         ta.focus();

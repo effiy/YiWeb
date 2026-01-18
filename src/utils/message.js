@@ -20,8 +20,11 @@ const MESSAGE_CONFIG = {
     duration: 3000,
     position: 'top-right',
     maxCount: 5,
-    margin: 20, // 距离边缘的边距
-    safeZone: 60 // 安全区域高度（避免被浏览器地址栏遮挡）
+    margin: 24, // 距离边缘的边距（优化为更舒适的间距）
+    safeZone: 80, // 安全区域高度（避免被浏览器地址栏和固定导航栏遮挡）
+    gap: 12, // 消息之间的间距
+    minDistanceFromTop: 20, // 距离顶部的最小距离
+    minDistanceFromRight: 20 // 距离右侧的最小距离
 };
 
 /**
@@ -52,38 +55,126 @@ const updateViewportInfo = () => {
 };
 
 /**
+ * 检测固定定位元素（如导航栏、工具栏等）
+ * @returns {Object} 固定元素信息
+ */
+const detectFixedElements = () => {
+    const fixedElements = [];
+
+    // 优化：只检查常见的固定元素选择器，而不是遍历所有元素
+    const commonSelectors = [
+        'header',
+        'nav',
+        '.header',
+        '.navbar',
+        '.nav',
+        '.toolbar',
+        '.topbar',
+        '[class*="fixed"]',
+        '[class*="sticky"]'
+    ];
+
+    // 检查常见选择器
+    commonSelectors.forEach(selector => {
+        try {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => {
+                const style = window.getComputedStyle(el);
+                if (style.position === 'fixed' || style.position === 'sticky') {
+                    const rect = el.getBoundingClientRect();
+                    // 只考虑在顶部或右侧的固定元素，且可见
+                    if (rect.width > 0 && rect.height > 0 &&
+                        (rect.top < 150 || rect.right > viewportInfo.width - 150)) {
+                        fixedElements.push({
+                            top: rect.top,
+                            right: viewportInfo.width - rect.right,
+                            bottom: rect.bottom,
+                            left: rect.left,
+                            height: rect.height,
+                            width: rect.width
+                        });
+                    }
+                }
+            });
+        } catch (e) {
+            // 忽略选择器错误
+        }
+    });
+
+    return fixedElements;
+};
+
+/**
  * 计算安全位置
  * @returns {Object} 位置信息
  */
 const calculateSafePosition = () => {
     updateViewportInfo();
-    
-    // 获取当前滚动位置
-    const scrollTop = viewportInfo.scrollTop;
-    const scrollLeft = viewportInfo.scrollLeft;
-    
-    // 计算安全区域
-    const safeTop = Math.max(MESSAGE_CONFIG.margin, MESSAGE_CONFIG.safeZone);
-    const safeRight = MESSAGE_CONFIG.margin;
-    
-    // 考虑滚动位置，确保消息始终在可视区域内
-    const adjustedTop = safeTop + scrollTop;
-    const adjustedRight = safeRight + scrollLeft;
-    
-    // 根据屏幕尺寸动态调整最大宽度
-    let maxWidth;
+
+    // 检测固定定位元素
+    const fixedElements = detectFixedElements();
+
+    // 计算顶部安全区域（考虑固定导航栏等）
+    let topOffset = MESSAGE_CONFIG.safeZone;
+    fixedElements.forEach(el => {
+        if (el.top < 100 && el.bottom > 0) {
+            // 顶部固定元素
+            topOffset = Math.max(topOffset, el.bottom + MESSAGE_CONFIG.margin);
+        }
+    });
+
+    // 计算右侧安全区域（考虑固定侧边栏等）
+    let rightOffset = MESSAGE_CONFIG.margin;
+    fixedElements.forEach(el => {
+        if (el.right < 100 && el.left < viewportInfo.width / 2) {
+            // 右侧固定元素
+            rightOffset = Math.max(rightOffset, viewportInfo.width - el.left + MESSAGE_CONFIG.margin);
+        }
+    });
+
+    // 使用固定定位，不依赖滚动位置（更稳定的体验）
+    const safeTop = Math.max(
+        MESSAGE_CONFIG.minDistanceFromTop,
+        topOffset
+    );
+    const safeRight = Math.max(
+        MESSAGE_CONFIG.minDistanceFromRight,
+        rightOffset
+    );
+
+    // 根据屏幕尺寸动态调整最大宽度和位置
+    let maxWidth, finalTop, finalRight;
+
     if (viewportInfo.width <= 480) {
-        maxWidth = viewportInfo.width - 20; // 小屏幕：几乎全宽
+        // 小屏幕：居中显示，几乎全宽
+        maxWidth = viewportInfo.width - 32;
+        finalTop = safeTop;
+        finalRight = 'auto';
+        // 需要计算居中位置
+        const leftPosition = (viewportInfo.width - maxWidth) / 2;
+        return {
+            top: `${safeTop}px`,
+            left: `${leftPosition}px`,
+            right: 'auto',
+            maxWidth: `${maxWidth}px`
+        };
     } else if (viewportInfo.width <= 768) {
-        maxWidth = viewportInfo.width - 40; // 中等屏幕：留出边距
+        // 中等屏幕：右上角，留出边距
+        maxWidth = Math.min(500, viewportInfo.width - 48);
+        finalTop = safeTop;
+        finalRight = safeRight;
     } else {
-        maxWidth = Math.min(600, viewportInfo.width - 40); // 大屏幕：最大600px
+        // 大屏幕：右上角，最大宽度限制
+        maxWidth = Math.min(600, viewportInfo.width - 48);
+        finalTop = safeTop;
+        finalRight = safeRight;
     }
-    
+
     return {
-        top: adjustedTop,
-        right: adjustedRight,
-        maxWidth: maxWidth
+        top: `${finalTop}px`,
+        right: `${finalRight}px`,
+        left: 'auto',
+        maxWidth: `${maxWidth}px`
     };
 };
 
@@ -95,51 +186,62 @@ const createMessageContainer = () => {
 
     messageContainer = document.createElement('div');
     messageContainer.className = 'message-container';
-    
+
     // 初始化位置
-    const position = calculateSafePosition();
-    
-    messageContainer.style.cssText = `
-        position: fixed;
-        top: ${position.top}px;
-        right: ${position.right}px;
-        z-index: 9999;
-        max-width: ${position.maxWidth}px;
-        pointer-events: none;
-        transition: all 0.3s ease;
-    `;
+    updateMessagePosition();
 
     document.body.appendChild(messageContainer);
-    
-    // 监听窗口大小变化和滚动事件
+
+    // 监听窗口大小变化（使用防抖优化性能）
     let resizeTimeout;
-    let scrollTimeout;
-    
     const handleResize = () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
             updateMessagePosition();
-        }, 100);
+        }, 150);
     };
-    
-    const handleScroll = () => {
-        clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(() => {
+
+    // 监听方向变化（移动设备旋转）
+    const handleOrientationChange = () => {
+        setTimeout(() => {
             updateMessagePosition();
-        }, 16); // 约60fps
+        }, 300); // 延迟以等待布局完成
     };
-    
+
     window.addEventListener('resize', handleResize, { passive: true });
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    document.addEventListener('scroll', handleScroll, { passive: true });
-    
+    window.addEventListener('orientationchange', handleOrientationChange, { passive: true });
+
     // 监听页面可见性变化
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
-            updateMessagePosition();
+            // 页面重新可见时更新位置
+            setTimeout(() => {
+                updateMessagePosition();
+            }, 100);
         }
     }, { passive: true });
-    
+
+    // 使用 Intersection Observer 检测容器是否在视口内（可选优化）
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) {
+                    // 如果容器不在视口内，更新位置
+                    updateMessagePosition();
+                }
+            });
+        }, {
+            threshold: 0.1
+        });
+
+        // 延迟观察，确保容器已添加到 DOM
+        setTimeout(() => {
+            if (messageContainer) {
+                observer.observe(messageContainer);
+            }
+        }, 100);
+    }
+
     return messageContainer;
 };
 
@@ -148,14 +250,18 @@ const createMessageContainer = () => {
  */
 const updateMessagePosition = () => {
     if (!messageContainer) return;
-    
+
     const position = calculateSafePosition();
-    
-    messageContainer.style.top = `${position.top}px`;
-    messageContainer.style.right = `${position.right}px`;
-    messageContainer.style.maxWidth = `${position.maxWidth}px`;
-    
-    // 静默，不打印日志以减少生产噪音
+
+    // 应用所有位置属性
+    messageContainer.style.top = position.top;
+    messageContainer.style.right = position.right || 'auto';
+    messageContainer.style.left = position.left || 'auto';
+    messageContainer.style.maxWidth = position.maxWidth;
+
+    // 确保容器始终可见
+    messageContainer.style.display = 'block';
+    messageContainer.style.visibility = 'visible';
 };
 
 /**
@@ -195,19 +301,19 @@ const createMessageElement = (message, type) => {
     icon.className = `fas ${getMessageIcon(type)}`;
     icon.style.marginRight = '8px';
     icon.style.flexShrink = '0';
-    
+
     // 创建文本容器
     const textContainer = document.createElement('span');
     textContainer.textContent = message;
     textContainer.style.flex = '1';
     textContainer.style.minWidth = '0';
-    
+
     // 创建内容包装器
     const contentWrapper = document.createElement('div');
     contentWrapper.style.display = 'flex';
     contentWrapper.style.alignItems = 'flex-start';
     contentWrapper.style.gap = '8px';
-    
+
     contentWrapper.appendChild(icon);
     contentWrapper.appendChild(textContainer);
     messageEl.appendChild(contentWrapper);
@@ -373,13 +479,13 @@ const createComplexMessageElement = (config) => {
             `;
 
             actionBtn.addEventListener('mouseenter', () => {
-                actionBtn.style.backgroundColor = action.type === 'primary' 
-                    ? 'rgba(255, 255, 255, 0.3)' 
+                actionBtn.style.backgroundColor = action.type === 'primary'
+                    ? 'rgba(255, 255, 255, 0.3)'
                     : 'rgba(255, 255, 255, 0.2)';
             });
             actionBtn.addEventListener('mouseleave', () => {
-                actionBtn.style.backgroundColor = action.type === 'primary' 
-                    ? 'rgba(255, 255, 255, 0.2)' 
+                actionBtn.style.backgroundColor = action.type === 'primary'
+                    ? 'rgba(255, 255, 255, 0.2)'
                     : 'rgba(255, 255, 255, 0.1)';
             });
             actionBtn.addEventListener('click', () => {
@@ -432,8 +538,14 @@ const showComplexMessage = (config) => {
         const oldestMessage = messages[0];
         hideMessage(oldestMessage);
     }
-    
-    console.log('[复杂消息显示] 显示消息:', config);
+
+    // 开发环境才输出详细日志（检查是否在开发环境）
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+        console.log('[复杂消息显示] 显示消息:', {
+            type: config.type,
+            title: config.title?.substring(0, 30) || ''
+        });
+    }
 };
 
 /**
@@ -448,7 +560,7 @@ export const showMessage = (messageOrConfig, type = MESSAGE_TYPES.INFO, duration
         const config = messageOrConfig;
         return showComplexMessage(config);
     }
-    
+
     // 简单消息
     const message = messageOrConfig;
     if (!message) return;
@@ -486,13 +598,15 @@ export const showMessage = (messageOrConfig, type = MESSAGE_TYPES.INFO, duration
         const oldestMessage = messages[0];
         hideMessage(oldestMessage);
     }
-    
-    console.log('[消息显示] 显示消息:', {
-        type: type,
-        message: message,
-        duration: duration,
-        position: calculateSafePosition()
-    });
+
+    // 开发环境才输出详细日志（检查是否在开发环境）
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+        console.log('[消息显示] 显示消息:', {
+            type: type,
+            message: message.substring(0, 50) + (message.length > 50 ? '...' : ''),
+            duration: duration
+        });
+    }
 };
 
 /**
@@ -502,7 +616,7 @@ export const showMessage = (messageOrConfig, type = MESSAGE_TYPES.INFO, duration
 const hideMessage = (messageEl) => {
     messageEl.style.transform = 'translateX(100%)';
     messageEl.style.opacity = '0';
-    
+
     setTimeout(() => {
         if (messageEl.parentNode) {
             messageEl.parentNode.removeChild(messageEl);
@@ -583,5 +697,5 @@ if (typeof window !== 'undefined') {
     window.showInfo = showInfo;
     window.clearMessages = clearMessages;
     window.MESSAGE_TYPES = MESSAGE_TYPES;
-} 
+}
 

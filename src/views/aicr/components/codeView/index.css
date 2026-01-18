@@ -3044,6 +3044,46 @@
     backdrop-filter: blur(4px);
 }
 
+/* AI 提示内容样式 */
+.comment-ai-prompt {
+    margin-bottom: 16px;
+    border: 1px solid rgba(167, 139, 250, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    background: linear-gradient(135deg, 
+        rgba(167, 139, 250, 0.05) 0%, 
+        rgba(139, 92, 246, 0.08) 100%);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.ai-prompt-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.1) 0%, rgba(139, 92, 246, 0.15) 100%);
+    border-bottom: 1px solid rgba(167, 139, 250, 0.2);
+    font-size: 13px;
+    font-weight: 600;
+    color: #a78bfa;
+}
+
+.ai-prompt-header i {
+    font-size: 14px;
+    color: #a78bfa;
+}
+
+.ai-prompt-content {
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+
 .improvement-header {
     display: flex;
     align-items: center;
@@ -3303,6 +3343,11 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
+    min-width: 600px;
+    min-height: 400px;
+    max-width: 95vw;
+    max-height: 95vh;
 }
 
 .manual-improvement-header {
@@ -3795,6 +3840,285 @@
         width: 94vw;
         max-height: 90vh;
     }
+}
+
+/* Manual Modal 调整大小手柄样式 */
+.manual-resize-handle {
+    position: absolute;
+    z-index: 10;
+    background: transparent;
+    pointer-events: auto;
+}
+
+/* 四个角的手柄 - 复用 quick-comment 的样式，但使用 manual-resize-handle 类 */
+.manual-resize-handle.resize-handle-se {
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    cursor: nwse-resize;
+    border-radius: 12px 0 12px 0;
+}
+
+.manual-resize-handle.resize-handle-se::before {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 0 12px 12px;
+    border-color: transparent transparent rgba(161, 161, 170, 0.4) transparent;
+    transition: border-color 0.15s ease;
+}
+
+.manual-resize-handle.resize-handle-se:hover::before {
+    border-color: transparent transparent rgba(161, 161, 170, 0.7) transparent;
+}
+
+.manual-resize-handle.resize-handle-se.resizing {
+    cursor: nwse-resize;
+}
+
+.manual-resize-handle.resize-handle-se.resizing::before {
+    border-color: transparent transparent rgba(167, 139, 250, 0.8) transparent;
+}
+
+.manual-resize-handle.resize-handle-sw {
+    bottom: 0;
+    left: 0;
+    width: 20px;
+    height: 20px;
+    cursor: nesw-resize;
+    border-radius: 0 12px 0 12px;
+}
+
+.manual-resize-handle.resize-handle-sw::before {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 0 12px 12px;
+    border-color: transparent transparent transparent rgba(161, 161, 170, 0.4);
+    transition: border-color 0.15s ease;
+}
+
+.manual-resize-handle.resize-handle-sw:hover::before {
+    border-color: transparent transparent transparent rgba(161, 161, 170, 0.7);
+}
+
+.manual-resize-handle.resize-handle-sw.resizing {
+    cursor: nesw-resize;
+}
+
+.manual-resize-handle.resize-handle-sw.resizing::before {
+    border-color: transparent transparent transparent rgba(167, 139, 250, 0.8);
+}
+
+.manual-resize-handle.resize-handle-ne {
+    top: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    cursor: nesw-resize;
+    border-radius: 0 12px 0 12px;
+}
+
+.manual-resize-handle.resize-handle-ne::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 12px 0 0 12px;
+    border-color: rgba(161, 161, 170, 0.4) transparent transparent transparent;
+    transition: border-color 0.15s ease;
+}
+
+.manual-resize-handle.resize-handle-ne:hover::before {
+    border-color: rgba(161, 161, 170, 0.7) transparent transparent transparent;
+}
+
+.manual-resize-handle.resize-handle-ne.resizing {
+    cursor: nesw-resize;
+}
+
+.manual-resize-handle.resize-handle-ne.resizing::before {
+    border-color: rgba(167, 139, 250, 0.8) transparent transparent transparent;
+}
+
+.manual-resize-handle.resize-handle-nw {
+    top: 0;
+    left: 0;
+    width: 20px;
+    height: 20px;
+    cursor: nwse-resize;
+    border-radius: 12px 0 12px 0;
+}
+
+.manual-resize-handle.resize-handle-nw::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 12px 0 0 12px;
+    border-color: transparent transparent rgba(161, 161, 170, 0.4) transparent;
+    transition: border-color 0.15s ease;
+}
+
+.manual-resize-handle.resize-handle-nw:hover::before {
+    border-color: transparent transparent rgba(161, 161, 170, 0.7) transparent;
+}
+
+.manual-resize-handle.resize-handle-nw.resizing {
+    cursor: nwse-resize;
+}
+
+.manual-resize-handle.resize-handle-nw.resizing::before {
+    border-color: transparent transparent rgba(167, 139, 250, 0.8) transparent;
+}
+
+/* 四条边的手柄 */
+.manual-resize-handle.resize-handle-n {
+    top: 0;
+    left: 20px;
+    right: 20px;
+    height: 8px;
+    cursor: ns-resize;
+}
+
+.manual-resize-handle.resize-handle-n::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 3px;
+    background: rgba(161, 161, 170, 0.4);
+    border-radius: 2px;
+    transition: background 0.15s ease;
+}
+
+.manual-resize-handle.resize-handle-n:hover::before {
+    background: rgba(161, 161, 170, 0.7);
+}
+
+.manual-resize-handle.resize-handle-n.resizing {
+    cursor: ns-resize;
+}
+
+.manual-resize-handle.resize-handle-n.resizing::before {
+    background: rgba(167, 139, 250, 0.8);
+}
+
+.manual-resize-handle.resize-handle-s {
+    bottom: 0;
+    left: 20px;
+    right: 20px;
+    height: 8px;
+    cursor: ns-resize;
+}
+
+.manual-resize-handle.resize-handle-s::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 3px;
+    background: rgba(161, 161, 170, 0.4);
+    border-radius: 2px;
+    transition: background 0.15s ease;
+}
+
+.manual-resize-handle.resize-handle-s:hover::before {
+    background: rgba(161, 161, 170, 0.7);
+}
+
+.manual-resize-handle.resize-handle-s.resizing {
+    cursor: ns-resize;
+}
+
+.manual-resize-handle.resize-handle-s.resizing::before {
+    background: rgba(167, 139, 250, 0.8);
+}
+
+.manual-resize-handle.resize-handle-e {
+    top: 20px;
+    bottom: 20px;
+    right: 0;
+    width: 8px;
+    cursor: ew-resize;
+}
+
+.manual-resize-handle.resize-handle-e::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 40px;
+    background: rgba(161, 161, 170, 0.4);
+    border-radius: 2px;
+    transition: background 0.15s ease;
+}
+
+.manual-resize-handle.resize-handle-e:hover::before {
+    background: rgba(161, 161, 170, 0.7);
+}
+
+.manual-resize-handle.resize-handle-e.resizing {
+    cursor: ew-resize;
+}
+
+.manual-resize-handle.resize-handle-e.resizing::before {
+    background: rgba(167, 139, 250, 0.8);
+}
+
+.manual-resize-handle.resize-handle-w {
+    top: 20px;
+    bottom: 20px;
+    left: 0;
+    width: 8px;
+    cursor: ew-resize;
+}
+
+.manual-resize-handle.resize-handle-w::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 40px;
+    background: rgba(161, 161, 170, 0.4);
+    border-radius: 2px;
+    transition: background 0.15s ease;
+}
+
+.manual-resize-handle.resize-handle-w:hover::before {
+    background: rgba(161, 161, 170, 0.7);
+}
+
+.manual-resize-handle.resize-handle-w.resizing {
+    cursor: ew-resize;
+}
+
+.manual-resize-handle.resize-handle-w.resizing::before {
+    background: rgba(167, 139, 250, 0.8);
+}
     .manual-improvement-input {
         min-height: 0;
     }
@@ -6069,6 +6393,147 @@
 
 .resize-handle-nw.resizing::before {
     border-color: transparent transparent rgba(167, 139, 250, 0.8) transparent;
+}
+
+/* 调整大小手柄 - 四条边 */
+/* 上边 (north) */
+.resize-handle-n {
+    top: 0;
+    left: 20px;
+    right: 20px;
+    height: 8px;
+    cursor: ns-resize;
+    border-radius: 0;
+}
+
+.resize-handle-n::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 3px;
+    background: rgba(161, 161, 170, 0.4);
+    border-radius: 2px;
+    transition: background 0.15s ease;
+}
+
+.resize-handle-n:hover::before {
+    background: rgba(161, 161, 170, 0.7);
+}
+
+.resize-handle-n.resizing {
+    cursor: ns-resize;
+}
+
+.resize-handle-n.resizing::before {
+    background: rgba(167, 139, 250, 0.8);
+}
+
+/* 下边 (south) */
+.resize-handle-s {
+    bottom: 0;
+    left: 20px;
+    right: 20px;
+    height: 8px;
+    cursor: ns-resize;
+    border-radius: 0;
+}
+
+.resize-handle-s::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 3px;
+    background: rgba(161, 161, 170, 0.4);
+    border-radius: 2px;
+    transition: background 0.15s ease;
+}
+
+.resize-handle-s:hover::before {
+    background: rgba(161, 161, 170, 0.7);
+}
+
+.resize-handle-s.resizing {
+    cursor: ns-resize;
+}
+
+.resize-handle-s.resizing::before {
+    background: rgba(167, 139, 250, 0.8);
+}
+
+/* 右边 (east) */
+.resize-handle-e {
+    top: 20px;
+    bottom: 20px;
+    right: 0;
+    width: 8px;
+    cursor: ew-resize;
+    border-radius: 0;
+}
+
+.resize-handle-e::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 40px;
+    background: rgba(161, 161, 170, 0.4);
+    border-radius: 2px;
+    transition: background 0.15s ease;
+}
+
+.resize-handle-e:hover::before {
+    background: rgba(161, 161, 170, 0.7);
+}
+
+.resize-handle-e.resizing {
+    cursor: ew-resize;
+}
+
+.resize-handle-e.resizing::before {
+    background: rgba(167, 139, 250, 0.8);
+}
+
+/* 左边 (west) */
+.resize-handle-w {
+    top: 20px;
+    bottom: 20px;
+    left: 0;
+    width: 8px;
+    cursor: ew-resize;
+    border-radius: 0;
+}
+
+.resize-handle-w::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 40px;
+    background: rgba(161, 161, 170, 0.4);
+    border-radius: 2px;
+    transition: background 0.15s ease;
+}
+
+.resize-handle-w:hover::before {
+    background: rgba(161, 161, 170, 0.7);
+}
+
+.resize-handle-w.resizing {
+    cursor: ew-resize;
+}
+
+.resize-handle-w.resizing::before {
+    background: rgba(167, 139, 250, 0.8);
 }
 
 /* 响应式设计 */

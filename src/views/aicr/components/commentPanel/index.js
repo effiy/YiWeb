@@ -635,6 +635,10 @@ const componentOptions = {
 
         // 将Markdown渲染为HTML（使用marked.js优化）
         renderMarkdown(text) {
+            return this.renderMarkdownWithAiPrompt(text, null);
+        },
+
+        renderMarkdownWithAiPrompt(text, aiPrompt) {
             return safeExecute(() => {
                 if (!text) return '';
 

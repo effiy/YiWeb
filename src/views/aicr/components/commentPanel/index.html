@@ -338,8 +338,9 @@
                             <!-- 评论操作按钮 -->
                             <div class="comment-actions comment-chat-actions">
                                 <!-- 编辑按钮 -->
-                                <button type="button" v-if="comment.author === '手动评论'" @click="openCommentEditor(comment)"
-                                    class="chat-meta-btn comment-action-btn" title="编辑评论" aria-label="编辑评论">
+                                <button type="button" v-if="comment.author === '手动评论'"
+                                    @click="openCommentEditor(comment)" class="chat-meta-btn comment-action-btn"
+                                    title="编辑评论" aria-label="编辑评论">
                                     ✏️ 编辑
                                 </button>
 
@@ -375,8 +376,17 @@
                                 @click="openFileAtAnchor(comment)" @keydown.enter="openFileAtAnchor(comment)"
                                 @keydown.space.prevent="openFileAtAnchor(comment)">{{ comment.text }}</pre>
                         </div>
+                        <!-- AI 提示内容展示（如果有） -->
+                        <div v-if="comment.aiPrompt" class="comment-ai-prompt">
+                            <div class="ai-prompt-header">
+                                <i class="fas fa-wand-magic-sparkles"></i>
+                                <span>AI 提示</span>
+                            </div>
+                            <div class="ai-prompt-content">{{ comment.aiPrompt }}</div>
+                        </div>
                         <!-- 评论内容展示 -->
-                        <div class="comment-content md-preview-body" v-html="renderMarkdown(comment.content)"></div>
+                        <div class="comment-content md-preview-body"
+                            v-html="renderMarkdownWithAiPrompt(comment.content, comment.aiPrompt)"></div>
 
                         <!-- 改进代码展示区域，仅当有改进代码时显示 -->
                         <div v-if="comment.improvementText" class="comment-improvement">
