@@ -105,33 +105,146 @@
         <!-- 划词评论按钮容器（全局唯一，通过脚本定位） -->
         <div id="comment-action-container"></div>
 
-        <!-- Quick Comment 内联输入框（Cursor Quick Edit 风格） -->
+        <!-- Quick Comment 内联输入框（Cursor Quick Edit 风格，支持 AI） -->
         <div v-if="showQuickComment" class="quick-comment-container"
-            :class="{ 'visible': showQuickComment, 'animate-in': quickCommentAnimating }" :style="quickCommentPosition"
-            :data-placement="quickCommentPositionData.placement || 'right'" @keydown.esc.stop="closeQuickComment">
+            :class="{ 
+                'visible': showQuickComment, 
+                'animate-in': quickCommentAnimating,
+                'ai-mode': quickCommentMode === 'ai',
+                'ai-generating': quickCommentAiGenerating
+            }" 
+            :style="quickCommentPosition"
+            :data-placement="quickCommentPositionData.placement || 'right'" 
+            @keydown.esc.stop="closeQuickComment">
+            
+            <!-- 头部 -->
             <div class="quick-comment-header">
                 <div class="quick-comment-title">
-                    <i class="fas fa-comment-dots"></i>
-                    <span>添加评论</span>
+                    <i :class="quickCommentMode === 'ai' ? 'fas fa-magic' : 'fas fa-comment-dots'"></i>
+                    <span>{{ quickCommentMode === 'ai' ? 'AI 评论' : '添加评论' }}</span>
                 </div>
-                <button type="button" class="quick-comment-close" @click="closeQuickComment" title="关闭 (Esc)"
-                    aria-label="关闭">
-                    <i class="fas fa-times"></i>
-                </button>
+                <div class="quick-comment-header-actions">
+                    <!-- 模式切换 -->
+                    <div class="quick-comment-mode-switch">
+                        <button type="button" 
+                            class="mode-switch-btn"
+                            :class="{ active: quickCommentMode === 'manual' }"
+                            @click="setQuickCommentMode('manual')"
+                            title="手动评论">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" 
+                            class="mode-switch-btn"
+                            :class="{ active: quickCommentMode === 'ai' }"
+                            @click="setQuickCommentMode('ai')"
+                            title="AI 生成">
+                            <i class="fas fa-magic"></i>
+                        </button>
+                    </div>
+                    <button type="button" class="quick-comment-close" @click="closeQuickComment" title="关闭 (Esc)"
+                        aria-label="关闭">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
 
+            <!-- 引用代码区域 -->
             <div v-if="quickCommentQuote" class="quick-comment-quote">
                 <div class="quick-comment-quote-label">
                     <i class="fas fa-code"></i>
                     <span>引用代码</span>
+                    <span class="quick-comment-quote-lines" v-if="lastSelectionRange">
+                        L{{ lastSelectionRange.startLine }}<template v-if="lastSelectionRange.endLine !== lastSelectionRange.startLine">-{{ lastSelectionRange.endLine }}</template>
+                    </span>
                 </div>
                 <div class="quick-comment-quote-code">{{ quickCommentQuoteDisplay }}</div>
             </div>
 
-            <div class="quick-comment-body">
+            <!-- AI 模式输入区域 -->
+            <div v-if="quickCommentMode === 'ai'" class="quick-comment-body ai-mode">
+                <!-- AI 指令输入 -->
+                <div class="quick-comment-ai-input-wrapper">
+                    <div class="ai-input-icon">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                    </div>
+                    <textarea ref="quickCommentAiInput" 
+                        class="quick-comment-ai-input"
+                        v-model="quickCommentAiPrompt"
+                        :placeholder="quickCommentAiGenerating ? 'AI 正在生成...' : '描述你想要的评论或修改建议...'"
+                        :disabled="quickCommentAiGenerating"
+                        @keydown="handleQuickCommentAiKeydown"
+                        rows="1"></textarea>
+                    <button v-if="quickCommentAiGenerating" 
+                        type="button" 
+                        class="ai-stop-btn"
+                        @click="stopAiGeneration"
+                        title="停止生成">
+                        <i class="fas fa-stop"></i>
+                    </button>
+                    <button v-else 
+                        type="button" 
+                        class="ai-generate-btn"
+                        :disabled="!quickCommentAiPrompt.trim()"
+                        @click="generateAiComment"
+                        title="生成 (⌘↵)">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+                
+                <!-- AI 生成结果 -->
+                <div v-if="quickCommentAiResult || quickCommentAiGenerating" class="quick-comment-ai-result">
+                    <div class="ai-result-header">
+                        <span class="ai-result-label">
+                            <i class="fas fa-sparkles"></i>
+                            AI 生成的评论
+                        </span>
+                        <div class="ai-result-actions" v-if="quickCommentAiResult && !quickCommentAiGenerating">
+                            <button type="button" class="ai-action-btn" @click="regenerateAiComment" title="重新生成">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                            <button type="button" class="ai-action-btn" @click="copyAiResult" title="复制">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="ai-result-content" :class="{ 'generating': quickCommentAiGenerating }">
+                        <div v-if="quickCommentAiGenerating && !quickCommentAiResult" class="ai-generating-indicator">
+                            <span class="generating-dot"></span>
+                            <span class="generating-dot"></span>
+                            <span class="generating-dot"></span>
+                        </div>
+                        <div v-else class="ai-result-text" v-html="renderQuickCommentAiResult"></div>
+                    </div>
+                    
+                    <!-- 错误提示 -->
+                    <div v-if="quickCommentAiError" class="quick-comment-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>{{ quickCommentAiError }}</span>
+                    </div>
+                </div>
+                
+                <!-- 快速预设 -->
+                <div v-if="!quickCommentAiResult && !quickCommentAiGenerating" class="quick-comment-ai-presets">
+                    <button type="button" class="ai-preset-btn" @click="useAiPreset('review')">
+                        <i class="fas fa-search"></i> 代码审查
+                    </button>
+                    <button type="button" class="ai-preset-btn" @click="useAiPreset('improve')">
+                        <i class="fas fa-lightbulb"></i> 改进建议
+                    </button>
+                    <button type="button" class="ai-preset-btn" @click="useAiPreset('explain')">
+                        <i class="fas fa-info-circle"></i> 解释代码
+                    </button>
+                    <button type="button" class="ai-preset-btn" @click="useAiPreset('bug')">
+                        <i class="fas fa-bug"></i> 查找问题
+                    </button>
+                </div>
+            </div>
+
+            <!-- 手动模式输入区域 -->
+            <div v-else class="quick-comment-body manual-mode">
                 <div class="quick-comment-input-wrapper">
                     <textarea ref="quickCommentTextarea" class="quick-comment-textarea" v-model="quickCommentText"
-                        placeholder="输入评论内容..." @keydown="handleQuickCommentKeydown"
+                        placeholder="输入评论内容，支持 Markdown..." @keydown="handleQuickCommentKeydown"
                         @input="autoResizeQuickCommentTextarea"></textarea>
 
                     <div v-if="quickCommentError" class="quick-comment-error">
@@ -141,10 +254,17 @@
                 </div>
             </div>
 
+            <!-- 底部操作栏 -->
             <div class="quick-comment-footer">
                 <div class="quick-comment-hint">
-                    <kbd>⌘</kbd><span>+</span><kbd>↵</kbd>
-                    <span>提交</span>
+                    <template v-if="quickCommentMode === 'ai'">
+                        <kbd>⌘</kbd><span>+</span><kbd>↵</kbd>
+                        <span>{{ quickCommentAiResult ? '提交' : '生成' }}</span>
+                    </template>
+                    <template v-else>
+                        <kbd>⌘</kbd><span>+</span><kbd>↵</kbd>
+                        <span>提交</span>
+                    </template>
                     <span class="separator">·</span>
                     <kbd>Esc</kbd>
                     <span>关闭</span>
@@ -154,12 +274,27 @@
                         <i class="fas fa-expand-alt"></i>
                         <span>展开</span>
                     </button>
-                    <button type="button" class="quick-comment-submit-btn"
-                        :class="{ 'loading': quickCommentSubmitting }"
-                        :disabled="!canSubmitQuickComment || quickCommentSubmitting" @click="submitQuickComment">
-                        <i :class="quickCommentSubmitting ? 'fas fa-spinner' : 'fas fa-paper-plane'"></i>
-                        <span>{{ quickCommentSubmitting ? '提交中...' : '提交' }}</span>
-                    </button>
+                    
+                    <!-- AI 模式下的提交按钮 -->
+                    <template v-if="quickCommentMode === 'ai'">
+                        <button type="button" class="quick-comment-submit-btn"
+                            :class="{ 'loading': quickCommentSubmitting }"
+                            :disabled="!quickCommentAiResult || quickCommentSubmitting || quickCommentAiGenerating" 
+                            @click="submitAiComment">
+                            <i :class="quickCommentSubmitting ? 'fas fa-spinner' : 'fas fa-check'"></i>
+                            <span>{{ quickCommentSubmitting ? '提交中...' : '采纳' }}</span>
+                        </button>
+                    </template>
+                    
+                    <!-- 手动模式下的提交按钮 -->
+                    <template v-else>
+                        <button type="button" class="quick-comment-submit-btn"
+                            :class="{ 'loading': quickCommentSubmitting }"
+                            :disabled="!canSubmitQuickComment || quickCommentSubmitting" @click="submitQuickComment">
+                            <i :class="quickCommentSubmitting ? 'fas fa-spinner' : 'fas fa-paper-plane'"></i>
+                            <span>{{ quickCommentSubmitting ? '提交中...' : '提交' }}</span>
+                        </button>
+                    </template>
                 </div>
             </div>
         </div>
@@ -180,10 +315,10 @@
                 </div>
                 <div class="manual-improvement-body">
                     <!-- 被评论的代码展示区域 -->
-                    <div class="manual-quoted-code-section" v-if="manualQuotedCode">
+                    <div class="manual-quoted-code-section" v-if="editingCommentText || manualQuotedCode">
                         <label class="manual-quoted-code-label"><i class="fas fa-quote-left"></i> 引用代码</label>
                         <div class="manual-quoted-code-content">
-                            <pre><code>{{ manualQuotedCode }}</code></pre>
+                            <pre><code>{{ editingCommentText || manualQuotedCode }}</code></pre>
                         </div>
                     </div>
 

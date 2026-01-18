@@ -96,7 +96,7 @@ const componentOptions = {
             _lastShowTs: 0,
             _buttonVisible: false,
 
-            // Quick Comment 内联输入框（Cursor Quick Edit 风格）
+            // Quick Comment 内联输入框（Cursor Quick Edit 风格，支持 AI）
             showQuickComment: false,
             quickCommentText: '',
             quickCommentQuote: '',
@@ -104,6 +104,13 @@ const componentOptions = {
             quickCommentSubmitting: false,
             quickCommentAnimating: false,
             quickCommentPositionData: { left: 0, top: 0 },
+            // AI 评论相关
+            quickCommentMode: 'ai', // 'ai' | 'manual'
+            quickCommentAiPrompt: '',
+            quickCommentAiResult: '',
+            quickCommentAiError: '',
+            quickCommentAiGenerating: false,
+            quickCommentAiAbortController: null,
 
             // 评论详情弹窗相关数据
             showCommentDetailPopup: false,
@@ -432,6 +439,12 @@ const componentOptions = {
                 return quote.substring(0, 150) + '...';
             }
             return quote;
+        },
+        renderQuickCommentAiResult() {
+            const text = this.quickCommentAiResult || '';
+            if (!text) return '';
+            // 简单的 Markdown 渲染
+            return this.renderMarkdown ? this.renderMarkdown(text) : text.replace(/\n/g, '<br>');
         },
         manualCommentPreviewHtml() {
             try {
@@ -2975,16 +2988,24 @@ const componentOptions = {
             this.quickCommentText = '';
             this.quickCommentError = '';
             this.quickCommentSubmitting = false;
+            // 重置 AI 状态
+            this.quickCommentAiPrompt = '';
+            this.quickCommentAiResult = '';
+            this.quickCommentAiError = '';
+            this.quickCommentAiGenerating = false;
 
             // 显示并触发动画
             this.quickCommentAnimating = true;
             this.showQuickComment = true;
 
-            // 聚焦输入框
+            // 聚焦输入框（根据模式选择）
             this.$nextTick(() => {
-                const textarea = this.$refs.quickCommentTextarea;
-                if (textarea) {
-                    textarea.focus();
+                if (this.quickCommentMode === 'ai') {
+                    const input = this.$refs.quickCommentAiInput;
+                    if (input) input.focus();
+                } else {
+                    const textarea = this.$refs.quickCommentTextarea;
+                    if (textarea) textarea.focus();
                 }
                 // 动画完成后移除动画类
                 setTimeout(() => {
@@ -3010,11 +3031,24 @@ const componentOptions = {
         },
 
         closeQuickComment() {
+            // 停止 AI 生成
+            if (this.quickCommentAiAbortController) {
+                try {
+                    this.quickCommentAiAbortController.abort();
+                } catch (_) { }
+                this.quickCommentAiAbortController = null;
+            }
+
             this.showQuickComment = false;
             this.quickCommentText = '';
             this.quickCommentQuote = '';
             this.quickCommentError = '';
             this.quickCommentSubmitting = false;
+            // 重置 AI 状态
+            this.quickCommentAiPrompt = '';
+            this.quickCommentAiResult = '';
+            this.quickCommentAiError = '';
+            this.quickCommentAiGenerating = false;
 
             // 移除点击外部关闭的监听
             document.removeEventListener('mousedown', this._quickCommentOutsideClickHandler);
@@ -3023,10 +3057,176 @@ const componentOptions = {
             console.log('[CodeView] Quick Comment 已关闭');
         },
 
+        setQuickCommentMode(mode) {
+            this.quickCommentMode = mode;
+            // 切换模式时聚焦对应输入框
+            this.$nextTick(() => {
+                if (mode === 'ai') {
+                    const input = this.$refs.quickCommentAiInput;
+                    if (input) input.focus();
+                } else {
+                    const textarea = this.$refs.quickCommentTextarea;
+                    if (textarea) textarea.focus();
+                }
+            });
+        },
+
+        useAiPreset(preset) {
+            const presets = {
+                'review': '请审查这段代码，指出潜在的问题和改进建议',
+                'improve': '请为这段代码提供优化和改进建议',
+                'explain': '请解释这段代码的功能和工作原理',
+                'bug': '请检查这段代码中可能存在的 bug 或错误'
+            };
+            this.quickCommentAiPrompt = presets[preset] || '';
+            this.$nextTick(() => {
+                this.generateAiComment();
+            });
+        },
+
+        handleQuickCommentAiKeydown(event) {
+            // Cmd/Ctrl + Enter 生成或提交
+            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                event.preventDefault();
+                if (this.quickCommentAiResult && !this.quickCommentAiGenerating) {
+                    this.submitAiComment();
+                } else if (this.quickCommentAiPrompt.trim() && !this.quickCommentAiGenerating) {
+                    this.generateAiComment();
+                }
+                return;
+            }
+
+            // Esc 关闭
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                if (this.quickCommentAiGenerating) {
+                    this.stopAiGeneration();
+                } else {
+                    this.closeQuickComment();
+                }
+                return;
+            }
+        },
+
+        async generateAiComment() {
+            const prompt = (this.quickCommentAiPrompt || '').trim();
+            if (!prompt) {
+                this.quickCommentAiError = '请输入描述';
+                return;
+            }
+
+            this.quickCommentAiGenerating = true;
+            this.quickCommentAiError = '';
+            this.quickCommentAiResult = '';
+
+            try {
+                const { streamPrompt } = await import('/src/services/modules/crud.js');
+                const apiUrl = `${String(window.API_URL || '').trim().replace(/\/$/, '')}/`;
+
+                // 构建系统提示
+                const systemPrompt = `你是一个专业的代码审查助手。用户会提供一段代码，请根据用户的要求给出评论或建议。
+要求：
+1. 评论要专业、具体、有建设性
+2. 使用 Markdown 格式，保持简洁
+3. 如果是代码改进建议，可以提供改进后的代码示例
+4. 评论语言与用户输入语言保持一致`;
+
+                // 构建用户提示
+                const codeContext = this.quickCommentQuote
+                    ? `\n\n代码片段：\n\`\`\`\n${this.quickCommentQuote}\n\`\`\``
+                    : '';
+                const userPrompt = `${prompt}${codeContext}`;
+
+                // 创建 AbortController
+                const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                this.quickCommentAiAbortController = controller;
+
+                let accumulated = '';
+
+                await streamPrompt(
+                    apiUrl,
+                    {
+                        module_name: 'services.ai.chat_service',
+                        method_name: 'chat',
+                        parameters: {
+                            system: systemPrompt,
+                            user: userPrompt,
+                            stream: true
+                        }
+                    },
+                    controller ? { signal: controller.signal } : {},
+                    (chunk) => {
+                        accumulated += String(chunk || '');
+                        this.quickCommentAiResult = accumulated;
+                    }
+                );
+
+                console.log('[CodeView] AI 评论生成完成:', accumulated.substring(0, 100));
+
+            } catch (error) {
+                // 检查是否为中止错误
+                const isAbort = error?.name === 'AbortError' ||
+                    error?.message?.includes('abort') ||
+                    error?.message?.includes('cancel');
+
+                if (isAbort) {
+                    console.log('[CodeView] AI 生成已停止');
+                    if (!this.quickCommentAiResult) {
+                        this.quickCommentAiResult = '';
+                    }
+                } else {
+                    console.error('[CodeView] AI 评论生成失败:', error);
+                    this.quickCommentAiError = error.message || 'AI 生成失败，请重试';
+                }
+            } finally {
+                this.quickCommentAiGenerating = false;
+                this.quickCommentAiAbortController = null;
+            }
+        },
+
+        stopAiGeneration() {
+            if (this.quickCommentAiAbortController) {
+                try {
+                    this.quickCommentAiAbortController.abort();
+                } catch (_) { }
+                this.quickCommentAiAbortController = null;
+            }
+            this.quickCommentAiGenerating = false;
+        },
+
+        regenerateAiComment() {
+            this.quickCommentAiResult = '';
+            this.quickCommentAiError = '';
+            this.generateAiComment();
+        },
+
+        async copyAiResult() {
+            try {
+                await navigator.clipboard.writeText(this.quickCommentAiResult);
+                if (window.showSuccess) {
+                    window.showSuccess('已复制到剪贴板');
+                }
+            } catch (error) {
+                console.error('[CodeView] 复制失败:', error);
+            }
+        },
+
+        async submitAiComment() {
+            const content = (this.quickCommentAiResult || '').trim();
+            if (!content) {
+                this.quickCommentAiError = 'AI 评论内容为空';
+                return;
+            }
+
+            // 将 AI 结果作为评论内容提交
+            this.quickCommentText = content;
+            await this.submitQuickComment();
+        },
+
         calculateQuickCommentPosition(rect) {
             const padding = 16;
-            const containerWidth = 400;
-            const containerHeight = 300; // 预估高度（包括引用区域）
+            const containerWidth = 440; // 增加宽度以适应 AI 内容
+            const containerHeight = 400; // 增加高度以适应 AI 结果
             const vw = window.innerWidth || document.documentElement.clientWidth;
             const vh = window.innerHeight || document.documentElement.clientHeight;
             const minEdgeDistance = 16;
@@ -3106,14 +3306,29 @@ const componentOptions = {
         },
 
         expandToFullEditor() {
-            // 将当前内容转移到完整编辑器
-            this.manualCommentText = this.quickCommentText;
+            // 将当前内容转移到完整编辑器（支持 AI 模式）
+            if (this.quickCommentMode === 'ai' && this.quickCommentAiResult) {
+                this.manualCommentText = this.quickCommentAiResult;
+            } else {
+                this.manualCommentText = this.quickCommentText;
+            }
             this.manualQuotedCode = this.quickCommentQuote;
+
+            // 停止 AI 生成
+            if (this.quickCommentAiAbortController) {
+                try {
+                    this.quickCommentAiAbortController.abort();
+                } catch (_) { }
+                this.quickCommentAiAbortController = null;
+            }
 
             // 关闭 Quick Comment
             this.showQuickComment = false;
             this.quickCommentText = '';
             this.quickCommentQuote = '';
+            this.quickCommentAiPrompt = '';
+            this.quickCommentAiResult = '';
+            this.quickCommentAiGenerating = false;
 
             // 打开完整编辑器
             this.showManualImprovementModal = true;
@@ -3179,15 +3394,16 @@ const componentOptions = {
                     timestamp: Date.now()
                 };
 
-                console.log('[CodeView] 准备提交 Quick Comment，文件Key:', comment.fileKey);
+                console.log('[CodeView] 准备提交 Quick Comment:', {
+                    fileKey: comment.fileKey,
+                    content: comment.content?.substring(0, 50) + '...',
+                    text: comment.text?.substring(0, 50) + '...',
+                    rangeInfo: comment.rangeInfo
+                });
 
-                // 规范化评论数据
-                if (window.aicrStore && window.aicrStore.normalizeComment) {
-                    comment = window.aicrStore.normalizeComment(comment);
-                } else {
-                    comment.createdTime = comment.timestamp;
-                    comment.createdAt = comment.timestamp;
-                }
+                // 手动设置时间戳字段，不使用 normalizeComment 避免 content/text 被启发式逻辑调换
+                comment.createdTime = comment.timestamp;
+                comment.createdAt = comment.timestamp;
 
                 // 验证API地址配置
                 if (!window.API_URL) {
@@ -3287,7 +3503,10 @@ const componentOptions = {
 
             // 设置评论内容
             this.manualCommentText = comment.content ? String(comment.content).trim() : '';
-            this.manualQuotedCode = comment.text ? comment.text.trim() : '';
+            const quotedCode = comment.text ? comment.text.trim() : '';
+            this.manualQuotedCode = quotedCode;
+            // 同时设置编辑表单中的引用代码，确保显示和编辑一致
+            this.editingCommentText = quotedCode;
 
             // 设置行范围信息
             if (comment.rangeInfo) {
@@ -3361,7 +3580,8 @@ const componentOptions = {
                     key: this.editingCommentData.key,
                     author: finalAuthor,
                     content: content,
-                    text: this.manualQuotedCode || this.editingCommentData.text || '', // 引用代码
+                    // 使用编辑表单中的引用代码（editingCommentText），确保与用户编辑的内容一致
+                    text: (this.editingCommentText || '').trim() || this.manualQuotedCode || this.editingCommentData.text || '',
                     rangeInfo: originalRangeInfo,
                     fileKey: updateFileKey,
                     updatedAt: new Date().toISOString()
@@ -3528,17 +3748,16 @@ const componentOptions = {
                     timestamp: Date.now() // 使用毫秒数
                 };
 
-                console.log('[CodeView] 准备提交评论，文件Key:', comment.fileKey, '文件对象:', this.file);
+                console.log('[CodeView] 准备提交评论:', {
+                    fileKey: comment.fileKey,
+                    content: comment.content?.substring(0, 50) + '...',
+                    text: comment.text?.substring(0, 50) + '...',
+                    rangeInfo: comment.rangeInfo
+                });
 
-                // 规范化评论数据，确保字段一致性
-                if (window.aicrStore && window.aicrStore.normalizeComment) {
-                    comment = window.aicrStore.normalizeComment(comment);
-                } else {
-                    // 如果没有规范化函数，手动设置字段
-                    // 保留 text 字段（引用代码），不要覆盖为 content
-                    comment.createdTime = comment.timestamp; // 毫秒数
-                    comment.createdAt = comment.timestamp; // 毫秒数
-                }
+                // 手动设置时间戳字段，不使用 normalizeComment 避免 content/text 被启发式逻辑调换
+                comment.createdTime = comment.timestamp; // 毫秒数
+                comment.createdAt = comment.timestamp; // 毫秒数
 
                 // 验证API地址配置
                 if (!window.API_URL) {

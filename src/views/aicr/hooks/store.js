@@ -1622,16 +1622,6 @@ export const createStore = () => {
         const rawContent = (comment.content == null) ? '' : String(comment.content).trim();
         const rawText = (comment.text == null) ? '' : String(comment.text).trim();
 
-        const looksLikeCode = (s) => {
-            if (!s) return false;
-            const str = String(s);
-            // 多行 + 常见代码符号/关键词/缩进，粗略判断即可
-            const isMultiline = str.includes('\n');
-            const hasCodePunct = /[;{}()[\]]/.test(str) || /<\/?[a-z][\s\S]*?>/i.test(str);
-            const hasCodeKeywords = /(^|\n)\s*(import|export|from|function|class|const|let|var|if|else|for|while|return|switch|case)\b/m.test(str);
-            const hasIndent = /(^|\n)\s{2,}\S/.test(str);
-            return (isMultiline && (hasCodePunct || hasCodeKeywords || hasIndent)) || (hasCodeKeywords && hasCodePunct);
-        };
 
         const hasRangeInfo = !!comment.rangeInfo;
 
@@ -1641,49 +1631,27 @@ export const createStore = () => {
         let normalizedContent = '';
         let normalizedText = '';
 
-        if (hasRangeInfo) {
-            // 兼容历史数据：有些数据可能把“引用代码”和“评论正文”写反了
-            if (rawContent && rawText) {
-                if (looksLikeCode(rawContent) && !looksLikeCode(rawText)) {
-                    normalizedText = rawContent;
-                    normalizedContent = rawText;
-                } else {
-                    normalizedText = rawText;
-                    normalizedContent = rawContent;
-                }
-            } else if (rawText) {
-                // 关键修复：如果有 rangeInfo，说明这确实是一个代码引用，应该无条件保留 text 作为引用代码
-                // 不要用 looksLikeCode 来判断，因为 rangeInfo 已经明确表示这是代码引用
+        // 重要修复：不再使用启发式逻辑调换 content 和 text 字段
+        // 因为 AI 生成的评论可能包含代码示例，会被误判为"引用代码"
+        // 字段语义应该由提交时决定，不应该在获取时被自动调换
+        if (rawContent && rawText) {
+            // 两者都有：content 是评论内容，text 是引用代码
+            normalizedContent = rawContent;
+            normalizedText = rawText;
+        } else if (rawContent) {
+            // 只有 content：作为评论内容
+            normalizedContent = rawContent;
+            normalizedText = '';
+        } else if (rawText) {
+            // 只有 text：如果有 rangeInfo，作为引用代码；否则作为评论内容
+            if (hasRangeInfo) {
                 normalizedText = rawText;
                 normalizedContent = '';
-            } else if (rawContent) {
-                // 只有 content：可能是历史数据，尝试判断
-                if (looksLikeCode(rawContent)) {
-                    normalizedText = rawContent;
-                    normalizedContent = '';
-                } else {
-                    normalizedContent = rawContent;
-                }
-            }
-        } else {
-            // 无引用范围：默认只有评论正文
-            if (rawContent && rawText && rawContent !== rawText) {
-                // 关键修复：只要后端同时给了 content/text 且两者不相等，就保留 text 作为“引用代码”
-                // 不能仅依赖 looksLikeCode：单行/短片段引用经常无法命中“像代码”的启发式，导致引用代码在列表里丢失
-                //
-                // 同时保留启发式用于纠正“写反”的历史数据（引用代码被写进 content 的情况）
-                if (looksLikeCode(rawContent) && !looksLikeCode(rawText)) {
-                    normalizedText = rawContent;
-                    normalizedContent = rawText;
-                } else {
-                    normalizedText = rawText;
-                    normalizedContent = rawContent;
-                }
             } else {
-                normalizedContent = rawContent || rawText;
+                normalizedContent = rawText;
+                normalizedText = '';
             }
         }
-
         normalizedContent = String(normalizedContent || '').trim();
         normalizedText = String(normalizedText || '').trim();
 

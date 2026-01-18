@@ -4943,14 +4943,15 @@
     }
 }
 
-/* ========== Quick Comment 内联输入框（Cursor Quick Edit 风格） ========== */
+/* ========== Quick Comment 内联输入框（Cursor Quick Edit 风格，支持 AI） ========== */
 .quick-comment-container {
     position: fixed;
     z-index: 999998;
     display: none;
     flex-direction: column;
-    min-width: 360px;
-    max-width: 480px;
+    min-width: 400px;
+    max-width: 520px;
+    max-height: 80vh;
     background: linear-gradient(165deg, 
         rgba(24, 24, 27, 0.97) 0%, 
         rgba(39, 39, 42, 0.95) 50%, 
@@ -5143,6 +5144,386 @@
 .quick-comment-hint .separator {
     margin: 0 4px;
     color: #3f3f46;
+}
+
+/* ========== Quick Comment AI 模式样式 ========== */
+
+/* 头部操作区 */
+.quick-comment-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 模式切换 */
+.quick-comment-mode-switch {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    background: rgba(39, 39, 42, 0.6);
+    border-radius: 6px;
+    border: 1px solid rgba(82, 82, 91, 0.3);
+}
+
+.mode-switch-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: #71717a;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.mode-switch-btn:hover {
+    color: #a1a1aa;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mode-switch-btn.active {
+    color: #fafafa;
+    background: rgba(139, 92, 246, 0.3);
+}
+
+.mode-switch-btn i {
+    font-size: 12px;
+}
+
+/* 引用代码行号 */
+.quick-comment-quote-lines {
+    margin-left: auto;
+    font-size: 10px;
+    color: #52525b;
+    font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+/* AI 模式容器 */
+.quick-comment-container.ai-mode {
+    border-color: rgba(139, 92, 246, 0.4);
+}
+
+.quick-comment-container.ai-mode .quick-comment-header {
+    background: linear-gradient(180deg, 
+        rgba(139, 92, 246, 0.08) 0%, 
+        transparent 100%);
+}
+
+.quick-comment-container.ai-generating {
+    border-color: rgba(139, 92, 246, 0.6);
+}
+
+/* AI 输入区域 */
+.quick-comment-body.ai-mode {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.quick-comment-ai-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(39, 39, 42, 0.6);
+    border: 1px solid rgba(82, 82, 91, 0.4);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.quick-comment-ai-input-wrapper:focus-within {
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.ai-input-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: #a78bfa;
+}
+
+.ai-input-icon i {
+    font-size: 14px;
+}
+
+.quick-comment-ai-input {
+    flex: 1;
+    min-height: 24px;
+    max-height: 80px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: #fafafa;
+    font-size: 13px;
+    font-family: inherit;
+    line-height: 1.5;
+    resize: none;
+}
+
+.quick-comment-ai-input::placeholder {
+    color: #52525b;
+}
+
+.quick-comment-ai-input:focus {
+    outline: none;
+}
+
+.quick-comment-ai-input:disabled {
+    opacity: 0.6;
+}
+
+.ai-generate-btn,
+.ai-stop-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ai-generate-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #9333ea 0%, #8b5cf6 100%);
+    transform: scale(1.05);
+}
+
+.ai-generate-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.ai-stop-btn {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.ai-stop-btn:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.ai-generate-btn i,
+.ai-stop-btn i {
+    font-size: 11px;
+}
+
+/* AI 生成结果区域 */
+.quick-comment-ai-result {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(39, 39, 42, 0.4);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 10px;
+}
+
+.ai-result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ai-result-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #a78bfa;
+    font-weight: 500;
+}
+
+.ai-result-label i {
+    font-size: 10px;
+}
+
+.ai-result-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ai-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: #71717a;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ai-action-btn:hover {
+    color: #fafafa;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.ai-action-btn i {
+    font-size: 11px;
+}
+
+.ai-result-content {
+    min-height: 40px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.ai-result-content.generating {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.ai-generating-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 0;
+}
+
+.generating-dot {
+    width: 6px;
+    height: 6px;
+    background: #a78bfa;
+    border-radius: 50%;
+    animation: generatingPulse 1.4s ease-in-out infinite;
+}
+
+.generating-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.generating-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes generatingPulse {
+    0%, 80%, 100% {
+        transform: scale(0.6);
+        opacity: 0.4;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.ai-result-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #e4e4e7;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.ai-result-text p {
+    margin: 0 0 8px 0;
+}
+
+.ai-result-text p:last-child {
+    margin-bottom: 0;
+}
+
+.ai-result-text code {
+    background: rgba(39, 39, 42, 0.8);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 12px;
+}
+
+.ai-result-text pre {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.ai-result-text pre code {
+    background: transparent;
+    padding: 0;
+}
+
+/* AI 预设按钮 */
+.quick-comment-ai-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.ai-preset-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    background: rgba(39, 39, 42, 0.6);
+    border: 1px solid rgba(82, 82, 91, 0.4);
+    border-radius: 6px;
+    color: #a1a1aa;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ai-preset-btn:hover {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
+    color: #fafafa;
+}
+
+.ai-preset-btn i {
+    font-size: 10px;
+    color: #a78bfa;
+}
+
+/* 手动模式 */
+.quick-comment-body.manual-mode {
+    padding: 12px 14px;
+}
+
+/* AI 模式下的 body 滚动 */
+.quick-comment-body.ai-mode {
+    max-height: calc(80vh - 140px);
+    overflow-y: auto;
+}
+
+/* 响应式 AI 模式 */
+@media (max-width: 640px) {
+    .quick-comment-mode-switch {
+        display: none;
+    }
+    
+    .quick-comment-ai-presets {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .ai-preset-btn {
+        flex-shrink: 0;
+    }
+    
+    .ai-result-content {
+        max-height: 150px;
+    }
 }
 
 .quick-comment-hint kbd {
