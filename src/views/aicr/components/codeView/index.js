@@ -103,7 +103,9 @@ const componentOptions = {
             quickCommentError: '',
             quickCommentSubmitting: false,
             quickCommentAnimating: false,
-            quickCommentPositionData: { left: 0, top: 0 },
+            quickCommentPositionData: { left: 0, top: 0, width: 440, height: 400 },
+            isDraggingQuickComment: false,
+            isResizingQuickComment: false,
             // AI 评论相关
             quickCommentMode: 'ai', // 'ai' | 'manual'
             quickCommentAiPrompt: '',
@@ -430,7 +432,9 @@ const componentOptions = {
         quickCommentPosition() {
             return {
                 left: `${this.quickCommentPositionData.left}px`,
-                top: `${this.quickCommentPositionData.top}px`
+                top: `${this.quickCommentPositionData.top}px`,
+                width: `${this.quickCommentPositionData.width}px`,
+                height: `${this.quickCommentPositionData.height}px`
             };
         },
         quickCommentQuoteDisplay() {
@@ -2974,9 +2978,12 @@ const componentOptions = {
                 this.calculateQuickCommentPosition(referenceRect);
             } else {
                 // 没有参考位置时使用视口中心
+                const defaultWidth = this.quickCommentPositionData.width || 440;
+                const defaultHeight = this.quickCommentPositionData.height || 400;
                 this.quickCommentPositionData = {
-                    left: Math.max(16, (window.innerWidth - 400) / 2),
-                    top: Math.max(100, (window.innerHeight - 300) / 3)
+                    ...this.quickCommentPositionData,
+                    left: Math.max(16, (window.innerWidth - defaultWidth) / 2),
+                    top: Math.max(100, (window.innerHeight - defaultHeight) / 3)
                 };
             }
 
@@ -3054,7 +3061,121 @@ const componentOptions = {
             document.removeEventListener('mousedown', this._quickCommentOutsideClickHandler);
             this._quickCommentOutsideClickHandler = null;
 
+            // 清理拖拽和调整大小的事件监听器
+            this.stopDragQuickComment();
+            this.stopResizeQuickComment();
+
             console.log('[CodeView] Quick Comment 已关闭');
+        },
+
+        // 拖拽移动功能
+        startDragQuickComment(event) {
+            // 如果点击的是按钮或其他交互元素，不触发拖拽
+            if (event.target.closest('button') || event.target.closest('.quick-comment-header-actions')) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            this.isDraggingQuickComment = true;
+
+            const startX = event.clientX;
+            const startY = event.clientY;
+            const startLeft = this.quickCommentPositionData.left;
+            const startTop = this.quickCommentPositionData.top;
+
+            const onMouseMove = (e) => {
+                if (!this.isDraggingQuickComment) return;
+
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+
+                const newLeft = startLeft + deltaX;
+                const newTop = startTop + deltaY;
+
+                // 限制在视口内
+                const container = this.$el?.querySelector('.quick-comment-container');
+                if (container) {
+                    const containerWidth = this.quickCommentPositionData.width;
+                    const containerHeight = this.quickCommentPositionData.height;
+                    const maxLeft = window.innerWidth - containerWidth;
+                    const maxTop = window.innerHeight - containerHeight;
+
+                    this.quickCommentPositionData.left = Math.max(0, Math.min(newLeft, maxLeft));
+                    this.quickCommentPositionData.top = Math.max(0, Math.min(newTop, maxTop));
+                }
+            };
+
+            const onMouseUp = () => {
+                this.isDraggingQuickComment = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        },
+
+        stopDragQuickComment() {
+            this.isDraggingQuickComment = false;
+        },
+
+        // 调整大小功能
+        startResizeQuickComment(event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            this.isResizingQuickComment = true;
+
+            const startX = event.clientX;
+            const startY = event.clientY;
+            const startWidth = this.quickCommentPositionData.width;
+            const startHeight = this.quickCommentPositionData.height;
+            const startLeft = this.quickCommentPositionData.left;
+            const startTop = this.quickCommentPositionData.top;
+
+            const minWidth = 400;
+            const minHeight = 300;
+            const maxWidth = window.innerWidth - 32;
+            const maxHeight = window.innerHeight - 32;
+
+            const onMouseMove = (e) => {
+                if (!this.isResizingQuickComment) return;
+
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+
+                let newWidth = startWidth + deltaX;
+                let newHeight = startHeight + deltaY;
+
+                // 限制最小和最大尺寸
+                newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+                newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
+
+                // 确保不超出视口
+                const maxAllowedWidth = window.innerWidth - this.quickCommentPositionData.left - 16;
+                const maxAllowedHeight = window.innerHeight - this.quickCommentPositionData.top - 16;
+
+                newWidth = Math.min(newWidth, maxAllowedWidth);
+                newHeight = Math.min(newHeight, maxAllowedHeight);
+
+                this.quickCommentPositionData.width = newWidth;
+                this.quickCommentPositionData.height = newHeight;
+            };
+
+            const onMouseUp = () => {
+                this.isResizingQuickComment = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        },
+
+        stopResizeQuickComment() {
+            this.isResizingQuickComment = false;
         },
 
         setQuickCommentMode(mode) {
@@ -3225,8 +3346,8 @@ const componentOptions = {
 
         calculateQuickCommentPosition(rect) {
             const padding = 16;
-            const containerWidth = 440; // 增加宽度以适应 AI 内容
-            const containerHeight = 400; // 增加高度以适应 AI 结果
+            const containerWidth = this.quickCommentPositionData.width || 440;
+            const containerHeight = this.quickCommentPositionData.height || 400;
             const vw = window.innerWidth || document.documentElement.clientWidth;
             const vh = window.innerHeight || document.documentElement.clientHeight;
             const minEdgeDistance = 16;
@@ -3274,7 +3395,12 @@ const componentOptions = {
             left = Math.max(minEdgeDistance, Math.min(left, vw - containerWidth - minEdgeDistance));
             top = Math.max(minEdgeDistance, Math.min(top, vh - containerHeight - minEdgeDistance));
 
-            this.quickCommentPositionData = { left, top, placement };
+            this.quickCommentPositionData = {
+                ...this.quickCommentPositionData,
+                left,
+                top,
+                placement
+            };
             console.log('[CodeView] Quick Comment 位置计算:', { left, top, placement, rect });
         },
 
