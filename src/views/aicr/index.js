@@ -134,7 +134,7 @@ const { computed } = Vue;
                 // 会话批量选择相关状态
                 sessionBatchMode: store.sessionBatchMode,
                 selectedSessionKeys: store.selectedSessionKeys,
-                externalSelectedSessionId: store.externalSelectedSessionId,
+                externalSelectedSessionKey: store.externalSelectedSessionKey,
             },
             onMounted: (mountedApp) => {
                 logInfo('[代码审查页面] 应用已挂载');
@@ -897,11 +897,11 @@ const { computed } = Vue;
                     }
                 },
 
-                handleSessionDelete: async function (sessionId) {
-                    logInfo('[主页面] 收到会话删除事件:', sessionId);
+                handleSessionDelete: async function (sessionKey) {
+                    logInfo('[主页面] 收到会话删除事件:', sessionKey);
                     try {
                         const methods = useMethods(store);
-                        await methods.handleSessionDelete(sessionId);
+                        await methods.handleSessionDelete(sessionKey);
                     } catch (error) {
                         logError('[主页面] 会话删除处理失败:', error);
                     }
@@ -917,41 +917,41 @@ const { computed } = Vue;
                     }
                 },
 
-                handleSessionFavorite: async function (sessionId) {
-                    logInfo('[主页面] 收到会话收藏事件:', sessionId);
+                handleSessionFavorite: async function (sessionKey) {
+                    logInfo('[主页面] 收到会话收藏事件:', sessionKey);
                     try {
                         const methods = useMethods(store);
-                        await methods.handleSessionToggleFavorite(sessionId);
+                        await methods.handleSessionToggleFavorite(sessionKey);
                     } catch (error) {
                         logError('[主页面] 会话收藏处理失败:', error);
                     }
                 },
 
-                handleSessionEdit: async function (sessionId) {
-                    logInfo('[主页面] 收到会话编辑事件:', sessionId);
+                handleSessionEdit: async function (sessionKey) {
+                    logInfo('[主页面] 收到会话编辑事件:', sessionKey);
                     try {
                         const methods = useMethods(store);
-                        await methods.handleSessionEdit(sessionId);
+                        await methods.handleSessionEdit(sessionKey);
                     } catch (error) {
                         logError('[主页面] 会话编辑处理失败:', error);
                     }
                 },
 
-                handleSessionTag: async function (sessionId) {
-                    logInfo('[主页面] 收到会话标签管理事件:', sessionId);
+                handleSessionTag: async function (sessionKey) {
+                    logInfo('[主页面] 收到会话标签管理事件:', sessionKey);
                     try {
                         const methods = useMethods(store);
-                        await methods.handleSessionManageTags(sessionId);
+                        await methods.handleSessionManageTags(sessionKey);
                     } catch (error) {
                         logError('[主页面] 会话标签管理处理失败:', error);
                     }
                 },
 
-                handleSessionDuplicate: async function (sessionId) {
-                    logInfo('[主页面] 收到会话副本事件:', sessionId);
+                handleSessionDuplicate: async function (sessionKey) {
+                    logInfo('[主页面] 收到会话副本事件:', sessionKey);
                     try {
                         const methods = useMethods(store);
-                        await methods.handleSessionDuplicate(sessionId);
+                        await methods.handleSessionDuplicate(sessionKey);
                     } catch (error) {
                         logError('[主页面] 会话副本处理失败:', error);
                     }
@@ -1086,12 +1086,12 @@ const { computed } = Vue;
                 },
 
                 // 处理会话批量选择
-                handleSessionBatchSelect: function (sessionId) {
-                    logInfo('[主页面] 切换会话选择状态:', sessionId);
+                handleSessionBatchSelect: function (sessionKey) {
+                    logInfo('[主页面] 切换会话选择状态:', sessionKey);
                     try {
                         const methods = useMethods(store);
                         if (methods.toggleSessionSelection) {
-                            methods.toggleSessionSelection(sessionId);
+                            methods.toggleSessionSelection(sessionKey);
                         } else {
                             // 备用方法：直接操作 store
                             if (store && store.selectedSessionKeys && store.selectedSessionKeys.value) {

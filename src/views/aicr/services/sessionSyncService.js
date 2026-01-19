@@ -91,10 +91,12 @@ class SessionSyncService {
             return null;
         }
         
-        const filePath = normalizedFile.fileKey || normalizedFile.path || '';
+        const filePath = normalizedFile.path || '';
+        
+        // 确保 filePath 与用于生成 tags 的路径一致
+        // 使用相同的路径来提取文件名和标签
         const fileName = extractFileName(filePath);
         let tags = this.extractTagsFromPath(filePath);
-        const sessionKey = this.generateSessionKey(filePath);
         
         // 如果标签为空，不再使用默认标签，直接放在根目录
         if (!Array.isArray(tags)) {
@@ -110,15 +112,17 @@ class SessionSyncService {
         const createdAt = this.normalizeTimestamp(file.createdAt);
         const updatedAt = this.normalizeTimestamp(file.updatedAt);
 
+        // 确保 pageDescription 中的 file_path 与用于生成 tags 的路径完全一致
+        // 使用相同的 filePath 变量，确保一致性
         return {
-            key: String(sessionKey),
+            key: file.key,
             url: uniqueUrl,
             title: fileName,
             pageTitle: fileName,
-            pageDescription: `文件：${filePath}`,
+            pageDescription: `文件：${filePath}`, // 使用与 tags 相同的 filePath
             pageContent: String(normalizedFile.content || ''),
             messages: [], // 消息将从评论中同步
-            tags: tags,
+            tags: tags, // 使用与 pageDescription 相同的 filePath 生成的 tags
             isFavorite: false,
             createdAt: createdAt,
             updatedAt: updatedAt,
@@ -240,30 +244,7 @@ class SessionSyncService {
                 return { error: '无法创建会话数据' };
             }
             
-            // 检查会话是否已存在
-            const existingSession = await this.getSession(sessionData.key);
-            
-            if (existingSession) {
-                if (!forceUpdate) {
-                    console.log(`[SessionSync] 会话已存在，跳过保存: ${sessionData.key}`);
-                    return { skipped: true, sessionKey: sessionData.key, reason: '会话已存在' };
-                }
-                
-                // 更新模式：保留原有消息和部分元数据
-                sessionData.messages = existingSession.messages || [];
-                sessionData.createdAt = existingSession.createdAt;
-                sessionData.key = existingSession.key;
-                // 更新时间使用当前时间
-                sessionData.updatedAt = Date.now();
-                
-                console.log(`[SessionSync] 更新现有会话: ${sessionData.key}`);
-            }
-            
             if (immediate) {
-                // 如果是更新，saveSession 需要处理 update_document
-                // 现有的 saveSession 可能只处理 create?
-                // 让我们检查 saveSession 实现
-                // 假设 saveSession 能够处理带有 key 的更新
                 return await this.saveSession(sessionData);
             } else {
                 // 加入同步队列
@@ -592,40 +573,31 @@ class SessionSyncService {
 
     /**
      * 获取会话
-     * @param {string} sessionId - 会话ID
+     * @param {string} sessionKey - 会话Key
      * @returns {Promise<Object|null>} 会话数据
      */
-    async getSession(sessionId) {
+    async getSession(sessionKey) {
         return safeExecuteAsync(async () => {
             try {
-                if (!sessionId || typeof sessionId !== 'string') {
-                    console.warn('[SessionSync] 会话ID无效:', sessionId);
+                if (!sessionKey || typeof sessionKey !== 'string') {
+                    console.warn('[SessionSync] 会话Key无效:', sessionKey);
                     return null;
                 }
                 
-                // 1. 优先尝试按 key 查询 (符合 "只需要key即可" 的原则)
-                let url = buildServiceUrl('query_documents', {
+                // 只按 key 查询 (key 必须是会话的 key，UUID 格式)
+                const url = buildServiceUrl('query_documents', {
                     cname: 'sessions',
-                    filter: { key: sessionId },
+                    filter: { key: sessionKey },
                     limit: 1
                 });
-                let response = await getData(url, {}, false);
-                
-                // 2. 如果未找到，尝试按 id 查询 (兼容旧数据或路径类型的会话)
-                if (!response || !response.data || !response.data.list || response.data.list.length === 0) {
-                     url = buildServiceUrl('query_documents', {
-                        cname: 'sessions',
-                        filter: { id: sessionId },
-                        limit: 1
-                    });
-                    response = await getData(url, {}, false);
-                }
+                const response = await getData(url, {}, false);
                 
                 if (response && response.data && response.data.list && response.data.list.length > 0) {
                     const session = response.data.list[0];
                     // 确保 key 字段存在
-                    if (session && !session.key && session.id) {
-                        session.key = session.id;
+                    if (session && !session.key) {
+                        console.warn('[SessionSync] 会话缺少 key 字段:', session);
+                        return null;
                     }
                     // 规范化消息格式
                     if (session.messages) {
@@ -636,7 +608,7 @@ class SessionSyncService {
                 return null;
             } catch (error) {
                 console.warn('[SessionSync] 获取会话失败:', {
-                    sessionId,
+                    sessionKey,
                     error: error?.message || error
                 });
                 return null;
@@ -653,21 +625,7 @@ class SessionSyncService {
         return safeExecuteAsync(async () => {
             try {
                 // 规范化会话数据
-                // 注意：id 字段使用路径，key 字段保留为空（新建时）或使用现有 UUID（更新时）
-                // sessionData.key 可能是路径（来自 fileToSession），也可能是 UUID（来自 renameSession 或 loadFromSessions）
-                // 我们需要判断 sessionData.key 是否是 UUID
-                
-                let targetKey = sessionData.key;
-                const pathId = sessionData.id || sessionData.key || '';
-                
-                // 如果 key 看起来像路径（包含 /），则视为 id，key 设为空或 undefined
-                if (targetKey && typeof targetKey === 'string' && targetKey.includes('/')) {
-                    targetKey = undefined;
-                }
-
                 const normalized = {
-                    id: String(pathId),
-                    // key: targetKey, // 不要在这里设置 key，除非它是 UUID
                     url: String(sessionData.url || ''),
                     title: String(sessionData.title || sessionData.pageTitle || ''),
                     pageTitle: String(sessionData.pageTitle || sessionData.title || ''),
@@ -683,65 +641,35 @@ class SessionSyncService {
 
                 normalized.messages = await this.uploadAndReplaceMessageImages(normalized.messages);
 
-                // 如果有有效的 UUID key，也放入 normalized 数据中（虽然 update 时参数里也会传）
-                if (targetKey) {
-                    normalized.key = targetKey;
-                }
-
-                // 使用统一的 postData 接口（会自动添加认证头）
-                // 检查会话是否存在（通过 id=路径 查询）
-                const checkUrl = buildServiceUrl('query_documents', {
-                    cname: 'sessions',
-                    filter: { id: normalized.id },
-                    limit: 1
-                });
-                const checkResponse = await getData(checkUrl, {}, false);
-                const existingSession = checkResponse?.data?.list?.[0];
-
-                let response;
-                if (existingSession) {
-                    // 更新会话
-                    // 确保使用真实的 UUID Key
-                    const realKey = existingSession.key;
-                    if (!realKey) {
-                        throw new Error('现有会话缺少 UUID Key，无法更新');
-                    }
-                    
-                    // data 中不需要包含 key，因为已经在 parameters.key 中指定
-                    // normalized.key = realKey;
-
-                    const payload = {
-                        module_name: SERVICE_MODULE,
-                        method_name: 'update_document',
-                        parameters: {
-                            cname: 'sessions',
-                            key: realKey, // 使用 UUID
-                            data: normalized
-                        }
+                // 判断是创建还是更新
+                let method_name, parameters;
+                if (sessionData.key) {
+                    // 更新文档
+                    method_name = 'update_document';
+                    parameters = {
+                        cname: 'sessions',
+                        key: sessionData.key,
+                        data: normalized
                     };
-                    console.log(`[SessionSync] 更新会话: ${normalized.id} (Key: ${realKey})`);
-                    response = await postData(`${this.apiUrl}/`, payload);
                 } else {
-                    // 创建会话
-                    // 如果传入了 UUID key (比如从旧会话迁移)，则使用它；否则不传 key 让后端生成
-                    if (targetKey) {
-                        normalized.key = targetKey;
-                    }
-                    
-                    const payload = {
-                        module_name: SERVICE_MODULE,
-                        method_name: 'create_document',
-                        parameters: {
-                            cname: 'sessions',
-                            data: normalized
-                        }
+                    // 创建文档
+                    method_name = 'create_document';
+                    parameters = {
+                        cname: 'sessions',
+                        data: normalized
                     };
-                    console.log(`[SessionSync] 创建会话: ${normalized.id}`);
-                    response = await postData(`${this.apiUrl}/`, payload);
                 }
-                
+
+                const payload = {
+                    module_name: SERVICE_MODULE,
+                    method_name,
+                    parameters
+                };
+
+                const response = await postData(`${this.apiUrl}/`, payload);
+
                 if (response && response.success !== false) {
-                    console.log('[SessionSync] 会话保存成功:', normalized.id);
+                    console.log('[SessionSync] 会话保存成功');
                     return response;
                 } else {
                     throw new Error(response?.message || '保存会话失败');
@@ -755,43 +683,18 @@ class SessionSyncService {
 
     /**
      * 删除会话（统一接口）
-     * @param {string} sessionId - 会话ID
+     * @param {string} sessionKey - 会话Key
      * @returns {Promise<Object>} 删除结果
      */
-    async deleteSession(sessionId) {
+    async deleteSession(sessionKey) {
         return safeExecuteAsync(async () => {
             try {
-                if (!sessionId || typeof sessionId !== 'string') {
-                    throw new Error('会话ID无效');
+                if (!sessionKey || typeof sessionKey !== 'string') {
+                    throw new Error('会话Key无效');
                 }
                 
-                let targetKey = sessionId;
-                
-                // 检查 sessionId 是否疑似路径（包含斜杠），如果是，尝试获取真实的 UUID Key
-                // 这符合用户要求：delete_document 的 key 不应该是路径字符串
-                if (targetKey.includes('/')) {
-                    console.log('[SessionSync] 检测到会话Key疑似路径，尝试解析真实UUID:', targetKey);
-                    try {
-                        const findUrl = buildServiceUrl('query_documents', {
-                            cname: 'sessions',
-                            filter: { id: targetKey },
-                            limit: 1
-                        });
-                        const findResp = await getData(findUrl, {}, false);
-                        const item = findResp?.data?.list?.[0];
-                        
-                        // 如果找到了 item 且其 key 看起来像 UUID (不包含 /)
-                        if (item && item.key && !item.key.includes('/')) {
-                            console.log(`[SessionSync] 已将路径 Key "${targetKey}" 修正为 UUID "${item.key}"`);
-                            targetKey = item.key;
-                        } else {
-                            console.warn('[SessionSync] 无法解析出 UUID，将继续使用原始 Key:', targetKey);
-                        }
-                    } catch (lookupError) {
-                        console.warn('[SessionSync] 解析 UUID 失败:', lookupError);
-                        // 查询失败不阻断流程，继续尝试删除（可能后端支持路径删除，或者让重试逻辑处理）
-                    }
-                }
+                // key 必须是会话的 key（UUID 格式），不允许是路径
+                const targetKey = sessionKey;
 
                 // 确保正确编码会话ID，处理包含 "/" 等特殊字符的情况
                 // const encodedSessionId = encodeURIComponent(sessionId);
@@ -807,7 +710,7 @@ class SessionSyncService {
                 };
                 
                 console.log('[SessionSync] 删除会话请求:', { 
-                    originalId: sessionId, 
+                    originalKey: sessionKey, 
                     finalKey: targetKey,
                     payload
                 });
@@ -818,12 +721,11 @@ class SessionSyncService {
                     console.log('[SessionSync] 会话删除成功:', targetKey);
                     return response;
                 } else {
-                    // 如果直接删除失败，尝试先查询获取 key 再删除（兼容旧数据）
-                    // 注意：如果上面的预检查已经执行过且没找到 UUID，这里的逻辑可能也是徒劳，但保留作为兜底
-                    console.warn('[SessionSync] 直接删除失败，尝试查找后删除:', sessionId);
+                    // 如果直接删除失败，尝试先查询获取 key 再删除
+                    console.warn('[SessionSync] 直接删除失败，尝试查找后删除:', sessionKey);
                     const findUrl = buildServiceUrl('query_documents', {
                         cname: 'sessions',
-                        filter: { id: sessionId },
+                        filter: { key: sessionKey },
                         limit: 1
                     });
                     const findResp = await getData(findUrl, {}, false);
@@ -833,7 +735,7 @@ class SessionSyncService {
                         payload.parameters.key = item.key;
                         const retryResponse = await postData(`${this.apiUrl}/`, payload);
                          if (retryResponse && retryResponse.success !== false) {
-                            console.log('[SessionSync] 重试删除成功:', sessionId);
+                            console.log('[SessionSync] 重试删除成功:', sessionKey);
                             return retryResponse;
                          }
                     }
@@ -842,7 +744,7 @@ class SessionSyncService {
                 }
             } catch (error) {
                 console.error('[SessionSync] 删除会话失败:', {
-                    sessionId,
+                    sessionKey,
                     error: error?.message || error,
                     stack: error?.stack
                 });
@@ -874,9 +776,6 @@ class SessionSyncService {
             const updateData = {
                 // 必须包含 key 以修复 "Execution failed: 更新数据必须包含 key 字段"
                 key: targetKey,
-                
-                // 核心标识变更：id 更新为新路径
-                id: String(newKey || newSessionData.key),
                 
                 // 更新文件相关元数据
                 url: String(newSessionData.url),
@@ -942,7 +841,7 @@ class SessionSyncService {
         // 批量检查会话是否存在，然后只保存不存在的会话
         const checkResults = await Promise.all(
             sessionsToSync.map(async session => {
-                const existingSession = await this.getSession(session.id);
+                const existingSession = await this.getSession(session.key);
                 return { session, exists: !!existingSession };
             })
         );
@@ -1030,12 +929,13 @@ class SessionSyncService {
 
                 for (const session of projectSessions) {
                     // 从会话ID提取文件路径
-                    const sessionId = String(session.id || '');
-                    const filePath = this.extractFilePathFromSessionKey(sessionId);
-                    
-                    // 获取UUID格式的sessionKey（优先使用session.key，否则使用sessionId如果它是UUID）
-                    const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
-                    const sessionKey = (session.key && isUUID(session.key)) ? session.key : (isUUID(sessionId) ? sessionId : null);
+                    // key 必须是会话的 key（UUID 格式）
+                    const sessionKey = session.key;
+                    if (!sessionKey) {
+                        console.warn('[SessionSync] 会话缺少 key 字段，跳过:', session);
+                        continue;
+                    }
+                    const filePath = this.extractFilePathFromSessionKey(sessionKey);
                     
                     if (filePath) {
                         // 转换为文件
@@ -1056,7 +956,7 @@ class SessionSyncService {
                 for (let i = 0; i < normalizedMessages.length; i++) {
                             const message = normalizedMessages[i];
                             let comment = {
-                                key: `comment_${sessionId}_${i}_${message.timestamp}`,
+                                key: `comment_${sessionKey}_${i}_${message.timestamp}`,
                                 // 统一的消息字段
                                 type: message.type,
                                 message: message.message,

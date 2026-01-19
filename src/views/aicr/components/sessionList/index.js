@@ -66,8 +66,8 @@ const componentOptions = {
             type: Boolean,
             default: false
         },
-        // 外部选中的会话ID（用于从文件视图切换时自动选中）
-        externalSelectedSessionId: {
+        // 外部选中的会话Key（用于从文件视图切换时自动选中）
+        externalSelectedSessionKey: {
             type: [String, null],
             default: null
         }
@@ -78,13 +78,13 @@ const componentOptions = {
             'session-batch-select', 'session-batch-select-all', 'session-batch-delete', 'session-batch-cancel', 'session-tree',
             'session-import-file', 'session-export', 'toggle-batch-mode'],
     setup(props, { emit }) {
-        const selectedSessionId = ref(null);
+        const selectedSessionKey = ref(null);
         
-        // 监听外部选中的会话ID，自动更新内部选中状态
-        Vue.watch(() => props.externalSelectedSessionId, (newId) => {
-            if (newId) {
-                selectedSessionId.value = newId;
-                console.log('[SessionList] 外部选中会话ID已更新:', newId);
+        // 监听外部选中的会话Key，自动更新内部选中状态
+        Vue.watch(() => props.externalSelectedSessionKey, (newKey) => {
+            if (newKey) {
+                selectedSessionKey.value = newKey;
+                console.log('[SessionList] 外部选中会话Key已更新:', newKey);
             }
         }, { immediate: true });
         
@@ -687,7 +687,7 @@ const componentOptions = {
             console.log('[SessionList] 选中会话:', session.key, session.title);
             
             // 设置选中状态
-            selectedSessionId.value = session.key;
+            selectedSessionKey.value = session.key;
             
             emit('session-select', session);
         };
@@ -724,18 +724,18 @@ const componentOptions = {
         
 
         // 处理批量选择切换
-        const handleBatchSelect = (sessionId, event) => {
+        const handleBatchSelect = (sessionKey, event) => {
             // 阻止事件冒泡，避免触发会话项的点击事件
             if (event) {
                 event.stopPropagation();
                 event.preventDefault();
             }
-            emit('session-batch-select', sessionId);
+            emit('session-batch-select', sessionKey);
         };
         
         // 检查会话是否被选中
-        const isSessionSelected = (sessionId) => {
-            return props.selectedSessionKeys && props.selectedSessionKeys.has && props.selectedSessionKeys.has(sessionId);
+        const isSessionSelected = (sessionKey) => {
+            return props.selectedSessionKeys && props.selectedSessionKeys.has && props.selectedSessionKeys.has(sessionKey);
         };
 
         // 全选/取消全选
@@ -810,7 +810,7 @@ const componentOptions = {
         });
         
         return {
-            selectedSessionId,
+            selectedSessionKey,
             allTags,
             filteredTags,
             visibleTags,

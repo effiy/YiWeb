@@ -89,7 +89,7 @@ export function normalizeFileObject(file) {
     }
     
     // 提取原始路径（优先使用 key，兼容旧字段）
-    const rawPath = file.key || file.path || file.fileId || file.id || '';
+    const rawPath = file.path || '';
     
     // 规范化路径
     const normalizedPath = normalizeFilePath(rawPath);
@@ -120,8 +120,6 @@ export function normalizeFileObject(file) {
     
     // 构建规范化对象
     const normalized = {
-        // 统一标识字段（都指向规范化后的路径）
-        key: normalizedPath,
         path: normalizedPath,
         
         // 基本信息

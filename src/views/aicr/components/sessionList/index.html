@@ -231,7 +231,7 @@
                 :data-session-key="session.key"
                 class="session-item"
                 :class="{ 
-                    active: selectedSessionId === session.key,
+                    active: selectedSessionKey === session.key,
                     'batch-selected': sessionBatchMode && isSessionSelected(session.key)
                 }"
                 @click="handleSessionClick(session, $event)"

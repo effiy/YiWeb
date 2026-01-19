@@ -31,7 +31,7 @@ export function buildFileTreeFromSessions(allSessions) {
         const folderParts = normalizeFolders(s.tags);
         const folderKey = folderParts.join('/');
         const baseName = sanitizeFileName(s.title || s.pageTitle || 'Untitled');
-        const stableId = String(s.id || s._id || s.key || '');
+        const stableId = String(s.key || '');
         return { s, folderParts, folderKey, baseName, stableId };
     });
 
@@ -78,7 +78,7 @@ export function buildFileTreeFromSessions(allSessions) {
         }
 
         const fileKey = currentPath ? currentPath + '/' + uniqueName : uniqueName;
-        const sessionKey = session.key || session.id;
+        const sessionKey = session.key;
 
         currentLevelChildren.push({
             key: fileKey,
@@ -445,8 +445,8 @@ export const createStore = () => {
     // 会话批量选择相关状态
     const sessionBatchMode = vueRef(false);
     const selectedSessionKeys = vueRef(new Set());
-    // 外部选中的会话ID（用于从文件视图切换时自动选中）
-    const externalSelectedSessionId = vueRef(null);
+    // 外部选中的会话Key（用于从文件视图切换时自动选中）
+    const externalSelectedSessionKey = vueRef(null);
 
     // 视图模式：'tree' 树形视图，'tags' 标签视图
     const viewMode = vueRef('tree');
@@ -610,17 +610,6 @@ export const createStore = () => {
     }
 
     /**
-     * 持久化文件树到后端
-     */
-    const persistFileTree = async () => {
-        return safeExecuteAsync(async () => {
-            const project = 'global';
-            console.log('[persistFileTree] 跳过后端持久化，使用会话数据驱动文件树', { project });
-            return { skipped: true, project };
-        }, '文件树持久化');
-    };
-
-    /**
      * 创建文件夹
      */
     const createFolder = async ({ parentId, name }) => {
@@ -700,7 +689,6 @@ export const createStore = () => {
             // 保持全部展开
             expandAllFolders();
 
-            await persistFileTree();
             return newId;
         }, '创建文件夹');
     };
@@ -756,7 +744,6 @@ export const createStore = () => {
 
             // 使用统一的节点规范化工具
             const fileNode = normalizeTreeNode({
-                key: normalizedNewId,
                 name,
                 type: 'file',
                 size: content ? content.length : 0,
@@ -797,17 +784,46 @@ export const createStore = () => {
             // 保持全部展开
             expandAllFolders();
 
-            // 先持久化树（这会更新 projectTree，文件节点已包含在其中，包括 content 字段）
-            // 注意：即使 skipProjectFiles=true，文件内容也会通过 persistFileTree 保存到 projectTree
-            await persistFileTree();
+            // 调用 write-file 接口创建实际文件
+            try {
+                const baseUrl = window.API_URL || '';
+                const url = `${baseUrl.replace(/\/$/, '')}/write-file`;
+                
+                // 清理路径：移除 static/ 前缀（如果有）
+                const cleanPath = normalizedNewId.startsWith('static/') 
+                    ? normalizedNewId.slice(7) 
+                    : normalizedNewId;
 
-            // 2025-01-08: 已移除 projectFiles 接口调用，仅使用 sessions 模式
-            // 文件内容将通过 sessionSync.syncFileToSession 同步到会话
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        target_file: cleanPath,
+                        content: content || '',
+                        is_base64: false
+                    })
+                });
 
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `创建文件失败: ${response.status}`);
+                }
+
+                const result = await response.json();
+                if (result.code !== 0 && result.code !== 200) {
+                    throw new Error(result.message || '创建文件失败');
+                }
+
+                console.log('[createFile] 文件已通过 write-file 创建:', normalizedNewId);
+            } catch (writeError) {
+                console.warn('[createFile] 通过 write-file 创建文件失败（已忽略）:', writeError?.message);
+                // 不阻止流程继续，因为文件树和会话已创建
+            }
 
             // 更新本地files列表，携带后端返回的key，确保首次保存可PUT更新
             const newFile = normalizeFileObject({
-                key: normalizedNewId,
                 path: normalizedNewId,
                 name,
                 content,
@@ -824,21 +840,20 @@ export const createStore = () => {
                     // 强制立即同步且强制更新，确保会话被创建
                     await sessionSync.syncFileToSession(newFile, true, true);
                     console.log('[createFile] 文件已同步到会话:', normalizedNewId);
-
-                    // 手动更新本地 sessions 列表，确保后续操作（如删除文件夹）能找到对应会话
-                    const sessionData = sessionSync.fileToSession(newFile);
-                    if (sessionData) {
-                        const idx = sessions.value.findIndex(s => s.key === sessionData.key);
-                        if (idx >= 0) {
-                            sessions.value[idx] = { ...sessions.value[idx], ...sessionData };
-                        } else {
-                            sessions.value.push(sessionData);
-                        }
-                        console.log('[createFile] 本地会话列表已更新:', sessionData.key);
-                    }
                 }
             } catch (syncError) {
                 console.warn('[createFile] 同步文件到会话失败（已忽略）:', syncError?.message);
+            }
+
+            // 文件创建成功后刷新文件树
+            try {
+                // 先强制刷新会话列表，确保获取到最新创建的会话
+                await loadSessions(true);
+                // 然后刷新文件树
+                await loadFileTree();
+                console.log('[createFile] 文件树已刷新');
+            } catch (refreshError) {
+                console.warn('[createFile] 刷新文件树失败（已忽略）:', refreshError?.message);
             }
 
             return normalizedNewId;
@@ -965,10 +980,6 @@ export const createStore = () => {
                 });
             }
 
-            await persistFileTree();
-
-            // 同步 projectTree 中的文件节点，使用统一的字段规范化
-
             try {
                 const normalizedOldId = normalizeFilePath(oldId);
                 const affected = prevFiles.filter(f => {
@@ -1007,7 +1018,7 @@ export const createStore = () => {
                             const fTags = oldPath.split('/').slice(0, -1).filter(Boolean);
 
                             foundSessionIdx = sessions.value.findIndex(s => {
-                                if (s.key === oldPath || s.id === oldPath) return true;
+                                if (s.key === oldPath) return true;
                                 // 模糊匹配 (兼容 UUID Key 的情况)
                                 const sName = s.title || s.pageTitle;
                                 const sTags = s.tags || [];
@@ -1114,8 +1125,6 @@ export const createStore = () => {
                 });
             }
 
-            await persistFileTree();
-
             // 远端删除受影响文件（使用统一的删除服务）
             try {
                 const fileDeleteService = getFileDeleteService();
@@ -1192,7 +1201,7 @@ export const createStore = () => {
                         });
 
                         if (session) {
-                            const realSessionKey = session.key || session.id;
+                            const realSessionKey = session.key;
                             console.log(`[deleteItem] 为文件 ${fPath} 找到对应会话Key: ${realSessionKey}`);
                             return { ...f, sessionKey: realSessionKey, path: fPath };
                         }
@@ -1219,7 +1228,7 @@ export const createStore = () => {
                         console.log('[deleteItem] 待删除会话Keys:', deletedSessionKeys);
 
                         const originalLength = sessions.value.length;
-                        sessions.value = sessions.value.filter(s => !deletedSessionKeys.includes(s.key) && !deletedSessionKeys.includes(s.id));
+                        sessions.value = sessions.value.filter(s => !deletedSessionKeys.includes(s.key));
                         console.log('[deleteItem] 本地会话列表已更新，移除:', originalLength - sessions.value.length, '个文件会话');
                     }
                 }
@@ -2121,7 +2130,7 @@ export const createStore = () => {
         // 会话批量选择相关状态
         sessionBatchMode,
         selectedSessionKeys,
-        externalSelectedSessionId,
+        externalSelectedSessionKey,
 
         // 视图模式
         viewMode,
@@ -2194,7 +2203,6 @@ export const createStore = () => {
         loadFiles,
         loadFileByKey,
         expandAllFolders,
-        persistFileTree,
         createFolder,
         createFile,
         renameItem,

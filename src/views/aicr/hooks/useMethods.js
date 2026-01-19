@@ -92,12 +92,6 @@ export const useMethods = (store) => {
         sessionBotModelDraft,
         sessionBotSystemPromptDraft,
         weChatSettingsVisible,
-        weChatRobotEnabled,
-        weChatRobotWebhook,
-        weChatRobotAutoForward,
-        weChatRobotEnabledDraft,
-        weChatRobotWebhookDraft,
-        weChatRobotAutoForwardDraft,
         weChatRobots,
         weChatRobotsDraft
     } = store;
@@ -2689,9 +2683,9 @@ export const useMethods = (store) => {
 
     /**
      * 处理会话批量选择
-     * @param {string} sessionId - 会话ID
+     * @param {string} sessionKey - 会话Key
      */
-    const handleSessionBatchSelect = (sessionId) => {
+    const handleSessionBatchSelect = (sessionKey) => {
         return safeExecute(() => {
             const { sessionBatchMode, selectedSessionKeys } = store;
 
@@ -2705,10 +2699,10 @@ export const useMethods = (store) => {
                 return;
             }
 
-            if (selectedSessionKeys.value.has(sessionId)) {
-                selectedSessionKeys.value.delete(sessionId);
+            if (selectedSessionKeys.value.has(sessionKey)) {
+                selectedSessionKeys.value.delete(sessionKey);
             } else {
-                selectedSessionKeys.value.add(sessionId);
+                selectedSessionKeys.value.add(sessionKey);
             }
 
             console.log('[会话批量] 当前选中数量:', selectedSessionKeys.value.size);
@@ -2803,7 +2797,7 @@ export const useMethods = (store) => {
                 try {
                     // 检查是否为树文件类型的会话
                     // 我们需要从 store.sessions 中找到对应的会话对象来检查 URL
-                    const session = store.sessions.value.find(s => (s.key === key || s.id === key));
+                    const session = store.sessions.value.find(s => s.key === key);
                     if (session && session.url && String(session.url).startsWith('aicr-session://')) {
                         console.warn(`[会话批量] 跳过树文件会话: ${key}`);
                         return { success: false, key, reason: 'skip_tree_file' };
@@ -2837,7 +2831,7 @@ export const useMethods = (store) => {
             // 过滤掉已删除的
             const deletedKeys = new Set(results.filter(r => r.success).map(r => r.key));
             if (store.sessions && store.sessions.value) {
-                store.sessions.value = store.sessions.value.filter(s => !deletedKeys.has(s.key) && !deletedKeys.has(s.id));
+                store.sessions.value = store.sessions.value.filter(s => !deletedKeys.has(s.key));
             }
 
             // 提示结果
@@ -2974,17 +2968,17 @@ export const useMethods = (store) => {
     };
 
     const selectSessionForChat = async (session, { toggleActive = true, openContextEditor = false } = {}) => {
-        if (!session || (!session.key && !session.id)) {
+        if (!session || !session.key) {
             if (window.showError) window.showError('无效的会话数据');
             return;
         }
 
-        const targetSessionKey = String(session.key || session.id);
+        const targetSessionKey = String(session.key);
 
         if (
             toggleActive &&
             activeSession?.value &&
-            String(activeSession.value.key || activeSession.value.id || '') === targetSessionKey
+            String(activeSession.value.key || '') === targetSessionKey
         ) {
             if (setSelectedKey) setSelectedKey(null);
             if (activeSession) activeSession.value = null;
@@ -4999,11 +4993,148 @@ export const useMethods = (store) => {
 
         handleSessionCreate: async () => {
             return safeExecute(async () => {
-                console.log('[handleSessionCreate] 创建新会话');
-                // 可以在这里实现创建新会话的逻辑
-                // 例如：打开创建会话的对话框
-                if (window.showSuccess) {
-                    window.showSuccess('新会话创建功能待实现');
+                // 使用 prompt 获取会话名称（与新建文件保持一致）
+                const title = window.prompt('新建会话名称：');
+                if (!title || !title.trim()) return;
+
+                const sessionTitle = title.trim();
+
+                // 生成 UUID 格式的会话 key
+                const generateUUID = () => {
+                    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                        return crypto.randomUUID();
+                    }
+                    // 兜底方案：生成类似 UUID 的字符串
+                    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                        const r = Math.random() * 16 | 0;
+                        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                        return v.toString(16);
+                    });
+                };
+
+                const sessionKey = generateUUID();
+
+                // 获取当前时间戳
+                const now = Date.now();
+
+                // 生成唯一的随机 URL
+                const timestamp = Date.now();
+                const randomStr = Math.random().toString(36).substring(2, 11);
+                const uniqueUrl = `aicr-session://${timestamp}-${randomStr}`;
+
+                // 构建会话数据
+                const sessionData = {
+                    key: sessionKey,
+                    url: uniqueUrl,
+                    title: sessionTitle,
+                    pageTitle: sessionTitle,
+                    pageDescription: '',
+                    pageContent: '',
+                    messages: [],
+                    tags: [],
+                    createdAt: now,
+                    updatedAt: now,
+                    lastAccessTime: now
+                };
+
+                // 调用会话保存接口
+                const payload = {
+                    module_name: SERVICE_MODULE,
+                    method_name: 'create_document',
+                    parameters: {
+                        cname: 'sessions',
+                        data: sessionData
+                    }
+                };
+
+                const saveResult = await postData(`${window.API_URL}/`, payload);
+
+                if (saveResult && saveResult.success !== false) {
+                    // 生成文件路径（基于会话标题）
+                    const sanitizeFileName = (name) => String(name || '').replace(/\//g, '-');
+                    const fileName = sanitizeFileName(sessionTitle);
+                    
+                    // 根据会话的 tags 构建文件夹路径（如果有）
+                    const tags = Array.isArray(sessionData.tags) ? sessionData.tags : [];
+                    const folderParts = tags
+                        .map(t => (t == null ? '' : String(t)).trim())
+                        .filter(t => t.length > 0 && String(t).toLowerCase() !== 'default');
+                    
+                    let filePath = '';
+                    if (folderParts.length > 0) {
+                        const folderPath = folderParts.join('/');
+                        filePath = normalizeFilePath(`${folderPath}/${fileName}`);
+                    } else {
+                        filePath = normalizeFilePath(fileName);
+                    }
+
+                    // 调用 write-file 接口创建实际文件（与新建文件保持一致）
+                    try {
+                        const baseUrl = window.API_URL || '';
+                        const url = `${baseUrl.replace(/\/$/, '')}/write-file`;
+                        
+                        // 清理路径：移除 static/ 前缀（如果有）
+                        const cleanPath = filePath.startsWith('static/') 
+                            ? filePath.slice(7) 
+                            : filePath;
+
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                target_file: cleanPath,
+                                content: sessionData.pageContent || '',
+                                is_base64: false
+                            })
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}));
+                            throw new Error(errorData.message || `创建文件失败: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        if (result.code !== 0 && result.code !== 200) {
+                            throw new Error(result.message || '创建文件失败');
+                        }
+
+                        console.log('[handleSessionCreate] 文件已通过 write-file 创建:', cleanPath);
+                    } catch (writeError) {
+                        console.warn('[handleSessionCreate] 通过 write-file 创建文件失败（已忽略）:', writeError?.message);
+                        // 不阻止流程继续，因为会话已创建
+                    }
+
+                    // 添加到本地列表（确保新会话立即可用）
+                    if (store.sessions && store.sessions.value) {
+                        store.sessions.value = [sessionData, ...store.sessions.value];
+                    }
+
+                    // 刷新会话列表（从后端获取最新数据）
+                    if (loadSessions && typeof loadSessions === 'function') {
+                        await loadSessions(true);
+                    }
+
+                    // 刷新文件树（确保新创建的文件显示在文件树中）
+                    if (store.loadFileTree && typeof store.loadFileTree === 'function') {
+                        try {
+                            await store.loadFileTree();
+                        } catch (refreshError) {
+                            console.warn('[handleSessionCreate] 刷新文件树失败（已忽略）:', refreshError?.message);
+                        }
+                    }
+
+                    // 选中新创建的会话
+                    const sessions = store.sessions?.value || [];
+                    const newSession = sessions.find(s => s && s.key === sessionKey);
+                    if (newSession) {
+                        await selectSessionForChat(newSession, { toggleActive: false, openContextEditor: false });
+                    }
+
+                    showSuccessMessage('会话创建成功');
+                } else {
+                    throw new Error(saveResult?.message || '创建会话失败');
                 }
             }, '创建会话');
         },
@@ -5583,8 +5714,20 @@ export const useMethods = (store) => {
                         pageDescription = `文件：${payload?.name || fileKey}`;
                     }
 
-                    // 生成会话 ID（使用 fileKey 作为基础）
-                    const sessionId = `${Date.now()}_${fileKey.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    // 生成 UUID 格式的会话 key
+                    const generateUUID = () => {
+                        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                            return crypto.randomUUID();
+                        }
+                        // 兜底方案：生成类似 UUID 的字符串
+                        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                            const r = Math.random() * 16 | 0;
+                            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                            return v.toString(16);
+                        });
+                    };
+
+                    const sessionKey = generateUUID();
 
                     // 获取当前时间戳
                     const now = Date.now();
@@ -5686,7 +5829,7 @@ export const useMethods = (store) => {
 
                     // 在切换视图前，将 activeSession 的最新消息同步到 store.sessions
                     if (activeSession?.value && store.sessions?.value) {
-                        const activeKey = String(activeSession.value.key || activeSession.value.id || '');
+                        const activeKey = String(activeSession.value.key || '');
                         if (activeKey) {
                             const activeMessages = activeSession.value.messages;
                             if (Array.isArray(activeMessages)) {
@@ -5720,18 +5863,18 @@ export const useMethods = (store) => {
                     let pendingSessionKey = null;
                     let pendingSessionMessages = null;
                     if (previousMode === 'tags' && mode === 'tree') {
-                        // 优先使用 activeSession，否则使用 externalSelectedSessionId
+                        // 优先使用 activeSession，否则使用 externalSelectedSessionKey
                         if (activeSession && activeSession.value) {
-                            const sessionKey = activeSession.value.key || activeSession.value.id;
+                            const sessionKey = activeSession.value.key;
                             if (sessionKey) {
                                 pendingSessionKey = String(sessionKey);
                                 // 保存当前的消息，以便后续使用
                                 pendingSessionMessages = activeSession.value.messages;
                                 console.log('[useMethods] 保存当前选中的会话Key:', pendingSessionKey, '消息数量:', pendingSessionMessages?.length || 0);
                             }
-                        } else if (store.externalSelectedSessionId && store.externalSelectedSessionId.value) {
-                            pendingSessionKey = String(store.externalSelectedSessionId.value);
-                            console.log('[useMethods] 保存当前选中的会话Key（从externalSelectedSessionId）:', pendingSessionKey);
+                        } else if (store.externalSelectedSessionKey && store.externalSelectedSessionKey.value) {
+                            pendingSessionKey = String(store.externalSelectedSessionKey.value);
+                            console.log('[useMethods] 保存当前选中的会话Key（从externalSelectedSessionKey）:', pendingSessionKey);
                         }
                     }
 
@@ -5860,13 +6003,13 @@ export const useMethods = (store) => {
                                     // 在会话列表中查找对应的会话
                                     const sessions = store.sessions?.value || [];
                                     let targetSession = sessions.find(s => {
-                                        const sessionKey = String(s.key || s.id || '');
+                                        const sessionKey = String(s.key || '');
                                         return sessionKey === targetSessionKey;
                                     });
 
                                     // 如果当前有 activeSession 且与目标会话相同，使用 activeSession 的 messages（保留最新聊天记录）
                                     if (targetSession && activeSession?.value) {
-                                        const activeKey = String(activeSession.value.key || activeSession.value.id || '');
+                                        const activeKey = String(activeSession.value.key || '');
                                         if (activeKey === targetSessionKey) {
                                             const activeMessages = activeSession.value.messages;
                                             if (Array.isArray(activeMessages) && activeMessages.length > 0) {
@@ -5879,9 +6022,9 @@ export const useMethods = (store) => {
                                     if (targetSession) {
                                         console.log('[useMethods] 找到对应的会话，准备选中并滚动:', targetSession.key);
 
-                                        // 设置外部选中的会话ID（用于更新sessionList组件的选中状态）
-                                        if (store.externalSelectedSessionId) {
-                                            store.externalSelectedSessionId.value = targetSessionKey;
+                                        // 设置外部选中的会话Key（用于更新sessionList组件的选中状态）
+                                        if (store.externalSelectedSessionKey) {
+                                            store.externalSelectedSessionKey.value = targetSessionKey;
                                         }
 
                                         // 直接调用 selectSessionForChat 选择会话（确保调用 read-file 接口）
@@ -5891,7 +6034,7 @@ export const useMethods = (store) => {
                                         await new Promise(resolve => setTimeout(resolve, 200));
 
                                         // 滚动到对应的会话项
-                                        const sessionKey = targetSession.key || targetSession.id;
+                                        const sessionKey = targetSession.key;
                                         const sessionItem = document.querySelector(`.session-item[data-key="${sessionKey}"], .session-item[data-session-key="${sessionKey}"]`);
 
                                         if (sessionItem) {
@@ -5927,10 +6070,10 @@ export const useMethods = (store) => {
                                             }
                                         }
 
-                                        // 清理外部选中的会话ID（延迟清理，确保组件已更新）
+                                        // 清理外部选中的会话Key（延迟清理，确保组件已更新）
                                         setTimeout(() => {
-                                            if (store.externalSelectedSessionId) {
-                                                store.externalSelectedSessionId.value = null;
+                                            if (store.externalSelectedSessionKey) {
+                                                store.externalSelectedSessionKey.value = null;
                                             }
                                         }, 1000);
                                     } else {
@@ -6183,19 +6326,19 @@ export const useMethods = (store) => {
         },
 
         // 切换会话选择状态（批量选择）
-        toggleSessionSelection: (sessionId) => {
+        toggleSessionSelection: (sessionKey) => {
             return safeExecute(() => {
                 if (!selectedSessionKeys || !selectedSessionKeys.value) {
                     console.warn('[useMethods] selectedSessionKeys 未初始化');
                     return;
                 }
 
-                if (selectedSessionKeys.value.has(sessionId)) {
-                    selectedSessionKeys.value.delete(sessionId);
+                if (selectedSessionKeys.value.has(sessionKey)) {
+                    selectedSessionKeys.value.delete(sessionKey);
                 } else {
-                    selectedSessionKeys.value.add(sessionId);
+                    selectedSessionKeys.value.add(sessionKey);
                 }
-                console.log('[useMethods] 会话选择状态已切换:', sessionId, '选中数量:', selectedSessionKeys.value.size);
+                console.log('[useMethods] 会话选择状态已切换:', sessionKey, '选中数量:', selectedSessionKeys.value.size);
             }, '切换会话选择状态');
         },
 
@@ -6215,7 +6358,7 @@ export const useMethods = (store) => {
                 // 如果传入了 ids，使用 ids，否则使用所有会话
                 let targetSessions = [];
                 if (ids && Array.isArray(ids) && ids.length > 0) {
-                    targetSessions = store.sessions.value.filter(s => ids.includes(s.key || s.id));
+                    targetSessions = store.sessions.value.filter(s => ids.includes(s.key));
                 } else {
                     targetSessions = store.sessions.value;
                 }
@@ -6820,21 +6963,20 @@ export const useMethods = (store) => {
         return store || modal?._store || window.aicrStore || (window.app && window.app._instance && window.app._instance.setupState);
     }
 
-    function findSessionBySessionId(store, sessionId) {
-        const normalizedSessionId = sessionId == null ? '' : String(sessionId);
+    function findSessionBySessionKey(store, sessionKey) {
+        const normalizedSessionKey = sessionKey == null ? '' : String(sessionKey);
         const sessions = store?.sessions?.value || [];
         return sessions.find(s => {
             if (!s) return false;
             const key = s.key == null ? '' : String(s.key);
-            const id = s.id == null ? '' : String(s.id);
-            return key === normalizedSessionId || id === normalizedSessionId;
+            return key === normalizedSessionKey;
         });
     }
 
     // 打开标签管理弹窗
-    async function openTagManager(sessionId, session, store) {
-        if (!sessionId || !session) {
-            console.warn('会话不存在，无法管理标签:', sessionId);
+    async function openTagManager(sessionKey, session, store) {
+        if (!sessionKey || !session) {
+            console.warn('会话不存在，无法管理标签:', sessionKey);
             return;
         }
 
@@ -6854,21 +6996,21 @@ export const useMethods = (store) => {
 
         // 显示弹窗
         modal.style.display = 'flex';
-        modal.dataset.sessionId = sessionId;
+        modal.dataset.sessionKey = sessionKey;
 
         // 加载当前标签
-        loadTagsIntoManager(sessionId, currentTags, modal);
+        loadTagsIntoManager(sessionKey, currentTags, modal);
 
         // 添加关闭事件
         const closeBtn = modal.querySelector('.tag-manager-close');
         if (closeBtn) {
-            closeBtn.onclick = () => closeTagManager(sessionId, store);
+            closeBtn.onclick = () => closeTagManager(sessionKey, store);
         }
 
         // 添加保存事件
         const saveBtn = modal.querySelector('.tag-manager-save');
         if (saveBtn) {
-            saveBtn.onclick = () => saveTags(sessionId, store);
+            saveBtn.onclick = () => saveTags(sessionKey, store);
         }
 
         // 添加输入框回车事件（兼容中文输入法）
@@ -6899,7 +7041,7 @@ export const useMethods = (store) => {
 
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    addTagFromInput(sessionId, modal, store);
+                    addTagFromInput(sessionKey, modal, store);
                 }
             };
 
@@ -6912,7 +7054,7 @@ export const useMethods = (store) => {
         // ESC 键关闭
         const escHandler = (e) => {
             if (e.key === 'Escape') {
-                closeTagManager(sessionId, store);
+                closeTagManager(sessionKey, store);
             }
         };
 
@@ -6948,10 +7090,10 @@ export const useMethods = (store) => {
         // 点击背景关闭
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
-                const sessionId = modal.dataset.sessionId;
-                if (sessionId) {
+                const sessionKey = modal.dataset.sessionKey;
+                if (sessionKey) {
                     const store = getTagManagerStore(modal);
-                    closeTagManager(sessionId, store);
+                    closeTagManager(sessionKey, store);
                 }
             }
         });
@@ -7092,10 +7234,10 @@ export const useMethods = (store) => {
             addBtn.style.transform = 'translateY(0)';
         });
         addBtn.addEventListener('click', () => {
-            const sessionId = modal.dataset.sessionId;
-            if (sessionId) {
+            const sessionKey = modal.dataset.sessionKey;
+            if (sessionKey) {
                 const store = getTagManagerStore(modal);
-                addTagFromInput(sessionId, modal, store);
+                addTagFromInput(sessionKey, modal, store);
             }
         });
 
@@ -7131,10 +7273,10 @@ export const useMethods = (store) => {
             }
         });
         smartGenerateBtn.addEventListener('click', () => {
-            const sessionId = modal.dataset.sessionId;
-            if (sessionId) {
+            const sessionKey = modal.dataset.sessionKey;
+            if (sessionKey) {
                 const store = getTagManagerStore(modal);
-                generateSmartTags(sessionId, smartGenerateBtn, modal, store);
+                generateSmartTags(sessionKey, smartGenerateBtn, modal, store);
             }
         });
 
@@ -7142,18 +7284,14 @@ export const useMethods = (store) => {
         inputGroup.appendChild(addBtn);
         inputGroup.appendChild(smartGenerateBtn);
 
-        // 快捷标签按钮容器
+        // 快捷标签按钮容器（参考 tags-list 样式）
         const quickTagsContainer = document.createElement('div');
         quickTagsContainer.className = 'tag-manager-quick-tags';
         quickTagsContainer.style.cssText = `
         display: flex !important;
         flex-wrap: wrap !important;
-        gap: 10px !important;
+        gap: 6px !important;
         margin-bottom: 24px !important;
-        padding: 16px !important;
-        background: rgba(15, 23, 42, 0.3) !important;
-        border-radius: 16px !important;
-        border: 1px dashed rgba(51, 65, 85, 0.5) !important;
     `;
 
         // 获取所有标签（与标签筛选模块保持一致）
@@ -7215,9 +7353,9 @@ export const useMethods = (store) => {
             quickTagsContainer.appendChild(emptyHint);
         } else {
             // 获取当前会话的标签（用于判断快捷标签是否已添加）
-            const sessionId = modal.dataset.sessionId;
+            const sessionKey = modal.dataset.sessionKey;
             const store = getTagManagerStore(modal);
-            const session = findSessionBySessionId(store, sessionId);
+            const session = findSessionBySessionKey(store, sessionKey);
             const currentTags = session?.tags || [];
 
             quickTags.forEach(tagName => {
@@ -7226,34 +7364,42 @@ export const useMethods = (store) => {
                 quickTagBtn.textContent = tagName;
                 quickTagBtn.className = 'tag-manager-quick-tag-btn';
                 quickTagBtn.dataset.tagName = tagName;
-                quickTagBtn.style.cssText = `
-                padding: 8px 16px !important;
-                background: ${isAdded ? 'rgba(99, 102, 241, 0.2)' : 'rgba(30, 41, 59, 0.6)'} !important;
-                color: ${isAdded ? '#a5b4fc' : '#94a3b8'} !important;
-                border: 1px solid ${isAdded ? 'rgba(99, 102, 241, 0.3)' : 'rgba(51, 65, 85, 0.5)'} !important;
-                border-radius: 8px !important;
-                cursor: ${isAdded ? 'not-allowed' : 'pointer'} !important;
-                font-size: 13px !important;
-                font-weight: 500 !important;
-                transition: all 0.2s ease !important;
-                opacity: ${isAdded ? '0.8' : '1'} !important;
-                box-shadow: ${isAdded ? 'none' : '0 1px 2px 0 rgba(0, 0, 0, 0.2)'} !important;
-            `;
+                
+                // 参考 tag-item 样式（与 tags-list 保持一致）
+                const baseStyle = `
+                    padding: 2px 6px !important;
+                    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+                    border-radius: 4px !important;
+                    font-size: 11px !important;
+                    color: #e2e8f0 !important;
+                    background: rgba(255, 255, 255, 0.08) !important;
+                    cursor: ${isAdded ? 'not-allowed' : 'pointer'} !important;
+                    transition: all 0.2s !important;
+                    -webkit-user-select: none !important;
+                    user-select: none !important;
+                    opacity: ${isAdded ? '0.6' : '1'} !important;
+                `;
+                
+                const activeStyle = isAdded ? `
+                    border-color: #6366f1 !important;
+                    background: #6366f1 !important;
+                    color: #ffffff !important;
+                    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3) !important;
+                ` : '';
+                
+                quickTagBtn.style.cssText = baseStyle + activeStyle;
 
+                // hover 效果（与 tag-item:hover 完全一致）
                 if (!isAdded) {
                     quickTagBtn.addEventListener('mouseenter', () => {
-                        quickTagBtn.style.background = 'rgba(51, 65, 85, 0.8)';
                         quickTagBtn.style.borderColor = '#6366f1';
-                        quickTagBtn.style.color = '#f8fafc';
-                        quickTagBtn.style.transform = 'translateY(-1px)';
-                        quickTagBtn.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.3)';
+                        quickTagBtn.style.color = '#818cf8';
+                        quickTagBtn.style.background = 'rgba(99, 102, 241, 0.1)';
                     });
                     quickTagBtn.addEventListener('mouseleave', () => {
-                        quickTagBtn.style.background = 'rgba(30, 41, 59, 0.6)';
-                        quickTagBtn.style.borderColor = 'rgba(51, 65, 85, 0.5)';
-                        quickTagBtn.style.color = '#94a3b8';
-                        quickTagBtn.style.transform = 'translateY(0)';
-                        quickTagBtn.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
+                        quickTagBtn.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                        quickTagBtn.style.color = '#e2e8f0';
+                        quickTagBtn.style.background = 'rgba(255, 255, 255, 0.08)';
                     });
                 }
 
@@ -7261,10 +7407,10 @@ export const useMethods = (store) => {
                     if (isAdded || quickTagBtn.style.cursor === 'not-allowed') {
                         return;
                     }
-                    const sessionId = modal.dataset.sessionId;
-                    if (sessionId) {
+                    const sessionKey = modal.dataset.sessionKey;
+                    if (sessionKey) {
                         const store = getTagManagerStore(modal);
-                        addQuickTag(sessionId, tagName, modal, store);
+                        addQuickTag(sessionKey, tagName, modal, store);
                     }
                 });
                 quickTagsContainer.appendChild(quickTagBtn);
@@ -7318,10 +7464,10 @@ export const useMethods = (store) => {
             cancelBtn.style.color = '#94a3b8';
         });
         cancelBtn.addEventListener('click', () => {
-            const sessionId = modal.dataset.sessionId;
-            if (sessionId) {
+            const sessionKey = modal.dataset.sessionKey;
+            if (sessionKey) {
                 const store = getTagManagerStore(modal);
-                closeTagManager(sessionId, store);
+                closeTagManager(sessionKey, store);
             }
         });
 
@@ -7430,7 +7576,7 @@ export const useMethods = (store) => {
     }
 
     // 加载标签到管理器
-    function loadTagsIntoManager(sessionId, tags, modal) {
+    function loadTagsIntoManager(sessionKey, tags, modal) {
         if (!modal) {
             modal = document.querySelector('#aicr-tag-manager');
         }
@@ -7528,10 +7674,10 @@ export const useMethods = (store) => {
             removeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault(); // 防止触发拖拽
-                const sessionId = modal.dataset.sessionId;
-                if (sessionId) {
+                const sessionKey = modal.dataset.sessionKey;
+                if (sessionKey) {
                     const store = getTagManagerStore(modal);
-                    removeTag(sessionId, index, modal, store);
+                    removeTag(sessionKey, index, modal, store);
                 }
             });
 
@@ -7632,8 +7778,8 @@ export const useMethods = (store) => {
                     return;
                 }
 
-                const sessionId = modal.dataset.sessionId;
-                if (!sessionId) return;
+                const sessionKey = modal.dataset.sessionKey;
+                if (!sessionKey) return;
 
                 // 使用临时标签数据
                 if (!modal._currentTags) return;
@@ -7663,7 +7809,7 @@ export const useMethods = (store) => {
                 modal._currentTags = newTags;
 
                 // 重新加载标签列表
-                loadTagsIntoManager(sessionId, newTags, modal);
+                loadTagsIntoManager(sessionKey, newTags, modal);
 
                 // 更新快捷标签按钮状态
                 updateQuickTagButtons(modal, newTags);
@@ -7776,9 +7922,9 @@ export const useMethods = (store) => {
         }
 
         // 获取当前会话的标签
-        const sessionId = modal.dataset.sessionId;
+        const sessionKey = modal.dataset.sessionKey;
         const store = getTagManagerStore(modal);
-        const session = findSessionBySessionId(store, sessionId);
+        const session = findSessionBySessionKey(store, sessionKey);
         const currentTags = session?.tags || [];
 
         // 创建快捷标签按钮
@@ -7823,10 +7969,10 @@ export const useMethods = (store) => {
                 if (isAdded || quickTagBtn.style.cursor === 'not-allowed') {
                     return;
                 }
-                const sessionId = modal.dataset.sessionId;
-                if (sessionId) {
+                const sessionKey = modal.dataset.sessionKey;
+                if (sessionKey) {
                     const store = getTagManagerStore(modal);
-                    addQuickTag(sessionId, tagName, modal, store);
+                    addQuickTag(sessionKey, tagName, modal, store);
                 }
             });
 
@@ -7835,7 +7981,7 @@ export const useMethods = (store) => {
     }
 
     // 从输入框添加标签
-    function addTagFromInput(sessionId, modal, store) {
+    function addTagFromInput(sessionKey, modal, store) {
         if (!modal) {
             modal = document.querySelector('#aicr-tag-manager');
         }
@@ -7864,7 +8010,7 @@ export const useMethods = (store) => {
         tagInput.focus();
 
         // 重新加载标签列表
-        loadTagsIntoManager(sessionId, currentTags, modal);
+        loadTagsIntoManager(sessionKey, currentTags, modal);
 
         // 更新快捷标签按钮状态
         updateQuickTagButtons(modal, currentTags);
@@ -7876,7 +8022,7 @@ export const useMethods = (store) => {
     }
 
     // 添加快捷标签
-    function addQuickTag(sessionId, tagName, modal, store) {
+    function addQuickTag(sessionKey, tagName, modal, store) {
         if (!modal) {
             modal = document.querySelector('#aicr-tag-manager');
         }
@@ -7895,14 +8041,14 @@ export const useMethods = (store) => {
         currentTags.push(tagName);
 
         // 重新加载标签列表
-        loadTagsIntoManager(sessionId, currentTags, modal);
+        loadTagsIntoManager(sessionKey, currentTags, modal);
 
         // 更新快捷标签按钮状态
         updateQuickTagButtons(modal, currentTags);
     }
 
     // 删除标签
-    function removeTag(sessionId, index, modal, store) {
+    function removeTag(sessionKey, index, modal, store) {
         if (!modal) {
             modal = document.querySelector('#aicr-tag-manager');
         }
@@ -7913,7 +8059,7 @@ export const useMethods = (store) => {
         const currentTags = modal._currentTags;
 
         currentTags.splice(index, 1);
-        loadTagsIntoManager(sessionId, currentTags, modal);
+        loadTagsIntoManager(sessionKey, currentTags, modal);
 
         // 更新快捷标签按钮状态
         updateQuickTagButtons(modal, currentTags);
@@ -7925,16 +8071,16 @@ export const useMethods = (store) => {
     }
 
     // 智能生成标签
-    async function generateSmartTags(sessionId, buttonElement, modal, store) {
-        if (!sessionId) {
-            console.warn('会话不存在，无法生成标签:', sessionId);
+    async function generateSmartTags(sessionKey, buttonElement, modal, store) {
+        if (!sessionKey) {
+            console.warn('会话不存在，无法生成标签:', sessionKey);
             return;
         }
 
         store = getTagManagerStore(modal, store);
-        const session = findSessionBySessionId(store, sessionId);
+        const session = findSessionBySessionKey(store, sessionKey);
         if (!session) {
-            console.warn('会话不存在，无法生成标签:', sessionId);
+            console.warn('会话不存在，无法生成标签:', sessionKey);
             return;
         }
 
@@ -8069,7 +8215,7 @@ export const useMethods = (store) => {
 
             if (addedCount > 0) {
                 // 重新加载标签列表
-                loadTagsIntoManager(sessionId, tagsList, modal);
+                loadTagsIntoManager(sessionKey, tagsList, modal);
 
                 // 更新快捷标签按钮状态和列表
                 updateQuickTagButtons(modal, tagsList);
@@ -8146,9 +8292,9 @@ export const useMethods = (store) => {
     }
 
     // 保存标签
-    async function saveTags(sessionId, store) {
-        if (!sessionId) {
-            console.warn('会话不存在，无法保存标签:', sessionId);
+    async function saveTags(sessionKey, store) {
+        if (!sessionKey) {
+            console.warn('会话不存在，无法保存标签:', sessionKey);
             return;
         }
 
@@ -8158,7 +8304,7 @@ export const useMethods = (store) => {
         try {
             const modalEl = document.querySelector('#aicr-tag-manager');
             store = getTagManagerStore(modalEl, store);
-            const session = findSessionBySessionId(store, sessionId);
+            const session = findSessionBySessionKey(store, sessionKey);
             if (!session) {
                 throw new Error('会话不存在');
             }
@@ -8180,7 +8326,7 @@ export const useMethods = (store) => {
                         if (res) return res;
                     }
                 } else {
-                    if (nodes.sessionKey === sessionId) return nodes;
+                    if (nodes.sessionKey === sessionKey) return nodes;
                     if (nodes.children) return findNode(nodes.children);
                 }
                 return null;
@@ -8217,7 +8363,7 @@ export const useMethods = (store) => {
 
             const sessionsList = store.sessions?.value || [];
 
-            const oldSessionKey = String(session.key || session.id || sessionId || '');
+            const oldSessionKey = String(session.key || sessionKey || '');
             const { sessionPathMap: oldMap } = buildFileTreeFromSessions(sessionsList);
 
             const draftSessions = sessionsList.map(s => (s === session ? { ...s, tags: uniqueTags } : s));
@@ -8241,7 +8387,7 @@ export const useMethods = (store) => {
 
             for (const s of sessionsList) {
                 if (!s) continue;
-                const sessionKey = String(s.key || s.id || '');
+                const sessionKey = String(s.key || '');
                 if (!sessionKey) continue;
 
                 const oldPathByRule = oldMap.get(sessionKey) || null;
@@ -8318,9 +8464,9 @@ export const useMethods = (store) => {
                 method_name: 'update_document',
                 parameters: {
                     cname: 'sessions',
-                    key: sessionId,
+                    key: sessionKey,
                     data: {
-                        key: sessionId,
+                        key: sessionKey,
                         tags: session.tags,
                         updatedAt: Date.now()
                     }
@@ -8339,7 +8485,7 @@ export const useMethods = (store) => {
             }
 
             // 关闭弹窗
-            closeTagManager(sessionId, store);
+            closeTagManager(sessionKey, store);
 
             if (window.showSuccess) {
                 window.showSuccess('标签已保存');
@@ -8362,7 +8508,7 @@ export const useMethods = (store) => {
     }
 
     // 关闭标签管理器（放弃未保存的更改）
-    async function closeTagManager(sessionId, store) {
+    async function closeTagManager(sessionKey, store) {
         const modal = document.querySelector('#aicr-tag-manager');
         if (modal) {
             // 清理临时数据
