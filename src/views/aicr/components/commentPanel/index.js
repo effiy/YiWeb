@@ -799,15 +799,26 @@ const componentOptions = {
                 try {
                     const sessionSync = getSessionSyncService();
                     const session = await sessionSync.getSession(String(fileKey));
-                    this.sessionChatSession = session;
-                    this.sessionChatEditingPageContent = String(session?.pageContent || '');
-                    this.$nextTick(() => {
-                        try {
-                            const el = this.$el && this.$el.querySelector('.aicr-session-chat-messages');
-                            if (el) el.scrollTop = el.scrollHeight;
-                        } catch (_) { }
-                    });
+                    if (session) {
+                        // 确保 messages 字段存在（即使是空数组）
+                        if (!Array.isArray(session.messages)) {
+                            session.messages = [];
+                        }
+                        this.sessionChatSession = session;
+                        this.sessionChatEditingPageContent = String(session.pageContent || '');
+                        console.log('[CommentPanel] 会话加载成功，消息数量:', session.messages.length);
+                        this.$nextTick(() => {
+                            try {
+                                const el = this.$el && this.$el.querySelector('.aicr-session-chat-messages');
+                                if (el) el.scrollTop = el.scrollHeight;
+                            } catch (_) { }
+                        });
+                    } else {
+                        console.warn('[CommentPanel] 未找到会话:', fileKey);
+                        this.sessionChatSession = null;
+                    }
                 } catch (e) {
+                    console.error('[CommentPanel] 加载会话失败:', e);
                     this.sessionChatError = e?.message || '加载会话失败';
                     this.sessionChatSession = null;
                 } finally {

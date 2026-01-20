@@ -81,7 +81,7 @@
                                                 @click="sendSessionChatMessageToRobot(bot, m, idx)">{{ bot.name || '机器人'
                                                 }}</button>
                                         </template>
-                                        <button v-if="m.type !== 'pet'" type="button" class="chat-meta-btn"
+                                        <button type="button" class="chat-meta-btn"
                                             :disabled="sessionChatSending" @click="editSessionChatMessageAt(idx)"
                                             aria-label="编辑消息" title="编辑">✏️</button>
                                         <button v-if="m.type !== 'pet'" type="button" class="chat-meta-btn"

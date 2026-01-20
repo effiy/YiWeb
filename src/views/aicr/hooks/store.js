@@ -479,6 +479,11 @@ export const createStore = () => {
     const sessionContextMode = vueRef('edit');
     const sessionContextUndoVisible = vueRef(false);
     const sessionContextOptimizeBackup = vueRef('');
+    // 消息编辑相关状态
+    const sessionMessageEditorVisible = vueRef(false);
+    const sessionMessageEditorDraft = vueRef('');
+    const sessionMessageEditorMode = vueRef('edit');
+    const sessionMessageEditorIndex = vueRef(-1);
     const sessionFaqVisible = vueRef(false);
     const sessionFaqSearchKeyword = vueRef('');
     const sessionFaqItems = vueRef([]);
@@ -505,6 +510,14 @@ export const createStore = () => {
     const weChatRobotAutoForwardDraft = vueRef(false);
     const weChatRobots = vueRef([]);
     const weChatRobotsDraft = vueRef([]);
+    // 会话编辑相关状态
+    const sessionEditVisible = vueRef(false);
+    const sessionEditKey = vueRef(null);
+    const sessionEditTitle = vueRef('');
+    const sessionEditUrl = vueRef('');
+    const sessionEditDescription = vueRef('');
+    const sessionEditGenerating = vueRef(false);
+    const sessionEditData = vueRef(null); // 缓存编辑中的会话数据，避免重复获取
 
     // 标签过滤相关状态
     const tagFilterReverse = vueRef(false); // 是否反向过滤会话
@@ -2163,6 +2176,10 @@ export const createStore = () => {
         sessionContextMode,
         sessionContextUndoVisible,
         sessionContextOptimizeBackup,
+        sessionMessageEditorVisible,
+        sessionMessageEditorDraft,
+        sessionMessageEditorMode,
+        sessionMessageEditorIndex,
         sessionFaqVisible,
         sessionFaqSearchKeyword,
         sessionFaqItems,
@@ -2189,6 +2206,13 @@ export const createStore = () => {
         weChatRobotAutoForwardDraft,
         weChatRobots,
         weChatRobotsDraft,
+        sessionEditVisible,
+        sessionEditKey,
+        sessionEditTitle,
+        sessionEditUrl,
+        sessionEditDescription,
+        sessionEditGenerating,
+        sessionEditData,
 
         // 标签过滤相关状态
         tagFilterReverse,

@@ -125,6 +125,10 @@ const { computed } = Vue;
                 sessionContextDraft: store.sessionContextDraft,
                 sessionContextMode: store.sessionContextMode,
                 sessionContextUndoVisible: store.sessionContextUndoVisible,
+                sessionMessageEditorVisible: store.sessionMessageEditorVisible,
+                sessionMessageEditorDraft: store.sessionMessageEditorDraft,
+                sessionMessageEditorMode: store.sessionMessageEditorMode,
+                sessionMessageEditorIndex: store.sessionMessageEditorIndex,
                 // 标签过滤相关状态
                 tagFilterReverse: store.tagFilterReverse,
                 tagFilterNoTags: store.tagFilterNoTags,
@@ -135,6 +139,12 @@ const { computed } = Vue;
                 sessionBatchMode: store.sessionBatchMode,
                 selectedSessionKeys: store.selectedSessionKeys,
                 externalSelectedSessionKey: store.externalSelectedSessionKey,
+                sessionEditVisible: store.sessionEditVisible,
+                sessionEditKey: store.sessionEditKey,
+                sessionEditTitle: store.sessionEditTitle,
+                sessionEditUrl: store.sessionEditUrl,
+                sessionEditDescription: store.sessionEditDescription,
+                sessionEditGenerating: store.sessionEditGenerating,
             },
             onMounted: (mountedApp) => {
                 logInfo('[代码审查页面] 应用已挂载');
@@ -147,6 +157,30 @@ const { computed } = Vue;
                 // 加载会话侧边栏宽度
                 if (store && store.loadSessionSidebarWidth) {
                     store.loadSessionSidebarWidth();
+                }
+
+                // 监听 activeSession 变化，绑定 welcome-card 事件
+                if (store && store.activeSession && mountedApp) {
+                    // 使用 setInterval 定期检查并绑定事件（简单但有效的方法）
+                    const bindWelcomeCardEventsInterval = setInterval(() => {
+                        try {
+                            const welcomeCard = document.querySelector('[data-welcome-message]');
+                            if (welcomeCard && mountedApp.bindWelcomeCardEvents) {
+                                // 检查是否已经绑定过事件（通过检查是否有 data-events-bound 属性）
+                                if (!welcomeCard.hasAttribute('data-events-bound')) {
+                                    mountedApp.bindWelcomeCardEvents(welcomeCard);
+                                    welcomeCard.setAttribute('data-events-bound', 'true');
+                                }
+                            }
+                        } catch (e) {
+                            // 忽略错误，继续运行
+                        }
+                    }, 500);
+
+                    // 清理定时器
+                    window.addEventListener('beforeunload', () => {
+                        clearInterval(bindWelcomeCardEventsInterval);
+                    });
                 }
 
                 // 调试：检查会话相关状态
@@ -934,6 +968,33 @@ const { computed } = Vue;
                         await methods.handleSessionEdit(sessionKey);
                     } catch (error) {
                         logError('[主页面] 会话编辑处理失败:', error);
+                    }
+                },
+
+                closeSessionEdit: function () {
+                    try {
+                        const methods = useMethods(store);
+                        methods.closeSessionEdit();
+                    } catch (error) {
+                        logError('[主页面] 关闭会话编辑失败:', error);
+                    }
+                },
+
+                saveSessionEdit: async function () {
+                    try {
+                        const methods = useMethods(store);
+                        await methods.saveSessionEdit();
+                    } catch (error) {
+                        logError('[主页面] 保存会话编辑失败:', error);
+                    }
+                },
+
+                generateSessionDescription: async function () {
+                    try {
+                        const methods = useMethods(store);
+                        await methods.generateSessionDescription();
+                    } catch (error) {
+                        logError('[主页面] 生成会话描述失败:', error);
                     }
                 },
 

@@ -187,6 +187,9 @@
                             </div>
                         </div>
                         <div v-else>
+                            <!-- Welcome Card -->
+                            <div v-if="activeSession" class="pet-chat-message is-pet" data-welcome-message="true" v-html="buildWelcomeCardHtmlForSession(activeSession)" ref="welcomeCardRef"></div>
+                            
                             <div v-for="(m, idx) in sessionChatMessages(activeSession)"
                                 :key="`${m.timestamp || 0}_${idx}`" class="pet-chat-message" :class="{
                                     'is-pet': m.type === 'pet',
@@ -230,7 +233,7 @@
                                                     @click="sendSessionChatMessageToRobot(bot, m, idx)">{{ bot.name ||
                                                     '机器人' }}</button>
                                             </template>
-                                            <button v-if="m.type !== 'pet'" type="button" class="pet-chat-meta-btn"
+                                            <button type="button" class="pet-chat-meta-btn"
                                                 :disabled="sessionChatSending" @click="editSessionChatMessageAt(idx)"
                                                 aria-label="编辑消息" title="编辑">✏️</button>
                                             <button v-if="m.type !== 'pet'" type="button" class="pet-chat-meta-btn"
@@ -376,6 +379,60 @@
                                         aria-label="页面上下文内容"></textarea>
                                     <div v-else class="aicr-session-context-preview md-preview-body"
                                         v-html="renderSessionChatMarkdown(sessionContextDraft)" aria-label="页面上下文预览">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="sessionMessageEditorVisible" class="aicr-session-context-modal" role="dialog"
+                        aria-modal="true" aria-label="消息编辑器">
+                        <div class="aicr-session-context-modal-mask" @click="closeSessionMessageEditor"></div>
+                        <div class="aicr-session-context-modal-body" tabindex="0"
+                            @keydown.esc="closeSessionMessageEditor">
+                            <div class="aicr-session-context-modal-header">
+                                <div class="aicr-session-context-modal-title">
+                                    编辑消息
+                                    <span class="aicr-session-context-modal-subtitle">（Markdown）</span>
+                                </div>
+                                <div class="aicr-session-context-modal-header-right">
+                                    <div class="aicr-session-context-mode-group" role="tablist" aria-label="消息视图切换">
+                                        <button type="button" class="aicr-session-context-mode-btn"
+                                            :class="{ active: sessionMessageEditorMode === 'split' }"
+                                            @click="setSessionMessageEditorMode('split')" role="tab"
+                                            :aria-selected="sessionMessageEditorMode === 'split'" aria-label="并排">并排</button>
+                                        <button type="button" class="aicr-session-context-mode-btn"
+                                            :class="{ active: sessionMessageEditorMode === 'edit' }"
+                                            @click="setSessionMessageEditorMode('edit')" role="tab"
+                                            :aria-selected="sessionMessageEditorMode === 'edit'" aria-label="仅编辑">仅编辑</button>
+                                        <button type="button" class="aicr-session-context-mode-btn"
+                                            :class="{ active: sessionMessageEditorMode === 'preview' }"
+                                            @click="setSessionMessageEditorMode('preview')" role="tab"
+                                            :aria-selected="sessionMessageEditorMode === 'preview'"
+                                            aria-label="仅预览">仅预览</button>
+                                    </div>
+                                    <button type="button" class="aicr-session-context-toolbar-btn primary"
+                                        @click="saveSessionMessageEdit" title="保存修改" aria-label="保存修改">保存</button>
+                                    <button type="button" class="aicr-session-context-modal-close"
+                                        @click="closeSessionMessageEditor" aria-label="关闭">✕</button>
+                                </div>
+                            </div>
+                            <div class="aicr-session-context-modal-content">
+                                <div class="aicr-session-context-editor-body" :data-mode="sessionMessageEditorMode">
+                                    <div v-if="sessionMessageEditorMode === 'split'" class="aicr-session-context-split">
+                                        <textarea class="aicr-session-context-textarea" :value="sessionMessageEditorDraft"
+                                            @input="setSessionMessageEditorDraft($event.target.value)"
+                                            aria-label="消息内容"></textarea>
+                                        <div class="aicr-session-context-preview md-preview-body"
+                                            v-html="renderSessionChatMarkdown(sessionMessageEditorDraft)"
+                                            aria-label="消息预览"></div>
+                                    </div>
+                                    <textarea v-else-if="sessionMessageEditorMode === 'edit'"
+                                        class="aicr-session-context-textarea" :value="sessionMessageEditorDraft"
+                                        @input="setSessionMessageEditorDraft($event.target.value)"
+                                        aria-label="消息内容"></textarea>
+                                    <div v-else class="aicr-session-context-preview md-preview-body"
+                                        v-html="renderSessionChatMarkdown(sessionMessageEditorDraft)" aria-label="消息预览">
                                     </div>
                                 </div>
                             </div>
@@ -660,6 +717,63 @@
                                         </div>
                                         <hr />
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 会话编辑模态框 -->
+                    <div v-if="sessionEditVisible" class="aicr-session-context-modal" role="dialog" aria-modal="true"
+                        aria-label="编辑会话">
+                        <div class="aicr-session-context-modal-mask" @click="closeSessionEdit"></div>
+                        <div class="aicr-session-context-modal-body aicr-session-settings-modal-body" tabindex="0"
+                            @keydown.esc="closeSessionEdit">
+                            <div class="aicr-session-context-modal-header">
+                                <div class="aicr-session-context-modal-title">
+                                    ✏️ 编辑会话
+                                </div>
+                                <div class="aicr-session-context-modal-header-right">
+                                    <button type="button" class="aicr-session-context-toolbar-btn primary"
+                                        @click="saveSessionEdit" aria-label="保存" title="保存">保存</button>
+                                    <button type="button" class="aicr-session-context-modal-close"
+                                        @click="closeSessionEdit" aria-label="关闭">✕</button>
+                                </div>
+                            </div>
+                            <div class="aicr-session-context-modal-content aicr-session-settings-modal-content">
+                                <div class="aicr-session-settings-field">
+                                    <label class="aicr-session-settings-label" for="session-edit-title">标题</label>
+                                    <input id="session-edit-title" type="text" class="aicr-session-settings-input"
+                                        :value="sessionEditTitle"
+                                        @input="sessionEditTitle = $event.target.value"
+                                        placeholder="请输入会话标题" autocomplete="off" spellcheck="false"
+                                        aria-label="会话标题" />
+                                </div>
+                                <div class="aicr-session-settings-field">
+                                    <label class="aicr-session-settings-label" for="session-edit-url">网址</label>
+                                    <input id="session-edit-url" type="url" class="aicr-session-settings-input"
+                                        :value="sessionEditUrl"
+                                        @input="sessionEditUrl = $event.target.value"
+                                        placeholder="请输入网址（可选）" autocomplete="off" spellcheck="false"
+                                        aria-label="会话网址" />
+                                    <div class="aicr-session-settings-hint">网址将显示在欢迎卡片中</div>
+                                </div>
+                                <div class="aicr-session-settings-field">
+                                    <div class="aicr-session-edit-description-header">
+                                        <label class="aicr-session-settings-label" for="session-edit-description">描述</label>
+                                        <button type="button" class="aicr-session-context-toolbar-btn"
+                                            :disabled="sessionEditGenerating"
+                                            @click.stop="generateSessionDescription" aria-label="AI生成描述"
+                                            title="根据页面上下文内容AI智能生成描述">
+                                            <span v-if="sessionEditGenerating">生成中...</span>
+                                            <span v-else>✨ AI生成</span>
+                                        </button>
+                                    </div>
+                                    <textarea id="session-edit-description" class="aicr-session-settings-textarea"
+                                        :value="sessionEditDescription"
+                                        @input="sessionEditDescription = $event.target.value"
+                                        rows="6" placeholder="请输入会话描述，或点击AI生成按钮自动生成"
+                                        aria-label="会话描述"></textarea>
+                                    <div class="aicr-session-settings-hint">描述将帮助您更好地理解和管理会话内容</div>
                                 </div>
                             </div>
                         </div>

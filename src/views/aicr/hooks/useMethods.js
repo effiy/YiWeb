@@ -74,6 +74,10 @@ export const useMethods = (store) => {
         sessionContextMode,
         sessionContextUndoVisible,
         sessionContextOptimizeBackup,
+        sessionMessageEditorVisible,
+        sessionMessageEditorDraft,
+        sessionMessageEditorMode,
+        sessionMessageEditorIndex,
         sessionFaqVisible,
         sessionFaqSearchKeyword,
         sessionFaqItems,
@@ -3038,14 +3042,37 @@ export const useMethods = (store) => {
         }
 
         try {
-            const normalized = { ...(session || {}), key: targetSessionKey };
-            if (!normalized.messages || !Array.isArray(normalized.messages)) normalized.messages = [];
+            // 从后端加载完整的会话数据（包括消息）
+            let fullSession = null;
+            try {
+                const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                const sessionSync = getSessionSyncService();
+                fullSession = await sessionSync.getSession(targetSessionKey);
+                console.log('[selectSessionForChat] 从后端加载会话数据，消息数量:', fullSession?.messages?.length || 0);
+            } catch (e) {
+                console.warn('[selectSessionForChat] 加载完整会话数据失败，使用传入的会话数据:', e);
+            }
+
+            // 优先使用从后端加载的完整会话数据，否则使用传入的会话数据
+            const sourceSession = fullSession || session;
+            const normalized = { ...(sourceSession || {}), key: targetSessionKey };
+            
+            // 确保 messages 字段存在且是数组
+            if (!normalized.messages || !Array.isArray(normalized.messages)) {
+                normalized.messages = [];
+            }
+            
+            // 规范化消息格式
             normalized.messages = normalized.messages.map(m => ({
                 type: m?.type === 'pet' ? 'pet' : 'user',
                 message: String(m?.message || m?.content || ''),
                 timestamp: typeof m?.timestamp === 'number' ? m.timestamp : Date.now(),
-                imageDataUrl: m?.imageDataUrl
+                imageDataUrl: m?.imageDataUrl,
+                imageDataUrls: Array.isArray(m?.imageDataUrls) ? m.imageDataUrls : (m?.imageDataUrl ? [m.imageDataUrl] : [])
             }));
+
+            // 按时间戳排序消息
+            normalized.messages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
             if (activeSession) activeSession.value = normalized;
 
@@ -3392,6 +3419,367 @@ export const useMethods = (store) => {
             } catch (_) {
                 return '';
             }
+        },
+
+        // 格式化日期为 YYYY/MM/DD HH:mm
+        formatDate: (date) => {
+            try {
+                if (!date || !(date instanceof Date)) {
+                    if (typeof date === 'number') {
+                        date = new Date(date);
+                    } else {
+                        return '';
+                    }
+                }
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hour = String(date.getHours()).padStart(2, '0');
+                const minute = String(date.getMinutes()).padStart(2, '0');
+                return `${year}/${month}/${day} ${hour}:${minute}`;
+            } catch (_) {
+                return '';
+            }
+        },
+
+        // 构建欢迎卡片 HTML
+        buildWelcomeCardHtml: (pageInfo, session = null) => {
+            try {
+                // 获取会话信息（如果有）
+                const sessionTags = session && Array.isArray(session.tags) ? session.tags.filter(t => t && t.trim()) : [];
+                const sessionMessages = session && Array.isArray(session.messages) ? session.messages : [];
+                const sessionCreatedAt = session && session.createdAt ? session.createdAt : null;
+                const sessionUpdatedAt = session && session.updatedAt ? session.updatedAt : null;
+
+                // 检查会话是否有有效的 URL
+                const hasSessionUrl = session && session.url && session.url.trim();
+                const shouldShowUrl = !session || hasSessionUrl;
+
+                // 构建欢迎卡片 HTML
+                let pageInfoHtml = '<div class="welcome-card">';
+
+                // 检查是否有任何内容可显示
+                const hasTitle = pageInfo && pageInfo.title && pageInfo.title.trim();
+                const hasUrl = shouldShowUrl && pageInfo && pageInfo.url && pageInfo.url.trim();
+                const hasDescription = pageInfo && pageInfo.description && pageInfo.description.trim();
+                const hasAnyContent = hasTitle || hasUrl || hasDescription || sessionTags.length > 0 || 
+                                     sessionMessages.length > 0 || sessionCreatedAt || sessionUpdatedAt;
+
+                // 如果没有任何内容，显示空状态提示
+                if (!hasAnyContent) {
+                    pageInfoHtml += `
+                        <div class="welcome-card-header">
+                            <span class="welcome-card-title">当前页面</span>
+                        </div>
+                        <div class="welcome-card-section">
+                            <div class="welcome-card-empty">暂无页面信息</div>
+                        </div>
+                    `;
+                    pageInfoHtml += '</div>';
+                    return pageInfoHtml;
+                }
+
+                // 标题（如果有）
+                if (hasTitle) {
+                    pageInfoHtml += `
+                        <div class="welcome-card-header">
+                            <span class="welcome-card-title">${_escapeHtml(pageInfo.title)}</span>
+                        </div>
+                    `;
+                }
+
+                // 网址（如果有且应该显示）
+                if (hasUrl) {
+                    const urlId = `welcome-url-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    pageInfoHtml += `
+                        <div class="welcome-card-section">
+                            <div class="welcome-card-section-header">
+                                <div class="welcome-card-section-title">🔗 网址</div>
+                                <button type="button" class="welcome-card-action-btn" data-copy-target="${urlId}" title="复制网址" aria-label="复制网址">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <a href="${_escapeHtml(pageInfo.url)}" target="_blank" class="welcome-card-url" id="${urlId}">${_escapeHtml(pageInfo.url)}</a>
+                        </div>
+                    `;
+                }
+
+                // 页面描述（如果有）
+                if (hasDescription) {
+                    const descId = `welcome-desc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    // 使用 renderSessionChatMarkdown 方法（需要在返回对象中定义后才能使用）
+                    const renderMarkdown = (text) => {
+                        try {
+                            const raw = text == null ? '' : String(text);
+                            if (!raw) return '';
+                            if (typeof window.marked === 'undefined') {
+                                return raw
+                                    .replace(/&/g, '&amp;')
+                                    .replace(/</g, '&lt;')
+                                    .replace(/>/g, '&gt;')
+                                    .replace(/\n/g, '<br/>');
+                            }
+                            return window.marked.parse(raw, { breaks: true, gfm: true });
+                        } catch (_) {
+                            return _escapeHtml(raw).replace(/\n/g, '<br/>');
+                        }
+                    };
+                    pageInfoHtml += `
+                        <div class="welcome-card-section welcome-card-description">
+                            <div class="welcome-card-section-header">
+                                <div class="welcome-card-section-title">📝 页面描述</div>
+                                <button type="button" class="welcome-card-action-btn" data-copy-text="${_escapeHtml(pageInfo.description)}" title="复制描述" aria-label="复制描述">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <div class="markdown-content" id="${descId}">${renderMarkdown(pageInfo.description)}</div>
+                        </div>
+                    `;
+                }
+
+                // 标签（如果有）
+                if (sessionTags.length > 0) {
+                    const tagsHtml = sessionTags.map(tag => {
+                        const escapedTag = _escapeHtml(tag);
+                        return `<span class="welcome-card-tag">${escapedTag}</span>`;
+                    }).join('');
+                    pageInfoHtml += `
+                        <div class="welcome-card-section">
+                            <div class="welcome-card-section-title">🏷️ 标签</div>
+                            <div class="welcome-card-tags">${tagsHtml}</div>
+                        </div>
+                    `;
+                }
+
+                // 消息数量（如果有消息）
+                if (sessionMessages.length > 0) {
+                    const userMessages = sessionMessages.filter(m => m.type === 'user' || m.role === 'user').length;
+                    pageInfoHtml += `
+                        <div class="welcome-card-section">
+                            <div class="welcome-card-section-title">💬 对话记录</div>
+                            <div class="welcome-card-meta">
+                                <span>共 ${sessionMessages.length} 条消息</span>
+                                ${userMessages > 0 ? `<span>（用户: ${userMessages} 条）</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 时间信息（合并显示创建时间和更新时间）
+                if (sessionCreatedAt || sessionUpdatedAt) {
+                    const formatDate = (date) => {
+                        try {
+                            if (!date || !(date instanceof Date)) {
+                                if (typeof date === 'number') {
+                                    date = new Date(date);
+                                } else {
+                                    return '';
+                                }
+                            }
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            const hour = String(date.getHours()).padStart(2, '0');
+                            const minute = String(date.getMinutes()).padStart(2, '0');
+                            return `${year}/${month}/${day} ${hour}:${minute}`;
+                        } catch (_) {
+                            return '';
+                        }
+                    };
+                    const createdDate = sessionCreatedAt ? new Date(sessionCreatedAt) : null;
+                    const updatedDate = sessionUpdatedAt ? new Date(sessionUpdatedAt) : null;
+                    const hasValidCreated = createdDate && !isNaN(createdDate.getTime());
+                    const hasValidUpdated = updatedDate && !isNaN(updatedDate.getTime());
+                    const isSameTime = hasValidCreated && hasValidUpdated && 
+                                      Math.abs(createdDate.getTime() - updatedDate.getTime()) < 60000; // 1分钟内视为相同
+                    
+                    if (hasValidCreated || hasValidUpdated) {
+                        pageInfoHtml += `
+                            <div class="welcome-card-section">
+                                <div class="welcome-card-section-title">⏰ 时间信息</div>
+                                <div class="welcome-card-meta">
+                                    ${hasValidCreated ? `<span>创建: ${_escapeHtml(formatDate(createdDate))}</span>` : ''}
+                                    ${hasValidUpdated && !isSameTime ? `<span>更新: ${_escapeHtml(formatDate(updatedDate))}</span>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                pageInfoHtml += '</div>';
+                return pageInfoHtml;
+            } catch (error) {
+                console.error('[buildWelcomeCardHtml] 构建欢迎卡片失败:', error);
+                return '<div class="welcome-card"><div class="welcome-card-empty">构建欢迎卡片失败</div></div>';
+            }
+        },
+
+        // 为会话构建欢迎卡片 HTML（供模板使用）
+        buildWelcomeCardHtmlForSession: (session) => {
+            if (!session) return '';
+            try {
+                const pageInfo = {
+                    title: session.pageTitle || session.title || '当前页面',
+                    url: session.url || '',
+                    description: session.pageDescription || ''
+                };
+                // 直接调用 buildWelcomeCardHtml，因为它们在同一个返回对象中
+                // 这里需要延迟调用，因为方法还未定义，所以使用内联实现
+                const sessionTags = session && Array.isArray(session.tags) ? session.tags.filter(t => t && t.trim()) : [];
+                const sessionMessages = session && Array.isArray(session.messages) ? session.messages : [];
+                const sessionCreatedAt = session && session.createdAt ? session.createdAt : null;
+                const sessionUpdatedAt = session && session.updatedAt ? session.updatedAt : null;
+                const hasSessionUrl = session && session.url && session.url.trim();
+                const shouldShowUrl = !session || hasSessionUrl;
+                let pageInfoHtml = '<div class="welcome-card">';
+                const hasTitle = pageInfo && pageInfo.title && pageInfo.title.trim();
+                const hasUrl = shouldShowUrl && pageInfo && pageInfo.url && pageInfo.url.trim();
+                const hasDescription = pageInfo && pageInfo.description && pageInfo.description.trim();
+                const hasAnyContent = hasTitle || hasUrl || hasDescription || sessionTags.length > 0 || 
+                                     sessionMessages.length > 0 || sessionCreatedAt || sessionUpdatedAt;
+                if (!hasAnyContent) {
+                    pageInfoHtml += '<div class="welcome-card-header"><span class="welcome-card-title">当前页面</span></div><div class="welcome-card-section"><div class="welcome-card-empty">暂无页面信息</div></div>';
+                    pageInfoHtml += '</div>';
+                    return pageInfoHtml;
+                }
+                if (hasTitle) {
+                    pageInfoHtml += `<div class="welcome-card-header"><span class="welcome-card-title">${_escapeHtml(pageInfo.title)}</span></div>`;
+                }
+                if (hasUrl) {
+                    const urlId = `welcome-url-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    pageInfoHtml += `<div class="welcome-card-section"><div class="welcome-card-section-header"><div class="welcome-card-section-title">🔗 网址</div><button type="button" class="welcome-card-action-btn" data-copy-target="${urlId}" title="复制网址" aria-label="复制网址"><i class="fas fa-copy"></i></button></div><a href="${_escapeHtml(pageInfo.url)}" target="_blank" class="welcome-card-url" id="${urlId}">${_escapeHtml(pageInfo.url)}</a></div>`;
+                }
+                if (hasDescription) {
+                    const descId = `welcome-desc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    const renderMarkdown = (text) => {
+                        try {
+                            const raw = text == null ? '' : String(text);
+                            if (!raw) return '';
+                            if (typeof window.marked === 'undefined') {
+                                return raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>');
+                            }
+                            return window.marked.parse(raw, { breaks: true, gfm: true });
+                        } catch (_) {
+                            return _escapeHtml(String(text || '')).replace(/\n/g, '<br/>');
+                        }
+                    };
+                    pageInfoHtml += `<div class="welcome-card-section welcome-card-description"><div class="welcome-card-section-header"><div class="welcome-card-section-title">📝 页面描述</div><button type="button" class="welcome-card-action-btn" data-copy-text="${_escapeHtml(pageInfo.description)}" title="复制描述" aria-label="复制描述"><i class="fas fa-copy"></i></button></div><div class="markdown-content" id="${descId}">${renderMarkdown(pageInfo.description)}</div></div>`;
+                }
+                if (sessionTags.length > 0) {
+                    const tagsHtml = sessionTags.map(tag => `<span class="welcome-card-tag">${_escapeHtml(tag)}</span>`).join('');
+                    pageInfoHtml += `<div class="welcome-card-section"><div class="welcome-card-section-title">🏷️ 标签</div><div class="welcome-card-tags">${tagsHtml}</div></div>`;
+                }
+                if (sessionMessages.length > 0) {
+                    const userMessages = sessionMessages.filter(m => m.type === 'user' || m.role === 'user').length;
+                    pageInfoHtml += `<div class="welcome-card-section"><div class="welcome-card-section-title">💬 对话记录</div><div class="welcome-card-meta"><span>共 ${sessionMessages.length} 条消息</span>${userMessages > 0 ? `<span>（用户: ${userMessages} 条）</span>` : ''}</div></div>`;
+                }
+                if (sessionCreatedAt || sessionUpdatedAt) {
+                    const formatDate = (date) => {
+                        try {
+                            if (!date || !(date instanceof Date)) {
+                                if (typeof date === 'number') date = new Date(date);
+                                else return '';
+                            }
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            const hour = String(date.getHours()).padStart(2, '0');
+                            const minute = String(date.getMinutes()).padStart(2, '0');
+                            return `${year}/${month}/${day} ${hour}:${minute}`;
+                        } catch (_) {
+                            return '';
+                        }
+                    };
+                    const createdDate = sessionCreatedAt ? new Date(sessionCreatedAt) : null;
+                    const updatedDate = sessionUpdatedAt ? new Date(sessionUpdatedAt) : null;
+                    const hasValidCreated = createdDate && !isNaN(createdDate.getTime());
+                    const hasValidUpdated = updatedDate && !isNaN(updatedDate.getTime());
+                    const isSameTime = hasValidCreated && hasValidUpdated && Math.abs(createdDate.getTime() - updatedDate.getTime()) < 60000;
+                    if (hasValidCreated || hasValidUpdated) {
+                        pageInfoHtml += `<div class="welcome-card-section"><div class="welcome-card-section-title">⏰ 时间信息</div><div class="welcome-card-meta">${hasValidCreated ? `<span>创建: ${_escapeHtml(formatDate(createdDate))}</span>` : ''}${hasValidUpdated && !isSameTime ? `<span>更新: ${_escapeHtml(formatDate(updatedDate))}</span>` : ''}</div></div>`;
+                    }
+                }
+                pageInfoHtml += '</div>';
+                return pageInfoHtml;
+            } catch (error) {
+                console.error('[buildWelcomeCardHtmlForSession] 构建欢迎卡片失败:', error);
+                return '';
+            }
+        },
+
+        // 绑定欢迎卡片事件
+        bindWelcomeCardEvents: (container) => {
+            if (!container) return;
+
+            // 复制功能
+            const copyButtons = container.querySelectorAll('[data-copy-target], [data-copy-text]');
+            copyButtons.forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    let textToCopy = '';
+                    
+                    // 从目标元素复制
+                    const copyTarget = btn.getAttribute('data-copy-target');
+                    if (copyTarget) {
+                        const targetElement = container.querySelector(`#${copyTarget}`);
+                        if (targetElement) {
+                            textToCopy = targetElement.textContent || targetElement.innerText || '';
+                        }
+                    }
+                    
+                    // 从属性复制
+                    if (!textToCopy) {
+                        const copyText = btn.getAttribute('data-copy-text');
+                        if (copyText) {
+                            textToCopy = copyText;
+                        }
+                    }
+                    
+                    if (textToCopy) {
+                        try {
+                            await navigator.clipboard.writeText(textToCopy);
+                            // 显示成功反馈
+                            const icon = btn.querySelector('i');
+                            if (icon) {
+                                const originalClass = icon.className;
+                                icon.className = 'fas fa-check';
+                                btn.style.color = 'rgba(34, 197, 94, 0.9)';
+                                setTimeout(() => {
+                                    icon.className = originalClass;
+                                    btn.style.color = '';
+                                }, 2000);
+                            }
+                        } catch (err) {
+                            console.warn('复制失败:', err);
+                            // 降级方案：使用传统方法
+                            const textArea = document.createElement('textarea');
+                            textArea.value = textToCopy;
+                            textArea.style.position = 'fixed';
+                            textArea.style.opacity = '0';
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            try {
+                                document.execCommand('copy');
+                                const icon = btn.querySelector('i');
+                                if (icon) {
+                                    const originalClass = icon.className;
+                                    icon.className = 'fas fa-check';
+                                    btn.style.color = 'rgba(34, 197, 94, 0.9)';
+                                    setTimeout(() => {
+                                        icon.className = originalClass;
+                                        btn.style.color = '';
+                                    }, 2000);
+                                }
+                            } catch (e) {
+                                console.warn('降级复制也失败:', e);
+                            }
+                            document.body.removeChild(textArea);
+                        }
+                    }
+                });
+            });
         },
 
         setSessionChatInput: (v) => {
@@ -4028,21 +4416,110 @@ export const useMethods = (store) => {
                 const i = Number(idx);
                 if (!Number.isFinite(i) || i < 0 || i >= messages.length) return;
                 const m = messages[i];
-                if (!m || m.type === 'pet') return;
+                if (!m) return;
                 const text = String(m.message ?? m.content ?? '');
-                const images = (() => {
-                    const list = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.filter(Boolean) : [];
-                    const first = String(m.imageDataUrl || '').trim();
-                    if (first) list.unshift(first);
-                    return Array.from(new Set(list)).slice(0, 4);
-                })();
-                if (sessionChatInput) sessionChatInput.value = text;
-                if (sessionChatDraftImages) sessionChatDraftImages.value = images;
-                try {
-                    const el = document.getElementById('pet-chat-input');
-                    if (el && typeof el.focus === 'function') el.focus();
-                } catch (_) { }
+                
+                // 打开消息编辑模态框
+                if (sessionMessageEditorMode) sessionMessageEditorMode.value = 'split';
+                if (sessionMessageEditorDraft) sessionMessageEditorDraft.value = text;
+                if (sessionMessageEditorIndex) sessionMessageEditorIndex.value = i;
+                if (sessionMessageEditorVisible) sessionMessageEditorVisible.value = true;
             } catch (_) { }
+        },
+
+        closeSessionMessageEditor: () => {
+            if (sessionMessageEditorVisible) sessionMessageEditorVisible.value = false;
+            if (sessionMessageEditorDraft) sessionMessageEditorDraft.value = '';
+            if (sessionMessageEditorIndex) sessionMessageEditorIndex.value = -1;
+        },
+
+        setSessionMessageEditorMode: (v) => {
+            if (!sessionMessageEditorMode) return;
+            sessionMessageEditorMode.value = v === 'preview' ? 'preview' : (v === 'split' ? 'split' : 'edit');
+        },
+
+        setSessionMessageEditorDraft: (v) => {
+            if (!sessionMessageEditorDraft) return;
+            sessionMessageEditorDraft.value = String(v ?? '');
+        },
+
+        saveSessionMessageEdit: async () => {
+            return safeExecute(async () => {
+                const content = String(sessionMessageEditorDraft?.value ?? '').trim();
+                const idx = Number(sessionMessageEditorIndex?.value ?? -1);
+                
+                if (!Number.isFinite(idx) || idx < 0) {
+                    throw new Error('无效的消息索引');
+                }
+
+                const s = activeSession?.value;
+                if (!s || !s.key) {
+                    throw new Error('未选择会话或会话缺少key');
+                }
+
+                const messages = Array.isArray(s.messages) ? [...s.messages] : [];
+                if (idx >= messages.length) {
+                    throw new Error('消息索引超出范围');
+                }
+
+                const m = messages[idx];
+                if (!m) {
+                    throw new Error('消息不存在');
+                }
+
+                // 更新消息内容，只更新 message 字段
+                messages[idx] = { ...m, message: content };
+
+                // 更新会话
+                const now = Date.now();
+                const updatedSession = { ...s, messages, updatedAt: now, lastAccessTime: now };
+                if (activeSession) activeSession.value = updatedSession;
+
+                // 使用 update_document 接口保存到服务器
+                try {
+                    const updateData = {
+                        key: s.key,
+                        messages: messages,
+                        updatedAt: now,
+                        lastAccessTime: now
+                    };
+
+                    const payload = {
+                        module_name: SERVICE_MODULE,
+                        method_name: 'update_document',
+                        parameters: {
+                            cname: 'sessions',
+                            key: s.key,
+                            data: updateData
+                        }
+                    };
+
+                    const result = await postData(`${window.API_URL}/`, payload);
+                    
+                    if (result && result.success === false) {
+                        throw new Error(result.message || '保存失败');
+                    }
+
+                    // 更新本地会话列表
+                    if (store.sessions && store.sessions.value) {
+                        const sessionIndex = store.sessions.value.findIndex(sess => sess && sess.key === s.key);
+                        if (sessionIndex >= 0) {
+                            store.sessions.value = [...store.sessions.value];
+                            store.sessions.value[sessionIndex] = updatedSession;
+                        }
+                    }
+                } catch (error) {
+                    console.error('[保存消息编辑] 保存到服务器失败:', error);
+                    throw error; // 重新抛出错误，让 safeExecute 处理
+                }
+
+                // 关闭编辑器
+                if (sessionMessageEditorVisible) sessionMessageEditorVisible.value = false;
+                if (sessionMessageEditorDraft) sessionMessageEditorDraft.value = '';
+                if (sessionMessageEditorIndex) sessionMessageEditorIndex.value = -1;
+                
+                if (window.showSuccess) window.showSuccess('已保存');
+            }, '保存消息编辑');
         },
 
         deleteSessionChatMessageAt: async (idx) => {
@@ -4676,20 +5153,40 @@ export const useMethods = (store) => {
                 if (!webhook) return;
                 const content = String((m && (m.message || m.content)) || '').trim();
                 if (!content) return;
-                const payload = { msgtype: 'text', text: { content } };
+                
+                // 调用后端接口发送消息
+                if (!window.API_URL) {
+                    throw new Error('API地址未配置');
+                }
+                
                 try {
-                    const res = await fetch(webhook, {
+                    const apiUrl = `${window.API_URL}/wework/send-message`;
+                    const payload = {
+                        webhook_url: webhook,
+                        content: content
+                    };
+                    
+                    const res = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
+                    
+                    const data = await res.json().catch(() => ({}));
+                    
                     if (!res.ok) {
-                        const data = await res.json().catch(() => ({}));
-                        throw new Error(data?.message || `发送失败: ${res.status}`);
+                        throw new Error(data?.message || data?.errmsg || `发送失败: ${res.status}`);
                     }
+                    
+                    // 检查业务错误码
+                    if (data.code !== 0 && data.code !== undefined) {
+                        throw new Error(data.message || data.errmsg || '发送失败');
+                    }
+                    
                     if (window.showSuccess) window.showSuccess('已发送到机器人');
                 } catch (e) {
                     if (window.showError) window.showError(e?.message || '发送失败');
+                    throw e;
                 }
             }, '发送到机器人');
         },
@@ -5321,93 +5818,311 @@ export const useMethods = (store) => {
             }, '切换收藏状态');
         },
 
-        // 编辑会话标题
+        // 编辑会话（打开编辑模态框）
         handleSessionEdit: async (sessionKey) => {
             return safeExecute(async () => {
-                console.log('[handleSessionEdit] 编辑会话:', sessionKey);
+                console.log('[handleSessionEdit] 打开编辑模态框:', sessionKey);
 
-                // 1. 获取会话对象 (仅通过 key 查找)
+                // 获取会话对象（优先从本地获取）
                 const sessions = store.sessions?.value || [];
                 let session = sessions.find(s => s && s.key === sessionKey);
 
-                // 尝试在文件树中查找对应的节点，以便复用文件重命名逻辑
-                // 确保文件树已加载
-                if (!fileTree.value || fileTree.value.length === 0) {
-                    console.log('[handleSessionEdit] 文件树为空，尝试加载...');
-                    if (loadFileTree) {
-                        await loadFileTree();
+                // 如果本地有会话但缺少 pageContent，或者本地没有会话，从服务端获取完整数据
+                // 这样在 generateSessionDescription 中就不需要再次调用了
+                const needFetchFromServer = !session || !session.pageContent || session.pageContent.trim() === '';
+                
+                if (needFetchFromServer) {
+                    console.log('[handleSessionEdit] 需要从服务端获取完整会话数据（本地没有或缺少pageContent）');
+                    try {
+                        const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                        const sessionSync = getSessionSyncService();
+                        const serverSession = await sessionSync.getSession(sessionKey);
+                        
+                        if (serverSession) {
+                            // 如果本地有会话，合并数据；否则使用服务端会话
+                            if (session) {
+                                session = { ...session, ...serverSession };
+                            } else {
+                                session = serverSession;
+                            }
+                            console.log('[handleSessionEdit] 从服务端获取会话成功，pageContent长度:', session.pageContent?.length || 0);
+                        }
+                    } catch (e) {
+                        console.warn('[handleSessionEdit] 获取会话信息失败:', e);
                     }
+                } else {
+                    console.log('[handleSessionEdit] 使用本地会话数据（包含pageContent）');
                 }
 
-                // 递归查找节点
-                const findNode = (nodes) => {
-                    if (!nodes || !Array.isArray(nodes)) return null;
-                    for (const node of nodes) {
-                        // 直接匹配 key
-                        if (node.key === sessionKey) return node;
-                        // 兼容 sessionKey 匹配
-                        if (node.sessionKey === sessionKey) return node;
-
-                        if (node.children) {
-                            const found = findNode(node.children);
-                            if (found) return found;
-                        }
-                    }
-                    return null;
-                };
-
-                const node = findNode(fileTree.value);
-
-                if (node) {
-                    console.log('[handleSessionEdit] 找到对应文件节点，使用文件重命名逻辑:', node.key);
-                    const itemId = node.key;
-                    const oldName = node.name;
-                    const newName = window.prompt('输入新名称：', oldName || '');
-                    if (!newName) return;
-
-                    // 调用 store 的 renameItem
-                    if (renameItem) {
-                        await renameItem({ itemId, newName });
-                        showSuccessMessage('重命名成功');
+                if (!session) {
+                    if (window.showError) {
+                        window.showError('会话不存在');
                     }
                     return;
                 }
 
-                // 如果未找到文件节点，回退到简单标题更新逻辑
-                console.warn('[handleSessionEdit] 未找到对应文件节点，回退到简单标题更新逻辑');
+                // 设置编辑模态框数据
+                if (store.sessionEditKey) {
+                    store.sessionEditKey.value = sessionKey;
+                }
+                if (store.sessionEditTitle) {
+                    store.sessionEditTitle.value = session.pageTitle || session.title || '';
+                }
+                if (store.sessionEditUrl) {
+                    store.sessionEditUrl.value = session.url || '';
+                }
+                if (store.sessionEditDescription) {
+                    store.sessionEditDescription.value = session.pageDescription || '';
+                }
+                // 缓存完整的会话数据（包括 pageContent），避免在生成描述时重复获取
+                if (store.sessionEditData) {
+                    store.sessionEditData.value = session;
+                }
+                if (store.sessionEditVisible) {
+                    store.sessionEditVisible.value = true;
+                }
+            }, '打开编辑模态框');
+        },
 
-                try {
-                    if (!session) {
-                        try {
-                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
-                            const sessionSync = getSessionSyncService();
-                            session = await sessionSync.getSession(sessionKey);
-                        } catch (e) {
-                            console.warn('[handleSessionEdit] 获取会话信息失败:', e);
+        // 关闭会话编辑模态框
+        closeSessionEdit: () => {
+            if (store.sessionEditVisible) {
+                store.sessionEditVisible.value = false;
+            }
+            if (store.sessionEditKey) {
+                store.sessionEditKey.value = null;
+            }
+            if (store.sessionEditTitle) {
+                store.sessionEditTitle.value = '';
+            }
+            if (store.sessionEditUrl) {
+                store.sessionEditUrl.value = '';
+            }
+            if (store.sessionEditDescription) {
+                store.sessionEditDescription.value = '';
+            }
+            if (store.sessionEditGenerating) {
+                store.sessionEditGenerating.value = false;
+            }
+            // 清空缓存的会话数据
+            if (store.sessionEditData) {
+                store.sessionEditData.value = null;
+            }
+        },
+
+        // 保存会话编辑
+        saveSessionEdit: async () => {
+            return safeExecute(async () => {
+                const sessionKey = store.sessionEditKey?.value;
+                const title = store.sessionEditTitle?.value?.trim() || '';
+                const url = store.sessionEditUrl?.value?.trim() || '';
+                const description = store.sessionEditDescription?.value?.trim() || '';
+
+                if (!sessionKey) {
+                    throw new Error('会话Key不存在');
+                }
+
+                if (!title) {
+                    throw new Error('标题不能为空');
+                }
+
+                // 获取当前会话数据
+                const sessions = store.sessions?.value || [];
+                const session = sessions.find(s => s && s.key === sessionKey);
+                if (!session) {
+                    throw new Error('会话不存在');
+                }
+
+                const oldTitle = session.pageTitle || session.title || '';
+                const titleChanged = title !== oldTitle;
+
+                // 如果标题改变，需要同步更新静态文件名
+                if (titleChanged) {
+                    console.log('[saveSessionEdit] 标题已改变，需要同步更新静态文件名:', oldTitle, '->', title);
+                    
+                    // 确保文件树已加载
+                    if (!fileTree.value || fileTree.value.length === 0) {
+                        if (loadFileTree) {
+                            await loadFileTree();
                         }
                     }
 
-                    if (!session) {
-                        throw new Error('会话不存在');
+                    // 在文件树中查找对应的文件节点
+                    const findNodeBySessionKey = (nodes, targetSessionKey) => {
+                        if (!nodes || !Array.isArray(nodes)) return null;
+                        for (const node of nodes) {
+                            if (node.sessionKey === targetSessionKey || node.key === targetSessionKey) {
+                                return node;
+                            }
+                            if (node.children) {
+                                const found = findNodeBySessionKey(node.children, targetSessionKey);
+                                if (found) return found;
+                            }
+                        }
+                        return null;
+                    };
+
+                    const fileNode = findNodeBySessionKey(fileTree.value, sessionKey);
+                    
+                    if (fileNode && fileNode.key) {
+                        // 找到文件节点，需要重命名静态文件
+                        const oldPath = normalizeFilePath(fileNode.key);
+                        const parentPath = oldPath.split('/').slice(0, -1).join('/');
+                        
+                        // 清理文件名（移除特殊字符，避免路径问题）
+                        const sanitizeFileName = (name) => String(name || '').replace(/[\/\\:*?"<>|]/g, '-').trim();
+                        const newFileName = sanitizeFileName(title);
+                        
+                        if (!newFileName) {
+                            throw new Error('清理后的文件名为空，请使用有效的文件名');
+                        }
+
+                        // 计算新路径
+                        const newPath = normalizeFilePath(parentPath ? `${parentPath}/${newFileName}` : newFileName);
+                        
+                        if (oldPath !== newPath) {
+                            console.log('[saveSessionEdit] 准备重命名静态文件:', oldPath, '->', newPath);
+                            
+                            // 使用 store 中的 findNodeAndParentByKey 查找节点和父节点
+                            const findNodeAndParentByKey = (rootNodes, targetKey) => {
+                                const stack = Array.isArray(rootNodes) ? rootNodes.map(n => ({ node: n, parent: null })) : [{ node: rootNodes, parent: null }];
+                                while (stack.length) {
+                                    const { node, parent } = stack.pop();
+                                    if (!node) continue;
+                                    if (node.key === targetKey) return { node, parent };
+                                    if (node.type === 'folder' && Array.isArray(node.children)) {
+                                        for (const child of node.children) {
+                                            stack.push({ node: child, parent: node });
+                                        }
+                                    } else if (node.children && Array.isArray(node.children)) {
+                                        for (const child of node.children) {
+                                            stack.push({ node: child, parent: node });
+                                        }
+                                    }
+                                }
+                                return { node: null, parent: null };
+                            };
+                            
+                            const { node: foundNode, parent: parentNode } = findNodeAndParentByKey(fileTree.value, oldPath);
+                            
+                            // 检查同级是否有同名文件
+                            const siblings = parentNode ? (parentNode.children || []) : (Array.isArray(fileTree.value) ? fileTree.value : []);
+                            if (siblings.some(ch => ch !== fileNode && ch.name === newFileName)) {
+                                throw new Error('同级存在同名文件，请使用不同的文件名');
+                            }
+
+                            // 重命名静态文件
+                            const fileDeleteService = getFileDeleteService();
+                            const renameResult = await fileDeleteService.renameFile(oldPath, newPath);
+                            
+                            if (!renameResult.success) {
+                                throw new Error('静态文件重命名失败: ' + (renameResult.error || '未知错误'));
+                            }
+
+                            // 更新文件树节点
+                            fileNode.name = newFileName;
+                            fileNode.key = newPath;
+                            fileNode.path = newPath;
+
+                            // 更新本地 files 列表
+                            if (Array.isArray(files.value)) {
+                                files.value = files.value.map(f => {
+                                    const normalizedOldPath = normalizeFilePath(oldPath);
+                                    const ids = [f.key, f.path].filter(Boolean).map(id => normalizeFilePath(id));
+                                    const matched = ids.some(v => v === normalizedOldPath || v.startsWith(normalizedOldPath + '/'));
+                                    if (matched) {
+                                        const oldFilePath = normalizeFilePath(f.path || f.key);
+                                        const replacedPath = oldFilePath.replace(normalizedOldPath, newPath);
+                                        const normalized = normalizeFileObject({
+                                            ...f,
+                                            key: replacedPath,
+                                            path: replacedPath,
+                                            name: replacedPath.split('/').pop()
+                                        });
+                                        return normalized || f;
+                                    }
+                                    return f;
+                                });
+                            }
+
+                            // 使用 renameSession 更新会话（这会更新会话的元数据，包括 title, pageTitle, tags 等）
+                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const sessionSync = getSessionSyncService();
+                            
+                            // 构造新的文件对象
+                            const updatedFile = {
+                                key: newPath,
+                                path: newPath,
+                                name: newFileName,
+                                content: fileNode.content || session.pageContent || '',
+                                type: 'file'
+                            };
+                            
+                            // 调用 renameSession 更新会话
+                            await sessionSync.renameSession(sessionKey, newPath, updatedFile);
+                            
+                            console.log('[saveSessionEdit] 静态文件和会话已同步更新');
+                            
+                            // 刷新文件树和会话列表
+                            if (loadFileTree) {
+                                await loadFileTree();
+                            }
+                            if (loadSessions) {
+                                await loadSessions(true);
+                            }
+                        } else {
+                            // 路径没有改变，只需要更新会话元数据（url 和 description）
+                            console.log('[saveSessionEdit] 路径未改变，仅更新会话元数据');
+                            const updateData = {
+                                key: sessionKey,
+                                pageTitle: title,
+                                title: title,
+                                url: url,
+                                pageDescription: description
+                            };
+
+                            const payload = {
+                                module_name: SERVICE_MODULE,
+                                method_name: 'update_document',
+                                parameters: {
+                                    cname: 'sessions',
+                                    key: sessionKey,
+                                    data: updateData
+                                }
+                            };
+                            await postData(`${window.API_URL}/`, payload);
+                        }
+                    } else {
+                        // 未找到文件节点，可能不是从文件创建的会话，仅更新会话元数据
+                        console.log('[saveSessionEdit] 未找到对应的文件节点，仅更新会话元数据');
+                        const updateData = {
+                            key: sessionKey,
+                            pageTitle: title,
+                            title: title,
+                            url: url,
+                            pageDescription: description
+                        };
+
+                        const payload = {
+                            module_name: SERVICE_MODULE,
+                            method_name: 'update_document',
+                            parameters: {
+                                cname: 'sessions',
+                                key: sessionKey,
+                                data: updateData
+                            }
+                        };
+                        await postData(`${window.API_URL}/`, payload);
                     }
-
-                    const currentTitle = session.pageTitle || session.title || '';
-
-                    // 使用 prompt 获取新标题
-                    const newTitle = prompt('请输入新标题:', currentTitle);
-                    if (newTitle === null) {
-                        return; // 用户取消
-                    }
-
-                    if (newTitle.trim() === '') {
-                        throw new Error('标题不能为空');
-                    }
-
-                    // 更新后端
+                } else {
+                    // 标题未改变，仅更新 url 和 description
+                    console.log('[saveSessionEdit] 标题未改变，仅更新 url 和 description');
                     const updateData = {
                         key: sessionKey,
-                        pageTitle: newTitle.trim(),
-                        title: newTitle.trim()
+                        pageTitle: title,
+                        title: title,
+                        url: url,
+                        pageDescription: description
                     };
 
                     const payload = {
@@ -5420,26 +6135,207 @@ export const useMethods = (store) => {
                         }
                     };
                     await postData(`${window.API_URL}/`, payload);
+                }
 
-                    // 更新本地状态
-                    session.pageTitle = newTitle.trim();
-                    session.title = newTitle.trim();
-
-                    // 更新本地状态
+                // 更新本地状态
+                if (session) {
+                    session.pageTitle = title;
+                    session.title = title;
+                    session.url = url;
+                    session.pageDescription = description;
                     if (store.sessions && store.sessions.value) {
                         store.sessions.value = [...store.sessions.value];
                     }
+                }
+
+                // 如果当前编辑的会话是 activeSession，也要更新 activeSession，以刷新 welcome-card
+                if (activeSession && activeSession.value && activeSession.value.key === sessionKey) {
+                    activeSession.value = {
+                        ...activeSession.value,
+                        pageTitle: title,
+                        title: title,
+                        url: url,
+                        pageDescription: description,
+                        updatedAt: Date.now() // 更新更新时间
+                    };
+                    console.log('[saveSessionEdit] 已更新 activeSession，welcome-card 将自动刷新');
+                }
+
+                // 关闭模态框
+                if (store.sessionEditVisible) {
+                    store.sessionEditVisible.value = false;
+                }
+
+                if (window.showSuccess) {
+                    window.showSuccess('会话已更新');
+                }
+            }, '保存会话编辑');
+        },
+
+        // AI智能生成描述
+        generateSessionDescription: async () => {
+            return safeExecute(async () => {
+                const sessionKey = store.sessionEditKey?.value;
+                if (!sessionKey) {
+                    throw new Error('会话Key不存在');
+                }
+
+                // 防止重复调用：如果正在生成中，直接返回
+                if (store.sessionEditGenerating && store.sessionEditGenerating.value) {
+                    console.log('[generateSessionDescription] 正在生成中，跳过重复调用');
+                    return;
+                }
+
+                // 设置生成中状态
+                if (store.sessionEditGenerating) {
+                    store.sessionEditGenerating.value = true;
+                }
+
+                try {
+                    // 优先使用编辑框中缓存的会话数据（在 handleSessionEdit 中已获取完整数据，包括 pageContent）
+                    let session = store.sessionEditData?.value;
+                    
+                    // 如果缓存中没有，从本地 sessions 列表获取
+                    if (!session) {
+                        const sessions = store.sessions?.value || [];
+                        session = sessions.find(s => s && s.key === sessionKey);
+                    }
+                    
+                    // 获取页面上下文内容
+                    let pageContent = session?.pageContent || '';
+                    const pageTitle = session?.pageTitle || session?.title || '';
+
+                    // 注意：handleSessionEdit 已经获取了完整数据（包括 pageContent）并缓存到 sessionEditData
+                    // 所以这里不应该再次调用 getSession，除非缓存真的没有数据
+                    // 如果缓存和本地都没有 pageContent，说明 handleSessionEdit 获取失败，这里也不应该再次获取
+                    // 因为请求去重机制已经处理了并发请求，如果 handleSessionEdit 正在获取，这里会复用该请求
+                    if (!session) {
+                        console.warn('[generateSessionDescription] 会话不存在，无法生成描述');
+                        throw new Error('会话不存在');
+                    }
+                    
+                    if (!pageContent || pageContent.trim() === '') {
+                        console.warn('[generateSessionDescription] 会话缺少 pageContent，将仅使用标题生成描述');
+                        // 不再次调用 getSession，因为 handleSessionEdit 已经尝试过了
+                        // 如果还是没有，说明服务端也没有，或者获取失败
+                    } else {
+                        console.log('[generateSessionDescription] 使用缓存的会话数据，pageContent长度:', pageContent.length);
+                    }
+
+                    if (!session) {
+                        throw new Error('会话不存在');
+                    }
+
+                    // 如果 pageContent 仍然为空，尝试从文件树中获取（不调用 loadFileTree，避免触发 loadSessions）
+                    if (!pageContent || pageContent.trim() === '') {
+                        console.log('[generateSessionDescription] pageContent 仍为空，尝试从文件树获取');
+                        try {
+                            // 直接使用现有的文件树，不重新加载
+                            if (fileTree.value && fileTree.value.length > 0) {
+                                // 递归查找对应的文件节点
+                                const findNode = (nodes) => {
+                                    if (!nodes || !Array.isArray(nodes)) return null;
+                                    for (const node of nodes) {
+                                        if (node.sessionKey === sessionKey || node.key === sessionKey) {
+                                            return node;
+                                        }
+                                        if (node.children) {
+                                            const found = findNode(node.children);
+                                            if (found) return found;
+                                        }
+                                    }
+                                    return null;
+                                };
+
+                                const node = findNode(fileTree.value);
+                                if (node && node.content) {
+                                    pageContent = node.content;
+                                    console.log('[generateSessionDescription] 从文件树获取到内容，长度:', pageContent.length);
+                                } else {
+                                    // 如果文件树中也没有，尝试通过 loadFileByKey 加载（仅加载单个文件，不会触发会话列表查询）
+                                    if (node && node.key && loadFileByKey) {
+                                        const file = await loadFileByKey(node.key);
+                                        if (file && file.content) {
+                                            pageContent = file.content;
+                                            console.log('[generateSessionDescription] 通过 loadFileByKey 获取到内容，长度:', pageContent.length);
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('[generateSessionDescription] 从文件树获取内容失败:', e);
+                        }
+                    }
+
+                    // 如果仍然没有内容，使用标题作为上下文
+                    if (!pageContent || pageContent.trim() === '') {
+                        console.warn('[generateSessionDescription] 无法获取页面上下文内容，仅使用标题');
+                        pageContent = '';
+                    }
+
+                    // 构建用于生成描述的 prompt
+                    let contextText = '';
+                    if (pageContent && pageContent.trim()) {
+                        contextText = `会话标题：${pageTitle}\n\n页面上下文内容：\n${pageContent.substring(0, 10000)}`; // 限制内容长度避免过长
+                    } else {
+                        contextText = `会话标题：${pageTitle}`;
+                    }
+
+                    console.log('[generateSessionDescription] 准备调用AI，上下文长度:', contextText.length);
+                    console.log('[generateSessionDescription] 上下文内容预览:', contextText.substring(0, 200));
+
+                    // 调用 AI 接口生成描述
+                    const { streamPromptJSON } = await import('/src/services/modules/crud.js');
+                    const getPromptUrl = () => `${String(window.API_URL || '').trim().replace(/\/$/, '')}/`;
+
+                    const descriptionResponse = await streamPromptJSON(getPromptUrl(), {
+                        module_name: 'services.ai.chat_service',
+                        method_name: 'chat',
+                        parameters: {
+                            system: '请根据以下会话信息生成一个简洁的描述（不超过200字），描述应该概括会话的主要内容和用途。',
+                            user: contextText
+                        }
+                    });
+
+                    console.log('[generateSessionDescription] AI响应:', descriptionResponse);
+
+                    // 提取生成的描述
+                    let pageDescription = '';
+                    if (typeof descriptionResponse === 'string') {
+                        pageDescription = descriptionResponse;
+                    } else if (descriptionResponse && descriptionResponse.data) {
+                        if (Array.isArray(descriptionResponse.data) && descriptionResponse.data.length > 0) {
+                            const firstItem = descriptionResponse.data[0];
+                            pageDescription = typeof firstItem === 'string' ? firstItem : JSON.stringify(firstItem, null, 2);
+                        } else if (typeof descriptionResponse.data === 'string') {
+                            pageDescription = descriptionResponse.data;
+                        }
+                    }
+
+                    // 如果描述为空，使用默认描述
+                    if (!pageDescription || pageDescription.trim() === '') {
+                        pageDescription = `会话：${pageTitle}`;
+                    }
+
+                    // 更新编辑框中的描述
+                    if (store.sessionEditDescription) {
+                        store.sessionEditDescription.value = pageDescription.trim();
+                    }
 
                     if (window.showSuccess) {
-                        window.showSuccess('标题已更新');
+                        window.showSuccess('描述生成成功');
                     }
                 } catch (error) {
-                    console.error('[handleSessionEdit] 编辑会话失败:', error);
+                    console.error('[generateSessionDescription] 生成描述失败:', error);
                     if (window.showError) {
-                        window.showError(`编辑失败：${error.message || '未知错误'}`);
+                        window.showError(`生成描述失败：${error.message || '未知错误'}`);
+                    }
+                } finally {
+                    if (store.sessionEditGenerating) {
+                        store.sessionEditGenerating.value = false;
                     }
                 }
-            }, '编辑会话');
+            }, 'AI生成描述');
         },
 
         // 管理会话标签（参考 YiPet 的实现）
@@ -7365,41 +8261,34 @@ export const useMethods = (store) => {
                 quickTagBtn.className = 'tag-manager-quick-tag-btn';
                 quickTagBtn.dataset.tagName = tagName;
                 
-                // 参考 tag-item 样式（与 tags-list 保持一致）
-                const baseStyle = `
-                    padding: 2px 6px !important;
-                    border: 1px solid rgba(255, 255, 255, 0.12) !important;
-                    border-radius: 4px !important;
-                    font-size: 11px !important;
-                    color: #e2e8f0 !important;
-                    background: rgba(255, 255, 255, 0.08) !important;
+                quickTagBtn.style.cssText = `
+                    padding: 8px 16px !important;
+                    background: ${isAdded ? 'rgba(99, 102, 241, 0.2)' : 'rgba(30, 41, 59, 0.6)'} !important;
+                    color: ${isAdded ? '#a5b4fc' : '#94a3b8'} !important;
+                    border: 1px solid ${isAdded ? 'rgba(99, 102, 241, 0.3)' : 'rgba(51, 65, 85, 0.5)'} !important;
+                    border-radius: 8px !important;
                     cursor: ${isAdded ? 'not-allowed' : 'pointer'} !important;
-                    transition: all 0.2s !important;
-                    -webkit-user-select: none !important;
-                    user-select: none !important;
-                    opacity: ${isAdded ? '0.6' : '1'} !important;
+                    font-size: 13px !important;
+                    font-weight: 500 !important;
+                    transition: all 0.2s ease !important;
+                    opacity: ${isAdded ? '0.8' : '1'} !important;
+                    box-shadow: ${isAdded ? 'none' : '0 1px 2px 0 rgba(0, 0, 0, 0.2)'} !important;
                 `;
-                
-                const activeStyle = isAdded ? `
-                    border-color: #6366f1 !important;
-                    background: #6366f1 !important;
-                    color: #ffffff !important;
-                    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3) !important;
-                ` : '';
-                
-                quickTagBtn.style.cssText = baseStyle + activeStyle;
 
-                // hover 效果（与 tag-item:hover 完全一致）
                 if (!isAdded) {
                     quickTagBtn.addEventListener('mouseenter', () => {
+                        quickTagBtn.style.background = 'rgba(51, 65, 85, 0.8)';
                         quickTagBtn.style.borderColor = '#6366f1';
-                        quickTagBtn.style.color = '#818cf8';
-                        quickTagBtn.style.background = 'rgba(99, 102, 241, 0.1)';
+                        quickTagBtn.style.color = '#f8fafc';
+                        quickTagBtn.style.transform = 'translateY(-1px)';
+                        quickTagBtn.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.3)';
                     });
                     quickTagBtn.addEventListener('mouseleave', () => {
-                        quickTagBtn.style.borderColor = 'rgba(255, 255, 255, 0.12)';
-                        quickTagBtn.style.color = '#e2e8f0';
-                        quickTagBtn.style.background = 'rgba(255, 255, 255, 0.08)';
+                        quickTagBtn.style.background = 'rgba(30, 41, 59, 0.6)';
+                        quickTagBtn.style.borderColor = 'rgba(51, 65, 85, 0.5)';
+                        quickTagBtn.style.color = '#94a3b8';
+                        quickTagBtn.style.transform = 'translateY(0)';
+                        quickTagBtn.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.2)';
                     });
                 }
 

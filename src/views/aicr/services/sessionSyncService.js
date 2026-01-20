@@ -572,7 +572,7 @@ class SessionSyncService {
     }
 
     /**
-     * 获取会话
+     * 获取会话（带请求去重）
      * @param {string} sessionKey - 会话Key
      * @returns {Promise<Object|null>} 会话数据
      */
@@ -584,29 +584,56 @@ class SessionSyncService {
                     return null;
                 }
                 
-                // 只按 key 查询 (key 必须是会话的 key，UUID 格式)
-                const url = buildServiceUrl('query_documents', {
-                    cname: 'sessions',
-                    filter: { key: sessionKey },
-                    limit: 1
-                });
-                const response = await getData(url, {}, false);
-                
-                if (response && response.data && response.data.list && response.data.list.length > 0) {
-                    const session = response.data.list[0];
-                    // 确保 key 字段存在
-                    if (session && !session.key) {
-                        console.warn('[SessionSync] 会话缺少 key 字段:', session);
-                        return null;
-                    }
-                    // 规范化消息格式
-                    if (session.messages) {
-                        session.messages = this.normalizeMessages(session.messages);
-                    }
-                    return session;
+                // 请求去重：如果同一个 sessionKey 正在请求中，复用该请求
+                if (!this._pendingGetSessionRequests) {
+                    this._pendingGetSessionRequests = new Map();
                 }
-                return null;
+                
+                const pendingRequest = this._pendingGetSessionRequests.get(sessionKey);
+                if (pendingRequest) {
+                    console.log('[SessionSync] 复用正在进行的请求:', sessionKey);
+                    return await pendingRequest;
+                }
+                
+                // 创建新的请求
+                const requestPromise = (async () => {
+                    try {
+                        // 只按 key 查询 (key 必须是会话的 key，UUID 格式)
+                        const url = buildServiceUrl('query_documents', {
+                            cname: 'sessions',
+                            filter: { key: sessionKey },
+                            limit: 1
+                        });
+                        console.log('[SessionSync] 发起获取会话请求:', sessionKey);
+                        const response = await getData(url, {}, false);
+                        
+                        if (response && response.data && response.data.list && response.data.list.length > 0) {
+                            const session = response.data.list[0];
+                            // 确保 key 字段存在
+                            if (session && !session.key) {
+                                console.warn('[SessionSync] 会话缺少 key 字段:', session);
+                                return null;
+                            }
+                            // 规范化消息格式，确保 messages 字段始终存在（即使是空数组）
+                            session.messages = this.normalizeMessages(session.messages || []);
+                            console.log('[SessionSync] 获取会话成功:', sessionKey);
+                            return session;
+                        }
+                        return null;
+                    } finally {
+                        // 请求完成后，从 pending 中移除
+                        this._pendingGetSessionRequests.delete(sessionKey);
+                    }
+                })();
+                
+                // 保存到 pending 中
+                this._pendingGetSessionRequests.set(sessionKey, requestPromise);
+                return await requestPromise;
             } catch (error) {
+                // 确保错误时也从 pending 中移除
+                if (this._pendingGetSessionRequests) {
+                    this._pendingGetSessionRequests.delete(sessionKey);
+                }
                 console.warn('[SessionSync] 获取会话失败:', {
                     sessionKey,
                     error: error?.message || error
@@ -645,11 +672,14 @@ class SessionSyncService {
                 let method_name, parameters;
                 if (sessionData.key) {
                     // 更新文档
+                    // 注意：update_document 只需要 key 进行定位，但 data 中也必须包含 key 以通过校验
                     method_name = 'update_document';
                     parameters = {
                         cname: 'sessions',
-                        key: sessionData.key,
-                        data: normalized
+                        data: {
+                            key: sessionData.key,
+                            ...normalized
+                        }
                     };
                 } else {
                     // 创建文档

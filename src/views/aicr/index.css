@@ -1389,16 +1389,28 @@ html, body {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 16px 18px;
+    padding: 10px 12px;
     display: flex;
     flex-direction: column;
     gap: 0;
+    align-items: flex-start;
 }
 
 .pet-chat-message {
     display: flex;
     width: 100%;
-    margin: 18px 0;
+    margin: 12px 0;
+    max-width: 100%;
+}
+
+.pet-chat-message[data-welcome-message="true"] {
+    justify-content: flex-start;
+    width: 100%;
+}
+
+.pet-chat-message[data-welcome-message="true"] .welcome-card {
+    max-width: min(1400px, 98%) !important;
+    width: 100% !important;
 }
 
 .pet-chat-message.is-user {
@@ -1411,7 +1423,7 @@ html, body {
 
 @supports not (gap: 1rem) {
     .pet-chat-message {
-        margin: 18px 0;
+        margin: 12px 0;
     }
 
     .pet-chat-message:first-child {
@@ -1424,12 +1436,16 @@ html, body {
 }
 
 .pet-chat-bubble {
-    max-width: min(780px, 86%);
+    max-width: min(1400px, 98%);
+    width: fit-content;
+    min-width: 0;
     border-radius: 14px;
-    padding: 10px 12px;
+    padding: 12px 16px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
     border: 1px solid rgba(148, 163, 184, 0.15);
     background: rgba(30, 41, 59, 0.55);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .pet-chat-message.is-user .pet-chat-bubble {
@@ -1456,6 +1472,9 @@ html, body {
     color: rgba(226, 232, 240, 0.95);
     font-size: 14px;
     line-height: 1.6;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
 }
 
 .pet-chat-time {
@@ -1859,48 +1878,120 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 0;
+    width: 100%;
+    position: relative;
 }
 
 .pet-chat-empty-card {
-    width: min(520px, 100%);
-    margin: 6px 0;
-    padding: 18px 16px;
-    border-radius: 16px;
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    background: rgba(15, 23, 42, 0.55);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+    width: min(480px, 90%);
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 32px 24px;
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(30, 41, 59, 0.65) 100%);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), 
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+                0 1px 0 rgba(255, 255, 255, 0.1) inset;
     text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.pet-chat-empty-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(34, 211, 238, 0.4) 20%, 
+        rgba(59, 130, 246, 0.4) 50%, 
+        rgba(34, 211, 238, 0.4) 80%, 
+        transparent 100%);
+    opacity: 0.6;
+}
+
+.pet-chat-empty-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 24px 72px rgba(0, 0, 0, 0.4), 
+                0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+                0 1px 0 rgba(255, 255, 255, 0.12) inset;
+    border-color: rgba(148, 163, 184, 0.3);
 }
 
 .pet-chat-empty-icon {
-    width: 44px;
-    height: 44px;
-    margin: 0 auto 10px;
-    border-radius: 14px;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 20px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(226, 232, 240, 0.92);
-    background: linear-gradient(135deg, rgba(79, 70, 229, 0.35) 0%, rgba(34, 211, 238, 0.18) 100%);
-    border: 1px solid rgba(79, 70, 229, 0.28);
+    color: rgba(226, 232, 240, 0.95);
+    background: linear-gradient(135deg, 
+        rgba(79, 70, 229, 0.4) 0%, 
+        rgba(34, 211, 238, 0.25) 50%,
+        rgba(59, 130, 246, 0.2) 100%);
+    border: 1px solid rgba(79, 70, 229, 0.35);
+    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.2),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    font-size: 28px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.pet-chat-empty-card:hover .pet-chat-empty-icon {
+    transform: scale(1.05);
+    box-shadow: 0 12px 32px rgba(79, 70, 229, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+}
+
+.pet-chat-empty-icon::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, 
+        rgba(79, 70, 229, 0.3), 
+        rgba(34, 211, 238, 0.2));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+}
+
+.pet-chat-empty-card:hover .pet-chat-empty-icon::after {
+    opacity: 1;
 }
 
 .pet-chat-empty-title {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 650;
-    margin-bottom: 6px;
-    color: rgba(226, 232, 240, 0.95);
+    margin-bottom: 10px;
+    color: rgba(226, 232, 240, 0.98);
+    letter-spacing: -0.01em;
 }
 
 .pet-chat-empty-subtitle {
-    font-size: 13px;
-    color: rgba(148, 163, 184, 0.75);
+    font-size: 14px;
+    color: rgba(203, 213, 225, 0.85);
+    line-height: 1.6;
+    margin-bottom: 8px;
 }
 
 .pet-chat-empty-hint {
-    margin-top: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(148, 163, 184, 0.15);
     font-size: 12px;
-    color: rgba(148, 163, 184, 0.68);
+    color: rgba(148, 163, 184, 0.7);
+    line-height: 1.5;
 }
 
 .session-list-container.aicr-session-list-focus {
@@ -2673,4 +2764,255 @@ html, body {
     color: rgba(148, 163, 184, 0.75);
     font-size: 12px;
     line-height: 1.5;
+}
+
+.aicr-session-edit-description-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+/* ========== Welcome Card 样式 ========== */
+.welcome-card {
+    margin-bottom: 20px !important;
+    padding: 18px !important;
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(59, 130, 246, 0.08)) !important;
+    border-radius: 12px !important;
+    border-left: 3px solid rgba(34, 211, 238, 0.5) !important;
+    transition: all 0.3s ease !important;
+    position: relative !important;
+    overflow: hidden !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    max-width: min(900px, 85%) !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: auto !important;
+}
+
+.welcome-card::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 2px !important;
+    background: linear-gradient(90deg, rgba(34, 211, 238, 0.3), rgba(59, 130, 246, 0.3)) !important;
+    opacity: 0 !important;
+    transition: opacity 0.3s ease !important;
+}
+
+.welcome-card:hover::before {
+    opacity: 1 !important;
+}
+
+.welcome-card:hover {
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(59, 130, 246, 0.12)) !important;
+    border-left-color: rgba(34, 211, 238, 0.7) !important;
+    box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1) !important;
+}
+
+.welcome-card-header {
+    margin-bottom: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.welcome-card-title {
+    font-weight: 600 !important;
+    font-size: 15px !important;
+    color: rgba(226, 232, 240, 0.95) !important;
+    line-height: 1.4 !important;
+    word-break: break-word !important;
+}
+
+.welcome-card-section {
+    margin-bottom: 12px !important;
+}
+
+.welcome-card-section-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 4px !important;
+}
+
+.welcome-card-section-title {
+    font-size: 12px !important;
+    color: rgba(148, 163, 184, 0.85) !important;
+    font-weight: 500 !important;
+    flex: 1 !important;
+}
+
+.welcome-card-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+.welcome-card-action-btn {
+    background: transparent !important;
+    border: none !important;
+    color: rgba(148, 163, 184, 0.7) !important;
+    cursor: pointer !important;
+    padding: 4px 6px !important;
+    border-radius: 4px !important;
+    font-size: 11px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+    opacity: 0.7 !important;
+}
+
+.welcome-card-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: rgba(148, 163, 184, 0.9) !important;
+    opacity: 1 !important;
+}
+
+.welcome-card-action-btn:active {
+    transform: scale(0.95) !important;
+}
+
+.welcome-card-action-btn i {
+    font-size: 11px !important;
+}
+
+.welcome-card-url {
+    word-break: break-all !important;
+    color: rgba(59, 130, 246, 0.9) !important;
+    text-decoration: none !important;
+    font-size: 13px !important;
+    display: inline-block !important;
+    max-width: 100% !important;
+    line-height: 1.5 !important;
+    transition: all 0.2s ease !important;
+    padding: 2px 0 !important;
+    border-radius: 3px !important;
+}
+
+.welcome-card-url:hover {
+    text-decoration: underline !important;
+    color: rgba(59, 130, 246, 1) !important;
+    background: rgba(59, 130, 246, 0.1) !important;
+    padding: 2px 4px !important;
+}
+
+.welcome-card-url:active {
+    color: rgba(37, 99, 235, 1) !important;
+}
+
+.welcome-card-description .markdown-content {
+    font-size: 13px !important;
+    color: rgba(203, 213, 225, 0.85) !important;
+    line-height: 1.6 !important;
+    max-height: 300px !important;
+    overflow-y: auto !important;
+    padding-right: 4px !important;
+}
+
+.welcome-card-description .markdown-content p {
+    margin: 0 0 8px 0 !important;
+}
+
+.welcome-card-description .markdown-content p:last-child {
+    margin-bottom: 0 !important;
+}
+
+.welcome-card-tags {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin-top: 4px !important;
+}
+
+.welcome-card-tag {
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 4px 10px !important;
+    border-radius: 6px !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: rgba(59, 130, 246, 0.9) !important;
+    background: rgba(59, 130, 246, 0.15) !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+    transition: all 0.2s ease !important;
+    cursor: default !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.welcome-card-tag::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent) !important;
+    transition: left 0.5s ease !important;
+}
+
+.welcome-card-tag:hover {
+    background: rgba(59, 130, 246, 0.25) !important;
+    border-color: rgba(59, 130, 246, 0.4) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2) !important;
+}
+
+.welcome-card-tag:hover::before {
+    left: 100% !important;
+}
+
+.welcome-card-meta {
+    font-size: 12px !important;
+    color: rgba(203, 213, 225, 0.8) !important;
+    margin-top: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+}
+
+.welcome-card-meta > span {
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.welcome-card-meta > span:not(:last-child)::after {
+    content: '•' !important;
+    color: rgba(148, 163, 184, 0.5) !important;
+    margin-left: 8px !important;
+}
+
+.welcome-card-description .markdown-content::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+}
+
+.welcome-card-description .markdown-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-radius: 3px !important;
+}
+
+.welcome-card-description .markdown-content::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3) !important;
+    border-radius: 3px !important;
+    transition: background 0.2s ease !important;
+}
+
+.welcome-card-description .markdown-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.5) !important;
+}
+
+.welcome-card-empty {
+    font-size: 13px !important;
+    color: rgba(148, 163, 184, 0.7) !important;
+    font-style: italic !important;
+    text-align: center !important;
+    padding: 12px 0 !important;
 }
