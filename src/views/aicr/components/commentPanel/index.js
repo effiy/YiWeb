@@ -244,12 +244,13 @@ const componentOptions = {
         sessionChatMessages() {
             const session = this.sessionChatSession;
             const msgs = Array.isArray(session?.messages) ? session.messages : [];
+            // 保持接口返回的顺序，不进行排序
+            // 如果接口返回的顺序不正确，应该在接口层面修复
             return [...msgs]
                 .map(m => {
                     const message = String(m?.message || m?.content || m?.text || '');
                     return { ...m, message, content: message };
-                })
-                .sort((a, b) => Number(a?.timestamp || 0) - Number(b?.timestamp || 0));
+                });
         },
         renderComments() {
             // 优先使用mongoComments，如果没有则使用props中的comments

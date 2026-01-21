@@ -1469,17 +1469,6 @@
     background: var(--bg-tertiary);
 }
 
-.code-actions .jump-button { 
-    background: var(--accent); 
-    color: var(--text-on-accent); 
-    border-color: transparent;
-}
-.code-actions .jump-button:hover:not(:disabled) {
-    background: var(--accent-hover);
-    box-shadow: 0 4px 12px rgba(139,92,246,.3);
-    border-color: transparent;
-}
-
 .code-actions .preview-toggle-button { 
     background: var(--accent); 
     color: var(--text-on-accent); 

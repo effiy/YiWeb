@@ -41,10 +41,6 @@ const componentOptions = {
         comments: {
             type: Array,
             default: () => []
-        },
-        hideJumpButton: {
-            type: Boolean,
-            default: false
         }
     },
     emits: ['comment-delete', 'comment-resolve', 'comment-reopen', 'reload-comments', 'session-chat-send', 'session-context-save'],
@@ -348,14 +344,15 @@ const componentOptions = {
     computed: {
         sessionMessages() {
             const msgs = this.activeSession && Array.isArray(this.activeSession.messages) ? this.activeSession.messages : [];
+            // 保持接口返回的顺序，不进行排序
+            // 如果接口返回的顺序不正确，应该在接口层面修复
             return msgs
                 .map(m => ({
                     type: m?.type === 'pet' ? 'pet' : 'user',
                     content: String(m?.content || ''),
                     timestamp: typeof m?.timestamp === 'number' ? m.timestamp : Date.now(),
                     imageDataUrl: m?.imageDataUrl
-                }))
-                .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                }));
         },
         canSendSessionChat() {
             return !!(this.activeSession && String(this.sessionChatInputLocal || '').trim());
@@ -1363,40 +1360,6 @@ const componentOptions = {
                 showSuccess(`已下载文件: ${fileName}`);
             } catch (e) {
                 showError(e?.message || '下载失败');
-            }
-        },
-        jumpToCodePage() {
-            try {
-                if (!this.file) return;
-
-                console.log('[jumpToCodePage] 当前文件信息:', this.file);
-
-                // 统一约定：
-                // - this.file.key === sessionKey(UUID)
-                // - this.file.treeKey / this.file.path === 文件树key/路径（用于加载静态文件）
-                const treeKey = this.file.treeKey || this.file.path || this.file.name || '';
-                const sessionKey = this.file.sessionKey || this.file.key || '';
-
-                // 构建跳转URL，传递文件信息
-                const params = new URLSearchParams({
-                    // aicr-code 页仍然用 key/fileKey 做“树key定位”
-                    key: treeKey,
-                    fileName: this.file.name || this.file.path || '',
-                    filePath: this.file.path || this.file.name || ''
-                });
-
-                if (treeKey) params.set('fileKey', treeKey);
-                // 额外传递 sessionKey，确保评论/会话关联一致
-                if (sessionKey) params.set('sessionKey', sessionKey);
-
-                const jumpUrl = `/src/views/aicr/aicr-code.html?${params.toString()}`;
-                console.log('[jumpToCodePage] 跳转URL:', jumpUrl);
-
-                // 跳转到新的 aicr-code 页面
-                window.open(jumpUrl, '_blank');
-            } catch (e) {
-                console.error('[jumpToCodePage] 跳转失败:', e);
-                showError(e?.message || '跳转失败');
             }
         },
         escapeHtml(text) {

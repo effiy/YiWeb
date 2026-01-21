@@ -3062,7 +3062,8 @@ export const useMethods = (store) => {
                 normalized.messages = [];
             }
             
-            // 规范化消息格式
+            // 规范化消息格式（保持接口返回的顺序，不进行排序）
+            // 接口返回的消息顺序应该是正确的，如果接口顺序不对，应该在接口层面修复
             normalized.messages = normalized.messages.map(m => ({
                 type: m?.type === 'pet' ? 'pet' : 'user',
                 message: String(m?.message || m?.content || ''),
@@ -3071,8 +3072,8 @@ export const useMethods = (store) => {
                 imageDataUrls: Array.isArray(m?.imageDataUrls) ? m.imageDataUrls : (m?.imageDataUrl ? [m.imageDataUrl] : [])
             }));
 
-            // 按时间戳排序消息
-            normalized.messages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            // 不再进行排序，保持接口返回的顺序
+            // 如果接口返回的顺序不正确，应该在接口层面修复
 
             if (activeSession) activeSession.value = normalized;
 
@@ -3288,6 +3289,8 @@ export const useMethods = (store) => {
         sessionChatMessages: (session) => {
             try {
                 const msgs = Array.isArray(session?.messages) ? session.messages : [];
+                // 保持接口返回的顺序，不进行排序
+                // 如果接口返回的顺序不正确，应该在接口层面修复
                 return [...msgs].map(m => {
                     const timestamp = typeof m?.timestamp === 'number' ? m.timestamp : Date.now();
                     const imageDataUrls = Array.isArray(m?.imageDataUrls) ? m.imageDataUrls.filter(Boolean) : [];
