@@ -70,13 +70,6 @@
         </div>
     </div>
 
-    <!-- 收起按钮 -->
-    <div class="file-tree-toggle" @click="$emit('toggle-collapse')" :title="collapsed ? '展开文件目录树' : '收起文件目录树'"
-        role="button" tabindex="0" @keydown.enter="$emit('toggle-collapse')"
-        @keydown.space.prevent="$emit('toggle-collapse')" :aria-label="collapsed ? '展开文件目录树' : '收起文件目录树'">
-        <i class="fas fa-chevron-left" :class="{ 'rotated': collapsed }"></i>
-    </div>
-
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-container" role="status" aria-live="polite">
         <div class="loading-spinner" aria-hidden="true"></div>
