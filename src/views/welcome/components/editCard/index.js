@@ -163,7 +163,6 @@ export async function openEditCardModal(card, store) {
   }
 
   try {
-    // 记录滚动状态，用于关闭时恢复
     let prevHtmlOverflow = '';
     let prevBodyOverflow = '';
     let prevBodyOverflowY = '';
@@ -224,61 +223,38 @@ export async function openEditCardModal(card, store) {
     }, { passive: true });
 
     // 统一关闭与清理
+    const lockScroll = () => {
+      prevHtmlOverflow = document.documentElement.style.overflow;
+      prevBodyOverflow = document.body.style.overflow;
+      prevBodyOverflowY = document.body.style.overflowY;
+      prevBodyPosition = document.body.style.position;
+      prevBodyTop = document.body.style.top;
+      prevBodyWidth = document.body.style.width;
+      scrollPosition = {
+        x: window.scrollX || document.documentElement.scrollLeft || 0,
+        y: window.scrollY || document.documentElement.scrollTop || 0
+      };
+
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.body.style.overflowY = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollPosition.y}px`;
+      document.body.style.width = '100%';
+    };
+
     const unlockScroll = () => {
-      try {
-        // 恢复HTML和body的滚动状态
-        document.documentElement.style.overflow = prevHtmlOverflow || '';
-        document.body.style.overflow = prevBodyOverflow || '';
-        document.body.style.overflowY = prevBodyOverflowY || '';
-        document.body.style.position = prevBodyPosition || '';
-        document.body.style.top = prevBodyTop || '';
-        document.body.style.width = prevBodyWidth || '';
-        
-        // 恢复滚动位置
-        if (scrollPosition && (scrollPosition.x !== 0 || scrollPosition.y !== 0)) {
-          try {
-            window.scrollTo(scrollPosition.x, scrollPosition.y);
-          } catch (scrollError) {
-            console.warn('[EditCard] 恢复滚动位置失败:', scrollError);
-          }
-        }
-        
-        // 验证滚动状态是否已恢复
-        const currentHtmlOverflow = document.documentElement.style.overflow;
-        const currentBodyOverflow = document.body.style.overflow;
-        const currentBodyOverflowY = document.body.style.overflowY;
-        
-        // 如果滚动状态仍然被锁定，强制恢复
-        if (currentBodyOverflow === 'hidden' || currentBodyOverflowY === 'hidden' || currentHtmlOverflow === 'hidden') {
-          document.documentElement.style.overflow = '';
-          document.body.style.overflow = '';
-          document.body.style.overflowY = '';
-          document.body.style.position = '';
-          document.body.style.top = '';
-          document.body.style.width = '';
-        }
-        
-      } catch (error) {
-        console.warn('[EditCard] 恢复滚动状态时出错:', error);
-        // 强制恢复滚动
-        try {
-          document.documentElement.style.overflow = '';
-          document.body.style.overflow = '';
-          document.body.style.overflowY = '';
-          document.body.style.position = '';
-          document.body.style.top = '';
-          document.body.style.width = '';
-        } catch (forceError) {
-          console.error('[EditCard] 强制恢复滚动状态失败:', forceError);
-        }
-      }
+      document.documentElement.style.overflow = prevHtmlOverflow || '';
+      document.body.style.overflow = prevBodyOverflow || '';
+      document.body.style.overflowY = prevBodyOverflowY || '';
+      document.body.style.position = prevBodyPosition || '';
+      document.body.style.top = prevBodyTop || '';
+      document.body.style.width = prevBodyWidth || '';
+      window.scrollTo(scrollPosition.x, scrollPosition.y);
     };
 
     let closeModal = () => {
       try {
-        // 恢复滚动状态
-        unlockScroll();
-        
         // 移除事件监听器
         try { 
           document.removeEventListener('keydown', handleEsc); 
@@ -292,15 +268,16 @@ export async function openEditCardModal(card, store) {
         } catch (e) { 
           console.warn('[EditCard] 移除弹框元素失败:', e);
         }
+        unlockScroll();
         
       } catch (error) {
         console.error('[EditCard] 关闭弹框时出错:', error);
         // 强制清理
         try {
-          unlockScroll();
           if (modal && modal.parentNode) {
             modal.parentNode.removeChild(modal);
           }
+          unlockScroll();
         } catch (forceError) {
           console.error('[EditCard] 强制清理失败:', forceError);
         }
@@ -323,14 +300,15 @@ export async function openEditCardModal(card, store) {
     // 数据准备
     const formData = {
       ...card,
-      features: Array.isArray(card.features) ? [...card.features] : []
+      icon: card.icon || 'fas fa-cube',
+      hint: card.hint || '点击查看详情',
+      features: Array.isArray(card.features) ? [...card.features] : [],
+      stats: Array.isArray(card.stats) ? [...card.stats] : []
     };
 
-    // ==================== 1. 基本信息 ====================
     const basicInfoGroup = document.createElement('div');
     basicInfoGroup.style.cssText = `display: flex; flex-direction: column; gap: 12px;`;
 
-    // 标题输入
     const titleInput = document.createElement('input');
     titleInput.type = 'text';
     titleInput.value = formData.title || '';
@@ -346,7 +324,6 @@ export async function openEditCardModal(card, store) {
     `;
     titleInput.oninput = (e) => formData.title = e.target.value;
 
-    // 描述输入
     const descInput = document.createElement('textarea');
     descInput.value = formData.description || '';
     descInput.placeholder = 'Description (描述)';
@@ -362,86 +339,195 @@ export async function openEditCardModal(card, store) {
     `;
     descInput.oninput = (e) => formData.description = e.target.value;
 
+    const iconInput = document.createElement('input');
+    iconInput.type = 'text';
+    iconInput.value = formData.icon || '';
+    iconInput.placeholder = 'Icon Class (图标类名，如: fas fa-cube)';
+    iconInput.style.cssText = `
+      padding: 10px;
+      background: var(--bg-primary, #1a1a1a);
+      border: 1px solid var(--border-secondary, #444);
+      color: white;
+      border-radius: 6px;
+      font-size: 14px;
+    `;
+    iconInput.oninput = (e) => formData.icon = e.target.value;
+
+    const hintInput = document.createElement('input');
+    hintInput.type = 'text';
+    hintInput.value = formData.hint || '';
+    hintInput.placeholder = 'Hint (提示文案，如: 点击查看详情)';
+    hintInput.style.cssText = `
+      padding: 10px;
+      background: var(--bg-primary, #1a1a1a);
+      border: 1px solid var(--border-secondary, #444);
+      color: white;
+      border-radius: 6px;
+      font-size: 14px;
+    `;
+    hintInput.oninput = (e) => formData.hint = e.target.value;
+
     basicInfoGroup.appendChild(titleInput);
     basicInfoGroup.appendChild(descInput);
+    basicInfoGroup.appendChild(iconInput);
+    basicInfoGroup.appendChild(hintInput);
     form.appendChild(basicInfoGroup);
 
-    // ==================== 2. 统计数据 (Statistics) ====================
-    const statsGroup = document.createElement('div');
-    statsGroup.style.cssText = `display: flex; flex-direction: column; gap: 8px;`;
+    const featuresContainer = document.createElement('div');
+    featuresContainer.style.cssText = `margin-top: 8px; border-top: 1px solid var(--border-primary, #333); padding-top: 16px;`;
+
+    const featuresHeader = document.createElement('div');
+    featuresHeader.style.cssText = `display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;`;
+    featuresHeader.innerHTML = `<h4 style="margin:0; font-size:14px;">Features (功能特性)</h4>`;
+
+    const addFeatureBtn = document.createElement('button');
+    addFeatureBtn.type = 'button';
+    addFeatureBtn.textContent = '+ 添加特性';
+    addFeatureBtn.style.cssText = `padding: 4px 8px; background: var(--accent-color, #1890ff); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 12px;`;
+
+    const featuresList = document.createElement('div');
+    featuresList.style.cssText = `display: flex; flex-direction: column; gap: 10px;`;
+
+    const renderFeatures = () => {
+      featuresList.innerHTML = '';
+      formData.features.forEach((feature, idx) => {
+        const item = document.createElement('div');
+        item.style.cssText = `display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--border-primary, #333); border-radius: 8px; background: rgba(255,255,255,0.02);`;
+
+        const row1 = document.createElement('div');
+        row1.style.cssText = `display: flex; gap: 8px; align-items: center;`;
+
+        const iconInput = document.createElement('input');
+        iconInput.type = 'text';
+        iconInput.value = feature.icon || '';
+        iconInput.placeholder = 'icon (fas fa-...)';
+        iconInput.style.cssText = `flex: 1.2; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px;`;
+        iconInput.oninput = (e) => {
+          formData.features[idx].icon = e.target.value;
+        };
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = feature.name || '';
+        nameInput.placeholder = '名称 (如: 需求拆解)';
+        nameInput.style.cssText = `flex: 1.6; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px;`;
+        nameInput.oninput = (e) => {
+          formData.features[idx].name = e.target.value;
+          if (!formData.features[idx].icon) formData.features[idx].icon = 'fas fa-bolt';
+        };
+
+        const valueInput = document.createElement('input');
+        valueInput.type = 'text';
+        valueInput.value = feature.value || '';
+        valueInput.placeholder = 'value (可选)';
+        valueInput.style.cssText = `flex: 1; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px;`;
+        valueInput.oninput = (e) => {
+          formData.features[idx].value = e.target.value;
+        };
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.innerHTML = '&times;';
+        delBtn.style.cssText = `width: 28px; height: 28px; color: #ff4d4f; background: none; border: none; font-size: 20px; cursor: pointer; line-height: 1;`;
+        delBtn.onclick = () => {
+          formData.features.splice(idx, 1);
+          renderFeatures();
+        };
+
+        row1.appendChild(iconInput);
+        row1.appendChild(nameInput);
+        row1.appendChild(valueInput);
+        row1.appendChild(delBtn);
+
+        const descInput = document.createElement('textarea');
+        descInput.rows = 2;
+        descInput.value = feature.desc || '';
+        descInput.placeholder = '描述 (如: 本特性会生成对应的任务列表)';
+        descInput.style.cssText = `padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px; resize: vertical; font-family: inherit;`;
+        descInput.oninput = (e) => {
+          formData.features[idx].desc = e.target.value;
+        };
+
+        item.appendChild(row1);
+        item.appendChild(descInput);
+        featuresList.appendChild(item);
+      });
+    };
+
+    addFeatureBtn.onclick = () => {
+      formData.features.push({ name: '', icon: 'fas fa-bolt', desc: '', value: '' });
+      renderFeatures();
+    };
+
+    featuresHeader.appendChild(addFeatureBtn);
+    featuresContainer.appendChild(featuresHeader);
+    featuresContainer.appendChild(featuresList);
+    form.appendChild(featuresContainer);
+
+    const statsContainer = document.createElement('div');
+    statsContainer.style.cssText = `margin-top: 8px; border-top: 1px solid var(--border-primary, #333); padding-top: 16px;`;
 
     const statsHeader = document.createElement('div');
-    statsHeader.style.cssText = `display: flex; justify-content: space-between; align-items: center;`;
-    
-    const statsLabel = document.createElement('label');
-    statsLabel.textContent = 'Statistics (统计数据)';
-    statsLabel.style.cssText = `color: var(--text-secondary, #aaa); font-size: 14px;`;
-    
+    statsHeader.style.cssText = `display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;`;
+    statsHeader.innerHTML = `<h4 style="margin:0; font-size:14px;">Statistics (统计数据)</h4>`;
+
     const addStatBtn = document.createElement('button');
     addStatBtn.type = 'button';
     addStatBtn.textContent = '+ 添加统计';
     addStatBtn.style.cssText = `padding: 4px 8px; background: var(--accent-color, #1890ff); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 12px;`;
-    
-    statsHeader.appendChild(statsLabel);
-    statsHeader.appendChild(addStatBtn);
-    statsGroup.appendChild(statsHeader);
 
     const statsList = document.createElement('div');
     statsList.style.cssText = `display: flex; flex-direction: column; gap: 8px;`;
 
     const renderStats = () => {
-        statsList.innerHTML = '';
-        formData.features.forEach((stat, idx) => {
-            const row = document.createElement('div');
-            row.style.cssText = `display: flex; gap: 8px; align-items: center;`;
-            
-            // Name input
-            const nameInput = document.createElement('input');
-            nameInput.type = 'text';
-            nameInput.value = stat.name || '';
-            nameInput.placeholder = '名称 (如: 完成率)';
-            nameInput.style.cssText = `flex: 2; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 4px;`;
-            nameInput.oninput = (e) => {
-                formData.features[idx].name = e.target.value;
-                if (!formData.features[idx].icon) {
-                    formData.features[idx].icon = 'fas fa-chart-bar';
-                }
-            };
+      statsList.innerHTML = '';
+      formData.stats.forEach((stat, idx) => {
+        const row = document.createElement('div');
+        row.style.cssText = `display: flex; gap: 8px; align-items: center;`;
 
-            // Value input
-            const valueInput = document.createElement('input');
-            valueInput.type = 'text';
-            valueInput.value = stat.value || '';
-            valueInput.placeholder = '数值 (如: 85%)';
-            valueInput.style.cssText = `flex: 1; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 4px;`;
-            valueInput.oninput = (e) => {
-                formData.features[idx].value = e.target.value;
-            };
-            
-            const delBtn = document.createElement('button');
-            delBtn.type = 'button';
-            delBtn.innerHTML = '&times;';
-            delBtn.style.cssText = `color: #ff4d4f; background: none; border: none; font-size: 18px; cursor: pointer;`;
-            delBtn.onclick = () => {
-                formData.features.splice(idx, 1);
-                renderStats();
-            };
-            
-            row.appendChild(nameInput);
-            row.appendChild(valueInput);
-            row.appendChild(delBtn);
-            statsList.appendChild(row);
-        });
+        const labelInput = document.createElement('input');
+        labelInput.type = 'text';
+        labelInput.value = stat.label || '';
+        labelInput.placeholder = 'label (如: 完成率)';
+        labelInput.style.cssText = `flex: 2; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px;`;
+        labelInput.oninput = (e) => {
+          formData.stats[idx].label = e.target.value;
+        };
+
+        const numberInput = document.createElement('input');
+        numberInput.type = 'text';
+        numberInput.value = stat.number || '';
+        numberInput.placeholder = 'number (如: 85%)';
+        numberInput.style.cssText = `flex: 1; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px;`;
+        numberInput.oninput = (e) => {
+          formData.stats[idx].number = e.target.value;
+        };
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.innerHTML = '&times;';
+        delBtn.style.cssText = `width: 28px; height: 28px; color: #ff4d4f; background: none; border: none; font-size: 20px; cursor: pointer; line-height: 1;`;
+        delBtn.onclick = () => {
+          formData.stats.splice(idx, 1);
+          renderStats();
+        };
+
+        row.appendChild(labelInput);
+        row.appendChild(numberInput);
+        row.appendChild(delBtn);
+        statsList.appendChild(row);
+      });
     };
 
     addStatBtn.onclick = () => {
-        formData.features.push({ name: '', value: '', icon: 'fas fa-chart-bar' });
-        renderStats();
+      formData.stats.push({ label: '', number: '' });
+      renderStats();
     };
 
-    renderStats();
-    statsGroup.appendChild(statsList);
-    form.appendChild(statsGroup);
+    statsHeader.appendChild(addStatBtn);
+    statsContainer.appendChild(statsHeader);
+    statsContainer.appendChild(statsList);
+    form.appendChild(statsContainer);
 
     // ==================== 底部按钮 ====================
     const footer = document.createElement('div');
@@ -495,17 +581,32 @@ export async function openEditCardModal(card, store) {
         return;
       }
 
-      // 过滤空的 Stats
-      formData.features = formData.features.filter(stat => stat.name && stat.name.trim());
+      const cleanFeatures = (formData.features || [])
+        .filter(f => f && f.name && f.name.trim())
+        .map(f => ({
+          name: f.name.trim(),
+          icon: (f.icon || 'fas fa-bolt').trim(),
+          desc: (f.desc || '').trim(),
+          value: (f.value || '').trim()
+        }));
+
+      const cleanStats = (formData.stats || [])
+        .filter(s => s && ((s.label && s.label.trim()) || (s.number && s.number.trim())))
+        .map(s => ({
+          label: (s.label || '').trim(),
+          number: (s.number || '').trim()
+        }));
 
       try {
         // 更新卡片数据
         await store.updateCard(card.key || card.id, {
             ...formData,
-            icon: formData.icon || 'fas fa-cube',
+            icon: (formData.icon || 'fas fa-cube').trim(),
             // 移除 badge
             badge: '',
-            hint: formData.hint || '点击查看详情'
+            hint: (formData.hint || '点击查看详情').trim(),
+            features: cleanFeatures,
+            stats: cleanStats
         });
         
         showSuccess('卡片已更新');
@@ -537,6 +638,12 @@ export async function openEditCardModal(card, store) {
     modalContent.appendChild(form);
     modal.appendChild(modalContent);
     document.body.appendChild(modal);
+    lockScroll();
+    renderFeatures();
+    renderStats();
+    setTimeout(() => {
+      titleInput.focus();
+    }, 0);
 
     // ESC 关闭
     const handleEsc = (e) => {
