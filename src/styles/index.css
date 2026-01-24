@@ -20,6 +20,7 @@
 /* 组件样式 */
 @import "./components/input.css";
 @import "./components/button.css";
+@import "./components/tag.css";
 @import "./components/loading.css";
 @import "./components/message.css";
 @import "./components/edit-card.css";

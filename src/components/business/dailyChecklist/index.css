@@ -789,39 +789,6 @@
     border-top: 1px solid var(--border-glass);
 }
 
-.btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition-fast);
-}
-
-.btn-secondary {
-    background: var(--bg-glass);
-    color: var(--text-primary);
-    border: 1px solid var(--border-glass);
-}
-
-.btn-secondary:hover {
-    background: var(--bg-glass);
-    border-color: var(--border-secondary);
-}
-
-.btn-primary {
-    background: var(--accent-gradient);
-    color: var(--text-inverse);
-    box-shadow: var(--shadow-sm);
-}
-
-.btn-primary:hover {
-    background: var(--accent-gradient);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-glow);
-}
-
 /* 滚动条美化 */
 .daily-checklist-container ::-webkit-scrollbar {
     width: 6px;
@@ -991,4 +958,3 @@
         border: 1px solid #ddd;
     }
 }
-
