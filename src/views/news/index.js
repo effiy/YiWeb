@@ -16,11 +16,8 @@ import { createBaseView } from '/src/utils/baseView.js';
             useMethods,
             components: [
                 'SearchHeader',
-                'DailyChecklist',
                 'NewsList',
-                'Calendar',
-                'CommentsList',
-                'ProjectFilesList'
+                'Calendar'
             ],
             plugins: [],
             onMounted: (app) => {

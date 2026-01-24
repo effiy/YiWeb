@@ -47,33 +47,6 @@
                 <div class="content-wrapper">
                     <!-- 主要内容区域 -->
                     <div class="main-column">
-                        <!-- 每日清单 -->
-                        <daily-checklist 
-                            v-show="activeCategory === 'all' || activeCategory === 'dailyChecklist'"
-                            :active-category="activeCategory"
-                            :current-date-display="currentDateDisplay"
-                            :current-date-subtitle="currentDateSubtitle"
-                        ></daily-checklist>
-                        
-                        <!-- 项目文件列表 -->
-                        <project-files-list 
-                            v-show="activeCategory === 'all' || activeCategory === 'projectFiles'"
-                            :project-files="projectFilesData"
-                            :filtered-project-files="filteredProjectFilesData"
-                            :loading="loading"
-                            :error="error"
-                            :search-query="searchQuery"
-                            :current-date-display="currentDateDisplay"
-                            :clicked-items="clickedItems"
-                            :read-items="readItems"
-                            :favorite-items="favoriteItems"
-                            :has-project-files-data="hasProjectFilesData"
-                            @project-file-click="handleProjectFileClick"
-                            @toggle-favorite="handleToggleFavorite"
-                            @load-project-files-data="handleLoadProjectFilesData"
-                        ></project-files-list>
-                        <!-- 评论列表（与 AICR 风格一致） -->
-                        <comments-list v-show="activeCategory === 'all' || activeCategory === 'comments'" :date-str="currentDateSubtitle"></comments-list>
                         <!-- 新闻列表组件模板 -->
                         <news-list
                             v-show="activeCategory === 'all' || activeCategory === 'news'"
@@ -144,10 +117,7 @@
     <!-- 主功能脚本 -->
     <script type="module" src="../../components/common/searchHeader/index.js"></script>
     <script type="module" src="../../components/calendar/index.js"></script>
-    <script type="module" src="../../components/business/dailyChecklist/index.js"></script>
     <script type="module" src="../../components/business/newsList/index.js"></script>
-    <script type="module" src="../../components/business/commentsList/index.js"></script>
-    <script type="module" src="../../components/common/projectFilesList/index.js"></script>
     <script type="module" src="../../views/news/index.js"></script>
     <!-- 性能监控脚本 -->
     <script type="module" src="../../utils/performance.js"></script>

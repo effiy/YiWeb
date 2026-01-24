@@ -82,23 +82,6 @@
                 <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" aria-hidden="true"></i>
             </button>
             
-            <div class="view-switcher-container">
-                <div class="view-switcher">
-                    <button 
-                        type="button"
-                        v-for="category in categories" 
-                        :key="category.key"
-                        @click="$emit('toggle-category', category.key)"
-                        :class="['view-btn', { active: activeCategory === category.key }]"
-                        :title="category.title"
-                        :aria-label="category.title"
-                    >
-                        <i :class="category.icon"></i>
-                        <span>{{ category.title }}</span>
-                    </button>
-                </div>
-            </div>
-            
             <!-- 导出按钮 -->
             <button 
                 type="button"

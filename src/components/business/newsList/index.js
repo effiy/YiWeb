@@ -138,6 +138,17 @@ const componentOptions = {
                 }, '摘要提取');
             },
             
+            // 渲染 Markdown 内容
+            renderMarkdown(content) {
+                return safeExecute(() => {
+                    if (!content) return '';
+                    if (typeof marked !== 'undefined' && marked.parse) {
+                        return marked.parse(content);
+                    }
+                    return content;
+                }, 'Markdown渲染');
+            },
+            
             // 处理新闻点击
             handleNewsClick(item) {
                 return safeExecute(() => {

@@ -89,7 +89,7 @@
                     </time>
                 </div>
                 
-                <div class="news-excerpt">{{ extractExcerpt(item) }}</div>
+                <div class="news-content markdown-body" v-html="renderMarkdown(item.content || item.contentSnippet || item.excerpt)"></div>
                 
                 <footer class="news-footer">
                     <div class="news-source">
@@ -181,7 +181,7 @@
                         </time>
                     </div>
                     
-                    <div class="news-excerpt">{{ extractExcerpt(item) }}</div>
+                    <div class="news-content markdown-body" v-html="renderMarkdown(item.content || item.contentSnippet || item.excerpt)"></div>
                     
                     <footer class="news-footer">
                         <div class="news-source">

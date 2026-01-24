@@ -606,7 +606,6 @@ const componentOptions = {
             this._dataRequestHandler = null;
         }
     },
-    template: template
 };
 
 // 初始化组件并全局暴露
