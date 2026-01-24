@@ -11,10 +11,8 @@ const getStorage = (key) => typeof localStorage !== 'undefined' ? localStorage.g
 const isLocalHost = (h) => h === 'localhost' || h === '127.0.0.1' || h.endsWith('.local');
 
 const params = getParams();
-const envParam = params.get('env');
-const envStored = getStorage('env');
 
-let ENV = envParam || envStored || ((typeof location !== 'undefined' && isLocalHost(location.hostname)) ? 'local' : 'prod');
+let ENV = 'prod';
 
 // --- Configuration Definitions ---
 const ENDPOINTS = {
