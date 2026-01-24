@@ -180,6 +180,76 @@ export const createStore = () => {
     };
 
     /**
+     * 添加新卡片
+     * @param {Object} cardData - 卡片数据
+     * @returns {Promise<Object>} 创建的卡片
+     */
+    const addCard = async (cardData) => {
+        return safeExecuteAsync(async () => {
+            logInfo('[Store] 开始添加卡片:', cardData);
+            
+            // 验证数据
+            if (!cardData || !cardData.title) {
+                throw new Error('卡片数据不完整');
+            }
+            
+            // 使用动态导入 GoalsService
+            const { GoalsService } = await import('/src/services/modules/goals.js');
+            
+            // 调用 API 创建
+            const result = await GoalsService.create(cardData);
+            logInfo('[Store] MongoDB创建结果:', result);
+            
+            if (result && result.success !== false) {
+                // 创建成功后，刷新列表
+                await loadFeatureCards(true); // 强制刷新
+                return result.data || result;
+            } else {
+                throw new Error('API创建失败：' + (result?.message || '未知错误'));
+            }
+        }, '添加卡片', (errorInfo) => {
+            logError('[Store] 添加卡片失败:', errorInfo);
+            error.value = errorInfo.message || '添加卡片失败';
+            throw errorInfo;
+        });
+    };
+
+    /**
+     * 更新卡片
+     * @param {string} cardKey - 卡片ID
+     * @param {Object} cardData - 更新的数据
+     * @returns {Promise<Object>} 更新后的卡片
+     */
+    const updateCard = async (cardKey, cardData) => {
+        return safeExecuteAsync(async () => {
+            logInfo('[Store] 开始更新卡片:', cardKey, cardData);
+            
+            if (!cardKey) {
+                throw new Error('缺少卡片ID');
+            }
+            
+            // 使用动态导入 GoalsService
+            const { GoalsService } = await import('/src/services/modules/goals.js');
+            
+            // 调用 API 更新
+            const result = await GoalsService.update(cardKey, cardData);
+            logInfo('[Store] MongoDB更新结果:', result);
+            
+            if (result && result.success !== false) {
+                // 更新成功后，刷新列表
+                await loadFeatureCards(true); // 强制刷新
+                return result.data || result;
+            } else {
+                throw new Error('API更新失败：' + (result?.message || '未知错误'));
+            }
+        }, '更新卡片', (errorInfo) => {
+            logError('[Store] 更新卡片失败:', errorInfo);
+            error.value = errorInfo.message || '更新卡片失败';
+            throw errorInfo;
+        });
+    };
+
+    /**
      * 异步加载功能卡片数据
      * 支持多次调用，自动处理加载状态和错误
      */
@@ -542,6 +612,8 @@ export const createStore = () => {
             quarters,
             isAllSelected,  // 全部选择状态
             updateFeatureCards,  // 更新方法
+            addCard,        // 添加卡片方法
+            updateCard,     // 更新卡片方法
             deleteCard,     // 删除卡片方法
             removeCardFromLocal, // 本地移除卡片方法
             loadFeatureCards, // 重新加载数据方法
