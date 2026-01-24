@@ -188,48 +188,6 @@
                                             <span class="stat-label">{{ stat.label }}</span>
                                         </li>
                                     </ul>
-                                    <!-- 项目标签显示区域 -->
-                                    <div class="card-tags-section">
-                                        <div class="tags-header">
-                                            <span class="tags-label">
-                                                项目标签
-                                                <span class="time-info" v-if="card.year || card.quarter || card.month || card.week || card.day">
-                                                    <span v-if="card.year" class="time-badge">{{ card.year }}</span>
-                                                    <span v-if="card.quarter" class="time-badge">{{ card.quarter }}</span>
-                                                    <span v-if="card.month" class="time-badge">{{ card.month }}月</span>
-                                                    <span v-if="card.week" class="time-badge">{{ getWeekDisplayText(card.year, card.month, card.week) }}</span>
-                                                    <span v-if="card.day" class="time-badge">{{ card.day }}</span>
-                                                </span>
-                                            </span>
-                                        </div>
-                                        <div class="tags-container">
-                                            <div 
-                                                v-for="(tag, tagIndex) in card.tags || []" 
-                                                :key="tagIndex"
-                                                class="tag-item"
-                                                role="button"
-                                                tabindex="0"
-                                                :aria-label="'打开AICR项目: ' + tag.name"
-                                                :title="'打开AICR: ' + tag.name"
-                                                @click="openAicrFromTag(tag.name, $event)"
-                                                @keydown.enter="openAicrFromTag(tag.name, $event)"
-                                                @keydown.space.prevent="openAicrFromTag(tag.name, $event)"
-                                                @keydown.escape="blur()"
-                                            >
-                                                <span class="tag-text">{{ tag.name }}</span>
-                                            </div>
-                                            <div v-if="!card.tags || card.tags.length === 0" class="no-tags">
-                                                暂无标签
-                                            </div>
-                                        </div>
-                                        <div class="tags-stats" v-if="card.tags && card.tags.length > 0">
-                                            <span class="tags-count">
-                                                <i class="fas fa-tag"></i>
-                                                {{ card.tags.length }} 个标签
-                                            </span>
-                                            <span class="tags-hint">点击徽章编辑</span>
-                                        </div>
-                                    </div>
                                 </section>
                                 <footer class="card-footer">
                                     <span class="card-hint">{{ card.hint }}</span>

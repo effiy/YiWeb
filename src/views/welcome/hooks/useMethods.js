@@ -2896,71 +2896,7 @@ export const useMethods = (store) => {
         }
     };
 
-    /**
-     * 从标签跳转到AICR页面
-     * 支持的标签格式：
-     * - 项目ID（新格式，推荐）
-     * - 项目ID/版本ID（旧格式，兼容处理，版本ID会被忽略）
-     */
-    const openAicrFromTag = (tagName, event) => {
-        if (event) event.stopPropagation();
-        
-        // 防抖处理
-        if (openAicrFromTag.timeout) {
-            clearTimeout(openAicrFromTag.timeout);
-        }
-        
-        // 添加视觉反馈
-        const tagElement = event?.target?.closest('.tag-item');
-        if (tagElement) {
-            tagElement.classList.add('clicked');
-            setTimeout(() => {
-                tagElement.classList.remove('clicked');
-            }, 300);
-        }
-        
-        openAicrFromTag.timeout = setTimeout(() => {
-            try {
-                const raw = (tagName || '').trim();
-                if (!raw) {
-                    showError('无效的标签：标签不能为空');
-                    return;
-                }
-                
-                // 支持两种格式：
-                // 1. 项目ID（新格式）
-                // 2. 项目ID/版本ID（旧格式，兼容处理）
-                const parts = raw.split('/').map(s => s.trim()).filter(Boolean);
-                
-                if (parts.length < 1) {
-                    showError('标签格式错误：应为"项目ID"或"项目ID/版本ID"（版本ID会被忽略）');
-                    return;
-                }
-                
-                // 取第一部分作为项目ID（兼容旧格式中的项目ID/版本ID）
-                const projectId = parts[0];
-                
-                if (!projectId) {
-                    showError('标签格式错误：项目ID不能为空');
-                    return;
-                }
-                
-                // 如果包含版本ID，给出提示（但不阻止操作）
-                if (parts.length > 1) {
-                    console.log(`[openAicrFromTag] 检测到旧格式标签"${raw}"，版本ID"${parts[1]}"将被忽略`);
-                }
-                
-                const encodedProjectId = encodeURIComponent(projectId);
-                const url = `/src/views/aicr/index.html?projectId=${encodedProjectId}`;
-                
-                console.log(`[openAicrFromTag] 打开AICR页面: ${url}`);
-                window.open(url, '_blank');
-            } catch (e) {
-                console.error('[openAicrFromTag] 失败:', e);
-                showError(`打开AICR失败: ${e.message || '未知错误'}`);
-            }
-        }, 150);
-    };
+
 
     /**
      * 获取标签统计信息
@@ -3105,26 +3041,7 @@ export const useMethods = (store) => {
         }
     };
 
-    // 获取周显示文本（包含日期期间信息）
-    const getWeekDisplayText = (year, month, week) => {
-        if (!year || !month || !week) {
-            return `第${week}周`;
-        }
-        
-        try {
-            const weeks = getWeeksByMonth(year, month);
-            const weekData = weeks.find(w => w.value === week);
-            
-            if (weekData) {
-                return weekData.label; // 返回 "第X周 (X-X日)" 格式
-            } else {
-                return `第${week}周`;
-            }
-        } catch (error) {
-            console.error('[getWeekDisplayText] 获取周显示文本失败:', error);
-            return `第${week}周`;
-        }
-    };
+
 
     /**
      * 创建 YiPet 会话
@@ -3312,7 +3229,7 @@ ${cardData.day ? `日期：${cardData.day}` : ''}
         getMonthsByQuarter,
         getWeeksByMonth,
         getDaysByWeek,
-        getWeekDisplayText,
+
         // 上传下载相关方法
         handleDownloadData,
         triggerUploadData,
@@ -3341,7 +3258,6 @@ ${cardData.day ? `日期：${cardData.day}` : ''}
         handleCardTitleMouseUp,
         handleCardTitleTouchStart,
         handleCardTitleTouchEnd,
-        openAicrFromTag,
         editCard,
         createCard,
         handleCreateCard,
