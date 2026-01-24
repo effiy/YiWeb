@@ -616,6 +616,9 @@ class SessionSyncService {
                             }
                             // 规范化消息格式，确保 messages 字段始终存在（即使是空数组）
                             session.messages = this.normalizeMessages(session.messages || []);
+                            if (Object.prototype.hasOwnProperty.call(session, 'pageContent')) {
+                                delete session.pageContent;
+                            }
                             console.log('[SessionSync] 获取会话成功:', sessionKey);
                             return session;
                         }
@@ -657,7 +660,6 @@ class SessionSyncService {
                     title: String(sessionData.title || sessionData.pageTitle || ''),
                     pageTitle: String(sessionData.pageTitle || sessionData.title || ''),
                     pageDescription: String(sessionData.pageDescription || ''),
-                    pageContent: String(sessionData.pageContent || ''),
                     messages: this.normalizeMessages(sessionData.messages || []),
                     tags: Array.isArray(sessionData.tags) ? sessionData.tags : [],
                     isFavorite: sessionData.isFavorite !== undefined ? Boolean(sessionData.isFavorite) : false,
@@ -975,7 +977,7 @@ class SessionSyncService {
                             path: filePath,
                             sessionKey: sessionKey, // 添加sessionKey字段
                             name: session.pageTitle || session.title || filePath.split('/').pop() || '未命名文件',
-                            content: String(session.pageContent || ''),
+                            content: '',
                             createdAt: this.normalizeTimestamp(session.createdAt),
                             updatedAt: this.normalizeTimestamp(session.updatedAt)
                         };

@@ -5830,12 +5830,8 @@ export const useMethods = (store) => {
                 const sessions = store.sessions?.value || [];
                 let session = sessions.find(s => s && s.key === sessionKey);
 
-                // 如果本地有会话但缺少 pageContent，或者本地没有会话，从服务端获取完整数据
-                // 这样在 generateSessionDescription 中就不需要再次调用了
-                const needFetchFromServer = !session || !session.pageContent || session.pageContent.trim() === '';
-                
-                if (needFetchFromServer) {
-                    console.log('[handleSessionEdit] 需要从服务端获取完整会话数据（本地没有或缺少pageContent）');
+                if (!session) {
+                    console.log('[handleSessionEdit] 本地未找到会话，尝试从服务端获取');
                     try {
                         const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                         const sessionSync = getSessionSyncService();
@@ -5848,13 +5844,10 @@ export const useMethods = (store) => {
                             } else {
                                 session = serverSession;
                             }
-                            console.log('[handleSessionEdit] 从服务端获取会话成功，pageContent长度:', session.pageContent?.length || 0);
                         }
                     } catch (e) {
                         console.warn('[handleSessionEdit] 获取会话信息失败:', e);
                     }
-                } else {
-                    console.log('[handleSessionEdit] 使用本地会话数据（包含pageContent）');
                 }
 
                 if (!session) {

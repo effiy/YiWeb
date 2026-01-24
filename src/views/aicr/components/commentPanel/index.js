@@ -806,7 +806,48 @@ const componentOptions = {
                             session.messages = [];
                         }
                         this.sessionChatSession = session;
-                        this.sessionChatEditingPageContent = String(session.pageContent || '');
+                        try {
+                            const apiBase = String(window.API_URL || '').trim().replace(/\/$/, '');
+                            const title = String(session.pageTitle || session.title || '').trim();
+                            const tags = Array.isArray(session.tags) ? session.tags.filter(Boolean) : [];
+                            const desc = String(session.pageDescription || '');
+                            let path = '';
+                            const idx = desc.indexOf('文件：');
+                            if (idx >= 0) {
+                                path = desc.slice(idx + 3).trim();
+                            }
+                            if (!path && title) {
+                                path = tags.length > 0 ? `${tags.join('/')}/${title}` : title;
+                            }
+                            const cleanPath = path.startsWith('static/') ? path.slice(7) : path;
+                            if (apiBase && cleanPath) {
+                                const res = await fetch(`${apiBase}/read-file`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ target_file: cleanPath })
+                                });
+                                if (res.ok) {
+                                    const json = await res.json();
+                                    if (json && json.success && json.data && json.data.type !== 'base64') {
+                                        const staticContent = String(json.data.content || '');
+                                        this.sessionChatEditingPageContent = staticContent;
+                                        this.sessionChatSession = { ...this.sessionChatSession, pageContent: staticContent };
+                                    } else {
+                                        this.sessionChatEditingPageContent = '';
+                                        this.sessionChatSession = { ...this.sessionChatSession, pageContent: '' };
+                                    }
+                                } else {
+                                    this.sessionChatEditingPageContent = '';
+                                    this.sessionChatSession = { ...this.sessionChatSession, pageContent: '' };
+                                }
+                            } else {
+                                this.sessionChatEditingPageContent = '';
+                                this.sessionChatSession = { ...this.sessionChatSession, pageContent: '' };
+                            }
+                        } catch (_) {
+                            this.sessionChatEditingPageContent = '';
+                            this.sessionChatSession = { ...this.sessionChatSession, pageContent: '' };
+                        }
                         console.log('[CommentPanel] 会话加载成功，消息数量:', session.messages.length);
                         this.$nextTick(() => {
                             try {
@@ -877,6 +918,34 @@ const componentOptions = {
                 }
 
                 this.sessionChatSavingContext = true;
+                const apiBase = String(window.API_URL || '').trim().replace(/\/$/, '');
+                const session = this.sessionChatSession;
+                const title = String(session.pageTitle || session.title || '').trim();
+                const tags = Array.isArray(session.tags) ? session.tags.filter(Boolean) : [];
+                const desc = String(session.pageDescription || '');
+                let path = '';
+                const idx = desc.indexOf('文件：');
+                if (idx >= 0) {
+                    path = desc.slice(idx + 3).trim();
+                }
+                if (!path && title) {
+                    path = tags.length > 0 ? `${tags.join('/')}/${title}` : title;
+                }
+                const cleanPath = path.startsWith('static/') ? path.slice(7) : path;
+                if (!apiBase || !cleanPath) {
+                    throw new Error('无法确定文件路径');
+                }
+
+                const res = await fetch(`${apiBase}/write-file`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_file: cleanPath, content })
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err?.message || `保存失败: ${res.status}`);
+                }
+
                 const sessionSync = getSessionSyncService();
                 const updated = { ...this.sessionChatSession, pageContent: content, updatedAt: Date.now(), lastAccessTime: Date.now() };
                 await sessionSync.saveSession(updated);

@@ -84,8 +84,8 @@ export function buildFileTreeFromSessions(allSessions) {
             key: fileKey,
             name: uniqueName,
             type: 'file',
-            content: session.pageContent || '',
-            size: (session.pageContent || '').length,
+            content: '',
+            size: 0,
             lastModified: session.updatedAt || session.createdAt,
             sessionKey: sessionKey
         });
@@ -2038,6 +2038,9 @@ export const createStore = () => {
                         s.tags = [];
                     }
 
+                    if (Object.prototype.hasOwnProperty.call(s, 'pageContent')) {
+                        delete s.pageContent;
+                    }
 
                 });
 
