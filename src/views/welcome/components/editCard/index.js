@@ -4,15 +4,14 @@
  * 提供 openEditCardModal(card, store) 方法
  * 
  * Update: 2026-01-24
- * 重构为编辑 OKR 卡片的功能
- * - 简化时间选择器为年度和季度
- * - 将"功能特性"改为"Key Results (关键结果)"
- * - 移除多余字段（输入/输出、统计数据等）
- * - 保持与 feature-card 的内容对应
+ * 重构为编辑卡片的功能
+ * - 移除 OKR 相关概念
+ * - 移除年度和季度选择
+ * - 将"Key Results"改为"统计数据"
+ * - 支持添加统计项名称和数值
  */
 
 import { showError, showSuccess } from '/src/utils/message.js';
-import { getQuarters } from '/src/utils/timeSelectors.js';
 
 function addPassiveEventListener(element, event, handler, options = {}) {
   const finalOptions = { passive: true, ...options };
@@ -188,11 +187,11 @@ export async function openEditCardModal(card, store) {
     // 标题
     const modalTitle = document.createElement('h3');
     modalTitle.innerHTML = `
-      <span>编辑 OKR 卡片</span>
+      <span>编辑卡片</span>
       <span class="card-name">${card.title || ''}</span>
     `;
     modalTitle.style.cssText = ``;
-    modalTitle.setAttribute('title', '编辑 OKR 卡片');
+    modalTitle.setAttribute('title', '编辑卡片');
 
     // 关闭按钮（右上角）
     const closeButton = document.createElement('button');
@@ -324,8 +323,6 @@ export async function openEditCardModal(card, store) {
     // 数据准备
     const formData = {
       ...card,
-      year: card.year || store.selectedYear?.value || new Date().getFullYear().toString(),
-      quarter: card.quarter || store.selectedQuarter?.value || `Q${Math.ceil((new Date().getMonth() + 1) / 3)}`,
       features: Array.isArray(card.features) ? [...card.features] : []
     };
 
@@ -337,7 +334,7 @@ export async function openEditCardModal(card, store) {
     const titleInput = document.createElement('input');
     titleInput.type = 'text';
     titleInput.value = formData.title || '';
-    titleInput.placeholder = 'Objective (目标)';
+    titleInput.placeholder = 'Card Title (卡片标题)';
     titleInput.required = true;
     titleInput.style.cssText = `
       padding: 10px;
@@ -352,7 +349,7 @@ export async function openEditCardModal(card, store) {
     // 描述输入
     const descInput = document.createElement('textarea');
     descInput.value = formData.description || '';
-    descInput.placeholder = 'Rationale (基本原理/描述)';
+    descInput.placeholder = 'Description (描述)';
     descInput.rows = 3;
     descInput.style.cssText = `
       padding: 10px;
@@ -369,80 +366,56 @@ export async function openEditCardModal(card, store) {
     basicInfoGroup.appendChild(descInput);
     form.appendChild(basicInfoGroup);
 
-    // ==================== 2. 时间周期 ====================
-    const timeGroup = document.createElement('div');
-    timeGroup.style.cssText = `display: flex; gap: 12px;`;
+    // ==================== 2. 统计数据 (Statistics) ====================
+    const statsGroup = document.createElement('div');
+    statsGroup.style.cssText = `display: flex; flex-direction: column; gap: 8px;`;
 
-    // 年度选择
-    const yearSelect = document.createElement('select');
-    yearSelect.style.cssText = `flex: 1; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px;`;
-    const currentYear = new Date().getFullYear();
-    for (let i = currentYear - 2; i <= currentYear + 5; i++) {
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = `${i}年`;
-        if (String(formData.year) === String(i)) opt.selected = true;
-        yearSelect.appendChild(opt);
-    }
-    yearSelect.onchange = (e) => formData.year = e.target.value;
-
-    // 季度选择
-    const quarterSelect = document.createElement('select');
-    quarterSelect.style.cssText = `flex: 1; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px;`;
-    const quarters = getQuarters();
-    quarters.forEach(q => {
-        const opt = document.createElement('option');
-        opt.value = q.value;
-        opt.textContent = q.label;
-        if (formData.quarter === q.value) opt.selected = true;
-        quarterSelect.appendChild(opt);
-    });
-    quarterSelect.onchange = (e) => formData.quarter = e.target.value;
-
-    timeGroup.appendChild(yearSelect);
-    timeGroup.appendChild(quarterSelect);
-    form.appendChild(timeGroup);
-
-    // ==================== 3. Key Results (关键结果) ====================
-    const krGroup = document.createElement('div');
-    krGroup.style.cssText = `display: flex; flex-direction: column; gap: 8px;`;
-
-    const krHeader = document.createElement('div');
-    krHeader.style.cssText = `display: flex; justify-content: space-between; align-items: center;`;
+    const statsHeader = document.createElement('div');
+    statsHeader.style.cssText = `display: flex; justify-content: space-between; align-items: center;`;
     
-    const krLabel = document.createElement('label');
-    krLabel.textContent = 'Key Results (关键结果)';
-    krLabel.style.cssText = `color: var(--text-secondary, #aaa); font-size: 14px;`;
+    const statsLabel = document.createElement('label');
+    statsLabel.textContent = 'Statistics (统计数据)';
+    statsLabel.style.cssText = `color: var(--text-secondary, #aaa); font-size: 14px;`;
     
-    const addKrBtn = document.createElement('button');
-    addKrBtn.type = 'button';
-    addKrBtn.textContent = '+ 添加 KR';
-    addKrBtn.style.cssText = `padding: 4px 8px; background: var(--accent-color, #1890ff); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 12px;`;
+    const addStatBtn = document.createElement('button');
+    addStatBtn.type = 'button';
+    addStatBtn.textContent = '+ 添加统计';
+    addStatBtn.style.cssText = `padding: 4px 8px; background: var(--accent-color, #1890ff); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 12px;`;
     
-    krHeader.appendChild(krLabel);
-    krHeader.appendChild(addKrBtn);
-    krGroup.appendChild(krHeader);
+    statsHeader.appendChild(statsLabel);
+    statsHeader.appendChild(addStatBtn);
+    statsGroup.appendChild(statsHeader);
 
-    const krList = document.createElement('div');
-    krList.style.cssText = `display: flex; flex-direction: column; gap: 8px;`;
+    const statsList = document.createElement('div');
+    statsList.style.cssText = `display: flex; flex-direction: column; gap: 8px;`;
 
-    const renderKRs = () => {
-        krList.innerHTML = '';
-        formData.features.forEach((kr, idx) => {
+    const renderStats = () => {
+        statsList.innerHTML = '';
+        formData.features.forEach((stat, idx) => {
             const row = document.createElement('div');
             row.style.cssText = `display: flex; gap: 8px; align-items: center;`;
             
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = kr.name || '';
-            input.placeholder = 'Key Result description...';
-            input.style.cssText = `flex: 1; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 4px;`;
-            input.oninput = (e) => {
+            // Name input
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.value = stat.name || '';
+            nameInput.placeholder = '名称 (如: 完成率)';
+            nameInput.style.cssText = `flex: 2; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 4px;`;
+            nameInput.oninput = (e) => {
                 formData.features[idx].name = e.target.value;
-                // 确保有图标
                 if (!formData.features[idx].icon) {
-                    formData.features[idx].icon = 'fas fa-check-circle';
+                    formData.features[idx].icon = 'fas fa-chart-bar';
                 }
+            };
+
+            // Value input
+            const valueInput = document.createElement('input');
+            valueInput.type = 'text';
+            valueInput.value = stat.value || '';
+            valueInput.placeholder = '数值 (如: 85%)';
+            valueInput.style.cssText = `flex: 1; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 4px;`;
+            valueInput.oninput = (e) => {
+                formData.features[idx].value = e.target.value;
             };
             
             const delBtn = document.createElement('button');
@@ -451,23 +424,24 @@ export async function openEditCardModal(card, store) {
             delBtn.style.cssText = `color: #ff4d4f; background: none; border: none; font-size: 18px; cursor: pointer;`;
             delBtn.onclick = () => {
                 formData.features.splice(idx, 1);
-                renderKRs();
+                renderStats();
             };
             
-            row.appendChild(input);
+            row.appendChild(nameInput);
+            row.appendChild(valueInput);
             row.appendChild(delBtn);
-            krList.appendChild(row);
+            statsList.appendChild(row);
         });
     };
 
-    addKrBtn.onclick = () => {
-        formData.features.push({ name: '', icon: 'fas fa-check-circle' });
-        renderKRs();
+    addStatBtn.onclick = () => {
+        formData.features.push({ name: '', value: '', icon: 'fas fa-chart-bar' });
+        renderStats();
     };
 
-    renderKRs();
-    krGroup.appendChild(krList);
-    form.appendChild(krGroup);
+    renderStats();
+    statsGroup.appendChild(statsList);
+    form.appendChild(statsGroup);
 
     // ==================== 底部按钮 ====================
     const footer = document.createElement('div');
@@ -517,24 +491,24 @@ export async function openEditCardModal(card, store) {
       e.preventDefault();
       
       if (!formData.title.trim()) {
-        showError('请输入 OKR 目标');
+        showError('请输入标题');
         return;
       }
 
-      // 过滤空的 KR
-      formData.features = formData.features.filter(kr => kr.name && kr.name.trim());
+      // 过滤空的 Stats
+      formData.features = formData.features.filter(stat => stat.name && stat.name.trim());
 
       try {
         // 更新卡片数据
         await store.updateCard(card.key || card.id, {
             ...formData,
-            // 保持 OKR 特定字段
-            icon: formData.icon || 'fas fa-bullseye',
-            badge: `${formData.year} ${formData.quarter}`,
+            icon: formData.icon || 'fas fa-cube',
+            // 移除 badge
+            badge: '',
             hint: formData.hint || '点击查看详情'
         });
         
-        showSuccess('OKR 卡片已更新');
+        showSuccess('卡片已更新');
         closeModal();
         
         // 刷新列表

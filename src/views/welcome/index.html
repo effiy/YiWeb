@@ -71,10 +71,10 @@
                                 @click="handleCreateCard"
                                 class="create-card-btn"
                                 type="button"
-                                title="创建 OKR 卡片"
-                                aria-label="创建 OKR 卡片">
+                                title="创建新卡片"
+                                aria-label="创建新卡片">
                                 <i class="fas fa-plus" aria-hidden="true"></i>
-                                <span>新建 OKR 卡片</span>
+                                <span>新建卡片</span>
                             </button>
                         </li>
                         
@@ -139,13 +139,15 @@
                                         <i :class="card.icon" :aria-label="card.title + '图标'"></i>
                                     </span>
                                     <div class="card-actions">
-                                        <span
+                                        <button
                                             type="button"
-                                            class="card-badge" 
-                                            @click="editCard(card, $event)"
-                                            :title="'点击编辑卡片内容'"
-                                            aria-label="编辑卡片内容"
-                                        >{{ card.badge }}</span>
+                                            class="card-action-btn edit-btn" 
+                                            @click.stop="editCard(card, $event)"
+                                            title="编辑卡片"
+                                            aria-label="编辑卡片"
+                                        >
+                                            <i class="fas fa-edit"></i>
+                                        </button>
                                     </div>
                                 </header>
                                 <section class="card-content">
@@ -168,12 +170,20 @@
                                         <i :class="card.icon" aria-hidden="true"></i> {{ card.title }}
                                     </h3>
                                     <p class="card-description">{{ card.description }}</p>
-                                    <ul class="card-features" aria-label="Key Results (关键结果)">
+                                    <ul class="card-features" aria-label="功能特性">
                                         <li class="feature-tag" v-for="(feature, fidx) in card.features" :key="fidx">
                                             <span class="feature-content" @click="navigateToTasks(card, feature, $event)">
                                                 <i :class="feature.icon"></i> {{ feature.name }}
+                                                <span v-if="feature.value" class="feature-value">{{ feature.value }}</span>
                                             </span>
                                             
+                                        </li>
+                                    </ul>
+                                    <!-- 统计数据 -->
+                                    <ul class="card-stats" v-if="card.stats && card.stats.length > 0" aria-label="统计数据">
+                                        <li class="stat-item" v-for="(stat, sidx) in card.stats" :key="sidx">
+                                            <span class="stat-number">{{ stat.number }}</span>
+                                            <span class="stat-label">{{ stat.label }}</span>
                                         </li>
                                     </ul>
                                 </section>
