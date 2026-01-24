@@ -5,72 +5,277 @@
     left: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    background: rgba(0, 0, 0, 0.8);
+    padding: 24px;
+    background: rgba(2, 6, 23, 0.78);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     z-index: 10000;
-    -webkit-backdrop-filter: blur(5px);
-    backdrop-filter: blur(5px);
-    animation: modalFadeIn 0.3s ease-out;
-    overflow: hidden;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    animation: modalFadeIn 0.25s ease-out;
+    overflow: auto;
 }
 
 .edit-card-content {
     position: relative;
-    background: var(--bg-primary, #1a1a1a);
-    border: 1px solid var(--border-primary, #333);
-    border-radius: 12px;
-    max-width: min(90vw, 800px);
-    max-height: min(90vh, 600px);
-    width: 100%;
-    overflow: auto;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(2, 6, 23, 0.92) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 16px;
+    width: min(920px, 100%);
+    max-height: min(92vh, 760px);
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
     color: var(--text-primary, #fff);
-    animation: modalSlideIn 0.3s ease-out;
-    /* 确保弹框始终居中 */
-    margin: auto;
-    /* 防止内容溢出 */
+    animation: modalSlideIn 0.25s ease-out;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
 
-/* 弹框内容滚动条样式 */
-.edit-card-content::-webkit-scrollbar {
+.edit-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    background: linear-gradient(135deg, rgba(51, 65, 85, 0.45) 0%, rgba(2, 6, 23, 0.35) 100%);
+}
+
+.edit-card-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-primary, #fff);
+    min-width: 0;
+}
+
+.edit-card-header .card-name {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    color: rgba(226, 232, 240, 0.95);
+    max-width: 40ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.edit-card-close {
+    margin-left: auto;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 10px;
+    background: rgba(148, 163, 184, 0.12);
+    color: rgba(226, 232, 240, 0.95);
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.edit-card-close:hover {
+    background: rgba(148, 163, 184, 0.18);
+    border-color: rgba(148, 163, 184, 0.28);
+    transform: translateY(-1px);
+}
+
+.edit-card-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px 18px 18px;
+    overflow: auto;
+}
+
+.edit-card-form::-webkit-scrollbar {
     width: 8px;
 }
 
-.edit-card-content::-webkit-scrollbar-track {
+.edit-card-form::-webkit-scrollbar-track {
     background: var(--bg-secondary, #2a2a2a);
     border-radius: 4px;
 }
 
-.edit-card-content::-webkit-scrollbar-thumb {
+.edit-card-form::-webkit-scrollbar-thumb {
     background: var(--border-primary, #333);
     border-radius: 4px;
 }
 
-.edit-card-content::-webkit-scrollbar-thumb:hover {
+.edit-card-form::-webkit-scrollbar-thumb:hover {
     background: var(--primary, #007bff);
 }
 
-/* 编辑卡片模态框标题样式优化 */
-.edit-card-content h3 {
-    position: sticky;
-    top: 0;
-    background: linear-gradient(135deg, 
-        var(--bg-primary, #1a1a1a) 0%, 
-        var(--bg-secondary, #2a2a2a) 100%);
-    z-index: 20;
-    margin: 0 0 24px 0;
-    color: var(--text-primary, #fff);
-    font-size: 22px;
-    font-weight: 700;
-    padding: 20px 24px;
-    border-radius: 8px 8px 0 0;
-    border: none;
-    position: relative;
-    overflow: hidden;
-    letter-spacing: 0.5px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+.edit-card-section {
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    background: rgba(15, 23, 42, 0.35);
+    border-radius: 14px;
+    padding: 14px;
     display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.edit-card-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.edit-card-section-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(226, 232, 240, 0.95);
+    letter-spacing: 0.2px;
+}
+
+.edit-card-fields {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.edit-card-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.edit-card-field.full {
+    grid-column: 1 / -1;
+}
+
+.edit-card-label {
+    font-size: 12px;
+    color: rgba(148, 163, 184, 0.9);
+    font-weight: 600;
+}
+
+.edit-card-input,
+.edit-card-textarea {
+    width: 100%;
+    background: rgba(2, 6, 23, 0.35);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 10px;
+    color: var(--text-primary, #fff);
+    padding: 10px 12px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    box-sizing: border-box;
+}
+
+.edit-card-textarea {
+    resize: vertical;
+    min-height: 92px;
+}
+
+.edit-card-input:focus,
+.edit-card-textarea:focus {
+    border-color: rgba(59, 130, 246, 0.55);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+    background: rgba(2, 6, 23, 0.55);
+}
+
+.edit-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.edit-card-row {
+    display: grid;
+    grid-template-columns: 1fr 140px 36px;
+    gap: 10px;
+    align-items: center;
+}
+
+.edit-card-row-delete {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.10);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: rgba(248, 113, 113, 0.95);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.edit-card-row-delete:hover {
+    background: rgba(239, 68, 68, 0.16);
+    border-color: rgba(239, 68, 68, 0.35);
+    transform: translateY(-1px);
+}
+
+.edit-card-footer {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 12px 18px 16px;
+    margin: 6px -18px -18px;
+    background: linear-gradient(180deg, rgba(2, 6, 23, 0) 0%, rgba(2, 6, 23, 0.85) 35%, rgba(2, 6, 23, 0.95) 100%);
+    border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.edit-card-footer .btn {
+    min-height: 40px;
+}
+
+@media (min-width: 720px) {
+    .edit-card-fields {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    .edit-card-modal {
+        padding: 14px;
+    }
+    .edit-card-row {
+        grid-template-columns: 1fr;
+    }
+    .edit-card-row-delete {
+        justify-self: end;
+    }
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }

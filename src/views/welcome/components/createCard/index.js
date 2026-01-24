@@ -80,12 +80,6 @@ export async function openCreateCardModal(store) {
 
     const header = document.createElement('header');
     header.className = 'edit-card-header';
-    header.style.cssText = `
-      display: flex;
-      align-items: center;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border-primary, #333);
-    `;
 
     const modalTitle = document.createElement('h3');
     modalTitle.innerHTML = `<span>新建卡片</span>`;
@@ -97,186 +91,117 @@ export async function openCreateCardModal(store) {
     closeButton.setAttribute('aria-label', '关闭');
     closeButton.title = '关闭';
     closeButton.innerHTML = '&times;';
-    closeButton.style.cssText = `
-      margin-left: auto;
-      width: 32px;
-      height: 32px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border: none;
-      border-radius: 6px;
-      background: transparent;
-      color: var(--text-primary, #fff);
-      cursor: pointer;
-      font-size: 20px;
-      line-height: 1;
-      transition: all 0.2s ease;
-    `;
-    closeButton.addEventListener('mouseenter', () => {
-      closeButton.style.background = 'rgba(255,255,255,0.06)';
-    }, { passive: true });
-    closeButton.addEventListener('mouseleave', () => {
-      closeButton.style.background = 'transparent';
-    }, { passive: true });
-    closeButton.addEventListener('click', closeModal);
+    addPassiveEventListener(closeButton, 'click', closeModal);
 
     header.appendChild(modalTitle);
     header.appendChild(closeButton);
 
     // 表单
     const form = document.createElement('form');
-    form.style.cssText = `
-      display: flex;
-      flex-direction: column;
-      padding: 0 20px 20px;
-      gap: 16px;
-    `;
+    form.className = 'edit-card-form';
 
     const formData = {
       title: '',
       description: '',
       icon: 'fas fa-cube',
       hint: '点击查看详情',
-      features: [],
       stats: [],
       tags: []
     };
 
-    // --- Basic Fields ---
+    const createField = (labelText, inputEl, options = {}) => {
+      const field = document.createElement('div');
+      field.className = options.full ? 'edit-card-field full' : 'edit-card-field';
+      const label = document.createElement('label');
+      label.className = 'edit-card-label';
+      label.textContent = labelText;
+      field.appendChild(label);
+      field.appendChild(inputEl);
+      return field;
+    };
+
+    const basicSection = document.createElement('section');
+    basicSection.className = 'edit-card-section';
+
+    const basicHeader = document.createElement('div');
+    basicHeader.className = 'edit-card-section-header';
+
+    const basicTitle = document.createElement('h4');
+    basicTitle.className = 'edit-card-section-title';
+    basicTitle.textContent = '基础信息';
+
+    basicHeader.appendChild(basicTitle);
+    basicSection.appendChild(basicHeader);
+
     const basicFields = document.createElement('div');
-    basicFields.style.cssText = `display: flex; flex-direction: column; gap: 12px;`;
+    basicFields.className = 'edit-card-fields';
 
-    // Title
-    const titleGroup = createFieldGroup('Card Title (卡片标题)', '输入标题...', 'text', (val) => formData.title = val);
-    
-    // Description
-    const descGroup = createFieldGroup('Description (描述)', '输入描述...', 'textarea', (val) => formData.description = val);
+    const titleInput = document.createElement('input');
+    titleInput.type = 'text';
+    titleInput.value = formData.title || '';
+    titleInput.placeholder = '卡片标题';
+    titleInput.required = true;
+    titleInput.className = 'edit-card-input';
+    titleInput.oninput = (e) => formData.title = e.target.value;
 
-    const iconGroup = createFieldGroup('Icon Class (图标类名)', '例如：fas fa-cube', 'text', (val) => formData.icon = val);
-    const hintGroup = createFieldGroup('Hint (提示文案)', '例如：点击查看详情', 'text', (val) => formData.hint = val);
+    const descInput = document.createElement('textarea');
+    descInput.value = formData.description || '';
+    descInput.placeholder = '描述';
+    descInput.rows = 3;
+    descInput.className = 'edit-card-textarea';
+    descInput.oninput = (e) => formData.description = e.target.value;
 
-    basicFields.appendChild(titleGroup);
-    basicFields.appendChild(descGroup);
-    basicFields.appendChild(iconGroup);
-    basicFields.appendChild(hintGroup);
+    const iconInput = document.createElement('input');
+    iconInput.type = 'text';
+    iconInput.value = formData.icon || '';
+    iconInput.placeholder = '图标类名（如：fas fa-cube）';
+    iconInput.className = 'edit-card-input';
+    iconInput.oninput = (e) => formData.icon = e.target.value;
 
-    const featuresContainer = document.createElement('div');
-    featuresContainer.style.cssText = `margin-top: 8px; border-top: 1px solid var(--border-primary, #333); padding-top: 16px;`;
+    const hintInput = document.createElement('input');
+    hintInput.type = 'text';
+    hintInput.value = formData.hint || '';
+    hintInput.placeholder = '提示文案（如：点击查看详情）';
+    hintInput.className = 'edit-card-input';
+    hintInput.oninput = (e) => formData.hint = e.target.value;
 
-    const featuresHeader = document.createElement('div');
-    featuresHeader.style.cssText = `display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;`;
-    featuresHeader.innerHTML = `<h4 style="margin:0; font-size:14px;">Features (功能特性)</h4>`;
+    basicFields.appendChild(createField('卡片标题', titleInput, { full: true }));
+    basicFields.appendChild(createField('描述', descInput, { full: true }));
+    basicFields.appendChild(createField('图标类名', iconInput));
+    basicFields.appendChild(createField('提示文案', hintInput));
 
-    const addFeatureBtn = document.createElement('button');
-    addFeatureBtn.type = 'button';
-    addFeatureBtn.textContent = '+ 添加特性';
-    addFeatureBtn.style.cssText = `padding: 4px 8px; font-size: 12px; cursor: pointer; background: var(--primary-color, #007bff); color: white; border: none; border-radius: 4px;`;
+    basicSection.appendChild(basicFields);
+    form.appendChild(basicSection);
 
-    const featuresList = document.createElement('div');
-    featuresList.style.cssText = `display: flex; flex-direction: column; gap: 10px;`;
-
-    const renderFeatures = () => {
-      featuresList.innerHTML = '';
-      formData.features.forEach((feature, idx) => {
-        const item = document.createElement('div');
-        item.style.cssText = `display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--border-primary, #333); border-radius: 8px; background: rgba(255,255,255,0.02);`;
-
-        const row1 = document.createElement('div');
-        row1.style.cssText = `display: flex; gap: 8px; align-items: center;`;
-
-        const iconInput = document.createElement('input');
-        iconInput.type = 'text';
-        iconInput.value = feature.icon || '';
-        iconInput.placeholder = 'icon (fas fa-...)';
-        iconInput.style.cssText = `flex: 1.2; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px;`;
-        iconInput.oninput = (e) => {
-          formData.features[idx].icon = e.target.value;
-        };
-
-        const nameInput = document.createElement('input');
-        nameInput.type = 'text';
-        nameInput.value = feature.name || '';
-        nameInput.placeholder = '名称 (如: 需求拆解)';
-        nameInput.style.cssText = `flex: 1.6; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px;`;
-        nameInput.oninput = (e) => {
-          formData.features[idx].name = e.target.value;
-          if (!formData.features[idx].icon) formData.features[idx].icon = 'fas fa-bolt';
-        };
-
-        const valueInput = document.createElement('input');
-        valueInput.type = 'text';
-        valueInput.value = feature.value || '';
-        valueInput.placeholder = 'value (可选)';
-        valueInput.style.cssText = `flex: 1; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px;`;
-        valueInput.oninput = (e) => {
-          formData.features[idx].value = e.target.value;
-        };
-
-        const delBtn = document.createElement('button');
-        delBtn.type = 'button';
-        delBtn.innerHTML = '&times;';
-        delBtn.style.cssText = `width: 28px; height: 28px; color: #ff4d4f; background: none; border: none; font-size: 20px; cursor: pointer; line-height: 1;`;
-        delBtn.onclick = () => {
-          formData.features.splice(idx, 1);
-          renderFeatures();
-        };
-
-        row1.appendChild(iconInput);
-        row1.appendChild(nameInput);
-        row1.appendChild(valueInput);
-        row1.appendChild(delBtn);
-
-        const descInput = document.createElement('textarea');
-        descInput.rows = 2;
-        descInput.value = feature.desc || '';
-        descInput.placeholder = '描述 (如: 本特性会生成对应的任务列表)';
-        descInput.style.cssText = `padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px; resize: vertical; font-family: inherit;`;
-        descInput.oninput = (e) => {
-          formData.features[idx].desc = e.target.value;
-        };
-
-        item.appendChild(row1);
-        item.appendChild(descInput);
-        featuresList.appendChild(item);
-      });
-    };
-
-    addFeatureBtn.onclick = () => {
-      formData.features.push({ name: '', icon: 'fas fa-bolt', desc: '', value: '' });
-      renderFeatures();
-    };
-
-    featuresHeader.appendChild(addFeatureBtn);
-    featuresContainer.appendChild(featuresHeader);
-    featuresContainer.appendChild(featuresList);
-
-    const statsContainer = document.createElement('div');
-    statsContainer.style.cssText = `margin-top: 8px; border-top: 1px solid var(--border-primary, #333); padding-top: 16px;`;
+    const statsContainer = document.createElement('section');
+    statsContainer.className = 'edit-card-section';
 
     const statsHeader = document.createElement('div');
-    statsHeader.style.cssText = `display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;`;
-    statsHeader.innerHTML = `<h4 style="margin:0; font-size:14px;">Statistics (统计数据)</h4>`;
+    statsHeader.className = 'edit-card-section-header';
+
+    const statsTitle = document.createElement('h4');
+    statsTitle.className = 'edit-card-section-title';
+    statsTitle.textContent = '统计数据';
 
     const addStatBtn = document.createElement('button');
     addStatBtn.type = 'button';
-    addStatBtn.textContent = '+ 添加统计';
-    addStatBtn.style.cssText = `padding: 4px 8px; font-size: 12px; cursor: pointer; background: var(--primary-color, #007bff); color: white; border: none; border-radius: 4px;`;
+    addStatBtn.textContent = '+ 添加';
+    addStatBtn.className = 'btn btn-small btn-secondary';
 
     const statsList = document.createElement('div');
-    statsList.style.cssText = `display: flex; flex-direction: column; gap: 8px;`;
+    statsList.className = 'edit-card-list';
 
     const renderStats = () => {
       statsList.innerHTML = '';
       formData.stats.forEach((stat, idx) => {
         const row = document.createElement('div');
-        row.style.cssText = `display: flex; gap: 8px; align-items: center;`;
+        row.className = 'edit-card-row';
 
         const labelInput = document.createElement('input');
         labelInput.type = 'text';
         labelInput.value = stat.label || '';
-        labelInput.placeholder = 'label (如: 完成率)';
-        labelInput.style.cssText = `flex: 2; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px;`;
+        labelInput.placeholder = '名称（如：完成率）';
+        labelInput.className = 'edit-card-input';
         labelInput.oninput = (e) => {
           formData.stats[idx].label = e.target.value;
         };
@@ -284,8 +209,8 @@ export async function openCreateCardModal(store) {
         const numberInput = document.createElement('input');
         numberInput.type = 'text';
         numberInput.value = stat.number || '';
-        numberInput.placeholder = 'number (如: 85%)';
-        numberInput.style.cssText = `flex: 1; padding: 8px; background: var(--bg-primary, #1a1a1a); border: 1px solid var(--border-secondary, #444); color: white; border-radius: 6px;`;
+        numberInput.placeholder = '数值（如：85%）';
+        numberInput.className = 'edit-card-input';
         numberInput.oninput = (e) => {
           formData.stats[idx].number = e.target.value;
         };
@@ -293,7 +218,7 @@ export async function openCreateCardModal(store) {
         const delBtn = document.createElement('button');
         delBtn.type = 'button';
         delBtn.innerHTML = '&times;';
-        delBtn.style.cssText = `width: 28px; height: 28px; color: #ff4d4f; background: none; border: none; font-size: 20px; cursor: pointer; line-height: 1;`;
+        delBtn.className = 'edit-card-row-delete';
         delBtn.onclick = () => {
           formData.stats.splice(idx, 1);
           renderStats();
@@ -311,25 +236,26 @@ export async function openCreateCardModal(store) {
       renderStats();
     };
 
+    statsHeader.appendChild(statsTitle);
     statsHeader.appendChild(addStatBtn);
     statsContainer.appendChild(statsHeader);
     statsContainer.appendChild(statsList);
+    form.appendChild(statsContainer);
 
     // --- Footer Buttons ---
     const footer = document.createElement('div');
     footer.className = 'edit-card-footer';
-    footer.style.cssText = `display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-primary, #333);`;
 
     const cancelBtn = document.createElement('button');
     cancelBtn.type = 'button';
     cancelBtn.textContent = '取消';
-    cancelBtn.className = 'btn-secondary';
-    cancelBtn.onclick = closeModal;
+    cancelBtn.className = 'btn btn-secondary';
+    addPassiveEventListener(cancelBtn, 'click', closeModal);
 
     const saveBtn = document.createElement('button');
     saveBtn.type = 'submit';
-    saveBtn.textContent = '创建卡片';
-    saveBtn.className = 'btn-primary';
+    saveBtn.textContent = '创建';
+    saveBtn.className = 'btn btn-primary';
 
     form.onsubmit = async (e) => {
         e.preventDefault();
@@ -340,15 +266,6 @@ export async function openCreateCardModal(store) {
         }
 
         try {
-            const cleanFeatures = (formData.features || [])
-              .filter(f => f && f.name && f.name.trim())
-              .map(f => ({
-                name: f.name.trim(),
-                icon: (f.icon || 'fas fa-bolt').trim(),
-                desc: (f.desc || '').trim(),
-                value: (f.value || '').trim()
-              }));
-
             const cleanStats = (formData.stats || [])
               .filter(s => s && ((s.label && s.label.trim()) || (s.number && s.number.trim())))
               .map(s => ({
@@ -360,7 +277,7 @@ export async function openCreateCardModal(store) {
             const newCard = {
                 title: formData.title,
                 description: formData.description,
-                features: cleanFeatures,
+                features: [],
                 tags: formData.tags,
                 icon: (formData.icon || 'fas fa-cube').trim(),
                 badge: '',
@@ -396,9 +313,6 @@ export async function openCreateCardModal(store) {
     footer.appendChild(saveBtn);
 
     // Assembly
-    form.appendChild(basicFields);
-    form.appendChild(featuresContainer);
-    form.appendChild(statsContainer);
     form.appendChild(footer);
 
     modalContent.appendChild(header);
@@ -408,12 +322,10 @@ export async function openCreateCardModal(store) {
     document.body.appendChild(modal);
     lockScroll();
 
-    renderFeatures();
     renderStats();
 
     setTimeout(() => {
-      const input = titleGroup.querySelector('input');
-      if (input) input.focus();
+      titleInput.focus();
     }, 0);
 
     const handleEsc = (e) => {
@@ -429,31 +341,4 @@ export async function openCreateCardModal(store) {
     console.error('[CreateCardPlugin] 打开弹框失败:', error);
     showError('无法打开新建卡片弹框');
   }
-}
-
-function createFieldGroup(label, placeholder, type, onChange) {
-    const group = document.createElement('div');
-    group.style.cssText = `display: flex; flex-direction: column; gap: 4px;`;
-    
-    const lbl = document.createElement('label');
-    lbl.textContent = label;
-    lbl.style.cssText = `font-size: 12px; color: var(--text-secondary, #ccc); font-weight: 600;`;
-    
-    let input;
-    if (type === 'textarea') {
-        input = document.createElement('textarea');
-        input.rows = 3;
-    } else {
-        input = document.createElement('input');
-        input.type = type;
-    }
-    
-    input.placeholder = placeholder;
-    input.style.cssText = `padding: 10px; border-radius: 6px; background: var(--bg-secondary, #2a2a2a); color: var(--text-primary, #fff); border: 1px solid var(--border-primary, #333); width: 100%; box-sizing: border-box;`;
-    
-    input.oninput = (e) => onChange(e.target.value);
-    
-    group.appendChild(lbl);
-    group.appendChild(input);
-    return group;
 }

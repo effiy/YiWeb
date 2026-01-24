@@ -170,15 +170,6 @@
                                         <i :class="card.icon" aria-hidden="true"></i> {{ card.title }}
                                     </h3>
                                     <p class="card-description">{{ card.description }}</p>
-                                    <ul class="card-features" aria-label="功能特性">
-                                        <li class="feature-tag" v-for="(feature, fidx) in card.features" :key="fidx">
-                                            <span class="feature-content" @click="navigateToTasks(card, feature, $event)">
-                                                <i :class="feature.icon"></i> {{ feature.name }}
-                                                <span v-if="feature.value" class="feature-value">{{ feature.value }}</span>
-                                            </span>
-                                            
-                                        </li>
-                                    </ul>
                                     <!-- 统计数据 -->
                                     <ul class="card-stats" v-if="card.stats && card.stats.length > 0" aria-label="统计数据">
                                         <li class="stat-item" v-for="(stat, sidx) in card.stats" :key="sidx">
@@ -227,7 +218,6 @@
     <script type="module" src="../../utils/performance.js"></script>
 </body>
 </html>
-
 
 
 
