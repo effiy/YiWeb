@@ -70,7 +70,8 @@
                 
                 <!-- 评论标记 -->
                 <div v-if="lineCommentMarkers[index + 1]" class="comment-markers">
-                    <div 
+                    <button 
+                        type="button"
                         class="comment-marker"
                         :class="[
                             getCommentStatusClass(lineCommentMarkers[index + 1]?.status), 
@@ -87,14 +88,12 @@
                         @mouseenter="handleCommentMarkerMouseEvents(lineCommentMarkers[index + 1], $event)"
                         @mouseleave="handleCommentMarkerMouseEvents(lineCommentMarkers[index + 1], $event)"
                         :title="getCommentMarkerTitle(lineCommentMarkers[index + 1])"
-                        role="button"
-                        tabindex="0"
                     >
                         <i :class="getCommentMarkerIcon(lineCommentMarkers[index + 1])"></i>
                         <span class="comment-count" v-if="lineCommentMarkers[index + 1]?.count > 1 && lineCommentMarkers[index + 1]?.markerType !== 'middle'">
                             {{ lineCommentMarkers[index + 1]?.count }}
                         </span>
-                    </div>
+                    </button>
                 </div>
             </code>
         </pre>

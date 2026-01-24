@@ -4,6 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="代码审查助手，支持文件树浏览、评论标注、会话管理与导出">
+    <meta name="keywords" content="代码审查, AI, 代码评审, 文件树, 评论, YiWeb">
+    <meta name="author" content="liangliang">
     <title>YiWeb - 代码审查</title>
     <link rel="stylesheet" href="../../views/aicr/index.css">
     <link rel="stylesheet" href="../../views/aicr/components/sessionList/index.css">
@@ -24,9 +27,9 @@
         <header class="header-row" role="banner">
             <section class="search-row">
                 <form class="search-box" role="search" aria-label="代码审查搜索">
-                    <span class="search-logo" aria-hidden="true" @click="openLink('/index.html')">
-                        <i class="fas fa-globe" aria-label="代码审查图标"></i>
-                    </span>
+                    <button type="button" class="search-logo" @click="openLink('/index.html')" aria-label="打开首页">
+                        <i class="fas fa-globe" aria-hidden="true"></i>
+                    </button>
                     <div class="search-input-wrapper">
                         <label for="messageInput" class="visually-hidden">搜索输入框</label>
                         <textarea id="messageInput" placeholder="搜索网站、标签或描述..." rows="1" maxlength="2000"
@@ -73,10 +76,10 @@
             </button>
 
             <!-- 侧边栏收起按钮 (展开时显示，跟随侧边栏宽度) -->
-            <div class="file-tree-toggle" v-show="!sidebarCollapsed" @click="toggleSidebar" title="收起侧边栏"
+            <button type="button" class="file-tree-toggle" v-show="!sidebarCollapsed" @click="toggleSidebar" title="收起侧边栏"
                 :style="{ left: ((viewMode === 'tree' ? sidebarWidth : sessionSidebarWidth) - 14) + 'px', right: 'auto' }">
-                <i class="fas fa-chevron-left"></i>
-            </div>
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+            </button>
 
             <aside class="aicr-sidebar" aria-label="侧边栏" v-show="!sidebarCollapsed"
                 :style="{ width: (viewMode === 'tree' ? sidebarWidth : sessionSidebarWidth) + 'px' }">
@@ -793,10 +796,10 @@
             </aside>
 
             <!-- 评论区收起按钮 (展开时显示，跟随评论区宽度) -->
-            <div class="comments-toggle" v-show="viewMode === 'tree' && !commentsCollapsed" @click="toggleComments"
+            <button type="button" class="comments-toggle" v-show="viewMode === 'tree' && !commentsCollapsed" @click="toggleComments"
                 title="收起评论区" :style="{ right: (commentsWidth - 14) + 'px', left: 'auto' }">
-                <i class="fas fa-chevron-right"></i>
-            </div>
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </button>
 
             <!-- 评论区收起后的展开把手 -->
             <button type="button" class="comments-expand-handle" v-show="viewMode === 'tree' && commentsCollapsed"

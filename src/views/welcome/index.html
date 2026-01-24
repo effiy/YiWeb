@@ -29,9 +29,9 @@
         <header class="header-row" role="banner">
             <section class="search-row">
                 <form class="search-box" role="search" aria-label="智能助手搜索">
-                    <span class="search-logo" aria-hidden="true" @click="openLink('../../views/news/index.html')">
-                        <i class="fas fa-rss" aria-label="资讯图标"></i>
-                    </span>
+                    <button type="button" class="search-logo" @click="openLink('../../views/news/index.html')" aria-label="打开新闻助手">
+                        <i class="fas fa-rss" aria-hidden="true"></i>
+                    </button>
                     <div class="search-input-wrapper">
                         <label for="messageInput" class="visually-hidden">搜索输入框</label>
                         <textarea 
@@ -151,24 +151,21 @@
                                     </div>
                                 </header>
                                 <section class="card-content">
-                                    <h3 
+                                    <button 
                                         class="card-title" 
                                         @click="handleCardTitleClick(card, null, $event)"
-                                        @keydown.enter="handleCardTitleClick(card, null, $event)"
-                                        @keydown.space.prevent="handleCardTitleClick(card, null, $event)"
                                         @mousedown="handleCardTitleMouseDown($event)"
                                         @mouseup="handleCardTitleMouseUp($event)"
                                         @mouseleave="handleCardTitleMouseUp($event)"
                                         @touchstart="handleCardTitleTouchStart($event)"
                                         @touchend="handleCardTitleTouchEnd($event)"
                                         @touchcancel="handleCardTitleTouchEnd($event)"
-                                        tabindex="0"
-                                        role="button"
+                                        type="button"
                                         :aria-label="'打开' + card.title + '的任务列表'"
                                         :title="'点击打开' + card.title + '的任务列表'"
                                     >
                                         <i :class="card.icon" aria-hidden="true"></i> {{ card.title }}
-                                    </h3>
+                                    </button>
                                     <p class="card-description">{{ card.description }}</p>
                                     <!-- 统计数据 -->
                                     <ul class="card-stats" v-if="card.stats && card.stats.length > 0" aria-label="统计数据">
@@ -218,7 +215,6 @@
     <script type="module" src="../../utils/performance.js"></script>
 </body>
 </html>
-
 
 
 

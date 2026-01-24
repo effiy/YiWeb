@@ -7,14 +7,14 @@
             <span>{{ currentTimeSlot?.config?.name || '时间段追踪' }}</span>
         </div>
         <div class="time-slot-status">
-            <div class="status-indicator" :class="{ tracking: isTracking }"></div>
+            <div class="status-indicator" :class="{ tracking: isTracking }" aria-hidden="true"></div>
             <span>{{ isTracking ? '追踪中' : '待开始' }}</span>
         </div>
     </div>
 
     <!-- 时间段描述 -->
     <div class="time-slot-description" v-if="currentTimeSlot?.config?.description">
-        <p style="color: rgba(255, 255, 255, 0.9); margin-bottom: 15px;">
+        <p class="time-slot-description-text">
             {{ currentTimeSlot.config.description }}
         </p>
     </div>
@@ -23,15 +23,18 @@
     <div class="time-slot-tasks" v-if="currentTimeSlot?.config?.tasks">
         <h4>📋 任务清单</h4>
         <div class="task-checklist">
-            <div 
+            <button
+                type="button"
                 v-for="(task, index) in currentTimeSlot.config.tasks" 
                 :key="index"
                 class="task-item"
                 @click="toggleTask(index)"
+                :aria-pressed="completedTasks.has(index)"
+                :aria-label="`切换任务：${task}`"
             >
-                <div class="task-checkbox" :class="{ checked: completedTasks.has(index) }"></div>
+                <span class="task-checkbox" :class="{ checked: completedTasks.has(index) }" aria-hidden="true"></span>
                 <span>{{ task }}</span>
-            </div>
+            </button>
         </div>
     </div>
 
@@ -46,15 +49,18 @@
             >
                 <label class="metric-label" :for="`metric-${key}`">{{ metric.label }}</label>
                 <div v-if="metric.type === 'rating'" class="rating-input">
-                    <span 
+                    <button
+                        type="button"
                         v-for="i in metric.max" 
                         :key="i"
                         class="rating-star"
                         :class="{ active: trackingMetrics[key] >= i }"
                         @click="updateRating(key, i)"
+                        :aria-label="`${metric.label} 评分 ${i}/${metric.max}`"
+                        :aria-pressed="trackingMetrics[key] >= i"
                     >
                         {{ metric.unit }}
-                    </span>
+                    </button>
                 </div>
                 <input 
                     v-else
@@ -141,11 +147,13 @@
 <div id="time-slot-selector" class="time-slot-selector" v-if="showTimeSlotSelector">
     <h3>选择要追踪的时间段</h3>
     <div class="time-slot-options">
-        <div 
+        <button
+            type="button"
             v-for="(config, timeRange) in allTimeSlotConfigs" 
             :key="timeRange"
             class="time-slot-option"
             @click="selectTimeSlot(timeRange)"
+            :aria-label="`选择时间段：${config.name}（${timeRange}）`"
         >
             <div class="option-icon">{{ config.icon }}</div>
             <div class="option-content">
@@ -153,7 +161,6 @@
                 <div class="option-time">{{ timeRange }}</div>
                 <div class="option-description">{{ config.description }}</div>
             </div>
-        </div>
+        </button>
     </div>
 </div>
-
