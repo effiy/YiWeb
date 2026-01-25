@@ -1309,9 +1309,12 @@ window.renderMermaidDiagram = function(diagramId, code, callback) {
                     try {
                         // 获取父容器的最大宽度（考虑 padding）
                         const parent = mermaidDiv.parentElement;
-                        const maxContainerWidth = parent 
+                        let maxContainerWidth = parent 
                             ? parent.clientWidth - 32 // 减去 padding 和边距
                             : window.innerWidth - 100;
+                        
+                        // 确保 maxContainerWidth 至少为 100，避免负数或过小的值
+                        maxContainerWidth = Math.max(maxContainerWidth, 100);
                         
                         let svgWidth, svgHeight;
                         
@@ -1350,6 +1353,10 @@ window.renderMermaidDiagram = function(diagramId, code, callback) {
                             svgHeight = svg.clientHeight || svg.offsetHeight || svg.scrollHeight;
                         }
                         
+                        // 确保 svgWidth 和 svgHeight 是有效的正数
+                        svgWidth = Math.max(0, svgWidth || 0);
+                        svgHeight = Math.max(0, svgHeight || 0);
+                        
                         if (svgWidth > 0 && svgHeight > 0) {
                             // 确保 SVG 有 viewBox（用于响应式缩放）
                             if (!svg.getAttribute("viewBox")) {
@@ -1357,14 +1364,17 @@ window.renderMermaidDiagram = function(diagramId, code, callback) {
                             }
                             
                             // 如果 SVG 宽度超过容器，进行缩放
-                            if (svgWidth > maxContainerWidth) {
+                            if (svgWidth > maxContainerWidth && maxContainerWidth > 0) {
                                 const scale = maxContainerWidth / svgWidth;
                                 svgWidth = maxContainerWidth;
                                 svgHeight = svgHeight * scale;
-                                svg.setAttribute("width", svgWidth);
-                                svg.setAttribute("height", svgHeight);
-                            } else {
-                                // 保持原始尺寸
+                                // 再次确保计算后的值不为负数
+                                svgWidth = Math.max(0, svgWidth);
+                                svgHeight = Math.max(0, svgHeight);
+                            }
+                            
+                            // 只有在值有效时才设置属性
+                            if (svgWidth > 0 && svgHeight > 0) {
                                 svg.setAttribute("width", svgWidth);
                                 svg.setAttribute("height", svgHeight);
                             }
