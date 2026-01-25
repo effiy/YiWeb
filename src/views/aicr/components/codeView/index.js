@@ -3037,8 +3037,8 @@ const componentOptions = {
                 this.calculateQuickCommentPosition(referenceRect);
             } else {
                 // 没有参考位置时使用视口中心
-                const defaultWidth = this.quickCommentPositionData.width || 440;
-                const defaultHeight = this.quickCommentPositionData.height || 400;
+                const defaultWidth = this.quickCommentPositionData.width || 600;
+                const defaultHeight = this.quickCommentPositionData.height || 450;
                 this.quickCommentPositionData = {
                     ...this.quickCommentPositionData,
                     left: Math.max(16, (window.innerWidth - defaultWidth) / 2),
@@ -3235,7 +3235,7 @@ const componentOptions = {
             const startLeft = this.quickCommentPositionData.left;
             const startTop = this.quickCommentPositionData.top;
 
-            const minWidth = 400;
+            const minWidth = 500;
             const minHeight = 300;
             const maxWidth = window.innerWidth - 32;
             const maxHeight = window.innerHeight - 32;
@@ -3995,8 +3995,8 @@ const componentOptions = {
 
         calculateQuickCommentPosition(rect) {
             const padding = 16;
-            const containerWidth = this.quickCommentPositionData.width || 440;
-            const containerHeight = this.quickCommentPositionData.height || 400;
+            const containerWidth = this.quickCommentPositionData.width || 600;
+            const containerHeight = this.quickCommentPositionData.height || 450;
             const vw = window.innerWidth || document.documentElement.clientWidth;
             const vh = window.innerHeight || document.documentElement.clientHeight;
             const minEdgeDistance = 16;

@@ -5375,7 +5375,8 @@
     z-index: 999998;
     display: none;
     flex-direction: column;
-    min-width: 400px;
+    min-width: 500px;
+    max-height: 85vh;
     background: linear-gradient(165deg, 
         rgba(24, 24, 27, 0.97) 0%, 
         rgba(39, 39, 42, 0.95) 50%, 
