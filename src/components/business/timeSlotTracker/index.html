@@ -6,8 +6,7 @@
             <span class="time-slot-icon">{{ currentTimeSlot?.config?.icon || '⏰' }}</span>
             <span>{{ currentTimeSlot?.config?.name || '时间段追踪' }}</span>
         </div>
-        <div class="time-slot-status">
-            <div class="status-indicator" :class="{ tracking: isTracking }" aria-hidden="true"></div>
+        <div class="time-slot-status" :class="{ tracking: isTracking }">
             <span>{{ isTracking ? '追踪中' : '待开始' }}</span>
         </div>
     </div>
@@ -31,8 +30,8 @@
                 @click="toggleTask(index)"
                 :aria-pressed="completedTasks.has(index)"
                 :aria-label="`切换任务：${task}`"
+                :class="{ checked: completedTasks.has(index) }"
             >
-                <span class="task-checkbox" :class="{ checked: completedTasks.has(index) }" aria-hidden="true"></span>
                 <span>{{ task }}</span>
             </button>
         </div>

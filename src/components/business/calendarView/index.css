@@ -231,21 +231,25 @@
 }
 
 .calendar-task.priority-critical {
+    --task-priority-dot: var(--error);
     border-left-color: var(--error);
     background: var(--error-50);
 }
 
 .calendar-task.priority-high {
+    --task-priority-dot: var(--warning);
     border-left-color: var(--warning);
     background: var(--warning-50);
 }
 
 .calendar-task.priority-medium {
+    --task-priority-dot: var(--info);
     border-left-color: var(--info);
     background: var(--info-50);
 }
 
 .calendar-task.priority-low {
+    --task-priority-dot: var(--success);
     border-left-color: var(--success);
     background: var(--success-50);
 }
@@ -280,11 +284,12 @@
     color: var(--text-secondary);
 }
 
-.priority-dot {
+.calendar-task:not(.priority-none) .task-meta::before {
+    content: '';
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--primary-500);
+    background: var(--task-priority-dot, var(--primary-500));
 }
 
 .due-time {
@@ -627,4 +632,3 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-

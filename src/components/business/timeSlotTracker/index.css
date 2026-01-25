@@ -53,16 +53,20 @@
     border-radius: 20px;
     color: white;
     font-size: 0.9em;
+    position: relative;
+    z-index: 0;
 }
 
-.status-indicator {
+.time-slot-status::before {
+    content: '';
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background: #4caf50;
+    pointer-events: none;
 }
 
-.status-indicator.tracking {
+.time-slot-status.tracking::before {
     background: #ff9800;
     animation: blink 1s infinite;
 }
@@ -98,6 +102,8 @@
     color: white;
     font-size: 0.9em;
     transition: all 0.3s ease;
+    position: relative;
+    z-index: 0;
 }
 
 .task-item:hover {
@@ -105,7 +111,8 @@
     transform: translateY(-2px);
 }
 
-.task-checkbox {
+.task-item::before {
+    content: '';
     width: 18px;
     height: 18px;
     border: 2px solid rgba(255, 255, 255, 0.5);
@@ -115,18 +122,24 @@
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
+    pointer-events: none;
 }
 
-.task-checkbox.checked {
+.task-item.checked::before {
     background: #4caf50;
     border-color: #4caf50;
 }
 
-.task-checkbox.checked::after {
+.task-item.checked::after {
     content: '✓';
+    position: absolute;
+    left: 21px;
+    top: 50%;
+    transform: translate(-50%, -50%);
     color: white;
     font-size: 12px;
     font-weight: bold;
+    pointer-events: none;
 }
 
 .time-slot-metrics {
@@ -536,4 +549,3 @@
         color: #aaa;
     }
 }
-

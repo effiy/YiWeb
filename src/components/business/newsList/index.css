@@ -83,21 +83,24 @@
 /* 已读与收藏状态 */
 .news-item.read .news-title {
     color: var(--text-muted);
+    position: relative;
+    padding-left: 16px;
 }
 
 .news-item.read {
     background: var(--bg-surface);
 }
 
-.news-item .read-dot {
-    display: inline-block;
+.news-item.read .news-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55em;
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background: var(--accent);
-    margin-right: 8px;
-    position: relative;
-    top: -2px;
+    transform: translateY(-50%);
 }
 
 .favorite-btn {

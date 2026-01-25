@@ -77,7 +77,6 @@ const createCalendarView = () => {
                                     <div class="task-content">
                                         <span class="task-title">{{ task.title }}</span>
                                         <div class="task-meta">
-                                            <span v-if="task.priority" class="priority-dot"></span>
                                             <span v-if="task.dueDate" class="due-time">
                                                 {{ formatTime(task.dueDate) }}
                                             </span>
@@ -576,5 +575,4 @@ const createCalendarView = () => {
 
 window.CalendarView = createCalendarView();
 console.log('[CalendarView] 优化版组件已加载');
-
 

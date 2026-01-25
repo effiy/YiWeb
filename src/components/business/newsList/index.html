@@ -66,11 +66,9 @@
             >
                 <header class="news-header">
                     <h3 class="news-title">
-                        <span class="read-dot" v-if="isRead(item)" title="已读"></span>
                         {{ item.title }}
                     </h3>
                 </header>
-                
                 <div class="news-meta">
                     <div class="news-category-tags">
                         <span 
@@ -158,7 +156,6 @@
                 >
                     <header class="news-header">
                         <h3 class="news-title">
-                            <span class="read-dot" v-if="isRead(item)" title="已读"></span>
                             {{ item.title }}
                         </h3>
                     </header>
@@ -211,5 +208,3 @@
         <div class="empty-subtitle">请稍后重试或联系管理员</div>
     </div>
 </section>
-
-

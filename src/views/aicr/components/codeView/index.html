@@ -189,11 +189,7 @@
                         </div>
                     </div>
                     <div class="ai-result-content" :class="{ 'generating': quickCommentAiGenerating }">
-                        <div v-if="quickCommentAiGenerating && !quickCommentAiResult" class="ai-generating-indicator">
-                            <span class="generating-dot"></span>
-                            <span class="generating-dot"></span>
-                            <span class="generating-dot"></span>
-                        </div>
+                        <div v-if="quickCommentAiGenerating && !quickCommentAiResult" class="ai-generating-indicator" aria-hidden="true"></div>
                         <div v-else class="ai-result-text" v-html="renderQuickCommentAiResult"></div>
                     </div>
 
@@ -321,7 +317,6 @@
                                         class="fas fa-list-ol"></i></button>
                                 <button type="button" class="md-btn" title="链接" @click="insertMarkdown('link')"><i
                                         class="fas fa-link"></i></button>
-                                <span class="md-toolbar-spacer"></span>
                                 <div class="md-view-switch" aria-label="编辑与预览切换">
                                     <button type="button" class="md-view-btn"
                                         :class="{ active: manualEditorView === 'edit' }"
@@ -403,7 +398,6 @@
                     <div class="comment-author-info enhanced">
                         <div class="comment-author-avatar premium">
                             <i class="fas fa-user-tie"></i>
-                            <div class="avatar-ring"></div>
                         </div>
                         <div class="comment-author-details enhanced">
                             <div class="author-name-row">
@@ -428,7 +422,6 @@
                 <button type="button" @click="hideCommentDetail" class="close-button modern" title="关闭弹窗"
                     aria-label="关闭评论详情">
                     <i class="fas fa-times"></i>
-                    <div class="close-button-bg"></div>
                 </button>
             </div>
 

@@ -58,7 +58,6 @@
             >
                 <header class="news-header">
                     <h3 class="news-title">
-                        <span class="read-dot" v-if="isRead(file)" title="已读"></span>
                         {{ file.title || file.fileName || '未命名文件' }}
                     </h3>
                 </header>
@@ -151,7 +150,6 @@
             >
                 <header class="news-header">
                     <h3 class="news-title">
-                        <span class="read-dot" v-if="isRead(file)" title="已读"></span>
                         {{ file.fileId || '未命名文件' }}
                     </h3>
                 </header>
