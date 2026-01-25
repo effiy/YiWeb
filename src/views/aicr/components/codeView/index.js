@@ -2357,12 +2357,14 @@ const componentOptions = {
         // 监听选择变化并定位"评论"按钮
         onSelectionChange() {
             try {
+                this.hideSelectionButton();
                 // 如果是编辑模式，处理 textarea 中的选择
                 if (this.isEditingFile) {
                     const textarea = this.$el && this.$el.querySelector('.edit-textarea');
                     if (!textarea) {
-                        const withinGrace = Date.now() - this._lastShowTs < 250;
-                        if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                        this.lastSelectionText = '';
+                        this.lastSelectionRange = null;
+                        this._lastSelectionRect = null;
                         return;
                     }
 
@@ -2371,16 +2373,18 @@ const componentOptions = {
 
                     // 检查是否有选择（非折叠选择）
                     if (start === end) {
-                        const withinGrace = Date.now() - this._lastShowTs < 250;
-                        if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                        this.lastSelectionText = '';
+                        this.lastSelectionRange = null;
+                        this._lastSelectionRect = null;
                         return;
                     }
 
                     // 获取选择的文本
                     const selectedText = textarea.value.substring(start, end).trim();
                     if (!selectedText) {
-                        const withinGrace = Date.now() - this._lastShowTs < 250;
-                        if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                        this.lastSelectionText = '';
+                        this.lastSelectionRange = null;
+                        this._lastSelectionRect = null;
                         return;
                     }
 
@@ -2398,10 +2402,8 @@ const componentOptions = {
                     const rect = this.getTextareaSelectionRect(textarea, start, end);
                     if (rect && rect.width && rect.height) {
                         this._lastSelectionRect = rect;
-                        this.positionSelectionButton(rect);
                     } else {
-                        const withinGrace = Date.now() - this._lastShowTs < 250;
-                        if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                        this._lastSelectionRect = null;
                     }
                     return;
                 }
@@ -2409,14 +2411,16 @@ const componentOptions = {
                 // 非编辑模式：处理 DOM 选择
                 const sel = window.getSelection();
                 if (!sel || sel.rangeCount === 0) {
-                    const withinGrace = Date.now() - this._lastShowTs < 250;
-                    if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                    this.lastSelectionText = '';
+                    this.lastSelectionRange = null;
+                    this._lastSelectionRect = null;
                     return;
                 }
                 const range = sel.getRangeAt(0);
                 if (sel.isCollapsed) {
-                    const withinGrace = Date.now() - this._lastShowTs < 250;
-                    if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                    this.lastSelectionText = '';
+                    this.lastSelectionRange = null;
+                    this._lastSelectionRect = null;
                     return;
                 }
                 // 根据当前模式选择正确的根元素
@@ -2429,8 +2433,9 @@ const componentOptions = {
                     codeRoot = this.$el && this.$el.querySelector('.code-content');
                 }
                 if (!codeRoot) {
-                    const withinGrace = Date.now() - this._lastShowTs < 250;
-                    if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                    this.lastSelectionText = '';
+                    this.lastSelectionRange = null;
+                    this._lastSelectionRect = null;
                     return;
                 }
                 // 放宽：任一端点在代码区内即认为是代码选择
@@ -2442,20 +2447,28 @@ const componentOptions = {
                 const common = range.commonAncestorContainer;
                 const within = nodeIn(common) || nodeIn(sel.anchorNode) || nodeIn(sel.focusNode);
                 if (!within) {
-                    const withinGrace = Date.now() - this._lastShowTs < 250;
-                    if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                    this.lastSelectionText = '';
+                    this.lastSelectionRange = null;
+                    this._lastSelectionRect = null;
                     return;
                 }
                 const text = String(sel.toString() || '').trim();
                 if (!text) {
-                    const withinGrace = Date.now() - this._lastShowTs < 250;
-                    if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                    this.lastSelectionText = '';
+                    this.lastSelectionRange = null;
+                    this._lastSelectionRect = null;
                     return;
                 }
-                // 选择文本和范围将在按钮定位时保存，这里仅用于验证
+
+                const cleanText = this.extractCodeContent(sel);
+                const rangeInfo = this.getSelectionLineRange(range);
+                this.lastSelectionText = cleanText;
+                this.lastSelectionRange = rangeInfo;
+
                 console.log('[CodeView] 检测到有效选择:', {
-                    text: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
-                    textLength: text.length
+                    text: cleanText.substring(0, 50) + (cleanText.length > 50 ? '...' : ''),
+                    textLength: cleanText.length,
+                    range: rangeInfo
                 });
                 let rects = range.getClientRects();
                 if (!rects || rects.length === 0) {
@@ -2463,16 +2476,13 @@ const componentOptions = {
                     const br = range.getBoundingClientRect && range.getBoundingClientRect();
                     if (br && br.width && br.height) {
                         this._lastSelectionRect = br;
-                        this.positionSelectionButton(br);
                         return;
                     }
-                    const withinGrace = Date.now() - this._lastShowTs < 250;
-                    if (!this._containerHover && !withinGrace) this.hideSelectionButton();
+                    this._lastSelectionRect = null;
                     return;
                 }
                 const rect = rects[rects.length - 1];
                 this._lastSelectionRect = rect;
-                this.positionSelectionButton(rect);
             } catch (_) {
                 this.hideSelectionButton();
             }
@@ -2988,6 +2998,17 @@ const componentOptions = {
         },
 
         // ===== Quick Comment 内联输入框方法（Cursor Quick Edit 风格）=====
+        openAiQuickCommentFromShortcut() {
+            this.quickCommentMode = 'ai';
+            this.onSelectionChange();
+
+            if (!String(this.lastSelectionText || '').trim()) {
+                showError('请先选中需要评论的内容');
+                return;
+            }
+
+            this.openQuickComment();
+        },
         openQuickComment() {
             // 优先使用选中文本的位置，其次使用评论按钮位置
             let referenceRect = null;
@@ -3005,6 +3026,10 @@ const componentOptions = {
                 if (container) {
                     referenceRect = container.getBoundingClientRect();
                 }
+            }
+
+            if ((!referenceRect || referenceRect.width === 0) && this._lastSelectionRect && this._lastSelectionRect.width) {
+                referenceRect = this._lastSelectionRect;
             }
 
             // 计算 Quick Comment 的最佳位置
@@ -5850,6 +5875,26 @@ const componentOptions = {
         // 初始化键盘快捷键
         this.initKeyboardShortcuts();
 
+        this._cmdKListener = (event) => {
+            if (!(event && (event.metaKey || event.ctrlKey))) return;
+            if (event.key !== 'k' && event.key !== 'K') return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (this.showQuickComment) {
+                this.quickCommentMode = 'ai';
+                this.$nextTick(() => {
+                    const input = this.$refs.quickCommentAiInput;
+                    if (input) input.focus();
+                });
+                return;
+            }
+
+            this.openAiQuickCommentFromShortcut();
+        };
+        window.addEventListener('keydown', this._cmdKListener, true);
+
         // 添加调试方法到全局
         window.debugCodeView = {
             getFileInfo: () => {
@@ -6050,6 +6095,11 @@ const componentOptions = {
         if (this._escListener) {
             window.removeEventListener('keydown', this._escListener);
             this._escListener = null;
+        }
+
+        if (this._cmdKListener) {
+            window.removeEventListener('keydown', this._cmdKListener, true);
+            this._cmdKListener = null;
         }
 
         // 清理选择变化监听器
