@@ -273,6 +273,33 @@
                     </template>
                 </div>
             </div>
+
+            <!-- 调整大小手柄 - 四个角 -->
+            <div class="quick-comment-resize-handle resize-handle-se" @mousedown="startResizeQuickComment($event, 'se')"
+                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整大小">
+            </div>
+            <div class="quick-comment-resize-handle resize-handle-sw" @mousedown="startResizeQuickComment($event, 'sw')"
+                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整大小">
+            </div>
+            <div class="quick-comment-resize-handle resize-handle-ne" @mousedown="startResizeQuickComment($event, 'ne')"
+                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整大小">
+            </div>
+            <div class="quick-comment-resize-handle resize-handle-nw" @mousedown="startResizeQuickComment($event, 'nw')"
+                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整大小">
+            </div>
+            <!-- 调整大小手柄 - 四条边 -->
+            <div class="quick-comment-resize-handle resize-handle-n" @mousedown="startResizeQuickComment($event, 'n')"
+                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整高度">
+            </div>
+            <div class="quick-comment-resize-handle resize-handle-s" @mousedown="startResizeQuickComment($event, 's')"
+                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整高度">
+            </div>
+            <div class="quick-comment-resize-handle resize-handle-e" @mousedown="startResizeQuickComment($event, 'e')"
+                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整宽度">
+            </div>
+            <div class="quick-comment-resize-handle resize-handle-w" @mousedown="startResizeQuickComment($event, 'w')"
+                :class="{ 'resizing': isResizingQuickComment }" title="拖拽调整宽度">
+            </div>
         </div>
 
         <!-- 手动评论弹框（支持新建和编辑模式） -->
