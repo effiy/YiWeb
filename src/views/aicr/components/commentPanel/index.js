@@ -418,10 +418,18 @@ const componentOptions = {
             }
             return null;
         },
-        // 转义HTML
+        // 转义HTML（增加反转义逻辑防止双重转义）
         _escapeHtml(str) {
             if (typeof str !== 'string') return '';
-            return str
+            // 先反转义可能存在的实体
+            const unescaped = str
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/&amp;/g, '&');
+
+            return unescaped
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
@@ -447,11 +455,7 @@ const componentOptions = {
                 const raw = text == null ? '' : String(text);
                 if (!raw) return '';
                 if (typeof window.marked === 'undefined') {
-                    return raw
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;')
-                        .replace(/\n/g, '<br/>');
+                    return this._escapeHtml(raw).replace(/\n/g, '<br/>');
                 }
                 if (!this._sessionMarkedConfigured) {
                     try {

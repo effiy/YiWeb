@@ -1364,7 +1364,16 @@ const componentOptions = {
         },
         escapeHtml(text) {
             try {
-                return String(text)
+                if (typeof text !== 'string' && text == null) return '';
+                // 先反转义可能存在的实体
+                const unescaped = String(text)
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&quot;/g, '"')
+                    .replace(/&#39;/g, "'")
+                    .replace(/&amp;/g, '&');
+
+                return unescaped
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;')

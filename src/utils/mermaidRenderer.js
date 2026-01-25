@@ -669,7 +669,14 @@ ${originalCode}
      * HTML 转义
      */
     escapeHtml(str) {
-        return String(str)
+        if (typeof str !== 'string' && str == null) return '';
+        const unescaped = String(str)
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&amp;/g, '&');
+        return unescaped
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')

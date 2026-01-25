@@ -129,8 +129,18 @@ export const useMethods = (store) => {
         }
     };
 
+    // 转义HTML（增加反转义逻辑防止双重转义）
     const _escapeHtml = (v) => {
-        return String(v ?? '')
+        if (typeof v !== 'string' && v == null) return '';
+        // 先反转义可能存在的实体
+        const unescaped = String(v)
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&amp;/g, '&');
+        
+        return unescaped
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
@@ -3403,11 +3413,7 @@ export const useMethods = (store) => {
                     }
                     return window.marked(raw);
                 } catch (_) {
-                    return raw
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;')
-                        .replace(/\n/g, '<br/>');
+                    return _escapeHtml(raw).replace(/\n/g, '<br/>');
                 }
             } catch (_) {
                 return '';

@@ -161,10 +161,16 @@ const componentOptions = {
 
                 let html = processedText;
 
-                const escapeHtml = (s) => s
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;');
+                const escapeHtml = (s) => {
+                    const unescaped = String(s)
+                        .replace(/&lt;/g, '<')
+                        .replace(/&gt;/g, '>')
+                        .replace(/&amp;/g, '&');
+                    return unescaped
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                };
                 html = escapeHtml(html);
 
                 // 如果是JSON内容，包装在代码块中
@@ -484,7 +490,14 @@ const componentOptions = {
 
         // HTML 转义方法
         escapeHtml(str) {
-            return str
+            if (typeof str !== 'string' && str == null) return '';
+            const unescaped = String(str)
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/&amp;/g, '&');
+            return unescaped
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
