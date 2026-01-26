@@ -10,12 +10,12 @@
     <!-- 错误状态 -->
     <div v-else-if="error" class="error-container" role="alert">
         <div class="error-icon" aria-hidden="true">
-            <i class="fas fa-exclamation-triangle"></i>
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         </div>
         <div class="error-message">{{ error }}</div>
         <div class="error-submessage">网络连接可能存在问题，请检查后重试</div>
         <button type="button" @click="$emit('load-project-files-data')" class="retry-button">
-            <i class="fas fa-redo"></i>
+            <i class="fas fa-redo" aria-hidden="true"></i>
             重新加载
         </button>
     </div>
@@ -69,12 +69,12 @@
                             :style="{ backgroundColor: getFileTypeColor(file) }"
                             :title="getFileTypeLabel(getFileTypeFromFile(file))"
                         >
-                            <i :class="getFileTypeIcon(file)"></i>
+                            <i :class="getFileTypeIcon(file)" aria-hidden="true"></i>
                             {{ getFileTypeLabel(getFileTypeFromFile(file)) }}
                         </span>
                     </div>
                     <time class="news-time" :datetime="file.updatedTime">
-                        <i class="fas fa-clock"></i>
+                        <i class="fas fa-clock" aria-hidden="true"></i>
                         <span>{{ formatTime(file.updatedTime) }}</span>
                     </time>
                 </div>
@@ -83,16 +83,16 @@
                 
                 <footer class="news-footer">
                     <div class="news-source">
-                        <i class="fas fa-file-code"></i>
+                        <i class="fas fa-file-code" aria-hidden="true"></i>
                         <span>{{ file.filePath || '未知路径' }}</span>
                     </div>
                     <button type="button" class="favorite-btn" :class="{ active: isFavorited(file) }" @click.stop="$emit('toggle-favorite', file)" :aria-pressed="isFavorited(file)" aria-label="收藏该文件">
-                        <i :class="[isFavorited(file) ? 'fa-solid fa-star' : 'fa-regular fa-star']"></i>
+                        <i :class="[isFavorited(file) ? 'fa-solid fa-star' : 'fa-regular fa-star']" aria-hidden="true"></i>
                         <span class="favorite-text">{{ isFavorited(file) ? '已收藏' : '收藏' }}</span>
                     </button>
                     <div v-if="file.filePath" class="news-link">
                         <span>打开文件</span>
-                        <i class="fas fa-external-link-alt"></i>
+                        <i class="fas fa-external-link-alt" aria-hidden="true"></i>
                     </div>
                 </footer>
             </article>
@@ -102,7 +102,7 @@
     <!-- 空搜索结果 -->
     <div v-else-if="searchQuery && filteredProjectFiles.length === 0" class="empty-state" role="status">
         <div class="empty-icon" aria-hidden="true">
-            <i class="fas fa-search"></i>
+            <i class="fas fa-search" aria-hidden="true"></i>
         </div>
         <div class="empty-title">未找到相关文件</div>
         <div class="empty-subtitle">尝试使用其他关键词搜索</div>
@@ -161,12 +161,12 @@
                             :style="{ backgroundColor: getFileTypeColor(file) }"
                             :title="getFileTypeLabel(getFileTypeFromFile(file))"
                         >
-                            <i :class="getFileTypeIcon(file)"></i>
+                            <i :class="getFileTypeIcon(file)" aria-hidden="true"></i>
                             {{ getFileTypeLabel(getFileTypeFromFile(file)) }}
                         </span>
                     </div>
                     <time class="news-time" :datetime="file.updatedTime">
-                        <i class="fas fa-clock"></i>
+                        <i class="fas fa-clock" aria-hidden="true"></i>
                         <span>{{ formatTime(file.updatedTime) }}</span>
                     </time>
                 </div>
@@ -175,7 +175,7 @@
                 
                 <footer class="news-footer">
                     <div class="news-source">
-                        <i class="fas fa-file-code"></i>
+                        <i class="fas fa-file-code" aria-hidden="true"></i>
                         <span>
                             {{ (file.projectId && file.versionId) 
                                 ? (file.projectId + ' · ' + file.versionId)
@@ -184,12 +184,12 @@
                         </span>
                     </div>
                     <button type="button" class="favorite-btn" :class="{ active: isFavorited(file) }" @click.stop="$emit('toggle-favorite', file)" :aria-pressed="isFavorited(file)" aria-label="收藏该文件">
-                        <i :class="[isFavorited(file) ? 'fa-solid fa-star' : 'fa-regular fa-star']"></i>
+                        <i :class="[isFavorited(file) ? 'fa-solid fa-star' : 'fa-regular fa-star']" aria-hidden="true"></i>
                         <span class="favorite-text">{{ isFavorited(file) ? '已收藏' : '收藏' }}</span>
                     </button>
                     <div v-if="file.filePath" class="news-link">
                         <span>打开文件</span>
-                        <i class="fas fa-external-link-alt"></i>
+                        <i class="fas fa-external-link-alt" aria-hidden="true"></i>
                     </div>
                 </footer>
             </article>
@@ -199,9 +199,10 @@
     <!-- 空状态 -->
     <div v-else class="empty-state" role="status">
         <div class="empty-icon" aria-hidden="true">
-            <i class="fas fa-file-code"></i>
+            <i class="fas fa-file-code" aria-hidden="true"></i>
         </div>
         <div class="empty-title">暂无项目文件</div>
         <div class="empty-subtitle">请稍后重试或联系管理员</div>
     </div>
 </section>
+

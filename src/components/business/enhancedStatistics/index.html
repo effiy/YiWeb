@@ -3,11 +3,11 @@
         <div class="statistics-header">
             <h3>新闻数据分析</h3>
             <div class="header-actions">
-                <button type="button" @click="exportStats" class="export-btn" title="导出数据">
-                    <i class="fas fa-download"></i>
+                <button type="button" @click="exportStats" class="export-btn" title="导出数据" aria-label="导出数据">
+                    <i class="fas fa-download" aria-hidden="true"></i>
                 </button>
-                <button type="button" @click="closeStatistics" class="close-btn" title="关闭">
-                    <i class="fas fa-times"></i>
+                <button type="button" @click="closeStatistics" class="close-btn" title="关闭" aria-label="关闭">
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
         </div>
@@ -42,7 +42,7 @@
                 <div class="category-list">
                     <div v-for="category in categoryDistribution.slice(0, 10)" :key="category.key" class="category-item">
                         <div class="category-info">
-                            <i :class="category.icon" :style="{ color: category.color }"></i>
+                            <i :class="category.icon" :style="{ color: category.color }" aria-hidden="true"></i>
                             <span class="category-title">{{ category.title }}</span>
                         </div>
                         <div class="category-stats">
@@ -120,27 +120,27 @@
                 <h4>内容质量分析</h4>
                 <div class="content-insights">
                     <div class="content-item">
-                        <i class="fas fa-file-text"></i>
+                        <i class="fas fa-file-text" aria-hidden="true"></i>
                         <span class="content-label">有内容</span>
                         <span class="content-value">{{ contentQuality.withContent }}条</span>
                     </div>
                     <div class="content-item">
-                        <i class="fas fa-quote-left"></i>
+                        <i class="fas fa-quote-left" aria-hidden="true"></i>
                         <span class="content-label">有摘要</span>
                         <span class="content-value">{{ contentQuality.withExcerpt }}条</span>
                     </div>
                     <div class="content-item">
-                        <i class="fas fa-image"></i>
+                        <i class="fas fa-image" aria-hidden="true"></i>
                         <span class="content-label">有图片</span>
                         <span class="content-value">{{ contentQuality.withImages }}条</span>
                     </div>
                     <div class="content-item">
-                        <i class="fas fa-link"></i>
+                        <i class="fas fa-link" aria-hidden="true"></i>
                         <span class="content-label">有链接</span>
                         <span class="content-value">{{ contentQuality.withLinks }}条</span>
                     </div>
                     <div class="content-item">
-                        <i class="fas fa-ruler"></i>
+                        <i class="fas fa-ruler" aria-hidden="true"></i>
                         <span class="content-label">平均长度</span>
                         <span class="content-value">{{ contentQuality.averageLength }}字符</span>
                     </div>
@@ -177,7 +177,7 @@
                     <div v-for="(quality, key) in categoryQuality" :key="key" class="category-detail-item">
                         <div class="detail-header">
                             <div class="detail-title">
-                                <i class="fas fa-tag"></i>
+                                <i class="fas fa-tag" aria-hidden="true"></i>
                                 <span>{{ quality.title }}</span>
                             </div>
                             <div class="detail-stats">
@@ -189,7 +189,7 @@
                         </div>
                         <div class="detail-methods">
                             <span v-for="method in quality.methods" :key="method" class="method-tag">
-                                <i :class="getMethodIcon(method)"></i>
+                                <i :class="getMethodIcon(method)" aria-hidden="true"></i>
                                 {{ method }}
                             </span>
                         </div>
@@ -199,3 +199,4 @@
         </div>
     </div>
 </div>
+

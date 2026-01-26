@@ -69,25 +69,25 @@
                     
                     <!-- 侧边栏区域 -->
                     <aside class="sidebar-navigation" :class="{ collapsed: sidebarCollapsed }" role="complementary" aria-label="日期导航">
-                    <calendar
-                        :current-date="currentDate"
-                        :current-date-display="currentDateDisplay"
-                        :current-date-subtitle="currentDateSubtitle"
-                        :is-today="isToday"
-                        :is-future-date="isFutureDate"
-                        :sidebar-collapsed="sidebarCollapsed"
-                        :calendar-date="calendarMonth"
-                        :calendar-title="calendarTitle"
-                        :is-current-month="isCurrentMonth"
-                        :calendar-days="calendarDays"
-                        :selected-date="selectedDate"
-                        @go-to-previous-day="goToPreviousDay"
-                        @go-to-next-day="goToNextDay"
-                        @go-to-today="goToToday"
-                        @previous-month="previousMonth"
-                        @next-month="nextMonth"
-                        @select-date="selectDate"
-                    >                    </calendar>
+                        <calendar
+                            :current-date="currentDate"
+                            :current-date-display="currentDateDisplay"
+                            :current-date-subtitle="currentDateSubtitle"
+                            :is-today="isToday"
+                            :is-future-date="isFutureDate"
+                            :sidebar-collapsed="sidebarCollapsed"
+                            :calendar-date="calendarMonth"
+                            :calendar-title="calendarTitle"
+                            :is-current-month="isCurrentMonth"
+                            :calendar-days="calendarDays"
+                            :selected-date="selectedDate"
+                            @go-to-previous-day="goToPreviousDay"
+                            @go-to-next-day="goToNextDay"
+                            @go-to-today="goToToday"
+                            @previous-month="previousMonth"
+                            @next-month="nextMonth"
+                            @select-date="selectDate"
+                        ></calendar>
                     </aside>
                 </div>
             </section>

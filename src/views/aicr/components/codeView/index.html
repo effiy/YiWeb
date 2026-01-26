@@ -5,38 +5,38 @@
     </div>
     <div v-else-if="error" class="error-container" role="alert">
         <div class="error-icon" aria-hidden="true">
-            <i class="fas fa-exclamation-triangle"></i>
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         </div>
         <div class="error-message">{{ error }}</div>
     </div>
     <div v-else-if="file" class="code-content" :class="{ editing: isEditingFile }">
         <div class="code-header">
             <div class="file-name" :title="fullFilePath">
-                <i class="fas fa-file-code"></i>
+                <i class="fas fa-file-code" aria-hidden="true"></i>
                 <span class="file-name-text">{{ displayFileName }}</span>
             </div>
             <div class="code-actions">
                 <button type="button" v-if="!isEditingFile" class="action-button preview-toggle-button"
                     @click="startEditFile" :disabled="!file" title="编辑文件" aria-label="编辑文件">
-                    <i class="fas fa-pen"></i>
+                    <i class="fas fa-pen" aria-hidden="true"></i>
                 </button>
                 <template v-else>
                     <button type="button" class="action-button save-button" :disabled="editSaving"
                         @click="saveEditedFile" :title="editSaving ? '保存中' : '保存修改'" aria-label="保存修改">
-                        <i class="fas" :class="editSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                        <i class="fas" :class="editSaving ? 'fa-spinner fa-spin' : 'fa-save'" aria-hidden="true"></i>
                     </button>
                     <button type="button" class="action-button cancel-button" :disabled="editSaving"
                         @click="cancelEditFile" title="取消编辑" aria-label="取消编辑">
-                        <i class="fas fa-times"></i>
+                        <i class="fas fa-times" aria-hidden="true"></i>
                     </button>
                 </template>
                 <button type="button" v-if="!isEditingFile" class="action-button" @click="downloadCurrentFile"
                     :disabled="!file" title="下载文件" aria-label="下载文件">
-                    <i class="fas fa-download"></i>
+                    <i class="fas fa-download" aria-hidden="true"></i>
                 </button>
                 <button type="button" v-if="!isEditingFile" class="action-button" @click="copyEntireFile"
                     :disabled="!file" title="复制代码" aria-label="复制代码">
-                    <i class="fas fa-copy"></i>
+                    <i class="fas fa-copy" aria-hidden="true"></i>
                 </button>
             </div>
         </div>
@@ -44,7 +44,7 @@
             <textarea class="edit-textarea" v-model="editingFileContent" @keydown="onEditKeydown" spellcheck="false"
                 placeholder="编辑文件内容..." aria-label="编辑文件内容"></textarea>
             <div class="save-error" v-if="saveError">
-                <i class="fas fa-exclamation-circle"></i> {{ saveError }}
+                <i class="fas fa-exclamation-circle" aria-hidden="true"></i> {{ saveError }}
             </div>
         </div>
         <!-- Markdown预览模式 -->
@@ -88,8 +88,9 @@
                         @mouseenter="handleCommentMarkerMouseEvents(lineCommentMarkers[index + 1], $event)"
                         @mouseleave="handleCommentMarkerMouseEvents(lineCommentMarkers[index + 1], $event)"
                         :title="getCommentMarkerTitle(lineCommentMarkers[index + 1])"
+                        :aria-label="getCommentMarkerTitle(lineCommentMarkers[index + 1])"
                     >
-                        <i :class="getCommentMarkerIcon(lineCommentMarkers[index + 1])"></i>
+                        <i :class="getCommentMarkerIcon(lineCommentMarkers[index + 1])" aria-hidden="true"></i>
                         <span class="comment-count" v-if="lineCommentMarkers[index + 1]?.count > 1 && lineCommentMarkers[index + 1]?.markerType !== 'middle'">
                             {{ lineCommentMarkers[index + 1]?.count }}
                         </span>
@@ -113,24 +114,24 @@
             <div class="quick-comment-header" @mousedown="startDragQuickComment"
                 :class="{ 'dragging': isDraggingQuickComment }">
                 <div class="quick-comment-title">
-                    <i :class="quickCommentMode === 'ai' ? 'fas fa-magic' : 'fas fa-comment-dots'"></i>
+                    <i :class="quickCommentMode === 'ai' ? 'fas fa-magic' : 'fas fa-comment-dots'" aria-hidden="true"></i>
                     <span>{{ quickCommentMode === 'ai' ? 'AI 评论' : '添加评论' }}</span>
                 </div>
                 <div class="quick-comment-header-actions">
                     <!-- 模式切换 -->
                     <div class="quick-comment-mode-switch">
                         <button type="button" class="mode-switch-btn" :class="{ active: quickCommentMode === 'manual' }"
-                            @click="setQuickCommentMode('manual')" title="手动评论">
-                            <i class="fas fa-edit"></i>
+                            @click="setQuickCommentMode('manual')" title="手动评论" aria-label="手动评论">
+                            <i class="fas fa-edit" aria-hidden="true"></i>
                         </button>
                         <button type="button" class="mode-switch-btn" :class="{ active: quickCommentMode === 'ai' }"
-                            @click="setQuickCommentMode('ai')" title="AI 生成">
-                            <i class="fas fa-magic"></i>
+                            @click="setQuickCommentMode('ai')" title="AI 生成" aria-label="AI 生成">
+                            <i class="fas fa-magic" aria-hidden="true"></i>
                         </button>
                     </div>
                     <button type="button" class="quick-comment-close" @click="closeQuickComment" title="关闭 (Esc)"
                         aria-label="关闭">
-                        <i class="fas fa-times"></i>
+                        <i class="fas fa-times" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>
@@ -138,7 +139,7 @@
             <!-- 引用代码区域 -->
             <div v-if="quickCommentQuote" class="quick-comment-quote">
                 <div class="quick-comment-quote-label">
-                    <i class="fas fa-code"></i>
+                    <i class="fas fa-code" aria-hidden="true"></i>
                     <span>引用代码</span>
                     <span class="quick-comment-quote-lines" v-if="lastSelectionRange">
                         L{{ lastSelectionRange.startLine }}<template
@@ -154,18 +155,18 @@
                 <!-- AI 指令输入 -->
                 <div class="quick-comment-ai-input-wrapper">
                     <div class="ai-input-icon">
-                        <i class="fas fa-wand-magic-sparkles"></i>
+                        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
                     </div>
                     <textarea ref="quickCommentAiInput" class="quick-comment-ai-input" v-model="quickCommentAiPrompt"
                         :placeholder="quickCommentAiGenerating ? 'AI 正在生成...' : '描述你想要的评论或修改建议...'"
-                        :disabled="quickCommentAiGenerating" @keydown="handleQuickCommentAiKeydown" rows="1"></textarea>
+                        :disabled="quickCommentAiGenerating" @keydown="handleQuickCommentAiKeydown" rows="1" title="AI 指令输入" aria-label="AI 指令输入"></textarea>
                     <button v-if="quickCommentAiGenerating" type="button" class="ai-stop-btn" @click="stopAiGeneration"
-                        title="停止生成">
-                        <i class="fas fa-stop"></i>
+                        title="停止生成" aria-label="停止生成">
+                        <i class="fas fa-stop" aria-hidden="true"></i>
                     </button>
                     <button v-else type="button" class="ai-generate-btn" :disabled="!quickCommentAiPrompt.trim()"
-                        @click="generateAiComment" title="生成 (⌘↵)">
-                        <i class="fas fa-arrow-right"></i>
+                        @click="generateAiComment" title="生成 (⌘↵)" aria-label="生成">
+                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
                     </button>
                 </div>
 
@@ -173,18 +174,18 @@
                 <div v-if="quickCommentAiResult || quickCommentAiGenerating" class="quick-comment-ai-result">
                     <div class="ai-result-header">
                         <span class="ai-result-label">
-                            <i class="fas fa-sparkles"></i>
+                            <i class="fas fa-sparkles" aria-hidden="true"></i>
                             AI 生成的评论
                         </span>
                         <div class="ai-result-actions" v-if="quickCommentAiResult && !quickCommentAiGenerating">
-                            <button type="button" class="ai-action-btn" @click="clearAiResult" title="清空生成">
-                                <i class="fas fa-times"></i>
+                            <button type="button" class="ai-action-btn" @click="clearAiResult" title="清空生成" aria-label="清空生成">
+                                <i class="fas fa-times" aria-hidden="true"></i>
                             </button>
-                            <button type="button" class="ai-action-btn" @click="regenerateAiComment" title="重新生成">
-                                <i class="fas fa-redo"></i>
+                            <button type="button" class="ai-action-btn" @click="regenerateAiComment" title="重新生成" aria-label="重新生成">
+                                <i class="fas fa-redo" aria-hidden="true"></i>
                             </button>
-                            <button type="button" class="ai-action-btn" @click="copyAiResult" title="复制">
-                                <i class="fas fa-copy"></i>
+                            <button type="button" class="ai-action-btn" @click="copyAiResult" title="复制" aria-label="复制">
+                                <i class="fas fa-copy" aria-hidden="true"></i>
                             </button>
                         </div>
                     </div>
@@ -195,7 +196,7 @@
 
                     <!-- 错误提示 -->
                     <div v-if="quickCommentAiError" class="quick-comment-error">
-                        <i class="fas fa-exclamation-circle"></i>
+                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
                         <span>{{ quickCommentAiError }}</span>
                     </div>
                 </div>
@@ -203,16 +204,16 @@
                 <!-- 快速预设 -->
                 <div v-if="!quickCommentAiResult && !quickCommentAiGenerating" class="quick-comment-ai-presets">
                     <button type="button" class="ai-preset-btn" @click="useAiPreset('review')">
-                        <i class="fas fa-search"></i> 代码审查
+                        <i class="fas fa-search" aria-hidden="true"></i> 代码审查
                     </button>
                     <button type="button" class="ai-preset-btn" @click="useAiPreset('improve')">
-                        <i class="fas fa-lightbulb"></i> 改进建议
+                        <i class="fas fa-lightbulb" aria-hidden="true"></i> 改进建议
                     </button>
                     <button type="button" class="ai-preset-btn" @click="useAiPreset('explain')">
-                        <i class="fas fa-info-circle"></i> 解释代码
+                        <i class="fas fa-info-circle" aria-hidden="true"></i> 解释代码
                     </button>
                     <button type="button" class="ai-preset-btn" @click="useAiPreset('bug')">
-                        <i class="fas fa-bug"></i> 查找问题
+                        <i class="fas fa-bug" aria-hidden="true"></i> 查找问题
                     </button>
                 </div>
             </div>
@@ -225,7 +226,7 @@
                         @input="autoResizeQuickCommentTextarea"></textarea>
 
                     <div v-if="quickCommentError" class="quick-comment-error">
-                        <i class="fas fa-exclamation-circle"></i>
+                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
                         <span>{{ quickCommentError }}</span>
                     </div>
                 </div>
@@ -248,7 +249,7 @@
                 </div>
                 <div class="quick-comment-actions">
                     <button type="button" class="quick-comment-expand-btn" @click="expandToFullEditor" title="展开完整编辑器">
-                        <i class="fas fa-expand-alt"></i>
+                        <i class="fas fa-expand-alt" aria-hidden="true"></i>
                         <span>展开</span>
                     </button>
 
@@ -257,7 +258,7 @@
                         <button type="button" class="quick-comment-submit-btn ai-submit-btn"
                             :class="{ 'loading': quickCommentSubmitting, 'ready': canSubmitAiComment }"
                             :disabled="!canSubmitAiComment" @click="submitAiComment($event)">
-                            <i :class="quickCommentSubmitting ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
+                            <i :class="quickCommentSubmitting ? 'fas fa-spinner fa-spin' : 'fas fa-check'" aria-hidden="true"></i>
                             <span>{{ quickCommentSubmitting ? '提交中...' : '采纳' }}</span>
                         </button>
                     </template>
@@ -267,7 +268,7 @@
                         <button type="button" class="quick-comment-submit-btn"
                             :class="{ 'loading': quickCommentSubmitting }"
                             :disabled="!canSubmitQuickComment || quickCommentSubmitting" @click="submitQuickComment">
-                            <i :class="quickCommentSubmitting ? 'fas fa-spinner' : 'fas fa-paper-plane'"></i>
+                            <i :class="quickCommentSubmitting ? 'fas fa-spinner' : 'fas fa-paper-plane'" aria-hidden="true"></i>
                             <span>{{ quickCommentSubmitting ? '提交中...' : '提交' }}</span>
                         </button>
                     </template>
@@ -310,18 +311,18 @@
                 <div class="manual-improvement-header" @mousedown="startDragManualModal"
                     :class="{ 'dragging': isDraggingManualModal }">
                     <h3 class="manual-improvement-title">
-                        <i class="fas" :class="isEditingCommentMode ? 'fa-edit' : 'fa-comment-alt'"></i>
+                        <i class="fas" :class="isEditingCommentMode ? 'fa-edit' : 'fa-comment-alt'" aria-hidden="true"></i>
                         {{ isEditingCommentMode ? '编辑评论' : '填写评论内容' }}
                     </h3>
                     <button type="button" class="close-btn" @click="closeManualImprovementModal" title="关闭"
                         aria-label="关闭">
-                        <i class="fas fa-times"></i>
+                        <i class="fas fa-times" aria-hidden="true"></i>
                     </button>
                 </div>
                 <div class="manual-improvement-body">
                     <!-- 被评论的代码展示区域 -->
                     <div class="manual-quoted-code-section" v-if="editingCommentText || manualQuotedCode">
-                        <label class="manual-quoted-code-label"><i class="fas fa-quote-left"></i> 引用代码</label>
+                        <label class="manual-quoted-code-label"><i class="fas fa-quote-left" aria-hidden="true"></i> 引用代码</label>
                         <div class="manual-quoted-code-content">
                             <pre><code>{{ editingCommentText || manualQuotedCode }}</code></pre>
                         </div>
@@ -330,20 +331,20 @@
                     <div class="md-input-preview">
                         <div class="md-editor-panel">
                             <div class="md-toolbar" role="toolbar" aria-label="Markdown工具栏">
-                                <button type="button" class="md-btn" title="粗体" @click="insertMarkdown('bold')"><i
-                                        class="fas fa-bold"></i></button>
-                                <button type="button" class="md-btn" title="斜体" @click="insertMarkdown('italic')"><i
-                                        class="fas fa-italic"></i></button>
-                                <button type="button" class="md-btn" title="行内代码" @click="insertMarkdown('code')"><i
-                                        class="fas fa-code"></i></button>
-                                <button type="button" class="md-btn" title="代码块" @click="insertMarkdown('codeblock')"><i
-                                        class="fas fa-file-code"></i></button>
-                                <button type="button" class="md-btn" title="无序列表" @click="insertMarkdown('ul')"><i
-                                        class="fas fa-list-ul"></i></button>
-                                <button type="button" class="md-btn" title="有序列表" @click="insertMarkdown('ol')"><i
-                                        class="fas fa-list-ol"></i></button>
-                                <button type="button" class="md-btn" title="链接" @click="insertMarkdown('link')"><i
-                                        class="fas fa-link"></i></button>
+                                <button type="button" class="md-btn" title="粗体" aria-label="粗体" @click="insertMarkdown('bold')"><i
+                                        class="fas fa-bold" aria-hidden="true"></i></button>
+                                <button type="button" class="md-btn" title="斜体" aria-label="斜体" @click="insertMarkdown('italic')"><i
+                                        class="fas fa-italic" aria-hidden="true"></i></button>
+                                <button type="button" class="md-btn" title="行内代码" aria-label="行内代码" @click="insertMarkdown('code')"><i
+                                        class="fas fa-code" aria-hidden="true"></i></button>
+                                <button type="button" class="md-btn" title="代码块" aria-label="代码块" @click="insertMarkdown('codeblock')"><i
+                                        class="fas fa-file-code" aria-hidden="true"></i></button>
+                                <button type="button" class="md-btn" title="无序列表" aria-label="无序列表" @click="insertMarkdown('ul')"><i
+                                        class="fas fa-list-ul" aria-hidden="true"></i></button>
+                                <button type="button" class="md-btn" title="有序列表" aria-label="有序列表" @click="insertMarkdown('ol')"><i
+                                        class="fas fa-list-ol" aria-hidden="true"></i></button>
+                                <button type="button" class="md-btn" title="链接" aria-label="链接" @click="insertMarkdown('link')"><i
+                                        class="fas fa-link" aria-hidden="true"></i></button>
                                 <div class="md-view-switch" aria-label="编辑与预览切换">
                                     <button type="button" class="md-view-btn"
                                         :class="{ active: manualEditorView === 'edit' }"
@@ -363,7 +364,7 @@
                                     v-html="manualCommentPreviewHtml"></div>
                             </div>
                             <div v-if="manualCommentError" class="manual-improvement-error">
-                                <i class="fas fa-exclamation-circle"></i> {{ manualCommentError }}
+                                <i class="fas fa-exclamation-circle" aria-hidden="true"></i> {{ manualCommentError }}
                             </div>
                         </div>
                     </div>
@@ -373,13 +374,13 @@
                         <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 保存 · <kbd>Esc</kbd> 关闭
                     </span>
                     <button type="button" class="action-button cancel" @click="closeManualImprovementModal">
-                        <i class="fas fa-times"></i> 取消
+                        <i class="fas fa-times" aria-hidden="true"></i> 取消
                     </button>
                     <button type="button" class="action-button confirm"
                         :disabled="!canSubmitManualComment || manualSubmitting"
                         @click="isEditingCommentMode ? submitEditedComment() : submitManualImprovement()">
                         <i class="fas"
-                            :class="manualSubmitting ? 'fa-spinner fa-spin' : (isEditingCommentMode ? 'fa-save' : 'fa-paper-plane')"></i>
+                            :class="manualSubmitting ? 'fa-spinner fa-spin' : (isEditingCommentMode ? 'fa-save' : 'fa-paper-plane')" aria-hidden="true"></i>
                         {{ manualSubmitting ? '保存中...' : (isEditingCommentMode ? '保存' : '提交') }}
                     </button>
                 </div>
@@ -771,3 +772,4 @@
         </div>
     </div>
 </section>
+

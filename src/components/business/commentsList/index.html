@@ -12,7 +12,7 @@
   <!-- 错误状态 -->
   <div v-else-if="error" class="error-container" role="alert" aria-live="polite">
     <div class="error-icon" aria-hidden="true">
-      <i class="fas fa-exclamation-triangle"></i>
+      <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
     </div>
     <div class="error-text">{{ error }}</div>
   </div>
@@ -44,11 +44,11 @@
             </div>
             <div class="comment-badges">
               <span v-if="comment.type" class="comment-type" :class="`type-${comment.type}`">
-                <i :class="getCommentTypeIcon(comment.type)"></i>
+                <i :class="getCommentTypeIcon(comment.type)" aria-hidden="true"></i>
                 {{ getCommentTypeLabel(comment.type) }}
               </span>
               <span v-if="comment.status" class="comment-status" :class="`status-${comment.status}`">
-                <i :class="getCommentStatusIcon(comment.status)"></i>
+                <i :class="getCommentStatusIcon(comment.status)" aria-hidden="true"></i>
                 {{ getCommentStatusLabel(comment.status) }}
               </span>
             </div>
@@ -58,7 +58,7 @@
         <div class="comment-body">
           <div v-if="comment.text && comment.text !== comment.content" class="comment-quote">
             <div class="quote-header">
-              <i class="fas fa-quote-left"></i>
+              <i class="fas fa-quote-left" aria-hidden="true"></i>
               <span>引用</span>
             </div>
             <pre class="quote-code">{{ comment.text }}</pre>
@@ -67,7 +67,7 @@
           </div>
           <div v-if="comment.improvementText" class="comment-improvement">
             <div class="improvement-header">
-              <i class="fas fa-magic"></i>
+              <i class="fas fa-magic" aria-hidden="true"></i>
               <span>改进建议</span>
             </div>
             <pre class="improvement-code">{{ comment.improvementText }}</pre>
@@ -79,10 +79,11 @@
     <!-- 空状态 -->
     <div v-else class="no-comments-state" role="status">
       <div class="no-comments-icon" aria-hidden="true">
-        <i class="fas fa-comment-slash"></i>
+        <i class="fas fa-comment-slash" aria-hidden="true"></i>
       </div>
       <div class="no-comments-title">暂无评论</div>
       <div class="no-comments-subtitle">从服务端未获取到评论数据</div>
     </div>
   </div>
 </aside>
+

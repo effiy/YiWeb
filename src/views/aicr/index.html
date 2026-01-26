@@ -48,11 +48,11 @@
                 </form>
 
                 <!-- 项目选择器 -->
-                <nav class="category-filters" id="category-filters" role="toolbar" aria-label="项目过滤器">
+                <div class="category-filters" id="category-filters" role="toolbar" aria-label="项目过滤器">
                     <ul class="filter-buttons">
 
                     </ul>
-                </nav>
+                </div>
 
                 <!-- 视图切换按钮 -->
                 <div class="view-mode-toggle">
@@ -77,6 +77,7 @@
 
             <!-- 侧边栏收起按钮 (展开时显示，跟随侧边栏宽度) -->
             <button type="button" class="file-tree-toggle" v-show="!sidebarCollapsed" @click="toggleSidebar" title="收起侧边栏"
+                aria-label="收起侧边栏"
                 :style="{ left: ((viewMode === 'tree' ? sidebarWidth : sessionSidebarWidth) - 14) + 'px', right: 'auto' }">
                 <i class="fas fa-chevron-left" aria-hidden="true"></i>
             </button>
@@ -91,7 +92,7 @@
                         <!-- 搜索输入框和视图切换 -->
                         <div class="file-tree-search-container">
                             <div class="file-tree-search-wrapper">
-                                <span class="file-tree-search-icon">🔍</span>
+                                <i class="fas fa-search file-tree-search-icon" aria-hidden="true"></i>
                                 <input type="text" class="file-tree-search-input"
                                     :value="viewMode === 'tree' ? (searchQuery || '') : (sessionSearchQuery || '')"
                                     @input="viewMode === 'tree' ? handleSearchInput($event) : handleSessionSearchChange($event.target.value)"
@@ -184,9 +185,9 @@
                                 <div class="pet-chat-empty-icon" aria-hidden="true">
                                     <i class="fas fa-comments"></i>
                                 </div>
-                                <div class="pet-chat-empty-title">未选择会话</div>
-                                <div class="pet-chat-empty-subtitle">从左侧会话列表选择一个会话开始聊天</div>
-                                <div class="pet-chat-empty-hint">也可以在左侧搜索框输入关键词快速定位</div>
+                                <h2 class="pet-chat-empty-title">未选择会话</h2>
+                                <p class="pet-chat-empty-subtitle">从左侧会话列表选择一个会话开始聊天</p>
+                                <p class="pet-chat-empty-hint">也可以在左侧搜索框输入关键词快速定位</p>
                             </div>
                         </div>
                         <div v-else style="width: 100%;">
@@ -844,3 +845,4 @@
 </body>
 
 </html>
+

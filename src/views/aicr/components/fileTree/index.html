@@ -10,7 +10,7 @@
                     @input="updateTagSearch($event.target.value)" placeholder="搜索标签..." aria-label="搜索标签" />
                 <button type="button" v-if="tagFilterSearchKeyword" class="tag-search-clear"
                     @click="updateTagSearch('')" title="清除搜索" aria-label="清除搜索">
-                    <i class="fas fa-times"></i>
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
             <div class="tags-header-actions">
@@ -18,19 +18,19 @@
                 <button type="button" class="tag-filter-btn tag-filter-no-tags-btn" :class="{ active: tagFilterNoTags }"
                     @click="toggleNoTags" :title="tagFilterNoTags ? '取消筛选无标签文件' : '筛选没有标签的文件'" aria-label="筛选无标签">
                     <span class="tag-icon-wrapper">
-                        <i class="fas fa-tag"></i>
-                        <i v-if="tagFilterNoTags" class="fas fa-ban tag-ban-overlay"></i>
+                        <i class="fas fa-tag" aria-hidden="true"></i>
+                        <i v-if="tagFilterNoTags" class="fas fa-ban tag-ban-overlay" aria-hidden="true"></i>
                     </span>
                 </button>
                 <!-- 反向过滤按钮 -->
                 <button type="button" class="tag-filter-btn tag-filter-reverse" :class="{ active: tagFilterReverse }"
                     @click="toggleReverse" :title="tagFilterReverse ? '取消反向过滤' : '反向过滤（排除选中标签）'" aria-label="反向过滤">
-                    <i class="fas fa-exchange-alt"></i>
+                    <i class="fas fa-exchange-alt" aria-hidden="true"></i>
                 </button>
                 <!-- 展开/折叠按钮 -->
                 <button type="button" class="tag-filter-btn" :class="{ active: tagFilterExpanded }"
                     @click="toggleExpand" :title="tagFilterExpanded ? '收起标签列表' : '展开标签列表'" aria-label="展开/折叠标签">
-                    <i class="fas" :class="tagFilterExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    <i class="fas" :class="tagFilterExpanded ? 'fa-chevron-up' : 'fa-chevron-down'" aria-hidden="true"></i>
                 </button>
                 <!-- 清除所有过滤按钮 -->
                 <button type="button" class="tags-clear-btn"
@@ -64,7 +64,7 @@
             <!-- 展开/折叠按钮（仅在标签列表底部显示，当有更多标签时，不允许拖拽） -->
             <button type="button" v-if="hasMoreTags && !tagFilterSearchKeyword" class="tag-item tag-expand-btn"
                 :draggable="false" @click="toggleExpand" :title="tagFilterExpanded ? '收起标签' : '展开标签'">
-                <i class="fas" :class="tagFilterExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                <i class="fas" :class="tagFilterExpanded ? 'fa-chevron-up' : 'fa-chevron-down'" aria-hidden="true"></i>
                 {{ tagFilterExpanded ? '收起' : `展开 (${filteredTags.length - visibleTags.length})` }}
             </button>
         </div>
@@ -79,11 +79,11 @@
     <!-- 错误状态 -->
     <div v-else-if="error" class="error-container" role="alert">
         <div class="error-icon" aria-hidden="true">
-            <i class="fas fa-exclamation-triangle"></i>
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         </div>
         <div class="error-message">{{ error }}</div>
         <button type="button" @click="$emit('reload')" class="retry-button">
-            <i class="fas fa-redo"></i>
+            <i class="fas fa-redo" aria-hidden="true"></i>
             重新加载
         </button>
     </div>
@@ -125,9 +125,10 @@
     <!-- 空状态 -->
     <div v-else class="empty-state" role="status">
         <div class="empty-icon" aria-hidden="true">
-            <i class="fas fa-folder-open"></i>
+            <i class="fas fa-folder-open" aria-hidden="true"></i>
         </div>
         <div class="empty-title">暂无文件</div>
         <div class="empty-subtitle">请检查文件目录或联系管理员</div>
     </div>
 </aside>
+
