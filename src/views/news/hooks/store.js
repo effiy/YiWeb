@@ -3,7 +3,6 @@
  * author: liangliang
  */
 
-import { getData } from '/src/services/index.js';
 import { buildServiceUrl } from '/src/services/helper/requestHelper.js';
 import { formatDate, isFutureDate } from '/src/utils/date.js';
 import { safeExecuteAsync, createError, ErrorTypes } from '/src/utils/error.js';
@@ -72,6 +71,55 @@ export const createStore = () => {
     // 收藏新闻集合（本地持久化）
     const favoriteItems = vueRef(new Set());
 
+    const REQUEST_ABORT_KEYS = {
+        news: 'YiWeb.news.list',
+        projectFiles: 'YiWeb.projectFiles.list'
+    };
+
+    const parseDateParam = (value) => {
+        if (!value || typeof value !== 'string') return null;
+        const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) return null;
+        const y = Number(match[1]);
+        const m = Number(match[2]);
+        const d = Number(match[3]);
+        const dt = new Date(y, m - 1, d);
+        if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
+        return dt;
+    };
+
+    const getUrlState = () => {
+        try {
+            const url = new URL(window.location.href);
+            const dateStr = url.searchParams.get('date');
+            const active = url.searchParams.get('cat');
+            const q = url.searchParams.get('q');
+            return {
+                date: parseDateParam(dateStr),
+                activeCategory: active ? String(active) : null,
+                searchQuery: q ? String(q) : ''
+            };
+        } catch (_) {
+            return { date: null, activeCategory: null, searchQuery: '' };
+        }
+    };
+
+    const applyUrlState = (nextState = {}) => {
+        if (nextState.date instanceof Date) {
+            currentDate.value = new Date(nextState.date);
+            calendarMonth.value = new Date(nextState.date.getFullYear(), nextState.date.getMonth(), 1);
+        }
+        if (typeof nextState.searchQuery === 'string') {
+            searchQuery.value = nextState.searchQuery.trim();
+        }
+        if (typeof nextState.activeCategory === 'string') {
+            const allowed = new Set(['all', 'dailyChecklist', 'news', 'comments', 'projectFiles']);
+            if (allowed.has(nextState.activeCategory)) {
+                activeCategory.value = nextState.activeCategory;
+            }
+        }
+    };
+
     /**
      * 异步加载新闻数据
      * 支持多次调用，自动处理加载状态和错误
@@ -84,7 +132,6 @@ export const createStore = () => {
             
             const targetDate = date || currentDate.value;
             const dateStr = formatDate(targetDate);
-            const todayStr = formatDate(today.value);
             
             if (isFutureDate(targetDate, today.value)) {
                 throw createError('无法查看未来日期的新闻', ErrorTypes.VALIDATION, '新闻加载');
@@ -96,7 +143,7 @@ export const createStore = () => {
                 cname: 'rss',
                 isoDate: `${dateStr},${dateStr}`
             });
-            const response = await getData(rssUrl);
+            const response = await window.requestClient.get(rssUrl, { abortKey: REQUEST_ABORT_KEYS.news });
             const data = response.data.list;
             
             if (!Array.isArray(data)) {
@@ -128,7 +175,6 @@ export const createStore = () => {
             
             const targetDate = date || currentDate.value;
             const dateStr = formatDate(targetDate);
-            const todayStr = formatDate(today.value);
             
             if (isFutureDate(targetDate, today.value)) {
                 throw createError('无法查看未来日期的项目文件', ErrorTypes.VALIDATION, '项目文件加载');
@@ -140,7 +186,7 @@ export const createStore = () => {
                 cname: 'projectVersionFiles',
                 updatedTime: `${dateStr},${dateStr}`
             });
-            const response = await getData(filesUrl);
+            const response = await window.requestClient.get(filesUrl, { abortKey: REQUEST_ABORT_KEYS.projectFiles });
             const data = response.data.list;
             
             if (!Array.isArray(data)) {
@@ -339,11 +385,37 @@ export const createStore = () => {
         }
     };
 
-    // 自动初始化加载 - 延迟执行以确保组件完全初始化
-    setTimeout(() => {
-        loadNewsData();
-        loadProjectFilesData();
-    }, 100);
+    const initFromUrlAndLoad = () => {
+        const urlState = getUrlState();
+        applyUrlState(urlState);
+        setTimeout(() => {
+            if (activeCategory.value === 'projectFiles') {
+                loadProjectFilesData(currentDate.value);
+            } else if (activeCategory.value === 'news') {
+                loadNewsData(currentDate.value);
+            } else {
+                loadNewsData(currentDate.value);
+                loadProjectFilesData(currentDate.value);
+            }
+        }, 100);
+    };
+
+    initFromUrlAndLoad();
+
+    try {
+        window.addEventListener('popstate', () => {
+            const urlState = getUrlState();
+            applyUrlState(urlState);
+            if (activeCategory.value === 'projectFiles') {
+                loadProjectFilesData(currentDate.value);
+            } else if (activeCategory.value === 'news') {
+                loadNewsData(currentDate.value);
+            } else {
+                loadNewsData(currentDate.value);
+                loadProjectFilesData(currentDate.value);
+            }
+        });
+    } catch (_) {}
 
     // 恢复本地持久化
     restorePersistence();
@@ -388,8 +460,6 @@ export const createStore = () => {
         toggleFavorite
     };
 };
-
-
 
 
 

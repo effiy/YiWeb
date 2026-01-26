@@ -100,9 +100,25 @@ async function sendRequest(url, options = {}) {
     const timeLabel = `fetch:${config.method || 'GET'} ${url}`;
     window.timeStart(timeLabel);
 
-    // 构建可中止的 fetch
     const controller = new AbortController();
+    if (config.signal) {
+      try {
+        if (config.signal.aborted) {
+          controller.abort();
+        } else if (typeof config.signal.addEventListener === 'function') {
+          config.signal.addEventListener('abort', () => {
+            try { controller.abort(); } catch (_) {}
+          }, { once: true });
+        }
+      } catch (_) {}
+    }
     const { signal } = controller;
+
+    const timeoutMs = (() => {
+      const ms = Number(config.timeout);
+      if (Number.isFinite(ms) && ms > 0) return ms;
+      return DEFAULT_CONFIG.timeout;
+    })();
     // 创建请求 Promise
     const requestPromise = fetch(url, {
       method: config.method || 'GET',
@@ -116,17 +132,21 @@ async function sendRequest(url, options = {}) {
     });
     
     // 创建超时 Promise
+    let timeoutId = null;
     const timeoutPromise = new Promise((_, reject) => {
-      const timer = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         try { controller.abort(); } catch (_) {}
-        reject(new Error(`请求超时：${config.timeout}ms`));
-      }, config.timeout);
-      // 将timer挂到signal上，便于后续清理（可选）
-      signal._timer = timer;
+        reject(new Error(`请求超时：${timeoutMs}ms`));
+      }, timeoutMs);
     });
     
     // 竞争：请求 vs 超时
-    const response = await Promise.race([requestPromise, timeoutPromise]);
+    let response;
+    try {
+      response = await Promise.race([requestPromise, timeoutPromise]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
     
     // 应用响应拦截器
     const interceptedResponse = responseInterceptor(response, interceptedConfig);
@@ -259,10 +279,96 @@ export const buildServiceUrl = (methodName, params) => {
     return `${window.API_URL}/?module_name=${SERVICE_MODULE}&method_name=${methodName}&parameters=${encodeURIComponent(parameters)}`;
 };
 
+class RequestClient {
+  constructor(options = {}) {
+    const defaultOptions = {
+      timeout: options.timeout,
+      mode: options.mode,
+      credentials: options.credentials,
+      retryOn401: options.retryOn401,
+      autoClearToken: options.autoClearToken,
+      showError: options.showError,
+      promptLogin: options.promptLogin
+    };
+    this.defaultOptions = Object.fromEntries(
+      Object.entries(defaultOptions).filter(([, v]) => v !== undefined)
+    );
+    this.abortControllers = new Map();
+  }
+
+  buildServiceUrl(methodName, params) {
+    return buildServiceUrl(methodName, params);
+  }
+
+  abort(abortKey) {
+    if (!abortKey) return;
+    const controller = this.abortControllers.get(abortKey);
+    if (controller) {
+      try { controller.abort(); } catch (_) {}
+      this.abortControllers.delete(abortKey);
+    }
+  }
+
+  async request(url, options = {}) {
+    const { abortKey, ...rest } = options || {};
+    let signal = rest.signal;
+    let abortController = null;
+
+    if (abortKey) {
+      this.abort(abortKey);
+      abortController = new AbortController();
+      this.abortControllers.set(abortKey, abortController);
+      signal = abortController.signal;
+    }
+
+    try {
+      const merged = { ...this.defaultOptions, ...rest };
+      if (signal) merged.signal = signal;
+      else if ('signal' in merged) {
+        try { delete merged.signal; } catch (_) {}
+      }
+      return await sendRequest(url, merged);
+    } finally {
+      if (abortKey) {
+        if (abortController && this.abortControllers.get(abortKey) === abortController) {
+          this.abortControllers.delete(abortKey);
+        }
+      }
+    }
+  }
+
+  get(url, options = {}) {
+    return this.request(url, { ...options, method: 'GET' });
+  }
+
+  post(url, data, options = {}) {
+    return this.request(url, { ...options, method: 'POST', body: JSON.stringify(data) });
+  }
+
+  put(url, data, options = {}) {
+    return this.request(url, { ...options, method: 'PUT', body: JSON.stringify(data) });
+  }
+
+  patch(url, data, options = {}) {
+    return this.request(url, { ...options, method: 'PATCH', body: JSON.stringify(data) });
+  }
+
+  delete(url, options = {}) {
+    return this.request(url, { ...options, method: 'DELETE' });
+  }
+}
+
+function createRequestClient(options = {}) {
+  return new RequestClient(options);
+}
+
 // 导出常量和函数到全局 window 对象
 if (typeof window !== 'undefined') {
     window.SERVICE_MODULE = SERVICE_MODULE;
     window.buildServiceUrl = buildServiceUrl;
+    if (!window.RequestClient) window.RequestClient = RequestClient;
+    if (!window.createRequestClient) window.createRequestClient = createRequestClient;
+    if (!window.requestClient) window.requestClient = createRequestClient();
 }
 
 /**
@@ -501,7 +607,9 @@ export {
     batchRequests,
     retryRequest,
     CachedRequest,
-    createCachedRequest
+    createCachedRequest,
+    RequestClient,
+    createRequestClient
 };
 
 // 确保在ES6模块环境中也能全局访问
@@ -523,8 +631,6 @@ if (typeof window !== 'undefined') {
 // 注意：由于HTML使用普通script标签，不支持ES6模块语法
 // 如果需要ES6模块支持，请将script标签改为 type="module"
 // 或者使用动态import()语法
-
-
 
 
 

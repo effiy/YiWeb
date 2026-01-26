@@ -1,7 +1,6 @@
 // 新闻页评论列表组件（与 AICR 评论样式保持一致的展示）
 // 作者：liangliang
 
-import { getData } from '/src/services/index.js';
 import { buildServiceUrl } from '/src/services/helper/requestHelper.js';
 import { formatDate } from '/src/utils/date.js';
 import { safeExecute } from '/src/utils/error.js';
@@ -519,7 +518,7 @@ const componentOptions = {
                     params.newsLink = this.newsLink;
                 }
                 const queryUrl = buildServiceUrl('query_documents', params);
-                const res = await getData(queryUrl, { method: 'GET' }, false);
+                const res = await window.requestClient.get(queryUrl, { abortKey: 'YiWeb.comments.list' });
                 let list = [];
                 if (res && res.data && Array.isArray(res.data.list)) list = res.data.list;
                 else if (Array.isArray(res)) list = res;
@@ -632,7 +631,6 @@ const componentOptions = {
         console.error('[CommentsList] 组件初始化失败:', e);
     }
 })();
-
 
 
 

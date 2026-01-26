@@ -164,7 +164,7 @@ async function getData(url, options = {}, useCache = true) {
   }
   
   try {
-    const data = await window.getRequest(url, options);
+    const data = await window.requestClient.get(url, options);
     
     // 设置缓存
     if (useCache) {
@@ -196,7 +196,7 @@ async function postData(url, data, validationRules = {}, options = {}) {
   }
   
   try {
-    const result = await window.postRequest(url, data, options);
+    const result = await window.requestClient.post(url, data, options);
     
     // 清除相关缓存
     CacheManager.clear();
@@ -226,7 +226,7 @@ async function updateData(url, data, validationRules = {}, options = {}) {
   }
   
   try {
-    const result = await window.putRequest(url, data, options);
+    const result = await window.requestClient.put(url, data, options);
     
     // 清除相关缓存
     CacheManager.clear();
@@ -256,7 +256,7 @@ async function patchData(url, data, validationRules = {}, options = {}) {
   }
   
   try {
-    const result = await window.patchRequest(url, data, options);
+    const result = await window.requestClient.patch(url, data, options);
     
     // 清除相关缓存
     CacheManager.clear();
@@ -276,7 +276,7 @@ async function patchData(url, data, validationRules = {}, options = {}) {
  */
 async function deleteData(url, options = {}) {
   try {
-    const result = await window.deleteRequest(url, options);
+    const result = await window.requestClient.delete(url, options);
     
     // 清除相关缓存
     CacheManager.clear();

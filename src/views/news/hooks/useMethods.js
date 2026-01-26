@@ -8,6 +8,7 @@
  */
 import { getTimeAgo } from '/src/utils/date.js';
 import { safeExecute, createError, ErrorTypes, showSuccessMessage } from '/src/utils/error.js';
+import { updateUrlParams as updateUrlParamsInUrl } from '/src/utils/common.js';
 
 export const useMethods = (store) => {
     const { 
@@ -36,6 +37,17 @@ export const useMethods = (store) => {
         toggleFavorite
     } = store;
 
+    const formatYMD = (date) => {
+        if (!(date instanceof Date)) return '';
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+
+    const syncUrlState = (patch = {}, replace = false) => {
+        return safeExecute(() => {
+            updateUrlParamsInUrl(patch, replace);
+        }, 'URL状态同步');
+    };
+
     /**
      * 处理搜索输入
      * @param {Event} event - 输入事件
@@ -44,6 +56,7 @@ export const useMethods = (store) => {
         return safeExecute(() => {
             const value = event.target.value;
             setSearchQuery(value);
+            syncUrlState({ q: value && value.trim() ? value.trim() : null }, true);
             
             // 记录搜索行为
             if (value.trim()) {
@@ -61,11 +74,13 @@ export const useMethods = (store) => {
             if (event.key === 'Escape') {
                 event.target.value = '';
                 setSearchQuery('');
+                syncUrlState({ q: null }, true);
             } else if (event.key === 'Enter') {
                 event.preventDefault();
                 const query = searchQuery.value.trim();
                 if (query) {
                     addSearchHistory(query);
+                    syncUrlState({ q: query }, false);
                 }
             }
         }, '搜索键盘事件处理');
@@ -79,6 +94,7 @@ export const useMethods = (store) => {
             setSearchQuery('');
             selectedCategories.value.clear();
             selectedTags.value.clear();
+            syncUrlState({ q: null }, true);
             
             // 聚焦到输入框
             const messageInput = document.getElementById('messageInput');
@@ -103,6 +119,7 @@ export const useMethods = (store) => {
             // 顶部分类：全部/每日清单/新闻/评论/项目文件
             if (['all', 'dailyChecklist', 'news', 'comments', 'projectFiles'].includes(category)) {
                 setActiveCategory(category);
+                syncUrlState({ cat: category }, false);
 
                 // 点击后请求对应接口
                 if (category === 'all') {
@@ -263,8 +280,7 @@ export const useMethods = (store) => {
             newDate.setDate(newDate.getDate() - 1);
             setCurrentDate(newDate);
             
-            // 更新URL参数
-            updateUrlParams(newDate);
+            syncUrlState({ date: formatYMD(newDate) }, false);
             
             // 触发日期变化事件，通知每日清单组件
             window.dispatchEvent(new CustomEvent('dateChanged', { 
@@ -296,7 +312,7 @@ export const useMethods = (store) => {
             }
             
             setCurrentDate(newDate);
-            updateUrlParams(newDate);
+            syncUrlState({ date: formatYMD(newDate) }, false);
             
             // 触发日期变化事件，通知每日清单组件
             window.dispatchEvent(new CustomEvent('dateChanged', { 
@@ -317,7 +333,7 @@ export const useMethods = (store) => {
     const goToToday = () => {
         return safeExecute(async () => {
             setCurrentDate(today.value);
-            updateUrlParams(today.value);
+            syncUrlState({ date: formatYMD(today.value) }, false);
             
             // 触发日期变化事件，通知每日清单组件
             window.dispatchEvent(new CustomEvent('dateChanged', { 
@@ -362,7 +378,7 @@ export const useMethods = (store) => {
             }
             
             setCurrentDate(date);
-            updateUrlParams(date);
+            syncUrlState({ date: formatYMD(date) }, false);
             
             // 触发日期变化事件，通知每日清单组件
             window.dispatchEvent(new CustomEvent('dateChanged', { 
@@ -397,15 +413,6 @@ export const useMethods = (store) => {
         return safeExecute(async () => {
             await loadProjectFilesData(date);
         }, '项目文件数据加载');
-    };
-
-    const updateUrlParams = (date) => {
-        return safeExecute(() => {
-            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            const url = new URL(window.location);
-            url.searchParams.set('date', dateStr);
-            window.history.pushState({}, '', url);
-        }, 'URL参数更新');
     };
 
     const getCategoryTag = (item) => {
@@ -557,7 +564,6 @@ export const useMethods = (store) => {
         exportAllData
     };
 }; 
-
 
 
 
