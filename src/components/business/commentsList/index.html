@@ -31,6 +31,7 @@
     <div v-if="comments && comments.length > 0" class="comment-list" role="list">
       <article v-for="comment in comments" :key="comment.key" class="comment-item"
         :class="getCommentStatusClass(comment.status)" role="listitem" @click="openInAicr(comment)"
+        tabindex="0" @keydown.enter.prevent="openInAicr(comment)" @keydown.space.prevent="openInAicr(comment)"
         :title="'在AICR中打开相关文件'">
         <div class="comment-header-section">
           <div class="comment-meta">
@@ -86,4 +87,3 @@
     </div>
   </div>
 </aside>
-

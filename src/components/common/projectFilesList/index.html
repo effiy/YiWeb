@@ -47,6 +47,9 @@
                 v-for="file in filteredProjectFiles" 
                 :key="file.id || file.filePath || file.fileName"
                 @click="openProjectFile(file)"
+                tabindex="0"
+                @keydown.enter.prevent="openProjectFile(file)"
+                @keydown.space.prevent="openProjectFile(file)"
                 :class="['news-item', { 
                     highlighted: isHighlighted(file),
                     clicked: clickedItems.has(file.filePath || file.fileName),
@@ -139,6 +142,9 @@
                 v-for="file in projectFiles" 
                 :key="file.fileId"
                 @click="openProjectFile(file)"
+                tabindex="0"
+                @keydown.enter.prevent="openProjectFile(file)"
+                @keydown.space.prevent="openProjectFile(file)"
                 :class="['news-item', { 
                     highlighted: isHighlighted(file),
                     clicked: clickedItems.has(file.fileId),
@@ -205,4 +211,3 @@
         <div class="empty-subtitle">请稍后重试或联系管理员</div>
     </div>
 </section>
-

@@ -236,6 +236,11 @@
                     'batch-selected': sessionBatchMode && isSessionSelected(session.key)
                 }"
                 @click="handleSessionClick(session, $event)"
+                tabindex="0"
+                role="button"
+                :aria-label="`打开会话: ${(session.pageTitle || session.title || '未命名会话')}`"
+                @keydown.enter.prevent="handleSessionClick(session, $event)"
+                @keydown.space.prevent="handleSessionClick(session, $event)"
                 @mousedown="startLongPress(session, $event)"
                 @mouseup="cancelLongPress"
                 @mouseleave="cancelLongPress"
@@ -352,4 +357,3 @@
         </div>
     </div>
 </div>
-

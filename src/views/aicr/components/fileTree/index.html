@@ -1,134 +1,238 @@
 <!-- 文件树组件模板 -->
-<aside class="file-tree-container" :class="{ 'collapsed': collapsed }" role="navigation" aria-label="文件目录树">
-    <!-- 标签过滤器（参考 YiPet 项目） -->
-    <div class="session-list-tags" v-if="!collapsed && (allTags.length > 0 || tagCounts.noTagsCount > 0)"
-        style="margin-bottom: 10px; border-bottom: 1px solid var(--border-color);">
-        <div class="tags-header">
-            <!-- 标签搜索框 -->
-            <div class="tag-search-container" style="flex: 1; margin-bottom: 0; margin-right: 12px;">
-                <input type="text" class="tag-search-input" :value="tagFilterSearchKeyword"
-                    @input="updateTagSearch($event.target.value)" placeholder="搜索标签..." aria-label="搜索标签" />
-                <button type="button" v-if="tagFilterSearchKeyword" class="tag-search-clear"
-                    @click="updateTagSearch('')" title="清除搜索" aria-label="清除搜索">
-                    <i class="fas fa-times" aria-hidden="true"></i>
-                </button>
-            </div>
-            <div class="tags-header-actions">
-                <!-- 筛选无标签按钮 -->
-                <button type="button" class="tag-filter-btn tag-filter-no-tags-btn" :class="{ active: tagFilterNoTags }"
-                    @click="toggleNoTags" :title="tagFilterNoTags ? '取消筛选无标签文件' : '筛选没有标签的文件'" aria-label="筛选无标签">
-                    <span class="tag-icon-wrapper">
-                        <i class="fas fa-tag" aria-hidden="true"></i>
-                        <i v-if="tagFilterNoTags" class="fas fa-ban tag-ban-overlay" aria-hidden="true"></i>
-                    </span>
-                </button>
-                <!-- 反向过滤按钮 -->
-                <button type="button" class="tag-filter-btn tag-filter-reverse" :class="{ active: tagFilterReverse }"
-                    @click="toggleReverse" :title="tagFilterReverse ? '取消反向过滤' : '反向过滤（排除选中标签）'" aria-label="反向过滤">
-                    <i class="fas fa-exchange-alt" aria-hidden="true"></i>
-                </button>
-                <!-- 展开/折叠按钮 -->
-                <button type="button" class="tag-filter-btn" :class="{ active: tagFilterExpanded }"
-                    @click="toggleExpand" :title="tagFilterExpanded ? '收起标签列表' : '展开标签列表'" aria-label="展开/折叠标签">
-                    <i class="fas" :class="tagFilterExpanded ? 'fa-chevron-up' : 'fa-chevron-down'" aria-hidden="true"></i>
-                </button>
-                <!-- 清除所有过滤按钮 -->
-                <button type="button" class="tags-clear-btn"
-                    :class="{ active: selectedTags.length > 0 || tagFilterNoTags || tagFilterSearchKeyword }"
-                    @click="clearAllFilters"
-                    :title="(selectedTags.length > 0 || tagFilterNoTags || tagFilterSearchKeyword) ? '清除所有过滤条件' : '无过滤条件'"
-                    :disabled="selectedTags.length === 0 && !tagFilterNoTags && !tagFilterSearchKeyword">
-                    清除
-                </button>
-            </div>
-        </div>
-
-        <!-- 标签列表 -->
-        <div class="tags-list">
-            <!-- 没有标签按钮（不允许拖拽） -->
-            <button type="button" v-if="tagCounts.noTagsCount > 0" class="tag-item tag-no-tags"
-                :class="{ active: tagFilterNoTags }" :draggable="false" @click="toggleNoTags"
-                :title="tagFilterNoTags ? '取消筛选无标签文件' : '筛选没有标签的文件'">
-                没有标签 ({{ tagCounts.noTagsCount }})
-            </button>
-
-            <!-- 标签项（支持拖拽排序） -->
-            <button type="button" v-for="tag in visibleTags" :key="tag" class="tag-item"
-                :class="{ active: selectedTags.includes(tag) }" :draggable="true" :data-tag-name="tag"
-                @click="toggleTag(tag)" @dragstart="handleDragStart($event, tag)" @dragend="handleDragEnd($event)"
-                @dragover="handleDragOver($event)" @dragleave="handleDragLeave($event)" @drop="handleDrop($event, tag)"
-                :title="selectedTags.includes(tag) ? '取消选择 | 拖拽调整顺序' : '选择标签 | 拖拽调整顺序'">
-                {{ tag }} ({{ tagCounts.counts[tag] || 0 }})
-            </button>
-
-            <!-- 展开/折叠按钮（仅在标签列表底部显示，当有更多标签时，不允许拖拽） -->
-            <button type="button" v-if="hasMoreTags && !tagFilterSearchKeyword" class="tag-item tag-expand-btn"
-                :draggable="false" @click="toggleExpand" :title="tagFilterExpanded ? '收起标签' : '展开标签'">
-                <i class="fas" :class="tagFilterExpanded ? 'fa-chevron-up' : 'fa-chevron-down'" aria-hidden="true"></i>
-                {{ tagFilterExpanded ? '收起' : `展开 (${filteredTags.length - visibleTags.length})` }}
-            </button>
-        </div>
-    </div>
-
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading-container" role="status" aria-live="polite">
-        <div class="loading-spinner" aria-hidden="true"></div>
-        <div class="loading-text">正在加载文件树...</div>
-    </div>
-
-    <!-- 错误状态 -->
-    <div v-else-if="error" class="error-container" role="alert">
-        <div class="error-icon" aria-hidden="true">
-            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        </div>
-        <div class="error-message">{{ error }}</div>
-        <button type="button" @click="$emit('reload')" class="retry-button">
-            <i class="fas fa-redo" aria-hidden="true"></i>
-            重新加载
+<aside
+  class="file-tree-container"
+  :class="{ 'collapsed': collapsed }"
+  role="navigation"
+  aria-label="文件目录树"
+>
+  <!-- 标签过滤器（参考 YiPet 项目） -->
+  <div
+    class="session-list-tags"
+    v-if="!collapsed && (allTags.length > 0 || tagCounts.noTagsCount > 0)"
+    style="margin-bottom: 10px; border-bottom: 1px solid var(--border-color)"
+  >
+    <div class="tags-header">
+      <!-- 标签搜索框 -->
+      <div
+        class="tag-search-container"
+        style="flex: 1; margin-bottom: 0; margin-right: 12px"
+      >
+        <input
+          type="text"
+          class="tag-search-input"
+          :value="tagFilterSearchKeyword"
+          @input="updateTagSearch($event.target.value)"
+          placeholder="搜索标签..."
+          aria-label="搜索标签"
+        />
+        <button
+          type="button"
+          v-if="tagFilterSearchKeyword"
+          class="tag-search-clear"
+          @click="updateTagSearch('')"
+          title="清除搜索"
+          aria-label="清除搜索"
+        >
+          <i class="fas fa-times" aria-hidden="true"></i>
         </button>
+      </div>
+      <div class="tags-header-actions">
+        <!-- 筛选无标签按钮 -->
+        <button
+          type="button"
+          class="tag-filter-btn tag-filter-no-tags-btn"
+          :class="{ active: tagFilterNoTags }"
+          @click="toggleNoTags"
+          :title="tagFilterNoTags ? '取消筛选无标签文件' : '筛选没有标签的文件'"
+          aria-label="筛选无标签"
+        >
+          <span class="tag-icon-wrapper">
+            <i class="fas fa-tag" aria-hidden="true"></i>
+            <i
+              v-if="tagFilterNoTags"
+              class="fas fa-ban tag-ban-overlay"
+              aria-hidden="true"
+            ></i>
+          </span>
+        </button>
+        <!-- 反向过滤按钮 -->
+        <button
+          type="button"
+          class="tag-filter-btn tag-filter-reverse"
+          :class="{ active: tagFilterReverse }"
+          @click="toggleReverse"
+          :title="tagFilterReverse ? '取消反向过滤' : '反向过滤（排除选中标签）'"
+          aria-label="反向过滤"
+        >
+          <i class="fas fa-exchange-alt" aria-hidden="true"></i>
+        </button>
+        <!-- 展开/折叠按钮 -->
+        <button
+          type="button"
+          class="tag-filter-btn"
+          :class="{ active: tagFilterExpanded }"
+          @click="toggleExpand"
+          :title="tagFilterExpanded ? '收起标签列表' : '展开标签列表'"
+          aria-label="展开/折叠标签"
+        >
+          <i
+            class="fas"
+            :class="tagFilterExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"
+            aria-hidden="true"
+          ></i>
+        </button>
+        <!-- 清除所有过滤按钮 -->
+        <button
+          type="button"
+          class="tags-clear-btn"
+          :class="{ active: selectedTags.length > 0 || tagFilterNoTags || tagFilterSearchKeyword }"
+          @click="clearAllFilters"
+          :title="(selectedTags.length > 0 || tagFilterNoTags || tagFilterSearchKeyword) ? '清除所有过滤条件' : '无过滤条件'"
+          :disabled="selectedTags.length === 0 && !tagFilterNoTags && !tagFilterSearchKeyword"
+        >
+          清除
+        </button>
+      </div>
     </div>
 
-    <!-- 文件树内容 -->
-    <div v-else-if="tree.length > 0" class="file-tree-content">
-        <!-- 树形视图 -->
-        <ul v-if="viewMode === 'tree'" class="file-tree" role="tree">
-            <template v-for="item in sortedTree" :key="item.key">
-                <!-- 递归组件：文件树节点 -->
-                <file-tree-node :item="item" :selected-key="selectedKey" :expanded-folders="expandedFolders"
-                    :comments="comments" :batch-mode="batchMode" :selected-keys="selectedKeys"
-                    @file-select="$emit('file-select', $event)" @folder-toggle="$emit('folder-toggle', $event)"
-                    @create-folder="$emit('create-folder', $event)" @create-file="$emit('create-file', $event)"
-                    @rename-item="$emit('rename-item', $event)" @delete-item="$emit('delete-item', $event)"
-                    @create-session="$emit('create-session', $event)"
-                    @batch-select-file="$emit('batch-select-file', $event)"
-                    @copy-as-prompt="$emit('copy-as-prompt', $event)"></file-tree-node>
-            </template>
-        </ul>
+    <!-- 标签列表 -->
+    <div class="tags-list">
+      <!-- 没有标签按钮（不允许拖拽） -->
+      <button
+        type="button"
+        v-if="tagCounts.noTagsCount > 0"
+        class="tag-item tag-no-tags"
+        :class="{ active: tagFilterNoTags }"
+        :draggable="false"
+        @click="toggleNoTags"
+        :title="tagFilterNoTags ? '取消筛选无标签文件' : '筛选没有标签的文件'"
+      >
+        没有标签 ({{ tagCounts.noTagsCount }})
+      </button>
 
-        <!-- 标签视图 -->
-        <div v-else-if="viewMode === 'tags'" class="file-tags-view">
-            <div class="tags-container">
-                <div v-for="file in flattenedFiles" :key="file.key" :class="['file-tag', { 
+      <!-- 标签项（支持拖拽排序） -->
+      <button
+        type="button"
+        v-for="tag in visibleTags"
+        :key="tag"
+        class="tag-item"
+        :class="{ active: selectedTags.includes(tag) }"
+        :draggable="true"
+        :data-tag-name="tag"
+        @click="toggleTag(tag)"
+        @dragstart="handleDragStart($event, tag)"
+        @dragend="handleDragEnd($event)"
+        @dragover="handleDragOver($event)"
+        @dragleave="handleDragLeave($event)"
+        @drop="handleDrop($event, tag)"
+        :title="selectedTags.includes(tag) ? '取消选择 | 拖拽调整顺序' : '选择标签 | 拖拽调整顺序'"
+      >
+        {{ tag }} ({{ tagCounts.counts[tag] || 0 }})
+      </button>
+
+      <!-- 展开/折叠按钮（仅在标签列表底部显示，当有更多标签时，不允许拖拽） -->
+      <button
+        type="button"
+        v-if="hasMoreTags && !tagFilterSearchKeyword"
+        class="tag-item tag-expand-btn"
+        :draggable="false"
+        @click="toggleExpand"
+        :title="tagFilterExpanded ? '收起标签' : '展开标签'"
+      >
+        <i
+          class="fas"
+          :class="tagFilterExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"
+          aria-hidden="true"
+        ></i>
+        {{ tagFilterExpanded ? '收起' : `展开 (${filteredTags.length -
+        visibleTags.length})` }}
+      </button>
+    </div>
+  </div>
+
+  <!-- 加载状态 -->
+  <div
+    v-if="loading"
+    class="loading-container"
+    role="status"
+    aria-live="polite"
+  >
+    <div class="loading-spinner" aria-hidden="true"></div>
+    <div class="loading-text">正在加载文件树...</div>
+  </div>
+
+  <!-- 错误状态 -->
+  <div v-else-if="error" class="error-container" role="alert">
+    <div class="error-icon" aria-hidden="true">
+      <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+    </div>
+    <div class="error-message">{{ error }}</div>
+    <button type="button" @click="$emit('reload')" class="retry-button">
+      <i class="fas fa-redo" aria-hidden="true"></i>
+      重新加载
+    </button>
+  </div>
+
+  <!-- 文件树内容 -->
+  <div v-else-if="tree.length > 0" class="file-tree-content">
+    <!-- 树形视图 -->
+    <ul v-if="viewMode === 'tree'" class="file-tree" role="tree">
+      <template v-for="item in sortedTree" :key="item.key">
+        <!-- 递归组件：文件树节点 -->
+        <file-tree-node
+          :item="item"
+          :selected-key="selectedKey"
+          :expanded-folders="expandedFolders"
+          :comments="comments"
+          :batch-mode="batchMode"
+          :selected-keys="selectedKeys"
+          @file-select="$emit('file-select', $event)"
+          @folder-toggle="$emit('folder-toggle', $event)"
+          @create-folder="$emit('create-folder', $event)"
+          @create-file="$emit('create-file', $event)"
+          @rename-item="$emit('rename-item', $event)"
+          @delete-item="$emit('delete-item', $event)"
+          @create-session="$emit('create-session', $event)"
+          @batch-select-file="$emit('batch-select-file', $event)"
+          @copy-as-prompt="$emit('copy-as-prompt', $event)"
+        ></file-tree-node>
+      </template>
+    </ul>
+
+    <!-- 标签视图 -->
+    <div v-else-if="viewMode === 'tags'" class="file-tags-view">
+      <div class="tags-container">
+        <button
+          type="button"
+          v-for="file in flattenedFiles"
+          :key="file.key"
+          :class="['file-tag', { 
                         'selected': !batchMode && isFileSelected(file.key),
                         'batch-selected': batchMode && isFileSelected(file.key)
-                    }]" @click="handleTagClick(file.key)" :title="`文件: ${file.name}`">
-                    <span class="tag-icon">{{ getFileIcon(file) }}</span>
-                    <span class="tag-name">{{ file.name }}</span>
-                    <span v-if="getCommentCount(file.sessionKey || file.key) > 0" class="tag-comment-count">
-                        {{ getCommentCount(file.sessionKey || file.key) }}
-                    </span>
-                </div>
-            </div>
-        </div>
+                    }]"
+          @click="handleTagClick(file.key)"
+          :title="`文件: ${file.name}`"
+          :aria-label="`打开文件: ${file.name}`"
+        >
+          <span class="tag-icon">{{ getFileIcon(file) }}</span>
+          <span class="tag-name">{{ file.name }}</span>
+          <span
+            v-if="getCommentCount(file.sessionKey || file.key) > 0"
+            class="tag-comment-count"
+          >
+            {{ getCommentCount(file.sessionKey || file.key) }}
+          </span>
+        </button>
+      </div>
     </div>
+  </div>
 
-    <!-- 空状态 -->
-    <div v-else class="empty-state" role="status">
-        <div class="empty-icon" aria-hidden="true">
-            <i class="fas fa-folder-open" aria-hidden="true"></i>
-        </div>
-        <div class="empty-title">暂无文件</div>
-        <div class="empty-subtitle">请检查文件目录或联系管理员</div>
+  <!-- 空状态 -->
+  <div v-else class="empty-state" role="status">
+    <div class="empty-icon" aria-hidden="true">
+      <i class="fas fa-folder-open" aria-hidden="true"></i>
     </div>
+    <div class="empty-title">暂无文件</div>
+    <div class="empty-subtitle">请检查文件目录或联系管理员</div>
+  </div>
 </aside>
-
