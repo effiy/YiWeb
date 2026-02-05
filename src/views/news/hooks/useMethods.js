@@ -7,8 +7,9 @@
  * @returns {Object} 方法集合
  */
 import { getTimeAgo } from '/src/utils/date.js';
-import { safeExecute, createError, ErrorTypes, showSuccessMessage } from '/src/utils/error.js';
+import { safeExecute, safeExecuteAsync, createError, ErrorTypes, showSuccessMessage } from '/src/utils/error.js';
 import { updateUrlParams as updateUrlParamsInUrl } from '/src/utils/common.js';
+import { showSuccess, showError } from '/src/utils/message.js';
 
 export const useMethods = (store) => {
     const { 
@@ -24,6 +25,15 @@ export const useMethods = (store) => {
         sidebarCollapsed,
         rssManagerOpen,
         rssSources,
+        rssManagerBusy,
+        rssFetchingNow,
+        rssSchedulerLoading,
+        rssSchedulerEnabled,
+        rssSchedulerType,
+        rssSchedulerIntervalMinutes,
+        rssSchedulerCronMinute,
+        rssSchedulerCronHour,
+        rssSchedulerCronDayOfWeek,
         loadNewsData,
         loadProjectFilesData,
         setSearchQuery,
@@ -41,7 +51,10 @@ export const useMethods = (store) => {
         closeRssManager,
         addRssSource,
         deleteRssSourceAt,
-        saveRssSources
+        saveRssSources,
+        loadRssSchedulerStatus,
+        saveRssSchedulerSettings,
+        runRssFetchNow
     } = store;
 
     const formatYMD = (date) => {
@@ -429,16 +442,59 @@ export const useMethods = (store) => {
     };
 
     const handleDeleteRssSource = (idx) => {
-        return safeExecute(() => {
-            deleteRssSourceAt(idx);
+        return safeExecuteAsync(async () => {
+            await deleteRssSourceAt(idx);
         }, 'RSS订阅源删除');
     };
 
     const handleSaveRssSources = () => {
-        return safeExecute(() => {
-            saveRssSources();
+        return safeExecuteAsync(async () => {
+            const result = await saveRssSources();
+            if (
+                result &&
+                typeof result === 'object' &&
+                !Array.isArray(result) &&
+                'type' in result &&
+                'title' in result &&
+                'message' in result
+            ) {
+                return result;
+            }
             showSuccessMessage('RSS 订阅源已保存');
         }, 'RSS订阅源保存');
+    };
+
+    const handleRefreshRssSchedulerStatus = () => {
+        return safeExecuteAsync(async () => {
+            await loadRssSchedulerStatus();
+            showSuccess('已刷新定时状态');
+        }, 'RSS定时状态刷新');
+    };
+
+    const handleSaveRssManager = () => {
+        return safeExecuteAsync(async () => {
+            await saveRssSources();
+            await saveRssSchedulerSettings();
+            showSuccess('RSS 设置已保存');
+        }, 'RSS管理保存');
+    };
+
+    const handleRunRssFetchNow = () => {
+        return safeExecuteAsync(async () => {
+            const result = await runRssFetchNow();
+            const total = Number(result?.total_sources) || 0;
+            const success = Number(result?.success_count) || 0;
+            const failed = Number(result?.failed_count) || 0;
+            if (total === 0) {
+                showSuccess('暂无可抓取的启用订阅源');
+                return;
+            }
+            if (failed > 0) {
+                showError(`抓取完成：成功 ${success}，失败 ${failed}`);
+                return;
+            }
+            showSuccess(`抓取完成：成功 ${success}`);
+        }, 'RSS手动抓取');
     };
 
     const handleLoadNewsData = async (date) => {
@@ -522,6 +578,9 @@ export const useMethods = (store) => {
         handleAddRssSource,
         handleDeleteRssSource,
         handleSaveRssSources,
+        handleSaveRssManager,
+        handleRunRssFetchNow,
+        handleRefreshRssSchedulerStatus,
         
         // 工具方法
         updateUrlParams: updateUrlParamsInUrl,
@@ -530,9 +589,15 @@ export const useMethods = (store) => {
         extractExcerpt,
         shouldShowCategory,
         rssManagerOpen,
-        rssSources
+        rssSources,
+        rssManagerBusy,
+        rssFetchingNow,
+        rssSchedulerLoading,
+        rssSchedulerEnabled,
+        rssSchedulerType,
+        rssSchedulerIntervalMinutes,
+        rssSchedulerCronMinute,
+        rssSchedulerCronHour,
+        rssSchedulerCronDayOfWeek
     };
 }; 
-
-
-

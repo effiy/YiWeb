@@ -93,7 +93,7 @@
             </section>
         </main>
 
-        <div v-if="rssManagerOpen" class="edit-card-modal" role="dialog" aria-modal="true" aria-label="RSS 管理">
+        <div v-if="rssManagerOpen" class="edit-card-modal" role="dialog" aria-modal="true" aria-label="RSS 管理" @click.self="handleCloseRssManager">
             <div class="edit-card-content">
                 <div class="edit-card-header">
                     <h3>
@@ -104,6 +104,59 @@
                 </div>
 
                 <div class="edit-card-form">
+                    <div class="edit-card-section">
+                        <div class="edit-card-section-header">
+                            <h4 class="edit-card-section-title">抓取设置</h4>
+                            <div class="rss-manager-actions">
+                                <button type="button" class="btn btn-outline btn-small" @click="handleRefreshRssSchedulerStatus" :disabled="rssSchedulerLoading || rssManagerBusy" aria-label="刷新定时状态">
+                                    <i v-if="rssSchedulerLoading" class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                                    <i v-else class="fas fa-rotate" aria-hidden="true"></i>
+                                    <span>刷新</span>
+                                </button>
+                                <button type="button" class="btn btn-primary btn-small" @click="handleRunRssFetchNow" :disabled="rssFetchingNow || rssManagerBusy" aria-label="立即抓取RSS">
+                                    <i v-if="rssFetchingNow" class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                                    <i v-else class="fas fa-bolt" aria-hidden="true"></i>
+                                    <span>立即抓取</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="edit-card-fields rss-scheduler-grid">
+                            <div class="edit-card-field">
+                                <div class="edit-card-label">启用定时抓取</div>
+                                <label class="rss-switch" aria-label="启用定时抓取">
+                                    <input type="checkbox" v-model="rssSchedulerEnabled" />
+                                    <span class="rss-switch-track" aria-hidden="true"></span>
+                                </label>
+                            </div>
+                            <div class="edit-card-field">
+                                <div class="edit-card-label">模式</div>
+                                <select class="edit-card-input" v-model="rssSchedulerType" aria-label="定时模式">
+                                    <option value="interval">间隔</option>
+                                    <option value="cron">定点</option>
+                                </select>
+                            </div>
+                            <div class="edit-card-field" v-if="rssSchedulerType === 'interval'">
+                                <div class="edit-card-label">间隔(分钟)</div>
+                                <input class="edit-card-input" type="number" min="1" step="1" v-model="rssSchedulerIntervalMinutes" placeholder="例如：60" aria-label="间隔分钟" />
+                            </div>
+                            <template v-else>
+                                <div class="edit-card-field">
+                                    <div class="edit-card-label">分钟(0-59)</div>
+                                    <input class="edit-card-input" v-model="rssSchedulerCronMinute" placeholder="例如：5" aria-label="Cron 分钟" />
+                                </div>
+                                <div class="edit-card-field">
+                                    <div class="edit-card-label">小时(0-23)</div>
+                                    <input class="edit-card-input" v-model="rssSchedulerCronHour" placeholder="例如：9" aria-label="Cron 小时" />
+                                </div>
+                                <div class="edit-card-field">
+                                    <div class="edit-card-label">星期(0-6, 周一=0)</div>
+                                    <input class="edit-card-input" v-model="rssSchedulerCronDayOfWeek" placeholder="例如：0" aria-label="Cron 星期" />
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
                     <div class="edit-card-section">
                         <div class="edit-card-section-header">
                             <h4 class="edit-card-section-title">订阅源</h4>
@@ -121,29 +174,17 @@
                             <div class="empty-subtitle">点击“新增”添加 RSS 地址</div>
                         </div>
 
-                        <div v-else class="edit-card-list">
-                            <div class="edit-card-section" v-for="(source, idx) in rssSources" :key="source.key || idx">
-                                <div class="edit-card-fields">
-                                    <div class="edit-card-field">
-                                        <div class="edit-card-label">名称</div>
-                                        <input class="edit-card-input" v-model="source.title" placeholder="例如：TechCrunch" />
-                                    </div>
-                                    <div class="edit-card-field">
-                                        <div class="edit-card-label">URL</div>
-                                        <input class="edit-card-input" v-model="source.url" placeholder="https://example.com/rss" />
-                                    </div>
-                                    <div class="edit-card-field">
-                                        <div class="edit-card-label">启用</div>
-                                        <input type="checkbox" v-model="source.enabled" aria-label="启用该订阅源" />
-                                    </div>
-                                    <div class="edit-card-field">
-                                        <div class="edit-card-label">操作</div>
-                                        <button type="button" class="btn btn-secondary btn-small" @click="handleDeleteRssSource(idx)" aria-label="删除订阅源">
-                                            <i class="fas fa-trash" aria-hidden="true"></i>
-                                            <span>删除</span>
-                                        </button>
-                                    </div>
-                                </div>
+                        <div v-else class="edit-card-list rss-source-list">
+                            <div class="rss-source-row" :class="{ 'is-disabled': source && source.enabled === false }" v-for="(source, idx) in rssSources" :key="source.key || idx">
+                                <input class="edit-card-input" v-model="source.title" placeholder="名称" aria-label="订阅源名称" />
+                                <input class="edit-card-input" v-model="source.url" placeholder="https://example.com/rss" aria-label="订阅源URL" />
+                                <label class="rss-switch" aria-label="启用该订阅源">
+                                    <input type="checkbox" v-model="source.enabled" />
+                                    <span class="rss-switch-track" aria-hidden="true"></span>
+                                </label>
+                                <button type="button" class="edit-card-row-delete" @click="handleDeleteRssSource(idx)" aria-label="删除订阅源">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -151,7 +192,10 @@
 
                 <div class="edit-card-footer">
                     <button type="button" class="btn btn-secondary" @click="handleCloseRssManager">关闭</button>
-                    <button type="button" class="btn btn-primary" @click="handleSaveRssSources">保存</button>
+                    <button type="button" class="btn btn-primary" @click="handleSaveRssManager" :disabled="rssManagerBusy">
+                        <i v-if="rssManagerBusy" class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                        <span>保存</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -180,7 +224,6 @@
     <script type="module" src="../../utils/performance.js"></script>
 </body>
 </html>
-
 
 
 

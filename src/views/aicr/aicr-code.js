@@ -192,65 +192,11 @@ async function createApp() {
                                 return;
                             }
                         } catch (storeError) {
-                            console.warn('[loadFileContent] store 加载失败，尝试 API 方式:', storeError);
+                            console.warn('[loadFileContent] store 加载失败:', storeError);
                         }
                     }
 
-                    // 如果 store 方法不可用或失败，使用 API 方式
-                    // 构建 API URL，version 参数可以为空（系统已简化，不再有版本概念）
-                    const queryParams = {
-                        cname: 'projectVersionFiles',
-                        key: this.fileInfo.fileKey
-                    };
-                    if (this.fileInfo.version) {
-                        queryParams.versionId = this.fileInfo.version;
-                    }
-
-                    const url = buildServiceUrl('query_documents', queryParams);
-                    console.log('[loadFileContent] 请求URL:', url);
-
-                    const response = await fetch(url);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    let list = (data?.data?.list && Array.isArray(data.data.list)) ? data.data.list : (Array.isArray(data) ? data : []);
-                    console.log('[loadFileContent] 查询结果数量:', list.length);
-
-                    if (list.length > 0) {
-                        const item = list[0];
-                        const itemData = (item && typeof item === 'object' && item.data && typeof item.data === 'object') ? item.data : {};
-
-                        // 尝试从多个位置获取文件内容
-                        let content = '';
-                        if (itemData.content) {
-                            content = itemData.content;
-                        } else if (item.content) {
-                            content = item.content;
-                        } else if (itemData.data && typeof itemData.data === 'string') {
-                            content = itemData.data;
-                        } else if (item.data && typeof item.data === 'string') {
-                            content = item.data;
-                        }
-
-                        this.currentFile = {
-                            name: item.name || itemData.name || this.fileInfo.fileName,
-                            path: item.path || itemData.path || this.fileInfo.filePath,
-                            content: content,
-                            type: itemData.type || item.type || 'text',
-                            size: itemData.size || item.size || 0,
-                            lastModified: itemData.lastModified || item.lastModified || new Date().toISOString(),
-                            // 约定：file.key 与会话 key(sessionKey/UUID)一致
-                            key: this.resolveSessionKey(),
-                            sessionKey: this.resolveSessionKey(),
-                            treeKey: item.key || item.path || itemData.path || this.fileInfo.fileKey
-                        };
-
-                        console.log('[loadFileContent] 文件加载成功:', this.currentFile.name, '内容长度:', content.length);
-                    } else {
-                        throw new Error('未找到指定的文件');
-                    }
+                    throw new Error('无法通过 store 获取文件内容');
                 } catch (error) {
                     console.error('加载文件内容失败:', error);
                     this.error = '加载文件内容失败: ' + (error.message || error);

@@ -6559,21 +6559,6 @@ export const useMethods = (store) => {
                         }
                     }
 
-                    // 如果通过 loadFileByKey 没有获取到内容，尝试直接调用 API
-                    if (!fileContent) {
-                        const { getData } = await import('/src/services/modules/crud.js');
-                        const url = buildServiceUrl('query_documents', {
-                            cname: 'projectVersionFiles',
-                            key: fileKey
-                        });
-                        const response = await getData(url, {}, false);
-                        let list = (response?.data?.list && Array.isArray(response.data.list)) ? response.data.list : (Array.isArray(response) ? response : []);
-                        if (list.length > 0) {
-                            fileData = list[0];
-                            fileContent = fileData.content || '';
-                        }
-                    }
-
                     if (!fileContent) {
                         throw new Error('无法获取文件内容');
                     }
