@@ -245,6 +245,25 @@ export const useMethods = (store) => {
     };
 
     /**
+     * 处理统计项点击事件
+     * @param {string} label - 统计项标签
+     * @param {Event} event - 事件对象
+     */
+    const handleStatItemClick = (label, event) => {
+        if (event) {
+            event.stopPropagation();
+        }
+        
+        if (!label) return;
+        
+        console.log('[统计项点击] 跳转到 AICR 页面，标签:', label);
+        
+        // 构建目标 URL，包含 tag 参数
+        const url = `../../views/aicr/index.html?tag=${encodeURIComponent(label)}`;
+        window.open(url, '_blank');
+    };
+
+    /**
      * 开始长按计时
      * @param {Object} card - 卡片对象
      * @param {Event} event - 事件对象
@@ -3211,6 +3230,7 @@ ${cardData.day ? `日期：${cardData.day}` : ''}
         handleCompositionStart,
         handleCompositionEnd,
         handleCardClick,
+        handleStatItemClick,
         handleSearchInput,
         handleSearchKeydown,
         clearSearch,
@@ -3275,6 +3295,7 @@ ${cardData.day ? `日期：${cardData.day}` : ''}
     
     return methods;
 };
+
 
 
 

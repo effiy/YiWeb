@@ -37,8 +37,8 @@
             @clear-search="handleClearSearch"
             @toggle-category="handleToggleCategory"
             @toggle-sidebar="handleToggleSidebar"
+            @open-rss-manager="handleOpenRssManager"
             @set-current-view="handleToggleCategory"
-            @export-all-data="exportAllData"
         ></search-header>
         
         <main class="main-content" role="main">
@@ -92,6 +92,69 @@
                 </div>
             </section>
         </main>
+
+        <div v-if="rssManagerOpen" class="edit-card-modal" role="dialog" aria-modal="true" aria-label="RSS 管理">
+            <div class="edit-card-content">
+                <div class="edit-card-header">
+                    <h3>
+                        <i class="fas fa-rss" aria-hidden="true"></i>
+                        <span>RSS 管理</span>
+                    </h3>
+                    <button type="button" class="edit-card-close" @click="handleCloseRssManager" aria-label="关闭 RSS 管理">×</button>
+                </div>
+
+                <div class="edit-card-form">
+                    <div class="edit-card-section">
+                        <div class="edit-card-section-header">
+                            <h4 class="edit-card-section-title">订阅源</h4>
+                            <button type="button" class="btn btn-outline btn-small" @click="handleAddRssSource" aria-label="新增订阅源">
+                                <i class="fas fa-plus" aria-hidden="true"></i>
+                                <span>新增</span>
+                            </button>
+                        </div>
+
+                        <div v-if="!rssSources || rssSources.length === 0" class="empty-state" role="status">
+                            <div class="empty-icon" aria-hidden="true">
+                                <i class="fas fa-rss" aria-hidden="true"></i>
+                            </div>
+                            <div class="empty-title">暂无订阅源</div>
+                            <div class="empty-subtitle">点击“新增”添加 RSS 地址</div>
+                        </div>
+
+                        <div v-else class="edit-card-list">
+                            <div class="edit-card-section" v-for="(source, idx) in rssSources" :key="source.key || idx">
+                                <div class="edit-card-fields">
+                                    <div class="edit-card-field">
+                                        <div class="edit-card-label">名称</div>
+                                        <input class="edit-card-input" v-model="source.title" placeholder="例如：TechCrunch" />
+                                    </div>
+                                    <div class="edit-card-field">
+                                        <div class="edit-card-label">URL</div>
+                                        <input class="edit-card-input" v-model="source.url" placeholder="https://example.com/rss" />
+                                    </div>
+                                    <div class="edit-card-field">
+                                        <div class="edit-card-label">启用</div>
+                                        <input type="checkbox" v-model="source.enabled" aria-label="启用该订阅源" />
+                                    </div>
+                                    <div class="edit-card-field">
+                                        <div class="edit-card-label">操作</div>
+                                        <button type="button" class="btn btn-secondary btn-small" @click="handleDeleteRssSource(idx)" aria-label="删除订阅源">
+                                            <i class="fas fa-trash" aria-hidden="true"></i>
+                                            <span>删除</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="edit-card-footer">
+                    <button type="button" class="btn btn-secondary" @click="handleCloseRssManager">关闭</button>
+                    <button type="button" class="btn btn-primary" @click="handleSaveRssSources">保存</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     
@@ -104,12 +167,6 @@
 
     <script type="module" src="../../config.js"></script>
 
-    <!-- JSZip 库 -->
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-    
-    <!-- 导出工具 -->
-    <script type="module" src="../../utils/exportUtils.js"></script>
-    
     <!-- Mermaid 工具函数 -->
     <script type="module" src="../../utils/mermaid.js"></script>
     <script type="module" src="../../utils/mermaidDebug.js"></script>

@@ -22,6 +22,8 @@ export const useMethods = (store) => {
         today,
         clickedItems,
         sidebarCollapsed,
+        rssManagerOpen,
+        rssSources,
         loadNewsData,
         loadProjectFilesData,
         setSearchQuery,
@@ -34,7 +36,12 @@ export const useMethods = (store) => {
         addClickedItem,
         addSearchHistory,
         markItemRead,
-        toggleFavorite
+        toggleFavorite,
+        openRssManager,
+        closeRssManager,
+        addRssSource,
+        deleteRssSourceAt,
+        saveRssSources
     } = store;
 
     const formatYMD = (date) => {
@@ -403,6 +410,37 @@ export const useMethods = (store) => {
         }, '侧边栏切换');
     };
 
+    const handleOpenRssManager = () => {
+        return safeExecute(() => {
+            openRssManager();
+        }, 'RSS管理打开');
+    };
+
+    const handleCloseRssManager = () => {
+        return safeExecute(() => {
+            closeRssManager();
+        }, 'RSS管理关闭');
+    };
+
+    const handleAddRssSource = () => {
+        return safeExecute(() => {
+            addRssSource();
+        }, 'RSS订阅源新增');
+    };
+
+    const handleDeleteRssSource = (idx) => {
+        return safeExecute(() => {
+            deleteRssSourceAt(idx);
+        }, 'RSS订阅源删除');
+    };
+
+    const handleSaveRssSources = () => {
+        return safeExecute(() => {
+            saveRssSources();
+            showSuccessMessage('RSS 订阅源已保存');
+        }, 'RSS订阅源保存');
+    };
+
     const handleLoadNewsData = async (date) => {
         return safeExecute(async () => {
             await loadNewsData(date);
@@ -444,86 +482,13 @@ export const useMethods = (store) => {
         }, '摘要提取');
     };
 
+    /**
+     * 判断分类是否显示
+     */
     const shouldShowCategory = (categoryKey) => {
         return safeExecute(() => {
             return selectedCategories.value.size === 0 || selectedCategories.value.has(categoryKey);
         }, '分类显示判断');
-    };
-
-    /**
-     * 导出所有数据
-     */
-    const exportAllData = async () => {
-        return safeExecute(async () => {
-            try {
-                // 动态导入导出工具
-                const { exportToZip } = await import('/src/utils/exportUtils.js');
-                
-                // 获取各个组件的数据
-                const allData = {
-                    dailyChecklist: await getDailyChecklistData(),
-                    projectFiles: projectFilesData.value || [],
-                    comments: await getCommentsData(),
-                    news: newsData.value || []
-                };
-                
-                console.log('[ExportAllData] 收集到的数据:', allData);
-                
-                // 导出所有数据
-                const success = await exportToZip(
-                    allData, 
-                    'YiWeb数据导出'
-                );
-                
-                if (success) {
-                    showSuccessMessage('所有数据已导出');
-                    console.log('[ExportAllData] 导出成功');
-                } else {
-                    console.error('[ExportAllData] 导出失败');
-                }
-            } catch (error) {
-                console.error('[ExportAllData] 导出过程中出错:', error);
-                throw createError(ErrorTypes.EXPORT_ERROR, '导出数据失败', error);
-            }
-        }, '导出所有数据');
-    };
-
-    /**
-     * 获取每日清单数据
-     */
-    const getDailyChecklistData = async () => {
-        return new Promise((resolve) => {
-            // 发送事件请求每日清单数据
-            const event = new CustomEvent('RequestDailyChecklistData', {
-                detail: { callback: resolve }
-            });
-            window.dispatchEvent(event);
-            
-            // 设置超时，如果5秒内没有响应则返回空数组
-            setTimeout(() => {
-                console.warn('[ExportAllData] 获取每日清单数据超时');
-                resolve([]);
-            }, 5000);
-        });
-    };
-
-    /**
-     * 获取评论数据
-     */
-    const getCommentsData = async () => {
-        return new Promise((resolve) => {
-            // 发送事件请求评论数据
-            const event = new CustomEvent('RequestCommentsData', {
-                detail: { callback: resolve }
-            });
-            window.dispatchEvent(event);
-            
-            // 设置超时，如果5秒内没有响应则返回空数组
-            setTimeout(() => {
-                console.warn('[ExportAllData] 获取评论数据超时');
-                resolve([]);
-            }, 5000);
-        });
     };
 
     return {
@@ -552,16 +517,20 @@ export const useMethods = (store) => {
         handleLoadNewsData,
         handleLoadProjectFilesData,
         handleToggleFavorite,
+        handleOpenRssManager,
+        handleCloseRssManager,
+        handleAddRssSource,
+        handleDeleteRssSource,
+        handleSaveRssSources,
         
         // 工具方法
-        updateUrlParams,
+        updateUrlParams: updateUrlParamsInUrl,
         getCategoryTag,
         getTimeAgo,
         extractExcerpt,
         shouldShowCategory,
-        
-        // 导出方法
-        exportAllData
+        rssManagerOpen,
+        rssSources
     };
 }; 
 

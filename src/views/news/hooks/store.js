@@ -70,6 +70,8 @@ export const createStore = () => {
     const readItems = vueRef(new Set());
     // 收藏新闻集合（本地持久化）
     const favoriteItems = vueRef(new Set());
+    const rssManagerOpen = vueRef(false);
+    const rssSources = vueRef([]);
 
     const REQUEST_ABORT_KEYS = {
         news: 'YiWeb.news.list',
@@ -228,6 +230,82 @@ export const createStore = () => {
         } catch (e) {
             console.warn('[news/store] 恢复本地持久化失败', e);
         }
+    };
+
+    const restoreRssSources = () => {
+        try {
+            const raw = localStorage.getItem('newsRssSources');
+            if (!raw) {
+                rssSources.value = [];
+                return;
+            }
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) {
+                rssSources.value = [];
+                return;
+            }
+            rssSources.value = parsed.map((it) => ({
+                key: it && it.key ? String(it.key) : String(Date.now()) + Math.random().toString(16).slice(2),
+                title: it && it.title ? String(it.title) : '',
+                url: it && it.url ? String(it.url) : '',
+                enabled: it && typeof it.enabled === 'boolean' ? it.enabled : true
+            }));
+        } catch (e) {
+            rssSources.value = [];
+        }
+    };
+
+    const persistRssSources = () => {
+        try {
+            const normalized = (rssSources.value || []).map((it) => ({
+                key: it && it.key ? String(it.key) : String(Date.now()) + Math.random().toString(16).slice(2),
+                title: it && it.title ? String(it.title) : '',
+                url: it && it.url ? String(it.url) : '',
+                enabled: it && typeof it.enabled === 'boolean' ? it.enabled : true
+            }));
+            localStorage.setItem('newsRssSources', JSON.stringify(normalized));
+        } catch (_) {}
+    };
+
+    const openRssManager = () => {
+        rssManagerOpen.value = true;
+        if (!Array.isArray(rssSources.value) || rssSources.value.length === 0) {
+            restoreRssSources();
+        }
+    };
+
+    const closeRssManager = () => {
+        rssManagerOpen.value = false;
+    };
+
+    const addRssSource = () => {
+        if (!Array.isArray(rssSources.value)) rssSources.value = [];
+        rssSources.value.unshift({
+            key: String(Date.now()) + Math.random().toString(16).slice(2),
+            title: '',
+            url: '',
+            enabled: true
+        });
+    };
+
+    const deleteRssSourceAt = (idx) => {
+        if (!Array.isArray(rssSources.value)) return;
+        const i = Number(idx);
+        if (!Number.isFinite(i) || i < 0 || i >= rssSources.value.length) return;
+        rssSources.value.splice(i, 1);
+    };
+
+    const saveRssSources = () => {
+        if (!Array.isArray(rssSources.value)) {
+            rssSources.value = [];
+        }
+        rssSources.value = rssSources.value.map((it) => ({
+            key: it && it.key ? String(it.key) : String(Date.now()) + Math.random().toString(16).slice(2),
+            title: it && it.title ? String(it.title).trim() : '',
+            url: it && it.url ? String(it.url).trim() : '',
+            enabled: it && typeof it.enabled === 'boolean' ? it.enabled : true
+        }));
+        persistRssSources();
     };
 
     /**
@@ -419,6 +497,7 @@ export const createStore = () => {
 
     // 恢复本地持久化
     restorePersistence();
+    restoreRssSources();
 
     // 返回状态和方法
     return {
@@ -440,6 +519,8 @@ export const createStore = () => {
         sidebarCollapsed,
         readItems,
         favoriteItems,
+        rssManagerOpen,
+        rssSources,
         
         // 方法
         loadNewsData,
@@ -457,7 +538,12 @@ export const createStore = () => {
         setActiveCategory,
         // 持久化相关
         markItemRead,
-        toggleFavorite
+        toggleFavorite,
+        openRssManager,
+        closeRssManager,
+        addRssSource,
+        deleteRssSourceAt,
+        saveRssSources
     };
 };
 

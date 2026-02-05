@@ -40,7 +40,7 @@ import { defineComponent } from '/src/utils/componentLoader.js';
                     default: false
                 }
             },
-            emits: ['update:searchQuery', 'search-keydown', 'clear-search', 'toggle-category', 'filter-change', 'toggle-sidebar', 'export-all-data'],
+            emits: ['update:searchQuery', 'search-keydown', 'clear-search', 'toggle-category', 'filter-change', 'toggle-sidebar', 'open-rss-manager'],
             data() {
                 return {
                     // 搜索建议相关
@@ -261,3 +261,4 @@ import { defineComponent } from '/src/utils/componentLoader.js';
         console.error('SearchHeader 组件初始化失败:', error);
     }
 })();
+

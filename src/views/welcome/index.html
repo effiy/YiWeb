@@ -169,7 +169,10 @@
                                     <p class="card-description">{{ card.description }}</p>
                                     <!-- 统计数据 -->
                                     <ul class="card-stats" v-if="card.stats && card.stats.length > 0" aria-label="统计数据">
-                                        <li class="stat-item" v-for="(stat, sidx) in card.stats" :key="sidx">
+                                        <li class="stat-item" v-for="(stat, sidx) in card.stats" :key="sidx"
+                                            @click="handleStatItemClick(stat.label, $event)"
+                                            style="cursor: pointer;"
+                                            title="点击查看相关标签">
                                             <span class="stat-number">{{ stat.number }}</span>
                                             <span class="stat-label">{{ stat.label }}</span>
                                         </li>
@@ -215,6 +218,7 @@
     <script type="module" src="../../utils/performance.js"></script>
 </body>
 </html>
+
 
 
 

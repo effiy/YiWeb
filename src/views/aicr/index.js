@@ -214,6 +214,16 @@ const { computed } = Vue;
                         ]).then(() => {
                             // 如果URL带了key，尝试预选并按需加载
                             const params2 = new URLSearchParams(window.location.search);
+                            
+                            // 处理 tag 参数
+                            const tagParam = params2.get('tag');
+                            if (tagParam) {
+                                logInfo('[代码审查] URL触发标签选中', tagParam);
+                                if (store.selectedSessionTags) {
+                                    store.selectedSessionTags.value = [tagParam];
+                                }
+                            }
+
                             const fileParam = params2.get('key');
                             // 读取高亮范围（兼容旧参数）与评论Key
                             const startLineParam = parseInt(params2.get('startLine'), 10);
@@ -1443,4 +1453,5 @@ function createResizer(sidebarElement, store, type, options) {
 
     return resizer;
 }
+
 

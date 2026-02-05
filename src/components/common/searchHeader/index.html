@@ -70,6 +70,16 @@
         
         <!-- 右侧控制按钮区域 -->
         <div class="header-controls">
+            <button
+                type="button"
+                @click="$emit('open-rss-manager')"
+                class="export-all-btn"
+                title="RSS 管理"
+                aria-label="RSS 管理"
+            >
+                <i class="fas fa-rss" aria-hidden="true"></i>
+                <span>RSS 管理</span>
+            </button>
             <!-- 折叠按钮 -->
             <button 
                 type="button"
@@ -82,21 +92,8 @@
                 <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" aria-hidden="true"></i>
             </button>
             
-            <!-- 导出按钮 -->
-            <button 
-                type="button"
-                v-if="activeCategory === 'all'"
-                @click="$emit('export-all-data')"
-                class="export-all-btn"
-                title="导出所有数据"
-                aria-label="导出所有数据"
-            >
-                <i class="fas fa-download" aria-hidden="true"></i>
-                <span>导出全部</span>
-            </button>
         </div>
     </section>
 </header> 
-
 
 
