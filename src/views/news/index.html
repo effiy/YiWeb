@@ -182,9 +182,22 @@
                                     <input type="checkbox" v-model="source.enabled" />
                                     <span class="rss-switch-track" aria-hidden="true"></span>
                                 </label>
-                                <button type="button" class="edit-card-row-delete" @click="handleDeleteRssSource(idx)" aria-label="删除订阅源">
-                                    <i class="fas fa-trash" aria-hidden="true"></i>
-                                </button>
+                                <div class="rss-source-row-actions">
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline btn-small rss-source-fetch"
+                                        @click="handleRunRssFetchSource(idx)"
+                                        :disabled="rssManagerBusy || rssFetchingNow || !source || !source.url || (rssSourceFetchingKey === getRssSourceFetchKey(source, idx))"
+                                        aria-label="立即抓取该订阅源"
+                                    >
+                                        <i v-if="rssSourceFetchingKey === getRssSourceFetchKey(source, idx)" class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                                        <i v-else class="fas fa-bolt" aria-hidden="true"></i>
+                                        <span>抓取</span>
+                                    </button>
+                                    <button type="button" class="edit-card-row-delete" @click="handleDeleteRssSource(idx)" :disabled="rssManagerBusy || rssFetchingNow" aria-label="删除订阅源">
+                                        <i class="fas fa-trash" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -224,7 +237,6 @@
     <script type="module" src="../../utils/performance.js"></script>
 </body>
 </html>
-
 
 
 

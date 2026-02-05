@@ -240,13 +240,24 @@
 
 .rss-source-row {
     display: grid;
-    grid-template-columns: 1fr 1.6fr 56px 44px;
+    grid-template-columns: 1fr 1.6fr 56px auto;
     gap: 10px;
     align-items: center;
     padding: 12px;
     border-radius: 14px;
     border: 1px solid rgba(148, 163, 184, 0.14);
     background: rgba(2, 6, 23, 0.22);
+}
+
+.rss-source-row-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.rss-source-fetch {
+    white-space: nowrap;
 }
 
 .rss-source-row.is-disabled {
@@ -345,7 +356,7 @@
     .rss-source-row .rss-switch {
         justify-self: start;
     }
-    .rss-source-row .edit-card-row-delete {
+    .rss-source-row-actions {
         justify-self: end;
     }
 }

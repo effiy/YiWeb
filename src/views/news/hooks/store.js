@@ -75,6 +75,7 @@ export const createStore = () => {
   const rssSources = vueRef([]);
   const rssManagerBusy = vueRef(false);
   const rssFetchingNow = vueRef(false);
+  const rssSourceFetchingKey = vueRef("");
   const rssSchedulerLoading = vueRef(false);
   const rssSchedulerEnabled = vueRef(false);
   const rssSchedulerType = vueRef("interval");
@@ -218,6 +219,43 @@ export const createStore = () => {
       return resp?.data || {};
     }, "RSS手动抓取").finally(() => {
       rssFetchingNow.value = false;
+      rssManagerBusy.value = false;
+    });
+  };
+
+  const getRssSourceFetchKey = (source, idx) => {
+    const key = source && source.key ? String(source.key) : "";
+    if (key) return `key:${key}`;
+    const url = source && source.url ? String(source.url).trim() : "";
+    if (url) return `url:${url}`;
+    return `idx:${String(idx)}`;
+  };
+
+  const runRssFetchSourceAt = async (idx) => {
+    return safeExecuteAsync(async () => {
+      if (!Array.isArray(rssSources.value)) rssSources.value = [];
+      const i = Number(idx);
+      if (!Number.isFinite(i) || i < 0 || i >= rssSources.value.length) {
+        throw createError("订阅源索引无效", ErrorTypes.VALIDATION, "RSS单源抓取");
+      }
+
+      const source = rssSources.value[i] || {};
+      const url = source.url ? String(source.url).trim() : "";
+      if (!url) {
+        throw createError("RSS URL 不能为空", ErrorTypes.VALIDATION, "RSS单源抓取");
+      }
+      const name = source.title ? String(source.title).trim() : "";
+
+      rssSourceFetchingKey.value = getRssSourceFetchKey(source, i);
+      rssManagerBusy.value = true;
+      const execUrl = buildExecUrl("services.rss.feed_service", "parse_feed", {
+        url,
+        ...(name ? { name } : {}),
+      });
+      const resp = await window.requestClient.get(execUrl, { timeout: 10 * 60 * 1000 });
+      return resp?.data || {};
+    }, "RSS单源抓取").finally(() => {
+      rssSourceFetchingKey.value = "";
       rssManagerBusy.value = false;
     });
   };
@@ -820,6 +858,7 @@ export const createStore = () => {
     rssSources,
     rssManagerBusy,
     rssFetchingNow,
+    rssSourceFetchingKey,
     rssSchedulerLoading,
     rssSchedulerEnabled,
     rssSchedulerType,
@@ -853,5 +892,7 @@ export const createStore = () => {
     loadRssSchedulerStatus,
     saveRssSchedulerSettings,
     runRssFetchNow,
+    runRssFetchSourceAt,
+    getRssSourceFetchKey,
   };
 };

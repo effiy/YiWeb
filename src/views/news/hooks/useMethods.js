@@ -27,6 +27,7 @@ export const useMethods = (store) => {
         rssSources,
         rssManagerBusy,
         rssFetchingNow,
+        rssSourceFetchingKey,
         rssSchedulerLoading,
         rssSchedulerEnabled,
         rssSchedulerType,
@@ -54,7 +55,9 @@ export const useMethods = (store) => {
         saveRssSources,
         loadRssSchedulerStatus,
         saveRssSchedulerSettings,
-        runRssFetchNow
+        runRssFetchNow,
+        runRssFetchSourceAt,
+        getRssSourceFetchKey
     } = store;
 
     const formatYMD = (date) => {
@@ -497,6 +500,25 @@ export const useMethods = (store) => {
         }, 'RSS手动抓取');
     };
 
+    const handleRunRssFetchSource = (idx) => {
+        return safeExecuteAsync(async () => {
+            const result = await runRssFetchSourceAt(idx);
+            const ok = result && result.success === true;
+            const sourceName = result && result.source ? String(result.source) : '';
+            if (!ok) {
+                const err = result && result.error ? String(result.error) : '';
+                showError(err ? `抓取失败：${err}` : '抓取失败');
+                return;
+            }
+            const saved = Number(result?.saved_count) || 0;
+            const updated = Number(result?.updated_count) || 0;
+            const total = Number(result?.total_items) || 0;
+            const displayName = sourceName || '订阅源';
+            const suffix = total > 0 ? `（共 ${total} 条）` : '';
+            showSuccess(`${displayName} 抓取完成：新增 ${saved}，更新 ${updated}${suffix}`);
+        }, 'RSS单源抓取');
+    };
+
     const handleLoadNewsData = async (date) => {
         return safeExecute(async () => {
             await loadNewsData(date);
@@ -580,6 +602,7 @@ export const useMethods = (store) => {
         handleSaveRssSources,
         handleSaveRssManager,
         handleRunRssFetchNow,
+        handleRunRssFetchSource,
         handleRefreshRssSchedulerStatus,
         
         // 工具方法
@@ -592,12 +615,14 @@ export const useMethods = (store) => {
         rssSources,
         rssManagerBusy,
         rssFetchingNow,
+        rssSourceFetchingKey,
         rssSchedulerLoading,
         rssSchedulerEnabled,
         rssSchedulerType,
         rssSchedulerIntervalMinutes,
         rssSchedulerCronMinute,
         rssSchedulerCronHour,
-        rssSchedulerCronDayOfWeek
+        rssSchedulerCronDayOfWeek,
+        getRssSourceFetchKey
     };
 }; 
