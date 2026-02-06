@@ -73,6 +73,41 @@ html, body {
     position: relative;
 }
 
+.aicr-code-layout {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    width: 100%;
+}
+
+.aicr-code-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.aicr-code-chat {
+    min-width: 320px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--border-primary);
+    background: var(--bg-primary);
+}
+
+.aicr-code-layout.is-tree .aicr-code-chat {
+    flex: 0 0 420px;
+    width: 420px;
+}
+
+.aicr-code-layout.is-tags .aicr-code-chat {
+    flex: 1 1 auto;
+    width: auto;
+    border-left: none;
+}
+
 .aicr-code::before {
     content: '';
     position: absolute;
@@ -1563,6 +1598,19 @@ html, body {
 }
 
 @media (max-width: 768px) {
+    .aicr-code-layout {
+        flex-direction: column;
+    }
+
+    .aicr-code-chat {
+        border-left: none;
+        border-top: 1px solid var(--border-primary);
+    }
+
+    .aicr-code-layout.is-tree .aicr-code-chat {
+        width: 100%;
+        flex: 0 0 45%;
+    }
 }
 
 .hidden-input {

@@ -1806,6 +1806,7 @@ export const useMethods = (store) => {
 
             // 支持对象入参：优先使用 key，最后是 name
             let targetKey = key;
+            let targetSessionKey = null;
             if (key && typeof key === 'object') {
                 const node = key;
                 // 优先使用 key，最后是 name
@@ -1816,6 +1817,10 @@ export const useMethods = (store) => {
                 if (node.key) {
                     window.__aicrPendingFileKey = node.key;
                     console.log('[文件选择] 保存文件Key:', window.__aicrPendingFileKey);
+                }
+
+                if (node.sessionKey != null && String(node.sessionKey).trim()) {
+                    targetSessionKey = String(node.sessionKey).trim();
                 }
             }
 
@@ -1830,6 +1835,8 @@ export const useMethods = (store) => {
                 console.log('[文件选择] 取消选中文件:', keyNorm);
                 setSelectedKey(null);
                 window.__aicrPendingFileKey = null;
+                if (store.externalSelectedSessionKey) store.externalSelectedSessionKey.value = null;
+                if (activeSession) activeSession.value = null;
                 return;
             }
 
@@ -1851,6 +1858,96 @@ export const useMethods = (store) => {
                 }
             } catch (e) {
                 console.warn('[文件选择] 按需加载失败(忽略):', e?.message || e);
+            }
+
+            try {
+                const normalize = (v) => {
+                    try {
+                        if (v == null) return '';
+                        let s = String(v);
+                        s = s.replace(/\\/g, '/');
+                        s = s.replace(/^\.\//, '');
+                        s = s.replace(/^\/+/, '');
+                        s = s.replace(/\/\/+/, '/');
+                        return s;
+                    } catch (_) {
+                        return String(v || '');
+                    }
+                };
+
+                if (!targetSessionKey) {
+                    const targetTreeKey = normalize(keyNorm);
+                    const findSessionKeyByTreeKey = (nodes) => {
+                        if (!nodes) return null;
+                        const stack = Array.isArray(nodes) ? [...nodes] : [nodes];
+                        while (stack.length > 0) {
+                            const n = stack.pop();
+                            if (!n) continue;
+                            const k = normalize(n.key || n.path || n.id || '');
+                            if (k && k === targetTreeKey) {
+                                return n.sessionKey != null ? String(n.sessionKey) : null;
+                            }
+                            if (Array.isArray(n.children) && n.children.length > 0) {
+                                for (let i = n.children.length - 1; i >= 0; i--) stack.push(n.children[i]);
+                            }
+                        }
+                        return null;
+                    };
+
+                    targetSessionKey = findSessionKeyByTreeKey(store.fileTree?.value);
+
+                    if (!targetSessionKey) {
+                        const allFiles = store.files?.value || [];
+                        const match = allFiles.find((f) => {
+                            if (!f) return false;
+                            const candidates = [f.treeKey, f.path, f.key, f.name].filter(Boolean).map(normalize);
+                            return candidates.includes(targetTreeKey);
+                        });
+                        if (match && match.sessionKey != null && String(match.sessionKey).trim()) {
+                            targetSessionKey = String(match.sessionKey).trim();
+                        }
+                    }
+                }
+
+                try {
+                    if ((!store.sessions?.value || store.sessions.value.length === 0) && typeof store.loadSessions === 'function') {
+                        await store.loadSessions(false);
+                    }
+                } catch (_) { }
+
+                const sessions = store.sessions?.value || [];
+                const targetTreeKey = normalize(keyNorm);
+                const directKey = targetSessionKey ? String(targetSessionKey) : null;
+
+                const matchedSession = sessions.find((s) => {
+                    if (!s) return false;
+                    if (directKey && String(s.key || '') === directKey) return true;
+                    const desc = String(s.pageDescription || '');
+                    if (desc && desc.includes('文件：')) {
+                        const filePath = desc.split('文件：').slice(1).join('文件：').trim();
+                        if (filePath && normalize(filePath) === targetTreeKey) return true;
+                    }
+                    const title = normalize(s.title || '');
+                    const pageTitle = normalize(s.pageTitle || '');
+                    if (title && title === targetTreeKey) return true;
+                    if (pageTitle && pageTitle === targetTreeKey) return true;
+                    return false;
+                });
+
+                if (matchedSession) {
+                    if (store.externalSelectedSessionKey) store.externalSelectedSessionKey.value = String(matchedSession.key || '');
+                    await selectSessionForChat(matchedSession, {
+                        toggleActive: false,
+                        openContextEditor: false,
+                        syncSelectedKey: false,
+                        fileKeyOverride: keyNorm
+                    });
+                } else {
+                    if (store.externalSelectedSessionKey) store.externalSelectedSessionKey.value = null;
+                    if (activeSession) activeSession.value = null;
+                }
+            } catch (e) {
+                console.warn('[文件选择] 同步选中会话失败(忽略):', e?.message || e);
             }
         }, '文件选择处理');
     };
@@ -2302,7 +2399,7 @@ export const useMethods = (store) => {
         setTimeout(schedule, 0);
     };
 
-    const selectSessionForChat = async (session, { toggleActive = true, openContextEditor = false } = {}) => {
+    const selectSessionForChat = async (session, { toggleActive = true, openContextEditor = false, syncSelectedKey = true, fileKeyOverride = null } = {}) => {
         if (!session || !session.key) {
             if (window.showError) window.showError('无效的会话数据');
             return;
@@ -2358,10 +2455,16 @@ export const useMethods = (store) => {
             fileKey = currentPath ? currentPath + '/' + fileName : fileName;
         }
 
-        if (setSelectedKey) {
-            setSelectedKey(fileKey);
-        } else if (selectedKey) {
-            selectedKey.value = fileKey;
+        if (fileKeyOverride != null && String(fileKeyOverride).trim()) {
+            fileKey = String(fileKeyOverride).trim();
+        }
+
+        if (syncSelectedKey) {
+            if (setSelectedKey) {
+                setSelectedKey(fileKey);
+            } else if (selectedKey) {
+                selectedKey.value = fileKey;
+            }
         }
 
         if (activeSessionLoading) activeSessionLoading.value = true;

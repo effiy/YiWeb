@@ -163,9 +163,13 @@
 
 
             <section class="aicr-code" :class="{ 'with-sidebar-collapsed': sidebarCollapsed }" aria-label="代码区">
-                <code-view v-if="viewMode === 'tree'" :file="currentFile" :loading="loading" :error="errorMessage"></code-view>
+                <div class="aicr-code-layout" :class="{ 'is-tree': viewMode === 'tree', 'is-tags': viewMode === 'tags' }">
+                    <div class="aicr-code-main" v-show="viewMode === 'tree'">
+                        <code-view v-if="viewMode === 'tree'" :file="currentFile" :loading="loading" :error="errorMessage"></code-view>
+                    </div>
 
-                <div v-if="viewMode === 'tags'" class="pet-chat-right-panel" aria-label="会话聊天面板">
+                    <div class="aicr-code-chat" v-show="viewMode === 'tree' || viewMode === 'tags'">
+                        <div class="pet-chat-right-panel" aria-label="会话聊天面板">
                     <div class="pet-chat-messages" id="pet-chat-messages" role="log" aria-live="polite">
                         <div v-if="activeSessionLoading" class="pet-chat-loading" role="status" aria-live="polite">
                             <div class="loading-spinner" aria-hidden="true"></div>
@@ -266,13 +270,13 @@
                         <div class="pet-chat-toolbar chat-input-toolbar">
                             <div class="pet-chat-toolbar-left chat-input-btn-group">
                                 <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn"
-                                    @click="openSessionContextEditor" title="页面上下文" aria-label="页面上下文">📝 页面上下文</button>
+                                    @click="openSessionContextEditor" title="页面上下文" aria-label="页面上下文">📝</button>
                                 <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn"
-                                    @click="openSessionFaq" title="常见问题" aria-label="常见问题">💡 常见问题</button>
+                                    @click="openSessionFaq" title="常见问题" aria-label="常见问题">💡</button>
                                 <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn"
-                                    @click="openWeChatSettings" title="微信机器人设置" aria-label="微信机器人设置">🤖 微信机器人</button>
+                                    @click="openWeChatSettings" title="微信机器人设置" aria-label="微信机器人设置">🤖</button>
                                 <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn"
-                                    @click="openSessionChatImagePicker" title="上传图片" aria-label="上传图片">🖼️ 图片</button>
+                                    @click="openSessionChatImagePicker" title="上传图片" aria-label="上传图片">🖼️</button>
                                 <input id="pet-chat-image-input" type="file" accept="image/*" multiple
                                     style="display:none" @change="onSessionChatImageInputChange" />
                             </div>
@@ -319,6 +323,8 @@
                                     placeholder="输入消息... (Enter 发送, Shift+Enter 换行)" rows="2"
                                     aria-label="会话输入框"></textarea>
                             </div>
+                        </div>
+                    </div>
                         </div>
                     </div>
 
