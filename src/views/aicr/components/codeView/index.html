@@ -230,9 +230,9 @@
       <div class="empty-title">未选择文件</div>
       <div class="empty-subtitle">从左侧文件树选择一个文件开始查看</div>
       <div class="empty-actions">
-        <button type="button" class="empty-btn primary" @click.stop="focusFileTree">
-          <i class="fas fa-folder-open" aria-hidden="true"></i>
-          <span>去文件树</span>
+        <button type="button" class="empty-btn primary" @click.stop="emitCreateSession" aria-label="新建会话">
+          <i class="fas fa-plus" aria-hidden="true"></i>
+          <span>新建会话</span>
         </button>
       </div>
       <div class="empty-tip">Ctrl/Cmd + F 搜索 · 点击行号复制链接</div>

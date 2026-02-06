@@ -463,6 +463,7 @@ html, body {
     box-shadow: var(--shadow-sm);
     padding: 18px 18px 16px 18px;
     transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+    text-align: center;
 }
 
 .aicr-code .empty-hero {
@@ -503,6 +504,8 @@ html, body {
     color: var(--text-secondary);
     line-height: 1.45;
     text-align: center;
+    width: 100%;
+    max-width: 100%;
 }
 
 .aicr-code .empty-actions {

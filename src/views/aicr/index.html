@@ -179,7 +179,8 @@
 
                 <div class="aicr-code-layout" :class="{ 'is-tree': viewMode === 'tree', 'is-tags': viewMode === 'tags' }">
                     <div class="aicr-code-main" v-show="viewMode === 'tree'">
-                        <code-view v-if="viewMode === 'tree'" :file="currentFile" :loading="loading" :error="errorMessage"></code-view>
+                        <code-view v-if="viewMode === 'tree'" :file="currentFile" :loading="loading" :error="errorMessage"
+                            @create-session="handleSessionCreate"></code-view>
                     </div>
 
                     <div class="aicr-code-chat"

@@ -51,6 +51,7 @@ const guessLanguage = (name) => {
 const componentOptions = {
     name: 'CodeView',
     html: '/src/views/aicr/components/codeView/index.html',
+    emits: ['create-session'],
     props: {
         file: {
             type: [Object, null],
@@ -211,6 +212,11 @@ const componentOptions = {
         if (this._onCodeKeydown) window.removeEventListener('keydown', this._onCodeKeydown);
     },
     methods: {
+        emitCreateSession() {
+            try {
+                this.$emit('create-session');
+            } catch (_) { }
+        },
         openFileInNewTab() {
             return safeExecute(() => {
                 const f = this.file || {};
