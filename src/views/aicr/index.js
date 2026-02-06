@@ -25,13 +25,11 @@ const { computed } = Vue;
             components: [
                 'FileTree',
                 'CodeView',
-                'SessionList'
             ],
             data: {
                 // 暴露store数据给模板
                 sidebarCollapsed: store.sidebarCollapsed,
                 sidebarWidth: store.sidebarWidth,
-                sessionSidebarWidth: store.sessionSidebarWidth,
                 chatPanelCollapsed: store.chatPanelCollapsed,
                 chatPanelWidth: store.chatPanelWidth,
                 // 项目管理 - Removed
@@ -89,11 +87,6 @@ const { computed } = Vue;
                 // 加载侧边栏宽度
                 if (store && store.loadSidebarWidths) {
                     store.loadSidebarWidths();
-                }
-
-                // 加载会话侧边栏宽度
-                if (store && store.loadSessionSidebarWidth) {
-                    store.loadSessionSidebarWidth();
                 }
 
                 if (store && store.loadChatPanelSettings) {
@@ -656,12 +649,6 @@ const { computed } = Vue;
                     try {
                         const methods = useMethods(store);
 
-                        if (methods.setViewMode) {
-                            methods.setViewMode('tags');
-                        } else if (store && store.viewMode) {
-                            store.viewMode.value = 'tags';
-                        }
-
                         if (store?.sidebarCollapsed?.value && methods.toggleSidebar) {
                             methods.toggleSidebar();
                         }
@@ -670,14 +657,6 @@ const { computed } = Vue;
                             const sidebar = document.querySelector('.aicr-sidebar .sidebar-scroll-container');
                             if (sidebar && typeof sidebar.scrollTo === 'function') {
                                 sidebar.scrollTo({ top: 0, behavior: 'smooth' });
-                            }
-
-                            const sessionListContainer = document.querySelector('.aicr-session-list');
-                            if (sessionListContainer) {
-                                sessionListContainer.classList.add('aicr-session-list-focus');
-                                setTimeout(() => {
-                                    sessionListContainer.classList.remove('aicr-session-list-focus');
-                                }, 1400);
                             }
 
                             const searchInput = document.querySelector('.file-tree-search-input');
@@ -1159,10 +1138,7 @@ function createResizer(sidebarElement, store, type, options) {
 
             // 更新 store 中的宽度值
             if (type === 'sidebar') {
-                const mode = store.viewMode && store.viewMode.value;
-                if (mode === 'tags' && store.sessionSidebarWidth) {
-                    store.sessionSidebarWidth.value = newWidth;
-                } else if (store.sidebarWidth) {
+                if (store.sidebarWidth) {
                     store.sidebarWidth.value = newWidth;
                 }
             } else if (type === 'chatPanel') {
@@ -1191,10 +1167,7 @@ function createResizer(sidebarElement, store, type, options) {
                 : sidebarElement.offsetWidth;
 
             if (type === 'sidebar') {
-                const mode = store.viewMode && store.viewMode.value;
-                if (mode === 'tags' && typeof store.saveSessionSidebarWidth === 'function') {
-                    store.saveSessionSidebarWidth(finalWidth);
-                } else if (typeof store.saveSidebarWidth === 'function') {
+                if (typeof store.saveSidebarWidth === 'function') {
                     store.saveSidebarWidth(finalWidth);
                 } else if (saveWidth && typeof saveWidth === 'function') {
                     saveWidth(finalWidth);

@@ -90,7 +90,7 @@
           :title="(selectedTags.length > 0 || tagFilterNoTags || tagFilterSearchKeyword) ? '清除所有过滤条件' : '无过滤条件'"
           :disabled="selectedTags.length === 0 && !tagFilterNoTags && !tagFilterSearchKeyword"
         >
-          清除
+          <i class="fas fa-times" aria-hidden="true"></i>
         </button>
       </div>
     </div>

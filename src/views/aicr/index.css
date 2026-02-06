@@ -2284,11 +2284,6 @@ html, body {
     line-height: 1.5;
 }
 
-.aicr-session-list.aicr-session-list-focus {
-    border-radius: 14px;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.45), 0 0 0 8px rgba(79, 70, 229, 0.14);
-}
-
 .aicr-session-context-modal {
     position: absolute;
     inset: 0;

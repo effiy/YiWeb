@@ -2700,27 +2700,7 @@ export const useMethods = (store) => {
         toggleSessionList: async () => {
             return safeExecute(async () => {
                 console.log('[toggleSessionList] 切换会话列表（已废弃，使用 setViewMode 代替）');
-                // 如果当前是树形视图，切换到标签视图；否则切换回树形视图
-                if (viewMode && viewMode.value === 'tree') {
-                    // 直接设置视图模式，会触发 setViewMode 的逻辑
-                    viewMode.value = 'tags';
-                    // 加载会话数据
-                    if (loadSessions && typeof loadSessions === 'function') {
-                        try {
-                            await loadSessions(true);
-                        } catch (error) {
-                            console.error('[toggleSessionList] 加载会话数据失败:', error);
-                        }
-                    } else if (store.loadSessions && typeof store.loadSessions === 'function') {
-                        try {
-                            await store.loadSessions(true);
-                        } catch (error) {
-                            console.error('[toggleSessionList] 加载会话数据失败:', error);
-                        }
-                    }
-                } else {
-                    viewMode.value = 'tree';
-                }
+                if (viewMode) viewMode.value = 'tree';
             }, '切换会话列表');
         },
 
@@ -2815,15 +2795,6 @@ export const useMethods = (store) => {
                                     return container;
                                 }
                                 return `<pre class="md-code"><code class="language-mermaid">${_escapeHtml(diagramCode)}</code></pre>`;
-                            }
-
-                            if (window.hljs) {
-                                const desiredLanguage = lang || 'plaintext';
-                                const validLanguage = window.hljs.getLanguage(desiredLanguage) ? desiredLanguage : 'plaintext';
-                                try {
-                                    const highlighted = window.hljs.highlight(src, { language: validLanguage }).value;
-                                    return `<pre><code class="hljs language-${validLanguage}">${highlighted}</code></pre>`;
-                                } catch (_) { }
                             }
 
                             return originalCodeRenderer(src, language, isEscaped);
@@ -5927,10 +5898,6 @@ export const useMethods = (store) => {
                         throw new Error('会话不存在');
                     }
 
-                    if (viewMode && viewMode.value !== 'tags') {
-                        viewMode.value = 'tags';
-                    }
-
                     await selectSessionForChat(session, { toggleActive: false, openContextEditor: true });
                 } catch (error) {
                     console.error('[handleSessionContext] 打开页面上下文失败:', error);
@@ -6129,6 +6096,7 @@ export const useMethods = (store) => {
         // 视图模式切换
         setViewMode: async (mode) => {
             return safeExecute(async () => {
+                mode = 'tree';
                 if (viewMode && (mode === 'tree' || mode === 'tags')) {
                     const previousMode = viewMode.value;
                     viewMode.value = mode;
