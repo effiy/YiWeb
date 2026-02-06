@@ -75,10 +75,6 @@ const createFileTreeNode = () => {
                 type: Set,
                 default: () => new Set()
             },
-            comments: {
-                type: Array,
-                default: () => []
-            },
             batchMode: {
                 type: Boolean,
                 default: false
@@ -469,66 +465,6 @@ const createFileTreeNode = () => {
                 }, '文件修改时间格式化');
             },
 
-            // 获取文件的评论数量
-            getCommentCount(key) {
-                return safeExecute(() => {
-                    if (!this.comments || !key) return 0;
-
-                    // 使用统一的文件标识符匹配逻辑
-                    const normalize = (v) => {
-                        if (!v) return '';
-                        let s = String(v).replace(/\\/g, '/');
-                        s = s.replace(/^\.\//, '');
-                        s = s.replace(/^\/+/, '');
-                        s = s.replace(/\/\/+/g, '/');
-                        return s;
-                    };
-
-                    const target = normalize(key);
-
-                    const count = this.comments.filter(comment => {
-                        // 兼容不同的文件标识方式，优先使用 key
-                        const commentKey = comment.key || (comment.fileInfo && comment.fileInfo.key);
-                        const normalizedCommentKey = normalize(commentKey);
-                        return normalizedCommentKey === target;
-                    }).length;
-
-                    return count;
-                }, '文件评论数量计算');
-            },
-
-            // 获取文件夹的评论数量（递归计算所有子文件的评论）
-            getFolderCommentCount(folder) {
-                return safeExecute(() => {
-                    if (!folder || folder.type !== 'folder' || !folder.children) return 0;
-
-                    let totalCount = 0;
-
-                    const calculateCount = (items) => {
-                        if (!Array.isArray(items)) {
-                            // 如果是单个节点，直接处理
-                            if (items.type === 'file') {
-                                totalCount += this.getCommentCount(items.key);
-                            } else if (items.type === 'folder' && items.children) {
-                                calculateCount(items.children);
-                            }
-                            return;
-                        }
-
-                        items.forEach(item => {
-                            if (item.type === 'file') {
-                                totalCount += this.getCommentCount(item.key);
-                            } else if (item.type === 'folder' && item.children) {
-                                calculateCount(item.children);
-                            }
-                        });
-                    };
-
-                    calculateCount(folder.children);
-                    return totalCount;
-                }, '文件夹评论数量计算');
-            },
-
             // 切换标签选择
             toggleTag(tag) {
                 return safeExecute(() => {
@@ -771,7 +707,6 @@ const createFileTreeNode = () => {
                             :item="child"
                             :selected-key="selectedKey"
                             :expanded-folders="expandedFolders"
-                            :comments="comments"
                             :batch-mode="batchMode"
                             :selected-keys="selectedKeys"
                             @file-select="$emit('file-select', $event)"
@@ -819,10 +754,6 @@ const componentOptions = {
         error: {
             type: String,
             default: ''
-        },
-        comments: {
-            type: Array,
-            default: () => []
         },
         collapsed: {
             type: Boolean,
@@ -1295,55 +1226,6 @@ const componentOptions = {
             }, '文件修改时间格式化');
         },
 
-        // 获取文件的评论数量
-        getCommentCount(key) {
-            return safeExecute(() => {
-                if (!this.comments || !key) return 0;
-
-                const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
-
-                // 使用统一的文件标识符匹配逻辑
-                const normalize = (v) => {
-                    if (!v) return '';
-                    let s = String(v).replace(/\\/g, '/');
-                    s = s.replace(/^\.\//, '');
-                    s = s.replace(/^\/+/, '');
-                    s = s.replace(/\/\/+/g, '/');
-                    return s;
-                };
-
-                // 关键约定：评论的 fileKey 只存 sessionKey(UUID)
-                // 这里允许传入 sessionKey 或 treeKey（路径），并尽量解析到 sessionKey 再计数
-                const raw = String(key || '').trim();
-                let sessionKey = isUUID(raw) ? raw : null;
-
-                if (!sessionKey) {
-                    const targetTreeKey = normalize(raw);
-                    const root = this.tree;
-                    const stack = Array.isArray(root) ? [...root] : (root ? [root] : []);
-                    while (stack.length) {
-                        const node = stack.pop();
-                        if (!node) continue;
-                        const nodeKey = normalize(node.key || node.path || '');
-                        if (nodeKey && nodeKey === targetTreeKey) {
-                            if (node.sessionKey && isUUID(node.sessionKey)) sessionKey = String(node.sessionKey);
-                            break;
-                        }
-                        if (Array.isArray(node.children)) stack.push(...node.children);
-                    }
-                }
-
-                if (!sessionKey) return 0;
-
-                const count = this.comments.filter(comment => {
-                    const commentFileKey = comment?.fileKey || (comment?.fileInfo && comment.fileInfo.key) || null;
-                    return String(commentFileKey || '').trim() === sessionKey;
-                }).length;
-
-                return count;
-            }, '文件评论数量计算');
-        },
-
         // 处理标签点击（支持批量选择模式）
         handleTagClick(key) {
             return safeExecute(() => {
@@ -1536,39 +1418,6 @@ const componentOptions = {
             e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
         },
 
-        // 获取文件夹的评论数量（递归计算所有子文件的评论）
-        getFolderCommentCount(folder) {
-            return safeExecute(() => {
-                if (!folder || folder.type !== 'folder' || !folder.children) return 0;
-
-                let totalCount = 0;
-
-                const calculateCount = (items) => {
-                    if (!Array.isArray(items)) {
-                        // 如果是单个节点，直接处理
-                        if (items.type === 'file') {
-                            totalCount += this.getCommentCount(items.key);
-                        } else if (items.type === 'folder' && items.children) {
-                            calculateCount(items.children);
-                        }
-                        return;
-                    }
-
-                    items.forEach(item => {
-                        if (item.type === 'file') {
-                            totalCount += this.getCommentCount(item.key);
-                        } else if (item.type === 'folder' && item.children) {
-                            calculateCount(item.children);
-                        }
-                    });
-                };
-
-                calculateCount(folder.children);
-                return totalCount;
-            }, '文件夹评论数量计算');
-        },
-
-
     },
 };
 
@@ -1584,8 +1433,6 @@ const componentOptions = {
         console.error('FileTree 组件初始化失败:', error);
     }
 })();
-
-
 
 
 

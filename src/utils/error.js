@@ -226,7 +226,6 @@ export function showSuccessMessage(message) {
     if (!message) return;
     
     // 移除弹框显示，只保留控制台日志
-    // 用户反馈：评论保存成功后不需要再显示弹框
     console.log(`✅ ${message}`);
 }
 
@@ -529,4 +528,3 @@ if (typeof window !== 'undefined') {
     window.safeGetPath = safeGetPath;
     window.safeArrayOperation = safeArrayOperation;
 } 
-

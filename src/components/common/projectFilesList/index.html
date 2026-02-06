@@ -27,7 +27,7 @@
             <span class="search-query">"{{ searchQuery }}"</span>
         </header>
         <!-- 文件统计条 -->
-        <div class="comment-stats" v-if="getFileStats().hasData">
+        <div class="news-stats" v-if="getFileStats().hasData">
             <div class="stats-item stats-item-total" title="总文件数">
                 <span class="stats-number">{{ getFileStats().total }}</span>
                 <span class="stats-label">文件</span>
@@ -69,7 +69,7 @@
                     <div class="news-category-tags">
                         <span 
                             class="news-domain-tag"
-                            :style="{ backgroundColor: getFileTypeColor(file) }"
+                            :style="getFileTypeStyle(file)"
                             :title="getFileTypeLabel(getFileTypeFromFile(file))"
                         >
                             <i :class="getFileTypeIcon(file)" aria-hidden="true"></i>
@@ -122,7 +122,7 @@
         </div>
         
         <!-- 文件统计条 -->
-        <div class="comment-stats" v-if="getFileStats().hasData">
+        <div class="news-stats" v-if="getFileStats().hasData">
             <div class="stats-item stats-item-total" title="总文件数">
                 <span class="stats-number">{{ getFileStats().total }}</span>
                 <span class="stats-label">文件</span>
@@ -164,7 +164,7 @@
                     <div class="news-category-tags">
                         <span 
                             class="news-domain-tag"
-                            :style="{ backgroundColor: getFileTypeColor(file) }"
+                            :style="getFileTypeStyle(file)"
                             :title="getFileTypeLabel(getFileTypeFromFile(file))"
                         >
                             <i :class="getFileTypeIcon(file)" aria-hidden="true"></i>

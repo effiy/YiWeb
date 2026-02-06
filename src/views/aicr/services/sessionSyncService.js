@@ -6,7 +6,6 @@
  * - 文件名 -> 会话标题 (pageTitle)
  * - 目录路径 -> 会话标签 (tags)
  * - 文件内容 -> 页面上下文 (pageContent)
- * - 评论 -> 聊天记录 (messages)
  * 
  * 统一接口和字段格式：
  * - 使用 /session/save 接口（POST）
@@ -121,7 +120,7 @@ class SessionSyncService {
             pageTitle: fileName,
             pageDescription: `文件：${filePath}`, // 使用与 tags 相同的 filePath
             pageContent: String(normalizedFile.content || ''),
-            messages: [], // 消息将从评论中同步
+            messages: [],
             tags: tags, // 使用与 pageDescription 相同的 filePath 生成的 tags
             isFavorite: false,
             createdAt: createdAt,
@@ -131,13 +130,13 @@ class SessionSyncService {
     }
 
     /**
-     * 规范化角色类型（与 YiPet 保持一致）
-     * @param {Object} comment - 评论对象
+     * 规范化消息角色类型（与 YiPet 保持一致）
+     * @param {Object} msg - 消息对象
      * @returns {string} 'user' 或 'pet'
      */
-    normalizeRole(comment) {
-        const author = String(comment.author || '').toLowerCase();
-        const role = String(comment.role || comment.type || '').toLowerCase();
+    normalizeMessageType(msg) {
+        const author = String(msg.author || '').toLowerCase();
+        const role = String(msg.role || msg.type || '').toLowerCase();
         
         // 判断是否为用户消息
         if (role === 'user' || role === 'me' || author.includes('用户') || author.includes('user')) {
@@ -150,15 +149,6 @@ class SessionSyncService {
         }
         // 默认根据 author 判断
         return author.includes('AI') ? 'pet' : 'user';
-    }
-
-    /**
-     * 规范化文本内容（与 YiPet 保持一致）
-     * @param {Object} comment - 评论对象
-     * @returns {string} 规范化后的文本内容
-     */
-    normalizeText(comment) {
-        return String(comment.message || comment.content || comment.text || '').trim();
     }
 
     /**
@@ -180,48 +170,6 @@ class SessionSyncService {
             if (!isNaN(num)) return num;
         }
         return Date.now();
-    }
-
-    /**
-     * 将评论转换为消息（统一格式）
-     * 统一字段：type, message, timestamp, imageDataUrl
-     * @param {Object} comment - 评论对象
-     * @returns {Object} 消息对象（统一格式）
-     */
-    commentToMessage(comment) {
-        if (!comment) return null;
-        
-        // 统一 type 字段
-        let type;
-        if (comment.type) {
-            type = comment.type;
-        } else if (comment.role) {
-            const role = String(comment.role).toLowerCase();
-            if (role === 'user' || role === 'me') {
-                type = 'user';
-            } else if (role === 'assistant' || role === 'pet' || role === 'bot' || role === 'ai') {
-                type = 'pet';
-            } else {
-                type = 'user'; // 默认
-            }
-        } else {
-            type = this.normalizeRole(comment);
-        }
-        
-        const message = String(comment.message || comment.content || comment.text || '').trim();
-        
-        // 统一 timestamp 字段（转换为毫秒数）
-        const timestamp = this.normalizeTimestamp(comment.timestamp || comment.createdTime || comment.createdAt);
-        
-        // 统一 imageDataUrl 字段
-        const imageDataUrl = comment.imageDataUrl || comment.image || undefined;
-        
-        return {
-            type: type, // 'user' 或 'pet'
-            message: message,
-            timestamp: timestamp, // 毫秒数
-            imageDataUrl: imageDataUrl
-        };
     }
 
     /**
@@ -256,116 +204,6 @@ class SessionSyncService {
     }
 
     /**
-     * 同步评论到会话消息
-     * @param {Object} comment - 评论对象
-     * @param {string} filePath - 文件路径
-     * @param {boolean} immediate - 是否立即同步
-     * @returns {Promise<Object>} 同步结果
-     */
-    async syncCommentToMessage(comment, filePath, immediate = false) {
-        return safeExecuteAsync(async () => {
-            if (!this.syncEnabled) {
-                console.log('[SessionSync] 同步已禁用，跳过评论同步');
-                return null;
-            }
-
-            // 获取或创建对应的会话
-            const sessionKey = this.generateSessionKey(filePath);
-            let session = await this.getSession(sessionKey);
-            
-            if (!session) {
-                // 如果会话不存在，先创建会话（需要文件信息）
-                console.log('[SessionSync] 会话不存在，需要先创建会话');
-                return { error: '会话不存在，请先同步文件' };
-            }
-
-            // 将评论转换为消息（统一格式）
-            const message = this.commentToMessage(comment);
-            const commentKey = comment.key;
-            
-            // 检查消息是否已存在（通过内容匹配，因为标准格式不包含 _aicr）
-            // 使用内容和时间戳匹配，避免重复
-            const existingIndex = session.messages.findIndex(m => {
-                const mContent = String(m.message || m.content || '').trim();
-                const msgContent = String(message.message || '').trim();
-                const mTime = Number(m.timestamp || 0);
-                const msgTime = Number(message.timestamp || 0);
-                // 内容相同且时间戳相近（5秒内）认为是同一条消息
-                return mContent === msgContent && Math.abs(mTime - msgTime) < 5000;
-            });
-
-            if (existingIndex >= 0) {
-                // 更新现有消息
-                session.messages[existingIndex] = message;
-            } else {
-                // 添加新消息（按时间戳排序）
-                session.messages.push(message);
-                session.messages.sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
-            }
-
-            // 规范化消息数组
-            session.messages = this.normalizeMessages(session.messages);
-
-            // 更新会话时间戳（毫秒数）
-            const now = Date.now();
-            session.updatedAt = now;
-            session.lastAccessTime = now;
-
-            if (immediate) {
-                return await this.saveSession(session);
-            } else {
-                // 加入同步队列
-                this.syncQueue.set(sessionKey, session);
-                this.startSyncTimer();
-                return { queued: true, sessionKey };
-            }
-        }, '评论同步到消息');
-    }
-
-    /**
-     * 删除评论对应的消息
-     * @param {string} commentKey - 评论key
-     * @param {string} filePath - 文件路径
-     * @param {Object} comment - 可选的评论对象（用于内容匹配）
-     * @returns {Promise<Object>} 删除结果
-     */
-    async deleteCommentMessage(commentKey, filePath, comment = null) {
-        return safeExecuteAsync(async () => {
-            const sessionKey = this.generateSessionKey(filePath);
-            const session = await this.getSession(sessionKey);
-            
-            if (!session) {
-                return { error: '会话不存在' };
-            }
-
-            // 从消息列表中移除对应的消息
-            // 由于标准格式不包含 _aicr，需要通过内容匹配
-            if (comment) {
-                const targetMessage = this.commentToMessage(comment);
-                const targetContent = String(targetMessage.message || '').trim();
-                const targetTime = Number(targetMessage.timestamp || 0);
-                
-                session.messages = session.messages.filter(m => {
-                    const mContent = String(m.message || m.content || '').trim();
-                    const mTime = Number(m.timestamp || 0);
-                    // 内容相同且时间戳相近（5秒内）认为是同一条消息
-                    return !(mContent === targetContent && Math.abs(mTime - targetTime) < 5000);
-                });
-            } else {
-                // 如果没有提供评论对象，无法准确匹配，记录警告
-                console.warn('[SessionSync] 删除评论消息时缺少评论对象，无法准确匹配');
-            }
-
-            // 规范化消息数组
-            session.messages = this.normalizeMessages(session.messages);
-
-            const now = Date.now();
-            session.updatedAt = now;
-            return await this.saveSession(session);
-        }, '删除评论消息');
-    }
-
-    /**
      * 规范化消息数组（确保格式统一）
      * 统一字段：type, message, timestamp, imageDataUrl
      * @param {Array} messages - 消息数组
@@ -392,7 +230,7 @@ class SessionSyncService {
                 }
             } else {
                 // 根据 author 判断
-                type = this.normalizeRole(msg);
+                type = this.normalizeMessageType(msg);
             }
             
             const message = String(msg.message || msg.content || msg.text || '').trim();
@@ -926,8 +764,8 @@ class SessionSyncService {
 
     /**
      * 从会话系统加载数据到 aicr（反向同步）
-     * 从 YiPet 会话系统加载数据，转换为 aicr 的文件和评论格式
-     * @returns {Promise<Object>} 包含文件和评论的数据对象
+     * 从 YiPet 会话系统加载数据，转换为 aicr 的文件格式
+     * @returns {Promise<Object>} 包含文件的数据对象
      */
     async loadFromSessions() {
         return safeExecuteAsync(async () => {
@@ -955,9 +793,8 @@ class SessionSyncService {
 
                 console.log(`[SessionSync] 从会话系统加载到 ${projectSessions.length} 个会话`);
 
-                // 将会话转换为文件和评论
+                // 将会话转换为文件
                 const files = [];
-                const comments = [];
 
                 for (const session of projectSessions) {
                     // 从会话ID提取文件路径
@@ -983,42 +820,14 @@ class SessionSyncService {
                         };
                         files.push(file);
 
-                        // 将消息转换为评论（保持字段统一）
-                        const normalizedMessages = this.normalizeMessages(session.messages || []);
-                for (let i = 0; i < normalizedMessages.length; i++) {
-                            const message = normalizedMessages[i];
-                            let comment = {
-                                key: `comment_${sessionKey}_${i}_${message.timestamp}`,
-                                // 统一的消息字段
-                                type: message.type,
-                                message: message.message,
-                                content: message.message,
-                                timestamp: message.timestamp,
-                                imageDataUrl: message.imageDataUrl,
-                                // 评论特有字段 - 使用UUID格式的sessionKey作为fileKey
-                                fileKey: sessionKey || filePath, // 优先使用UUID格式的sessionKey
-                                status: 'pending',
-                                // 兼容字段（保留以兼容旧代码）
-                                text: message.message, // content 和 text 保持一致
-                                author: message.type === 'pet' ? 'AI助手' : '用户',
-                                createdTime: message.timestamp, // 毫秒数
-                                createdAt: message.timestamp // 毫秒数
-                            };
-                            // 使用规范化函数确保字段一致性（如果可用）
-                            // normalizeComment 会进一步验证和转换 fileKey 为 UUID 格式
-                            if (window.aicrStore && window.aicrStore.normalizeComment) {
-                                comment = window.aicrStore.normalizeComment(comment);
-                            }
-                            comments.push(comment);
-                        }
                     }
                 }
 
-                console.log(`[SessionSync] 转换得到 ${files.length} 个文件和 ${comments.length} 条评论`);
-                return { files, comments };
+                console.log(`[SessionSync] 转换得到 ${files.length} 个文件`);
+                return { files };
             } catch (error) {
                 console.error('[SessionSync] 从会话系统加载数据失败:', error);
-                return { files: [], comments: [] };
+                return { files: [] };
             }
         }, '从会话系统加载数据');
     }

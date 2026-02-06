@@ -708,7 +708,7 @@ const createComplexMessageElement = (config) => {
         // 悬停时暂停进度条
         if (MESSAGE_CONFIG.hoverPause) {
             let progressPaused = false;
-            let remainingTime = duration;
+            let remainingTime = complexDuration;
             let pauseStartTime = 0;
 
             messageEl.addEventListener('mouseenter', () => {
@@ -716,8 +716,8 @@ const createComplexMessageElement = (config) => {
                     const computedStyle = window.getComputedStyle(progressBar);
                     const transform = computedStyle.transform;
                     const scaleX = transform === 'none' ? 1 : parseFloat(transform.split(',')[0].split('(')[1]);
-                    const elapsed = (1 - scaleX) * duration;
-                    remainingTime = duration - elapsed;
+                    const elapsed = (1 - scaleX) * complexDuration;
+                    remainingTime = complexDuration - elapsed;
 
                     progressBar.style.transition = 'none';
                     progressBar.style.transform = `scaleX(${scaleX})`;
@@ -767,6 +767,7 @@ const showComplexMessage = (config) => {
         });
     });
 
+    const duration = config.duration !== undefined ? config.duration : MESSAGE_CONFIG.duration;
     // 自动隐藏（支持悬停暂停）
     let hideTimer = null;
     if (duration !== 0 && duration > 0) {
@@ -1037,4 +1038,3 @@ if (typeof window !== 'undefined') {
     window.clearMessages = clearMessages;
     window.MESSAGE_TYPES = MESSAGE_TYPES;
 }
-

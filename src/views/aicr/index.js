@@ -18,66 +18,6 @@ const { computed } = Vue;
         // 在外部创建 store，以便在 onMounted 中访问
         const store = createStore();
 
-        // 新增：本地评论和高亮状态
-        const localState = {
-            codeComments: []
-        };
-
-        // 保存事件监听器引用，便于后续清理
-        const eventListeners = {
-            addCodeComment: null,
-            click: null,
-            modalEscPressed: null,
-            keydown: null,
-            highlightCodeLines: null
-        };
-
-        // 监听划词评论事件
-        eventListeners.addCodeComment = (e) => {
-            const detail = e.detail;
-            // 生成唯一key
-            const commentKey = 'cmt_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
-            // 假设当前文件key为store.selectedKey
-            const fileKey = (store.selectedKey && store.selectedKey.value) || (store.state && store.state.selectedKey);
-            // 记录range的起止行号和字符索引
-            let startLine = 1, endLine = 1, startChar = 0, endChar = 0;
-            // 移除找行号逻辑
-
-            // 兼容性处理
-            if (!startLine || !endLine) {
-                startLine = endLine = 1;
-            }
-            localState.codeComments.push({
-                key: commentKey,
-                fileKey,
-                text: detail.text,
-                comment: detail.comment,
-                rangeInfo: { startLine, startChar, endLine, endChar }
-            });
-            // 触发视图刷新（如用Vue可用响应式，这里简单reload）
-            if (window.aicrApp && window.aicrApp.reload) window.aicrApp.reload();
-        };
-        window.addEventListener('addCodeComment', eventListeners.addCodeComment);
-
-        // 保存外部事件监听器引用到全局
-        window.__aicrExternalListeners = {
-            addCodeComment: eventListeners.addCodeComment
-        };
-
-        // 提供全局清理函数（清理外部事件监听器）
-        window.__aicrCleanupEventListeners = () => {
-            const listeners = window.__aicrExternalListeners;
-            if (listeners && listeners.addCodeComment) {
-                window.removeEventListener('addCodeComment', listeners.addCodeComment);
-            }
-            // 同时清理 onMounted 中的监听器
-            if (typeof window.__aicrCleanupMountedListeners === 'function') {
-                window.__aicrCleanupMountedListeners();
-            }
-            window.__aicrExternalListeners = null;
-            logInfo('[代码审查页面] 已清理所有事件监听器');
-        };
-
         const app = await createBaseView({
             createStore: () => store,
             useComputed,
@@ -85,18 +25,13 @@ const { computed } = Vue;
             components: [
                 'FileTree',
                 'CodeView',
-                'CommentPanel',
                 'SessionList'
             ],
             data: {
-                // 新增：本地评论和高亮状态
-                codeComments: localState.codeComments,
                 // 暴露store数据给模板
                 sidebarCollapsed: store.sidebarCollapsed,
-                commentsCollapsed: store.commentsCollapsed,
                 sidebarWidth: store.sidebarWidth,
                 sessionSidebarWidth: store.sessionSidebarWidth,
-                commentsWidth: store.commentsWidth,
                 // 项目管理 - Removed
                 // projects: store.projects,
                 // selectedProject: store.selectedProject,
@@ -198,9 +133,6 @@ const { computed } = Vue;
                     if (store.sidebarCollapsed) {
                         store.sidebarCollapsed.value = store.sidebarCollapsed.value; // 触发响应式更新
                     }
-                    if (store.commentsCollapsed) {
-                        store.commentsCollapsed.value = store.commentsCollapsed.value; // 触发响应式更新
-                    }
                 }, 500);
 
                 if (store) {
@@ -225,11 +157,10 @@ const { computed } = Vue;
                             }
 
                             const fileParam = params2.get('key');
-                            // 读取高亮范围（兼容旧参数）与评论Key
+                            // 读取高亮范围（兼容旧参数）
                             const startLineParam = parseInt(params2.get('startLine'), 10);
                             const endLineParamRaw = params2.get('endLine');
                             const endLineParam = endLineParamRaw !== null ? parseInt(endLineParamRaw, 10) : NaN;
-                            const commentKeyParam = params2.get('commentKey');
                             let pendingHighlightRange = null;
                             if (Number.isFinite(startLineParam)) {
                                 pendingHighlightRange = {
@@ -237,9 +168,6 @@ const { computed } = Vue;
                                     endLine: Number.isFinite(endLineParam) ? endLineParam : startLineParam
                                 };
                                 window.__aicrPendingHighlightRangeInfo = pendingHighlightRange;
-                            }
-                            if (commentKeyParam) {
-                                window.__aicrPendingCommentKey = commentKeyParam;
                             }
                             if (fileParam) {
                                 const norm = String(fileParam).replace(/\\\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
@@ -281,11 +209,6 @@ const { computed } = Vue;
                                 }
                             }, 300);
                         }).then(() => {
-                            // 全局数据设置完成，触发评论面板按需加载
-                            logInfo('[代码审查页面] 全局数据设置完成，评论将按需加载');
-                            // 注意：不再在初始化时加载所有评论，改为按需加载（当用户查看评论时才加载）
-                            // 这样可以减少初始化时的接口调用，提升页面加载性能
-                            // 通过触发一个自定义事件来通知评论面板可以开始加载
                             setTimeout(() => {
                                 window.dispatchEvent(new CustomEvent('projectReady', {
                                     detail: {}
@@ -318,42 +241,6 @@ const { computed } = Vue;
                                                 }
                                             } catch (e) { logWarn('[代码審查] 版本就绪高亮处理失败', e); }
 
-                                            // 新增：按 commentKey 触发高亮
-                                            try {
-                                                const pendingCommentKey = window.__aicrPendingCommentKey;
-                                                if (pendingCommentKey && Array.isArray(store.comments?.value)) {
-                                                    const all = store.comments.value;
-                                                    const target = all.find(c => c.key === pendingCommentKey);
-                                                    if (target && target.rangeInfo) {
-                                                        const wantedRaw = target.fileKey || (target.fileInfo && target.fileInfo.key) || keyNorm;
-                                                        const normalize4b = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/, '/');
-                                                        const wantedKey = normalize4b(wantedRaw);
-                                                        if (wantedKey && store.selectedKey && store.selectedKey.value !== wantedKey) {
-                                                            store.setSelectedKey(wantedKey);
-                                                        }
-                                                        const r = target.rangeInfo;
-                                                        const normalizedRange = {
-                                                            startLine: Number(r.startLine) >= 1 ? Number(r.startLine) : 1,
-                                                            endLine: Number(r.endLine) >= 1 ? Number(r.endLine) : (Number(r.startLine) || 1),
-                                                            startChar: r.startChar,
-                                                            endChar: r.endChar
-                                                        };
-                                                        setTimeout(() => {
-                                                            try {
-                                                                window.dispatchEvent(new CustomEvent('highlightCodeLines', {
-                                                                    detail: {
-                                                                        fileKey: wantedKey,
-                                                                        rangeInfo: normalizedRange,
-                                                                        comment: target
-                                                                    }
-                                                                }));
-                                                                logInfo('[代码審查] 版本就绪后按commentKey触发高亮', { key: pendingCommentKey, range: normalizedRange });
-                                                            } catch (e) { logWarn('[代码審查] 按commentKey触发高亮失败', e); }
-                                                        }, 500);
-                                                        window.__aicrPendingCommentKey = null;
-                                                    }
-                                                }
-                                            } catch (e) { logWarn('[代码審查] commentKey高亮处理失败', e); }
                                             window.__aicrPendingFileKey = null;
                                         });
                                     }
@@ -368,14 +255,6 @@ const { computed } = Vue;
                         });
                     });
                 }
-                // 取消聚焦（如点击空白处）- 保存监听器引用
-                const clickListener = (e) => {
-                    if (!e.target.closest('.comment-item')) {
-                        if (window.aicrApp && window.aicrApp.reload) window.aicrApp.reload();
-                    }
-                };
-                window.addEventListener('click', clickListener);
-
                 // 添加ESC快捷键监听，取消文件选中
                 // 监听模态框的ESC事件，如果模态框已处理则跳过
                 const modalEscListener = (e) => {
@@ -402,33 +281,20 @@ const { computed } = Vue;
                                 logInfo('[代码审查页面] 发送清除高亮事件');
                                 window.dispatchEvent(new CustomEvent('clearCodeHighlight'));
                             }, 50);
-
-                            // 触发评论面板刷新事件，恢复到显示所有评论的状态
-                            setTimeout(() => {
-                                logInfo('[代码审查页面] 触发评论面板刷新事件，恢复到显示所有评论');
-                                window.dispatchEvent(new CustomEvent('reloadComments', {
-                                    detail: {
-                                        key: null,
-                                        forceReload: true,
-                                        showAllComments: true, // 新增：标记显示所有评论
-                                        immediateReload: true // 新增：标记立即刷新，不使用防抖
-                                    }
-                                }));
-                            }, 100);
                         }
                     }
                 };
                 window.addEventListener('keydown', keydownListener);
 
-                // 监听评论区的代码高亮事件
+                // 监听高亮事件，必要时切换文件后转发
                 const highlightListener = (e) => {
                     // 如果事件已经被转发过，避免死循环
                     if (e.detail && e.detail._forwarded) {
                         return;
                     }
 
-                    const { fileKey, rangeInfo, comment } = e.detail;
-                    logInfo('[代码审查页面] 收到代码高亮事件:', { fileKey, rangeInfo, comment });
+                    const { fileKey, rangeInfo } = e.detail || {};
+                    logInfo('[代码审查页面] 收到代码高亮事件:', { fileKey, rangeInfo });
 
                     if (fileKey) {
                         // 如果当前没有选中该文件，先选中文件
@@ -445,7 +311,6 @@ const { computed } = Vue;
                             window.dispatchEvent(new CustomEvent('highlightCodeLines', {
                                 detail: {
                                     rangeInfo,
-                                    comment,
                                     _forwarded: true // 标记为已转发，避免死循环
                                 }
                             }));
@@ -456,7 +321,6 @@ const { computed } = Vue;
                             window.dispatchEvent(new CustomEvent('highlightCodeLines', {
                                 detail: {
                                     rangeInfo,
-                                    comment,
                                     _forwarded: true // 标记为已转发，避免死循环
                                 }
                             }));
@@ -467,7 +331,6 @@ const { computed } = Vue;
 
                 // 保存监听器引用到全局，供清理时使用
                 window.__aicrMountedListeners = {
-                    click: clickListener,
                     modalEscPressed: modalEscListener,
                     keydown: keydownListener,
                     highlightCodeLines: highlightListener
@@ -477,7 +340,6 @@ const { computed } = Vue;
                 window.__aicrCleanupMountedListeners = () => {
                     const listeners = window.__aicrMountedListeners;
                     if (listeners) {
-                        if (listeners.click) window.removeEventListener('click', listeners.click);
                         if (listeners.modalEscPressed) window.removeEventListener('modalEscPressed', listeners.modalEscPressed);
                         if (listeners.keydown) window.removeEventListener('keydown', listeners.keydown);
                         if (listeners.highlightCodeLines) window.removeEventListener('highlightCodeLines', listeners.highlightCodeLines);
@@ -495,41 +357,11 @@ const { computed } = Vue;
                     expandedFolders: function () { return store.expandedFolders; },
                     loading: function () { return store.loading; },
                     error: function () { return store.errorMessage; },
-                    comments: function () { return store.comments; },
                     collapsed: function () { return store.sidebarCollapsed ? store.sidebarCollapsed.value : false; },
                     searchQuery: function () { return store.searchQuery ? store.searchQuery.value : ''; },
                     batchMode: function () { return store.batchMode ? store.batchMode.value : false; },
                     selectedKeys: function () { return store.selectedKeys ? store.selectedKeys.value : new Set(); },
                     viewMode: function () { return store.viewMode ? store.viewMode.value : 'tree'; }
-                },
-                'comment-panel': {
-                    comments: function () {
-                        // 使用计算属性中的currentComments
-                        const comments = this.currentComments || [];
-                        console.log('[主页面] 传递给评论面板的评论数据:', comments);
-                        return comments;
-                    },
-                    file: function () {
-                        // 使用计算属性中的currentFile
-                        const currentFile = this.currentFile;
-                        console.log('[主页面] 传递给评论面板的文件数据:', currentFile);
-                        return currentFile;
-                    },
-                    newComment: function () {
-                        // 将字符串转换为对象格式
-                        const commentValue = store.newComment ? store.newComment.value : '';
-                        return {
-                            content: typeof commentValue === 'string' ? commentValue : '',
-                            author: '',
-                            text: '',
-                            improvementText: '',
-                            type: '',
-                            status: 'pending'
-                        };
-                    },
-                    loading: function () { return store.loading; },
-                    error: function () { return store.errorMessage; },
-                    collapsed: function () { return store.commentsCollapsed ? store.commentsCollapsed.value : false; }
                 }
             },
             methods: {
@@ -540,67 +372,6 @@ const { computed } = Vue;
                         return '';
                     }
                 },
-                // 添加评论提交事件处理
-                handleCommentSubmit: async function (commentData) {
-                    logInfo('[主页面] 收到评论提交事件:', commentData);
-                    try {
-                        // 从useMethods中获取handleCommentSubmit方法
-                        const methods = useMethods(store);
-                        await methods.handleCommentSubmit(commentData);
-                    } catch (error) {
-                        logError('[主页面] 评论提交失败:', error);
-                    }
-                },
-
-                // 添加评论删除事件处理
-                handleCommentDelete: async function (commentId) {
-                    logInfo('[主页面] 收到评论删除事件:', commentId);
-                    try {
-                        // 从useMethods中获取handleCommentDelete方法
-                        const methods = useMethods(store);
-                        await methods.handleCommentDelete(commentId);
-                    } catch (error) {
-                        logError('[主页面] 评论删除失败:', error);
-                    }
-                },
-
-                // 添加评论解决事件处理
-                handleCommentResolve: async function (commentId) {
-                    logInfo('[主页面] 收到评论解决事件:', commentId);
-                    try {
-                        // 从useMethods中获取handleCommentResolve方法
-                        const methods = useMethods(store);
-                        await methods.handleCommentResolve(commentId);
-                    } catch (error) {
-                        logError('[主页面] 评论解决失败:', error);
-                    }
-                },
-
-                // 添加评论重新打开事件处理
-                handleCommentReopen: async function (commentId) {
-                    logInfo('[主页面] 收到评论重新打开事件:', commentId);
-                    try {
-                        // 从useMethods中获取handleCommentReopen方法
-                        const methods = useMethods(store);
-                        await methods.handleCommentReopen(commentId);
-                    } catch (error) {
-                        logError('[主页面] 评论重新打开失败:', error);
-                    }
-                },
-
-                // 添加评论重新加载事件处理
-                handleReloadComments: async function (detail) {
-                    logInfo('[主页面] 收到评论重新加载事件:', detail);
-                    try {
-                        // 从useMethods中获取handleReloadComments方法
-                        const methods = useMethods(store);
-                        await methods.handleReloadComments(detail);
-                    } catch (error) {
-                        logError('[主页面] 评论重新加载失败:', error);
-                    }
-                },
-
-
                 // 添加文件夹切换事件处理
                 handleFolderToggle: function (folderId) {
                     logInfo('[主页面] 收到文件夹切换事件:', folderId);
@@ -800,8 +571,6 @@ const { computed } = Vue;
                         logError('[主页面] 刷新数据处理失败:', error);
                     }
                 },
-
-                // 侧边栏和评论区切换
                 toggleSidebar: function () {
                     logInfo('[主页面] 收到侧边栏切换事件');
                     try {
@@ -809,31 +578,6 @@ const { computed } = Vue;
                         methods.toggleSidebar();
                     } catch (error) {
                         logError('[主页面] 侧边栏切换处理失败:', error);
-                    }
-                },
-
-                toggleComments: function () {
-                    logInfo('[主页面] 收到评论区切换事件');
-                    try {
-                        const methods = useMethods(store);
-                        methods.toggleComments();
-                    } catch (error) {
-                        logError('[主页面] 评论区切换处理失败:', error);
-                    }
-                },
-
-                // 处理评论输入
-                handleCommentInput: function (event) {
-                    logInfo('[主页面] 收到评论输入事件');
-                    try {
-                        // 更新newComment数据
-                        if (store.newComment) {
-                            store.newComment.value = event.target.value;
-                        }
-                        const methods = useMethods(store);
-                        methods.handleCommentInput(event);
-                    } catch (error) {
-                        logError('[主页面] 评论输入处理失败:', error);
                     }
                 },
                 // 设置视图模式（已移至 useMethods，这里保留作为备用）
@@ -1291,24 +1035,6 @@ function createSidebarResizers(store) {
             sidebar.style.width = `${store.sidebarWidth.value}px`;
         }
     }
-
-    // 创建评论区侧边栏拖拽条
-    const comments = document.querySelector('.aicr-comments');
-    if (comments) {
-        createResizer(comments, store, 'comments', {
-            minWidth: 320,
-            maxWidth: 550,
-            defaultWidth: 450,
-            storageKey: 'aicrCommentsWidth',
-            saveWidth: store.saveCommentsWidth,
-            position: 'left' // 评论区在右侧，拖拽条在左侧
-        });
-
-        // 应用保存的宽度
-        if (store.commentsWidth && store.commentsWidth.value) {
-            comments.style.width = `${store.commentsWidth.value}px`;
-        }
-    }
 }
 
 /**
@@ -1406,8 +1132,6 @@ function createResizer(sidebarElement, store, type, options) {
                 } else if (store.sidebarWidth) {
                     store.sidebarWidth.value = newWidth;
                 }
-            } else if (type === 'comments' && store.commentsWidth) {
-                store.commentsWidth.value = newWidth;
             }
         };
 
@@ -1453,5 +1177,3 @@ function createResizer(sidebarElement, store, type, options) {
 
     return resizer;
 }
-
-

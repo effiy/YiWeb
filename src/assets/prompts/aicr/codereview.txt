@@ -23,10 +23,10 @@
 以卓越的数据工程能力，构建高质量、可扩展的企业级AI代码审查知识库，持续驱动智能研发与企业优化升级。
 
 【输出格式】
-请以JSON数组形式返回，数组内每个元素结构如下，且必须生成至少1个评论对象：
+请以JSON数组形式返回，数组内每个元素结构如下，且必须生成至少1个审查项：
 [
   {
-    "content": "这里是代码评论内容",
+    "content": "这里是审查意见内容",
     "text": "export function createCachedRequest(options = {}) {\n\n  return new CachedRequest(options);\n\n}",
     "rangeInfo": {
       "startLine": 371,
@@ -34,11 +34,6 @@
     },
     "fileId": "apis/helper/requestHelper.js",
     "projectId": "YiWeb",
-    "versionId": "1.0.0",
-    "author": "手动评论",
-    "status": "pending",
-    "createdTime": "2025-08-17 16:31:09",
-    "updatedTime": "2025-08-29 07:49:45",
-    "improvementText": ""
+    "versionId": "1.0.0"
   }
 ]

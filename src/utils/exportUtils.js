@@ -52,7 +52,6 @@ export async function exportToZip(data, filename = 'export') {
         // 创建目录结构
         const dailyChecklistDir = zip.folder('每日清单');
         const projectFilesDir = zip.folder('项目文件');
-        const commentsDir = zip.folder('评论');
         const newsDir = zip.folder('新闻');
         
         // 导出每日清单数据
@@ -70,15 +69,6 @@ export async function exportToZip(data, filename = 'export') {
                 const content = formatProjectFileItem(item);
                 const fileName = generateItemFileName(item, '项目文件', index);
                 projectFilesDir.file(`${fileName}.md`, content);
-            });
-        }
-        
-        // 导出评论数据
-        if (data.comments && data.comments.length > 0) {
-            data.comments.forEach((item, index) => {
-                const content = formatCommentItem(item);
-                const fileName = generateItemFileName(item, '评论', index);
-                commentsDir.file(`${fileName}.md`, content);
             });
         }
         
@@ -194,44 +184,6 @@ function formatProjectFileItem(item) {
 }
 
 /**
- * 格式化评论项目
- * @param {Object} item - 评论项目
- * @returns {string} 格式化后的内容
- */
-function formatCommentItem(item) {
-    const lines = [];
-    lines.push(`# 评论 - ${item.author || '匿名用户'}`);
-    lines.push('');
-    lines.push(`**作者**: ${item.author || '匿名用户'}`);
-    lines.push(`**时间**: ${item.timestamp ? new Date(item.timestamp).toLocaleString('zh-CN') : '未知'}`);
-    lines.push(`**类型**: ${item.type || '未知'}`);
-    lines.push(`**状态**: ${item.status || '未知'}`);
-    lines.push('');
-    
-    if (item.content) {
-        lines.push('## 评论内容');
-        lines.push(item.content);
-        lines.push('');
-    }
-    
-    if (item.newsLink) {
-        lines.push('## 相关新闻');
-        lines.push(`[查看原文](${item.newsLink})`);
-        lines.push('');
-    }
-    
-    if (item.fileId) {
-        lines.push('## 相关文件');
-        lines.push(`文件ID: ${item.fileId}`);
-        lines.push('');
-    }
-    
-    lines.push(`**导出时间**: ${new Date().toLocaleString('zh-CN')}`);
-    
-    return lines.join('\n');
-}
-
-/**
  * 格式化新闻项目
  * @param {Object} item - 新闻项目
  * @returns {string} 格式化后的内容
@@ -333,9 +285,6 @@ function generateOptimizedFileName(baseName, category = '', data = null) {
         if (data.projectFiles && data.projectFiles.length > 0) {
             stats.push(`文件${data.projectFiles.length}个`);
         }
-        if (data.comments && data.comments.length > 0) {
-            stats.push(`评论${data.comments.length}条`);
-        }
         if (data.news && data.news.length > 0) {
             stats.push(`新闻${data.news.length}条`);
         }
@@ -387,14 +336,6 @@ function generateItemFileName(item, category, index) {
             }
             break;
             
-        case '评论':
-            // 使用作者和部分内容，不添加评论前缀
-            const author = item.author || '匿名用户';
-            const contentPreview = (item.content || item.text || '').substring(0, 20).replace(/[<>:"/\\|?*\n\r]/g, '_');
-            const cleanAuthor = author.replace(/[<>:"/\\|?*]/g, '_');
-            fileName = `${cleanAuthor}_${contentPreview || '无内容'}`;
-            break;
-            
         case '新闻':
             // 使用标题和来源，不添加新闻前缀，不添加日期后缀
             const title = item.title || `新闻${index + 1}`;
@@ -408,8 +349,8 @@ function generateItemFileName(item, category, index) {
             fileName = `${category}_${index + 1}`;
     }
     
-    // 添加日期（可选，但新闻、评论和项目文件不添加日期后缀）
-    if (category !== '新闻' && category !== '评论' && category !== '项目文件' && (item.isoDate || item.timestamp || item.createdAt)) {
+    // 添加日期（可选，但新闻和项目文件不添加日期后缀）
+    if (category !== '新闻' && category !== '项目文件' && (item.isoDate || item.timestamp || item.createdAt)) {
         const itemDate = new Date(item.isoDate || item.timestamp || item.createdAt);
         const itemDateStr = itemDate.toISOString().slice(0, 10);
         fileName += `_${itemDateStr}`;
@@ -450,9 +391,6 @@ export async function exportCategoryData(data, category, filename = 'export') {
                 case '项目文件':
                     content = formatProjectFileItem(item);
                     break;
-                case '评论':
-                    content = formatCommentItem(item);
-                    break;
                 case '新闻':
                     content = formatNewsItem(item);
                     break;
@@ -483,4 +421,3 @@ window.ExportUtils = {
     exportToZip,
     exportCategoryData
 };
-

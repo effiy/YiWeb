@@ -34,8 +34,7 @@
             <span class="search-results-count">找到 {{ searchResults.length }} 条相关新闻</span>
             <span class="search-query">"{{ searchQuery }}"</span>
         </header>
-        <!-- 评论统计风格的统计条 -->
-        <div class="comment-stats" v-if="getNewsStats().hasData">
+        <div class="news-stats" v-if="getNewsStats().hasData">
             <div class="stats-item stats-item-total" title="总新闻数">
                 <span class="stats-number">{{ getNewsStats().total }}</span>
                 <span class="stats-label">新闻</span>
@@ -125,8 +124,7 @@
             class="news-category"
             :aria-label="`${category.title || categoryKey}分类新闻`"
         >
-            <!-- 评论统计风格的统计条 -->
-            <div class="comment-stats" v-if="getNewsStats().hasData">
+            <div class="news-stats" v-if="getNewsStats().hasData">
                 <div class="stats-item stats-item-total" title="总新闻数">
                     <span class="stats-number">{{ getNewsStats().total }}</span>
                     <span class="stats-label">新闻</span>
@@ -208,4 +206,3 @@
         <div class="empty-subtitle">请稍后重试或联系管理员</div>
     </div>
 </section>
-

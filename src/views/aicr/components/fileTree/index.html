@@ -183,7 +183,6 @@
           :item="item"
           :selected-key="selectedKey"
           :expanded-folders="expandedFolders"
-          :comments="comments"
           :batch-mode="batchMode"
           :selected-keys="selectedKeys"
           @file-select="$emit('file-select', $event)"
@@ -216,12 +215,6 @@
         >
           <span class="tag-icon">{{ getFileIcon(file) }}</span>
           <span class="tag-name">{{ file.name }}</span>
-          <span
-            v-if="getCommentCount(file.sessionKey || file.key) > 0"
-            class="tag-comment-count"
-          >
-            {{ getCommentCount(file.sessionKey || file.key) }}
-          </span>
         </button>
       </div>
     </div>

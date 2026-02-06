@@ -28,11 +28,6 @@
     width: 100%;
 }
 
-/* 评论列表区块间距 */
-.news-comments-section {
-    margin-top: var(--spacing-2xl);
-}
-
 /* 侧边栏组件样式 */
 
 /* 侧边栏导航主容器 */
@@ -275,7 +270,6 @@
         justify-content: center;
     }
 }
-
 
 
 

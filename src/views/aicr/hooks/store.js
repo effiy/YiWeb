@@ -400,8 +400,8 @@ const vueRef = typeof Vue !== 'undefined' && Vue.ref ? Vue.ref : (val) => ({ val
 
 /**
  * 数据存储工厂函数
- * 管理文件树、代码文件、评论数据、选中状态、加载状态和错误信息
- * @returns {Object} store对象，包含fileTree, files, comments, selectedKey等方法
+ * 管理文件树、代码文件、选中状态、加载状态和错误信息
+ * @returns {Object} store对象，包含fileTree, files, selectedKey等方法
  */
 export const createStore = () => {
     // 文件目录树
@@ -412,8 +412,6 @@ export const createStore = () => {
     const files = vueRef([]);
     // 待处理的文件加载请求（用于去重）
     const pendingFileRequests = new Map();
-    // 评论数据
-    const comments = vueRef([]);
     // 当前选中的文件Key
     const selectedKey = vueRef(null);
     // 加载状态
@@ -426,17 +424,11 @@ export const createStore = () => {
     const expandedFolders = vueRef(new Set());
     // 侧边栏收缩状态
     const sidebarCollapsed = vueRef(false);
-    // 评论区收缩状态
-    const commentsCollapsed = vueRef(false);
     // 侧边栏宽度（文件树）
     const sidebarWidth = vueRef(320);
-    // 评论区宽度
-    const commentsWidth = vueRef(450);
 
     // 搜索相关状态
     const searchQuery = vueRef('');
-    // 新增评论内容
-    const newComment = vueRef('');
 
     // 批量选择相关状态
     const batchMode = vueRef(false);
@@ -1633,195 +1625,6 @@ export const createStore = () => {
     };
 
     /**
-     * 规范化评论数据，确保与会话消息格式保持一致
-     * 统一字段：content/text, timestamp/createdTime/createdAt, type
-     * @param {Object} comment - 评论对象
-     * @returns {Object} 规范化后的评论对象
-     */
-    const normalizeComment = (comment) => {
-        if (!comment || typeof comment !== 'object') return comment;
-
-        const rawContent = (comment.content == null) ? '' : String(comment.content).trim();
-        const rawText = (comment.text == null) ? '' : String(comment.text).trim();
-
-
-        const hasRangeInfo = !!comment.rangeInfo;
-
-        // 统一语义：
-        // - content：评论正文
-        // - text：引用代码（仅在确实是代码引用时保留；避免 text=content 导致“引用代码/被评论内容不一致”）
-        let normalizedContent = '';
-        let normalizedText = '';
-
-        // 重要修复：不再使用启发式逻辑调换 content 和 text 字段
-        // 因为 AI 生成的评论可能包含代码示例，会被误判为"引用代码"
-        // 字段语义应该由提交时决定，不应该在获取时被自动调换
-        if (rawContent && rawText) {
-            // 两者都有：content 是评论内容，text 是引用代码
-            normalizedContent = rawContent;
-            normalizedText = rawText;
-        } else if (rawContent) {
-            // 只有 content：作为评论内容
-            normalizedContent = rawContent;
-            normalizedText = '';
-        } else if (rawText) {
-            // 只有 text：如果有 rangeInfo，作为引用代码；否则作为评论内容
-            if (hasRangeInfo) {
-                normalizedText = rawText;
-                normalizedContent = '';
-            } else {
-                normalizedContent = rawText;
-                normalizedText = '';
-            }
-        }
-        normalizedContent = String(normalizedContent || '').trim();
-        normalizedText = String(normalizedText || '').trim();
-
-        // 统一 timestamp 字段（转换为毫秒数）
-        let timestamp = Date.now();
-        if (comment.timestamp) {
-            if (typeof comment.timestamp === 'string') {
-                const date = new Date(comment.timestamp);
-                timestamp = isNaN(date.getTime()) ? Date.now() : date.getTime();
-            } else if (typeof comment.timestamp === 'number') {
-                // 如果是秒级时间戳，转换为毫秒
-                timestamp = comment.timestamp < 1e12 ? comment.timestamp * 1000 : comment.timestamp;
-            }
-        } else if (comment.createdTime) {
-            if (typeof comment.createdTime === 'string') {
-                const date = new Date(comment.createdTime);
-                timestamp = isNaN(date.getTime()) ? Date.now() : date.getTime();
-            } else if (typeof comment.createdTime === 'number') {
-                timestamp = comment.createdTime < 1e12 ? comment.createdTime * 1000 : comment.createdTime;
-            }
-        } else if (comment.createdAt) {
-            if (typeof comment.createdAt === 'string') {
-                const date = new Date(comment.createdAt);
-                timestamp = isNaN(date.getTime()) ? Date.now() : date.getTime();
-            } else if (typeof comment.createdAt === 'number') {
-                timestamp = comment.createdAt < 1e12 ? comment.createdAt * 1000 : comment.createdAt;
-            }
-        }
-
-        // 统一 type 字段
-        let type = comment.type;
-        if (!type) {
-            if (comment.role) {
-                const role = String(comment.role).toLowerCase();
-                type = (role === 'user' || role === 'me') ? 'user' : 'pet';
-            } else {
-                // 根据 author 判断
-                const author = String(comment.author || '').toLowerCase();
-                type = (author.includes('ai') || author.includes('助手') || author.includes('assistant')) ? 'pet' : 'user';
-            }
-        }
-
-        // 确保 fileKey 必须是 sessionKey（UUID格式）
-        // 重构：comment 的 fileKey 必须是对应 session 的 key
-        const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
-        let fileKey = comment.fileKey;
-
-        // 只接受 UUID 格式的 fileKey（即 sessionKey），否则设为 null
-        if (fileKey && isUUID(fileKey)) {
-            // 已经是 UUID 格式（sessionKey），保持原样
-        } else {
-            // 如果不是 UUID 格式，设为 null（不再尝试查找或转换）
-            if (fileKey) {
-                console.warn('[normalizeComment] fileKey 不是 sessionKey（UUID格式），将被设置为 null:', fileKey);
-            }
-            fileKey = null;
-        }
-
-        return {
-            ...comment,
-            // 统一的消息字段
-            type: type,
-            content: normalizedContent,
-            timestamp: timestamp,
-            // 确保 fileKey 是 UUID 格式或 null
-            fileKey: fileKey,
-            // 兼容字段（保持与 content 和 timestamp 一致）
-            // text：仅用于“引用代码”展示
-            text: normalizedText,
-            createdTime: timestamp, // 毫秒数
-            createdAt: timestamp, // 毫秒数
-            // 保留其他字段
-            imageDataUrl: comment.imageDataUrl || comment.image || undefined
-        };
-    };
-
-    /**
-     * 异步加载评论数据
-     */
-    const loadComments = async () => {
-        return safeExecuteAsync(async () => {
-            // 防止重复请求
-            if (loading.value) {
-                console.log('[loadComments] 正在加载中，跳过重复请求');
-                return comments.value;
-            }
-
-            console.log('[loadComments] 正在加载评论数据...');
-
-            // 设置loading状态
-            loading.value = true;
-
-            try {
-                // 调用MongoDB接口获取评论数据
-                const queryParams = {
-                    cname: 'comments'
-                };
-
-                // 如果有当前选中的文件，仅使用 sessionKey 作为 fileKey
-                if (selectedKey.value) {
-                    let sessionKey = null;
-                    try {
-                        const root = fileTree.value;
-                        const { node } = findNodeAndParentByKey(root, selectedKey.value);
-                        if (node && node.sessionKey) {
-                            sessionKey = node.sessionKey;
-                        }
-                    } catch (e) { }
-
-                    if (sessionKey) {
-                        queryParams.fileKey = sessionKey;
-                    } else {
-                        console.warn('[loadComments] 未找到 sessionKey，跳过 fileKey 参数');
-                    }
-                }
-
-                const url = buildServiceUrl('query_documents', queryParams);
-
-                console.log('[loadComments] 调用MongoDB接口:', url);
-                // 禁用本地缓存，确保评论列表总是从服务端获取最新数据
-                const response = await getData(url, {}, false);
-
-                let list = (response && response.data && response.data.list) ? response.data.list : [];
-
-                comments.value = Array.isArray(list) ? list.map(comment => normalizeComment(comment)) : [];
-                console.log(`[loadComments] 成功加载 ${comments.value.length} 条评论`);
-                console.log('[loadComments] 评论数据详情:', comments.value);
-
-                return comments.value;
-            } catch (error) {
-                console.error('[loadComments] 加载评论失败:', error);
-                comments.value = [];
-                return [];
-            } finally {
-                // 清除loading状态
-                loading.value = false;
-            }
-        }, '评论数据加载', (errorInfo) => {
-            error.value = errorInfo.message;
-            errorMessage.value = errorInfo.message;
-            comments.value = [];
-            loading.value = false;
-        });
-    };
-
-
-
-    /**
      * 统一的Key规范化函数（使用统一的规范化工具）
      * @param {string} key - 文件Key
      * @returns {string} 规范化后的Key
@@ -1856,46 +1659,10 @@ export const createStore = () => {
     };
 
     /**
-     * 添加评论
-     * @param {Object} commentData - 评论数据
-     */
-    const addComment = (commentData) => {
-        if (!commentData || !commentData.content) return;
-
-        const newCommentObj = {
-            key: Date.now(),
-            fileKey: commentData.fileKey,
-            line: commentData.line || 0,
-            author: commentData.author || 'liangliang',
-            content: commentData.content,
-            replies: [],
-            timestamp: new Date().toISOString()
-        };
-
-        comments.value.push(newCommentObj);
-    };
-
-    /**
      * 切换侧边栏状态
      */
     const toggleSidebar = () => {
         sidebarCollapsed.value = !sidebarCollapsed.value;
-    };
-
-    /**
-     * 切换评论区状态
-     */
-    const toggleComments = () => {
-        commentsCollapsed.value = !commentsCollapsed.value;
-    };
-
-    /**
-     * 设置新增评论内容
-     * @param {string} content - 评论内容
-     */
-    const setNewComment = (content) => {
-        newComment.value = content;
-        console.log('[setNewComment] 设置评论内容:', content);
     };
 
     /**
@@ -1905,10 +1672,7 @@ export const createStore = () => {
         console.log('[refreshData] 正在刷新数据...');
 
         try {
-            await Promise.all([
-                loadFileTree(),
-                loadComments()
-            ]);
+            await loadFileTree();
 
             await loadFiles();
 
@@ -1935,19 +1699,11 @@ export const createStore = () => {
     const loadSidebarWidths = () => {
         try {
             const savedSidebarWidth = localStorage.getItem('aicrSidebarWidth');
-            const savedCommentsWidth = localStorage.getItem('aicrCommentsWidth');
 
             if (savedSidebarWidth) {
                 const width = Math.max(50, parseInt(savedSidebarWidth, 10));
                 if (!isNaN(width)) {
                     sidebarWidth.value = width;
-                }
-            }
-
-            if (savedCommentsWidth) {
-                const width = Math.max(50, parseInt(savedCommentsWidth, 10));
-                if (!isNaN(width)) {
-                    commentsWidth.value = width;
                 }
             }
         } catch (error) {
@@ -1964,18 +1720,6 @@ export const createStore = () => {
             localStorage.setItem('aicrSidebarWidth', width.toString());
         } catch (error) {
             console.warn('[saveSidebarWidth] 保存侧边栏宽度失败:', error);
-        }
-    };
-
-    /**
-     * 保存评论区宽度
-     */
-    const saveCommentsWidth = (width) => {
-        try {
-            commentsWidth.value = width;
-            localStorage.setItem('aicrCommentsWidth', width.toString());
-        } catch (error) {
-            console.warn('[saveCommentsWidth] 保存评论区宽度失败:', error);
         }
     };
 
@@ -2124,20 +1868,16 @@ export const createStore = () => {
         fileTree,
         fileTreeDocKey,
         files,
-        comments,
         selectedKey,
         loading,
         error,
         errorMessage,
         expandedFolders,
         sidebarCollapsed,
-        commentsCollapsed,
         sidebarWidth,
-        commentsWidth,
 
         // 搜索相关状态
         searchQuery,
-        newComment,
 
         // 批量选择相关状态
         batchMode,
@@ -2234,20 +1974,14 @@ export const createStore = () => {
         createFile,
         renameItem,
         deleteItem,
-        normalizeComment,
-        loadComments,
         setSelectedKey,
         normalizeKey,
         toggleFolder,
-        addComment,
         toggleSidebar,
-        toggleComments,
-        setNewComment,
         refreshData,
         clearError,
         loadSidebarWidths,
         saveSidebarWidth,
-        saveCommentsWidth,
         loadSessions,
         saveSessionSidebarWidth,
         loadSessionSidebarWidth

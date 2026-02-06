@@ -20,16 +20,12 @@ import { getFileDeleteService, buildFileTreeFromSessions } from './store.js';
 export const useMethods = (store) => {
     const {
         fileTree,
-        comments,
         selectedKey,
         expandedFolders,
-        newComment,
         setSelectedKey,
         normalizeKey,
         toggleFolder,
-        setNewComment,
         toggleSidebar,
-        toggleComments,
         loadFileTree,
         loadFiles,
         loadFileByKey,
@@ -770,9 +766,8 @@ export const useMethods = (store) => {
             console.log('[搜索执行] 执行搜索:', query);
 
             // 这里可以实现具体的搜索逻辑
-            // 例如：搜索文件、评论、代码内容等
+            // 例如：搜索文件、代码内容等
             searchInFileTree(query);
-            searchInComments(query);
             searchInCode(query);
 
         }, '搜索执行');
@@ -802,17 +797,6 @@ export const useMethods = (store) => {
                 console.warn('[文件树搜索] searchQuery未定义或无效');
             }
         }, '文件树搜索变化处理');
-    };
-
-    /**
-     * 在评论中搜索
-     * @param {string} query - 搜索关键词
-     */
-    const searchInComments = (query) => {
-        return safeExecute(() => {
-            console.log('[评论搜索] 搜索关键词:', query);
-            // 实现评论搜索逻辑
-        }, '评论搜索');
     };
 
     /**
@@ -982,13 +966,6 @@ export const useMethods = (store) => {
                 // 执行搜索 - 添加安全检查
                 const query = searchQuery && typeof searchQuery.value !== 'undefined' ? searchQuery.value : '';
                 performSearch(query);
-            } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-                event.preventDefault();
-                // 提交评论
-                if (newComment && newComment.value && newComment.value.trim()) {
-                    console.log('[消息输入] 检测到Ctrl+Enter，提交评论');
-                    handleCommentSubmit({ content: newComment.value.trim() });
-                }
             } else if (event.key === 'Escape') {
                 event.preventDefault();
                 clearSearch();
@@ -1753,8 +1730,7 @@ export const useMethods = (store) => {
                 // 加载界面所需数据（上传项目后需要重新加载，使用 forceClear: true）
                 await Promise.all([
                     loadFileTree(true),  // forceClear: true，上传后需要重新加载
-                    loadFiles(),
-                    (async () => { try { await loadComments(); } catch (_) { } })()
+                    loadFiles()
                 ]);
 
                 // 刷新会话列表（转换成树文件后需要刷新）
@@ -1896,304 +1872,6 @@ export const useMethods = (store) => {
     };
 
     /**
-     * 处理评论输入
-     * @param {Event} event - 输入事件
-     */
-    const handleCommentInput = (event) => {
-        return safeExecute(() => {
-            const value = event.target.value;
-            setNewComment(value);
-        }, '评论输入处理');
-    };
-
-    /**
-     * 处理评论键盘事件
-     * @param {Event} event - 键盘事件
-     */
-    const handleCommentKeydown = (event) => {
-        return safeExecute(() => {
-            if (event.key === 'Escape') {
-                setNewComment('');
-            } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-                event.preventDefault();
-                if (newComment.value.trim()) {
-                    handleCommentSubmit({ content: newComment.value.trim() });
-                }
-            }
-        }, '评论键盘事件处理');
-    };
-
-    /**
-     * 处理评论提交
-     * @param {Object} commentData - 评论数据
-     */
-    const handleCommentSubmit = async (commentData) => {
-        return safeExecute(async () => {
-            if (!commentData || !commentData.content) {
-                throw createError('评论内容不能为空', ErrorTypes.VALIDATION, '评论提交');
-            }
-
-            if (!selectedKey.value) {
-                throw createError('请先选择文件', ErrorTypes.VALIDATION, '评论提交');
-            }
-
-            console.log('[评论提交] 开始提交评论:', commentData);
-
-            try {
-                // 设置loading状态
-                loading.value = true;
-                console.log('[评论提交] 设置loading状态');
-
-                // 显示全局loading
-                const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
-                showGlobalLoading('正在提交评论...');
-                console.log('[评论提交] 显示全局loading');
-
-                // 规范化时间戳（转换为毫秒数）
-                const now = Date.now();
-                let timestamp = now;
-                if (commentData.timestamp) {
-                    if (typeof commentData.timestamp === 'string') {
-                        const date = new Date(commentData.timestamp);
-                        timestamp = isNaN(date.getTime()) ? now : date.getTime();
-                    } else if (typeof commentData.timestamp === 'number') {
-                        // 如果是秒级时间戳，转换为毫秒
-                        timestamp = commentData.timestamp < 1e12 ? commentData.timestamp * 1000 : commentData.timestamp;
-                    }
-                }
-
-                // 统一 type 字段（从 role 或 author 推断）
-                let type;
-                if (commentData.type) {
-                    type = commentData.type;
-                } else if (commentData.role) {
-                    const role = String(commentData.role).toLowerCase();
-                    type = (role === 'user' || role === 'me') ? 'user' : 'pet';
-                } else {
-                    // 根据 author 判断
-                    const author = String(commentData.author || '').toLowerCase();
-                    type = (author.includes('ai') || author.includes('助手') || author.includes('assistant')) ? 'pet' : 'user';
-                }
-
-                // 统一 content 字段
-                const content = String(commentData.content || commentData.text || '').trim();
-
-                // 重构：comment 的 fileKey 必须是对应 session 的 key（sessionKey）
-                const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
-                let targetFileKey = null;
-
-                // 只从 fileTree 中查找 sessionKey
-                if (store && store.fileTree && store.fileTree.value && selectedKey.value) {
-                    try {
-                        const root = store.fileTree.value;
-                        const { node } = findNodeAndParentByKey(root, selectedKey.value);
-                        if (node && node.sessionKey && isUUID(node.sessionKey)) {
-                            targetFileKey = node.sessionKey;
-                            console.log('[评论提交] 使用 sessionKey 作为 fileKey:', targetFileKey);
-                        } else {
-                            console.warn('[评论提交] 无法从fileTree找到sessionKey');
-                        }
-                    } catch (e) {
-                        console.warn('[评论提交] 查找sessionKey失败:', e);
-                    }
-                }
-
-                // 如果最终还是没有 sessionKey，抛出错误
-                if (!targetFileKey || !isUUID(targetFileKey)) {
-                    throw createError('无法找到有效的 sessionKey，评论无法提交', ErrorTypes.VALIDATION, '评论提交');
-                }
-
-                // 构建评论数据（保留评论特有字段，同时包含统一的消息字段）
-                // 如果有 rangeInfo，说明 text 字段存储的是引用代码，应该保留原有的 text 值
-                const textValue = (commentData.rangeInfo && commentData.text) ? commentData.text : content;
-
-                let comment = {
-                    ...commentData,
-                    // 统一的消息字段
-                    type: type,
-                    content: content,
-                    timestamp: timestamp,
-                    // 保留评论特有字段
-                    fileKey: targetFileKey,
-                    // 兼容字段（保留原有字段以兼容旧代码）
-                    // 如果有 rangeInfo，保留原有的 text（引用代码），否则使用 content
-                    text: textValue,
-                    createdTime: timestamp, // 毫秒数
-                    createdAt: timestamp, // 毫秒数
-                    // author 字段保留（用于显示）
-                    author: commentData.author || (type === 'pet' ? 'AI助手' : '用户')
-                };
-
-                // 使用规范化函数确保字段一致性
-                if (store && store.normalizeComment) {
-                    comment = store.normalizeComment(comment);
-                }
-
-                // 处理fromSystem字段
-                if (commentData.fromSystem) {
-                    console.log('[评论提交] 评论者信息:', commentData.fromSystem);
-                    if (Array.isArray(commentData.fromSystem)) {
-                        console.log('[评论提交] 多个评论者:', commentData.fromSystem.length);
-                        commentData.fromSystem.forEach(commenter => {
-                            console.log('[评论提交] 评论者:', commenter.name, commenter.key);
-                        });
-                    } else {
-                        console.log('[评论提交] 单个评论者:', commentData.fromSystem.name);
-                    }
-                    // 将评论者信息添加到评论数据中
-                    comment.fromSystem = commentData.fromSystem;
-                }
-
-                console.log('[评论提交] 构建的评论数据:', comment);
-
-                // 检查API配置
-                if (!window.API_URL) {
-                    throw createError('API地址未配置，无法提交评论', ErrorTypes.API, '评论提交');
-                }
-                const payload = {
-                    module_name: SERVICE_MODULE,
-                    method_name: 'create_document',
-                    parameters: {
-                        cname: 'comments',
-                        data: comment
-                    }
-                };
-                const result = await postData(`${window.API_URL}/`, payload);
-
-                console.log('[评论提交] API调用成功:', result);
-
-                // 同步评论到会话消息（确保使用规范化后的评论）
-                if (targetFileKey) {
-                    try {
-                        const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
-                        const sessionSync = getSessionSyncService();
-                        let commentWithKey = {
-                            ...comment,
-                            key: result?.data?.key || result?.key || comment.key || `comment_${Date.now()}`
-                        };
-                        // 再次规范化，确保字段一致性
-                        if (store && store.normalizeComment) {
-                            commentWithKey = store.normalizeComment(commentWithKey);
-                        }
-                        await sessionSync.syncCommentToMessage(commentWithKey, targetFileKey, false);
-                        console.log('[评论提交] 评论已同步到会话消息');
-                    } catch (syncError) {
-                        console.warn('[评论提交] 同步评论到会话消息失败（已忽略）:', syncError?.message);
-                    }
-                }
-
-                showSuccessMessage('评论添加成功');
-
-                // 立即在UI中显示新评论
-                let commentAdded = false;
-
-                // 方法1：通过ref直接调用组件方法
-                if (window.aicrApp && window.aicrApp.$refs) {
-                    const commentPanelRef = window.aicrApp.$refs['comment-panel'];
-                    if (commentPanelRef && typeof commentPanelRef.addCommentToLocalData === 'function') {
-                        console.log('[评论提交] 方法1：通过ref直接调用组件方法');
-                        commentPanelRef.addCommentToLocalData(comment);
-                        commentAdded = true;
-                    } else {
-                        console.log('[评论提交] 方法1失败：无法获取评论面板组件引用或方法不存在');
-                        console.log('[评论提交] commentPanelRef存在:', !!commentPanelRef);
-                        console.log('[评论提交] addCommentToLocalData方法存在:', !!(commentPanelRef && commentPanelRef.addCommentToLocalData));
-                    }
-                } else {
-                    console.log('[评论提交] 方法1失败：无法获取aicrApp或$refs');
-                }
-
-                // 方法2：通过全局方法调用
-                if (!commentAdded) {
-                    try {
-                        // 查找评论面板组件实例
-                        const commentPanelElement = document.querySelector('.comment-panel-container');
-                        if (commentPanelElement) {
-                            // 避免直接访问Vue内部属性，使用更安全的方式
-                            const componentInstance = commentPanelElement.__vueParentComponent?.component;
-                            if (componentInstance && typeof componentInstance.addCommentGlobally === 'function') {
-                                console.log('[评论提交] 方法2：通过全局方法调用');
-                                componentInstance.addCommentGlobally(comment);
-                                commentAdded = true;
-                            } else {
-                                console.log('[评论提交] 方法2失败：无法获取组件实例或方法不存在');
-                            }
-                        }
-                    } catch (error) {
-                        console.log('[评论提交] 方法2失败:', error);
-                    }
-                }
-
-                // 方法3：通过全局事件传递新评论数据
-                if (!commentAdded) {
-                    console.log('[评论提交] 方法3：通过全局事件传递新评论数据');
-                    window.dispatchEvent(new CustomEvent('addNewComment', {
-                        detail: { comment: comment }
-                    }));
-                }
-
-                // 方法5：额外确保comment-panel同步 - 增加延迟确保事件被正确处理
-                console.log('[评论提交] 方法5：额外确保comment-panel同步');
-                setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('addNewComment', {
-                        detail: { comment: comment }
-                    }));
-                }, 100);
-
-                // 清空评论输入
-                setNewComment('');
-
-                // 重新加载评论数据（只调用一次查询接口）
-                console.log('[评论提交] 开始重新加载评论数据');
-                setTimeout(async () => {
-                    try {
-                        await loadComments(); // 唯一一次查询 comments
-                    } catch (error) {
-                        console.error('[评论提交] 重新加载评论失败:', error);
-                    }
-                }, 500);
-
-            } catch (error) {
-                console.error('[评论提交] 提交失败:', error);
-                throw createError(`评论提交失败: ${error.message}`, ErrorTypes.API, '评论提交');
-            } finally {
-                // 清除loading状态
-                loading.value = false;
-                console.log('[评论提交] 清除loading状态');
-
-                // 隐藏全局loading
-                try {
-                    const { hideGlobalLoading } = await import('/src/utils/loading.js');
-                    hideGlobalLoading();
-                    console.log('[评论提交] 隐藏全局loading');
-                } catch (error) {
-                    console.error('[评论提交] 隐藏全局loading失败:', error);
-                }
-            }
-        }, '评论提交处理');
-    };
-
-
-
-
-
-    /**
-     * 清空所有评论
-     */
-    const clearAllComments = () => {
-        return safeExecute(() => {
-            if (comments.value.length === 0) {
-                throw createError('没有评论可清空', ErrorTypes.VALIDATION, '清空评论');
-            }
-
-            if (confirm('确定要清空所有评论吗？此操作不可撤销。')) {
-                comments.value.length = 0;
-                showSuccessMessage('已清空所有评论');
-            }
-        }, '清空评论');
-    };
-
-    /**
      * 展开所有文件夹
      */
     const expandAllFolders = () => {
@@ -2239,274 +1917,6 @@ export const useMethods = (store) => {
 
 
 
-    /**
-     * 处理评论删除
-     * @param {string} commentId - 评论ID
-     */
-    const handleCommentDelete = async (commentId) => {
-        return safeExecute(async () => {
-            if (!commentId) {
-                throw createError('评论ID不能为空', ErrorTypes.VALIDATION, '评论删除');
-            }
-
-            // 检查API配置
-            if (!window.API_URL) {
-                throw createError('API地址未配置，无法删除评论', ErrorTypes.API, '评论删除');
-            }
-
-            console.log('[评论删除] 开始删除评论:', commentId);
-
-            try {
-                const commentForSync = (comments && comments.value && Array.isArray(comments.value))
-                    ? comments.value.find(c => c && c.key === commentId)
-                    : null;
-
-                // 显示全局loading
-                const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
-                showGlobalLoading('正在删除评论...');
-                console.log('[评论删除] 显示全局loading');
-
-                // 构建删除接口URL
-                const payload = {
-                    module_name: SERVICE_MODULE,
-                    method_name: 'delete_document',
-                    parameters: {
-                        cname: 'comments',
-                        key: commentId
-                    }
-                };
-
-                console.log('[评论删除] 调用删除接口, payload:', payload);
-
-                // 调用删除接口
-                const resp = await postData(`${window.API_URL}/`, payload);
-
-                if (resp && resp.success !== false) {
-                    console.log('[评论删除] 删除成功:', resp);
-
-                    // 立即从本地store中移除，确保UI立即更新
-                    if (comments && comments.value) {
-                        const initialLength = comments.value.length;
-                        comments.value = comments.value.filter(c => c.key !== commentId);
-                        console.log('[评论删除] 已从本地store移除评论，剩余:', comments.value.length, '原数量:', initialLength);
-                    }
-                } else {
-                    throw new Error(resp?.message || '删除失败');
-                }
-
-                // 注意：删除评论不需要查询 sessions 接口，已移除同步删除会话消息的逻辑
-
-                // 显示成功消息
-                const { showSuccess } = await import('/src/utils/message.js');
-                showSuccess('评论删除成功');
-
-                // 发送清除高亮事件，通知代码视图组件清除对应的高亮
-                console.log('[评论删除] 发送清除高亮事件');
-                window.dispatchEvent(new CustomEvent('clearCommentHighlight', {
-                    detail: { commentId }
-                }));
-
-                // 重新加载评论数据
-                console.log('[评论删除] 重新加载评论数据');
-                await loadComments();
-
-                // 触发评论面板重新加载mongoComments
-                console.log('[评论删除] 触发评论面板重新加载');
-                setTimeout(() => {
-                    console.log('[评论删除] 发送reloadComments事件');
-                    // 关键修复：reloadComments 事件必须携带 fileKey（sessionKey）或显式声明 showAllComments
-                    // 否则 CommentPanel 会把 fileKey 当成 null 并清空列表，造成“删除一条后全空”
-                    const isUUID = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '').trim());
-                    let sessionKey = null;
-                    try {
-                        // 优先：从 fileTree 中根据 selectedKey 找到 sessionKey（最可靠）
-                        if (store && store.fileTree && store.fileTree.value && selectedKey?.value) {
-                            const root = store.fileTree.value;
-                            const { node } = findNodeAndParentByKey(root, selectedKey.value);
-                            if (node?.sessionKey && isUUID(node.sessionKey)) {
-                                sessionKey = node.sessionKey;
-                            }
-                        }
-                    } catch (e) {
-                        // ignore
-                    }
-                    // 兜底：如果评论对象里带有合法的 fileKey（sessionKey），也可使用
-                    if (!sessionKey && commentForSync?.fileKey && isUUID(commentForSync.fileKey)) {
-                        sessionKey = commentForSync.fileKey;
-                    }
-
-                    window.dispatchEvent(new CustomEvent('reloadComments', {
-                        detail: {
-                            // 让 CommentPanel 按当前文件刷新；若拿不到 sessionKey，则显式请求“加载全部”
-                            fileKey: sessionKey,
-                            showAllComments: !sessionKey,
-                            forceReload: true,
-                            immediateReload: true
-                        }
-                    }));
-                }, 200); // 增加延迟时间到200ms
-
-            } catch (error) {
-                console.error('[评论删除] 删除失败:', error);
-                throw createError(`删除评论失败: ${error.message}`, ErrorTypes.API, '评论删除');
-            } finally {
-                // 隐藏全局loading
-                try {
-                    const { hideGlobalLoading } = await import('/src/utils/loading.js');
-                    hideGlobalLoading();
-                    console.log('[评论删除] 隐藏全局loading');
-                } catch (error) {
-                    console.error('[评论删除] 隐藏全局loading失败:', error);
-                }
-            }
-        }, '评论删除处理');
-    };
-
-    /**
-     * 处理评论解决
-     * @param {string} commentId - 评论ID
-     */
-    const handleCommentResolve = async (commentId) => {
-        return safeExecute(async () => {
-            if (!commentId) {
-                throw createError('评论ID不能为空', ErrorTypes.VALIDATION, '评论解决');
-            }
-
-            // 检查API配置
-            if (!window.API_URL) {
-                throw createError('API地址未配置，无法解决评论', ErrorTypes.API, '评论解决');
-            }
-
-            console.log('[评论解决] 开始解决评论:', commentId);
-
-            try {
-                // 显示全局loading
-                const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
-                showGlobalLoading('正在解决评论...');
-                console.log('[评论解决] 显示全局loading');
-
-                // 构建解决评论的URL
-                const payload = {
-                    module_name: SERVICE_MODULE,
-                    method_name: 'update_document',
-                    parameters: {
-                        cname: 'comments',
-                        data: {
-                            key: commentId,
-                            status: 'resolved'
-                        }
-                    }
-                };
-
-                console.log('[评论解决] 调用解决接口 payload:', payload);
-
-                const { postData } = await import('/src/services/modules/crud.js');
-                const result = await postData(`${window.API_URL}/`, payload);
-
-                console.log('[评论解决] 解决成功:', result);
-                showSuccessMessage('评论已标记为已解决');
-
-                // 重新加载评论数据
-                if (selectedKey.value) {
-                    console.log('[评论解决] 重新加载评论数据');
-                    await loadComments();
-
-                    // 触发评论面板重新加载mongoComments
-                    console.log('[评论解决] 触发评论面板重新加载');
-                    setTimeout(() => {
-                        window.dispatchEvent(new CustomEvent('reloadComments', {}));
-                    }, 200); // 增加延迟时间到200ms
-                }
-
-            } catch (error) {
-                console.error('[评论解决] 解决失败:', error);
-                throw createError(`解决评论失败: ${error.message}`, ErrorTypes.API, '评论解决');
-            } finally {
-                // 隐藏全局loading
-                try {
-                    const { hideGlobalLoading } = await import('/src/utils/loading.js');
-                    hideGlobalLoading();
-                    console.log('[评论解决] 隐藏全局loading');
-                } catch (error) {
-                    console.error('[评论解决] 隐藏全局loading失败:', error);
-                }
-            }
-        }, '评论解决处理');
-    };
-
-    /**
-     * 处理评论重新打开
-     * @param {string} commentId - 评论ID
-     */
-    const handleCommentReopen = async (commentId) => {
-        return safeExecute(async () => {
-            if (!commentId) {
-                throw createError('评论ID不能为空', ErrorTypes.VALIDATION, '评论重新打开');
-            }
-
-            // 检查API配置
-            if (!window.API_URL) {
-                throw createError('API地址未配置，无法重新打开评论', ErrorTypes.API, '评论重新打开');
-            }
-
-            console.log('[评论重新打开] 开始重新打开评论:', commentId);
-
-            try {
-                // 显示全局loading
-                const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
-                showGlobalLoading('正在重新打开评论...');
-                console.log('[评论重新打开] 显示全局loading');
-
-                // 构建重新打开评论的URL
-                const reopenPayload = {
-                    module_name: SERVICE_MODULE,
-                    method_name: 'update_document',
-                    parameters: {
-                        cname: 'comments',
-                        data: {
-                            key: commentId,
-                            status: 'pending'
-                        }
-                    }
-                };
-
-                console.log('[评论重新打开] 调用重新打开接口 payload:', reopenPayload);
-
-                const { postData } = await import('/src/services/modules/crud.js');
-                const result = await postData(`${window.API_URL}/`, reopenPayload);
-
-                console.log('[评论重新打开] 重新打开成功:', result);
-                showSuccessMessage('评论已重新打开');
-
-                // 重新加载评论数据
-                if (selectedKey.value) {
-                    console.log('[评论重新打开] 重新加载评论数据');
-                    await loadComments();
-
-                    // 触发评论面板重新加载mongoComments
-                    console.log('[评论重新打开] 触发评论面板重新加载');
-                    setTimeout(() => {
-                        window.dispatchEvent(new CustomEvent('reloadComments', {
-                            detail: {}
-                        }));
-                    }, 200); // 增加延迟时间到200ms
-                }
-
-            } catch (error) {
-                console.error('[评论重新打开] 重新打开失败:', error);
-                throw createError(`重新打开评论失败: ${error.message}`, ErrorTypes.API, '评论重新打开');
-            } finally {
-                // 隐藏全局loading
-                try {
-                    const { hideGlobalLoading } = await import('/src/utils/loading.js');
-                    hideGlobalLoading();
-                    console.log('[评论重新打开] 隐藏全局loading');
-                } catch (error) {
-                    console.error('[评论重新打开] 隐藏全局loading失败:', error);
-                }
-            }
-        }, '评论重新打开处理');
-    };
 
     /**
      * 初始化项目根目录
@@ -2543,85 +1953,6 @@ export const useMethods = (store) => {
     };
 
     /**
-     * 处理评论重新加载事件
-     * @param {Object} detail - 事件详情
-     */
-    const handleReloadComments = async (detail) => {
-        return safeExecute(async () => {
-            console.log('[评论重新加载] 收到重新加载评论的请求:', detail);
-
-            try {
-                // 调用加载评论方法
-                await loadComments();
-
-                console.log('[评论重新加载] 评论重新加载完成');
-
-            } catch (error) {
-                console.error('[评论重新加载] 重新加载评论失败:', error);
-
-                // 显示错误消息
-                try {
-                    const { showError } = await import('/src/utils/message.js');
-                    showError('重新加载评论失败: ' + error.message);
-                } catch (_) { }
-            }
-        }, '评论重新加载处理');
-    };
-
-    /**
-     * 加载评论数据
-     */
-    const loadComments = async () => {
-        return safeExecute(async () => {
-            // 防止重复请求
-            if (loading.value) {
-                console.log('[加载评论] 正在加载中，跳过重复请求');
-                return;
-            }
-
-            console.log('[加载评论] 开始加载评论数据...');
-
-            try {
-                let targetKey = selectedKey.value;
-                if (selectedKey.value && store && store.fileTree && store.fileTree.value) {
-                    try {
-                        const root = store.fileTree.value;
-                        const { node } = findNodeAndParentByKey(root, selectedKey.value);
-                        if (node && node.sessionKey) {
-                            targetKey = node.sessionKey;
-                        }
-                    } catch (e) { }
-                }
-                // 构建获取评论的URL
-                const queryUrl = buildServiceUrl('query_documents', {
-                    cname: 'comments',
-                    ...(targetKey ? { fileKey: targetKey } : {})
-                });
-
-                console.log('[加载评论] 调用获取评论接口:', queryUrl);
-
-                // const { getData } = await import('/src/services/modules/crud.js');
-                // const response = await getData(queryUrl);
-
-                // // 更新评论数据
-                // if (response && response.data && response.data.list) {
-                //     comments.value = response.data.list;
-                //     console.log('[加载评论] 评论数据更新成功，数量:', comments.value.length);
-                // } else {
-                //     comments.value = [];
-                //     console.log('[加载评论] 没有评论数据');
-                // }
-
-            } catch (error) {
-                console.error('[加载评论] 加载失败:', error);
-                comments.value = [];
-            }
-        }, '评论数据加载');
-    };
-
-
-
-    /**
      * 切换侧边栏
      */
     const handleToggleSidebar = () => {
@@ -2629,16 +1960,6 @@ export const useMethods = (store) => {
             toggleSidebar();
             console.log('[侧边栏] 切换侧边栏状态');
         }, '侧边栏切换');
-    };
-
-    /**
-     * 切换评论区
-     */
-    const handleToggleComments = () => {
-        return safeExecute(() => {
-            toggleComments();
-            console.log('[评论区] 切换评论区状态');
-        }, '评论区切换');
     };
 
     /**
@@ -6669,19 +5990,9 @@ export const useMethods = (store) => {
                 }
             }, '创建会话');
         },
-        handleCommentSubmit,
-        handleCommentInput,
-        handleCommentKeydown,
-        clearAllComments,
         expandAllFolders,
         collapseAllFolders,
-        handleCommentDelete,
-        handleCommentResolve,
-        handleCommentReopen,
-        handleReloadComments,
-        loadComments,
         toggleSidebar: handleToggleSidebar,
-        toggleComments: handleToggleComments,
         // 项目/版本管理方法
         handleProjectChange,
         refreshData: handleRefreshData,
@@ -6690,7 +6001,6 @@ export const useMethods = (store) => {
         handleSearchChange,
         performSearch,
         searchInFileTree,
-        searchInComments,
         searchInCode,
         clearSearchResults,
         clearSearch,
@@ -6778,12 +6088,6 @@ export const useMethods = (store) => {
                             }
                         }
 
-                        if (typeof setNewComment === 'function') {
-                            setNewComment('');
-                        } else if (newComment) {
-                            newComment.value = '';
-                        }
-
                         // 只有在没有待处理的会话/文件时才清空会话状态
                         // 如果有待处理的会话/文件，保留当前状态以便后续同步
                         const hasPendingSync = (previousMode === 'tree' && mode === 'tags' && pendingFileKey) ||
@@ -6798,17 +6102,6 @@ export const useMethods = (store) => {
                         }
 
                         window.dispatchEvent(new CustomEvent('clearCodeHighlight'));
-                        setTimeout(() => {
-                            window.dispatchEvent(new CustomEvent('resetAicrComments'));
-                            window.dispatchEvent(new CustomEvent('reloadComments', {
-                                detail: {
-                                    key: null,
-                                    forceReload: true,
-                                    showAllComments: true,
-                                    immediateReload: true
-                                }
-                            }));
-                        }, 0);
                     }
 
                     // 如果切换到标签视图，自动加载会话数据
@@ -7159,12 +6452,6 @@ export const useMethods = (store) => {
                     selectedKey.value = null;
                 }
 
-                if (typeof setNewComment === 'function') {
-                    setNewComment('');
-                } else if (newComment) {
-                    newComment.value = '';
-                }
-
                 if (activeSession) activeSession.value = null;
                 if (activeSessionError) activeSessionError.value = null;
                 if (activeSessionLoading) activeSessionLoading.value = false;
@@ -7173,17 +6460,6 @@ export const useMethods = (store) => {
                 if (sessionContextDraft) sessionContextDraft.value = '';
 
                 window.dispatchEvent(new CustomEvent('clearCodeHighlight'));
-                setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('resetAicrComments'));
-                    window.dispatchEvent(new CustomEvent('reloadComments', {
-                        detail: {
-                            key: null,
-                            forceReload: true,
-                            showAllComments: true,
-                            immediateReload: true
-                        }
-                    }));
-                }, 0);
 
                 setTimeout(() => {
                     try {

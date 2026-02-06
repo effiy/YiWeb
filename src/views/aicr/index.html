@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="代码审查助手，支持文件树浏览、评论标注、会话管理与导出">
-    <meta name="keywords" content="代码审查, AI, 代码评审, 文件树, 评论, YiWeb">
+    <meta name="description" content="代码审查助手，支持文件树浏览、会话管理与导出">
+    <meta name="keywords" content="代码审查, AI, 代码评审, 文件树, YiWeb">
     <meta name="author" content="liangliang">
     <title>YiWeb - 代码审查</title>
     <link rel="stylesheet" href="../../views/aicr/index.css">
@@ -115,7 +115,7 @@
                     <!-- 树形视图：显示文件树 -->
                     <file-tree v-show="viewMode === 'tree'" :tree="fileTree" :selected-key="selectedKey"
                         :expanded-folders="expandedFolders" :loading="loading" :error="errorMessage"
-                        :comments="comments" :collapsed="sidebarCollapsed" :search-query="searchQuery"
+                        :collapsed="sidebarCollapsed" :search-query="searchQuery"
                         :batch-mode="batchMode" :selected-keys="selectedKeys" :view-mode="viewMode"
                         :selected-tags="(selectedSessionTags && Array.isArray(selectedSessionTags)) ? selectedSessionTags : []"
                         :tag-filter-reverse="tagFilterReverse || false" :tag-filter-no-tags="tagFilterNoTags || false"
@@ -162,13 +162,8 @@
             </aside>
 
 
-            <section class="aicr-code"
-                :class="{ 'with-sidebar-collapsed': sidebarCollapsed, 'with-comments-collapsed': commentsCollapsed }"
-                aria-label="代码区">
-                <code-view v-if="viewMode === 'tree'" :file="currentFile" :loading="loading" :error="errorMessage"
-                    :comments="currentComments" @comment-delete="handleCommentDelete"
-                    @comment-resolve="handleCommentResolve" @comment-reopen="handleCommentReopen"
-                    @reload-comments="handleReloadComments"></code-view>
+            <section class="aicr-code" :class="{ 'with-sidebar-collapsed': sidebarCollapsed }" aria-label="代码区">
+                <code-view v-if="viewMode === 'tree'" :file="currentFile" :loading="loading" :error="errorMessage"></code-view>
 
                 <div v-if="viewMode === 'tags'" class="pet-chat-right-panel" aria-label="会话聊天面板">
                     <div class="pet-chat-messages" id="pet-chat-messages" role="log" aria-live="polite">
@@ -183,7 +178,7 @@
                             <div class="sr-only" role="status" aria-live="polite">未选择会话，从左侧会话列表选择一个会话开始聊天</div>
                             <div class="pet-chat-empty-card">
                                 <div class="pet-chat-empty-icon" aria-hidden="true">
-                                    <i class="fas fa-comments"></i>
+                                    <i class="fas fa-inbox"></i>
                                 </div>
                                 <h2 class="pet-chat-empty-title">未选择会话</h2>
                                 <p class="pet-chat-empty-subtitle">从左侧会话列表选择一个会话开始聊天</p>
@@ -784,30 +779,6 @@
                     </div>
                 </div>
             </section>
-            <aside class="aicr-comments" aria-label="评论区" v-show="viewMode === 'tree' && !commentsCollapsed"
-                :style="{ width: commentsWidth + 'px' }">
-                <div class="sidebar-scroll-container">
-                    <comment-panel :comments="currentComments" :file="currentFile" :view-mode="viewMode"
-                        :new-comment="newComment" :loading="loading" :error="errorMessage"
-                        :collapsed="commentsCollapsed" @comment-submit="handleCommentSubmit"
-                        @comment-input="handleCommentInput" @comment-delete="handleCommentDelete"
-                        @comment-resolve="handleCommentResolve" @comment-reopen="handleCommentReopen"
-                        @toggle-collapse="toggleComments"></comment-panel>
-                </div>
-            </aside>
-
-            <!-- 评论区收起按钮 (展开时显示，跟随评论区宽度) -->
-            <button type="button" class="comments-toggle" v-show="viewMode === 'tree' && !commentsCollapsed" @click="toggleComments"
-                title="收起评论区" :style="{ right: (commentsWidth - 14) + 'px', left: 'auto' }">
-                <i class="fas fa-chevron-right" aria-hidden="true"></i>
-            </button>
-
-            <!-- 评论区收起后的展开把手 -->
-            <button type="button" class="comments-expand-handle" v-show="viewMode === 'tree' && commentsCollapsed"
-                @click="toggleComments" aria-label="展开评论区" title="展开评论区">
-                <i class="fas fa-chevron-left" aria-hidden="true"></i>
-            </button>
-
         </main>
     </div>
 
@@ -834,7 +805,6 @@
     <!-- 插件组件 -->
     <script type="module" src="../../views/aicr/components/fileTree/index.js"></script>
     <script type="module" src="../../views/aicr/components/codeView/index.js"></script>
-    <script type="module" src="../../views/aicr/components/commentPanel/index.js"></script>
     <script type="module" src="../../views/aicr/components/sessionList/index.js"></script>
 
     <!-- 主应用入口 -->
@@ -845,4 +815,3 @@
 </body>
 
 </html>
-

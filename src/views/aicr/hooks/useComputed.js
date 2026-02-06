@@ -140,91 +140,6 @@ export const useComputed = (store) => {
         }),
 
         /**
-         * 当前文件的评论
-         * 在会话模式下，返回与当前会话相关的评论
-         */
-        currentComments: computed(() => {
-            const viewMode = store.viewMode?.value || 'tree';
-            const activeSession = store.activeSession?.value;
-
-            // 会话模式下，如果有activeSession，返回与该会话相关的评论
-            if (viewMode === 'tags' && activeSession) {
-                const sessionKey = activeSession.id || activeSession.key;
-                if (sessionKey) {
-                    const storeComments = store.comments?.value ? store.comments.value.filter(c => {
-                        const commentFileKey = c.fileKey;
-                        return String(commentFileKey || '') === String(sessionKey);
-                    }) : [];
-
-                    console.log('[currentComments] 会话模式 - 会话Key:', sessionKey);
-                    console.log('[currentComments] 会话模式 - 评论数量:', storeComments.length);
-
-                    return storeComments.map(comment => ({
-                        ...comment,
-                        key: comment.key || `comment_${Date.now()}_${Math.random()}`
-                    }));
-                }
-                // 如果没有sessionKey，返回空数组，让评论面板自己加载
-                return [];
-            }
-
-            // 树形视图模式下的原有逻辑
-            const key = store.selectedKey?.value;
-            console.log('[currentComments] 树形模式 - 当前文件Key:', key);
-            console.log('[currentComments] store.comments:', store.comments);
-
-            if (!key) return [];
-
-            const normalize = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
-            const keyNorm = normalize(key);
-            const findSessionKeyByTreeKey = (nodes, treeKey) => {
-                if (!nodes) return null;
-                const stack = Array.isArray(nodes) ? [...nodes] : [nodes];
-                while (stack.length > 0) {
-                    const n = stack.pop();
-                    if (!n) continue;
-                    const k = normalize(n.key || n.path || n.id || '');
-                    if (k && k === treeKey) {
-                        return n.sessionKey != null ? String(n.sessionKey) : null;
-                    }
-                    if (Array.isArray(n.children) && n.children.length > 0) {
-                        for (let i = n.children.length - 1; i >= 0; i--) stack.push(n.children[i]);
-                    }
-                }
-                return null;
-            };
-            const currentFile = store.files?.value ? store.files.value.find(f => {
-                if (!f) return false;
-                const candidates = [f.key, f.path, f.name].filter(Boolean).map(normalize);
-                return candidates.includes(keyNorm);
-            }) : null;
-            const sessionKey = currentFile?.sessionKey
-                ? String(currentFile.sessionKey)
-                : findSessionKeyByTreeKey(store.fileTree?.value, keyNorm);
-            if (!sessionKey) return [];
-
-            // 合并本地评论和store中的评论
-            const localComments = []; // 这里可以添加本地评论逻辑
-            const storeComments = store.comments?.value ? store.comments.value.filter(c => {
-                const commentFileKey = c.fileKey;
-                console.log('[currentComments] 评论文件Key:', commentFileKey, '当前文件Key:', key);
-                return String(commentFileKey || '') === sessionKey;
-            }) : [];
-            const allComments = [...localComments, ...storeComments];
-
-            console.log('[currentComments] 本地评论数量:', localComments.length);
-            console.log('[currentComments] store评论数量:', storeComments.length);
-            console.log('[currentComments] 总评论数量:', allComments.length);
-            console.log('[currentComments] 所有评论详情:', allComments);
-
-            // 确保返回的评论有正确的key属性
-            return allComments.map(comment => ({
-                ...comment,
-                key: comment.key || `comment_${Date.now()}_${Math.random()}`
-            }));
-        }),
-
-        /**
          * 文件树统计信息
          */
         fileTreeStats: computed(() => {
@@ -302,26 +217,6 @@ export const useComputed = (store) => {
         }),
 
         /**
-         * 当前文件的评论数量
-         */
-        currentFileCommentCount: computed(() => {
-            if (!store.selectedKey?.value || !store.comments?.value) return 0;
-            const normalize = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
-            const key = store.selectedKey.value;
-            const keyNorm = normalize(key);
-            const currentFile = store.files?.value ? store.files.value.find(f => {
-                if (!f) return false;
-                const candidates = [f.key, f.path, f.name].filter(Boolean).map(normalize);
-                return candidates.includes(keyNorm);
-            }) : null;
-            const sessionKey = currentFile?.sessionKey ? String(currentFile.sessionKey) : null;
-            if (!sessionKey) return 0;
-            return store.comments.value.filter(c => {
-                return String(c.fileKey || '') === sessionKey;
-            }).length;
-        }),
-
-        /**
          * 是否有项目数据
          */
         // hasProjects: computed(() => {
@@ -354,22 +249,6 @@ export const useComputed = (store) => {
         }),
 
         /**
-         * 新评论对象 - 将字符串转换为对象格式，用于传递给CommentPanel组件
-         */
-        newComment: computed(() => {
-            // 将字符串转换为对象格式
-            const commentValue = store.newComment ? store.newComment.value : '';
-            return {
-                content: typeof commentValue === 'string' ? commentValue : '',
-                author: '',
-                text: '',
-                improvementText: '',
-                type: '',
-                status: 'pending'
-            };
-        }),
-
-        /**
          * 是否所有会话都已选中（用于全选/取消全选按钮）
          */
         isAllSessionsSelected: computed(() => {
@@ -388,5 +267,4 @@ export const useComputed = (store) => {
 
     };
 };
-
 

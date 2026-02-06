@@ -1252,50 +1252,6 @@
     font-size: 12px;
 }
 
-/* ========== 评论数量显示 ========== */
-.comment-count {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    padding: 2px 6px;
-    background: var(--primary);
-    color: white;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 500;
-    line-height: 1;
-    margin-left: auto;
-    flex-shrink: 0;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.comment-count:hover {
-    background: var(--primary-dark, #4338ca);
-    transform: scale(1.05);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.folder-comment-count {
-    background: var(--secondary, #6b7280);
-}
-
-.folder-comment-count:hover {
-    background: var(--secondary-dark, #4b5563);
-}
-
-/* 当文件被选中时，评论数量样式 */
-.file-tree-item.selected .comment-count {
-    background: white;
-    color: var(--primary);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.file-tree-item.selected .folder-comment-count {
-    background: white;
-    color: var(--secondary);
-}
-
 /* ========== 视图切换按钮样式（集成在搜索框内） ========== */
 .view-mode-toggle {
     display: inline-flex;
@@ -1351,11 +1307,6 @@
 
 /* 响应式设计 */
 @media (max-width: 640px) {
-    .comment-count {
-        font-size: 10px;
-        padding: 1px 4px;
-    }
-    
     .view-mode-btn {
         width: 26px;
         height: 26px;
@@ -1431,32 +1382,6 @@
     max-width: 200px;
 }
 
-.tag-comment-count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    background: var(--primary);
-    color: white;
-    border-radius: 8px;
-    font-size: 9px;
-    font-weight: 600;
-    line-height: 1;
-    margin-left: 2px;
-}
-
-.file-tag.selected .tag-comment-count {
-    background: white;
-    color: var(--primary);
-}
-
-.file-tag.batch-selected .tag-comment-count {
-    background: #10b981;
-    color: white;
-}
-
 /* 响应式设计 */
 @media (max-width: 950px) {
     .tags-container {
@@ -1487,7 +1412,5 @@
         font-size: 12px;
     }
 }
-
-
 
 

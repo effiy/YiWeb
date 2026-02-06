@@ -179,6 +179,17 @@ function getFileType(extension) {
     return typeMap[ext] || 'other';
 }
 
+function getContrastingTextColor(hexColor) {
+    if (!hexColor || typeof hexColor !== 'string') return '#ffffff';
+    const hex = hexColor.startsWith('#') ? hexColor.slice(1) : hexColor;
+    if (hex.length !== 6) return '#ffffff';
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    return yiq >= 170 ? '#111827' : '#ffffff';
+}
+
 const componentOptions = {
     name: 'ProjectFilesList',
     css: '/src/components/common/projectFilesList/index.css',
@@ -303,6 +314,13 @@ const componentOptions = {
                     'other': '#6c757d'
                 };
                 return colorMap[fileType] || '#6c757d';
+            },
+            getFileTypeStyle(file) {
+                const backgroundColor = this.getFileTypeColor(file);
+                return {
+                    backgroundColor,
+                    color: getContrastingTextColor(backgroundColor)
+                };
             },
             getFileTypeIcon,
             getFileTypeLabel,

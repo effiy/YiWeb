@@ -589,8 +589,7 @@
     }
 } 
 
-/* 评论统计风格（复用 commentPanel 样式命名） */
-.comment-stats {
+.news-stats {
     width: 100%;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -598,7 +597,7 @@
     margin: 0 0 var(--spacing-lg) 0;
 }
 
-.comment-stats .stats-item {
+.news-stats .stats-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -608,13 +607,13 @@
     background: var(--bg-elevated);
 }
 
-.comment-stats .stats-number {
+.news-stats .stats-number {
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--text-primary);
 }
 
-.comment-stats .stats-label {
+.news-stats .stats-label {
     font-size: 0.85rem;
     color: var(--text-secondary);
 }

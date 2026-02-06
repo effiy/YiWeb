@@ -139,24 +139,21 @@ export const useMethods = (store) => {
                 throw createError('分类参数无效', ErrorTypes.VALIDATION, '分类切换');
             }
 
-            // 顶部分类：全部/每日清单/新闻/评论/项目文件
-            if (['all', 'dailyChecklist', 'news', 'comments', 'projectFiles'].includes(category)) {
+            // 顶部分类：全部/每日清单/新闻/项目文件
+            if (['all', 'dailyChecklist', 'news', 'projectFiles'].includes(category)) {
                 setActiveCategory(category);
                 syncUrlState({ cat: category }, false);
 
                 // 点击后请求对应接口
                 if (category === 'all') {
-                    // 同时刷新新闻、评论和项目文件
+                    // 同时刷新新闻和项目文件
                     loadNewsData();
                     loadProjectFilesData();
-                    window.dispatchEvent(new CustomEvent('ReloadComments'));
                 } else if (category === 'dailyChecklist') {
                     // 加载每日清单数据
                     window.dispatchEvent(new CustomEvent('LoadDailyChecklist'));
                 } else if (category === 'news') {
                     loadNewsData();
-                } else if (category === 'comments') {
-                    window.dispatchEvent(new CustomEvent('ReloadComments'));
                 } else if (category === 'projectFiles') {
                     loadProjectFilesData();
                 }
@@ -165,7 +162,6 @@ export const useMethods = (store) => {
                     'all': '全部',
                     'dailyChecklist': '每日清单',
                     'news': '新闻',
-                    'comments': '评论',
                     'projectFiles': '项目文件'
                 };
                 showSuccessMessage(`已切换到: ${categoryNames[category]}`);
