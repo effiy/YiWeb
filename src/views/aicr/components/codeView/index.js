@@ -211,6 +211,18 @@ const componentOptions = {
         if (this._onCodeKeydown) window.removeEventListener('keydown', this._onCodeKeydown);
     },
     methods: {
+        openFileInNewTab() {
+            return safeExecute(() => {
+                const f = this.file || {};
+                const rawKey = String(f.treeKey || f.path || f.key || '').trim();
+                const key = normalizePath(rawKey);
+                if (!key) return;
+                const targetPath = '/src/views/aicr/index.html';
+                const baseUrl = `${window.location.origin}${targetPath}`;
+                const url = `${baseUrl}?key=${encodeURIComponent(key)}`;
+                window.open(url, '_blank', 'noopener,noreferrer');
+            }, '新标签打开文件');
+        },
         escapeHtml(input) {
             return String(input || '')
                 .replace(/&/g, '&amp;')

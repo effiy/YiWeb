@@ -272,6 +272,12 @@
                                 <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn"
                                     @click="openSessionContextEditor" title="页面上下文" aria-label="页面上下文">📝</button>
                                 <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn"
+                                    :disabled="!activeSession" @click="activeSession && handleSessionEdit(activeSession.key)"
+                                    title="编辑标题" aria-label="编辑标题">✏️</button>
+                                <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn"
+                                    :disabled="!activeSession" @click="activeSession && handleSessionTag(activeSession.key)"
+                                    title="管理标签" aria-label="管理标签">🏷️</button>
+                                <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn"
                                     @click="openSessionFaq" title="常见问题" aria-label="常见问题">💡</button>
                                 <button type="button" class="pet-chat-btn chat-input-btn chat-input-text-btn"
                                     @click="openWeChatSettings" title="微信机器人设置" aria-label="微信机器人设置">🤖</button>
