@@ -426,6 +426,9 @@ export const createStore = () => {
     const sidebarCollapsed = vueRef(false);
     // 侧边栏宽度（文件树）
     const sidebarWidth = vueRef(320);
+    // 右侧聊天面板（代码视图下）收缩状态与宽度
+    const chatPanelCollapsed = vueRef(false);
+    const chatPanelWidth = vueRef(420);
 
     // 搜索相关状态
     const searchQuery = vueRef('');
@@ -1665,6 +1668,15 @@ export const createStore = () => {
         sidebarCollapsed.value = !sidebarCollapsed.value;
     };
 
+    const toggleChatPanel = () => {
+        chatPanelCollapsed.value = !chatPanelCollapsed.value;
+        try {
+            localStorage.setItem('aicrChatPanelCollapsed', chatPanelCollapsed.value ? '1' : '0');
+        } catch (error) {
+            console.warn('[toggleChatPanel] 保存聊天面板收起状态失败:', error);
+        }
+    };
+
     /**
      * 刷新数据
      */
@@ -1711,6 +1723,29 @@ export const createStore = () => {
         }
     };
 
+    const loadChatPanelSettings = () => {
+        try {
+            const savedWidth = localStorage.getItem('aicrChatPanelWidth');
+            if (savedWidth) {
+                const width = parseInt(savedWidth, 10);
+                if (!isNaN(width)) {
+                    chatPanelWidth.value = Math.max(240, Math.min(1200, width));
+                }
+            }
+        } catch (error) {
+            console.warn('[loadChatPanelSettings] 加载聊天面板宽度失败:', error);
+        }
+
+        try {
+            const savedCollapsed = localStorage.getItem('aicrChatPanelCollapsed');
+            if (savedCollapsed != null) {
+                chatPanelCollapsed.value = savedCollapsed === '1' || savedCollapsed === 'true';
+            }
+        } catch (error) {
+            console.warn('[loadChatPanelSettings] 加载聊天面板收起状态失败:', error);
+        }
+    };
+
     /**
      * 保存侧边栏宽度
      */
@@ -1720,6 +1755,17 @@ export const createStore = () => {
             localStorage.setItem('aicrSidebarWidth', width.toString());
         } catch (error) {
             console.warn('[saveSidebarWidth] 保存侧边栏宽度失败:', error);
+        }
+    };
+
+    const saveChatPanelWidth = (width) => {
+        try {
+            const w = Math.max(240, Math.min(1200, Number(width) || 0));
+            if (!w) return;
+            chatPanelWidth.value = w;
+            localStorage.setItem('aicrChatPanelWidth', String(w));
+        } catch (error) {
+            console.warn('[saveChatPanelWidth] 保存聊天面板宽度失败:', error);
         }
     };
 
@@ -1875,6 +1921,8 @@ export const createStore = () => {
         expandedFolders,
         sidebarCollapsed,
         sidebarWidth,
+        chatPanelCollapsed,
+        chatPanelWidth,
 
         // 搜索相关状态
         searchQuery,
@@ -1978,10 +2026,13 @@ export const createStore = () => {
         normalizeKey,
         toggleFolder,
         toggleSidebar,
+        toggleChatPanel,
         refreshData,
         clearError,
         loadSidebarWidths,
+        loadChatPanelSettings,
         saveSidebarWidth,
+        saveChatPanelWidth,
         loadSessions,
         saveSessionSidebarWidth,
         loadSessionSidebarWidth

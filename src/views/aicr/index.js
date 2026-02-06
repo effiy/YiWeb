@@ -32,6 +32,8 @@ const { computed } = Vue;
                 sidebarCollapsed: store.sidebarCollapsed,
                 sidebarWidth: store.sidebarWidth,
                 sessionSidebarWidth: store.sessionSidebarWidth,
+                chatPanelCollapsed: store.chatPanelCollapsed,
+                chatPanelWidth: store.chatPanelWidth,
                 // 项目管理 - Removed
                 // projects: store.projects,
                 // selectedProject: store.selectedProject,
@@ -92,6 +94,10 @@ const { computed } = Vue;
                 // 加载会话侧边栏宽度
                 if (store && store.loadSessionSidebarWidth) {
                     store.loadSessionSidebarWidth();
+                }
+
+                if (store && store.loadChatPanelSettings) {
+                    store.loadChatPanelSettings();
                 }
 
                 // 监听 activeSession 变化，绑定 welcome-card 事件
@@ -1035,6 +1041,23 @@ function createSidebarResizers(store) {
             sidebar.style.width = `${store.sidebarWidth.value}px`;
         }
     }
+
+    const chatPanel = document.querySelector('.aicr-code-chat');
+    if (chatPanel) {
+        createResizer(chatPanel, store, 'chatPanel', {
+            minWidth: 280,
+            maxWidth: 980,
+            defaultWidth: 420,
+            storageKey: 'aicrChatPanelWidth',
+            saveWidth: store.saveChatPanelWidth,
+            position: 'left',
+            enforceLimits: true
+        });
+
+        if (store.chatPanelWidth && store.chatPanelWidth.value) {
+            chatPanel.style.setProperty('--aicr-chat-width', `${store.chatPanelWidth.value}px`);
+        }
+    }
 }
 
 /**
@@ -1047,7 +1070,8 @@ function createResizer(sidebarElement, store, type, options) {
         defaultWidth = 320,
         storageKey,
         saveWidth,
-        position = 'right' // 'right' 或 'left'
+        position = 'right', // 'right' 或 'left'
+        enforceLimits = false
     } = options;
 
     // 检查是否已存在拖拽条
@@ -1118,11 +1142,20 @@ function createResizer(sidebarElement, store, type, options) {
                 : startX - e.clientX;
             let newWidth = startWidth + diffX;
 
-            // 只限制最小宽度，避免宽度为负或过小
-            newWidth = Math.max(50, newWidth);
+            if (enforceLimits) {
+                const min = typeof minWidth === 'number' && minWidth > 0 ? minWidth : 50;
+                const max = typeof maxWidth === 'number' && maxWidth > 0 ? maxWidth : Infinity;
+                newWidth = Math.max(min, Math.min(max, newWidth));
+            } else {
+                newWidth = Math.max(50, newWidth);
+            }
 
             // 更新宽度
-            sidebarElement.style.width = `${newWidth}px`;
+            if (type === 'chatPanel') {
+                sidebarElement.style.setProperty('--aicr-chat-width', `${newWidth}px`);
+            } else {
+                sidebarElement.style.width = `${newWidth}px`;
+            }
 
             // 更新 store 中的宽度值
             if (type === 'sidebar') {
@@ -1131,6 +1164,10 @@ function createResizer(sidebarElement, store, type, options) {
                     store.sessionSidebarWidth.value = newWidth;
                 } else if (store.sidebarWidth) {
                     store.sidebarWidth.value = newWidth;
+                }
+            } else if (type === 'chatPanel') {
+                if (store.chatPanelWidth) {
+                    store.chatPanelWidth.value = newWidth;
                 }
             }
         };
@@ -1149,13 +1186,22 @@ function createResizer(sidebarElement, store, type, options) {
             document.body.style.cursor = '';
 
             // 保存宽度
-            const finalWidth = sidebarElement.offsetWidth;
+            const finalWidth = type === 'chatPanel'
+                ? (store.chatPanelWidth ? store.chatPanelWidth.value : sidebarElement.getBoundingClientRect().width)
+                : sidebarElement.offsetWidth;
+
             if (type === 'sidebar') {
                 const mode = store.viewMode && store.viewMode.value;
                 if (mode === 'tags' && typeof store.saveSessionSidebarWidth === 'function') {
                     store.saveSessionSidebarWidth(finalWidth);
                 } else if (typeof store.saveSidebarWidth === 'function') {
                     store.saveSidebarWidth(finalWidth);
+                } else if (saveWidth && typeof saveWidth === 'function') {
+                    saveWidth(finalWidth);
+                }
+            } else if (type === 'chatPanel') {
+                if (typeof store.saveChatPanelWidth === 'function') {
+                    store.saveChatPanelWidth(finalWidth);
                 } else if (saveWidth && typeof saveWidth === 'function') {
                     saveWidth(finalWidth);
                 }

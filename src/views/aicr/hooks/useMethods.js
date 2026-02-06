@@ -26,6 +26,7 @@ export const useMethods = (store) => {
         normalizeKey,
         toggleFolder,
         toggleSidebar,
+        toggleChatPanel,
         loadFileTree,
         loadFiles,
         loadFileByKey,
@@ -2057,6 +2058,15 @@ export const useMethods = (store) => {
             toggleSidebar();
             console.log('[侧边栏] 切换侧边栏状态');
         }, '侧边栏切换');
+    };
+
+    const handleToggleChatPanel = () => {
+        return safeExecute(() => {
+            if (typeof toggleChatPanel === 'function') {
+                toggleChatPanel();
+            }
+            console.log('[聊天面板] 切换聊天面板状态');
+        }, '聊天面板切换');
     };
 
     /**
@@ -6096,6 +6106,7 @@ export const useMethods = (store) => {
         expandAllFolders,
         collapseAllFolders,
         toggleSidebar: handleToggleSidebar,
+        toggleChatPanel: handleToggleChatPanel,
         // 项目/版本管理方法
         handleProjectChange,
         refreshData: handleRefreshData,

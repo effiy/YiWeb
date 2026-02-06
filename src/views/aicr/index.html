@@ -162,13 +162,29 @@
             </aside>
 
 
-            <section class="aicr-code" :class="{ 'with-sidebar-collapsed': sidebarCollapsed }" aria-label="代码区">
+            <section class="aicr-code"
+                :class="{ 'with-sidebar-collapsed': sidebarCollapsed, 'with-chat-collapsed': (viewMode === 'tree' && chatPanelCollapsed) }"
+                aria-label="代码区">
+                <button type="button" class="chat-expand-handle" v-show="viewMode === 'tree' && chatPanelCollapsed"
+                    @click="toggleChatPanel" aria-label="展开聊天面板" title="展开聊天面板">
+                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                    <span class="label">聊天</span>
+                </button>
+
+                <button type="button" class="chat-panel-toggle" v-show="viewMode === 'tree' && !chatPanelCollapsed"
+                    @click="toggleChatPanel" title="收起聊天面板" aria-label="收起聊天面板"
+                    :style="{ right: ((chatPanelWidth || 420) - 14) + 'px', left: 'auto' }">
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                </button>
+
                 <div class="aicr-code-layout" :class="{ 'is-tree': viewMode === 'tree', 'is-tags': viewMode === 'tags' }">
                     <div class="aicr-code-main" v-show="viewMode === 'tree'">
                         <code-view v-if="viewMode === 'tree'" :file="currentFile" :loading="loading" :error="errorMessage"></code-view>
                     </div>
 
-                    <div class="aicr-code-chat" v-show="viewMode === 'tree' || viewMode === 'tags'">
+                    <div class="aicr-code-chat"
+                        v-show="viewMode === 'tags' || (viewMode === 'tree' && !chatPanelCollapsed)"
+                        :style="viewMode === 'tree' ? { '--aicr-chat-width': (chatPanelWidth || 420) + 'px' } : {}">
                         <div class="pet-chat-right-panel" aria-label="会话聊天面板">
                     <div class="pet-chat-messages" id="pet-chat-messages" role="log" aria-live="polite">
                         <div v-if="activeSessionLoading" class="pet-chat-loading" role="status" aria-live="polite">
