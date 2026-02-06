@@ -1,5 +1,5 @@
 /* 会话列表组件样式 */
-.session-list-container {
+.aicr-session-list {
     display: flex;
     flex-direction: column;
     background: transparent;
@@ -765,4 +765,3 @@
 }
 
 /* 会话列表底部 */
-

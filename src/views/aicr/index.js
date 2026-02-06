@@ -672,7 +672,7 @@ const { computed } = Vue;
                                 sidebar.scrollTo({ top: 0, behavior: 'smooth' });
                             }
 
-                            const sessionListContainer = document.querySelector('.session-list-container');
+                            const sessionListContainer = document.querySelector('.aicr-session-list');
                             if (sessionListContainer) {
                                 sessionListContainer.classList.add('aicr-session-list-focus');
                                 setTimeout(() => {

@@ -54,17 +54,6 @@
                     </ul>
                 </div>
 
-                <!-- 视图切换按钮 -->
-                <div class="view-mode-toggle">
-                    <button type="button" class="view-mode-btn" :class="{ 'active': viewMode === 'tree' }"
-                        @click="setViewMode('tree')" :disabled="loading" title="树形视图" aria-label="切换到树形视图">
-                        <i class="fas fa-sitemap" aria-hidden="true"></i>
-                    </button>
-                    <button type="button" class="view-mode-btn" :class="{ 'active': viewMode === 'tags' }"
-                        @click="setViewMode('tags')" :disabled="loading" title="标签视图" aria-label="切换到标签视图">
-                        <i class="fas fa-tags" aria-hidden="true"></i>
-                    </button>
-                </div>
             </section>
         </header>
         <main class="aicr-main">

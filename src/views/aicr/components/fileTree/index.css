@@ -357,7 +357,7 @@
 
 .file-tree-search-clear {
     position: absolute;
-    right: 60px;
+    right: 8px;
     width: 16px;
     height: 16px;
     border: none;
@@ -1252,72 +1252,10 @@
     font-size: 12px;
 }
 
-/* ========== 视图切换按钮样式（集成在搜索框内） ========== */
-.view-mode-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0;
-    height: 28px;
-    flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 5px;
-    padding: 3px;
-}
-
-.view-mode-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border-radius: 4px;
-    opacity: 0.7;
-}
-
-.view-mode-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
-    opacity: 1;
-}
-
-.view-mode-btn.active {
-    background: rgba(79, 70, 229, 0.2);
-    color: var(--primary);
-    opacity: 1;
-}
-
-.view-mode-btn.active:hover {
-    background: rgba(79, 70, 229, 0.25);
-}
-
-.view-mode-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.view-mode-btn i {
-    font-size: 13px;
-}
-
 /* 响应式设计 */
 @media (max-width: 640px) {
-    .view-mode-btn {
-        width: 26px;
-        height: 26px;
-    }
-    
-    .view-mode-btn i {
-        font-size: 12px;
-    }
-    
     .file-tree-search-clear {
-        right: 50px;
+        right: 8px;
     }
 }
 
@@ -1412,5 +1350,3 @@
         font-size: 12px;
     }
 }
-
-

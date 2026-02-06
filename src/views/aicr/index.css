@@ -1411,97 +1411,6 @@ html, body {
     }
 }
 
-/* ========== 视图切换按钮样式 ========== */
-.view-mode-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.15);
-    background: rgba(255,255,255,0.06);
-    height: 38px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-}
-
-.view-mode-toggle:hover {
-    border-color: rgba(255,255,255,0.25);
-    background: rgba(255,255,255,0.08);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-.view-mode-btn {
-    border-radius: 0;
-    border: none;
-    border-right: 1px solid rgba(255,255,255,0.15);
-    margin: 0;
-    padding: 0 16px;
-    min-width: 44px;
-    height: 38px;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
-    position: relative;
-    color: var(--text-secondary, rgba(255,255,255,0.7));
-}
-
-.view-mode-btn:last-child {
-    border-right: none;
-}
-
-.view-mode-btn i {
-    font-size: 15px;
-    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
-    display: inline-block;
-}
-
-.view-mode-btn:hover:not(:disabled) {
-    background: rgba(255,255,255,0.12);
-    color: var(--text-primary, rgba(255,255,255,0.95));
-}
-
-.view-mode-btn:hover:not(:disabled) i {
-    transform: scale(1.1);
-    color: var(--text-primary, rgba(255,255,255,0.95));
-}
-
-.view-mode-btn:active:not(:disabled) {
-    transform: scale(0.96);
-}
-
-.view-mode-btn.active {
-    background: linear-gradient(135deg, var(--primary-blue, #4f46e5) 0%, var(--primary-cyan, #06b6d4) 100%);
-    border-color: var(--primary-blue, #4f46e5);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
-}
-
-.view-mode-btn.active i {
-    color: #fff;
-    transform: scale(1.05);
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
-}
-
-.view-mode-btn.active:hover {
-    background: linear-gradient(135deg, var(--primary-cyan, #06b6d4) 0%, var(--primary-blue, #4f46e5) 100%);
-    border-color: var(--primary-cyan, #06b6d4);
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
-}
-
-.view-mode-btn.active:hover i {
-    transform: scale(1.15);
-}
-
-.view-mode-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
 /* ========== 搜索清除按钮样式 ========== */
 .search-clear {
     position: absolute;
@@ -2375,7 +2284,7 @@ html, body {
     line-height: 1.5;
 }
 
-.session-list-container.aicr-session-list-focus {
+.aicr-session-list.aicr-session-list-focus {
     border-radius: 14px;
     box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.45), 0 0 0 8px rgba(79, 70, 229, 0.14);
 }
