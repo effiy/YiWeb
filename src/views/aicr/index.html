@@ -571,32 +571,38 @@
                                             <div v-for="item in (filteredSessionFaqItems || [])" :key="item.key"
                                                 class="aicr-session-faq-item" role="listitem" tabindex="0"
                                                 @click="applySessionFaqItem(item, 'insert'); closeSessionFaq()"
-                                                @keydown.enter.prevent="applySessionFaqItem(item, 'insert'); closeSessionFaq()"
+                                                @keydown.enter.exact.prevent="applySessionFaqItem(item, 'insert'); closeSessionFaq()"
                                                 @keydown.ctrl.enter.prevent="applySessionFaqItem(item, 'send'); closeSessionFaq()"
                                                 @keydown.meta.enter.prevent="applySessionFaqItem(item, 'send'); closeSessionFaq()">
-                                                <div class="aicr-session-faq-item-header">
+                                                <div class="aicr-session-faq-item-title-row">
                                                     <div class="aicr-session-faq-item-title">{{ item.title }}</div>
+                                                </div>
+                                                <div class="aicr-session-faq-item-meta-row">
+                                                    <div v-if="Array.isArray(item.tags) && item.tags.length > 0"
+                                                        class="aicr-session-faq-item-tags" aria-label="问题标签">
+                                                        <button v-for="tag in item.tags" :key="`${item.key}_${tag}`"
+                                                            type="button" class="aicr-session-faq-item-tag"
+                                                            @click.stop="toggleSessionFaqTag(tag)"
+                                                            :aria-label="`筛选标签：${tag}`">{{ tag }}</button>
+                                                    </div>
                                                     <div class="aicr-session-faq-item-actions">
                                                         <button type="button" class="aicr-session-faq-item-btn"
                                                             @click.stop="editSessionFaqTags(item)"
+                                                            :disabled="!!sessionFaqLoading"
                                                             aria-label="标签">标签</button>
                                                         <button type="button" class="aicr-session-faq-item-btn"
                                                             @click.stop="applySessionFaqItem(item, 'insert'); closeSessionFaq()"
+                                                            :disabled="!!sessionFaqLoading"
                                                             aria-label="插入">插入</button>
                                                         <button type="button" class="aicr-session-faq-item-btn primary"
                                                             @click.stop="applySessionFaqItem(item, 'send'); closeSessionFaq()"
+                                                            :disabled="!!sessionFaqLoading"
                                                             aria-label="发送">发送</button>
                                                         <button type="button" class="aicr-session-faq-item-btn danger"
                                                             @click.stop="deleteSessionFaqItem(item)"
-                                                            aria-label="删除">删除</button>
+                                                            :disabled="!!sessionFaqLoading || !!(sessionFaqDeletingMap && sessionFaqDeletingMap[item.key])"
+                                                            aria-label="删除">{{ (sessionFaqDeletingMap && sessionFaqDeletingMap[item.key]) ? '删除中...' : '删除' }}</button>
                                                     </div>
-                                                </div>
-                                                <div v-if="Array.isArray(item.tags) && item.tags.length > 0"
-                                                    class="aicr-session-faq-item-tags" aria-label="问题标签">
-                                                    <button v-for="tag in item.tags" :key="`${item.key}_${tag}`"
-                                                        type="button" class="aicr-session-faq-item-tag"
-                                                        @click.stop="toggleSessionFaqTag(tag)"
-                                                        :aria-label="`筛选标签：${tag}`">{{ tag }}</button>
                                                 </div>
                                                 <div class="aicr-session-faq-item-prompt">{{ item.prompt }}</div>
                                             </div>

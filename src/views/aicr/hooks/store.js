@@ -487,6 +487,7 @@ export const createStore = () => {
     const sessionFaqItems = vueRef([]);
     const sessionFaqLoading = vueRef(false);
     const sessionFaqError = vueRef(null);
+    const sessionFaqDeletingMap = vueRef({});
     const sessionFaqSelectedTags = vueRef([]);
     const sessionFaqTagFilterReverse = vueRef(false);
     const sessionFaqTagFilterNoTags = vueRef(false);
@@ -1999,6 +2000,7 @@ export const createStore = () => {
         sessionFaqItems,
         sessionFaqLoading,
         sessionFaqError,
+        sessionFaqDeletingMap,
         sessionFaqSelectedTags,
         sessionFaqTagFilterReverse,
         sessionFaqTagFilterNoTags,

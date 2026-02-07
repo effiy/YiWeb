@@ -82,6 +82,7 @@ export const useMethods = (store) => {
         sessionFaqItems,
         sessionFaqLoading,
         sessionFaqError,
+        sessionFaqDeletingMap,
         sessionFaqSelectedTags,
         sessionFaqTagFilterReverse,
         sessionFaqTagFilterNoTags,
@@ -3617,14 +3618,30 @@ export const useMethods = (store) => {
                 const key = String(item?.key || '').trim();
                 if (!key) return;
                 if (!confirm('确定要删除这条常见问题吗？')) return;
+                try {
+                    const prev = sessionFaqDeletingMap?.value && typeof sessionFaqDeletingMap.value === 'object'
+                        ? sessionFaqDeletingMap.value
+                        : {};
+                    if (sessionFaqDeletingMap) sessionFaqDeletingMap.value = { ...prev, [key]: true };
+                } catch (_) { }
                 const payload = {
                     module_name: SERVICE_MODULE,
                     method_name: 'delete_document',
                     parameters: { cname: 'faqs', key }
                 };
-                await postData(`${window.API_URL}/`, payload);
-                await loadSessionFaqs({ force: true });
-                if (window.showSuccess) window.showSuccess('已删除常见问题');
+                try {
+                    await postData(`${window.API_URL}/`, payload);
+                    await loadSessionFaqs({ force: true });
+                    if (window.showSuccess) window.showSuccess('已删除常见问题');
+                } finally {
+                    try {
+                        const prev = sessionFaqDeletingMap?.value && typeof sessionFaqDeletingMap.value === 'object'
+                            ? sessionFaqDeletingMap.value
+                            : {};
+                        const { [key]: _removed, ...rest } = prev;
+                        if (sessionFaqDeletingMap) sessionFaqDeletingMap.value = rest;
+                    } catch (_) { }
+                }
             }, '删除常见问题');
         },
 
