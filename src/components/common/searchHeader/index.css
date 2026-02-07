@@ -707,6 +707,63 @@
   transform: scale(1.1);
 }
 
+/* 头部图标按钮 */
+.header-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-sm, 8px);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  font-size: 0.9rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.header-icon-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--primary-gradient);
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.4,0,0.2,1);
+  z-index: 0;
+}
+
+.header-icon-btn:hover::before {
+  opacity: 0.1;
+}
+
+.header-icon-btn:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.header-icon-btn:active {
+  transform: scale(0.95);
+}
+
+.header-icon-btn i {
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.header-icon-btn:hover i {
+  transform: scale(1.1);
+}
+
 /* 导出按钮样式 */
 .export-all-btn {
   display: inline-flex;
@@ -778,6 +835,12 @@
     height: 36px;
     font-size: 0.8rem;
   }
+
+  .header-icon-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 0.8rem;
+  }
   
   .export-all-btn {
     padding: var(--spacing-xs, 0.5rem) var(--spacing-sm, 0.75rem);
@@ -812,5 +875,4 @@
     justify-content: flex-end;
   }
 }
-
 

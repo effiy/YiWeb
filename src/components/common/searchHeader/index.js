@@ -249,6 +249,15 @@ import { defineComponent } from '/src/utils/componentLoader.js';
                  */
                 handleToggleSidebar() {
                     this.$emit('toggle-sidebar');
+                },
+
+                openLink(url) {
+                    if (!url) return;
+                    if (/^https?:\/\//.test(url)) {
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                    } else {
+                        window.location.href = url;
+                    }
                 }
             }
         });
@@ -261,4 +270,3 @@ import { defineComponent } from '/src/utils/componentLoader.js';
         console.error('SearchHeader 组件初始化失败:', error);
     }
 })();
-

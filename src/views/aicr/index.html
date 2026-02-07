@@ -42,6 +42,26 @@
                         </div>
                     </div>
                 </form>
+                <div class="header-controls">
+                    <button
+                        type="button"
+                        class="header-icon-btn"
+                        @click="openLink('https://effiy.cn/src/views/news/index.html')"
+                        title="新闻"
+                        aria-label="打开新闻页"
+                    >
+                        <i class="fas fa-newspaper" aria-hidden="true"></i>
+                    </button>
+                    <button
+                        type="button"
+                        class="header-icon-btn"
+                        @click="openAuth"
+                        title="API 鉴权"
+                        aria-label="API 鉴权"
+                    >
+                        <i class="fas fa-key" aria-hidden="true"></i>
+                    </button>
+                </div>
 
             </section>
         </header>

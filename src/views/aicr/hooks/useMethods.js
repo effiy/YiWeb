@@ -8,6 +8,7 @@
  */
 import { safeExecute, createError, ErrorTypes, showSuccessMessage } from '/src/utils/error.js';
 import { getData, postData, deleteData, batchOperations } from '/src/services/index.js';
+import { getStoredToken, saveToken, clearToken as clearStoredToken } from '/src/services/helper/authUtils.js';
 import {
     normalizeFilePath,
     normalizeFileObject,
@@ -1797,6 +1798,24 @@ export const useMethods = (store) => {
         }
     };
 
+    const openAuth = () => {
+        try {
+            const current = getStoredToken();
+            const token = window.prompt('请输入 X-Token（用于访问 API）', current);
+            if (token === null) return;
+            const next = String(token || '').trim();
+            if (!next) {
+                clearStoredToken();
+                if (window.showInfo) window.showInfo('Token 已清除');
+                return;
+            }
+            saveToken(next);
+            if (window.showSuccess) window.showSuccess('Token 已保存');
+        } catch (e) {
+            if (window.showError) window.showError('API 鉴权失败，请重试');
+        }
+    };
+
     /**
      * 处理文件选择
      * @param {string|Object} key - 文件Key或节点对象
@@ -2636,6 +2655,7 @@ export const useMethods = (store) => {
 
     return {
         openLink,
+        openAuth,
         sessionFaqItems,
         sessionFaqAllTags,
         sessionFaqVisibleTags,
