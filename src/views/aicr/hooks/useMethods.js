@@ -3683,6 +3683,31 @@ export const useMethods = (store) => {
             }
         },
 
+        copySessionFaqItem: async (item) => {
+            return safeExecute(async () => {
+                const title = String(item?.title || '').trim();
+                const prompt = String(item?.prompt || '').trim();
+                const text = title && prompt ? `${title}\n\n${prompt}` : (prompt || title);
+                const content = String(text ?? '').trim();
+                if (!content) return;
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    await navigator.clipboard.writeText(content);
+                    if (window.showSuccess) window.showSuccess('已复制');
+                    return;
+                }
+                const ta = document.createElement('textarea');
+                ta.value = content;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                ta.style.top = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                if (window.showSuccess) window.showSuccess('已复制');
+            }, '复制常见问题');
+        },
+
         restoreSessionSettingsDefaults: () => {
             if (sessionBotModelDraft) sessionBotModelDraft.value = '';
             if (sessionBotSystemPromptDraft) sessionBotSystemPromptDraft.value = defaultSessionBotSystemPrompt;

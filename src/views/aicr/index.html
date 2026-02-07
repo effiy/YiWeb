@@ -577,6 +577,7 @@
                                                 <div class="aicr-session-faq-item-title-row">
                                                     <div class="aicr-session-faq-item-title">{{ item.title }}</div>
                                                 </div>
+                                                <div class="aicr-session-faq-item-prompt">{{ item.prompt }}</div>
                                                 <div class="aicr-session-faq-item-meta-row">
                                                     <div v-if="Array.isArray(item.tags) && item.tags.length > 0"
                                                         class="aicr-session-faq-item-tags" aria-label="问题标签">
@@ -591,6 +592,10 @@
                                                             :disabled="!!sessionFaqLoading"
                                                             aria-label="标签">标签</button>
                                                         <button type="button" class="aicr-session-faq-item-btn"
+                                                            @click.stop="copySessionFaqItem(item)"
+                                                            :disabled="!!sessionFaqLoading"
+                                                            aria-label="复制">复制</button>
+                                                        <button type="button" class="aicr-session-faq-item-btn"
                                                             @click.stop="applySessionFaqItem(item, 'insert'); closeSessionFaq()"
                                                             :disabled="!!sessionFaqLoading"
                                                             aria-label="插入">插入</button>
@@ -604,7 +609,6 @@
                                                             aria-label="删除">{{ (sessionFaqDeletingMap && sessionFaqDeletingMap[item.key]) ? '删除中...' : '删除' }}</button>
                                                     </div>
                                                 </div>
-                                                <div class="aicr-session-faq-item-prompt">{{ item.prompt }}</div>
                                             </div>
 
                                             <div v-if="!sessionFaqLoading && (filteredSessionFaqItems || []).length === 0"
