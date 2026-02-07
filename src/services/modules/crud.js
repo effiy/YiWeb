@@ -747,14 +747,15 @@ async function batchOperations(operations) {
 // 导出缓存管理器
 // CacheManager 已通过全局暴露可用
 
-// 在全局作用域中暴露（用于非模块环境）
-if (typeof window !== 'undefined') {
+function exposeToWindow() {
+    if (typeof window === 'undefined') return;
     window.getData = getData;
     window.postData = postData;
     window.updateData = updateData;
     window.patchData = patchData;
     window.deleteData = deleteData;
     window.streamPrompt = streamPrompt;
+    window.streamPromptJSON = streamPromptJSON;
     window.batchOperations = batchOperations;
     window.CacheManager = CacheManager;
 }
@@ -772,20 +773,7 @@ export {
     CacheManager
 };
 
-// 确保在ES6模块环境中也能全局访问
-// 这对于混合使用模块和传统script标签的页面很重要
-if (typeof window !== 'undefined') {
-    // 如果函数还没有暴露到全局，则暴露它们
-    if (!window.getData) window.getData = getData;
-    if (!window.postData) window.postData = postData;
-    if (!window.updateData) window.updateData = updateData;
-    if (!window.patchData) window.patchData = patchData;
-    if (!window.deleteData) window.deleteData = deleteData;
-    if (!window.streamPrompt) window.streamPrompt = streamPrompt;
-    if (!window.streamPromptJSON) window.streamPromptJSON = streamPromptJSON;
-    if (!window.batchOperations) window.batchOperations = batchOperations;
-    if (!window.CacheManager) window.CacheManager = CacheManager;
-}
+exposeToWindow();
 
 // 注意：由于HTML使用普通script标签，不支持ES6模块语法
 // 如果需要ES6模块支持，请将script标签改为 type="module"

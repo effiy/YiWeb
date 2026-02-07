@@ -376,8 +376,8 @@ function loadJSFiles(jsFiles) {
     return Promise.all(loadPromises);
 }
 
-// 在全局作用域中暴露（用于非模块环境）
-if (typeof window !== 'undefined') {
+function exposeToWindow() {
+    if (typeof window === 'undefined') return;
     window.ViewConfig = ViewConfig;
     window.createVueApp = createVueApp;
     window.mountApp = mountApp;
@@ -400,23 +400,10 @@ export {
     loadJSFiles
 };
 
-// 确保在ES6模块环境中也能全局访问
-// 这对于混合使用模块和传统script标签的页面很重要
-if (typeof window !== 'undefined') {
-    // 如果函数还没有暴露到全局，则暴露它们
-    if (!window.ViewConfig) window.ViewConfig = ViewConfig;
-    if (!window.createVueApp) window.createVueApp = createVueApp;
-    if (!window.mountApp) window.mountApp = mountApp;
-    if (!window.createAndMountApp) window.createAndMountApp = createAndMountApp;
-    if (!window.createBaseView) window.createBaseView = createBaseView;
-    if (!window.waitForComponents) window.waitForComponents = waitForComponents;
-    if (!window.loadCSSFiles) window.loadCSSFiles = loadCSSFiles;
-    if (!window.loadJSFiles) window.loadJSFiles = loadJSFiles;
-}
+exposeToWindow();
 
 // 注意：由于HTML使用普通script标签，不支持ES6模块语法
 // 如果需要ES6模块支持，请将script标签改为 type="module"
 // 或者使用动态import()语法 
-
 
 

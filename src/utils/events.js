@@ -11,6 +11,10 @@ class EventManager {
     constructor() {
         this.listeners = new Map();
         this.globalListeners = new Map();
+        this._elementIds = new WeakMap();
+        this._handlerIds = new WeakMap();
+        this._nextElementId = 1;
+        this._nextHandlerId = 1;
     }
 
     /**
@@ -21,10 +25,10 @@ class EventManager {
      * @param {Object} options - 选项
      */
     on(element, event, handler, options = {}) {
-        // 为触摸和滚动事件添加passive选项
-        const finalOptions = this.addPassiveOption(event, options);
-        const wrappedHandler = this.wrapHandler(handler, finalOptions, element, event);
-        element.addEventListener(event, wrappedHandler, finalOptions);
+        const { debounce, throttle, ...listenerOptions } = options || {};
+        const finalListenerOptions = this.addPassiveOption(event, listenerOptions);
+        const wrappedHandler = this.wrapHandler(handler, { debounce, throttle });
+        element.addEventListener(event, wrappedHandler, finalListenerOptions);
         
         // 记录监听器以便后续移除
         const key = this.getListenerKey(element, event, handler);
@@ -33,7 +37,7 @@ class EventManager {
             event,
             handler: wrappedHandler,
             originalHandler: handler,
-            options: finalOptions
+            options: finalListenerOptions
         });
     }
 
@@ -60,17 +64,17 @@ class EventManager {
      * @param {Object} options - 选项
      */
     onGlobal(event, handler, options = {}) {
-        // 为触摸和滚动事件添加passive选项
-        const finalOptions = this.addPassiveOption(event, options);
-        const wrappedHandler = this.wrapHandler(handler, finalOptions, document, event);
-        document.addEventListener(event, wrappedHandler, finalOptions);
+        const { debounce, throttle, ...listenerOptions } = options || {};
+        const finalListenerOptions = this.addPassiveOption(event, listenerOptions);
+        const wrappedHandler = this.wrapHandler(handler, { debounce, throttle });
+        document.addEventListener(event, wrappedHandler, finalListenerOptions);
         
         const key = `global_${event}_${this.getHandlerKey(handler)}`;
         this.globalListeners.set(key, {
             event,
             handler: wrappedHandler,
             originalHandler: handler,
-            options: finalOptions
+            options: finalListenerOptions
         });
     }
 
@@ -134,8 +138,8 @@ class EventManager {
      * @param {Object} options - 选项
      * @returns {Function} 包装后的处理函数
      */
-    wrapHandler(handler, options = {}, element, eventName) {
-        const { debounce, throttle, once } = options;
+    wrapHandler(handler, behaviorOptions = {}) {
+        const { debounce, throttle } = behaviorOptions;
         
         let wrappedHandler = handler;
         
@@ -143,24 +147,6 @@ class EventManager {
             wrappedHandler = this.createDebounceHandler(handler, debounce);
         } else if (throttle) {
             wrappedHandler = this.createThrottleHandler(handler, throttle);
-        }
-        
-        if (once) {
-            const originalHandler = wrappedHandler;
-            const self = this;
-            wrappedHandler = function(...args) {
-                const result = originalHandler.apply(this, args);
-                // 移除监听器（确保使用相同的目标与选项）
-                try {
-                    const target = element || (self && self.element) || document;
-                    if (target && eventName) {
-                        target.removeEventListener(eventName, wrappedHandler, options);
-                    }
-                } catch (e) {
-                    // 忽略移除失败
-                }
-                return result;
-            };
         }
         
         return wrappedHandler;
@@ -205,7 +191,16 @@ class EventManager {
      * @returns {string} 键名
      */
     getListenerKey(element, event, handler) {
-        return `${element.tagName}_${event}_${this.getHandlerKey(handler)}`;
+        return `el${this.getElementKey(element)}_${event}_${this.getHandlerKey(handler)}`;
+    }
+
+    getElementKey(element) {
+        if (!element) return 'unknown';
+        const existing = this._elementIds.get(element);
+        if (existing) return existing;
+        const id = String(this._nextElementId++);
+        this._elementIds.set(element, id);
+        return id;
     }
 
     /**
@@ -214,7 +209,12 @@ class EventManager {
      * @returns {string} 键名
      */
     getHandlerKey(handler) {
-        return handler.name || handler.toString().slice(0, 50);
+        if (typeof handler !== 'function') return String(handler);
+        const existing = this._handlerIds.get(handler);
+        if (existing) return existing;
+        const id = String(this._nextHandlerId++);
+        this._handlerIds.set(handler, id);
+        return id;
     }
 
     /**
@@ -589,4 +589,3 @@ export default {
     keyboardHandler,
     SearchHandler
 }; 
-

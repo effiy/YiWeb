@@ -547,13 +547,6 @@ html, body {
     box-shadow: 0 10px 22px rgba(79, 172, 254, 0.18);
 }
 
-.aicr-code .empty-tip {
-    margin-top: 12px;
-    color: var(--text-muted);
-    font-size: 0.86rem;
-    text-align: center;
-}
-
 /* ========== 会话列表侧边栏 ========== */
 .aicr-session-sidebar {
     width: 320px;

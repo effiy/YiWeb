@@ -13,7 +13,7 @@ import '/src/services/helper/checkStatus.js';
 // 导入认证工具，确保 getAuthHeaders 函数可用
 import { getAuthHeaders } from '/src/services/helper/authUtils.js';
 // 导入认证错误处理器
-import { isAuthError, handle401Error } from '/src/services/helper/authErrorHandler.js';
+import { isAuthError } from '/src/services/helper/authErrorHandler.js';
 
 /**
  * 默认请求配置
@@ -68,17 +68,6 @@ function responseInterceptor(response, config) {
   });
   
   return response;
-}
-
-/**
- * 创建超时 Promise
- */
-function createTimeoutPromise(timeout) {
-  return new Promise((_, reject) => {
-    setTimeout(() => {
-      reject(new Error(`请求超时：${timeout}ms`));
-    }, timeout);
-  });
 }
 
 /**
@@ -362,15 +351,6 @@ function createRequestClient(options = {}) {
   return new RequestClient(options);
 }
 
-// 导出常量和函数到全局 window 对象
-if (typeof window !== 'undefined') {
-    window.SERVICE_MODULE = SERVICE_MODULE;
-    window.buildServiceUrl = buildServiceUrl;
-    if (!window.RequestClient) window.RequestClient = RequestClient;
-    if (!window.createRequestClient) window.createRequestClient = createRequestClient;
-    if (!window.requestClient) window.requestClient = createRequestClient();
-}
-
 /**
  * 发送 GET 请求
  */
@@ -582,18 +562,23 @@ function createCachedRequest(options = {}) {
   return new CachedRequest(options);
 }
 
-// 在全局作用域中暴露（用于非模块环境）
-if (typeof window !== 'undefined') {
-    window.getRequest = getRequest;
-    window.postRequest = postRequest;
-    window.putRequest = putRequest;
-    window.patchRequest = patchRequest;
-    window.deleteRequest = deleteRequest;
-    window.sendRequest = sendRequest;
-    window.batchRequests = batchRequests;
-    window.retryRequest = retryRequest;
-    window.CachedRequest = CachedRequest;
-    window.createCachedRequest = createCachedRequest;
+function exposeToWindow() {
+  if (typeof window === 'undefined') return;
+  window.SERVICE_MODULE = SERVICE_MODULE;
+  window.buildServiceUrl = buildServiceUrl;
+  if (!window.RequestClient) window.RequestClient = RequestClient;
+  if (!window.createRequestClient) window.createRequestClient = createRequestClient;
+  if (!window.requestClient) window.requestClient = createRequestClient();
+  window.getRequest = getRequest;
+  window.postRequest = postRequest;
+  window.putRequest = putRequest;
+  window.patchRequest = patchRequest;
+  window.deleteRequest = deleteRequest;
+  window.sendRequest = sendRequest;
+  window.batchRequests = batchRequests;
+  window.retryRequest = retryRequest;
+  window.CachedRequest = CachedRequest;
+  window.createCachedRequest = createCachedRequest;
 }
 
 // ES6模块导出（用于模块环境）
@@ -612,25 +597,10 @@ export {
     createRequestClient
 };
 
-// 确保在ES6模块环境中也能全局访问
-// 这对于混合使用模块和传统script标签的页面很重要
-if (typeof window !== 'undefined') {
-    // 如果函数还没有暴露到全局，则暴露它们
-    if (!window.getRequest) window.getRequest = getRequest;
-    if (!window.postRequest) window.postRequest = postRequest;
-    if (!window.putRequest) window.putRequest = putRequest;
-    if (!window.patchRequest) window.patchRequest = patchRequest;
-    if (!window.deleteRequest) window.deleteRequest = deleteRequest;
-    if (!window.sendRequest) window.sendRequest = sendRequest;
-    if (!window.batchRequests) window.batchRequests = batchRequests;
-    if (!window.retryRequest) window.retryRequest = retryRequest;
-    if (!window.CachedRequest) window.CachedRequest = CachedRequest;
-    if (!window.createCachedRequest) window.createCachedRequest = createCachedRequest;
-}
+exposeToWindow();
 
 // 注意：由于HTML使用普通script标签，不支持ES6模块语法
 // 如果需要ES6模块支持，请将script标签改为 type="module"
 // 或者使用动态import()语法
-
 
 
