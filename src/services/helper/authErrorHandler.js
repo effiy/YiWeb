@@ -79,48 +79,58 @@ function showLoginPrompt(message = '未授权，请先登录') {
   }
   
   // 默认使用 prompt 提示
+  const fallbackPrompt = () => {
+    try {
+      const shouldLogin = window.confirm(`${message}\n\n是否现在登录？`);
+      if (!shouldLogin) return;
+      const token = window.prompt('请输入 X-Token（用于访问 API）', getStoredToken());
+      if (token !== null && token.trim()) {
+        saveToken(token.trim());
+        try {
+          if (window.showSuccess) window.showSuccess('Token 已保存，请重试操作');
+        } catch (_) { }
+      }
+    } catch (_) { }
+  };
+
   try {
     if (window.showError) {
-      window.showError({
-        title: '认证失败',
-        content: message,
-        type: 'error',
-        duration: 5000,
-        actions: [
-          {
-            text: '重新登录',
-            type: 'primary',
-            action: () => {
-              // 触发登录对话框（如果存在）
-              if (window.openAuth) {
-                window.openAuth();
-              } else {
-                // 如果没有 openAuth 函数，使用 prompt
-                const token = window.prompt('请输入 X-Token（用于访问 API）', '');
-                if (token !== null && token.trim()) {
-                  saveToken(token.trim());
-                  window.showSuccess('Token 已保存，请重试操作');
-                }
+      try {
+        window.showError({
+          title: '认证失败',
+          content: message,
+          type: 'error',
+          duration: 5000,
+          actions: [
+            {
+              text: '重新登录',
+              type: 'primary',
+              action: () => {
+                try {
+                  if (window.openAuth) {
+                    window.openAuth();
+                    return;
+                  }
+                  const token = window.prompt('请输入 X-Token（用于访问 API）', '');
+                  if (token !== null && token.trim()) {
+                    saveToken(token.trim());
+                    if (window.showSuccess) window.showSuccess('Token 已保存，请重试操作');
+                  }
+                } catch (_) { }
               }
             }
-          }
-        ]
-      });
-    } else {
-      // 降级到简单的 alert
-      const shouldLogin = window.confirm(`${message}\n\n是否现在登录？`);
-      if (shouldLogin) {
-        const token = window.prompt('请输入 X-Token（用于访问 API）', getStoredToken());
-        if (token !== null && token.trim()) {
-          saveToken(token.trim());
-          if (window.showSuccess) {
-            window.showSuccess('Token 已保存，请重试操作');
-          }
-        }
+          ]
+        });
+        return;
+      } catch (_) {
+        fallbackPrompt();
+        return;
       }
     }
+    fallbackPrompt();
   } catch (error) {
-    window.logError('[认证错误处理] 显示登录提示失败:', error);
+    try { console.error('[认证错误处理] 显示登录提示失败:', error); } catch (_) { }
+    fallbackPrompt();
   }
 }
 
@@ -225,4 +235,3 @@ if (typeof window !== 'undefined') {
   window.getAuthErrorConfig = getAuthErrorConfig;
   window.reset401Handler = reset401Handler;
 }
-

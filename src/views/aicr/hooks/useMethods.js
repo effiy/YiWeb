@@ -1798,23 +1798,182 @@ export const useMethods = (store) => {
         }
     };
 
+    let __aicrAuthDialog = null;
+    let __aicrAuthDialogInput = null;
+
+    const notifyAuth = (type, message) => {
+        try {
+            if (type === 'success' && typeof window.showSuccess === 'function') return window.showSuccess(message);
+            if (type === 'info' && typeof window.showInfo === 'function') return window.showInfo(message);
+            if (type === 'error' && typeof window.showError === 'function') return window.showError(message);
+            window.alert(message);
+        } catch (_) { }
+    };
+
+    const ensureAuthDialog = () => {
+        try {
+            if (__aicrAuthDialog && __aicrAuthDialogInput) return { dialog: __aicrAuthDialog, input: __aicrAuthDialogInput };
+            if (typeof document === 'undefined') return null;
+            if (!document.getElementById('aicr-auth-dialog-style')) {
+                const style = document.createElement('style');
+                style.id = 'aicr-auth-dialog-style';
+                style.textContent = `
+                    dialog.aicr-auth-dialog{border:1px solid rgba(255,255,255,0.12);border-radius:12px;background:rgba(15,23,42,0.92);color:var(--text-primary);padding:0;max-width:520px;width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,0.45);backdrop-filter:blur(14px)}
+                    dialog.aicr-auth-dialog::backdrop{background:rgba(2,6,23,0.55)}
+                    .aicr-auth-form{display:flex;flex-direction:column;gap:12px;padding:16px}
+                    .aicr-auth-title{font-size:14px;font-weight:700;letter-spacing:.02em}
+                    .aicr-auth-label{font-size:12px;color:var(--text-secondary)}
+                    .aicr-auth-input{width:100%;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:var(--text-primary);padding:0 12px;outline:none}
+                    .aicr-auth-input:focus{border-color:rgba(99,102,241,0.7);box-shadow:0 0 0 3px rgba(99,102,241,0.18)}
+                    .aicr-auth-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
+                    .aicr-auth-btn{height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:var(--text-primary);cursor:pointer}
+                    .aicr-auth-btn.primary{border-color:rgba(99,102,241,0.55);background:rgba(99,102,241,0.22)}
+                    .aicr-auth-hint{font-size:12px;color:var(--text-tertiary)}
+                `;
+                document.head.appendChild(style);
+            }
+
+            const dialog = document.createElement('dialog');
+            dialog.className = 'aicr-auth-dialog';
+            dialog.setAttribute('aria-label', 'API 鉴权');
+
+            const form = document.createElement('div');
+            form.className = 'aicr-auth-form';
+
+            const title = document.createElement('div');
+            title.className = 'aicr-auth-title';
+            title.textContent = 'API 鉴权';
+
+            const label = document.createElement('div');
+            label.className = 'aicr-auth-label';
+            label.textContent = 'X-Token（用于访问 API）';
+
+            const input = document.createElement('input');
+            input.className = 'aicr-auth-input';
+            input.type = 'password';
+            input.autocomplete = 'off';
+            input.spellcheck = false;
+
+            const hint = document.createElement('div');
+            hint.className = 'aicr-auth-hint';
+            hint.textContent = '留空并保存会清除 Token';
+
+            const actions = document.createElement('div');
+            actions.className = 'aicr-auth-actions';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.className = 'aicr-auth-btn';
+            cancelBtn.textContent = '取消';
+
+            const clearBtn = document.createElement('button');
+            clearBtn.type = 'button';
+            clearBtn.className = 'aicr-auth-btn';
+            clearBtn.textContent = '清除';
+
+            const saveBtn = document.createElement('button');
+            saveBtn.type = 'button';
+            saveBtn.className = 'aicr-auth-btn primary';
+            saveBtn.textContent = '保存';
+
+            const applyValue = (mode) => {
+                try {
+                    if (mode === 'cancel') {
+                        dialog.close('cancel');
+                        return;
+                    }
+                    if (mode === 'clear') {
+                        clearStoredToken();
+                        dialog.close('cleared');
+                        notifyAuth('info', 'Token 已清除');
+                        return;
+                    }
+                    const next = String(input.value || '').trim();
+                    if (!next) {
+                        clearStoredToken();
+                        dialog.close('cleared');
+                        notifyAuth('info', 'Token 已清除');
+                        return;
+                    }
+                    saveToken(next);
+                    dialog.close('saved');
+                    notifyAuth('success', 'Token 已保存');
+                } catch (e) {
+                    try { dialog.close('error'); } catch (_) { }
+                    notifyAuth('error', 'API 鉴权失败，请重试');
+                }
+            };
+
+            cancelBtn.addEventListener('click', () => applyValue('cancel'));
+            clearBtn.addEventListener('click', () => applyValue('clear'));
+            saveBtn.addEventListener('click', () => applyValue('save'));
+
+            input.addEventListener('keydown', (e) => {
+                if (e && e.key === 'Enter') {
+                    e.preventDefault();
+                    applyValue('save');
+                }
+            });
+
+            dialog.addEventListener('cancel', (e) => {
+                try { if (e && typeof e.preventDefault === 'function') e.preventDefault(); } catch (_) { }
+                try { dialog.close('cancel'); } catch (_) { }
+            });
+
+            actions.appendChild(cancelBtn);
+            actions.appendChild(clearBtn);
+            actions.appendChild(saveBtn);
+
+            form.appendChild(title);
+            form.appendChild(label);
+            form.appendChild(input);
+            form.appendChild(hint);
+            form.appendChild(actions);
+
+            dialog.appendChild(form);
+            document.body.appendChild(dialog);
+
+            __aicrAuthDialog = dialog;
+            __aicrAuthDialogInput = input;
+
+            return { dialog, input };
+        } catch (_) {
+            return null;
+        }
+    };
+
     const openAuth = () => {
         try {
             const current = getStoredToken();
+            const dialogInfo = ensureAuthDialog();
+            if (dialogInfo && dialogInfo.dialog && typeof dialogInfo.dialog.showModal === 'function') {
+                dialogInfo.input.value = String(current || '');
+                dialogInfo.dialog.showModal();
+                setTimeout(() => {
+                    try {
+                        dialogInfo.input.focus();
+                        dialogInfo.input.select();
+                    } catch (_) { }
+                }, 0);
+                return;
+            }
+
             const token = window.prompt('请输入 X-Token（用于访问 API）', current);
             if (token === null) return;
             const next = String(token || '').trim();
             if (!next) {
                 clearStoredToken();
-                if (window.showInfo) window.showInfo('Token 已清除');
+                notifyAuth('info', 'Token 已清除');
                 return;
             }
             saveToken(next);
-            if (window.showSuccess) window.showSuccess('Token 已保存');
+            notifyAuth('success', 'Token 已保存');
         } catch (e) {
-            if (window.showError) window.showError('API 鉴权失败，请重试');
+            notifyAuth('error', 'API 鉴权失败，请重试');
         }
     };
+
+    try { window.openAuth = openAuth; } catch (_) { }
 
     /**
      * 处理文件选择
