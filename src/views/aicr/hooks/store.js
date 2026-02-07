@@ -25,7 +25,10 @@ export function buildFileTreeFromSessions(allSessions) {
             .filter(t => t.length > 0 && String(t).toLowerCase() !== 'default');
     };
 
-    const sanitizeFileName = (name) => String(name || '').replace(/\//g, '-');
+    const sanitizeFileName = (name) => String(name || '')
+        .trim()
+        .replace(/\s+/g, '_')
+        .replace(/\//g, '-');
 
     const sortable = sessionsList.map((s) => {
         const folderParts = normalizeFolders(s.tags);
@@ -1029,7 +1032,7 @@ export const createStore = () => {
                             foundSessionIdx = sessions.value.findIndex(s => {
                                 if (s.key === oldPath) return true;
                                 // 模糊匹配 (兼容 UUID Key 的情况)
-                                const sName = s.title || s.pageTitle;
+                                const sName = String(s.title || s.pageTitle || '').trim().replace(/\s+/g, '_');
                                 const sTags = s.tags || [];
                                 if (sName !== fName) return false;
                                 if (sTags.length !== fTags.length) return false;
@@ -1207,7 +1210,7 @@ export const createStore = () => {
                         const fTags = fPath.split('/').slice(0, -1).filter(Boolean);
 
                         const session = sessions.value.find(s => {
-                            const sName = s.title || s.pageTitle;
+                            const sName = String(s.title || s.pageTitle || '').trim().replace(/\s+/g, '_');
                             const sTags = s.tags || [];
 
                             if (sName !== fName) return false;
@@ -1845,14 +1848,24 @@ export const createStore = () => {
                 });
 
                 sessionList.forEach(s => {
+                    const rawTitle = s.title != null ? s.title : (s.pageTitle != null ? s.pageTitle : '');
+                    const normalizedTitle = String(rawTitle || '').trim().replace(/\s+/g, '_');
+                    if (normalizedTitle) {
+                        s.title = normalizedTitle;
+                    }
+                    if (Object.prototype.hasOwnProperty.call(s, 'pageTitle')) {
+                        delete s.pageTitle;
+                    }
+
                     const rawKey = s.key ? String(s.key) : '';
                     const badKey = !rawKey || /^[0-9a-fA-F]{24}$/.test(rawKey);
                     if (badKey) {
-                        const title = s.title || s.pageTitle;
+                        const title = s.title;
                         const tags = Array.isArray(s.tags) ? s.tags : [];
                         const pathTags = tags.filter(t => t && t !== 'default' && t !== 'Default');
                         if (title) {
-                            s.key = pathTags.length > 0 ? `${pathTags.join('/')}/${title}` : String(title);
+                            const safeTitle = String(title).replace(/\//g, '-');
+                            s.key = pathTags.length > 0 ? `${pathTags.join('/')}/${safeTitle}` : safeTitle;
                         }
                     } else {
                         s.key = rawKey;

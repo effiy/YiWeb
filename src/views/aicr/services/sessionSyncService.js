@@ -94,7 +94,7 @@ class SessionSyncService {
         
         // 确保 filePath 与用于生成 tags 的路径一致
         // 使用相同的路径来提取文件名和标签
-        const fileName = extractFileName(filePath);
+        const fileName = String(extractFileName(filePath) || '').trim().replace(/\s+/g, '_');
         let tags = this.extractTagsFromPath(filePath);
         
         // 如果标签为空，不再使用默认标签，直接放在根目录
@@ -117,7 +117,6 @@ class SessionSyncService {
             key: file.key,
             url: uniqueUrl,
             title: fileName,
-            pageTitle: fileName,
             pageDescription: `文件：${filePath}`, // 使用与 tags 相同的 filePath
             pageContent: String(normalizedFile.content || ''),
             messages: [],
@@ -495,8 +494,7 @@ class SessionSyncService {
                 // 规范化会话数据
                 const normalized = {
                     url: String(sessionData.url || ''),
-                    title: String(sessionData.title || sessionData.pageTitle || ''),
-                    pageTitle: String(sessionData.pageTitle || sessionData.title || ''),
+                    title: String(sessionData.title || '').trim().replace(/\s+/g, '_'),
                     pageDescription: String(sessionData.pageDescription || ''),
                     messages: this.normalizeMessages(sessionData.messages || []),
                     tags: Array.isArray(sessionData.tags) ? sessionData.tags : [],
@@ -648,8 +646,7 @@ class SessionSyncService {
                 key: targetKey,
                 
                 // 更新文件相关元数据
-                title: String(newSessionData.title || newSessionData.pageTitle || ''),
-                pageTitle: String(newSessionData.pageTitle || newSessionData.title || ''),
+                title: String(newSessionData.title || '').trim().replace(/\s+/g, '_'),
                 pageDescription: String(newSessionData.pageDescription || ''),
                 // pageContent: String(newSessionData.pageContent || ''), // 可选：如果重命名不涉及内容变更，可以不传
                 tags: Array.isArray(newSessionData.tags) ? newSessionData.tags : [],
@@ -812,7 +809,9 @@ class SessionSyncService {
                             key: filePath,
                             path: filePath,
                             sessionKey: sessionKey, // 添加sessionKey字段
-                            name: session.pageTitle || session.title || filePath.split('/').pop() || '未命名文件',
+                            name: String(session.title || session.pageTitle || filePath.split('/').pop() || '未命名文件')
+                                .trim()
+                                .replace(/\s+/g, '_'),
                             content: '',
                             createdAt: this.normalizeTimestamp(session.createdAt),
                             updatedAt: this.normalizeTimestamp(session.updatedAt)

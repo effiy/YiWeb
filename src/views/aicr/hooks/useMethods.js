@@ -2108,6 +2108,7 @@ export const useMethods = (store) => {
                         if (v == null) return '';
                         let s = String(v);
                         s = s.replace(/\\/g, '/');
+                        s = s.trim().replace(/\s+/g, '_');
                         s = s.replace(/^\.\//, '');
                         s = s.replace(/^\/+/, '');
                         s = s.replace(/\/\/+/, '/');
@@ -2170,9 +2171,7 @@ export const useMethods = (store) => {
                         if (filePath && normalize(filePath) === targetTreeKey) return true;
                     }
                     const title = normalize(s.title || '');
-                    const pageTitle = normalize(s.pageTitle || '');
                     if (title && title === targetTreeKey) return true;
-                    if (pageTitle && pageTitle === targetTreeKey) return true;
                     return false;
                 });
 
@@ -2701,8 +2700,8 @@ export const useMethods = (store) => {
                 if (!folderName || (folderName.toLowerCase && folderName.toLowerCase() === 'default')) return;
                 currentPath = currentPath ? currentPath + '/' + folderName : folderName;
             });
-            let fileName = session.title || session.pageTitle || 'Untitled';
-            fileName = String(fileName).replace(/\//g, '-');
+            let fileName = session.title || 'Untitled';
+            fileName = String(fileName).trim().replace(/\s+/g, '_').replace(/\//g, '-');
             fileKey = currentPath ? currentPath + '/' + fileName : fileName;
         }
 
@@ -2794,8 +2793,8 @@ export const useMethods = (store) => {
                         if (!folderName || (folderName.toLowerCase && folderName.toLowerCase() === 'default')) return;
                         currentPath = currentPath ? currentPath + '/' + folderName : folderName;
                     });
-                    let fileName = session.title || session.pageTitle || 'Untitled';
-                    fileName = String(fileName).replace(/\//g, '-');
+                    let fileName = session.title || 'Untitled';
+                    fileName = String(fileName).trim().replace(/\s+/g, '_').replace(/\//g, '-');
                     cleanPath = currentPath ? currentPath + '/' + fileName : fileName;
                     cleanPath = cleanPath.replace(/\\/g, '/').replace(/^\/+/, '');
                     if (cleanPath.startsWith('static/')) {
@@ -3167,7 +3166,7 @@ export const useMethods = (store) => {
             if (!session) return '';
             try {
                 const pageInfo = {
-                    title: session.pageTitle || session.title || '当前页面',
+                    title: session.title || '当前页面',
                     url: session.url || '',
                     description: session.pageDescription || ''
                 };
@@ -5042,7 +5041,7 @@ export const useMethods = (store) => {
                 const title = window.prompt('新建会话名称：');
                 if (!title || !title.trim()) return;
 
-                const sessionTitle = title.trim();
+                const sessionTitle = title.trim().replace(/\s+/g, '_');
 
                 // 生成 UUID 格式的会话 key
                 const generateUUID = () => {
@@ -5072,7 +5071,6 @@ export const useMethods = (store) => {
                     key: sessionKey,
                     url: uniqueUrl,
                     title: sessionTitle,
-                    pageTitle: sessionTitle,
                     pageDescription: '',
                     pageContent: '',
                     messages: [],
@@ -5096,7 +5094,7 @@ export const useMethods = (store) => {
 
                 if (saveResult && saveResult.success !== false) {
                     // 生成文件路径（基于会话标题）
-                    const sanitizeFileName = (name) => String(name || '').replace(/\//g, '-');
+                    const sanitizeFileName = (name) => String(name || '').trim().replace(/\s+/g, '_').replace(/\//g, '-');
                     const fileName = sanitizeFileName(sessionTitle);
                     
                     // 根据会话的 tags 构建文件夹路径（如果有）
@@ -5407,7 +5405,7 @@ export const useMethods = (store) => {
                     store.sessionEditKey.value = sessionKey;
                 }
                 if (store.sessionEditTitle) {
-                    store.sessionEditTitle.value = session.pageTitle || session.title || '';
+                    store.sessionEditTitle.value = session.title || '';
                 }
                 if (store.sessionEditUrl) {
                     store.sessionEditUrl.value = session.url || '';
@@ -5455,7 +5453,7 @@ export const useMethods = (store) => {
         saveSessionEdit: async () => {
             return safeExecute(async () => {
                 const sessionKey = store.sessionEditKey?.value;
-                const title = store.sessionEditTitle?.value?.trim() || '';
+                const title = (store.sessionEditTitle?.value || '').trim().replace(/\s+/g, '_');
                 const url = store.sessionEditUrl?.value?.trim() || '';
                 const description = store.sessionEditDescription?.value?.trim() || '';
 
@@ -5474,7 +5472,7 @@ export const useMethods = (store) => {
                     throw new Error('会话不存在');
                 }
 
-                const oldTitle = session.pageTitle || session.title || '';
+                const oldTitle = session.title || '';
                 const titleChanged = title !== oldTitle;
 
                 // 如果标题改变，需要同步更新静态文件名
@@ -5511,7 +5509,10 @@ export const useMethods = (store) => {
                         const parentPath = oldPath.split('/').slice(0, -1).join('/');
                         
                         // 清理文件名（移除特殊字符，避免路径问题）
-                        const sanitizeFileName = (name) => String(name || '').replace(/[\/\\:*?"<>|]/g, '-').trim();
+                        const sanitizeFileName = (name) => String(name || '')
+                            .trim()
+                            .replace(/\s+/g, '_')
+                            .replace(/[\/\\:*?"<>|]/g, '-');
                         const newFileName = sanitizeFileName(title);
                         
                         if (!newFileName) {
@@ -5586,7 +5587,7 @@ export const useMethods = (store) => {
                                 });
                             }
 
-                            // 使用 renameSession 更新会话（这会更新会话的元数据，包括 title, pageTitle, tags 等）
+                            // 使用 renameSession 更新会话（这会更新会话的元数据，包括 title, tags 等）
                             const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
                             const sessionSync = getSessionSyncService();
                             
@@ -5616,7 +5617,6 @@ export const useMethods = (store) => {
                             console.log('[saveSessionEdit] 路径未改变，仅更新会话元数据');
                             const updateData = {
                                 key: sessionKey,
-                                pageTitle: title,
                                 title: title,
                                 url: url,
                                 pageDescription: description
@@ -5638,7 +5638,6 @@ export const useMethods = (store) => {
                         console.log('[saveSessionEdit] 未找到对应的文件节点，仅更新会话元数据');
                         const updateData = {
                             key: sessionKey,
-                            pageTitle: title,
                             title: title,
                             url: url,
                             pageDescription: description
@@ -5660,7 +5659,6 @@ export const useMethods = (store) => {
                     console.log('[saveSessionEdit] 标题未改变，仅更新 url 和 description');
                     const updateData = {
                         key: sessionKey,
-                        pageTitle: title,
                         title: title,
                         url: url,
                         pageDescription: description
@@ -5680,7 +5678,6 @@ export const useMethods = (store) => {
 
                 // 更新本地状态
                 if (session) {
-                    session.pageTitle = title;
                     session.title = title;
                     session.url = url;
                     session.pageDescription = description;
@@ -5693,7 +5690,6 @@ export const useMethods = (store) => {
                 if (activeSession && activeSession.value && activeSession.value.key === sessionKey) {
                     activeSession.value = {
                         ...activeSession.value,
-                        pageTitle: title,
                         title: title,
                         url: url,
                         pageDescription: description,
@@ -5744,7 +5740,7 @@ export const useMethods = (store) => {
                     
                     // 获取页面上下文内容
                     let pageContent = session?.pageContent || '';
-                    const pageTitle = session?.pageTitle || session?.title || '';
+                    const pageTitle = session?.title || '';
 
                     // 注意：handleSessionEdit 已经获取了完整数据（包括 pageContent）并缓存到 sessionEditData
                     // 所以这里不应该再次调用 getSession，除非缓存真的没有数据
@@ -5975,8 +5971,7 @@ export const useMethods = (store) => {
                     const duplicatedSession = {
                         key: newSessionKey,
                         url: sourceSession.url || '',
-                        pageTitle: sourceSession.pageTitle ? `${sourceSession.pageTitle} (副本)` : '新会话 (副本)',
-                        title: sourceSession.pageTitle ? `${sourceSession.pageTitle} (副本)` : '新会话 (副本)',
+                        title: sourceSession.title ? `${String(sourceSession.title).trim().replace(/\s+/g, '_')}_(副本)` : '新会话_(副本)',
                         pageDescription: sourceSession.pageDescription || '',
                         pageContent: sourceSession.pageContent || '',
                         messages: sourceSession.messages ? JSON.parse(JSON.stringify(sourceSession.messages)) : [],
@@ -6159,8 +6154,7 @@ export const useMethods = (store) => {
                     const sessionData = {
                         key: sessionKey,
                         url: uniqueUrl,
-                        title: fileKey, // 使用 fileKey 作为会话标题
-                        pageTitle: fileKey,
+                        title: String(fileKey || '').trim().replace(/\s+/g, '_'), // 使用 fileKey 作为会话标题
                         pageDescription: pageDescription.trim(),
                         pageContent: fileContent, // 使用文件内容作为页面上下文
                         messages: [],
@@ -6360,6 +6354,7 @@ export const useMethods = (store) => {
                                 const normalize = (v) => {
                                     if (!v) return '';
                                     let s = String(v).replace(/\\/g, '/');
+                                    s = s.trim().replace(/\s+/g, '_');
                                     s = s.replace(/^\.\//, '');
                                     s = s.replace(/^\/+/, '');
                                     s = s.replace(/\/\/+/g, '/');
@@ -6446,9 +6441,9 @@ export const useMethods = (store) => {
                                             const sessionItems = document.querySelectorAll('.session-item');
                                             for (const item of sessionItems) {
                                                 const titleElement = item.querySelector('.session-title-text');
-                                                if (titleElement && targetSession.pageTitle) {
+                                                if (titleElement && targetSession.title) {
                                                     const itemTitle = titleElement.textContent?.trim();
-                                                    const targetTitle = targetSession.pageTitle?.trim();
+                                                    const targetTitle = targetSession.title?.trim();
                                                     if (itemTitle === targetTitle) {
                                                         item.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                                         item.classList.add('highlight-session');
@@ -6577,6 +6572,7 @@ export const useMethods = (store) => {
                                 const normalize = (v) => {
                                     if (!v) return '';
                                     let s = String(v).replace(/\\/g, '/');
+                                    s = s.trim().replace(/\s+/g, '_');
                                     s = s.replace(/^\.\//, '');
                                     s = s.replace(/^\/+/, '');
                                     s = s.replace(/\/\/+/g, '/');
@@ -7239,8 +7235,8 @@ export const useMethods = (store) => {
 
                     // 导出所有会话为 JSON 文件
                     store.sessions.value.forEach(session => {
-                        let fileName = session.title || session.pageTitle || 'Untitled';
-                        fileName = fileName.replace(/[\\/:*?"<>|]/g, '_'); // 替换非法字符
+                        let fileName = session.title || 'Untitled';
+                        fileName = String(fileName).trim().replace(/\s+/g, '_').replace(/[\\/:*?"<>|]/g, '_');
                         const content = JSON.stringify(session, null, 2);
                         zip.file(`${fileName}.json`, content);
                     });
@@ -8473,7 +8469,7 @@ export const useMethods = (store) => {
 
         try {
             // 收集页面上下文信息
-            const pageTitle = session.pageTitle || '当前页面';
+            const pageTitle = session.title || '当前页面';
             const pageUrl = session.url || window.location.href;
             const pageDescription = session.pageDescription || '';
 
