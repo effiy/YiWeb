@@ -2569,12 +2569,20 @@ export const useMethods = (store) => {
      */
 
     let sessionContextScrollSyncCleanup = null;
+    let sessionMessageEditorScrollSyncCleanup = null;
 
     const cleanupSessionContextScrollSync = () => {
         if (typeof sessionContextScrollSyncCleanup === 'function') {
             sessionContextScrollSyncCleanup();
         }
         sessionContextScrollSyncCleanup = null;
+    };
+
+    const cleanupSessionMessageEditorScrollSync = () => {
+        if (typeof sessionMessageEditorScrollSyncCleanup === 'function') {
+            sessionMessageEditorScrollSyncCleanup();
+        }
+        sessionMessageEditorScrollSyncCleanup = null;
     };
 
     const setupSessionContextScrollSync = () => {
@@ -2634,6 +2642,46 @@ export const useMethods = (store) => {
         };
     };
 
+    const setupSessionMessageEditorScrollSync = () => {
+        cleanupSessionMessageEditorScrollSync();
+
+        const root = document.querySelector('.aicr-session-context-modal[aria-label="消息编辑器"]');
+        const modal = root ? root.querySelector('.aicr-session-context-modal-body') : null;
+        if (!modal) return;
+
+        const split = modal.querySelector('.aicr-session-context-split');
+        if (!split) return;
+
+        const textarea = split.querySelector('.aicr-session-context-textarea');
+        const preview = split.querySelector('.aicr-session-context-preview');
+        if (!(textarea instanceof HTMLElement) || !(preview instanceof HTMLElement)) return;
+
+        let rafId = 0;
+
+        const syncScroll = () => {
+            const fromMax = Math.max(0, (textarea.scrollHeight || 0) - (textarea.clientHeight || 0));
+            const toMax = Math.max(0, (preview.scrollHeight || 0) - (preview.clientHeight || 0));
+            const ratio = fromMax > 0 ? (textarea.scrollTop / fromMax) : 0;
+            preview.scrollTop = ratio * toMax;
+        };
+
+        const onTextareaScroll = () => {
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => {
+                rafId = 0;
+                syncScroll();
+            });
+        };
+
+        textarea.addEventListener('scroll', onTextareaScroll, { passive: true });
+
+        sessionMessageEditorScrollSyncCleanup = () => {
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = 0;
+            textarea.removeEventListener('scroll', onTextareaScroll);
+        };
+    };
+
     const ensureSessionContextScrollSync = () => {
         const visible = !!sessionContextEditorVisible?.value;
         const mode = String(sessionContextMode?.value || '').toLowerCase();
@@ -2643,6 +2691,22 @@ export const useMethods = (store) => {
         }
 
         const schedule = () => setupSessionContextScrollSync();
+        if (typeof Vue !== 'undefined' && typeof Vue.nextTick === 'function') {
+            Vue.nextTick(schedule);
+            return;
+        }
+        setTimeout(schedule, 0);
+    };
+
+    const ensureSessionMessageEditorScrollSync = () => {
+        const visible = !!sessionMessageEditorVisible?.value;
+        const mode = String(sessionMessageEditorMode?.value || '').toLowerCase();
+        if (!visible || mode !== 'split') {
+            cleanupSessionMessageEditorScrollSync();
+            return;
+        }
+
+        const schedule = () => setupSessionMessageEditorScrollSync();
         if (typeof Vue !== 'undefined' && typeof Vue.nextTick === 'function') {
             Vue.nextTick(schedule);
             return;
@@ -4013,6 +4077,7 @@ export const useMethods = (store) => {
                 if (sessionMessageEditorDraft) sessionMessageEditorDraft.value = text;
                 if (sessionMessageEditorIndex) sessionMessageEditorIndex.value = i;
                 if (sessionMessageEditorVisible) sessionMessageEditorVisible.value = true;
+                ensureSessionMessageEditorScrollSync();
             } catch (_) { }
         },
 
@@ -4020,11 +4085,13 @@ export const useMethods = (store) => {
             if (sessionMessageEditorVisible) sessionMessageEditorVisible.value = false;
             if (sessionMessageEditorDraft) sessionMessageEditorDraft.value = '';
             if (sessionMessageEditorIndex) sessionMessageEditorIndex.value = -1;
+            cleanupSessionMessageEditorScrollSync();
         },
 
         setSessionMessageEditorMode: (v) => {
             if (!sessionMessageEditorMode) return;
             sessionMessageEditorMode.value = v === 'preview' ? 'preview' : (v === 'split' ? 'split' : 'edit');
+            ensureSessionMessageEditorScrollSync();
         },
 
         setSessionMessageEditorDraft: (v) => {
