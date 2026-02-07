@@ -1020,6 +1020,7 @@ export const createStore = () => {
                         // 查找旧会话以获取 UUID (用于后端更新)
                         let targetSessionKey = oldPath;
                         let foundSessionIdx = -1;
+                        let foundSession = null;
 
                         if (sessions.value && Array.isArray(sessions.value)) {
                             const fName = oldPath.split('/').pop();
@@ -1039,7 +1040,7 @@ export const createStore = () => {
                             });
 
                             if (foundSessionIdx >= 0) {
-                                const foundSession = sessions.value[foundSessionIdx];
+                                foundSession = sessions.value[foundSessionIdx];
                                 if (foundSession && foundSession.key) {
                                     targetSessionKey = foundSession.key;
                                 }
@@ -1057,11 +1058,20 @@ export const createStore = () => {
                                 sessions.value.splice(foundSessionIdx, 1);
 
                                 // 添加新会话（本地模拟）
-                                const sessionData = sessionSync.fileToSession(updatedFile);
+                                let sessionData = sessionSync.fileToSession(updatedFile);
                                 if (sessionData) {
+                                    if (foundSession && typeof foundSession === 'object') {
+                                        sessionData = { ...foundSession, ...sessionData };
+                                    }
                                     // 保持原有 UUID (如果是更新)
                                     if (targetSessionKey !== oldPath) {
                                         sessionData.key = targetSessionKey;
+                                    }
+                                    if (foundSession && foundSession.url) {
+                                        sessionData.url = foundSession.url;
+                                    }
+                                    if (Object.prototype.hasOwnProperty.call(sessionData, 'pageContent')) {
+                                        delete sessionData.pageContent;
                                     }
                                     sessions.value.push(sessionData);
                                 }

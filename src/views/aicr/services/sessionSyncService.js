@@ -648,7 +648,6 @@ class SessionSyncService {
                 key: targetKey,
                 
                 // 更新文件相关元数据
-                url: String(newSessionData.url),
                 title: String(newSessionData.title || newSessionData.pageTitle || ''),
                 pageTitle: String(newSessionData.pageTitle || newSessionData.title || ''),
                 pageDescription: String(newSessionData.pageDescription || ''),
