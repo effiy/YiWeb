@@ -488,123 +488,8 @@
   color: var(--text-primary);
 }
 
-/* 过滤器按钮样式（合并优化） */
-.filter-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm, 0.5rem);
-  padding: var(--spacing-2) var(--spacing-4);
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: var(--radius-md, 6px);
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  transition: all var(--duration-fast) var(--ease-smooth);
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  white-space: nowrap;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  animation: filterButtonSlideIn 0.2s ease-out;
-}
-.filter-btn:hover {
-  background: rgba(255,255,255,0.15);
-  border-color: rgba(255,255,255,0.3);
-  color: var(--text-primary);
-  transform: translateY(-1px);
-}
-.filter-btn.active {
-  background: var(--primary-blue);
-  border-color: var(--primary-blue);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(79,70,229,0.3);
-}
-.filter-btn.active:hover {
-  background: var(--primary-cyan);
-  border-color: var(--primary-cyan);
-}
-.filter-btn i {
-  font-size: var(--font-size-sm);
-  transition: color var(--duration-fast) var(--ease-smooth);
-}
-.filter-btn:hover i {
-  color: var(--text-primary);
-}
-.filter-btn.active i {
-  color: #fff;
-}
-.filter-btn:active {
-  transform: scale(0.98);
-  transition: transform var(--duration-fast) var(--ease-smooth);
-}
-.filter-btn:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(79,172,254,0.3);
-}
-
-/* 筛选按钮容器 */
-.filter-buttons {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: nowrap;
-  gap: var(--spacing-sm);
-  overflow-x: auto;
-  -ms-overflow-style: none;
-  flex: 1;
-  padding: var(--spacing-xs);
-  position: relative;
-}
-.filter-buttons::-webkit-scrollbar {
-  display: none;
-}
-
-/* 分类过滤器 */
-.category-filters {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  flex-shrink: 0;
-  min-width: 200px;
-  position: relative;
-  padding: var(--spacing-xs);
-  background: transparent;
-  border: none;
-  transition: all var(--duration-fast) var(--ease-smooth);
-}
-.category-filters:hover {
-  background: transparent;
-}
-.category-filters h4 {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  white-space: nowrap;
-  opacity: 0.8;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: transparent;
-  border: none;
-}
-
 /* 暗色模式适配 */
 @media (prefers-color-scheme: dark) {
-  .filter-btn {
-    background: rgba(255,255,255,0.05);
-    border-color: rgba(255,255,255,0.1);
-  }
-  .filter-btn:hover {
-    background: rgba(255,255,255,0.1);
-    border-color: rgba(255,255,255,0.2);
-  }
   .search-suggestions {
     background: rgba(15, 23, 42, 0.98);
     border-color: rgba(79, 172, 254, 0.3);
@@ -634,7 +519,6 @@
 
 /* 减少动画选项 */
 @media (prefers-reduced-motion: reduce) {
-  .filter-btn,
   .message-input,
   .message-input-wrapper {
     animation: none !important;
@@ -660,18 +544,6 @@
   -moz-user-select: text;
   -ms-user-select: text;
   user-select: text;
-}
-
-/* 筛选按钮动画 */
-@keyframes filterButtonSlideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
 }
 
 /* 视图切换栏样式 */
@@ -940,6 +812,5 @@
     justify-content: flex-end;
   }
 }
-
 
 

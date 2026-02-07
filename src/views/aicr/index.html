@@ -29,7 +29,7 @@
                     <div class="search-input-wrapper">
                         <label for="messageInput" class="visually-hidden">搜索输入框</label>
                         <textarea id="messageInput" placeholder="搜索网站、标签或描述..." rows="1" maxlength="2000"
-                            aria-label="搜索输入框" aria-describedby="category-filters" autocomplete="off" spellcheck="false"
+                            aria-label="搜索输入框" autocomplete="off" spellcheck="false"
                             @keydown="handleMessageInput" @compositionstart="handleCompositionStart"
                             @compositionend="handleCompositionEnd" @input="handleSearchInput"></textarea>
 
@@ -42,13 +42,6 @@
                         </div>
                     </div>
                 </form>
-
-                <!-- 项目选择器 -->
-                <div class="category-filters" id="category-filters" role="toolbar" aria-label="项目过滤器">
-                    <ul class="filter-buttons">
-
-                    </ul>
-                </div>
 
             </section>
         </header>
