@@ -475,6 +475,14 @@ export const createStore = () => {
     const sessionContextEditorVisible = vueRef(false);
     const sessionContextDraft = vueRef('');
     const sessionContextMode = vueRef('edit');
+    const sessionContextUserEdited = vueRef(false);
+    const sessionContextRefreshConfirmUntil = vueRef(0);
+    const sessionContextRefreshStatus = vueRef('');
+    const sessionContextOptimizing = vueRef(false);
+    const sessionContextOptimizeStatus = vueRef('');
+    const sessionContextTranslating = vueRef('');
+    const sessionContextSaving = vueRef(false);
+    const sessionContextSaveStatus = vueRef('');
     const sessionContextUndoVisible = vueRef(false);
     const sessionContextOptimizeBackup = vueRef('');
     // 消息编辑相关状态
@@ -621,12 +629,17 @@ export const createStore = () => {
         return { node: null, parent: null };
     }
 
+    const normalizeItemName = (raw) => {
+        return String(raw ?? '').trim().replace(/\s+/g, '_');
+    };
+
     /**
      * 创建文件夹
      */
     const createFolder = async ({ parentId, name }) => {
         return safeExecuteAsync(async () => {
-            if (!name || !name.trim()) {
+            const normalizedName = normalizeItemName(name);
+            if (!normalizedName) {
                 throw createError('文件夹名称不能为空', ErrorTypes.VALIDATION, '新建文件夹');
             }
             // 修正：使用完整 fileTree.value 作为根，支持数组结构
@@ -656,15 +669,15 @@ export const createStore = () => {
             }
 
             // 保证同级唯一
-            const exists = targetChildren.find(ch => ch.name === name);
+            const exists = targetChildren.find(ch => normalizeItemName(ch?.name) === normalizedName);
             if (exists) throw createError('同名文件或文件夹已存在', ErrorTypes.VALIDATION, '新建文件夹');
 
             const parentKey = parentNode ? parentNode.key : '';
-            const newId = (parentKey ? `${parentKey}/` : '') + name;
+            const newId = (parentKey ? `${parentKey}/` : '') + normalizedName;
             // 使用 normalizeTreeNode 确保 key 和 path
             const folderNode = normalizeTreeNode({
                 key: newId,
-                name,
+                name: normalizedName,
                 type: 'folder',
                 children: []
             });
@@ -715,7 +728,8 @@ export const createStore = () => {
      */
     const createFile = async ({ parentId, name, content = '', skipProjectFiles = false }) => {
         return safeExecuteAsync(async () => {
-            if (!name || !name.trim()) {
+            const normalizedName = normalizeItemName(name);
+            if (!normalizedName) {
                 throw createError('文件名称不能为空', ErrorTypes.VALIDATION, '新建文件');
             }
             // 修正：使用完整 fileTree.value 作为根，支持数组结构
@@ -744,19 +758,19 @@ export const createStore = () => {
                 targetChildren = parentNode.children = parentNode.children || [];
             }
 
-            if (targetChildren.find(ch => ch.name === name)) {
+            if (targetChildren.find(ch => normalizeItemName(ch?.name) === normalizedName)) {
                 throw createError('同名文件或文件夹已存在', ErrorTypes.VALIDATION, '新建文件');
             }
 
             // 使用统一的路径规范化
             const parentPath = parentNode ? normalizeFilePath(parentNode.key || '') : '';
-            const newId = parentPath ? `${parentPath}/${name}` : name;
+            const newId = parentPath ? `${parentPath}/${normalizedName}` : normalizedName;
             const normalizedNewId = normalizeFilePath(newId);
             const now = Date.now();
 
             // 使用统一的节点规范化工具
             const fileNode = normalizeTreeNode({
-                name,
+                name: normalizedName,
                 type: 'file',
                 size: content ? content.length : 0,
                 modified: now,
@@ -837,7 +851,7 @@ export const createStore = () => {
             // 更新本地files列表，携带后端返回的key，确保首次保存可PUT更新
             const newFile = normalizeFileObject({
                 path: normalizedNewId,
-                name,
+                name: normalizedName,
                 content,
                 type: 'file'
             });
@@ -878,14 +892,15 @@ export const createStore = () => {
     const renameItem = async ({ itemId, newName }) => {
         return safeExecuteAsync(async () => {
             if (!itemId) throw createError('缺少目标ID', ErrorTypes.VALIDATION, '重命名');
-            if (!newName || !newName.trim()) throw createError('名称不能为空', ErrorTypes.VALIDATION, '重命名');
+            const normalizedNewName = normalizeItemName(newName);
+            if (!normalizedNewName) throw createError('名称不能为空', ErrorTypes.VALIDATION, '重命名');
             // 修正：直接使用 fileTree.value 作为搜索根
             const root = fileTree.value;
             const { node, parent } = findNodeAndParentByKey(root, itemId);
             if (!node) throw createError('未找到目标节点', ErrorTypes.API, '重命名');
             // 检查同级重名（如果是根节点，parent为null，则检查fileTree.value）
             const siblings = parent ? (parent.children || []) : (Array.isArray(fileTree.value) ? fileTree.value : [fileTree.value]);
-            if (siblings.some(ch => ch !== node && ch.name === newName)) {
+            if (siblings.some(ch => ch !== node && normalizeItemName(ch?.name) === normalizedNewName)) {
                 throw createError('同级存在同名项', ErrorTypes.VALIDATION, '重命名');
             }
 
@@ -895,7 +910,7 @@ export const createStore = () => {
             // 获取旧ID的规范化路径
             const oldPath = normalizeFilePath(node.key || '');
             // 计算新ID的规范化路径
-            const newPath = normalizeFilePath(parentPath ? `${parentPath}/${newName}` : newName);
+            const newPath = normalizeFilePath(parentPath ? `${parentPath}/${normalizedNewName}` : normalizedNewName);
             // 构建完整路径
             const oldId = oldPath;
             const newId = newPath;
@@ -914,7 +929,7 @@ export const createStore = () => {
                 }
             }
 
-            node.name = newName;
+            node.name = normalizedNewName;
 
             // 记录变更前的文件列表用于远端同步
             const prevFiles = Array.isArray(files.value) ? files.value.slice() : [];
@@ -1989,6 +2004,14 @@ export const createStore = () => {
         sessionContextEditorVisible,
         sessionContextDraft,
         sessionContextMode,
+        sessionContextUserEdited,
+        sessionContextRefreshConfirmUntil,
+        sessionContextRefreshStatus,
+        sessionContextOptimizing,
+        sessionContextOptimizeStatus,
+        sessionContextTranslating,
+        sessionContextSaving,
+        sessionContextSaveStatus,
         sessionContextUndoVisible,
         sessionContextOptimizeBackup,
         sessionMessageEditorVisible,

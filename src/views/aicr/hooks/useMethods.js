@@ -71,6 +71,14 @@ export const useMethods = (store) => {
         sessionContextEditorVisible,
         sessionContextDraft,
         sessionContextMode,
+        sessionContextUserEdited,
+        sessionContextRefreshConfirmUntil,
+        sessionContextRefreshStatus,
+        sessionContextOptimizing,
+        sessionContextOptimizeStatus,
+        sessionContextTranslating,
+        sessionContextSaving,
+        sessionContextSaveStatus,
         sessionContextUndoVisible,
         sessionContextOptimizeBackup,
         sessionMessageEditorVisible,
@@ -106,6 +114,8 @@ export const useMethods = (store) => {
     const _SESSION_CHAT_COMPOSITION_END_DELAY = 100;
     let _sessionFaqEscHandler = null;
     let _sessionFaqLastActiveElement = null;
+    let _sessionContextKeydownHandler = null;
+    const _sessionContextTimeouts = new Set();
     const { computed } = Vue;
 
     const getApiBaseUrl = () => {
@@ -114,6 +124,126 @@ export const useMethods = (store) => {
 
     const getPromptUrl = () => {
         return `${getApiBaseUrl()}/`;
+    };
+
+    const _sessionContextClearTimeouts = () => {
+        try {
+            for (const t of Array.from(_sessionContextTimeouts)) {
+                clearTimeout(t);
+            }
+            _sessionContextTimeouts.clear();
+        } catch (_) { }
+    };
+
+    const _sessionContextSetStatus = (refObj, value, resetMs = 0, resetValue = '') => {
+        try {
+            if (!refObj) return;
+            refObj.value = value;
+            if (resetMs > 0) {
+                const t = setTimeout(() => {
+                    try { refObj.value = resetValue; } catch (_) { }
+                }, resetMs);
+                _sessionContextTimeouts.add(t);
+            }
+        } catch (_) { }
+    };
+
+    const _sessionContextCleanAiText = (raw) => {
+        try {
+            let s = String(raw ?? '');
+            s = s.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+            if (!s) return '';
+
+            const tryParseJsonString = (text) => {
+                const t = String(text || '').trim();
+                if (!t) return '';
+                try {
+                    const parsed = JSON.parse(t);
+                    if (typeof parsed === 'string') return parsed;
+                } catch (_) { }
+                return '';
+            };
+
+            const parsed = tryParseJsonString(s);
+            if (parsed) s = parsed;
+
+            s = s.replace(/^\uFEFF/, '');
+            s = s.replace(/^\s*```(?:markdown|md|text)?\s*\n?/i, '');
+            s = s.replace(/\n?\s*```\s*$/i, '');
+            s = s.trim();
+
+            if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+                s = s.slice(1, -1);
+            }
+
+            s = String(s || '')
+                .replace(/\r\n/g, '\n')
+                .replace(/[ \t]+\n/g, '\n')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+            return s;
+        } catch (_) {
+            return String(raw ?? '').trim();
+        }
+    };
+
+    const _sessionContextGetCleanPath = (key) => {
+        try {
+            const k = key || selectedKey?.value;
+            if (!k) return '';
+            const file = Array.isArray(files?.value)
+                ? files.value.find(f => f && (f.key === k || f.path === k))
+                : null;
+            const path = String(file?.path || file?.key || k || '').replace(/\\/g, '/').replace(/^\/+/, '');
+            const cleanPath = path.startsWith('static/') ? path.slice(7) : path;
+            return cleanPath.replace(/^\/+/, '');
+        } catch (_) {
+            return '';
+        }
+    };
+
+    const _closeSessionContextEditorInternal = () => {
+        try {
+            if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
+            if (sessionContextUndoVisible) sessionContextUndoVisible.value = false;
+            if (sessionContextOptimizeBackup) sessionContextOptimizeBackup.value = '';
+            if (sessionContextUserEdited) sessionContextUserEdited.value = false;
+            if (sessionContextRefreshConfirmUntil) sessionContextRefreshConfirmUntil.value = 0;
+            if (_sessionContextKeydownHandler) {
+                document.removeEventListener('keydown', _sessionContextKeydownHandler, true);
+                _sessionContextKeydownHandler = null;
+            }
+            _sessionContextClearTimeouts();
+            if (sessionContextRefreshStatus) sessionContextRefreshStatus.value = '';
+            if (sessionContextOptimizeStatus) sessionContextOptimizeStatus.value = '';
+            if (sessionContextSaveStatus) sessionContextSaveStatus.value = '';
+            if (sessionContextTranslating) sessionContextTranslating.value = '';
+            if (sessionContextOptimizing) sessionContextOptimizing.value = false;
+            if (sessionContextSaving) sessionContextSaving.value = false;
+            cleanupSessionContextScrollSync();
+        } catch (_) { }
+    };
+
+    const _sessionContextChatOnce = async ({ system, user }) => {
+        const { streamPrompt } = await import('/src/services/modules/crud.js');
+        const promptUrl = getPromptUrl();
+        const res = await streamPrompt(
+            promptUrl,
+            {
+                module_name: 'services.ai.chat_service',
+                method_name: 'chat',
+                parameters: {
+                    system: String(system || ''),
+                    user: String(user || ''),
+                    stream: false,
+                    ...(String(sessionBotModel?.value || '').trim()
+                        ? { model: String(sessionBotModel.value || '').trim() }
+                        : {})
+                }
+            },
+            { errorMessage: '请求失败' }
+        );
+        return _sessionContextCleanAiText(res);
     };
 
     const _isAbortError = (e) => {
@@ -3549,6 +3679,14 @@ export const useMethods = (store) => {
             if (sessionContextMode) sessionContextMode.value = 'split';
             if (sessionContextOptimizeBackup) sessionContextOptimizeBackup.value = '';
             if (sessionContextUndoVisible) sessionContextUndoVisible.value = false;
+            if (sessionContextUserEdited) sessionContextUserEdited.value = false;
+            if (sessionContextRefreshConfirmUntil) sessionContextRefreshConfirmUntil.value = 0;
+            if (sessionContextRefreshStatus) sessionContextRefreshStatus.value = '';
+            if (sessionContextOptimizeStatus) sessionContextOptimizeStatus.value = '';
+            if (sessionContextSaveStatus) sessionContextSaveStatus.value = '';
+            if (sessionContextTranslating) sessionContextTranslating.value = '';
+            if (sessionContextOptimizing) sessionContextOptimizing.value = false;
+            if (sessionContextSaving) sessionContextSaving.value = false;
 
             const key = selectedKey?.value;
             let staticFile = null;
@@ -3562,13 +3700,38 @@ export const useMethods = (store) => {
             }
             if (sessionContextEditorVisible) sessionContextEditorVisible.value = true;
             ensureSessionContextScrollSync();
+            try {
+                if (_sessionContextKeydownHandler) {
+                    document.removeEventListener('keydown', _sessionContextKeydownHandler, true);
+                    _sessionContextKeydownHandler = null;
+                }
+                _sessionContextKeydownHandler = (e) => {
+                    try {
+                        if (!sessionContextEditorVisible?.value) return;
+                        if (!e) return;
+                        if (e.key === 'Escape') {
+                            e.preventDefault();
+                            _closeSessionContextEditorInternal();
+                            return;
+                        }
+                        const isSave = (e.key === 's' || e.key === 'S') && (e.ctrlKey || e.metaKey);
+                        if (isSave) {
+                            e.preventDefault();
+                            if (typeof window.aicrApp?.saveSessionContext === 'function') {
+                                window.aicrApp.saveSessionContext();
+                            }
+                        }
+                    } catch (_) { }
+                };
+                document.addEventListener('keydown', _sessionContextKeydownHandler, true);
+            } catch (_) { }
         },
 
         openSessionFaq: async () => {
             if (sessionFaqVisible) sessionFaqVisible.value = true;
             if (sessionFaqSearchKeyword) sessionFaqSearchKeyword.value = '';
             if (sessionSettingsVisible) sessionSettingsVisible.value = false;
-            if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
+            _closeSessionContextEditorInternal();
             try {
                 _sessionFaqLastActiveElement = document.activeElement || null;
             } catch (_) {
@@ -3599,7 +3762,7 @@ export const useMethods = (store) => {
 
         openSessionSettings: () => {
             if (sessionFaqVisible) sessionFaqVisible.value = false;
-            if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
+            _closeSessionContextEditorInternal();
             if (sessionBotModelDraft) sessionBotModelDraft.value = String(sessionBotModel?.value || '').trim();
             if (sessionBotSystemPromptDraft) sessionBotSystemPromptDraft.value = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim();
             if (sessionSettingsVisible) sessionSettingsVisible.value = true;
@@ -3607,7 +3770,7 @@ export const useMethods = (store) => {
 
         openWeChatSettings: () => {
             if (sessionFaqVisible) sessionFaqVisible.value = false;
-            if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
+            _closeSessionContextEditorInternal();
             const src = Array.isArray(weChatRobots?.value) ? weChatRobots.value : [];
             if (weChatRobotsDraft) weChatRobotsDraft.value = src.map(r => ({ ...r }));
             if (weChatSettingsVisible) weChatSettingsVisible.value = true;
@@ -3830,10 +3993,7 @@ export const useMethods = (store) => {
         },
 
         closeSessionContextEditor: () => {
-            if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
-            if (sessionContextUndoVisible) sessionContextUndoVisible.value = false;
-            if (sessionContextOptimizeBackup) sessionContextOptimizeBackup.value = '';
-            cleanupSessionContextScrollSync();
+            _closeSessionContextEditorInternal();
         },
 
         setSessionContextMode: (mode) => {
@@ -3846,6 +4006,18 @@ export const useMethods = (store) => {
         setSessionContextDraft: (v) => {
             if (!sessionContextDraft) return;
             sessionContextDraft.value = String(v ?? '');
+            if (sessionContextUserEdited) sessionContextUserEdited.value = true;
+        },
+
+        isSessionContextActionBusy: () => {
+            try {
+                const optimizing = !!sessionContextOptimizing?.value;
+                const saving = !!sessionContextSaving?.value;
+                const translating = !!String(sessionContextTranslating?.value || '').trim();
+                return optimizing || saving || translating;
+            } catch (_) {
+                return false;
+            }
         },
 
         copySessionContextDraft: async () => {
@@ -3870,24 +4042,114 @@ export const useMethods = (store) => {
             }, '复制页面上下文');
         },
 
+        sessionContextOptimizeButtonLabel: () => {
+            try {
+                if (sessionContextOptimizing?.value) return '⏳';
+                const status = String(sessionContextOptimizeStatus?.value || '');
+                if (status === 'success') return '✅';
+                if (status === 'error') return '✕';
+                return '✨';
+            } catch (_) {
+                return '✨';
+            }
+        },
+
+        sessionContextOptimizeButtonTitle: () => {
+            return '智能优化上下文内容';
+        },
+
         optimizeSessionContextDraft: async () => {
             return safeExecute(async () => {
                 if (!sessionContextDraft) return;
                 const raw = String(sessionContextDraft.value ?? '');
                 if (!raw.trim()) return;
+                if (sessionContextOptimizing?.value) return;
 
                 if (sessionContextOptimizeBackup) sessionContextOptimizeBackup.value = raw;
                 if (sessionContextUndoVisible) sessionContextUndoVisible.value = true;
 
-                const normalized = raw
-                    .replace(/\r\n/g, '\n')
-                    .replace(/[ \t]+\n/g, '\n')
-                    .replace(/\n{3,}/g, '\n\n')
-                    .trim();
+                if (sessionContextOptimizing) sessionContextOptimizing.value = true;
+                if (sessionContextOptimizeStatus) sessionContextOptimizeStatus.value = '';
+                _sessionContextSetStatus(sessionContextOptimizeStatus, 'loading');
 
-                sessionContextDraft.value = normalized;
-                if (window.showSuccess) window.showSuccess('已优化');
+                try {
+                    const systemPrompt = `你是一个专业的“页面上下文清理与排版”专家。
+你的任务不是总结或改写，而是：在不新增信息、不遗漏关键信息的前提下，把页面渲染后的上下文内容清理干净并排版成更易读的 Markdown。
+必须遵守：
+1. 不总结、不提炼、不下结论，不添加原文没有的新信息
+2. 尽量保持原文的信息顺序与层级，只做清理与格式化
+3. 删除与正文无关的内容：广告/赞助、导航菜单、推荐/相关阅读、评论区、页脚版权、Cookie/订阅/登录提示、分享按钮文案等
+4. 保留代码块、表格、列表、链接文字等结构；必要时仅做轻量的结构化（如把连续短句整理成列表）
+5. 输出必须是有效的 Markdown，且只输出 Markdown 正文，不要任何解释`;
+
+                    const cleaned = await _sessionContextChatOnce({ system: systemPrompt, user: raw });
+                    if (!cleaned.trim()) throw new Error('未获取到优化结果');
+                    sessionContextDraft.value = cleaned;
+                    if (sessionContextUserEdited) sessionContextUserEdited.value = true;
+                    _sessionContextSetStatus(sessionContextOptimizeStatus, 'success', 2000);
+                    if (window.showSuccess) window.showSuccess('已优化');
+                } catch (e) {
+                    _sessionContextSetStatus(sessionContextOptimizeStatus, 'error', 2000);
+                    throw e;
+                } finally {
+                    if (sessionContextOptimizing) {
+                        const t = setTimeout(() => {
+                            try { sessionContextOptimizing.value = false; } catch (_) { }
+                        }, 2000);
+                        _sessionContextTimeouts.add(t);
+                    }
+                }
             }, '智能优化页面上下文');
+        },
+
+        sessionContextTranslateButtonLabel: (target) => {
+            try {
+                const t = String(target || '').toLowerCase();
+                if (String(sessionContextTranslating?.value || '').toLowerCase() === t) return '⏳';
+                return t === 'en' ? '🇺🇸' : '🇨🇳';
+            } catch (_) {
+                return String(target || '').toLowerCase() === 'en' ? '🇺🇸' : '🇨🇳';
+            }
+        },
+
+        translateSessionContextDraft: async (target = 'zh') => {
+            return safeExecute(async () => {
+                if (!sessionContextDraft) return;
+                const raw = String(sessionContextDraft.value ?? '');
+                if (!raw.trim()) return;
+                const t = String(target || '').toLowerCase() === 'en' ? 'en' : 'zh';
+                if (String(sessionContextTranslating?.value || '').trim()) return;
+                if (sessionContextTranslating) sessionContextTranslating.value = t;
+                try {
+                    const systemPrompt = '你是一个专业翻译。只输出翻译后的正文，不要解释。保留 Markdown 结构（标题/列表/表格/代码块/链接）。不要改写，不要总结。';
+                    const userPrompt = t === 'en'
+                        ? `把下面的 Markdown 内容翻译成英文：\n\n${raw}`
+                        : `把下面的 Markdown 内容翻译成中文：\n\n${raw}`;
+                    const translated = await _sessionContextChatOnce({ system: systemPrompt, user: userPrompt });
+                    if (!translated.trim()) throw new Error('未获取到翻译结果');
+                    sessionContextDraft.value = translated;
+                    if (sessionContextUserEdited) sessionContextUserEdited.value = true;
+                    if (window.showSuccess) window.showSuccess('已翻译');
+                } finally {
+                    if (sessionContextTranslating) sessionContextTranslating.value = '';
+                }
+            }, '翻译页面上下文');
+        },
+
+        sessionContextSaveButtonLabel: () => {
+            try {
+                if (sessionContextSaving?.value) return '⏳';
+                const status = String(sessionContextSaveStatus?.value || '');
+                if (status === 'success') return '✅';
+                if (status === 'error') return '✕';
+                return '💾';
+            } catch (_) {
+                return '💾';
+            }
+        },
+
+        sessionContextSaveButtonTitle: () => {
+            return '保存修改 (Ctrl+S / Cmd+S)';
         },
 
         undoOptimizeSessionContextDraft: async () => {
@@ -3903,52 +4165,94 @@ export const useMethods = (store) => {
 
         saveSessionContext: async () => {
             return safeExecute(async () => {
-                const content = String(sessionContextDraft?.value ?? '');
-                const key = selectedKey?.value;
+                if (sessionContextSaving?.value) return;
+                if (sessionContextSaving) sessionContextSaving.value = true;
+                if (sessionContextSaveStatus) sessionContextSaveStatus.value = '';
+                _sessionContextSetStatus(sessionContextSaveStatus, 'loading');
 
-                const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL))
-                    ? String(window.API_URL).replace(/\/+$/, '')
-                    : '';
+                try {
+                    const content = String(sessionContextDraft?.value ?? '');
+                    const key = selectedKey?.value;
 
-                if (apiBase && key) {
-                    const file = Array.isArray(files?.value)
-                        ? files.value.find(f => f && (f.key === key || f.path === key))
-                        : null;
-                    const path = String(file?.path || file?.key || key || '').replace(/\\/g, '/').replace(/^\/+/, '');
-                    const cleanPath = path.startsWith('static/') ? path.slice(7) : path;
+                    const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL))
+                        ? String(window.API_URL).replace(/\/+$/, '')
+                        : '';
 
-                    const res = await fetch(`${apiBase}/write-file`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ target_file: cleanPath, content, is_base64: false })
-                    });
-                    if (!res.ok) {
-                        const errorData = await res.json().catch(() => ({}));
-                        throw new Error(errorData.message || `保存失败: ${res.status}`);
-                    }
-                    const result = await res.json().catch(() => ({}));
-                    if (result && result.code != null && result.code !== 0 && result.code !== 200) {
-                        throw new Error(result.message || '保存失败');
-                    }
+                    if (apiBase && key) {
+                        const file = Array.isArray(files?.value)
+                            ? files.value.find(f => f && (f.key === key || f.path === key))
+                            : null;
+                        const path = String(file?.path || file?.key || key || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                        const cleanPath = path.startsWith('static/') ? path.slice(7) : path;
 
-                    if (Array.isArray(files?.value)) {
-                        const idx = files.value.findIndex(f => f && (f.key === key || f.path === key));
-                        if (idx >= 0) {
-                            files.value[idx] = { ...files.value[idx], content, __fromStatic: true };
+                        const res = await fetch(`${apiBase}/write-file`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ target_file: cleanPath, content, is_base64: false })
+                        });
+                        if (!res.ok) {
+                            const errorData = await res.json().catch(() => ({}));
+                            throw new Error(errorData.message || `保存失败: ${res.status}`);
+                        }
+                        const result = await res.json().catch(() => ({}));
+                        if (result && result.code != null && result.code !== 0 && result.code !== 200) {
+                            throw new Error(result.message || '保存失败');
+                        }
+
+                        if (Array.isArray(files?.value)) {
+                            const idx = files.value.findIndex(f => f && (f.key === key || f.path === key));
+                            if (idx >= 0) {
+                                files.value[idx] = { ...files.value[idx], content, __fromStatic: true };
+                            }
                         }
                     }
-                }
 
-                if (activeSession?.value) {
-                    const prev = activeSession.value;
-                    activeSession.value = { ...prev, pageContent: content, updatedAt: Date.now(), lastAccessTime: Date.now() };
-                }
+                    if (activeSession?.value) {
+                        const prev = activeSession.value;
+                        activeSession.value = { ...prev, pageContent: content, updatedAt: Date.now(), lastAccessTime: Date.now() };
+                    }
 
-                if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
-                if (sessionContextUndoVisible) sessionContextUndoVisible.value = false;
-                if (sessionContextOptimizeBackup) sessionContextOptimizeBackup.value = '';
-                if (window.showSuccess) window.showSuccess('已保存');
+                    if (sessionContextUserEdited) sessionContextUserEdited.value = false;
+                    _sessionContextSetStatus(sessionContextSaveStatus, 'success', 2000);
+                    if (window.showSuccess) window.showSuccess('已保存');
+                } catch (e) {
+                    _sessionContextSetStatus(sessionContextSaveStatus, 'error', 2000);
+                    throw e;
+                } finally {
+                    if (sessionContextSaving) {
+                        const t = setTimeout(() => {
+                            try { sessionContextSaving.value = false; } catch (_) { }
+                        }, 2000);
+                        _sessionContextTimeouts.add(t);
+                    }
+                }
             }, '保存页面上下文');
+        },
+
+        downloadSessionContextDraft: async () => {
+            return safeExecute(async () => {
+                const content = String(sessionContextDraft?.value ?? '');
+                if (!content.trim()) return;
+                const key = selectedKey?.value;
+                const file = Array.isArray(files?.value)
+                    ? files.value.find(f => f && (f.key === key || f.path === key))
+                    : null;
+                const baseName = String(file?.name || file?.path || file?.key || key || 'page_context').split('/').pop() || 'page_context';
+                const name = baseName.toLowerCase().endsWith('.md') ? baseName : `${baseName}.md`;
+                const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                try {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                } finally {
+                    URL.revokeObjectURL(url);
+                }
+                if (window.showSuccess) window.showSuccess('已下载');
+            }, '下载页面上下文');
         },
 
         onSessionChatKeydown: (e) => {

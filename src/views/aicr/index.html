@@ -335,30 +335,39 @@
                                         <button type="button" class="aicr-session-context-mode-btn"
                                             :class="{ active: sessionContextMode === 'split' }"
                                             @click="setSessionContextMode('split')" role="tab"
-                                            :aria-selected="sessionContextMode === 'split'" aria-label="并排">并排</button>
+                                            :aria-selected="sessionContextMode === 'split'" aria-label="并排模式" title="并排模式">▦</button>
                                         <button type="button" class="aicr-session-context-mode-btn"
                                             :class="{ active: sessionContextMode === 'edit' }"
                                             @click="setSessionContextMode('edit')" role="tab"
-                                            :aria-selected="sessionContextMode === 'edit'" aria-label="仅编辑">仅编辑</button>
+                                            :aria-selected="sessionContextMode === 'edit'" aria-label="仅编辑模式" title="仅编辑模式">✏️</button>
                                         <button type="button" class="aicr-session-context-mode-btn"
                                             :class="{ active: sessionContextMode === 'preview' }"
                                             @click="setSessionContextMode('preview')" role="tab"
                                             :aria-selected="sessionContextMode === 'preview'"
-                                            aria-label="仅预览">仅预览</button>
+                                            aria-label="仅预览模式" title="仅预览模式">👁️</button>
                                     </div>
                                     <button type="button" class="aicr-session-context-toolbar-btn"
-                                        @click="copySessionContextDraft" title="复制内容" aria-label="复制内容">复制</button>
+                                        :disabled="isSessionContextActionBusy()" @click="optimizeSessionContextDraft"
+                                        :title="sessionContextOptimizeButtonTitle()" aria-label="智能优化上下文内容">{{
+                                        sessionContextOptimizeButtonLabel() }}</button>
                                     <button type="button" class="aicr-session-context-toolbar-btn"
-                                        @click="optimizeSessionContextDraft" title="智能优化上下文内容" aria-label="智能优化">✨
-                                        智能优化</button>
-                                    <button v-show="sessionContextUndoVisible" type="button"
-                                        class="aicr-session-context-toolbar-btn"
-                                        @click="undoOptimizeSessionContextDraft" title="撤销优化" aria-label="撤销优化">↶
-                                        撤销</button>
-                                    <button type="button" class="aicr-session-context-toolbar-btn primary"
-                                        @click="saveSessionContext" title="保存修改" aria-label="保存修改">保存</button>
+                                        :disabled="isSessionContextActionBusy()" @click="translateSessionContextDraft('zh')"
+                                        title="翻译成中文" aria-label="翻译成中文">{{ sessionContextTranslateButtonLabel('zh') }}</button>
+                                    <button type="button" class="aicr-session-context-toolbar-btn"
+                                        :disabled="isSessionContextActionBusy()" @click="translateSessionContextDraft('en')"
+                                        title="翻译成英文" aria-label="翻译成英文">{{ sessionContextTranslateButtonLabel('en') }}</button>
+                                    <button type="button" class="aicr-session-context-toolbar-btn"
+                                        :disabled="isSessionContextActionBusy()" @click="copySessionContextDraft" title="复制内容"
+                                        aria-label="复制内容">📋</button>
+                                    <button type="button" class="aicr-session-context-toolbar-btn"
+                                        :disabled="isSessionContextActionBusy()" @click="saveSessionContext"
+                                        :title="sessionContextSaveButtonTitle()" aria-label="保存修改">{{
+                                        sessionContextSaveButtonLabel() }}</button>
+                                    <button type="button" class="aicr-session-context-toolbar-btn"
+                                        :disabled="isSessionContextActionBusy()" @click="downloadSessionContextDraft"
+                                        title="下载当前上下文为 Markdown (.md)" aria-label="下载当前上下文为 Markdown (.md)">⬇️</button>
                                     <button type="button" class="aicr-session-context-modal-close"
-                                        @click="closeSessionContextEditor" aria-label="关闭">✕</button>
+                                        @click="closeSessionContextEditor" title="关闭 (Esc)" aria-label="关闭">✕</button>
                                 </div>
                             </div>
                             <div class="aicr-session-context-modal-content">
