@@ -64,17 +64,6 @@
           v-if="!isEditingFile"
           type="button"
           class="action-button"
-          @click="openFileInNewTab"
-          :disabled="!file"
-          title="新标签打开"
-          aria-label="新标签打开"
-        >
-          <i class="fas fa-external-link-alt" aria-hidden="true"></i>
-        </button>
-        <button
-          v-if="!isEditingFile"
-          type="button"
-          class="action-button"
           @click="copyEntireFile"
           :disabled="!file"
           title="复制代码"
