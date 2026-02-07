@@ -15,7 +15,7 @@ import '/src/utils/log.js';
 // 导入请求工具，确保 window.getRequest、window.postRequest 等函数可用
 import '/src/services/helper/requestHelper.js';
 // 导入认证工具
-import { getAuthHeaders } from '/src/services/helper/authUtils.js';
+import { getAuthHeaders, getStoredModel } from '/src/services/helper/authUtils.js';
 // 导入认证错误处理器
 import { handle401Error, isAuthError } from '/src/services/helper/authErrorHandler.js';
 
@@ -306,7 +306,11 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
     const isNewSchema = !isServicePayload && data && typeof data === 'object' && 'type' in data;
     const payload = (() => {
       if (isServicePayload) {
-        return data;
+        const clone = { ...data };
+        if (clone && typeof clone.parameters === 'object' && clone.parameters !== null && !Array.isArray(clone.parameters)) {
+          clone.parameters = { ...clone.parameters };
+        }
+        return clone;
       }
       if (isNewSchema) {
         // 新协议：若携带 input，则转换为 fromUser 字符串，并删除 input
@@ -326,7 +330,8 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
         fromSystem: data.fromSystem,
         fromUser: String(data.fromUser ?? '')
       };
-      if (data.model) body.model = data.model;
+      const explicitModel = String(data.model || '').trim();
+      body.model = explicitModel || getStoredModel();
       if (data.images && Array.isArray(data.images) && data.images.length > 0) {
         body.images = data.images;
       }
@@ -337,6 +342,23 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
     // 移除不再支持的字段
     if (payload && Object.prototype.hasOwnProperty.call(payload, 'type')) {
       try { delete payload.type; } catch (_) {}
+    }
+
+    if (isServicePayload) {
+      try {
+        const moduleName = String(payload.module_name || '');
+        const methodName = String(payload.method_name || '');
+        const looksLikeAI = moduleName.includes('services.ai') || moduleName.includes('chat_service') || methodName === 'chat';
+        if (looksLikeAI && payload && typeof payload.parameters === 'object' && payload.parameters !== null && !Array.isArray(payload.parameters)) {
+          const current = String(payload.parameters.model || '').trim();
+          if (!current) payload.parameters.model = getStoredModel();
+        }
+      } catch (_) {}
+    } else if (!isNewSchema) {
+      try {
+        const current = String(payload.model || '').trim();
+        if (!current) payload.model = getStoredModel();
+      } catch (_) {}
     }
 
     // 获取认证头

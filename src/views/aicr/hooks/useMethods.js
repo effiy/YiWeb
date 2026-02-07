@@ -8,7 +8,7 @@
  */
 import { safeExecute, createError, ErrorTypes, showSuccessMessage } from '/src/utils/error.js';
 import { getData, postData, deleteData, batchOperations } from '/src/services/index.js';
-import { getStoredToken, saveToken, clearToken as clearStoredToken } from '/src/services/helper/authUtils.js';
+import { getStoredToken, saveToken, clearToken as clearStoredToken, openAuth as openAuthSettings } from '/src/services/helper/authUtils.js';
 import {
     normalizeFilePath,
     normalizeFileObject,
@@ -2123,6 +2123,10 @@ export const useMethods = (store) => {
 
     const openAuth = (event) => {
         try {
+            openAuthSettings(event);
+            return;
+        } catch (_) { }
+        try {
             const current = getStoredToken();
             const dialogInfo = ensureAuthDialog();
             if (dialogInfo && dialogInfo.dialog && typeof dialogInfo.dialog.showModal === 'function') {
@@ -2162,7 +2166,7 @@ export const useMethods = (store) => {
             }
             saveToken(next);
             notifyAuth('success', 'Token 已保存');
-        } catch (e) {
+        } catch (_) {
             notifyAuth('error', 'API 鉴权失败，请重试');
         }
     };

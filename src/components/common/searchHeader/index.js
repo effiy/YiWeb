@@ -2,6 +2,7 @@
 // 作者：liangliang
 
 import { defineComponent } from '/src/utils/componentLoader.js';
+import { openAuth as openAuthSettings } from '/src/services/helper/authUtils.js';
 
 (async function initComponent() {
     try {
@@ -258,6 +259,18 @@ import { defineComponent } from '/src/utils/componentLoader.js';
                     } else {
                         window.location.href = url;
                     }
+                },
+
+                openAuth(event) {
+                    try {
+                        openAuthSettings(event);
+                        return;
+                    } catch (_) { }
+                    try {
+                        if (typeof window.openAuth === 'function') {
+                            window.openAuth(event);
+                        }
+                    } catch (_) { }
                 }
             }
         });
