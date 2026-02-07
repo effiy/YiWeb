@@ -5,6 +5,7 @@ import { defineComponent } from '/src/utils/componentLoader.js';
 import { getData } from '/src/services/index.js';
 import { formatDate } from '/src/utils/date.js';
 import { safeExecute } from '/src/utils/error.js';
+import { renderMarkdownHtml } from '/src/utils/markdownRenderer.js';
 // 导入日志工具，确保 window.logError 等函数可用
 import '/src/utils/log.js';
 
@@ -399,72 +400,12 @@ const componentOptions = {
                             processedText = text;
                         }
                     }
-                    
-                    let html = processedText;
 
-                    const escapeHtml = (s) => s
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;');
-                    html = escapeHtml(html);
-
-                    // 如果是JSON内容，包装在代码块中
                     if (isJsonContent) {
-                        html = `<pre class="md-code json-content"><code>${html}</code></pre>`;
+                        processedText = `\`\`\`json\n${processedText}\n\`\`\``;
                     }
 
-                    // 代码块 ``` - 支持语言标识
-                    html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, (m, lang, code) => {
-                        const language = lang || 'text';
-                        return `<pre class="md-code"><code class="language-${language}">${code}</code></pre>`;
-                    });
-
-                    // 行内代码 `code`
-                    html = html.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
-
-                    // 图片 ![alt](url)
-                    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, url) => {
-                        const safeUrl = /^https?:\/\//i.test(url) ? url : '';
-                        const altText = alt || '';
-                        return safeUrl ? `<img src="${safeUrl}" alt="${altText}" class="md-image"/>` : m;
-                    });
-
-                    // 标题 # ## ### #### ##### ######
-                    html = html.replace(/^#{1}\s+(.+)$/gm, '<h1>$1<\/h1>')
-                               .replace(/^#{2}\s+(.+)$/gm, '<h2>$1<\/h2>')
-                               .replace(/^#{3}\s+(.+)$/gm, '<h3>$1<\/h3>')
-                               .replace(/^#{4}\s+(.+)$/gm, '<h4>$1<\/h4>')
-                               .replace(/^#{5}\s+(.+)$/gm, '<h5>$1<\/h5>')
-                               .replace(/^#{6}\s+(.+)$/gm, '<h6>$1<\/h6>');
-
-                    // 粗体/斜体
-                    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1<\/strong>');
-                    html = html.replace(/\*([^*]+)\*/g, '<em>$1<\/em>');
-
-                    // 链接 [text](url)
-                    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer noopener">$1<\/a>');
-
-                    // 有序列表
-                    html = html.replace(/^(\d+)\.\s+(.+)$/gm, '<li>$2<\/li>');
-                    html = html.replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ol>${m.replace(/\n/g, '')}<\/ol>`);
-                    // 无序列表
-                    html = html.replace(/^[-*+]\s+(.+)$/gm, '<li>$1<\/li>');
-                    html = html.replace(/(<li>[^<]*<\/li>\n?)+/g, (m) => `<ul>${m.replace(/\n/g, '')}<\/ul>`);
-
-                    // 段落/换行
-                    const blockTags = ['h1','h2','h3','h4','h5','h6','pre','ul','ol','li','blockquote'];
-                    html = html.replace(/\n{3,}/g, '\n\n');
-                    html = html.split(/\n{2,}/).map(block => {
-                        const trimmed = block.trim();
-                        if (!trimmed) return '';
-                        const isBlock = blockTags.some(tag => new RegExp(`^<${tag}[\\s>]`, 'i').test(trimmed));
-                        return isBlock ? trimmed : `<p>${trimmed.replace(/\n/g, '<br/>')}<\/p>`;
-                    }).join('');
-
-                    // 清理空列表
-                    html = html.replace(/<(ul|ol)>\s*<\/\1>/g, '');
-
-                    return html;
+                    return renderMarkdownHtml(processedText, { breaks: true, gfm: true });
                 }, 'Markdown渲染(ProjectFilesList)');
             },
             

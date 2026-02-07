@@ -17,6 +17,7 @@ import {
 } from '/src/views/aicr/utils/fileFieldNormalizer.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
 import { getFileDeleteService, buildFileTreeFromSessions } from './store.js';
+import { renderMarkdownHtml, renderStreamingHtml } from '/src/utils/markdownRenderer.js';
 
 export const useMethods = (store) => {
     const {
@@ -102,8 +103,6 @@ export const useMethods = (store) => {
     let _sessionChatIsComposing = false;
     let _sessionChatCompositionEndTime = 0;
     const _SESSION_CHAT_COMPOSITION_END_DELAY = 100;
-    let _sessionMarkedConfigured = false;
-    let _sessionMarkedRenderer = null;
     let _sessionFaqEscHandler = null;
     let _sessionFaqLastActiveElement = null;
     const { computed } = Vue;
@@ -2980,102 +2979,11 @@ export const useMethods = (store) => {
         },
 
         renderSessionChatMarkdown: (text) => {
-            try {
-                const raw = text == null ? '' : String(text);
-                if (!raw) return '';
-                if (typeof window.marked === 'undefined') {
-                    return raw
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;')
-                        .replace(/\n/g, '<br/>');
-                }
-                if (!_sessionMarkedConfigured) {
-                    try {
-                        const renderer = new window.marked.Renderer();
-                        const originalCodeRenderer = renderer.code.bind(renderer);
-
-                        renderer.html = (html) => {
-                            return _escapeHtml(html);
-                        };
-
-                        renderer.link = (href, title, text) => {
-                            const safeHref = _sanitizeUrl(href);
-                            const safeText = _escapeHtml(text == null ? '' : String(text));
-                            if (!safeHref) return safeText;
-                            const safeTitle = title == null ? '' : String(title);
-                            const titleAttr = safeTitle ? ` title="${_escapeHtml(safeTitle)}"` : '';
-                            return `<a href="${_escapeHtml(safeHref)}"${titleAttr} target="_blank" rel="noopener noreferrer">${safeText}</a>`;
-                        };
-
-                        renderer.image = (href, title, text) => {
-                            const safeHref = _sanitizeUrl(href);
-                            const alt = _escapeHtml(text == null ? '' : String(text));
-                            if (!safeHref) return alt;
-                            const safeTitle = title == null ? '' : String(title);
-                            const titleAttr = safeTitle ? ` title="${_escapeHtml(safeTitle)}"` : '';
-                            return `<img src="${_escapeHtml(safeHref)}" alt="${alt}" loading="lazy"${titleAttr} />`;
-                        };
-
-                        renderer.code = (code, language, isEscaped) => {
-                            const lang = String(language || '').trim().toLowerCase();
-                            const src = String(code || '');
-                            if (lang === 'mermaid') {
-                                const diagramId = `aicr-chat-mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-                                const diagramCode = String(src || '').trim();
-                                if (window.mermaidRenderer && typeof window.mermaidRenderer.createDiagramContainer === 'function' && typeof window.mermaidRenderer.renderDiagram === 'function') {
-                                    const container = window.mermaidRenderer.createDiagramContainer(diagramId, diagramCode, {
-                                        showHeader: false,
-                                        showActions: true,
-                                        headerLabel: 'MERMAID 图表',
-                                        sourceLine: null
-                                    });
-                                    setTimeout(() => {
-                                        try {
-                                            window.mermaidRenderer.renderDiagram(diagramId, diagramCode, { showLoading: false });
-                                        } catch (_) { }
-                                    }, 0);
-                                    return container;
-                                }
-                                return `<pre class="md-code"><code class="language-mermaid">${_escapeHtml(diagramCode)}</code></pre>`;
-                            }
-
-                            return originalCodeRenderer(src, language, isEscaped);
-                        };
-
-                        _sessionMarkedRenderer = renderer;
-                        _sessionMarkedConfigured = true;
-                    } catch (_) {
-                        _sessionMarkedRenderer = null;
-                        _sessionMarkedConfigured = true;
-                    }
-                }
-
-                try {
-                    if (typeof window.marked.parse === 'function') {
-                        return window.marked.parse(raw, {
-                            renderer: _sessionMarkedRenderer || undefined,
-                            breaks: true,
-                            gfm: true
-                        });
-                    }
-                    return window.marked(raw);
-                } catch (_) {
-                    return _escapeHtml(raw).replace(/\n/g, '<br/>');
-                }
-            } catch (_) {
-                return '';
-            }
+            return renderMarkdownHtml(text, { breaks: true, gfm: true });
         },
 
         renderSessionChatStreamingHtml: (text) => {
-            try {
-                const raw = text == null ? '' : String(text);
-                if (!raw) return '';
-                return _escapeHtml(raw).replace(/\n/g, '<br/>');
-            } catch (_) {
-                return '';
-            }
+            return renderStreamingHtml(text);
         },
 
         // 格式化日期为 YYYY/MM/DD HH:mm
@@ -3164,23 +3072,6 @@ export const useMethods = (store) => {
                 // 页面描述（如果有）
                 if (hasDescription) {
                     const descId = `welcome-desc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                    // 使用 renderSessionChatMarkdown 方法（需要在返回对象中定义后才能使用）
-                    const renderMarkdown = (text) => {
-                        try {
-                            const raw = text == null ? '' : String(text);
-                            if (!raw) return '';
-                            if (typeof window.marked === 'undefined') {
-                                return raw
-                                    .replace(/&/g, '&amp;')
-                                    .replace(/</g, '&lt;')
-                                    .replace(/>/g, '&gt;')
-                                    .replace(/\n/g, '<br/>');
-                            }
-                            return window.marked.parse(raw, { breaks: true, gfm: true });
-                        } catch (_) {
-                            return _escapeHtml(raw).replace(/\n/g, '<br/>');
-                        }
-                    };
                     pageInfoHtml += `
                         <div class="welcome-card-section welcome-card-description">
                             <div class="welcome-card-section-header">
@@ -3189,7 +3080,7 @@ export const useMethods = (store) => {
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
-                            <div class="markdown-content" id="${descId}">${renderMarkdown(pageInfo.description)}</div>
+                            <div class="markdown-content md-preview-body" id="${descId}">${renderMarkdownHtml(pageInfo.description, { breaks: true, gfm: true })}</div>
                         </div>
                     `;
                 }

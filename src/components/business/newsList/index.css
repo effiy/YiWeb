@@ -234,62 +234,6 @@
     pointer-events: none;
 }
 
-/* Markdown 样式 */
-.markdown-body p {
-    margin-bottom: 1em;
-}
-
-.markdown-body p:last-child {
-    margin-bottom: 0;
-}
-
-.markdown-body a {
-    color: var(--accent);
-    text-decoration: none;
-}
-
-.markdown-body a:hover {
-    text-decoration: underline;
-}
-
-.markdown-body ul, .markdown-body ol {
-    padding-left: 1.5em;
-    margin-bottom: 1em;
-}
-
-.markdown-body code {
-    background: var(--bg-surface);
-    padding: 2px 4px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 0.9em;
-}
-
-.markdown-body pre {
-    background: var(--bg-surface);
-    padding: 12px;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin-bottom: 1em;
-}
-
-.markdown-body pre code {
-    background: transparent;
-    padding: 0;
-}
-
-.markdown-body blockquote {
-    border-left: 4px solid var(--border-secondary);
-    margin: 0 0 1em 0;
-    padding-left: 1em;
-    color: var(--text-muted);
-}
-
-.markdown-body img {
-    max-width: 100%;
-    border-radius: 8px;
-}
-
 /* 新闻底部信息 */
 .news-footer {
     display: flex;

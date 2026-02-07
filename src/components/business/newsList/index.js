@@ -7,6 +7,7 @@ import { safeExecute, createError, ErrorTypes } from '/src/utils/error.js';
 import { extractDomainCategory } from '/src/utils/domain.js';
 import { categorizeNewsItem } from '/src/views/news/hooks/store.js';
 import { defineComponent } from '/src/utils/componentLoader.js';
+import { renderMarkdownHtml } from '/src/utils/markdownRenderer.js';
 
 // 创建组件定义
 const componentOptions = {
@@ -141,11 +142,7 @@ const componentOptions = {
             // 渲染 Markdown 内容
             renderMarkdown(content) {
                 return safeExecute(() => {
-                    if (!content) return '';
-                    if (typeof marked !== 'undefined' && marked.parse) {
-                        return marked.parse(content);
-                    }
-                    return content;
+                    return renderMarkdownHtml(content, { breaks: true, gfm: true });
                 }, 'Markdown渲染');
             },
             
@@ -270,5 +267,4 @@ defineComponent(componentOptions).then(component => {
 }).catch(error => {
     console.error('NewsList 组件初始化失败:', error);
 });
-
 
