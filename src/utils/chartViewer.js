@@ -139,13 +139,14 @@ class ChartViewer {
      */
     downloadSVGFile(filename, svgElement) {
         try {
+            const safeFileName = String(filename || 'chart').replace(/\s+/g, '_');
             const svgData = new XMLSerializer().serializeToString(svgElement);
             const blob = new Blob([svgData], { type: 'image/svg+xml' });
             const url = URL.createObjectURL(blob);
             
             const link = document.createElement('a');
             link.href = url;
-            link.download = `${filename}.svg`;
+            link.download = `${safeFileName}.svg`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -163,6 +164,7 @@ class ChartViewer {
      */
     exportSVGToPNG(filename, svgElement) {
         try {
+            const safeFileName = String(filename || 'chart').replace(/\s+/g, '_');
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             const img = new Image();
@@ -180,7 +182,7 @@ class ChartViewer {
                     const pngUrl = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.href = pngUrl;
-                    link.download = `${filename}.png`;
+                    link.download = `${safeFileName}.png`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -203,9 +205,10 @@ class ChartViewer {
      */
     downloadImageFile(imageSrc, filename) {
         try {
+            const safeFileName = String(filename || 'image').replace(/\s+/g, '_');
             const link = document.createElement('a');
             link.href = imageSrc;
-            link.download = filename;
+            link.download = safeFileName;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -221,12 +224,13 @@ class ChartViewer {
      */
     downloadTextFile(content, filename, mimeType) {
         try {
+            const safeFileName = String(filename || 'file').replace(/\s+/g, '_');
             const blob = new Blob([content], { type: mimeType });
             const url = URL.createObjectURL(blob);
             
             const link = document.createElement('a');
             link.href = url;
-            link.download = filename;
+            link.download = safeFileName;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

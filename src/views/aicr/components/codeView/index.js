@@ -479,7 +479,7 @@ const componentOptions = {
         downloadCurrentFile() {
             return safeExecute(() => {
                 if (!this.file) return;
-                const filename = this.displayFileName || 'file.txt';
+                const filename = String(this.displayFileName || 'file.txt').replace(/\s+/g, '_');
                 const blob = new Blob([String(this.rawContent || '')], { type: 'text/plain;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');

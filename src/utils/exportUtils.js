@@ -236,7 +236,7 @@ function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename;
+    a.download = String(filename || '').replace(/\s+/g, '_');
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -297,7 +297,7 @@ function generateOptimizedFileName(baseName, category = '', data = null) {
     // 添加日期时间
     fileName += `_${dateStr}_${timeStr}`;
     
-    return fileName;
+    return String(fileName || '').replace(/\s+/g, '_');
 }
 
 /**
@@ -317,7 +317,7 @@ function generateItemFileName(item, category, index) {
         case '每日清单':
             // 使用时段名称，不添加每日清单前缀
             const timeSlot = item.time || item.name || `时段${index + 1}`;
-            const cleanTimeSlot = timeSlot.replace(/[<>:"/\\|?*]/g, '_');
+            const cleanTimeSlot = timeSlot.replace(/\s+/g, '_').replace(/[<>:"/\\|?*]/g, '_');
             fileName = cleanTimeSlot;
             break;
             
@@ -327,7 +327,7 @@ function generateItemFileName(item, category, index) {
             const fileType = item.fileType;
             // 移除原有的文件扩展名，避免重复
             const baseFileName = fileName_part.replace(/\.[^/.]+$/, '');
-            const cleanFileName = baseFileName.replace(/[<>:"/\\|?*]/g, '_');
+            const cleanFileName = baseFileName.replace(/\s+/g, '_').replace(/[<>:"/\\|?*]/g, '_');
             
             if (fileType && fileType !== 'unknown') {
                 fileName = `${cleanFileName}_${fileType}`;
@@ -340,8 +340,8 @@ function generateItemFileName(item, category, index) {
             // 使用标题和来源，不添加新闻前缀，不添加日期后缀
             const title = item.title || `新闻${index + 1}`;
             const source = item.link ? new URL(item.link).hostname : '未知来源';
-            const cleanTitle = title.substring(0, 30).replace(/[<>:"/\\|?*\n\r]/g, '_');
-            const cleanSource = source.replace(/[<>:"/\\|?*]/g, '_');
+            const cleanTitle = title.substring(0, 30).replace(/\s+/g, '_').replace(/[<>:"/\\|?*\n\r]/g, '_');
+            const cleanSource = source.replace(/\s+/g, '_').replace(/[<>:"/\\|?*]/g, '_');
             fileName = `${cleanTitle}_${cleanSource}`;
             break;
             
@@ -361,7 +361,7 @@ function generateItemFileName(item, category, index) {
         fileName = fileName.substring(0, 97) + '...';
     }
     
-    return fileName;
+    return String(fileName || '').replace(/\s+/g, '_');
 }
 
 /**
@@ -380,7 +380,7 @@ export async function exportCategoryData(data, category, filename = 'export') {
         // 等待JSZip加载完成
         const JSZip = await waitForJSZip();
         const zip = new JSZip();
-        const categoryDir = zip.folder(category);
+        const categoryDir = zip.folder(String(category || '').replace(/\s+/g, '_'));
         
         data.forEach((item, index) => {
             let content = '';
@@ -398,7 +398,7 @@ export async function exportCategoryData(data, category, filename = 'export') {
                     content = JSON.stringify(item, null, 2);
             }
             const fileName = generateItemFileName(item, category, index);
-            categoryDir.file(`${fileName}.md`, content);
+            categoryDir.file(`${String(fileName || '').replace(/\s+/g, '_')}.md`, content);
         });
         
         const zipBlob = await zip.generateAsync({ type: 'blob' });

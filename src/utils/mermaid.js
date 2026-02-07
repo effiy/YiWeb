@@ -544,7 +544,7 @@ window.downloadMermaidSVG = function(diagramId, svgElement) {
         
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${diagramId}.svg`;
+        link.download = `${String(diagramId || 'diagram').replace(/\s+/g, '_')}.svg`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -934,7 +934,7 @@ window.downloadMermaidPNG = function(diagramId, svgElement, retryCount = 0) {
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = `${diagramId}.png`;
+                    link.download = `${String(diagramId || 'diagram').replace(/\s+/g, '_')}.png`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -1480,5 +1480,4 @@ function escapeHtml(str) {
 // 样式管理
 
 console.log('[Mermaid Utils] 工具函数已加载');
-
 

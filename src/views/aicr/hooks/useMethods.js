@@ -4244,7 +4244,7 @@ export const useMethods = (store) => {
                 try {
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = name;
+                    a.download = String(name || '').replace(/\s+/g, '_');
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
