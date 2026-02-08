@@ -339,14 +339,10 @@ const sanitizeMarkdownHtml = (html) => {
 
             const renderMarkdownInCustomTags = (root) => {
                 const selector = [
-                    'steps',
-                    'step',
                     'tabs',
-                    'cardgroup',
                     'card',
                     'tab',
                     'tabitem',
-                    'tip',
                     'note',
                     'info',
                     'warning',
@@ -452,29 +448,27 @@ const sanitizeMarkdownHtml = (html) => {
             };
 
             const handleAdmonitions = () => {
-                const tags = ['tip', 'note', 'info', 'warning', 'danger', 'caution', 'success'];
+                const tags = ['note', 'info', 'warning', 'danger', 'caution', 'success'];
                 const selector = tags.join(',');
                 const nodes = Array.from(rootEl.querySelectorAll(selector));
                 nodes.forEach((el) => {
                     const tagName = String(el?.tagName || '').toLowerCase();
                     const defaultType =
-                        tagName === 'tip'
-                            ? 'tip'
-                            : tagName === 'note'
-                                ? 'note'
-                                : tagName === 'warning'
-                                    ? 'warning'
-                                    : tagName === 'danger'
-                                        ? 'danger'
-                                        : tagName === 'caution'
-                                            ? 'caution'
-                                            : tagName === 'success'
-                                                ? 'success'
-                                                : 'info';
+                        tagName === 'note'
+                            ? 'note'
+                            : tagName === 'warning'
+                                ? 'warning'
+                                : tagName === 'danger'
+                                    ? 'danger'
+                                    : tagName === 'caution'
+                                        ? 'caution'
+                                        : tagName === 'success'
+                                            ? 'success'
+                                            : 'info';
 
                     const rawType = toSafeText(pickAttr(el, ['type', 'kind', 'variant']), 32).toLowerCase();
                     const normalized = rawType || defaultType;
-                    const type = ['info', 'tip', 'note', 'warning', 'danger', 'caution', 'success'].includes(normalized)
+                    const type = ['info', 'note', 'warning', 'danger', 'caution', 'success'].includes(normalized)
                         ? normalized
                         : defaultType;
 
@@ -483,33 +477,12 @@ const sanitizeMarkdownHtml = (html) => {
                     const outer = document.createElement('div');
                     outer.className = `pet-tip pet-tip--${type}`;
 
-                    const header = document.createElement('div');
-                    header.className = 'pet-tip__header';
-
-                    const iconEl = document.createElement('span');
-                    iconEl.className = 'pet-tip__icon';
-                    iconEl.textContent =
-                        type === 'tip'
-                            ? '💡'
-                            : type === 'success'
-                                ? '✅'
-                                : type === 'warning' || type === 'caution'
-                                    ? '⚠️'
-                                    : type === 'danger'
-                                        ? '⛔'
-                                        : type === 'note'
-                                            ? '📝'
-                                            : 'ℹ️';
-                    header.appendChild(iconEl);
-
                     if (title) {
                         const titleEl = document.createElement('div');
                         titleEl.className = 'pet-tip__title';
                         titleEl.textContent = title;
-                        header.appendChild(titleEl);
+                        outer.appendChild(titleEl);
                     }
-
-                    outer.appendChild(header);
 
                     const content = document.createElement('div');
                     content.className = 'pet-tip__content';
@@ -517,111 +490,6 @@ const sanitizeMarkdownHtml = (html) => {
                     outer.appendChild(content);
 
                     replaceWith(el, outer);
-                });
-            };
-
-            const handleSteps = () => {
-                const nodes = Array.from(rootEl.querySelectorAll('steps'));
-                nodes.forEach((stepsEl) => {
-                    const outer = document.createElement('ol');
-                    outer.className = 'pet-steps';
-
-                    const items = Array.from(stepsEl.querySelectorAll('step')).filter((stepEl) => {
-                        if (typeof stepEl?.closest === 'function') return stepEl.closest('steps') === stepsEl;
-                        return true;
-                    });
-
-                    const finalItems = items.length ? items : [stepsEl];
-                    finalItems.forEach((itemEl, idx) => {
-                        const title =
-                            toSafeText(pickAttr(itemEl, ['title', 'label', 'name', 'header']), 120) ||
-                            `Step ${idx + 1}`;
-
-                        const li = document.createElement('li');
-                        li.className = 'pet-step';
-
-                        const header = document.createElement('div');
-                        header.className = 'pet-step__header';
-
-                        const indexEl = document.createElement('div');
-                        indexEl.className = 'pet-step__index';
-                        indexEl.textContent = String(idx + 1);
-                        header.appendChild(indexEl);
-
-                        if (title) {
-                            const titleEl = document.createElement('div');
-                            titleEl.className = 'pet-step__title';
-                            titleEl.textContent = title;
-                            header.appendChild(titleEl);
-                        }
-
-                        const content = document.createElement('div');
-                        content.className = 'pet-step__content';
-                        const sourceEl = itemEl === stepsEl ? stepsEl : itemEl;
-                        moveChildren(sourceEl, content);
-
-                        li.appendChild(header);
-                        li.appendChild(content);
-                        outer.appendChild(li);
-                    });
-
-                    replaceWith(stepsEl, outer);
-                });
-            };
-
-            const handleStandaloneStep = () => {
-                const nodes = Array.from(rootEl.querySelectorAll('step'));
-                nodes.forEach((stepEl, idx) => {
-                    if (typeof stepEl.closest === 'function' && stepEl.closest('steps')) return;
-
-                    const wrapper = stepEl.parentElement;
-                    const wrapperTag = normalizeComponentName(wrapper);
-                    const wrapperIsSimple = wrapper && (wrapperTag === 'p' || wrapperTag === 'div' || wrapperTag === 'span');
-
-                    const wrapperIsSolo = (() => {
-                        if (!wrapperIsSimple) return false;
-                        const meaningful = Array.from(wrapper.childNodes || []).filter((n) => {
-                            if (!n) return false;
-                            if (n.nodeType === Node.ELEMENT_NODE) return true;
-                            if (n.nodeType === Node.TEXT_NODE) return String(n.textContent || '').trim().length > 0;
-                            return false;
-                        });
-                        return meaningful.length === 1 && meaningful[0] === stepEl;
-                    })();
-
-                    const outer = document.createElement('ol');
-                    outer.className = 'pet-steps';
-
-                    const li = document.createElement('li');
-                    li.className = 'pet-step';
-
-                    const header = document.createElement('div');
-                    header.className = 'pet-step__header';
-
-                    const indexEl = document.createElement('div');
-                    indexEl.className = 'pet-step__index';
-                    indexEl.textContent = '1';
-                    header.appendChild(indexEl);
-
-                    const title =
-                        toSafeText(pickAttr(stepEl, ['title', 'label', 'name', 'header']), 120) ||
-                        `Step ${idx + 1}`;
-                    if (title) {
-                        const titleEl = document.createElement('div');
-                        titleEl.className = 'pet-step__title';
-                        titleEl.textContent = title;
-                        header.appendChild(titleEl);
-                    }
-
-                    const content = document.createElement('div');
-                    content.className = 'pet-step__content';
-                    moveChildren(stepEl, content);
-
-                    li.appendChild(header);
-                    li.appendChild(content);
-                    outer.appendChild(li);
-
-                    replaceWith(wrapperIsSolo ? wrapper : stepEl, outer);
                 });
             };
 
@@ -710,8 +578,6 @@ const sanitizeMarkdownHtml = (html) => {
 
             renderMarkdownInCustomTags(rootEl);
             handleCardGroup();
-            handleSteps();
-            handleStandaloneStep();
             handleTabs();
             handleStandaloneTab();
             handleCard();
