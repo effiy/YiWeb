@@ -2,7 +2,7 @@
 // 作者：liangliang
 
 import { defineComponent } from '/src/utils/componentLoader.js';
-import { openAuth as openAuthSettings } from '/src/services/helper/authUtils.js';
+import { openAuth as openAuthSettings } from '/src/services/helper/authUtils.js?v=1';
 
 (async function initComponent() {
     try {

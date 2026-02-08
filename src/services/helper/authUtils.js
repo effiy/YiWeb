@@ -16,7 +16,7 @@ const DEFAULT_API_MODEL = "qwen3";
 export const getStoredToken = () => {
   try {
     return String(localStorage.getItem(API_TOKEN_KEY) || "").trim();
-  } catch {
+  } catch (_) {
     return "";
   }
 };
@@ -25,7 +25,7 @@ export const getStoredModel = () => {
   try {
     const v = String(localStorage.getItem(API_MODEL_KEY) || "").trim();
     return v || DEFAULT_API_MODEL;
-  } catch {
+  } catch (_) {
     return DEFAULT_API_MODEL;
   }
 };
@@ -37,7 +37,7 @@ export const getStoredModel = () => {
 export const saveToken = (token) => {
   try {
     localStorage.setItem(API_TOKEN_KEY, String(token || "").trim());
-  } catch {
+  } catch (_) {
     // ignore
   }
 };
@@ -50,7 +50,7 @@ export const saveModel = (model) => {
       return;
     }
     localStorage.setItem(API_MODEL_KEY, next);
-  } catch {
+  } catch (_) {
     // ignore
   }
 };
@@ -76,7 +76,7 @@ export const clearToken = () => {
 export const clearModel = () => {
   try {
     localStorage.removeItem(API_MODEL_KEY);
-  } catch {
+  } catch (_) {
     // ignore
   }
 };
@@ -370,4 +370,3 @@ if (typeof window !== 'undefined') {
   window.clearModel = clearModel;
   if (!window.openAuth) window.openAuth = openAuth;
 }
-

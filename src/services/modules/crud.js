@@ -15,7 +15,7 @@ import '/src/utils/log.js';
 // 导入请求工具，确保 window.getRequest、window.postRequest 等函数可用
 import '/src/services/helper/requestHelper.js';
 // 导入认证工具
-import { getAuthHeaders, getStoredModel } from '/src/services/helper/authUtils.js';
+import { getAuthHeaders, getStoredModel } from '/src/services/helper/authUtils.js?v=1';
 // 导入认证错误处理器
 import { handle401Error, isAuthError } from '/src/services/helper/authErrorHandler.js';
 

@@ -11,7 +11,7 @@ import '/src/utils/log.js';
 // 导入状态检查工具，确保 window.checkStatus 和 window.isJsonResponse 函数可用
 import '/src/services/helper/checkStatus.js';
 // 导入认证工具，确保 getAuthHeaders 函数可用
-import { getAuthHeaders } from '/src/services/helper/authUtils.js';
+import { getAuthHeaders } from '/src/services/helper/authUtils.js?v=1';
 // 导入认证错误处理器
 import { isAuthError } from '/src/services/helper/authErrorHandler.js';
 
@@ -602,5 +602,4 @@ exposeToWindow();
 // 注意：由于HTML使用普通script标签，不支持ES6模块语法
 // 如果需要ES6模块支持，请将script标签改为 type="module"
 // 或者使用动态import()语法
-
 

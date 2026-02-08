@@ -8,7 +8,7 @@
  */
 import { safeExecute, createError, ErrorTypes, showSuccessMessage } from '/src/utils/error.js';
 import { getData, postData, deleteData, batchOperations } from '/src/services/index.js';
-import { getStoredToken, saveToken, clearToken as clearStoredToken, openAuth as openAuthSettings } from '/src/services/helper/authUtils.js';
+import { getStoredToken, saveToken, clearToken as clearStoredToken, openAuth as openAuthSettings } from '/src/services/helper/authUtils.js?v=1';
 import {
     normalizeFilePath,
     normalizeFileObject,
@@ -115,6 +115,7 @@ export const useMethods = (store) => {
     let _sessionFaqEscHandler = null;
     let _sessionFaqLastActiveElement = null;
     let _sessionContextKeydownHandler = null;
+    let _sessionContextPreviewClickHandler = null;
     const _sessionContextTimeouts = new Set();
     const { computed } = Vue;
 
@@ -133,6 +134,114 @@ export const useMethods = (store) => {
             }
             _sessionContextTimeouts.clear();
         } catch (_) { }
+    };
+
+    let __aicrImagePreviewOverlay = null;
+
+    const _ensureAicrImagePreviewOverlay = () => {
+        try {
+            if (__aicrImagePreviewOverlay) return __aicrImagePreviewOverlay;
+
+            const root = document.createElement('div');
+            root.className = 'aicr-image-preview-overlay';
+            root.setAttribute('aria-hidden', 'true');
+
+            const mask = document.createElement('div');
+            mask.className = 'aicr-image-preview-mask';
+
+            const body = document.createElement('div');
+            body.className = 'aicr-image-preview-body';
+
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.className = 'aicr-image-preview-close';
+            closeBtn.setAttribute('aria-label', '关闭图片预览');
+            closeBtn.title = '关闭';
+            closeBtn.textContent = '✕';
+
+            const img = document.createElement('img');
+            img.className = 'aicr-image-preview-img';
+            img.alt = '图片预览';
+
+            const close = () => {
+                try {
+                    root.classList.remove('is-open');
+                    root.setAttribute('aria-hidden', 'true');
+                    img.src = '';
+                } catch (_) { }
+            };
+
+            mask.addEventListener('click', close);
+            closeBtn.addEventListener('click', close);
+            root.addEventListener('click', (e) => {
+                try {
+                    if (e && e.target === root) close();
+                } catch (_) { }
+            });
+
+            body.appendChild(closeBtn);
+            body.appendChild(img);
+            root.appendChild(mask);
+            root.appendChild(body);
+            document.body.appendChild(root);
+
+            __aicrImagePreviewOverlay = { root, img, close };
+            return __aicrImagePreviewOverlay;
+        } catch (_) {
+            return null;
+        }
+    };
+
+    const _isAicrImagePreviewOpen = () => {
+        try {
+            return !!(__aicrImagePreviewOverlay && __aicrImagePreviewOverlay.root && __aicrImagePreviewOverlay.root.classList.contains('is-open'));
+        } catch (_) {
+            return false;
+        }
+    };
+
+    const _openAicrImagePreview = (src) => {
+        try {
+            const s = String(src || '').trim();
+            if (!s) return;
+            const overlay = _ensureAicrImagePreviewOverlay();
+            if (!overlay || !overlay.root || !overlay.img) return;
+            overlay.img.src = s;
+            overlay.root.classList.add('is-open');
+            overlay.root.setAttribute('aria-hidden', 'false');
+        } catch (_) { }
+    };
+
+    const _closeAicrImagePreview = () => {
+        try {
+            const overlay = __aicrImagePreviewOverlay;
+            if (!overlay || typeof overlay.close !== 'function') return;
+            overlay.close();
+        } catch (_) { }
+    };
+
+    const _insertTextAtTextarea = (textarea, text, fallbackValue = '') => {
+        try {
+            const rawText = String(text ?? '');
+            if (!rawText) return fallbackValue;
+
+            const current = String(fallbackValue ?? '');
+            const ta = textarea;
+            const start = ta && typeof ta.selectionStart === 'number' ? ta.selectionStart : current.length;
+            const end = ta && typeof ta.selectionEnd === 'number' ? ta.selectionEnd : start;
+            const next = current.slice(0, start) + rawText + current.slice(end);
+
+            if (ta && typeof ta.focus === 'function') {
+                ta.focus();
+                const caret = start + rawText.length;
+                setTimeout(() => {
+                    try { ta.setSelectionRange(caret, caret); } catch (_) { }
+                }, 0);
+            }
+            return next;
+        } catch (_) {
+            return String(fallbackValue ?? '') + String(text ?? '');
+        }
     };
 
     const _sessionContextSetStatus = (refObj, value, resetMs = 0, resetValue = '') => {
@@ -204,6 +313,7 @@ export const useMethods = (store) => {
 
     const _closeSessionContextEditorInternal = () => {
         try {
+            _closeAicrImagePreview();
             if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
             if (sessionContextUndoVisible) sessionContextUndoVisible.value = false;
             if (sessionContextOptimizeBackup) sessionContextOptimizeBackup.value = '';
@@ -212,6 +322,10 @@ export const useMethods = (store) => {
             if (_sessionContextKeydownHandler) {
                 document.removeEventListener('keydown', _sessionContextKeydownHandler, true);
                 _sessionContextKeydownHandler = null;
+            }
+            if (_sessionContextPreviewClickHandler) {
+                document.removeEventListener('click', _sessionContextPreviewClickHandler, true);
+                _sessionContextPreviewClickHandler = null;
             }
             _sessionContextClearTimeouts();
             if (sessionContextRefreshStatus) sessionContextRefreshStatus.value = '';
@@ -277,8 +391,17 @@ export const useMethods = (store) => {
     };
 
     const _sanitizeUrl = (href) => {
-        const raw = String(href ?? '').trim();
+        let raw = String(href ?? '').trim();
         if (!raw) return '';
+        for (let i = 0; i < 4; i++) {
+            const next = (() => {
+                if (raw.length >= 2 && raw.startsWith('`') && raw.endsWith('`')) return raw.slice(1, -1).trim();
+                if (raw.length >= 2 && raw.startsWith('<') && raw.endsWith('>')) return raw.slice(1, -1).trim();
+                return raw;
+            })();
+            if (next === raw) break;
+            raw = next;
+        }
         if (raw.startsWith('#') || raw.startsWith('/') || raw.startsWith('./') || raw.startsWith('../')) return raw;
         try {
             const u = new URL(raw, window.location.origin);
@@ -3599,6 +3722,69 @@ export const useMethods = (store) => {
             } catch (_) { }
         },
 
+        onSessionContextPaste: async (e) => {
+            let hideGlobalLoading = null;
+            try {
+                const clipboard = e?.clipboardData;
+                const items = clipboard?.items;
+                if (!items || typeof items.length !== 'number') return;
+
+                const imageFiles = [];
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if (!item || typeof item.type !== 'string') continue;
+                    if (!item.type.includes('image')) continue;
+                    const file = item.getAsFile && item.getAsFile();
+                    if (file) imageFiles.push(file);
+                }
+                if (imageFiles.length === 0) return;
+
+                if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
+                try {
+                    const mod = await import('/src/utils/loading.js');
+                    if (mod && typeof mod.showGlobalLoading === 'function') mod.showGlobalLoading('正在上传图片...');
+                    if (mod && typeof mod.hideGlobalLoading === 'function') hideGlobalLoading = mod.hideGlobalLoading;
+                } catch (_) { }
+
+                const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                const sessionSync = getSessionSyncService();
+
+                const toDataUrl = (file) => new Promise((resolve, reject) => {
+                    try {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(String(reader.result || '').trim());
+                        reader.onerror = () => reject(new Error('读取图片失败'));
+                        reader.readAsDataURL(file);
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+
+                const picked = imageFiles.slice(0, 4);
+                const dataUrls = (await Promise.all(picked.map(toDataUrl))).filter(v => v && v.startsWith('data:image/'));
+                const urls = (await Promise.all(dataUrls.map((src) => sessionSync.uploadImageToOss(src, 'aicr/images')))).filter(Boolean);
+                if (urls.length === 0) return;
+
+                const md = urls.map(u => `![](${u})`).join('\n\n');
+                const insertion = `\n\n${md}\n\n`;
+
+                const textarea = e && e.target;
+                const current = String(sessionContextDraft?.value ?? '');
+                const next = _insertTextAtTextarea(textarea, insertion, current);
+                if (sessionContextDraft) sessionContextDraft.value = next;
+                if (sessionContextUserEdited) sessionContextUserEdited.value = true;
+                if (activeSession?.value) {
+                    activeSession.value = { ...activeSession.value, pageContent: next };
+                }
+                if (window.showSuccess) window.showSuccess('已插入图片');
+            } catch (_) {
+                if (window.showError) window.showError('图片粘贴失败');
+            } finally {
+                try { if (typeof hideGlobalLoading === 'function') hideGlobalLoading(); } catch (_) { }
+            }
+        },
+
         openSessionChatImagePicker: () => {
             try {
                 const input = document.getElementById('pet-chat-image-input');
@@ -3715,6 +3901,10 @@ export const useMethods = (store) => {
                         if (!e) return;
                         if (e.key === 'Escape') {
                             e.preventDefault();
+                            if (_isAicrImagePreviewOpen()) {
+                                _closeAicrImagePreview();
+                                return;
+                            }
                             _closeSessionContextEditorInternal();
                             return;
                         }
@@ -3728,6 +3918,29 @@ export const useMethods = (store) => {
                     } catch (_) { }
                 };
                 document.addEventListener('keydown', _sessionContextKeydownHandler, true);
+            } catch (_) { }
+
+            try {
+                if (_sessionContextPreviewClickHandler) {
+                    document.removeEventListener('click', _sessionContextPreviewClickHandler, true);
+                    _sessionContextPreviewClickHandler = null;
+                }
+                _sessionContextPreviewClickHandler = (e) => {
+                    try {
+                        if (!sessionContextEditorVisible?.value) return;
+                        const t = e && e.target;
+                        if (!t || t.nodeType !== 1) return;
+                        const preview = t.closest ? t.closest('.aicr-session-context-preview') : null;
+                        if (!preview) return;
+                        if (String(t.tagName || '').toLowerCase() !== 'img') return;
+                        const src = t.getAttribute ? (t.getAttribute('src') || '') : '';
+                        if (!src) return;
+                        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+                        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+                        _openAicrImagePreview(src);
+                    } catch (_) { }
+                };
+                document.addEventListener('click', _sessionContextPreviewClickHandler, true);
             } catch (_) { }
         },
 

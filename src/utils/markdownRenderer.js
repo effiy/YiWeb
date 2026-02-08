@@ -18,8 +18,17 @@ export const escapeHtml = (v) => {
 };
 
 export const sanitizeUrl = (href) => {
-    const raw = String(href ?? '').trim();
+    let raw = String(href ?? '').trim();
     if (!raw) return '';
+    for (let i = 0; i < 4; i++) {
+        const next = (() => {
+            if (raw.length >= 2 && raw.startsWith('`') && raw.endsWith('`')) return raw.slice(1, -1).trim();
+            if (raw.length >= 2 && raw.startsWith('<') && raw.endsWith('>')) return raw.slice(1, -1).trim();
+            return raw;
+        })();
+        if (next === raw) break;
+        raw = next;
+    }
     if (raw.startsWith('#') || raw.startsWith('/') || raw.startsWith('./') || raw.startsWith('../')) return raw;
     try {
         const u = new URL(raw, window.location.origin);
@@ -145,4 +154,3 @@ export const renderStreamingHtml = (text) => {
         return '';
     }
 };
-

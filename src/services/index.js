@@ -45,7 +45,7 @@ export {
     getAuthHeaders,
     clearToken,
     hasValidToken
-} from './helper/authUtils.js';
+} from './helper/authUtils.js?v=1';
 
 // 从authErrorHandler.js导出
 export {

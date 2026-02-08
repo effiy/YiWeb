@@ -2051,6 +2051,60 @@ html, body {
     gap: 12px;
 }
 
+.aicr-image-preview-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: none;
+}
+
+.aicr-image-preview-overlay.is-open {
+    display: block;
+}
+
+.aicr-image-preview-mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+}
+
+.aicr-image-preview-body {
+    position: absolute;
+    inset: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.aicr-image-preview-img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 14px;
+    border: 1px solid rgba(51, 65, 85, 0.85);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+    background: rgba(2, 6, 23, 0.65);
+    pointer-events: auto;
+}
+
+.aicr-image-preview-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translate(-10px, 10px);
+    border: 1px solid rgba(51, 65, 85, 0.85);
+    background: rgba(30, 41, 59, 0.75);
+    color: rgba(226, 232, 240, 0.95);
+    border-radius: 12px;
+    padding: 8px 12px;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.aicr-image-preview-close:hover {
+    background: rgba(51, 65, 85, 0.78);
+}
+
 .aicr-session-context-toolbar-btn {
     border: 1px solid rgba(51, 65, 85, 0.85);
     background: rgba(30, 41, 59, 0.6);
@@ -2117,6 +2171,10 @@ html, body {
     background: rgba(2, 6, 23, 0.45);
     color: rgba(226, 232, 240, 0.95);
     overflow: auto;
+}
+
+.aicr-session-context-preview img {
+    cursor: zoom-in;
 }
 
 .aicr-session-context-split {

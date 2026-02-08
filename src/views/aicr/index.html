@@ -375,6 +375,7 @@
                                     <div v-if="sessionContextMode === 'split'" class="aicr-session-context-split">
                                         <textarea class="aicr-session-context-textarea" :value="sessionContextDraft"
                                             @input="setSessionContextDraft($event.target.value)"
+                                            @paste="onSessionContextPaste"
                                             aria-label="页面上下文内容"></textarea>
                                         <div class="aicr-session-context-preview md-preview-body"
                                             v-html="renderSessionChatMarkdown(sessionContextDraft)"
@@ -383,6 +384,7 @@
                                     <textarea v-else-if="sessionContextMode === 'edit'"
                                         class="aicr-session-context-textarea" :value="sessionContextDraft"
                                         @input="setSessionContextDraft($event.target.value)"
+                                        @paste="onSessionContextPaste"
                                         aria-label="页面上下文内容"></textarea>
                                     <div v-else class="aicr-session-context-preview md-preview-body"
                                         v-html="renderSessionChatMarkdown(sessionContextDraft)" aria-label="页面上下文预览">
