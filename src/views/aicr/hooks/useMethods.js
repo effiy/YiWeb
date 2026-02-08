@@ -4709,13 +4709,7 @@ export const useMethods = (store) => {
                 if (!Number.isFinite(i) || i < 0 || i >= messages.length) return;
                 if (!confirm('确定删除这条消息吗？')) return;
 
-                const target = messages[i];
-                const next = messages[i + 1];
-                if (target && target.type !== 'pet' && next && next.type === 'pet') {
-                    messages.splice(i, 2);
-                } else {
-                    messages.splice(i, 1);
-                }
+                messages.splice(i, 1);
 
                 const now = Date.now();
                 const nextSession = { ...s, messages, updatedAt: now, lastAccessTime: now };
