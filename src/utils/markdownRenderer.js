@@ -340,9 +340,13 @@ const sanitizeMarkdownHtml = (html) => {
             const renderMarkdownInCustomTags = (root) => {
                 const selector = [
                     'tabs',
+                    'cardgroup',
                     'card',
+                    'steps',
+                    'step',
                     'tab',
                     'tabitem',
+                    'tip',
                     'note',
                     'info',
                     'warning',
@@ -358,6 +362,10 @@ const sanitizeMarkdownHtml = (html) => {
                         if (!el || el.nodeType !== Node.ELEMENT_NODE) continue;
                         if (isInsideCodeBlock(el)) continue;
                         if (hasRenderedMarkdown(el)) continue;
+                        const tagName = String(el?.tagName || '').toLowerCase();
+                        if (tagName === 'tabs' && el.querySelector && el.querySelector('tab, tabitem')) continue;
+                        if (tagName === 'cardgroup' && el.querySelector && el.querySelector('card')) continue;
+                        if (tagName === 'steps' && el.querySelector && el.querySelector('step')) continue;
 
                         const md = normalizeMarkdownText(extractMarkdownSource(el));
                         if (!String(md || '').trim()) continue;
@@ -448,27 +456,29 @@ const sanitizeMarkdownHtml = (html) => {
             };
 
             const handleAdmonitions = () => {
-                const tags = ['note', 'info', 'warning', 'danger', 'caution', 'success'];
+                const tags = ['tip', 'note', 'info', 'warning', 'danger', 'caution', 'success'];
                 const selector = tags.join(',');
                 const nodes = Array.from(rootEl.querySelectorAll(selector));
                 nodes.forEach((el) => {
                     const tagName = String(el?.tagName || '').toLowerCase();
                     const defaultType =
-                        tagName === 'note'
-                            ? 'note'
-                            : tagName === 'warning'
-                                ? 'warning'
-                                : tagName === 'danger'
-                                    ? 'danger'
-                                    : tagName === 'caution'
-                                        ? 'caution'
-                                        : tagName === 'success'
-                                            ? 'success'
-                                            : 'info';
+                        tagName === 'tip'
+                            ? 'tip'
+                            : tagName === 'note'
+                                ? 'note'
+                                : tagName === 'warning'
+                                    ? 'warning'
+                                    : tagName === 'danger'
+                                        ? 'danger'
+                                        : tagName === 'caution'
+                                            ? 'caution'
+                                            : tagName === 'success'
+                                                ? 'success'
+                                                : 'info';
 
                     const rawType = toSafeText(pickAttr(el, ['type', 'kind', 'variant']), 32).toLowerCase();
                     const normalized = rawType || defaultType;
-                    const type = ['info', 'note', 'warning', 'danger', 'caution', 'success'].includes(normalized)
+                    const type = ['info', 'tip', 'note', 'warning', 'danger', 'caution', 'success'].includes(normalized)
                         ? normalized
                         : defaultType;
 
@@ -488,6 +498,47 @@ const sanitizeMarkdownHtml = (html) => {
                     content.className = 'pet-tip__content';
                     moveChildren(el, content);
                     outer.appendChild(content);
+
+                    replaceWith(el, outer);
+                });
+            };
+
+            const handleSteps = () => {
+                const stepsNodes = Array.from(rootEl.querySelectorAll('steps'));
+                stepsNodes.forEach((el) => {
+                    const outer = document.createElement('ol');
+                    outer.className = 'pet-steps';
+                    moveChildren(el, outer);
+                    replaceWith(el, outer);
+                });
+
+                const stepNodes = Array.from(rootEl.querySelectorAll('step'));
+                stepNodes.forEach((el) => {
+                    const title = toSafeText(pickAttr(el, ['title', 'name', 'header']), 120);
+                    const desc = toSafeText(pickAttr(el, ['desc', 'description', 'subtitle']), 400);
+
+                    const isInsideSteps = el.parentElement && el.parentElement.tagName === 'OL' && el.parentElement.classList?.contains('pet-steps');
+                    const outer = document.createElement(isInsideSteps ? 'li' : 'div');
+                    outer.className = 'pet-step';
+
+                    if (title) {
+                        const titleEl = document.createElement('div');
+                        titleEl.className = 'pet-step__title';
+                        titleEl.textContent = title;
+                        outer.appendChild(titleEl);
+                    }
+
+                    if (desc) {
+                        const descEl = document.createElement('div');
+                        descEl.className = 'pet-step__desc';
+                        descEl.textContent = desc;
+                        outer.appendChild(descEl);
+                    }
+
+                    const content = document.createElement('div');
+                    content.className = 'pet-step__content';
+                    moveChildren(el, content);
+                    if (content.childNodes.length) outer.appendChild(content);
 
                     replaceWith(el, outer);
                 });
@@ -580,6 +631,7 @@ const sanitizeMarkdownHtml = (html) => {
             handleCardGroup();
             handleTabs();
             handleStandaloneTab();
+            handleSteps();
             handleCard();
             handleAdmonitions();
         };
