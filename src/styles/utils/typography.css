@@ -386,3 +386,54 @@
 .md-preview-body .pet-tabs__panel.is-active {
     display: block;
 }
+
+.md-preview-body .pet-steps {
+    margin: 0.75em 0;
+    padding-left: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.md-preview-body .pet-step {
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-primary);
+    background: rgba(var(--bg-secondary-rgb), 0.22);
+}
+
+.md-preview-body .pet-step__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.md-preview-body .pet-step__index {
+    width: 22px;
+    height: 22px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 12px;
+    background: rgba(var(--primary-rgb), 0.14);
+    box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.22) inset;
+    color: var(--text-primary);
+    flex: 0 0 auto;
+}
+
+.md-preview-body .pet-step__title {
+    font-weight: 700;
+    color: var(--text-primary);
+    min-width: 0;
+    word-break: break-word;
+}
+
+.md-preview-body .pet-step__content {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-size: 12px;
+}
