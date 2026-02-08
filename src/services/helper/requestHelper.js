@@ -426,7 +426,10 @@ async function batchRequests(requests) {
       hasErrors: Object.keys(errors).length > 0
     };
   } catch (error) {
-    console.error('批量请求失败:', error);
+    try {
+      if (window.logError) window.logError('批量请求失败:', error);
+      else console.error('批量请求失败:', error);
+    } catch (_) { }
     throw error;
   }
 }
@@ -602,4 +605,3 @@ exposeToWindow();
 // 注意：由于HTML使用普通script标签，不支持ES6模块语法
 // 如果需要ES6模块支持，请将script标签改为 type="module"
 // 或者使用动态import()语法
-

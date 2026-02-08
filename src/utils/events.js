@@ -125,7 +125,7 @@ class EventManager {
             'scroll', 'wheel', 'mousewheel'
         ];
         
-        if (passiveEvents.includes(event) && !options.hasOwnProperty('passive')) {
+        if (passiveEvents.includes(event) && !Object.prototype.hasOwnProperty.call(options, 'passive')) {
             return { ...options, passive: true };
         }
         

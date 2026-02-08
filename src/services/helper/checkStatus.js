@@ -1,6 +1,7 @@
 // 检查 HTTP 响应状态的辅助函数
 // 作者：liangliang
 
+import '/src/utils/log.js';
 // 导入认证错误处理器
 import { handle401Error } from './authErrorHandler.js';
 
@@ -43,13 +44,26 @@ function checkStatus(response, options = {}) {
   const errorMessage = STATUS_MESSAGES[status] || `请求失败：${statusText}`;
   
   // 监控错误 - 记录详细信息
-  console.error('请求失败详情：', {
-    status,
-    statusText,
-    url: response.url,
-    message: errorMessage,
-    timestamp: new Date().toISOString()
-  });
+  try {
+    if (window.logError) {
+      window.logError('请求失败详情：', {
+        status,
+        statusText,
+        url: response.url,
+        message: errorMessage,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      console.error('请求失败详情：', {
+        status,
+        statusText,
+        url: response.url,
+        message: errorMessage,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (_) {
+  }
   
   // 创建更详细的错误对象
   const error = new Error(errorMessage);

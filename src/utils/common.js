@@ -4,6 +4,8 @@
  * 整合了项目中所有模块的通用工具函数，避免代码重复
  */
 
+import '/src/utils/log.js';
+
 /**
  * 防抖函数 - 延迟执行函数，在指定时间内只执行最后一次调用
  * @param {Function} func - 要执行的函数
@@ -57,11 +59,17 @@ export function safeSetItem(key, value, stringify = true) {
         localStorage.setItem(key, storeValue);
         return true;
     } catch (error) {
-        console.warn(`LocalStorage存储失败 (${key}):`, error.message);
+        try {
+            if (window.logWarn) window.logWarn(`LocalStorage存储失败 (${key}):`, error.message);
+            else console.warn(`LocalStorage存储失败 (${key}):`, error.message);
+        } catch (_) { }
         
         // 如果是配额超出，尝试清理数据
         if (error.name === 'QuotaExceededError') {
-            console.warn('LocalStorage配额超出，尝试清理数据...');
+            try {
+                if (window.logWarn) window.logWarn('LocalStorage配额超出，尝试清理数据...');
+                else console.warn('LocalStorage配额超出，尝试清理数据...');
+            } catch (_) { }
             return handleStorageQuotaExceeded(key, value, stringify);
         }
         
@@ -82,7 +90,10 @@ export function safeGetItem(key, defaultValue = null, parse = true) {
         if (item === null) return defaultValue;
         return parse ? JSON.parse(item) : item;
     } catch (error) {
-        console.warn(`LocalStorage读取失败 (${key}):`, error.message);
+        try {
+            if (window.logWarn) window.logWarn(`LocalStorage读取失败 (${key}):`, error.message);
+            else console.warn(`LocalStorage读取失败 (${key}):`, error.message);
+        } catch (_) { }
         return defaultValue;
     }
 }
@@ -101,16 +112,25 @@ function handleStorageQuotaExceeded(key, value, stringify) {
     for (const cleanKey of keysToClean) {
         if (cleanKey !== key && localStorage.getItem(cleanKey)) {
             localStorage.removeItem(cleanKey);
-            console.log(`已清理存储项：${cleanKey}`);
+            try {
+                if (window.logInfo) window.logInfo(`已清理存储项：${cleanKey}`);
+                else console.log(`已清理存储项：${cleanKey}`);
+            } catch (_) { }
             
             // 重试存储
             try {
                 const storeValue = stringify ? JSON.stringify(value) : value;
                 localStorage.setItem(key, storeValue);
-                console.log('清理缓存后重新存储成功');
+                try {
+                    if (window.logInfo) window.logInfo('清理缓存后重新存储成功');
+                    else console.log('清理缓存后重新存储成功');
+                } catch (_) { }
                 return true;
             } catch (retryError) {
-                console.warn('清理缓存后仍然存储失败:', retryError);
+                try {
+                    if (window.logWarn) window.logWarn('清理缓存后仍然存储失败:', retryError);
+                    else console.warn('清理缓存后仍然存储失败:', retryError);
+                } catch (_) { }
             }
         }
     }
@@ -230,7 +250,7 @@ export function deepClone(obj) {
     if (typeof obj === 'object') {
         const cloned = {};
         for (const key in obj) {
-            if (obj.hasOwnProperty(key)) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
                 cloned[key] = deepClone(obj[key]);
             }
         }

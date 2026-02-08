@@ -129,7 +129,10 @@ function showLoginPrompt(message = '未授权，请先登录') {
     }
     fallbackPrompt();
   } catch (error) {
-    try { console.error('[认证错误处理] 显示登录提示失败:', error); } catch (_) { }
+    try {
+      if (window.logError) window.logError('[认证错误处理] 显示登录提示失败:', error);
+      else console.error('[认证错误处理] 显示登录提示失败:', error);
+    } catch (_) { }
     fallbackPrompt();
   }
 }

@@ -117,7 +117,7 @@ export function onNetworkChange(callback) {
  * @returns {string} - 唯一的请求 ID
  */
 export function generateRequestId() {
-  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `req_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 }
 
 /**
@@ -130,7 +130,7 @@ export function deepMerge(target, source) {
   const result = { ...target };
   
   for (const key in source) {
-    if (source.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
       if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
         result[key] = deepMerge(result[key] || {}, source[key]);
       } else {

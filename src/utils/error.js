@@ -4,6 +4,8 @@
  * author: liangliang
  */
 
+import '/src/utils/log.js';
+
 /**
  * 错误类型枚举
  */
@@ -117,21 +119,27 @@ class ErrorLogger {
         const { level, message, context, timestamp } = errorRecord;
         const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
         
-        switch (level) {
-            case ErrorLevels.DEBUG:
-                console.debug(`${prefix} ${context}: ${message}`);
-                break;
-            case ErrorLevels.INFO:
-                console.info(`${prefix} ${context}: ${message}`);
-                break;
-            case ErrorLevels.WARN:
-                console.warn(`${prefix} ${context}: ${message}`);
-                break;
-            case ErrorLevels.ERROR:
-            case ErrorLevels.FATAL:
-                console.error(`${prefix} ${context}: ${message}`);
-                break;
-        }
+        try {
+            switch (level) {
+                case ErrorLevels.DEBUG:
+                    if (window.logDebug) window.logDebug(`${prefix} ${context}: ${message}`);
+                    else console.debug(`${prefix} ${context}: ${message}`);
+                    break;
+                case ErrorLevels.INFO:
+                    if (window.logInfo) window.logInfo(`${prefix} ${context}: ${message}`);
+                    else console.info(`${prefix} ${context}: ${message}`);
+                    break;
+                case ErrorLevels.WARN:
+                    if (window.logWarn) window.logWarn(`${prefix} ${context}: ${message}`);
+                    else console.warn(`${prefix} ${context}: ${message}`);
+                    break;
+                case ErrorLevels.ERROR:
+                case ErrorLevels.FATAL:
+                    if (window.logError) window.logError(`${prefix} ${context}: ${message}`);
+                    else console.error(`${prefix} ${context}: ${message}`);
+                    break;
+            }
+        } catch (_) { }
     }
 
     /**
@@ -226,7 +234,10 @@ export function showSuccessMessage(message) {
     if (!message) return;
     
     // 移除弹框显示，只保留控制台日志
-    console.log(`✅ ${message}`);
+    try {
+        if (window.logInfo) window.logInfo(`✅ ${message}`);
+        else console.log(`✅ ${message}`);
+    } catch (_) { }
 }
 
 /**
@@ -370,11 +381,15 @@ export function isBrowserExtensionError(error, filename = '', stack = '') {
  */
 export function handleBrowserExtensionError(error, context = '', filename = '', stack = '') {
     if (isBrowserExtensionError(error, filename, stack)) {
-        console.log(`[${context}] 检测到浏览器扩展错误，已忽略:`, {
-            message: error?.message || '未知错误',
-            filename: filename || '未知文件',
-            stack: stack || '无堆栈信息'
-        });
+        try {
+            const payload = {
+                message: error?.message || '未知错误',
+                filename: filename || '未知文件',
+                stack: stack || '无堆栈信息'
+            };
+            if (window.logInfo) window.logInfo(`[${context}] 检测到浏览器扩展错误，已忽略:`, payload);
+            else console.log(`[${context}] 检测到浏览器扩展错误，已忽略:`, payload);
+        } catch (_) { }
         return true; // 已处理，可以忽略
     }
     return false; // 未处理，需要继续处理
@@ -414,7 +429,10 @@ export function setupBrowserExtensionErrorFilter(context = 'App', enablePromiseF
         });
     }
     
-    console.log(`[${context}] 浏览器扩展错误过滤器已启用`);
+    try {
+        if (window.logInfo) window.logInfo(`[${context}] 浏览器扩展错误过滤器已启用`);
+        else console.log(`[${context}] 浏览器扩展错误过滤器已启用`);
+    } catch (_) { }
 }
 
 /**
@@ -435,12 +453,16 @@ export function safeGet(obj, key, defaultValue = null) {
         }
         
         if (typeof key === 'string' && typeof obj === 'object') {
-            return obj.hasOwnProperty(key) ? obj[key] : defaultValue;
+            return Object.prototype.hasOwnProperty.call(obj, key) ? obj[key] : defaultValue;
         }
         
         return defaultValue;
     } catch (error) {
-        console.warn('[safeGet] 访问失败:', { obj, key, error: error.message });
+        try {
+            const payload = { obj, key, error: error.message };
+            if (window.logWarn) window.logWarn('[safeGet] 访问失败:', payload);
+            else console.warn('[safeGet] 访问失败:', payload);
+        } catch (_) { }
         return defaultValue;
     }
 }
@@ -481,7 +503,11 @@ export function safeGetPath(obj, path, defaultValue = null) {
         
         return current !== undefined ? current : defaultValue;
     } catch (error) {
-        console.warn('[safeGetPath] 访问失败:', { obj, path, error: error.message });
+        try {
+            const payload = { obj, path, error: error.message };
+            if (window.logWarn) window.logWarn('[safeGetPath] 访问失败:', payload);
+            else console.warn('[safeGetPath] 访问失败:', payload);
+        } catch (_) { }
         return defaultValue;
     }
 }
@@ -501,7 +527,11 @@ export function safeArrayOperation(arr, operation, defaultValue = null) {
         
         return operation(arr);
     } catch (error) {
-        console.warn('[safeArrayOperation] 操作失败:', { arr, error: error.message });
+        try {
+            const payload = { arr, error: error.message };
+            if (window.logWarn) window.logWarn('[safeArrayOperation] 操作失败:', payload);
+            else console.warn('[safeArrayOperation] 操作失败:', payload);
+        } catch (_) { }
         return defaultValue;
     }
 }
