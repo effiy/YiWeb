@@ -200,12 +200,14 @@
                                         alt="图片消息" />
                                     <div v-if="m.type === 'pet' && (!(m.message || m.content) || !String(m.message || m.content).trim()) && sessionChatSending && idx === (sessionChatMessages(activeSession).length - 1)"
                                         class="pet-chat-typing" aria-label="生成中">...</div>
-                                    <div v-else-if="(m.message || m.content) && String(m.message || m.content).trim() && isSessionChatStreamingMessage(m, idx)"
+                                    <markdown-view v-else-if="(m.message || m.content) && String(m.message || m.content).trim() && isSessionChatStreamingMessage(m, idx)"
                                         class="pet-chat-content md-preview-body pet-chat-content-streaming"
-                                        v-html="renderSessionChatStreamingHtml(m.message || m.content)"></div>
-                                    <div v-else-if="(m.message || m.content) && String(m.message || m.content).trim()"
+                                        mode="streaming"
+                                        :content="m.message || m.content"></markdown-view>
+                                    <markdown-view v-else-if="(m.message || m.content) && String(m.message || m.content).trim()"
                                         class="pet-chat-content md-preview-body"
-                                        v-html="renderSessionChatMarkdown(m.message || m.content)"></div>
+                                        mode="markdown"
+                                        :content="m.message || m.content"></markdown-view>
                                     <div class="pet-chat-meta">
                                         <div class="pet-chat-meta-actions">
                                             <button
@@ -377,18 +379,19 @@
                                             @input="setSessionContextDraft($event.target.value)"
                                             @paste="onSessionContextPaste"
                                             aria-label="页面上下文内容"></textarea>
-                                        <div class="aicr-session-context-preview md-preview-body"
-                                            v-html="renderSessionChatMarkdown(sessionContextDraft)"
-                                            aria-label="页面上下文预览"></div>
+                                        <markdown-view class="aicr-session-context-preview md-preview-body"
+                                            mode="markdown"
+                                            :content="sessionContextDraft"
+                                            aria-label="页面上下文预览"></markdown-view>
                                     </div>
                                     <textarea v-else-if="sessionContextMode === 'edit'"
                                         class="aicr-session-context-textarea" :value="sessionContextDraft"
                                         @input="setSessionContextDraft($event.target.value)"
                                         @paste="onSessionContextPaste"
                                         aria-label="页面上下文内容"></textarea>
-                                    <div v-else class="aicr-session-context-preview md-preview-body"
-                                        v-html="renderSessionChatMarkdown(sessionContextDraft)" aria-label="页面上下文预览">
-                                    </div>
+                                    <markdown-view v-else class="aicr-session-context-preview md-preview-body"
+                                        mode="markdown"
+                                        :content="sessionContextDraft" aria-label="页面上下文预览"></markdown-view>
                                 </div>
                             </div>
                         </div>
@@ -432,17 +435,18 @@
                                         <textarea class="aicr-session-context-textarea" :value="sessionMessageEditorDraft"
                                             @input="setSessionMessageEditorDraft($event.target.value)"
                                             aria-label="消息内容"></textarea>
-                                        <div class="aicr-session-context-preview md-preview-body"
-                                            v-html="renderSessionChatMarkdown(sessionMessageEditorDraft)"
-                                            aria-label="消息预览"></div>
+                                        <markdown-view class="aicr-session-context-preview md-preview-body"
+                                            mode="markdown"
+                                            :content="sessionMessageEditorDraft"
+                                            aria-label="消息预览"></markdown-view>
                                     </div>
                                     <textarea v-else-if="sessionMessageEditorMode === 'edit'"
                                         class="aicr-session-context-textarea" :value="sessionMessageEditorDraft"
                                         @input="setSessionMessageEditorDraft($event.target.value)"
                                         aria-label="消息内容"></textarea>
-                                    <div v-else class="aicr-session-context-preview md-preview-body"
-                                        v-html="renderSessionChatMarkdown(sessionMessageEditorDraft)" aria-label="消息预览">
-                                    </div>
+                                    <markdown-view v-else class="aicr-session-context-preview md-preview-body"
+                                        mode="markdown"
+                                        :content="sessionMessageEditorDraft" aria-label="消息预览"></markdown-view>
                                 </div>
                             </div>
                         </div>
@@ -823,6 +827,7 @@
     <script type="module" src="../../utils/mermaidRenderer.js"></script>
 
     <!-- 插件组件 -->
+    <script type="module" src="../../markdown/components/markdownView/index.js"></script>
     <script type="module" src="../../views/aicr/components/fileTree/index.js"></script>
     <script type="module" src="../../views/aicr/components/codeView/index.js"></script>
 

@@ -86,7 +86,7 @@
                     </time>
                 </div>
                 
-                <div class="news-content md-preview-body" v-html="renderMarkdown(item.content || item.contentSnippet || item.excerpt)"></div>
+                <markdown-view class="news-content md-preview-body" :content="item.content || item.contentSnippet || item.excerpt"></markdown-view>
                 
                 <footer class="news-footer">
                     <div class="news-source">
@@ -176,7 +176,7 @@
                         </time>
                     </div>
                     
-                    <div class="news-content md-preview-body" v-html="renderMarkdown(item.content || item.contentSnippet || item.excerpt)"></div>
+                    <markdown-view class="news-content md-preview-body" :content="item.content || item.contentSnippet || item.excerpt"></markdown-view>
                     
                     <footer class="news-footer">
                         <div class="news-source">

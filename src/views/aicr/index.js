@@ -25,6 +25,7 @@ const { computed } = Vue;
             components: [
                 'FileTree',
                 'CodeView',
+                'MarkdownView',
             ],
             data: {
                 // 暴露store数据给模板

@@ -17,7 +17,7 @@ import {
 } from '/src/views/aicr/utils/fileFieldNormalizer.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
 import { getFileDeleteService, buildFileTreeFromSessions } from './store.js';
-import { renderMarkdownHtml, renderStreamingHtml } from '/src/utils/markdownRenderer.js';
+import { renderMarkdownHtml, renderStreamingHtml } from '/src/markdown/index.js';
 
 export const useMethods = (store) => {
     const {

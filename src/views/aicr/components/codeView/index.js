@@ -1,6 +1,5 @@
 import { defineComponent } from '/src/utils/componentLoader.js';
 import { safeExecute } from '/src/utils/error.js';
-import { renderMarkdownHtml } from '/src/utils/markdownRenderer.js';
 
 const normalizePath = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
 
@@ -121,10 +120,6 @@ const componentOptions = {
             return {
                 '--code-font-size': `${this.fontSize}px`
             };
-        },
-        markdownPreviewHtml() {
-            const text = String(this.rawContent || '');
-            return renderMarkdownHtml(text, { breaks: true, gfm: true });
         }
     },
     watch: {

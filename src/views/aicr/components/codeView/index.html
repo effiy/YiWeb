@@ -90,9 +90,7 @@
 
     <div v-else-if="shouldShowMarkdownPreview" class="markdown-preview-container">
       <div class="markdown-preview-wrapper">
-        <div class="markdown-preview-content md-preview-body">
-          <div class="markdown-full-content" v-html="markdownPreviewHtml"></div>
-        </div>
+        <markdown-view class="markdown-preview-content md-preview-body" :content="rawContent" mode="markdown"></markdown-view>
       </div>
     </div>
 

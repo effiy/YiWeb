@@ -5,7 +5,6 @@ import { registerGlobalComponent } from '/src/utils/componentLoader.js';
 import { getData } from '/src/services/index.js';
 import { formatDate } from '/src/utils/date.js';
 import { safeExecute } from '/src/utils/error.js';
-import { renderMarkdownHtml } from '/src/utils/markdownRenderer.js';
 // 导入日志工具，确保 window.logError 等函数可用
 import '/src/utils/log.js';
 
@@ -372,41 +371,6 @@ const componentOptions = {
                     fav,
                     hasData: total > 0
                 };
-            },
-            // 将Markdown渲染为HTML
-            renderMarkdown(text) {
-                return safeExecute(() => {
-                    if (!text) return '';
-                    
-                    // 检查是否为JSON对象
-                    let processedText = text;
-                    let isJsonContent = false;
-                    
-                    if (typeof text === 'object') {
-                        try {
-                            processedText = JSON.stringify(text, null, 2);
-                            isJsonContent = true;
-                        } catch (e) {
-                            processedText = text.toString();
-                        }
-                    } else if (typeof text === 'string') {
-                        try {
-                            const parsed = JSON.parse(text);
-                            if (typeof parsed === 'object' && parsed !== null) {
-                                processedText = JSON.stringify(parsed, null, 2);
-                                isJsonContent = true;
-                            }
-                        } catch (e) {
-                            processedText = text;
-                        }
-                    }
-
-                    if (isJsonContent) {
-                        processedText = `\`\`\`json\n${processedText}\n\`\`\``;
-                    }
-
-                    return renderMarkdownHtml(processedText, { breaks: true, gfm: true });
-                }, 'Markdown渲染(ProjectFilesList)');
             },
             
             // 导出数据
