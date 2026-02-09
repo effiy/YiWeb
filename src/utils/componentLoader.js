@@ -87,3 +87,35 @@ export async function defineComponent(options) {
 
     return component;
 }
+
+export function registerGlobalComponent(componentOptions, options = {}) {
+    const exposeName = options.exposeName || componentOptions?.name;
+    const eventName = options.eventName || (exposeName ? `${exposeName}Loaded` : '');
+    const errorPrefix = options.errorPrefix || exposeName || componentOptions?.name || 'Component';
+
+    if (!componentOptions || !componentOptions.name) {
+        console.error(`[${errorPrefix}] 组件初始化失败: componentOptions.name 缺失`);
+        return Promise.resolve(null);
+    }
+
+    return defineComponent(componentOptions)
+        .then((component) => {
+            try {
+                if (exposeName) {
+                    window[exposeName] = component;
+                }
+            } catch (_) { }
+
+            try {
+                if (eventName) {
+                    window.dispatchEvent(new CustomEvent(eventName, { detail: component }));
+                }
+            } catch (_) { }
+
+            return component;
+        })
+        .catch((error) => {
+            console.error(`${errorPrefix} 组件初始化失败:`, error);
+            return null;
+        });
+}

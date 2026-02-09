@@ -1,16 +1,14 @@
 // 搜索头部组件 - 包含搜索框和分类过滤器
 // 作者：liangliang
 
-import { defineComponent } from '/src/utils/componentLoader.js';
+import { registerGlobalComponent } from '/src/utils/componentLoader.js';
 import { openAuth as openAuthSettings } from '/src/services/helper/authUtils.js?v=1';
 
-(async function initComponent() {
-    try {
-        await defineComponent({
-            name: 'SearchHeader',
-            css: '/src/components/common/searchHeader/index.css',
-            html: '/src/components/common/searchHeader/index.html',
-            props: {
+registerGlobalComponent({
+    name: 'SearchHeader',
+    css: '/src/components/common/searchHeader/index.css',
+    html: '/src/components/common/searchHeader/index.html',
+    props: {
                 searchQuery: {
                     type: String,
                     default: ''
@@ -40,20 +38,20 @@ import { openAuth as openAuthSettings } from '/src/services/helper/authUtils.js?
                     type: Boolean,
                     default: false
                 }
-            },
-            emits: ['update:searchQuery', 'search-keydown', 'clear-search', 'toggle-category', 'filter-change', 'toggle-sidebar', 'open-rss-manager'],
-            data() {
-                return {
-                    // 搜索建议相关
-                    showSuggestions: false,
-                    searchSuggestions: [],
-                    selectedSuggestionIndex: -1,
-                    // 实时过滤相关
-                    isFiltering: false,
-                    filterTimeout: null
-                };
-            },
-            computed: {
+    },
+    emits: ['update:searchQuery', 'search-keydown', 'clear-search', 'toggle-category', 'filter-change', 'toggle-sidebar', 'open-rss-manager'],
+    data() {
+        return {
+            // 搜索建议相关
+            showSuggestions: false,
+            searchSuggestions: [],
+            selectedSuggestionIndex: -1,
+            // 实时过滤相关
+            isFiltering: false,
+            filterTimeout: null
+        };
+    },
+    computed: {
                 /**
                  * 生成搜索建议
                  */
@@ -118,7 +116,7 @@ import { openAuth as openAuthSettings } from '/src/services/helper/authUtils.js?
                     return this.computedSearchSuggestions.length > 0;
                 }
             },
-            methods: {
+    methods: {
                 goHome() {
                     window.location.href = '/';
                 },
@@ -272,14 +270,5 @@ import { openAuth as openAuthSettings } from '/src/services/helper/authUtils.js?
                         }
                     } catch (_) { }
                 }
-            }
-        });
-        
-        // 触发自定义事件，通知组件已加载完成
-        if (window.SearchHeader) {
-            window.dispatchEvent(new CustomEvent('SearchHeaderLoaded', { detail: window.SearchHeader }));
-        }
-    } catch (error) {
-        console.error('SearchHeader 组件初始化失败:', error);
     }
-})();
+});

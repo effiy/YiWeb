@@ -1,7 +1,7 @@
 // 项目文件列表组件
 // 作者：liangliang
 
-import { defineComponent } from '/src/utils/componentLoader.js';
+import { registerGlobalComponent } from '/src/utils/componentLoader.js';
 import { getData } from '/src/services/index.js';
 import { formatDate } from '/src/utils/date.js';
 import { safeExecute } from '/src/utils/error.js';
@@ -453,10 +453,4 @@ const componentOptions = {
     }
 };
 
-defineComponent(componentOptions).then(component => {
-    window.ProjectFilesList = component;
-    window.dispatchEvent(new CustomEvent('ProjectFilesListLoaded', { detail: component }));
-    console.log('[ProjectFilesList] 组件初始化完成');
-}).catch(e => {
-    console.error('[ProjectFilesList] 组件初始化失败:', e);
-});
+registerGlobalComponent(componentOptions);

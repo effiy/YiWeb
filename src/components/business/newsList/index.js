@@ -6,7 +6,7 @@ import { getTimeAgo } from '/src/utils/date.js';
 import { safeExecute, createError, ErrorTypes } from '/src/utils/error.js';
 import { extractDomainCategory } from '/src/utils/domain.js';
 import { categorizeNewsItem } from '/src/views/news/hooks/store.js';
-import { defineComponent } from '/src/utils/componentLoader.js';
+import { registerGlobalComponent } from '/src/utils/componentLoader.js';
 import { renderMarkdownHtml } from '/src/utils/markdownRenderer.js';
 
 // 创建组件定义
@@ -260,11 +260,4 @@ const componentOptions = {
 };
 
 // 初始化组件并全局暴露
-defineComponent(componentOptions).then(component => {
-    window.NewsList = component;
-    window.dispatchEvent(new CustomEvent('NewsListLoaded', { detail: component }));
-    console.log('[NewsList] 组件初始化完成');
-}).catch(error => {
-    console.error('NewsList 组件初始化失败:', error);
-});
-
+registerGlobalComponent(componentOptions);
