@@ -2,6 +2,63 @@ let _markedConfigured = false;
 let _markedRenderer = null;
 let _markdownInteractionsBound = false;
 
+const decodeHtmlText = (v) => {
+    try {
+        const raw = v == null ? '' : String(v);
+        if (!raw) return '';
+        if (typeof document === 'undefined') {
+            return raw
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/&amp;/g, '&');
+        }
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = raw;
+        return String(textarea.value || '');
+    } catch (_) {
+        return '';
+    }
+};
+
+const stripInlineHtml = (v) => {
+    try {
+        const raw = v == null ? '' : String(v);
+        if (!raw) return '';
+        return raw.replace(/<[^>]*>/g, ' ');
+    } catch (_) {
+        return '';
+    }
+};
+
+const createHeadingSlugger = () => {
+    const used = new Map();
+    const toBaseSlug = (value) => {
+        const decoded = decodeHtmlText(stripInlineHtml(value));
+        const lowered = decoded
+            .normalize('NFKD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+        const cleaned = lowered
+            .replace(/[^a-z0-9\u4e00-\u9fa5\s_-]/g, ' ')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+        let slug = cleaned || 'section';
+        if (!/^[a-z\u4e00-\u9fa5]/i.test(slug)) slug = `s-${slug}`;
+        if (slug.length > 96) slug = slug.slice(0, 96).replace(/-+$/g, '');
+        return slug || 'section';
+    };
+    const slug = (value) => {
+        const base = toBaseSlug(value);
+        const current = used.get(base) || 0;
+        used.set(base, current + 1);
+        if (current === 0) return base;
+        return `${base}-${current + 1}`;
+    };
+    return { slug };
+};
+
 export const escapeHtml = (v) => {
     if (typeof v !== 'string' && v == null) return '';
     const unescaped = String(v)
@@ -337,6 +394,54 @@ const sanitizeMarkdownHtml = (html) => {
             if (!rootEl || typeof rootEl.querySelectorAll !== 'function') return;
             if (typeof window.marked === 'undefined' || typeof window.marked.parse !== 'function') return;
 
+            const handleMermaidTag = () => {
+                const nodes = Array.from(rootEl.querySelectorAll('mermaid'));
+                nodes.forEach((el) => {
+                    if (!el || el.nodeType !== Node.ELEMENT_NODE) return;
+                    if (isInsideCodeBlock(el)) return;
+                    if (hasRenderedMarkdown(el)) return;
+
+                    const diagramCode = normalizeMarkdownText(extractMarkdownSource(el));
+                    if (!String(diagramCode || '').trim()) return;
+
+                    const diagramId = `md-mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+                    if (
+                        window.mermaidRenderer &&
+                        typeof window.mermaidRenderer.createDiagramContainer === 'function' &&
+                        typeof window.mermaidRenderer.renderDiagram === 'function'
+                    ) {
+                        const containerHtml = window.mermaidRenderer.createDiagramContainer(diagramId, diagramCode, {
+                            showHeader: false,
+                            showActions: true,
+                            headerLabel: 'MERMAID 图表',
+                            sourceLine: null
+                        });
+                        const tpl = document.createElement('template');
+                        tpl.innerHTML = String(containerHtml || '');
+                        const wrapper = tpl.content && tpl.content.firstElementChild ? tpl.content.firstElementChild : null;
+                        if (wrapper) {
+                            replaceWith(el, wrapper);
+                            markRenderedMarkdown(wrapper);
+                            setTimeout(() => {
+                                try {
+                                    window.mermaidRenderer.renderDiagram(diagramId, diagramCode, { showLoading: false });
+                                } catch (_) { }
+                            }, 0);
+                            return;
+                        }
+                    }
+
+                    const pre = document.createElement('pre');
+                    pre.className = 'md-code';
+                    const codeEl = document.createElement('code');
+                    codeEl.className = 'language-mermaid';
+                    codeEl.textContent = diagramCode;
+                    pre.appendChild(codeEl);
+                    replaceWith(el, pre);
+                    markRenderedMarkdown(pre);
+                });
+            };
+
             const renderMarkdownInCustomTags = (root) => {
                 const selector = [
                     'tabs',
@@ -576,6 +681,7 @@ const sanitizeMarkdownHtml = (html) => {
                 });
             };
 
+            handleMermaidTag();
             renderMarkdownInCustomTags(rootEl);
             handleCardGroup();
             handleTabs();
@@ -793,6 +899,7 @@ const ensureMarkedRenderer = () => {
     try {
         const renderer = new window.marked.Renderer();
         const originalCodeRenderer = renderer.code ? renderer.code.bind(renderer) : null;
+        const originalHeadingRenderer = renderer.heading ? renderer.heading.bind(renderer) : null;
 
         renderer.html = (html) => {
             if (typeof html === 'string') return html;
@@ -815,6 +922,31 @@ const ensureMarkedRenderer = () => {
             const safeTitle = title == null ? '' : String(title);
             const titleAttr = safeTitle ? ` title="${escapeHtml(safeTitle)}"` : '';
             return `<img src="${escapeHtml(safeHref)}" alt="${alt}" loading="lazy" decoding="async"${titleAttr} />`;
+        };
+
+        renderer.heading = (text, level, raw, slugger) => {
+            const html = typeof text === 'string' ? text : (text && (text.raw || text.text)) || '';
+            const plain = decodeHtmlText(stripInlineHtml(html));
+            const l = Number(level) || 1;
+
+            const s =
+                (renderer && renderer.__yiwebHeadingSlugger && typeof renderer.__yiwebHeadingSlugger.slug === 'function')
+                    ? renderer.__yiwebHeadingSlugger
+                    : (slugger && typeof slugger.slug === 'function')
+                        ? slugger
+                        : null;
+
+            const id = s ? s.slug(plain) : createHeadingSlugger().slug(plain);
+            const safeLevel = Math.max(1, Math.min(6, l));
+            if (typeof originalHeadingRenderer === 'function') {
+                try {
+                    const rendered = originalHeadingRenderer(text, safeLevel, raw, slugger);
+                    if (typeof rendered === 'string' && rendered.includes('<h') && !rendered.includes(' id=')) {
+                        return rendered.replace(/^(<h[1-6])(\b[^>]*)>/i, `$1$2 id="${escapeHtml(id)}">`);
+                    }
+                } catch (_) { }
+            }
+            return `<h${safeLevel} id="${escapeHtml(id)}">${html}</h${safeLevel}>`;
         };
 
         renderer.code = (code, language, isEscaped) => {
@@ -873,6 +1005,9 @@ export const renderMarkdownHtml = (text, options = {}) => {
 
         try {
             if (typeof window.marked.parse === 'function') {
+                if (_markedRenderer) {
+                    _markedRenderer.__yiwebHeadingSlugger = createHeadingSlugger();
+                }
                 const rendered = window.marked.parse(raw, {
                     renderer: _markedRenderer || undefined,
                     breaks,
@@ -886,6 +1021,86 @@ export const renderMarkdownHtml = (text, options = {}) => {
         }
     } catch (_) {
         return '';
+    }
+};
+
+export const getMarkdownToc = (text, options = {}) => {
+    try {
+        const raw = text == null ? '' : String(text);
+        if (!raw) return [];
+
+        const minDepth = Math.max(1, Math.min(6, Number(options.minDepth || 1) || 1));
+        const maxDepth = Math.max(minDepth, Math.min(6, Number(options.maxDepth || 4) || 4));
+        const slugger = createHeadingSlugger();
+
+        const marked = typeof window !== 'undefined' ? window.marked : null;
+        const lexer =
+            marked && typeof marked.lexer === 'function'
+                ? marked.lexer.bind(marked)
+                : marked && marked.Lexer && typeof marked.Lexer.lex === 'function'
+                    ? (src, opt) => marked.Lexer.lex(src, opt)
+                    : null;
+
+        const pickHeadingText = (token) => {
+            const t = token && (token.text || token.raw || '');
+            return decodeHtmlText(stripInlineHtml(t));
+        };
+
+        const items = [];
+
+        if (lexer) {
+            let tokens = [];
+            try {
+                tokens = lexer(raw, { gfm: true, breaks: true }) || [];
+            } catch (_) {
+                try { tokens = lexer(raw) || []; } catch (_) { tokens = []; }
+            }
+
+            const walk = (arr) => {
+                if (!Array.isArray(arr)) return;
+                for (const token of arr) {
+                    if (!token) continue;
+                    if (token.type === 'heading' || token.type === 'heading_open') {
+                        const depth = Number(token.depth || token.level || token.rank || token.headingLevel || 0) || 0;
+                        const level = depth > 0 ? depth : Number(token.depth) || 0;
+                        const finalLevel = level > 0 ? level : Number(token.level) || 0;
+                        const l = finalLevel || 0;
+                        if (l >= minDepth && l <= maxDepth) {
+                            const plain = pickHeadingText(token);
+                            const id = slugger.slug(plain);
+                            items.push({ id, level: l, text: plain });
+                        }
+                    } else if (token.type === 'heading') {
+                        const l = Number(token.depth || 0) || 0;
+                        if (l >= minDepth && l <= maxDepth) {
+                            const plain = pickHeadingText(token);
+                            const id = slugger.slug(plain);
+                            items.push({ id, level: l, text: plain });
+                        }
+                    }
+                    if (token.tokens) walk(token.tokens);
+                    if (token.items) walk(token.items);
+                    if (token.children) walk(token.children);
+                    if (token.blocks) walk(token.blocks);
+                }
+            };
+            walk(tokens);
+            return items;
+        }
+
+        const lines = raw.replace(/\r\n/g, '\n').split('\n');
+        for (const line of lines) {
+            const m = String(line || '').match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
+            if (!m) continue;
+            const l = m[1].length;
+            if (l < minDepth || l > maxDepth) continue;
+            const plain = decodeHtmlText(stripInlineHtml(m[2]));
+            const id = slugger.slug(plain);
+            items.push({ id, level: l, text: plain });
+        }
+        return items;
+    } catch (_) {
+        return [];
     }
 };
 
