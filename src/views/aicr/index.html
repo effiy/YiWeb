@@ -20,52 +20,26 @@
 <body>
     <div id="app">
         <!-- 顶部搜索与分类区域 -->
-        <header class="header-row" role="banner">
-            <section class="search-row">
-                <form class="search-box" role="search" aria-label="代码审查搜索">
-                    <button type="button" class="search-logo" @click="openLink('/index.html')" aria-label="打开首页">
-                        <i class="fas fa-globe" aria-hidden="true"></i>
-                    </button>
-                    <div class="search-input-wrapper">
-                        <label for="messageInput" class="visually-hidden">搜索输入框</label>
-                        <textarea id="messageInput" placeholder="搜索网站、标签或描述..." rows="1" maxlength="2000"
-                            aria-label="搜索输入框" autocomplete="off" spellcheck="false"
-                            @keydown="handleMessageInput" @compositionstart="handleCompositionStart"
-                            @compositionend="handleCompositionEnd" @input="handleSearchInput"></textarea>
-
-                        <!-- 清除搜索按钮 -->
-                        <div class="search-clear" v-if="searchQueryValue">
-                            <button type="button" @click.prevent="clearSearch" class="clear-search-btn" title="清除搜索"
-                                aria-label="清除搜索内容">
-                                <i class="fas fa-times" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-                <div class="header-controls">
-                    <button
-                        type="button"
-                        class="header-icon-btn"
-                        @click="openLink('https://effiy.cn/src/views/news/index.html')"
-                        title="新闻"
-                        aria-label="打开新闻页"
-                    >
-                        <i class="fas fa-newspaper" aria-hidden="true"></i>
-                    </button>
-                    <button
-                        type="button"
-                        class="header-icon-btn"
-                        @click="openAuth($event)"
-                        onclick="window.openAuth && window.openAuth()"
-                        title="API 鉴权"
-                        aria-label="API 鉴权"
-                    >
-                        <i class="fas fa-key" aria-hidden="true"></i>
-                    </button>
-                </div>
-
-            </section>
-        </header>
+        <search-header
+            v-model:search-query="searchQuery"
+            placeholder="搜索网站、标签或描述..."
+            home-href="/index.html"
+            home-icon-class="fas fa-globe"
+            home-aria-label="打开首页"
+            :show-aicr-button="false"
+            :show-news-button="true"
+            news-href="https://effiy.cn/src/views/news/index.html"
+            news-button-title="新闻"
+            :show-rss-manager-button="false"
+            :sidebar-toggle-enabled="false"
+            :sidebar-collapsed="sidebarCollapsed"
+            :original-data="[]"
+            @search-input="handleSearchInput"
+            @search-keydown="handleMessageInput"
+            @composition-start="handleCompositionStart"
+            @composition-end="handleCompositionEnd"
+            @clear-search="clearSearch"
+        ></search-header>
         <main class="aicr-main">
             <!-- 侧边栏展开把手 (收起时显示) -->
             <button type="button" class="sidebar-expand-handle" v-show="sidebarCollapsed" @click="toggleSidebar"

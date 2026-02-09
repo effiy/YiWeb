@@ -13,6 +13,22 @@ registerGlobalComponent({
                     type: String,
                     default: ''
                 },
+                placeholder: {
+                    type: String,
+                    default: '搜索任务内容，支持标题、描述、输入输出、步骤等...'
+                },
+                homeHref: {
+                    type: String,
+                    default: '/'
+                },
+                homeIconClass: {
+                    type: String,
+                    default: 'fas fa-brain'
+                },
+                homeAriaLabel: {
+                    type: String,
+                    default: '返回首页'
+                },
                 // 分类列表
                 categories: {
                     type: Array,
@@ -37,9 +53,56 @@ registerGlobalComponent({
                 sidebarCollapsed: {
                     type: Boolean,
                     default: false
+                },
+                sidebarToggleEnabled: {
+                    type: Boolean,
+                    default: true
+                },
+                showAicrButton: {
+                    type: Boolean,
+                    default: true
+                },
+                aicrHref: {
+                    type: String,
+                    default: '/src/views/aicr/index.html'
+                },
+                aicrButtonTitle: {
+                    type: String,
+                    default: '代码审查'
+                },
+                showNewsButton: {
+                    type: Boolean,
+                    default: false
+                },
+                newsHref: {
+                    type: String,
+                    default: '/src/views/news/index.html'
+                },
+                newsButtonTitle: {
+                    type: String,
+                    default: '新闻'
+                },
+                showRssManagerButton: {
+                    type: Boolean,
+                    default: true
+                },
+                showAuthButton: {
+                    type: Boolean,
+                    default: true
                 }
     },
-    emits: ['update:searchQuery', 'search-keydown', 'clear-search', 'toggle-category', 'filter-change', 'toggle-sidebar', 'open-rss-manager'],
+    emits: [
+        'update:searchQuery',
+        'search-keydown',
+        'search-input',
+        'clear-search',
+        'toggle-category',
+        'filter-change',
+        'toggle-sidebar',
+        'open-rss-manager',
+        'composition-start',
+        'composition-end',
+    ],
     data() {
         return {
             // 搜索建议相关
@@ -118,7 +181,7 @@ registerGlobalComponent({
             },
     methods: {
                 goHome() {
-                    window.location.href = '/';
+                    this.openLink(this.homeHref);
                 },
 
                 /**
@@ -128,6 +191,7 @@ registerGlobalComponent({
                 handleSearchInput(event) {
                     const value = event.target.value;
                     this.$emit('update:searchQuery', value);
+                    this.$emit('search-input', event);
                     
                     // 显示搜索建议
                     this.showSuggestions = value.length > 0;
@@ -241,6 +305,14 @@ registerGlobalComponent({
                     if (this.searchQuery && this.searchQuery.length > 0) {
                         this.showSuggestions = true;
                     }
+                },
+
+                handleCompositionStart(event) {
+                    this.$emit('composition-start', event);
+                },
+
+                handleCompositionEnd(event) {
+                    this.$emit('composition-end', event);
                 },
 
                 /**

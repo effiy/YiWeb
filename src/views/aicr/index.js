@@ -23,11 +23,13 @@ const { computed } = Vue;
             useComputed,
             useMethods,
             components: [
+                'SearchHeader',
                 'FileTree',
                 'CodeView',
                 'MarkdownView',
             ],
             componentModules: [
+                '/src/components/common/searchHeader/index.js',
                 '/src/views/aicr/components/fileTree/index.js',
                 '/src/views/aicr/components/codeView/index.js',
                 '/src/markdown/components/markdownView/index.js'

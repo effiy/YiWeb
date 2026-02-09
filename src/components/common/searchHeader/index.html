@@ -2,8 +2,8 @@
     <!-- 第一行：搜索框和筛选 -->
     <section class="search-row">
         <form class="search-box" role="search" @submit.prevent>
-            <button type="button" class="search-logo" @click="goHome()" aria-label="返回首页">
-                <i class="fas fa-brain" aria-hidden="true"></i>
+            <button type="button" class="search-logo" @click="goHome()" :aria-label="homeAriaLabel">
+                <i :class="homeIconClass" aria-hidden="true"></i>
             </button>
             <div class="search-input-wrapper">
                 <textarea 
@@ -11,9 +11,11 @@
                     :value="searchQuery"
                     @input="handleSearchInput"
                     @keydown="handleKeydown"
+                    @compositionstart="handleCompositionStart"
+                    @compositionend="handleCompositionEnd"
                     @focus="handleSearchFocus"
                     @blur="handleSearchBlur"
-                    placeholder="搜索任务内容，支持标题、描述、输入输出、步骤等..." 
+                    :placeholder="placeholder" 
                     rows="1" 
                     maxlength="2000"
                     aria-label="消息输入框"
@@ -72,15 +74,27 @@
         <div class="header-controls">
             <button
                 type="button"
-                @click="openLink('/src/views/aicr/index.html')"
+                v-if="showAicrButton"
+                @click="openLink(aicrHref)"
                 class="header-icon-btn"
-                title="代码审查"
-                aria-label="代码审查"
+                :title="aicrButtonTitle"
+                :aria-label="aicrButtonTitle"
             >
                 <i class="fas fa-code" aria-hidden="true"></i>
             </button>
             <button
                 type="button"
+                v-if="showNewsButton"
+                @click="openLink(newsHref)"
+                class="header-icon-btn"
+                :title="newsButtonTitle"
+                :aria-label="newsButtonTitle"
+            >
+                <i class="fas fa-newspaper" aria-hidden="true"></i>
+            </button>
+            <button
+                type="button"
+                v-if="showRssManagerButton"
                 @click="$emit('open-rss-manager')"
                 class="header-icon-btn"
                 title="RSS 管理"
@@ -90,6 +104,7 @@
             </button>
             <button
                 type="button"
+                v-if="showAuthButton"
                 @click="openAuth($event)"
                 class="header-icon-btn"
                 title="API 鉴权"
@@ -100,6 +115,7 @@
             <!-- 折叠按钮 -->
             <button 
                 type="button"
+                v-if="sidebarToggleEnabled"
                 @click="handleToggleSidebar"
                 class="sidebar-toggle-btn"
                 title="切换侧边栏"
