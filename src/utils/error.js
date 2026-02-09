@@ -4,8 +4,6 @@
  * author: liangliang
  */
 
-import '/src/utils/log.js';
-
 /**
  * 错误类型枚举
  */
