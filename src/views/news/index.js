@@ -20,6 +20,12 @@ import { createBaseView } from '/src/utils/baseView.js';
                 'NewsList',
                 'Calendar'
             ],
+            componentModules: [
+                '/src/components/common/searchHeader/index.js',
+                '/src/markdown/components/markdownView/index.js',
+                '/src/components/business/newsList/index.js',
+                '/src/components/calendar/index.js'
+            ],
             plugins: [],
             onMounted: (app) => {
                 console.log('[新闻页面] 应用已挂载');
@@ -32,4 +38,3 @@ import { createBaseView } from '/src/utils/baseView.js';
         console.error('[新闻页面] 应用初始化失败:', error);
     }
 })();
-

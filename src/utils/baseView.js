@@ -43,7 +43,9 @@ async function createVueApp(options = {}) {
         components = ViewConfig.DEFAULT_COMPONENTS,
         plugins = ViewConfig.DEFAULT_PLUGINS,
         onError = ViewConfig.DEFAULT_ERROR_HANDLER,
-        rootTemplate = null
+        rootTemplate = null,
+        cssFiles = [],
+        componentModules = []
     } = options;
 
     // 验证必需参数
@@ -58,6 +60,14 @@ async function createVueApp(options = {}) {
         // 如果提供了根模板，则使用它而不是解析现有DOM
         ...(rootTemplate ? { template: rootTemplate } : {})
     });
+
+    if (Array.isArray(cssFiles) && cssFiles.length) {
+        loadCSSFiles(cssFiles);
+    }
+
+    if (Array.isArray(componentModules) && componentModules.length) {
+        await loadJSFiles(componentModules);
+    }
 
     // 注册组件（异步）
     await registerComponents(app, components);
@@ -190,6 +200,8 @@ async function createBaseView(config = {}) {
         plugins = ViewConfig.DEFAULT_PLUGINS,
         onMounted = null,
         selector = '#app',
+        cssFiles = [],
+        componentModules = [],
         // 支持传入额外的 methods、data 和 computed（用于兼容 Options API 风格）
         methods: extraMethods = {},
         data: extraData = {},
@@ -293,6 +305,8 @@ async function createBaseView(config = {}) {
         setup,
         components,
         plugins,
+        cssFiles,
+        componentModules,
         onError: (error) => {
             console.error('[视图错误]', error);
         }
@@ -345,8 +359,17 @@ function waitForComponents(componentNames, timeout = 5000) {
  * @param {Array} cssFiles - CSS文件路径列表
  */
 function loadCSSFiles(cssFiles) {
-    cssFiles.forEach(cssFile => {
-        if (!document.querySelector(`link[href*="${cssFile}"]`)) {
+    (Array.isArray(cssFiles) ? cssFiles : []).forEach(cssFile => {
+        if (!cssFile) return;
+        const targetHref = new URL(cssFile, location.href).href;
+        const exists = Array.from(document.querySelectorAll('link[rel="stylesheet"][href]')).some(link => {
+            try {
+                return new URL(link.href, location.href).href === targetHref;
+            } catch (_) {
+                return false;
+            }
+        });
+        if (!exists) {
             const link = document.createElement('link');
             link.rel = 'stylesheet';
             link.href = cssFile;
@@ -362,18 +385,36 @@ function loadCSSFiles(cssFiles) {
  * @returns {Promise} 加载完成的Promise
  */
 function loadJSFiles(jsFiles) {
-    const loadPromises = jsFiles.map(jsFile => {
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.type = 'module';
-            script.src = jsFile;
-            script.onload = resolve;
-            script.onerror = () => reject(new Error(`加载失败: ${jsFile}`));
-            document.head.appendChild(script);
+    const files = Array.isArray(jsFiles) ? jsFiles : [];
+    const tasks = files
+        .filter(Boolean)
+        .map(async (jsFile) => {
+            try {
+                await import(jsFile);
+                return;
+            } catch (_) { }
+
+            const targetSrc = new URL(jsFile, location.href).href;
+            const exists = Array.from(document.querySelectorAll('script[type="module"][src]')).some(script => {
+                try {
+                    return new URL(script.src, location.href).href === targetSrc;
+                } catch (_) {
+                    return false;
+                }
+            });
+            if (exists) return;
+
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.type = 'module';
+                script.src = jsFile;
+                script.onload = resolve;
+                script.onerror = () => reject(new Error(`加载失败: ${jsFile}`));
+                document.head.appendChild(script);
+            });
         });
-    });
-    
-    return Promise.all(loadPromises);
+
+    return Promise.all(tasks);
 }
 
 function exposeToWindow() {
@@ -405,5 +446,4 @@ exposeToWindow();
 // 注意：由于HTML使用普通script标签，不支持ES6模块语法
 // 如果需要ES6模块支持，请将script标签改为 type="module"
 // 或者使用动态import()语法 
-
 

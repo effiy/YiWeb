@@ -27,6 +27,11 @@ const { computed } = Vue;
                 'CodeView',
                 'MarkdownView',
             ],
+            componentModules: [
+                '/src/views/aicr/components/fileTree/index.js',
+                '/src/views/aicr/components/codeView/index.js',
+                '/src/markdown/components/markdownView/index.js'
+            ],
             data: {
                 // 暴露store数据给模板
                 sidebarCollapsed: store.sidebarCollapsed,
