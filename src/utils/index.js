@@ -1,8 +1,12 @@
-// author: liangliang
-// 工具库聚合 - 全局变量方式加载（兼容非模块环境）
+export * from '/src/utils/core/index.js';
+export * from '/src/utils/browser/index.js';
+export * from '/src/utils/time/index.js';
+export * from '/src/utils/view/index.js';
+export * from '/src/utils/render/index.js';
 
-// 注意：此文件已转换为全局变量方式，避免ES6模块语法错误
-// 所有工具函数将通过其他工具文件以全局变量方式暴露
-console.log('[Utils] 工具库聚合文件已加载');
-
+export * from '/src/utils/domain.js';
+export * from '/src/utils/exportUtils.js';
+export * from '/src/utils/loading.js';
+export * from '/src/utils/message.js';
+export * from '/src/utils/template.js';
 

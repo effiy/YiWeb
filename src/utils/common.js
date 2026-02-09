@@ -143,7 +143,10 @@ function handleStorageQuotaExceeded(key, value, stringify) {
  * @returns {string} 格式化后的时间字符串
  */
 export function formatTime(dateInput, format = 'ago') {
-    const date = new Date(dateInput);
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    if (isNaN(date.getTime())) {
+        return '未知时间';
+    }
     const now = new Date();
     
     if (format === 'ago') {
@@ -175,10 +178,10 @@ export function formatTime(dateInput, format = 'ago') {
  * @returns {string} 摘要文本
  */
 export function extractExcerpt(text, maxLength = 100, suffix = '...') {
-    if (!text) return '';
+    if (text === null || text === undefined) return '';
     
     // 移除HTML标签
-    const plainText = text.replace(/<[^>]*>/g, '').trim();
+    const plainText = String(text).replace(/<[^>]*>/g, '').trim();
     
     if (plainText.length <= maxLength) {
         return plainText;
@@ -195,7 +198,10 @@ export function extractExcerpt(text, maxLength = 100, suffix = '...') {
  * @returns {number} 随机数
  */
 export function random(min, max, integer = false) {
-    const value = Math.random() * (max - min) + min;
+    const minNum = Number(min);
+    const maxNum = Number(max);
+    if (!Number.isFinite(minNum) || !Number.isFinite(maxNum)) return NaN;
+    const value = Math.random() * (maxNum - minNum) + minNum;
     return integer ? Math.floor(value) : value;
 }
 
@@ -205,6 +211,7 @@ export function random(min, max, integer = false) {
  * @returns {string} CSS变量字符串
  */
 export function createCSSVars(vars) {
+    if (!vars || typeof vars !== 'object') return '';
     return Object.entries(vars)
         .map(([key, value]) => `--${key}: ${value}`)
         .join(';');
@@ -219,10 +226,12 @@ export function createCSSVars(vars) {
  */
 export function isSearchMatch(text, query, caseSensitive = false) {
     if (!query) return true;
-    if (!text) return false;
+    if (text === null || text === undefined) return false;
     
-    const searchText = caseSensitive ? text : text.toLowerCase();
-    const searchQuery = caseSensitive ? query : query.toLowerCase();
+    const searchTextRaw = String(text);
+    const searchQueryRaw = String(query);
+    const searchText = caseSensitive ? searchTextRaw : searchTextRaw.toLowerCase();
+    const searchQuery = caseSensitive ? searchQueryRaw : searchQueryRaw.toLowerCase();
     
     return searchText.includes(searchQuery);
 }

@@ -4,6 +4,8 @@
  * 提供统一的事件管理方法，减少重复的事件处理逻辑
  */
 
+import { debounce as debounceFn, throttle as throttleFn, safeGetItem, safeSetItem } from '/src/utils/common.js';
+
 /**
  * 事件管理器类
  */
@@ -141,46 +143,9 @@ class EventManager {
     wrapHandler(handler, behaviorOptions = {}) {
         const { debounce, throttle } = behaviorOptions;
         
-        let wrappedHandler = handler;
-        
-        if (debounce) {
-            wrappedHandler = this.createDebounceHandler(handler, debounce);
-        } else if (throttle) {
-            wrappedHandler = this.createThrottleHandler(handler, throttle);
-        }
-        
-        return wrappedHandler;
-    }
-
-    /**
-     * 创建防抖处理函数
-     * @param {Function} handler - 原始处理函数
-     * @param {number} delay - 延迟时间
-     * @returns {Function} 防抖处理函数
-     */
-    createDebounceHandler(handler, delay) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => handler.apply(this, args), delay);
-        };
-    }
-
-    /**
-     * 创建节流处理函数
-     * @param {Function} handler - 原始处理函数
-     * @param {number} limit - 限制间隔
-     * @returns {Function} 节流处理函数
-     */
-    createThrottleHandler(handler, limit) {
-        let inThrottle;
-        return function(...args) {
-            if (!inThrottle) {
-                handler.apply(this, args);
-                inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
-            }
-        };
+        if (debounce) return debounceFn(handler, debounce);
+        if (throttle) return throttleFn(handler, throttle);
+        return handler;
     }
 
     /**
@@ -558,26 +523,15 @@ export class SearchHandler {
      * 保存搜索历史
      */
     saveSearchHistory() {
-        try {
-            localStorage.setItem('searchHistory', JSON.stringify(this.searchHistory));
-        } catch (error) {
-            console.warn('保存搜索历史失败:', error);
-        }
+        safeSetItem('searchHistory', this.searchHistory);
     }
 
     /**
      * 加载搜索历史
      */
     loadSearchHistory() {
-        try {
-            const history = localStorage.getItem('searchHistory');
-            if (history) {
-                this.searchHistory = JSON.parse(history);
-            }
-        } catch (error) {
-            console.warn('加载搜索历史失败:', error);
-            this.searchHistory = [];
-        }
+        const history = safeGetItem('searchHistory', []);
+        this.searchHistory = Array.isArray(history) ? history : [];
     }
 }
 
