@@ -193,6 +193,8 @@
           @delete-item="$emit('delete-item', $event)"
           @create-session="$emit('create-session', $event)"
           @batch-select-file="$emit('batch-select-file', $event)"
+          @folder-import="$emit('folder-import', $event)"
+          @folder-export="$emit('folder-export', $event)"
         ></file-tree-node>
       </template>
     </ul>

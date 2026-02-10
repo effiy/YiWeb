@@ -449,6 +449,24 @@ const { computed } = Vue;
                         logError('[主页面] 删除失败:', error);
                     }
                 },
+                handleFolderImport: async function (payload) {
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleFolderImport(payload);
+                    } catch (error) {
+                        logError('[主页面] 目录导入失败:', error);
+                        alert('导入失败：' + (error?.message || '未知错误'));
+                    }
+                },
+                handleFolderExport: async function (payload) {
+                    try {
+                        const methods = useMethods(store);
+                        await methods.handleFolderExport(payload);
+                    } catch (error) {
+                        logError('[主页面] 目录导出失败:', error);
+                        alert('导出失败：' + (error?.message || '未知错误'));
+                    }
+                },
 
                 // 搜索相关方法
                 handleSearchInput: function (event) {

@@ -101,7 +101,7 @@ const createFileTreeNode = () => {
                 return this.tree.map(item => sortFileTreeRecursively(item));
             }
         },
-        emits: ['file-select', 'folder-toggle', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'batch-select-file'],
+        emits: ['file-select', 'folder-toggle', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'batch-select-file', 'folder-import', 'folder-export'],
         methods: {
             // 排序函数，供模板使用
             sortFileTreeItems(items) {
@@ -163,6 +163,24 @@ const createFileTreeNode = () => {
                     }
                     this.$emit('delete-item', { key });
                 }, '删除');
+            },
+            importFolder(event, folderKey) {
+                return safeExecute(() => {
+                    event && event.stopPropagation && event.stopPropagation();
+                    if (!folderKey || typeof folderKey !== 'string') {
+                        throw createError('文件夹Key无效', ErrorTypes.VALIDATION, '导入');
+                    }
+                    this.$emit('folder-import', { folderKey });
+                }, '导入');
+            },
+            exportFolder(event, folderKey) {
+                return safeExecute(() => {
+                    event && event.stopPropagation && event.stopPropagation();
+                    if (!folderKey || typeof folderKey !== 'string') {
+                        throw createError('文件夹Key无效', ErrorTypes.VALIDATION, '导出');
+                    }
+                    this.$emit('folder-export', { folderKey });
+                }, '导出');
             },
 
             // 开始长按计时
@@ -643,6 +661,8 @@ const createFileTreeNode = () => {
                     <span class="file-actions" @click.stop>
                         <button :title="'在 ' + item.name + ' 下新建文件夹'" @click="createSubFolder($event, item.key)"><i class="fas fa-folder-plus"></i></button>
                         <button :title="'在 ' + item.name + ' 下新建文件'" @click="createSubFile($event, item.key)"><i class="fas fa-file"></i></button>
+                        <button :title="'导入到 ' + item.name" @click="importFolder($event, item.key)"><i class="fas fa-upload"></i></button>
+                        <button :title="'导出 ' + item.name" @click="exportFolder($event, item.key)"><i class="fas fa-download"></i></button>
                         <button :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
                     </span>
                 </div>
@@ -698,6 +718,8 @@ const createFileTreeNode = () => {
                              @delete-item="$emit('delete-item', $event)"
                              @create-session="$emit('create-session', $event)"
                              @batch-select-file="$emit('batch-select-file', $event)"
+                             @folder-import="$emit('folder-import', $event)"
+                             @folder-export="$emit('folder-export', $event)"
                         ></file-tree-node>
                     </template>
                 </ul>
@@ -971,7 +993,7 @@ const componentOptions = {
             return files;
         }
     },
-    emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'tag-select', 'tag-clear', 'tag-filter-reverse', 'tag-filter-no-tags', 'tag-filter-expand', 'tag-filter-search'],
+    emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'tag-select', 'tag-clear', 'tag-filter-reverse', 'tag-filter-no-tags', 'tag-filter-expand', 'tag-filter-search', 'folder-import', 'folder-export'],
     data() {
         return {
             searchDebounceTimer: null,
@@ -1413,7 +1435,6 @@ const componentOptions = {
         console.error('FileTree 组件初始化失败:', error);
     }
 })();
-
 
 
 
