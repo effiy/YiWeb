@@ -7,7 +7,7 @@
 // import { window.checkStatus, window.isJsonResponse } from '/src/services/helper/window.checkStatus.js';
 // import { logDebug, window.logInfo, logWarn, window.logError, window.timeStart, window.timeEnd } from '/src/utils/log.js';
 // 导入日志工具，确保 window.logInfo、window.timeStart 等函数可用
-import '/src/utils/log.js';
+import '/src/utils/core/log.js';
 // 导入状态检查工具，确保 window.checkStatus 和 window.isJsonResponse 函数可用
 import '/src/services/helper/checkStatus.js';
 // 导入认证工具，确保 getAuthHeaders 函数可用

@@ -8,9 +8,9 @@
 // import { window.safeExecute } from './error.js';
 // import { window.logInfo, window.logWarn, window.logError } from './log.js';
 // 导入日志工具，确保 window.logError 等函数可用
-import './log.js';
+import '/src/utils/core/log.js';
 // 导入错误处理工具，确保 window.safeExecute 函数可用
-import './error.js';
+import '/src/utils/core/error.js';
 
 /**
  * 视图配置选项
@@ -446,4 +446,3 @@ exposeToWindow();
 // 注意：由于HTML使用普通script标签，不支持ES6模块语法
 // 如果需要ES6模块支持，请将script标签改为 type="module"
 // 或者使用动态import()语法 
-

@@ -1,7 +1,7 @@
 // 搜索头部组件 - 包含搜索框和分类过滤器
 // 作者：liangliang
 
-import { registerGlobalComponent } from '/src/utils/componentLoader.js';
+import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 import { openAuth as openAuthSettings } from '/src/services/helper/authUtils.js?v=1';
 
 registerGlobalComponent({

@@ -67,7 +67,7 @@ export function parseUrlParams(url) {
 }
 
 // 使用通用工具中的防抖与节流，避免重复实现
-export { debounce, throttle } from '/src/utils/common.js';
+export { debounce, throttle } from '/src/utils/core/common.js';
 
 /**
  * 格式化错误信息

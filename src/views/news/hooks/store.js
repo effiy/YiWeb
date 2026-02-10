@@ -4,9 +4,9 @@
  */
 
 import { buildServiceUrl, SERVICE_MODULE } from "/src/services/helper/requestHelper.js";
-import { formatDate, isFutureDate } from "/src/utils/date.js";
-import { safeExecuteAsync, createError, ErrorTypes } from "/src/utils/error.js";
-import { extractDomainCategory } from "/src/utils/domain.js";
+import { formatDate, isFutureDate } from "/src/utils/time/date.js";
+import { safeExecuteAsync, createError, ErrorTypes } from "/src/utils/core/error.js";
+import { extractDomainCategory } from "/src/utils/data/domain.js";
 
 /**
  * 对新闻项进行分类

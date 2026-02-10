@@ -3,7 +3,7 @@
 
 // 注意：此文件已转换为全局变量方式，避免ES6模块语法错误
 // API函数将通过其他API文件以全局变量方式暴露
-import '/src/utils/log.js';
+import '/src/utils/core/log.js';
 try {
   if (window.logInfo) window.logInfo('[APIs] API模块聚合文件已加载');
   else console.log('[APIs] API模块聚合文件已加载');

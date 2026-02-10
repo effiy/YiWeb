@@ -12,7 +12,7 @@ import {
     isFutureDate, 
     getTimeAgo, 
     generateCalendarDays 
-} from '/src/utils/date.js';
+} from '/src/utils/time/date.js';
 import { categorizeNewsItem } from '/src/views/news/hooks/store.js';
 
 /**
@@ -362,6 +362,4 @@ export const useComputed = (store) => {
 
     };
 };
-
-
 

@@ -1,4 +1,4 @@
-import { registerGlobalComponent } from '/src/utils/componentLoader.js';
+import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 import { renderMarkdownHtml, renderStreamingHtml } from '/src/markdown/index.js';
 
 const componentOptions = {

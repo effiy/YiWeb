@@ -1,7 +1,7 @@
 // 检查 HTTP 响应状态的辅助函数
 // 作者：liangliang
 
-import '/src/utils/log.js';
+import '/src/utils/core/log.js';
 // 导入认证错误处理器
 import { handle401Error } from './authErrorHandler.js';
 

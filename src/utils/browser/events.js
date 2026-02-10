@@ -4,7 +4,7 @@
  * 提供统一的事件管理方法，减少重复的事件处理逻辑
  */
 
-import { debounce as debounceFn, throttle as throttleFn, safeGetItem, safeSetItem } from '/src/utils/common.js';
+import { debounce as debounceFn, throttle as throttleFn, safeGetItem, safeSetItem } from '/src/utils/core/common.js';
 
 /**
  * 事件管理器类

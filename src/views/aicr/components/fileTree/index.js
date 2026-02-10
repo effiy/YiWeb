@@ -1,8 +1,8 @@
 // 文件树组件 - 负责文件目录树的展示和交互
 // 作者：liangliang
 
-import { safeExecute, createError, ErrorTypes } from '/src/utils/error.js';
-import { defineComponent } from '/src/utils/componentLoader.js';
+import { safeExecute, createError, ErrorTypes } from '/src/utils/core/error.js';
+import { defineComponent } from '/src/utils/view/componentLoader.js';
 
 // 统一的文件大小格式化（截断不进位，避免边界显示进位）
 function formatFileSizeCompact(bytes) {
@@ -1433,7 +1433,6 @@ const componentOptions = {
         console.error('FileTree 组件初始化失败:', error);
     }
 })();
-
 
 
 

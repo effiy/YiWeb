@@ -5,7 +5,7 @@
 import { createStore } from '/src/views/news/hooks/store.js';
 import { useComputed } from '/src/views/news/hooks/useComputed.js';
 import { useMethods } from '/src/views/news/hooks/useMethods.js';
-import { createBaseView } from '/src/utils/baseView.js';
+import { createBaseView } from '/src/utils/view/baseView.js';
 
 // 创建新闻页面应用
 (async function initNewsApp() {

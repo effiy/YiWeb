@@ -1,12 +1,12 @@
 // 项目文件列表组件
 // 作者：liangliang
 
-import { registerGlobalComponent } from '/src/utils/componentLoader.js';
+import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 import { getData } from '/src/services/index.js';
-import { formatDate } from '/src/utils/date.js';
-import { safeExecute } from '/src/utils/error.js';
+import { formatDate } from '/src/utils/time/date.js';
+import { safeExecute } from '/src/utils/core/error.js';
 // 导入日志工具，确保 window.logError 等函数可用
-import '/src/utils/log.js';
+import '/src/utils/core/log.js';
 
 
 
@@ -377,7 +377,7 @@ const componentOptions = {
             async exportData() {
                 try {
                     // 动态导入导出工具
-                    const { exportCategoryData } = await import('/src/utils/exportUtils.js');
+                    const { exportCategoryData } = await import('/src/utils/io/exportUtils.js');
                     
                     // 准备项目文件数据
                     const projectFilesData = this.internalProjectFiles.map(file => ({

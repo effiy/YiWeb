@@ -1,5 +1,5 @@
 // 日历组件 - 负责日期导航和小日历显示
-import { registerGlobalComponent } from '/src/utils/componentLoader.js';
+import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 
 registerGlobalComponent({
     name: 'Calendar',

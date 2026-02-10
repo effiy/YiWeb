@@ -1,2 +1,2 @@
-export * from '/src/utils/dom.js';
-export * from '/src/utils/events.js';
+export * from '/src/utils/browser/dom.js';
+export * from '/src/utils/browser/events.js';

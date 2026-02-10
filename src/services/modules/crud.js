@@ -11,7 +11,7 @@
 // } from '/src/services/helper/requestHelper.js';
 // import { window.logInfo, logWarn, window.logError } from '/src/utils/log.js';
 // 导入日志工具，确保 window.logError 等函数可用
-import '/src/utils/log.js';
+import '/src/utils/core/log.js';
 // 导入请求工具，确保 window.getRequest、window.postRequest 等函数可用
 import '/src/services/helper/requestHelper.js';
 // 导入认证工具

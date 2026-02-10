@@ -6,10 +6,10 @@
  * @param {Object} store - 状态存储对象
  * @returns {Object} 方法集合
  */
-import { getTimeAgo } from '/src/utils/date.js';
-import { safeExecute, safeExecuteAsync, createError, ErrorTypes, showSuccessMessage } from '/src/utils/error.js';
-import { updateUrlParams as updateUrlParamsInUrl } from '/src/utils/common.js';
-import { showSuccess, showError } from '/src/utils/message.js';
+import { getTimeAgo } from '/src/utils/time/date.js';
+import { safeExecute, safeExecuteAsync, createError, ErrorTypes, showSuccessMessage } from '/src/utils/core/error.js';
+import { updateUrlParams as updateUrlParamsInUrl } from '/src/utils/core/common.js';
+import { showSuccess, showError } from '/src/utils/ui/message.js';
 
 export const useMethods = (store) => {
     const { 

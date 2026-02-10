@@ -5,9 +5,9 @@
 import { createStore } from '/src/views/aicr/hooks/store.js';
 import { useComputed } from '/src/views/aicr/hooks/useComputed.js';
 import { useMethods } from '/src/views/aicr/hooks/useMethods.js';
-import { createBaseView } from '/src/utils/baseView.js';
-import { logInfo, logWarn, logError } from '/src/utils/log.js';
-import { formatTime as formatTimeUtil } from '/src/utils/common.js';
+import { createBaseView } from '/src/utils/view/baseView.js';
+import { logInfo, logWarn, logError } from '/src/utils/core/log.js';
+import { formatTime as formatTimeUtil } from '/src/utils/core/common.js';
 
 // 获取Vue的computed函数
 const { computed } = Vue;
@@ -432,7 +432,7 @@ const { computed } = Vue;
                 handleDeleteItem: async function (payload) {
                     try {
                         const methods = useMethods(store);
-                        const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
+                        const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/ui/loading.js');
                         showGlobalLoading('正在删除，请稍候...');
                         try {
                             await methods.handleDeleteItem(payload);

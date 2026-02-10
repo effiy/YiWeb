@@ -5,7 +5,7 @@
 
 import { getData, postData } from '/src/services/index.js';
 import { buildServiceUrl } from '/src/services/helper/requestHelper.js';
-import { safeExecuteAsync, createError, ErrorTypes } from '/src/utils/error.js';
+import { safeExecuteAsync, createError, ErrorTypes } from '/src/utils/core/error.js';
 import { getSessionSyncService } from '/src/views/aicr/services/sessionSyncService.js';
 import {
     normalizeFilePath,

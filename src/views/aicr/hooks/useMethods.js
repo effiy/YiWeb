@@ -6,7 +6,7 @@
  * @param {Object} store - 状态存储对象
  * @returns {Object} 方法集合
  */
-import { safeExecute, createError, ErrorTypes, showSuccessMessage } from '/src/utils/error.js';
+import { safeExecute, createError, ErrorTypes, showSuccessMessage } from '/src/utils/core/error.js';
 import { getData, postData, deleteData, batchOperations } from '/src/services/index.js';
 import { getStoredToken, saveToken, clearToken as clearStoredToken, openAuth as openAuthSettings } from '/src/services/helper/authUtils.js?v=1';
 import {
@@ -1272,7 +1272,7 @@ export const useMethods = (store) => {
             if (!zipFile) return;
 
             // 动态加载依赖与工具
-            const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
+            const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/ui/loading.js');
             let __uploadLoadingShown = false;
             try {
                 // 显示loading
@@ -2000,7 +2000,7 @@ export const useMethods = (store) => {
                     window.dispatchEvent(new CustomEvent('projectReady', { detail: {} }));
                 } catch (_) { }
 
-                const { showSuccess, showWarning } = await import('/src/utils/message.js');
+                const { showSuccess, showWarning } = await import('/src/utils/ui/message.js');
                 let msg = `导入完成：成功处理 ${filesUploaded} 个文件`;
                 if (filesUpdated > 0 && filesCreated > 0) {
                     msg += `（更新 ${filesUpdated} 个，新增 ${filesCreated} 个）`;
@@ -3742,7 +3742,7 @@ export const useMethods = (store) => {
                 if (e && typeof e.preventDefault === 'function') e.preventDefault();
 
                 try {
-                    const mod = await import('/src/utils/loading.js');
+                    const mod = await import('/src/utils/ui/loading.js');
                     if (mod && typeof mod.showGlobalLoading === 'function') mod.showGlobalLoading('正在上传图片...');
                     if (mod && typeof mod.hideGlobalLoading === 'function') hideGlobalLoading = mod.hideGlobalLoading;
                 } catch (_) { }
@@ -7416,7 +7416,7 @@ export const useMethods = (store) => {
 
                 console.log('[useMethods] 导入会话文件:', file.name);
 
-                const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
+                const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/ui/loading.js');
                 showGlobalLoading('正在导入会话...');
 
                 try {
@@ -7587,7 +7587,7 @@ export const useMethods = (store) => {
 
                 console.log('[useMethods] 导出会话，数量:', store.sessions.value.length);
 
-                const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
+                const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/ui/loading.js');
                 showGlobalLoading('正在导出会话...');
 
                 try {
@@ -7711,7 +7711,7 @@ export const useMethods = (store) => {
                     return;
                 }
 
-                const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
+                const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/ui/loading.js');
                 showGlobalLoading(`正在删除 ${count} 个会话...`);
 
                 try {
@@ -7851,7 +7851,7 @@ export const useMethods = (store) => {
                 }
 
                 try {
-                    const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
+                    const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/ui/loading.js');
                     showGlobalLoading('正在导出会话...');
 
                     const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default || window.JSZip || (await import('jszip')).default;
@@ -7892,7 +7892,7 @@ export const useMethods = (store) => {
                 if (!file) return;
 
                 try {
-                    const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/loading.js');
+                    const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/ui/loading.js');
                     showGlobalLoading('正在导入会话...');
 
                     const sessionSync = (await import('/src/views/aicr/services/sessionSyncService.js')).getSessionSyncService();

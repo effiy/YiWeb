@@ -2,11 +2,11 @@
 // 作者：liangliang
 
 // 导入共享的分类工具函数
-import { getTimeAgo } from '/src/utils/date.js';
-import { safeExecute, createError, ErrorTypes } from '/src/utils/error.js';
-import { extractDomainCategory } from '/src/utils/domain.js';
+import { getTimeAgo } from '/src/utils/time/date.js';
+import { safeExecute, createError, ErrorTypes } from '/src/utils/core/error.js';
+import { extractDomainCategory } from '/src/utils/data/domain.js';
 import { categorizeNewsItem } from '/src/views/news/hooks/store.js';
-import { registerGlobalComponent } from '/src/utils/componentLoader.js';
+import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 
 // 创建组件定义
 const componentOptions = {
@@ -216,7 +216,7 @@ const componentOptions = {
             async exportData() {
                 try {
                     // 动态导入导出工具
-                    const { exportCategoryData } = await import('/src/utils/exportUtils.js');
+                    const { exportCategoryData } = await import('/src/utils/io/exportUtils.js');
                     
                     // 获取当前显示的新闻数据
                     const newsData = this.getDisplayedItems().map(news => ({

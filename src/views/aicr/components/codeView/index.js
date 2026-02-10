@@ -1,5 +1,5 @@
-import { defineComponent } from '/src/utils/componentLoader.js';
-import { safeExecute } from '/src/utils/error.js';
+import { defineComponent } from '/src/utils/view/componentLoader.js';
+import { safeExecute } from '/src/utils/core/error.js';
 
 const normalizePath = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
 

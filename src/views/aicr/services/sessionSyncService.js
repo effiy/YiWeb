@@ -16,7 +16,7 @@
 
 import { postData, getData } from '/src/services/index.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
-import { safeExecuteAsync } from '/src/utils/error.js';
+import { safeExecuteAsync } from '/src/utils/core/error.js';
 import { normalizeFileObject, extractFileName } from '/src/views/aicr/utils/fileFieldNormalizer.js';
 
 class SessionSyncService {
