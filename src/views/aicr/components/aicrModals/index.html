@@ -1,7 +1,11 @@
-<div v-if="sessionContextEditorVisible" class="aicr-session-context-modal" role="dialog"
-    aria-modal="true" aria-label="页面上下文编辑器">
-    <div class="aicr-session-context-modal-mask" @click="closeSessionContextEditor"></div>
-    <div class="aicr-session-context-modal-body">
+<base-modal
+    :visible="sessionContextEditorVisible"
+    wrapper-class="aicr-session-context-modal"
+    mask-class="aicr-session-context-modal-mask"
+    body-class="aicr-session-context-modal-body"
+    aria-label="页面上下文编辑器"
+    @close="closeSessionContextEditor"
+>
         <div class="aicr-session-context-modal-header">
             <div class="aicr-session-context-modal-title">
                 页面上下文
@@ -69,14 +73,17 @@
                     :content="sessionContextDraft" aria-label="页面上下文预览"></markdown-view>
             </div>
         </div>
-    </div>
-</div>
+</base-modal>
 
-<div v-if="sessionMessageEditorVisible" class="aicr-session-context-modal" role="dialog"
-    aria-modal="true" aria-label="消息编辑器">
-    <div class="aicr-session-context-modal-mask" @click="closeSessionMessageEditor"></div>
-    <div class="aicr-session-context-modal-body" tabindex="0"
-        @keydown.esc="closeSessionMessageEditor">
+<base-modal
+    :visible="sessionMessageEditorVisible"
+    wrapper-class="aicr-session-context-modal"
+    mask-class="aicr-session-context-modal-mask"
+    body-class="aicr-session-context-modal-body"
+    aria-label="消息编辑器"
+    :body-tabindex="0"
+    @close="closeSessionMessageEditor"
+>
         <div class="aicr-session-context-modal-header">
             <div class="aicr-session-context-modal-title">
                 编辑消息
@@ -124,14 +131,17 @@
                     :content="sessionMessageEditorDraft" aria-label="消息预览"></markdown-view>
             </div>
         </div>
-    </div>
-</div>
+</base-modal>
 
-<div v-if="sessionFaqVisible" class="aicr-session-context-modal" role="dialog" aria-modal="true"
-    aria-label="常见问题">
-    <div class="aicr-session-context-modal-mask" @click="closeSessionFaq"></div>
-    <div class="aicr-session-context-modal-body aicr-session-faq-modal-body" tabindex="0"
-        @keydown.esc="closeSessionFaq">
+<base-modal
+    :visible="sessionFaqVisible"
+    wrapper-class="aicr-session-context-modal"
+    mask-class="aicr-session-context-modal-mask"
+    body-class="aicr-session-context-modal-body aicr-session-faq-modal-body"
+    aria-label="常见问题"
+    :body-tabindex="0"
+    @close="closeSessionFaq"
+>
         <div class="aicr-session-context-modal-header">
             <div class="aicr-session-context-modal-title">
                 💡 常见问题
@@ -309,14 +319,17 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
+</base-modal>
 
-<div v-if="sessionSettingsVisible" class="aicr-session-context-modal" role="dialog"
-    aria-modal="true" aria-label="AI 设置">
-    <div class="aicr-session-context-modal-mask" @click="closeSessionSettings"></div>
-    <div class="aicr-session-context-modal-body aicr-session-settings-modal-body" tabindex="0"
-        @keydown.esc="closeSessionSettings">
+<base-modal
+    :visible="sessionSettingsVisible"
+    wrapper-class="aicr-session-context-modal"
+    mask-class="aicr-session-context-modal-mask"
+    body-class="aicr-session-context-modal-body aicr-session-settings-modal-body"
+    aria-label="AI 设置"
+    :body-tabindex="0"
+    @close="closeSessionSettings"
+>
         <div class="aicr-session-context-modal-header">
             <div class="aicr-session-context-modal-title">
                 ⚙️ AI 设置
@@ -352,14 +365,17 @@
                     aria-label="系统提示词"></textarea>
             </div>
         </div>
-    </div>
-</div>
+</base-modal>
 
-<div v-if="weChatSettingsVisible" class="aicr-session-context-modal" role="dialog" aria-modal="true"
-    aria-label="微信机器人设置">
-    <div class="aicr-session-context-modal-mask" @click="closeWeChatSettings"></div>
-    <div class="aicr-session-context-modal-body aicr-session-settings-modal-body" tabindex="0"
-        @keydown.esc="closeWeChatSettings">
+<base-modal
+    :visible="weChatSettingsVisible"
+    wrapper-class="aicr-session-context-modal"
+    mask-class="aicr-session-context-modal-mask"
+    body-class="aicr-session-context-modal-body aicr-session-settings-modal-body"
+    aria-label="微信机器人设置"
+    :body-tabindex="0"
+    @close="closeWeChatSettings"
+>
         <div class="aicr-session-context-modal-header">
             <div class="aicr-session-context-modal-title">
                 🤖 微信机器人
@@ -417,14 +433,17 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
+</base-modal>
 
-<div v-if="sessionEditVisible" class="aicr-session-context-modal" role="dialog" aria-modal="true"
-    aria-label="编辑会话">
-    <div class="aicr-session-context-modal-mask" @click="closeSessionEdit"></div>
-    <div class="aicr-session-context-modal-body aicr-session-settings-modal-body" tabindex="0"
-        @keydown.esc="closeSessionEdit">
+<base-modal
+    :visible="sessionEditVisible"
+    wrapper-class="aicr-session-context-modal"
+    mask-class="aicr-session-context-modal-mask"
+    body-class="aicr-session-context-modal-body aicr-session-settings-modal-body"
+    aria-label="编辑会话"
+    :body-tabindex="0"
+    @close="closeSessionEdit"
+>
         <div class="aicr-session-context-modal-header">
             <div class="aicr-session-context-modal-title">
                 ✏️ 编辑会话
@@ -473,6 +492,4 @@
                 <div class="aicr-session-settings-hint">描述将帮助您更好地理解和管理会话内容</div>
             </div>
         </div>
-    </div>
-</div>
-
+</base-modal>

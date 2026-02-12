@@ -1,0 +1,7 @@
+<div v-if="visible" :class="wrapperClass" role="dialog" aria-modal="true" :aria-label="ariaLabel">
+    <div :class="maskClass" @click="onMaskClick"></div>
+    <div :class="bodyClass" :tabindex="bodyTabindex" @keydown.esc="onEscKeydown" @click.stop>
+        <slot></slot>
+    </div>
+</div>
+

@@ -1,0 +1,6 @@
+<div :class="containerClass" role="status" aria-live="polite">
+    <div :class="spinnerClass" aria-hidden="true"></div>
+    <div :class="textClass">{{ text }}</div>
+    <div v-if="subtext" :class="subtextClass">{{ subtext }}</div>
+</div>
+

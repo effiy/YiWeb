@@ -151,15 +151,7 @@
   </div>
 
   <!-- 加载状态 -->
-  <div
-    v-if="loading"
-    class="loading-container"
-    role="status"
-    aria-live="polite"
-  >
-    <div class="loading-spinner" aria-hidden="true"></div>
-    <div class="loading-text">正在加载文件树...</div>
-  </div>
+  <base-loading v-if="loading" text="正在加载文件树..."></base-loading>
 
   <!-- 错误状态 -->
   <div v-else-if="error" class="error-container" role="alert">
@@ -222,11 +214,19 @@
   </div>
 
   <!-- 空状态 -->
-  <div v-else class="empty-state" role="status">
-    <div class="empty-icon" aria-hidden="true">
-      <i class="fas fa-folder-open" aria-hidden="true"></i>
-    </div>
-    <div class="empty-title">暂无文件</div>
-    <div class="empty-subtitle">请检查文件目录或联系管理员</div>
-  </div>
+  <base-empty-state
+    v-else
+    wrapper-class="empty-state"
+    :cardless="true"
+    title="暂无文件"
+    subtitle="请检查文件目录或联系管理员"
+    title-class="empty-title"
+    subtitle-class="empty-subtitle"
+  >
+    <template #icon>
+      <div class="empty-icon" aria-hidden="true">
+        <i class="fas fa-folder-open" aria-hidden="true"></i>
+      </div>
+    </template>
+  </base-empty-state>
 </aside>

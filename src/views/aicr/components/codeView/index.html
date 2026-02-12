@@ -1,8 +1,5 @@
 <section class="code-view-container" role="main" aria-label="代码查看器">
-  <div v-if="loading" class="loading-container" role="status" aria-live="polite">
-    <div class="loading-spinner" aria-hidden="true"></div>
-    <div class="loading-text">正在加载代码...</div>
-  </div>
+  <base-loading v-if="loading" text="正在加载代码..."></base-loading>
   <div v-else-if="error" class="error-container" role="alert">
     <div class="error-icon" aria-hidden="true">
       <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
@@ -207,21 +204,28 @@
       </div>
     </div>
   </div>
-  <div v-else class="empty-container" role="status" aria-live="polite" @click="focusFileTree">
-    <div class="empty-card">
+  <base-empty-state
+    v-else
+    wrapper-class="empty-container"
+    card-class="empty-card"
+    title="未选择文件"
+    subtitle="从左侧文件树选择一个文件开始查看"
+    title-class="empty-title"
+    subtitle-class="empty-subtitle"
+    @click="focusFileTree"
+  >
+    <template #icon>
       <div class="empty-hero" aria-hidden="true">
         <div class="empty-icon" aria-hidden="true">
           <i class="fas fa-file-code" aria-hidden="true"></i>
         </div>
       </div>
-      <div class="empty-title">未选择文件</div>
-      <div class="empty-subtitle">从左侧文件树选择一个文件开始查看</div>
-      <div class="empty-actions">
-        <button type="button" class="empty-btn primary" @click.stop="emitCreateSession" aria-label="新建会话">
-          <i class="fas fa-plus" aria-hidden="true"></i>
-          <span>新建会话</span>
-        </button>
-      </div>
+    </template>
+    <div class="empty-actions">
+      <button type="button" class="empty-btn primary" @click.stop="emitCreateSession" aria-label="新建会话">
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        <span>新建会话</span>
+      </button>
     </div>
-  </div>
+  </base-empty-state>
 </section>
