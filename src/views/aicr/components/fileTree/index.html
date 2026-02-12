@@ -154,16 +154,18 @@
   <base-loading v-if="loading" text="正在加载文件树..."></base-loading>
 
   <!-- 错误状态 -->
-  <div v-else-if="error" class="error-container" role="alert">
-    <div class="error-icon" aria-hidden="true">
-      <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-    </div>
-    <div class="error-message">{{ error }}</div>
-    <button type="button" @click="$emit('reload')" class="retry-button">
+  <base-error-state
+    v-else-if="error"
+    :message="error"
+    icon-class="fas fa-exclamation-triangle"
+    :show-retry="true"
+    retry-text="重新加载"
+    @retry="$emit('reload')"
+  >
+    <template #retryIcon>
       <i class="fas fa-redo" aria-hidden="true"></i>
-      重新加载
-    </button>
-  </div>
+    </template>
+  </base-error-state>
 
   <!-- 文件树内容 -->
   <div v-else-if="tree.length > 0" class="file-tree-content">

@@ -1,11 +1,10 @@
 <section class="code-view-container" role="main" aria-label="代码查看器">
   <base-loading v-if="loading" text="正在加载代码..."></base-loading>
-  <div v-else-if="error" class="error-container" role="alert">
-    <div class="error-icon" aria-hidden="true">
-      <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-    </div>
-    <div class="error-message">{{ error }}</div>
-  </div>
+  <base-error-state
+    v-else-if="error"
+    :message="error"
+    icon-class="fas fa-exclamation-triangle"
+  ></base-error-state>
   <div v-else-if="file" class="code-content" :class="{ editing: isEditingFile, wrap: wrapEnabled }" :style="codeContentStyle">
     <div class="code-header">
       <div class="file-name" :title="fullFilePath">
@@ -106,81 +105,74 @@
               placeholder="搜索 (Ctrl+F)"
               aria-label="搜索代码"
             />
-            <button
+            <base-icon-button
               v-if="searchQuery"
-              type="button"
-              class="icon-button"
-              @click="clearSearch"
+              class-name="icon-button"
               title="清除搜索"
               aria-label="清除搜索"
+              @click="clearSearch"
             >
               <i class="fas fa-times" aria-hidden="true"></i>
-            </button>
+            </base-icon-button>
           </div>
           <div class="search-status" v-if="searchQuery">
             <span class="search-count">{{ searchMatchCount ? (activeMatchIndex + 1) : 0 }}/{{ searchMatchCount }}</span>
-            <button
-              type="button"
-              class="icon-button"
-              @click="findPrevMatch"
+            <base-icon-button
+              class-name="icon-button"
               :disabled="!searchMatchCount"
               title="上一个匹配 (Shift+F3)"
               aria-label="上一个匹配"
+              @click="findPrevMatch"
             >
               <i class="fas fa-chevron-up" aria-hidden="true"></i>
-            </button>
-            <button
-              type="button"
-              class="icon-button"
-              @click="findNextMatch"
+            </base-icon-button>
+            <base-icon-button
+              class-name="icon-button"
               :disabled="!searchMatchCount"
               title="下一个匹配 (F3)"
               aria-label="下一个匹配"
+              @click="findNextMatch"
             >
               <i class="fas fa-chevron-down" aria-hidden="true"></i>
-            </button>
+            </base-icon-button>
           </div>
         </div>
         <div class="toolbar-right">
-          <button
-            type="button"
-            class="icon-button"
-            :class="{ active: wrapEnabled }"
-            @click="toggleWrap"
+          <base-icon-button
+            class-name="icon-button"
+            :active="wrapEnabled"
             title="自动换行"
             aria-label="自动换行"
+            @click="toggleWrap"
           >
             <i class="fas fa-align-left" aria-hidden="true"></i>
-          </button>
-          <button
-            type="button"
-            class="icon-button"
-            @click="decreaseFont"
+          </base-icon-button>
+          <base-icon-button
+            class-name="icon-button"
             :disabled="fontSize <= fontSizeMin"
             title="减小字号"
             aria-label="减小字号"
+            @click="decreaseFont"
           >
             <i class="fas fa-minus" aria-hidden="true"></i>
-          </button>
-          <button
-            type="button"
-            class="icon-button"
-            @click="increaseFont"
+          </base-icon-button>
+          <base-icon-button
+            class-name="icon-button"
             :disabled="fontSize >= fontSizeMax"
             title="增大字号"
             aria-label="增大字号"
+            @click="increaseFont"
           >
             <i class="fas fa-plus" aria-hidden="true"></i>
-          </button>
-          <button
-            type="button"
-            class="icon-button"
-            @click="resetFont"
+          </base-icon-button>
+          <base-icon-button
+            class-name="icon-button"
             title="重置字号"
             aria-label="重置字号"
+            @click="resetFont"
           >
             <i class="fas fa-rotate-left" aria-hidden="true"></i>
-          </button>
+          </base-icon-button>
         </div>
       </div>
 

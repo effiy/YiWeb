@@ -1,0 +1,11 @@
+<button
+    :type="type"
+    :class="[className, { [activeClass]: active }]"
+    :disabled="disabled"
+    :title="title"
+    :aria-label="ariaLabel"
+    @click="$emit('click', $event)"
+>
+    <slot></slot>
+</button>
+

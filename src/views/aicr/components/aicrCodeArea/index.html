@@ -27,9 +27,12 @@
                         container-class="pet-chat-loading"
                         text="正在加载会话..."
                     ></base-loading>
-                    <div v-else-if="activeSessionError" class="pet-chat-error" role="alert" aria-live="polite">
-                        <div class="error-text">{{ activeSessionError }}</div>
-                    </div>
+                    <base-error-state
+                        v-else-if="activeSessionError"
+                        container-class="pet-chat-error"
+                        message-class="error-text"
+                        :message="activeSessionError"
+                    ></base-error-state>
                     <base-empty-state
                         v-else-if="!activeSession"
                         wrapper-class="pet-chat-empty"
