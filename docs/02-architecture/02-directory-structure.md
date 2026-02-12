@@ -56,6 +56,21 @@ YiWeb/
           index.css
           index.html
           index.js
+        baseModal/
+          index.html
+          index.js
+        baseLoading/
+          index.html
+          index.js
+        baseEmptyState/
+          index.html
+          index.js
+        baseErrorState/
+          index.html
+          index.js
+        baseIconButton/
+          index.html
+          index.js
       business/               # 业务组件（新闻列表等）
         newsList/
           index.css
