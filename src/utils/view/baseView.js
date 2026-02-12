@@ -289,6 +289,12 @@ async function createBaseView(config = {}) {
             ...reactiveExtraComputed, // 额外的计算属性
             ...boundExtraMethods     // 额外的方法
         };
+
+        try {
+            if (typeof Vue !== 'undefined' && typeof Vue.provide === 'function') {
+                Vue.provide('viewContext', result);
+            }
+        } catch (_) { }
         
         // 避免使用Object.keys枚举组件实例属性
         const resultKeys = ['store', 'computedProps', 'methods'];

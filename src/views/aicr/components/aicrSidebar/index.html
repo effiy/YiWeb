@@ -1,0 +1,62 @@
+<!-- 侧边栏展开把手 (收起时显示) -->
+<button type="button" class="sidebar-expand-handle" v-show="sidebarCollapsed" @click="toggleSidebar"
+    aria-label="展开侧边栏" title="展开侧边栏">
+    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+    <span class="label">展开</span>
+</button>
+
+<!-- 侧边栏收起按钮 (展开时显示，跟随侧边栏宽度) -->
+<button type="button" class="file-tree-toggle" v-show="!sidebarCollapsed" @click="toggleSidebar" title="收起侧边栏"
+    aria-label="收起侧边栏"
+    :style="{ left: (sidebarWidth - 14) + 'px', right: 'auto' }">
+    <i class="fas fa-chevron-left" aria-hidden="true"></i>
+</button>
+
+<aside class="aicr-sidebar" aria-label="侧边栏" v-show="!sidebarCollapsed"
+    :style="{ width: sidebarWidth + 'px' }">
+    <div class="sidebar-scroll-container">
+        <!-- 共享搜索容器（两种视图模式共用） -->
+        <div v-if="!sidebarCollapsed" class="file-tree-header-container">
+            <!-- 搜索输入框和视图切换 -->
+            <div class="file-tree-search-container">
+                <div class="file-tree-search-wrapper">
+                    <i class="fas fa-search file-tree-search-icon" aria-hidden="true"></i>
+                    <input type="text" class="file-tree-search-input"
+                        :value="searchQuery || ''"
+                        @input="handleSearchInput($event)"
+                        @keydown.esc="clearSearch()"
+                        placeholder="搜索文件..." aria-label="搜索" />
+                    <button
+                        v-if="searchQuery"
+                        class="file-tree-search-clear"
+                        @click="clearSearch()"
+                        type="button" aria-label="清除搜索" title="清除搜索 (ESC)">
+                        ✕
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <file-tree :tree="fileTree" :selected-key="selectedKey"
+            :expanded-folders="expandedFolders" :loading="loading" :error="errorMessage"
+            :collapsed="sidebarCollapsed" :search-query="searchQuery"
+            :batch-mode="batchMode" :selected-keys="selectedKeys" :view-mode="'tree'"
+            :selected-tags="(selectedSessionTags && Array.isArray(selectedSessionTags)) ? selectedSessionTags : []"
+            :tag-filter-reverse="tagFilterReverse || false" :tag-filter-no-tags="tagFilterNoTags || false"
+            :tag-filter-expanded="tagFilterExpanded || false"
+            :tag-filter-search-keyword="tagFilterSearchKeyword || ''" @file-select="handleFileSelect"
+            @folder-toggle="handleFolderToggle" @create-folder="handleCreateFolder"
+            @create-file="handleCreateFile" @rename-item="handleRenameItem" @delete-item="handleDeleteItem"
+            @create-session="handleCreateSession" @toggle-collapse="toggleSidebar"
+            @search-change="handleSearchChange" @toggle-batch-mode="toggleBatchMode"
+            @batch-select-file="toggleFileSelection" @download-project="handleDownloadProjectVersion"
+            @upload-project="handleUploadProjectVersion"
+            @folder-import="handleFolderImport"
+            @folder-export="handleFolderExport"
+            @tag-select="handleTagSelect" @tag-clear="handleTagClear"
+            @tag-filter-reverse="handleTagFilterReverse" @tag-filter-no-tags="handleTagFilterNoTags"
+            @tag-filter-expand="handleTagFilterExpand"
+            @tag-filter-search="handleTagFilterSearch"></file-tree>
+    </div>
+</aside>
+

@@ -1,0 +1,21 @@
+<search-header
+    v-model:search-query="searchQuery"
+    placeholder="搜索网站、标签或描述..."
+    home-href="/index.html"
+    home-icon-class="fas fa-globe"
+    home-aria-label="打开首页"
+    :show-aicr-button="false"
+    :show-news-button="true"
+    news-href="https://effiy.cn/src/views/news/index.html"
+    news-button-title="新闻"
+    :show-rss-manager-button="false"
+    :sidebar-toggle-enabled="false"
+    :sidebar-collapsed="sidebarCollapsed"
+    :original-data="[]"
+    @search-input="handleSearchInput"
+    @search-keydown="handleMessageInput"
+    @composition-start="handleCompositionStart"
+    @composition-end="handleCompositionEnd"
+    @clear-search="clearSearch"
+></search-header>
+
