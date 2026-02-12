@@ -22,7 +22,7 @@ import { createBaseView } from '/src/utils/view/baseView.js';
             ],
             componentModules: [
                 '/src/components/common/searchHeader/index.js',
-                '/src/markdown/components/markdownView/index.js',
+                '/src/markdown/markdownView/index.js',
                 '/src/components/business/newsList/index.js',
                 '/src/components/calendar/index.js'
             ],
