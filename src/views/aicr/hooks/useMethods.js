@@ -14,10 +14,10 @@ import {
     normalizeFileObject,
     normalizeTreeNode,
     extractFileName
-} from '/src/views/aicr/utils/fileFieldNormalizer.js';
+} from '/src/utils/aicr/fileFieldNormalizer.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
 import { getFileDeleteService, buildFileTreeFromSessions } from './store.js';
-import { getSessionSyncService } from '/src/views/aicr/services/sessionSyncService.js';
+import { getSessionSyncService } from '/src/services/aicr/sessionSyncService.js';
 import { renderMarkdownHtml, renderStreamingHtml } from '/src/markdown/index.js';
 
 export const useMethods = (store) => {
@@ -574,7 +574,7 @@ export const useMethods = (store) => {
     const _saveActiveSession = async (nextSession) => {
         try {
             if (!nextSession) return;
-            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+            const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
             const sessionSync = getSessionSyncService();
             await sessionSync.saveSession(nextSession);
         } catch (_) { }
@@ -1912,7 +1912,7 @@ export const useMethods = (store) => {
                 const failedFiles = [];
 
                 // 导入会话同步服务（与新建文件保持一致）
-                const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                 const sessionSync = getSessionSyncService();
 
                 for (const payload of filesPayload) {
@@ -2896,7 +2896,7 @@ export const useMethods = (store) => {
 
             try {
                 // 导入会话同步服务
-                const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                 const sessionSync = getSessionSyncService();
 
                 // 创建 README.md 文件对象
@@ -3097,7 +3097,7 @@ export const useMethods = (store) => {
 
             console.log('[会话批量] 开始删除, 数量:', count);
 
-            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+            const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
             const sessionSync = getSessionSyncService();
 
             let successCount = 0;
@@ -3424,7 +3424,7 @@ export const useMethods = (store) => {
             // 从后端加载完整的会话数据（包括消息）
             let fullSession = null;
             try {
-                const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                 const sessionSync = getSessionSyncService();
                 fullSession = await sessionSync.getSession(targetSessionKey);
                 console.log('[selectSessionForChat] 从后端加载会话数据，消息数量:', fullSession?.messages?.length || 0);
@@ -4120,7 +4120,7 @@ export const useMethods = (store) => {
                     if (mod && typeof mod.hideGlobalLoading === 'function') hideGlobalLoading = mod.hideGlobalLoading;
                 } catch (_) { }
 
-                const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                 const sessionSync = getSessionSyncService();
 
                 const toDataUrl = (file) => new Promise((resolve, reject) => {
@@ -5089,7 +5089,7 @@ export const useMethods = (store) => {
                 activeSession.value = nextSession;
 
                 try {
-                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     await sessionSync.saveSession(nextSession);
                 } catch (_) { }
@@ -5152,7 +5152,7 @@ export const useMethods = (store) => {
                 })();
                 if (!text && images.length === 0) return;
 
-                const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                 const sessionSync = getSessionSyncService();
                 const uploadOne = async (src) => {
                     const raw = String(src || '').trim();
@@ -5290,7 +5290,7 @@ export const useMethods = (store) => {
                 activeSession.value = finalSession;
 
                 try {
-                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
                 } catch (_) { }
@@ -5452,7 +5452,7 @@ export const useMethods = (store) => {
                 activeSession.value = finalSession;
 
                 try {
-                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
                 } catch (_) { }
@@ -5655,7 +5655,7 @@ export const useMethods = (store) => {
                 activeSession.value = finalSession;
 
                 try {
-                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
                 } catch (_) { }
@@ -5748,7 +5748,7 @@ export const useMethods = (store) => {
                 if (sessionChatLastDraftImages) sessionChatLastDraftImages.value = images;
 
                 const now = Date.now();
-                const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                 const sessionSync = getSessionSyncService();
                 const uploadOne = async (src) => {
                     const raw = String(src || '').trim();
@@ -5897,7 +5897,7 @@ export const useMethods = (store) => {
                 activeSession.value = finalSession;
 
                 try {
-                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
                 } catch (_) { }
@@ -5992,7 +5992,7 @@ export const useMethods = (store) => {
                     // 如果从列表中找不到，尝试获取完整会话信息
                     if (!session) {
                         try {
-                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                             const sessionSync = getSessionSyncService();
                             session = await sessionSync.getSession(sessionKey);
                         } catch (e) {
@@ -6011,7 +6011,7 @@ export const useMethods = (store) => {
                     }
 
                     // 使用 SessionSyncService 删除会话
-                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     await sessionSync.deleteSession(sessionKey);
 
@@ -6246,7 +6246,7 @@ export const useMethods = (store) => {
 
                     if (!session) {
                         try {
-                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                             const sessionSync = getSessionSyncService();
                             session = await sessionSync.getSession(sessionKey);
                         } catch (e) {
@@ -6309,7 +6309,7 @@ export const useMethods = (store) => {
 
                     if (!session) {
                         try {
-                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                             const sessionSync = getSessionSyncService();
                             session = await sessionSync.getSession(sessionKey);
                         } catch (e) {
@@ -6373,7 +6373,7 @@ export const useMethods = (store) => {
                 if (!session) {
                     console.log('[handleSessionEdit] 本地未找到会话，尝试从服务端获取');
                     try {
-                        const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                        const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                         const sessionSync = getSessionSyncService();
                         const serverSession = await sessionSync.getSession(sessionKey);
                         
@@ -6585,7 +6585,7 @@ export const useMethods = (store) => {
                             }
 
                             // 使用 renameSession 更新会话（这会更新会话的元数据，包括 title, tags 等）
-                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                             const sessionSync = getSessionSyncService();
                             
                             // 构造新的文件对象
@@ -6882,7 +6882,7 @@ export const useMethods = (store) => {
 
                     if (!session) {
                         try {
-                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                             const sessionSync = getSessionSyncService();
                             session = await sessionSync.getSession(sessionKey);
                         } catch (e) {
@@ -6915,7 +6915,7 @@ export const useMethods = (store) => {
 
                     if (!session) {
                         try {
-                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                             const sessionSync = getSessionSyncService();
                             session = await sessionSync.getSession(sessionKey);
                         } catch (e) {
@@ -6948,7 +6948,7 @@ export const useMethods = (store) => {
 
                     if (!sourceSession) {
                         try {
-                            const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                            const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                             const sessionSync = getSessionSyncService();
                             sourceSession = await sessionSync.getSession(sessionKey);
                         } catch (e) {
@@ -8046,7 +8046,7 @@ export const useMethods = (store) => {
                     }
                 } else {
                     // 如果无法从列表获取，尝试获取完整会话信息
-                    const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                    const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                     const sessionSync = getSessionSyncService();
                     for (const sessionKey of sessionKeys) {
                         try {
@@ -8097,7 +8097,7 @@ export const useMethods = (store) => {
                     // 获取 SessionSyncService 实例
                     let sessionSync;
                     try {
-                        const { getSessionSyncService } = await import('/src/views/aicr/services/sessionSyncService.js');
+                        const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
                         sessionSync = getSessionSyncService();
                     } catch (e) {
                         console.error('[useMethods] 无法加载 SessionSyncService:', e);
@@ -8270,7 +8270,7 @@ export const useMethods = (store) => {
                     const { showGlobalLoading, hideGlobalLoading } = await import('/src/utils/ui/loading.js');
                     showGlobalLoading('正在导入会话...');
 
-                    const sessionSync = (await import('/src/views/aicr/services/sessionSyncService.js')).getSessionSyncService();
+                    const sessionSync = (await import('/src/services/aicr/sessionSyncService.js')).getSessionSyncService();
 
                     if (file.name.endsWith('.json')) {
                         const text = await file.text();

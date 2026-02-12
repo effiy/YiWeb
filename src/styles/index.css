@@ -10,9 +10,9 @@
 @import "./base/animations.css";
 
 /* 通用工具类 */
-@import "./utils/spacing.css";
-@import "./utils/display.css";
-@import "./utils/typography.css";
+@import "./base/spacing.css";
+@import "./base/display.css";
+@import "./base/typography.css";
 
 /* 布局相关 */
 @import "./layout/layout.css";

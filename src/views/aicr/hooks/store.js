@@ -6,12 +6,12 @@
 import { getData, postData } from '/src/services/index.js';
 import { buildServiceUrl } from '/src/services/helper/requestHelper.js';
 import { safeExecuteAsync, createError, ErrorTypes } from '/src/utils/core/error.js';
-import { getSessionSyncService } from '/src/views/aicr/services/sessionSyncService.js';
+import { getSessionSyncService } from '/src/services/aicr/sessionSyncService.js';
 import {
     normalizeFilePath,
     normalizeFileObject,
     normalizeTreeNode
-} from '/src/views/aicr/utils/fileFieldNormalizer.js';
+} from '/src/utils/aicr/fileFieldNormalizer.js';
 
 export function buildFileTreeFromSessions(allSessions) {
     const sessionsList = Array.isArray(allSessions) ? allSessions.filter(Boolean) : [];
