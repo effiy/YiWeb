@@ -72,6 +72,8 @@
   --bg-tertiary: #334155;            /* 中量子灰 */
   --bg-elevated: rgba(30,41,59,0.9); /* 半透明量子灰 */
   --bg-glass: rgba(255,255,255,0.03);/* 量子玻璃 */
+  --bg-surface: rgba(30, 41, 59, 0.6);
+  --bg-surface-hover: rgba(51, 65, 85, 0.7);
   --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #475569 75%, #64748b 100%);
 
   /* ===== 文字色 ===== */

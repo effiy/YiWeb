@@ -671,7 +671,7 @@
 }
 
 .tag-filter-btn.active {
-    color: #4CAF50;
+    color: var(--success);
     opacity: 1;
 }
 
@@ -681,7 +681,7 @@
 }
 
 .tag-filter-no-tags-btn.active {
-    color: #4CAF50;
+    color: var(--success);
 }
 
 /* 图标包装器 */
@@ -703,13 +703,13 @@
 .tag-icon-wrapper .tag-ban-overlay {
     position: absolute;
     font-size: 14px;
-    color: #ef4444;
+    color: var(--error);
     opacity: 0.8;
     transform: rotate(-15deg);
 }
 
 .tag-filter-no-tags-btn.active .tag-icon-wrapper .tag-ban-overlay {
-    color: #ef4444;
+    color: var(--error);
     opacity: 1;
 }
 

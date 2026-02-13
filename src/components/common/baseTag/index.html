@@ -1,0 +1,15 @@
+<button
+  v-if="as === 'button'"
+  type="button"
+  :class="computedClass"
+  :disabled="disabled"
+  :aria-disabled="disabled ? 'true' : null"
+  :title="title || null"
+  :aria-label="ariaLabel || null"
+  @click="onClick"
+>
+  <slot></slot>
+</button>
+<span v-else :class="computedClass" :title="title || null">
+  <slot></slot>
+</span>

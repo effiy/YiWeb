@@ -148,8 +148,8 @@
                 <span class="aicr-session-context-modal-subtitle">（一键插入/发送）</span>
             </div>
             <div class="aicr-session-context-modal-header-right">
-                <button type="button" class="aicr-session-context-modal-close"
-                    @click="closeSessionFaq" aria-label="关闭">✕</button>
+                <base-button unstyled type="button" class-name="aicr-session-context-modal-close"
+                    @click="closeSessionFaq" aria-label="关闭">✕</base-button>
             </div>
         </div>
         <div class="aicr-session-context-modal-content aicr-session-faq-modal-content">
@@ -160,33 +160,33 @@
                             :value="sessionFaqSearchKeyword"
                             @input="sessionFaqSearchKeyword = $event.target.value"
                             placeholder="搜索常见问题..." aria-label="搜索常见问题" />
-                        <button type="button" class="aicr-session-faq-search-clear"
+                        <base-button unstyled type="button" class-name="aicr-session-faq-search-clear"
                             :disabled="!String(sessionFaqSearchKeyword || '').trim()"
                             @click="clearSessionFaqSearch" aria-label="清除搜索"
-                            title="清除搜索">清除</button>
+                            title="清除搜索">清除</base-button>
                     </div>
 
                     <div class="aicr-session-faq-filter-row" aria-label="常见问题标签筛选">
                         <div class="aicr-session-faq-filter-actions">
-                            <button type="button" class="aicr-session-faq-filter-btn"
-                                :class="{ active: !!sessionFaqTagFilterReverse }"
+                            <base-button unstyled type="button" class-name="aicr-session-faq-filter-btn"
+                                :active="!!sessionFaqTagFilterReverse"
                                 @click="toggleSessionFaqTagReverse" aria-label="反选"
-                                title="不包含选中标签">反选</button>
-                            <button type="button" class="aicr-session-faq-filter-btn"
-                                :class="{ active: !!sessionFaqTagFilterNoTags }"
+                                title="不包含选中标签">反选</base-button>
+                            <base-button unstyled type="button" class-name="aicr-session-faq-filter-btn"
+                                :active="!!sessionFaqTagFilterNoTags"
                                 @click="toggleSessionFaqNoTags" aria-label="无标签"
-                                title="只显示无标签问题">无标签</button>
-                            <button type="button" class="aicr-session-faq-filter-btn"
+                                title="只显示无标签问题">无标签</base-button>
+                            <base-button unstyled type="button" class-name="aicr-session-faq-filter-btn"
                                 :disabled="(sessionFaqSelectedTags || []).length === 0 && !sessionFaqTagFilterReverse && !sessionFaqTagFilterNoTags"
                                 @click="clearSessionFaqTagFilters" aria-label="清除标签筛选"
-                                title="清除标签筛选">清除标签</button>
-                            <button type="button" class="aicr-session-faq-filter-btn"
-                                :class="{ active: !!sessionFaqTagManagerVisible }"
+                                title="清除标签筛选">清除标签</base-button>
+                            <base-button unstyled type="button" class-name="aicr-session-faq-filter-btn"
+                                :active="!!sessionFaqTagManagerVisible"
                                 @click="toggleSessionFaqTagManager" aria-label="标签管理"
-                                title="标签管理">标签管理</button>
-                            <button type="button" class="aicr-session-faq-filter-btn"
+                                title="标签管理">标签管理</base-button>
+                            <base-button unstyled type="button" class-name="aicr-session-faq-filter-btn"
                                 :disabled="!!sessionFaqLoading" @click="refreshSessionFaqs"
-                                aria-label="刷新" title="从接口刷新">刷新</button>
+                                aria-label="刷新" title="从接口刷新">刷新</base-button>
                         </div>
 
                         <div class="aicr-session-faq-tag-search">
@@ -194,33 +194,33 @@
                                 :value="sessionFaqTagFilterSearchKeyword"
                                 @input="sessionFaqTagFilterSearchKeyword = $event.target.value"
                                 placeholder="搜索标签..." aria-label="搜索标签" />
-                            <button type="button" class="aicr-session-faq-filter-btn"
+                            <base-button unstyled type="button" class-name="aicr-session-faq-filter-btn"
                                 :disabled="!String(sessionFaqTagFilterSearchKeyword || '').trim()"
                                 @click="clearSessionFaqTagSearch" aria-label="清除标签搜索"
-                                title="清除标签搜索">清除</button>
+                                title="清除标签搜索">清除</base-button>
                         </div>
 
                         <div class="aicr-session-faq-tag-list" role="list" aria-label="标签列表">
-                            <button v-for="tag in (sessionFaqVisibleTags || [])" :key="tag"
-                                type="button" class="aicr-session-faq-tag"
-                                :class="{ active: (sessionFaqSelectedTags || []).includes(tag) }"
+                            <base-tag v-for="tag in (sessionFaqVisibleTags || [])" :key="tag"
+                                as="button" unstyled class-name="aicr-session-faq-tag"
+                                :active="(sessionFaqSelectedTags || []).includes(tag)"
                                 @click="toggleSessionFaqTag(tag)" role="listitem"
-                                :aria-label="`筛选标签：${tag}`">{{ tag }}</button>
-                            <button
+                                :aria-label="`筛选标签：${tag}`">{{ tag }}</base-tag>
+                            <base-tag
                                 v-if="(sessionFaqAllTags || []).length > (sessionFaqVisibleTags || []).length"
-                                type="button" class="aicr-session-faq-tag more"
+                                as="button" unstyled class-name="aicr-session-faq-tag more"
                                 @click="toggleSessionFaqTagExpanded" role="listitem"
                                 aria-label="展开或收起标签">{{ sessionFaqTagFilterExpanded ? '收起' : '更多'
-                                }}</button>
+                                }}</base-tag>
                         </div>
 
                         <div v-if="sessionFaqTagManagerVisible" class="aicr-session-faq-tag-manager"
                             aria-label="标签管理面板">
                             <div class="aicr-session-faq-tag-manager-header">
                                 <div class="aicr-session-faq-tag-manager-title">标签管理</div>
-                                <button type="button" class="aicr-session-faq-filter-btn"
+                                <base-button unstyled type="button" class-name="aicr-session-faq-filter-btn"
                                     @click="toggleSessionFaqTagManager"
-                                    aria-label="关闭标签管理">关闭</button>
+                                    aria-label="关闭标签管理">关闭</base-button>
                             </div>
                             <div class="aicr-session-faq-tag-manager-list" role="list"
                                 aria-label="可管理标签列表">
@@ -228,15 +228,15 @@
                                     class="aicr-session-faq-tag-manager-item" role="listitem">
                                     <div class="aicr-session-faq-tag-manager-name">{{ tag }}</div>
                                     <div class="aicr-session-faq-tag-manager-actions">
-                                        <button type="button" class="aicr-session-faq-filter-btn"
+                                        <base-button unstyled type="button" class-name="aicr-session-faq-filter-btn"
                                             :disabled="!!sessionFaqLoading"
                                             @click="renameSessionFaqTag(tag)"
-                                            aria-label="重命名标签">重命名</button>
-                                        <button type="button"
-                                            class="aicr-session-faq-filter-btn danger"
+                                            aria-label="重命名标签">重命名</base-button>
+                                        <base-button unstyled type="button"
+                                            class-name="aicr-session-faq-filter-btn danger"
                                             :disabled="!!sessionFaqLoading"
                                             @click="deleteSessionFaqTag(tag)"
-                                            aria-label="删除标签">删除</button>
+                                            aria-label="删除标签">删除</base-button>
                                     </div>
                                 </div>
                                 <div v-if="(sessionFaqAllTags || []).length === 0"

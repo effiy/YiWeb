@@ -515,38 +515,6 @@ html, body {
     justify-content: center;
 }
 
-.aicr-code .empty-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 36px;
-    padding: 0 12px;
-    border-radius: 999px;
-    border: 1px solid var(--border-primary);
-    background: var(--bg-surface);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-}
-
-.aicr-code .empty-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-    border-color: var(--border-secondary);
-}
-
-.aicr-code .empty-btn.primary {
-    background: rgba(79, 172, 254, 0.14);
-    border-color: rgba(79, 172, 254, 0.22);
-    color: rgba(2, 132, 199, 0.95);
-}
-
-.aicr-code .empty-btn.primary:hover {
-    box-shadow: 0 10px 22px rgba(79, 172, 254, 0.18);
-}
-
 /* ========== 会话列表侧边栏 ========== */
 .aicr-session-sidebar {
     width: 320px;
