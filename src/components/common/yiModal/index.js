@@ -1,8 +1,8 @@
 import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 
 registerGlobalComponent({
-    name: 'BaseModal',
-    html: '/src/components/common/baseModal/index.html',
+    name: 'YiModal',
+    html: '/src/components/common/yiModal/index.html',
     props: {
         visible: {
             type: Boolean,
@@ -49,4 +49,3 @@ registerGlobalComponent({
         }
     }
 });
-

@@ -19,18 +19,18 @@ import { createBaseView } from '/src/utils/view/baseView.js';
                 'MarkdownView',
                 'NewsList',
                 'Calendar',
-                'BaseLoading',
-                'BaseEmptyState',
-                'BaseErrorState'
+                'YiLoading',
+                'YiEmptyState',
+                'YiErrorState'
             ],
             componentModules: [
                 '/src/components/common/searchHeader/index.js',
                 '/src/markdown/markdownView/index.js',
                 '/src/components/business/newsList/index.js',
                 '/src/components/calendar/index.js',
-                '/src/components/common/baseLoading/index.js',
-                '/src/components/common/baseEmptyState/index.js',
-                '/src/components/common/baseErrorState/index.js'
+                '/src/components/common/yiLoading/index.js',
+                '/src/components/common/yiEmptyState/index.js',
+                '/src/components/common/yiErrorState/index.js'
             ],
             plugins: [],
             onMounted: (app) => {

@@ -1,8 +1,8 @@
 import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 
 registerGlobalComponent({
-    name: 'BaseTag',
-    html: '/src/components/common/baseTag/index.html',
+    name: 'YiTag',
+    html: '/src/components/common/yiTag/index.html',
     props: {
         as: {
             type: String,

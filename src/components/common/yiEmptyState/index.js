@@ -1,8 +1,8 @@
 import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 
 registerGlobalComponent({
-    name: 'BaseEmptyState',
-    html: '/src/components/common/baseEmptyState/index.html',
+    name: 'YiEmptyState',
+    html: '/src/components/common/yiEmptyState/index.html',
     props: {
         title: {
             type: String,

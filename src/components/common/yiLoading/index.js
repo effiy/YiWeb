@@ -1,8 +1,8 @@
 import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 
 registerGlobalComponent({
-    name: 'BaseLoading',
-    html: '/src/components/common/baseLoading/index.html',
+    name: 'YiLoading',
+    html: '/src/components/common/yiLoading/index.html',
     props: {
         text: {
             type: String,
@@ -30,4 +30,3 @@ registerGlobalComponent({
         }
     }
 });
-

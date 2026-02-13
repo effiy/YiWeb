@@ -1,8 +1,8 @@
 import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 
 registerGlobalComponent({
-    name: 'BaseErrorState',
-    html: '/src/components/common/baseErrorState/index.html',
+    name: 'YiErrorState',
+    html: '/src/components/common/yiErrorState/index.html',
     props: {
         message: {
             type: [String, Number],
@@ -43,4 +43,3 @@ registerGlobalComponent({
     },
     emits: ['retry']
 });
-

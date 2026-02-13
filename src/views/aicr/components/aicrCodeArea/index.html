@@ -22,18 +22,18 @@
             :style="{ '--aicr-chat-width': (chatPanelWidth || 420) + 'px' }">
             <div class="pet-chat-right-panel" aria-label="会话聊天面板">
                 <div class="pet-chat-messages" id="pet-chat-messages" role="log" aria-live="polite">
-                    <base-loading
+                    <yi-loading
                         v-if="activeSessionLoading"
                         container-class="pet-chat-loading"
                         text="正在加载会话..."
-                    ></base-loading>
-                    <base-error-state
+                    ></yi-loading>
+                    <yi-error-state
                         v-else-if="activeSessionError"
                         container-class="pet-chat-error"
                         message-class="error-text"
                         :message="activeSessionError"
-                    ></base-error-state>
-                    <base-empty-state
+                    ></yi-error-state>
+                    <yi-empty-state
                         v-else-if="!activeSession"
                         wrapper-class="pet-chat-empty"
                         card-class="pet-chat-empty-card"
@@ -50,7 +50,7 @@
                                 <i class="fas fa-inbox"></i>
                             </div>
                         </template>
-                    </base-empty-state>
+                    </yi-empty-state>
                     <div v-else style="width: 100%;">
                         <div v-if="activeSession" class="pet-chat-message is-pet" data-welcome-message="true" v-html="buildWelcomeCardHtmlForSession(activeSession)" ref="welcomeCardRef"></div>
                         

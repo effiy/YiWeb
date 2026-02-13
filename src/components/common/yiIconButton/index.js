@@ -1,8 +1,8 @@
 import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 
 registerGlobalComponent({
-    name: 'BaseIconButton',
-    html: '/src/components/common/baseIconButton/index.html',
+    name: 'YiIconButton',
+    html: '/src/components/common/yiIconButton/index.html',
     props: {
         type: {
             type: String,
@@ -35,4 +35,3 @@ registerGlobalComponent({
     },
     emits: ['click']
 });
-

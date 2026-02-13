@@ -25,7 +25,7 @@
           placeholder="搜索标签..."
           aria-label="搜索标签"
         />
-        <base-icon-button
+        <yi-icon-button
           v-if="tagFilterSearchKeyword"
           type="button"
           class-name="tag-search-clear"
@@ -34,7 +34,7 @@
           aria-label="清除搜索"
         >
           <i class="fas fa-times" aria-hidden="true"></i>
-        </base-icon-button>
+        </yi-icon-button>
       </div>
       <div class="tags-header-actions">
         <!-- 筛选无标签按钮 -->
@@ -151,10 +151,10 @@
   </div>
 
   <!-- 加载状态 -->
-  <base-loading v-if="loading" text="正在加载文件树..."></base-loading>
+  <yi-loading v-if="loading" text="正在加载文件树..."></yi-loading>
 
   <!-- 错误状态 -->
-  <base-error-state
+  <yi-error-state
     v-else-if="error"
     :message="error"
     icon-class="fas fa-exclamation-triangle"
@@ -165,7 +165,7 @@
     <template #retryIcon>
       <i class="fas fa-redo" aria-hidden="true"></i>
     </template>
-  </base-error-state>
+  </yi-error-state>
 
   <!-- 文件树内容 -->
   <div v-else-if="tree.length > 0" class="file-tree-content">
@@ -216,7 +216,7 @@
   </div>
 
   <!-- 空状态 -->
-  <base-empty-state
+  <yi-empty-state
     v-else
     wrapper-class="empty-state"
     :cardless="true"
@@ -230,5 +230,5 @@
         <i class="fas fa-folder-open" aria-hidden="true"></i>
       </div>
     </template>
-  </base-empty-state>
+  </yi-empty-state>
 </aside>

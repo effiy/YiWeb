@@ -7,9 +7,9 @@ import { safeExecute, createError, ErrorTypes } from '/src/utils/core/error.js';
 import { extractDomainCategory } from '/src/utils/data/domain.js';
 import { categorizeNewsItem } from '/src/views/news/hooks/store.js';
 import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
-import '/src/components/common/baseLoading/index.js';
-import '/src/components/common/baseEmptyState/index.js';
-import '/src/components/common/baseErrorState/index.js';
+import '/src/components/common/yiLoading/index.js';
+import '/src/components/common/yiEmptyState/index.js';
+import '/src/components/common/yiErrorState/index.js';
 
 // 创建组件定义
 const componentOptions = {

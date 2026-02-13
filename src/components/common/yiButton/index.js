@@ -1,8 +1,8 @@
 import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 
 registerGlobalComponent({
-    name: 'BaseButton',
-    html: '/src/components/common/baseButton/index.html',
+    name: 'YiButton',
+    html: '/src/components/common/yiButton/index.html',
     props: {
         as: {
             type: String,
