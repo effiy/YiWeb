@@ -1,4 +1,4 @@
-import { defineComponent } from '/src/utils/view/componentLoader.js';
+import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 import { safeExecute } from '/src/utils/core/error.js';
 
 const normalizePath = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
@@ -489,12 +489,4 @@ const componentOptions = {
     }
 };
 
-(async function initComponent() {
-    try {
-        const CodeView = await defineComponent(componentOptions);
-        window.CodeView = CodeView;
-        window.dispatchEvent(new CustomEvent('CodeViewLoaded', { detail: CodeView }));
-    } catch (error) {
-        console.error('CodeView 组件初始化失败:', error);
-    }
-})();
+registerGlobalComponent(componentOptions);

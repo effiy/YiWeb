@@ -2,7 +2,7 @@
 // 作者：liangliang
 
 import { safeExecute, createError, ErrorTypes } from '/src/utils/core/error.js';
-import { defineComponent } from '/src/utils/view/componentLoader.js';
+import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 
 // 统一的文件大小格式化（截断不进位，避免边界显示进位）
 function formatFileSizeCompact(bytes) {
@@ -1423,18 +1423,6 @@ const componentOptions = {
     },
 };
 
-// 初始化组件并全局暴露
-(async function initComponent() {
-    try {
-        const FileTree = await defineComponent(componentOptions);
-        window.FileTree = FileTree;
-
-        // 触发自定义事件，通知组件已加载完成
-        window.dispatchEvent(new CustomEvent('FileTreeLoaded', { detail: FileTree }));
-    } catch (error) {
-        console.error('FileTree 组件初始化失败:', error);
-    }
-})();
-
+registerGlobalComponent(componentOptions);
 
 

@@ -295,14 +295,7 @@ async function createBaseView(config = {}) {
                 Vue.provide('viewContext', result);
             }
         } catch (_) { }
-        
-        // 避免使用Object.keys枚举组件实例属性
-        const resultKeys = ['store', 'computedProps', 'methods'];
-        const methodKeys = ['editCard', 'createCard', 'deleteCard', 'toggleFavorite', 'openLink'];
-        
-        console.log('[BaseView] Setup 函数返回结果包含:', resultKeys);
-        console.log('[BaseView] 可用的方法:', methodKeys.filter(key => typeof methods[key] === 'function'));
-        
+
         return result;
     };
 
