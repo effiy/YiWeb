@@ -1,0 +1,137 @@
+.file-tree > .file-tree-node {
+    margin-left: 0;
+}
+
+.file-tree-children {
+    padding-left: var(--spacing-sm);
+    margin-left: 20px; /* 优化缩进宽度 */
+    position: relative;
+}
+
+/* ========== 文件树标题 ========== */
+.file-tree-header {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-secondary);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.file-tree-header::before {
+    content: '📁';
+    font-size: 12px;
+}
+
+/* ========== 文件树项目 ========== */
+.file-tree-item {
+    cursor: pointer;
+    padding: 6px var(--spacing-sm);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    -webkit-user-select: none;
+    user-select: none;
+    transition: all 0.15s ease;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 2px 0;
+    position: relative;
+    min-width: 0; /* 允许子项正确收缩，配合省略号 */
+}
+
+.file-tree-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
+
+/* ========== 选中状态 ========== */
+.file-tree-item.selected {
+    background: rgba(79, 70, 229, 0.15);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* ========== 批量选择状态 ========== */
+.file-tree-item.batch-selected {
+    background: rgba(16, 185, 129, 0.15);
+}
+
+/* ========== 高亮状态（用于视图切换时的锚定效果） ========== */
+.file-tree-item.highlight-file {
+    background: rgba(79, 70, 229, 0.25);
+    color: var(--text-primary);
+    font-weight: 600;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.4);
+    animation: highlightFilePulse 2s ease-out;
+}
+
+@keyframes highlightFilePulse {
+    0% {
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.6);
+        background: rgba(79, 70, 229, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+        background: rgba(79, 70, 229, 0.2);
+    }
+    100% {
+        box-shadow: none;
+        background: rgba(79, 70, 229, 0.15);
+    }
+}
+
+/* ========== 文件夹样式 ========== */
+.folder-item {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.folder-item.expanded {
+    color: var(--text-primary);
+}
+
+.folder-toggle {
+    margin-right: var(--spacing-xs);
+    color: var(--text-muted);
+    font-size: 12px;
+    transition: all 0.2s ease;
+    min-width: 30px;
+    text-align: center;
+}
+
+.folder-toggle:hover {
+    color: var(--primary);
+    transform: scale(1.1);
+}
+
+.folder-toggle.expanded {
+    transform: rotate(90deg);
+    color: var(--primary);
+}
+
+/* ========== 文件图标 ========== */
+.file-icon {
+    margin-right: var(--spacing-xs);
+    font-size: 12px;
+    min-width: 16px;
+    text-align: center;
+    opacity: 0.8;
+}
+
+.file-icon.js { color: #f7df1e; }
+.file-icon.ts { color: #3178c6; }
+.file-icon.html { color: #e34f26; }
+.file-icon.css { color: #1572b6; }
+.file-icon.json { color: #fccc2e; }
+.file-icon.md { color: #4caf50; }
+.file-icon.vue { color: #4fc08d; }
+.file-icon.react { color: #61dafb; }
+.file-icon.svg { color: #ff9800; }
+.file-icon.png, .file-icon.jpg, .file-icon.gif { color: #9c27b0; }

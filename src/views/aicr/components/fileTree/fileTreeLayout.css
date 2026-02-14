@@ -1,0 +1,483 @@
+/**
+ * 文件树组件样式
+ * 优化目录层级展示和文件选择交互
+ */
+
+/* ========== 文件树容器 ========== */
+.file-tree-container {
+    position: relative;
+    /* 使用 min-height 而不是 height，确保内容可以超出容器，这样 sticky 才能工作 */
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    /* 确保可以正确计算 sticky 定位 */
+    align-items: stretch;
+    /* 确保容器不会阻止 sticky 定位 */
+    overflow: visible;
+}
+
+/* ========== 侧边栏标题容器 ========== */
+.file-tree-header-container {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    /* sticky 定位，相对于 .aicr-sidebar 的滚动 */
+    position: -webkit-sticky; /* Safari 兼容 */
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    /* 防止被压缩 */
+    flex-shrink: 0;
+    /* 确保背景不透明，避免滚动时内容透过 */
+    background-color: var(--bg-secondary) !important;
+    /* 添加底部边框，增强视觉分离 */
+    border-bottom: 1px solid var(--border-primary);
+    /* 添加阴影，增强置顶效果 */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    /* 确保在滚动时保持可见 */
+    will-change: transform;
+}
+
+/* ========== 工具栏 ========== */
+.file-tree-toolbar {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: stretch;
+    gap: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 6px 0;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    min-width: 0;
+}
+
+.toolbar-group:first-child {
+    flex: 0 0 auto;
+}
+
+.toolbar-group:last-child {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    width: 100%;
+    flex: 1;
+}
+
+/* 当只有一个工具栏组时（如标签视图的新建会话按钮） */
+.file-tree-toolbar > .toolbar-group:only-child {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+}
+
+.toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 10px;
+    height: auto;
+    min-height: 32px;
+    font-size: 13px;
+    font-weight: 500;
+    color: white;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    border: 1px solid #4f46e5;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+}
+
+.toolbar-group:first-child .toolbar-btn {
+    width: auto;
+    padding: 6px 10px;
+    height: auto;
+    min-height: 32px;
+}
+
+.toolbar-group:last-child .toolbar-btn {
+    flex: 1;
+    min-width: 0;
+}
+
+.toolbar-btn:hover {
+    background: linear-gradient(135deg, #4f46e5, #4338ca);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.toolbar-btn:active {
+    transform: translateY(0);
+}
+
+.toolbar-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.toolbar-btn.active {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: #059669;
+}
+
+.toolbar-btn.active:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* 批量删除按钮样式 */
+.toolbar-btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    border-color: #dc2626 !important;
+}
+
+.toolbar-btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+}
+
+.toolbar-btn-danger:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
+/* 已选择数量显示 */
+.toolbar-selected-count {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.toolbar-selected-count.has-selection {
+    color: #4338ca;
+    font-weight: 600;
+}
+
+/* 全选按钮样式 */
+.toolbar-btn-select-all {
+    background: #ffffff !important;
+    color: #374151 !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+.toolbar-btn-select-all:hover {
+    background: #f9fafb !important;
+    border-color: #d1d5db !important;
+}
+
+/* 下载按钮样式 */
+.toolbar-btn:has(.fa-download) {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    border-color: #1976D2;
+}
+
+.toolbar-btn:has(.fa-download):hover {
+    background: linear-gradient(135deg, #1976D2, #1565C0);
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+/* 上传按钮样式 */
+.toolbar-btn:has(.fa-upload) {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    border-color: #45a049;
+}
+
+.toolbar-btn:has(.fa-upload):hover {
+    background: linear-gradient(135deg, #45a049, #3d8b40);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.toolbar-btn i {
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.toolbar-btn span {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 窄屏时优化工具栏 */
+@media (max-width: 400px) {
+    .file-tree-toolbar {
+        grid-template-columns: auto 1fr;
+        gap: 3px;
+    }
+    
+    .toolbar-btn span {
+        display: none;
+    }
+    
+    .toolbar-btn {
+        padding: 4px 8px;
+        min-width: 28px;
+        min-height: 28px;
+        font-size: 12px;
+    }
+    
+    .toolbar-group:first-child .toolbar-btn {
+        padding: 4px 8px;
+        min-height: 28px;
+    }
+}
+
+/* 超窄屏时进一步优化 */
+@media (max-width: 300px) {
+    .file-tree-toolbar {
+        grid-template-columns: 1fr;
+        gap: 3px;
+    }
+    
+    .toolbar-group:last-child {
+        display: flex;
+        flex-wrap: nowrap;
+    }
+    
+    .toolbar-btn {
+        padding: 5px 6px;
+        min-width: 30px;
+        min-height: 30px;
+        font-size: 11px;
+    }
+    
+    .toolbar-group {
+        gap: 3px;
+    }
+}
+
+/* 根据侧边栏宽度自适应 */
+@media (max-width: 280px) {
+    .file-tree-header-container {
+        padding: var(--spacing-xs) var(--spacing-xs);
+    }
+    
+    .file-tree-toolbar {
+        gap: 2px;
+    }
+    
+    .toolbar-group {
+        gap: 2px;
+    }
+    
+    .toolbar-btn {
+        padding: 4px 6px;
+        font-size: 11px;
+        min-height: 28px;
+    }
+}
+
+/* ========== 搜索输入框 ========== */
+.file-tree-search-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+}
+
+.file-tree-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 5px;
+    transition: all 0.2s ease;
+    padding-right: 2px;
+}
+
+.file-tree-search-wrapper:focus-within {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+}
+
+.file-tree-search-icon {
+    position: absolute;
+    left: 10px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.file-tree-search-input {
+    width: 100%;
+    height: 32px;
+    font-weight: 400;
+    font-size: 13px;
+    color: var(--text-primary);
+    padding: 6px 6px 6px 28px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    flex: 1;
+    min-width: 0;
+}
+
+.file-tree-search-input::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+}
+
+.file-tree-search-wrapper:focus-within .file-tree-search-icon {
+    opacity: 0.7;
+}
+
+.file-tree-search-clear {
+    position: absolute;
+    right: 8px;
+    width: 16px;
+    height: 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    padding: 0;
+    transition: all 0.2s ease;
+    z-index: 2;
+    line-height: 1;
+    opacity: 0.5;
+}
+
+.file-tree-search-clear:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.file-tree-search-clear:active {
+    transform: scale(0.95);
+}
+
+/* ========== 收起按钮 ========== */
+.file-tree-toggle {
+    position: absolute;
+    top: 50%;
+    right: -16px;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 30;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--text-secondary);
+    box-shadow: 0 6px 18px rgba(79,70,229,0.15);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-size: 12px;
+}
+
+.file-tree-toggle::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(79,70,229,0.18), rgba(79,70,229,0.00));
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.file-tree-toggle:hover {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    box-shadow: 0 8px 24px rgba(79,70,229,0.28), 0 0 0 8px rgba(79,70,229,0.10);
+    transform: translateY(-50%) scale(1.08) translateX(1px);
+}
+
+.file-tree-toggle:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.file-tree-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.35), 0 6px 18px rgba(79,70,229,0.25);
+}
+
+.file-tree-toggle i {
+    transition: transform 0.25s ease;
+    font-size: 12px;
+}
+
+.file-tree-toggle i.rotated {
+    transform: rotate(180deg);
+}
+
+/* 收起状态下的特殊样式 */
+.file-tree-container.collapsed .file-tree-toggle {
+    right: -12px;
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+.file-tree-container.collapsed .file-tree-toggle:hover {
+    background: var(--primary-dark, #4338ca);
+}
+
+/* ========== 文件树内容容器 ========== */
+.file-tree-content {
+    flex: 1;
+    min-height: 0;
+    /* 移除独立的滚动，让 .aicr-sidebar 处理滚动，这样 sticky 才能正确工作 */
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ========== 文件树 ========== */
+.file-tree {
+    list-style: none;
+    margin: 0px;
+    padding: var(--spacing-sm);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+    background: var(--bg-secondary);
+    /* 移除独立的滚动，由 .file-tree-content 处理 */
+    overflow: visible;
+    flex: 1;
+}

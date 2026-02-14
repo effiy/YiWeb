@@ -1,14 +1,14 @@
 <!-- 新闻列表组件模板 -->
 <section class="news-section" aria-label="新闻内容">
     <!-- 加载状态 -->
-    <base-loading
+    <yi-loading
         v-if="loading"
         text="正在加载新闻数据..."
         :subtext="'正在获取 ' + currentDateDisplay + ' 的新闻资讯'"
-    ></base-loading>
+    ></yi-loading>
 
     <!-- 错误状态 -->
-    <base-error-state
+    <yi-error-state
         v-else-if="error"
         :message="error"
         icon-class="fas fa-exclamation-triangle"
@@ -20,7 +20,7 @@
         <template #retryIcon>
             <i class="fas fa-redo" aria-hidden="true"></i>
         </template>
-    </base-error-state>
+    </yi-error-state>
 
     <!-- 搜索结果显示 -->
     <div v-else-if="searchQuery && searchResults.length > 0" class="search-results">
@@ -109,7 +109,7 @@
     </div>
 
     <!-- 空搜索结果 -->
-    <base-empty-state
+    <yi-empty-state
         v-else-if="searchQuery && searchResults.length === 0"
         wrapper-class="empty-state"
         :cardless="true"
@@ -123,7 +123,7 @@
                 <i class="fas fa-search" aria-hidden="true"></i>
             </div>
         </template>
-    </base-empty-state>
+    </yi-empty-state>
 
     <!-- 分类新闻显示 -->
     <div v-else-if="hasNewsData">
@@ -208,7 +208,7 @@
     </div>
 
     <!-- 空状态 -->
-    <base-empty-state
+    <yi-empty-state
         v-else
         wrapper-class="empty-state"
         :cardless="true"
@@ -222,5 +222,5 @@
                 <i class="fas fa-newspaper" aria-hidden="true"></i>
             </div>
         </template>
-    </base-empty-state>
+    </yi-empty-state>
 </section>

@@ -1,0 +1,416 @@
+/* ========== 文件名 ========== */
+.file-name {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    min-width: 0; /* 使省略号生效 */
+}
+
+.file-tree-item.selected .file-name {
+    font-weight: 600;
+}
+
+/* ========== 文件统计 ========== */
+.folder-count {
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-left: auto;
+    background: var(--bg-glass);
+    padding: 1px var(--spacing-xs);
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+    flex: 0 0 auto; /* 防止挤压文件名 */
+}
+
+.file-tree-item:hover .folder-count {
+    opacity: 1;
+    background: rgba(79, 70, 229, 0.2);
+    color: var(--primary);
+}
+
+/* ========== 嵌套文件夹 ========== */
+.file-tree .file-tree {
+    padding-left: var(--spacing-sm);
+    margin-left: var(--spacing-xs);
+    position: relative;
+}
+
+/* ========== 展开/折叠动画 ========== */
+.file-tree-collapse {
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.file-tree-collapse.collapsed {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-10px);
+}
+
+.file-tree-collapse.expanded {
+    max-height: 1000px;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ========== 加载状态 ========== */
+.file-tree-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.file-tree-loading::before {
+    content: '⏳';
+    margin-right: var(--spacing-xs);
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ========== 错误状态 ========== */
+.file-tree-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    color: var(--error);
+    font-size: 14px;
+    text-align: center;
+}
+
+.file-tree-error::before {
+    content: '⚠️';
+    margin-right: var(--spacing-xs);
+}
+
+/* ========== 空状态优化 ========== */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 0 32px 0;
+    color: var(--text-muted);
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    min-height: 180px;
+    box-shadow: 0 2px 12px 0 rgba(60,60,60,0.04);
+    margin: 32px 16px 0 16px;
+    opacity: 0.85;
+    transition: background 0.2s;
+}
+.empty-state:hover {
+    background: var(--bg-glass);
+    opacity: 1;
+}
+.empty-icon {
+    font-size: 44px;
+    color: var(--primary);
+    margin-bottom: 12px;
+    opacity: 0.7;
+    transition: color 0.2s;
+}
+.empty-state:hover .empty-icon {
+    color: var(--accent);
+    opacity: 1;
+}
+.empty-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+}
+.empty-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    opacity: 0.8;
+    text-align: center;
+    max-width: 220px;
+    line-height: 1.6;
+}
+
+/* ========== 搜索高亮 ========== */
+.file-tree-item.search-match {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: var(--warning);
+}
+
+.file-tree-item.search-match .file-name {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+/* ========== 响应式设计 ========== */
+@media (max-width: 950px) {
+    .file-tree-header-container {
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+    
+    .file-tree-toolbar {
+        gap: 3px;
+    }
+    
+    .toolbar-btn {
+        padding: 5px 8px;
+        font-size: 12px;
+        min-height: 30px;
+    }
+    
+    .file-tree {
+        padding: var(--spacing-xs);
+    }
+    
+    .file-tree-item {
+        font-size: 12px;
+        padding: 3px var(--spacing-xs);
+        gap: var(--spacing-xs);
+    }
+    
+    .file-icon,
+    .folder-toggle {
+        font-size: 11px;
+        min-width: 14px;
+    }
+    
+    .folder-count {
+        font-size: 10px;
+        padding: 1px 4px;
+    }
+    
+    .file-tree .file-tree {
+        padding-left: var(--spacing-xs);
+    }
+
+    .file-tree-toggle {
+        right: -14px;
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+    
+    .file-tree-toggle i {
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 640px) {
+    .file-tree {
+        padding: var(--spacing-xs);
+    }
+    
+    .file-tree-item {
+        font-size: 11px;
+        padding: 2px var(--spacing-xs);
+    }
+    
+    .file-icon,
+    .folder-toggle {
+        font-size: 10px;
+        min-width: 12px;
+    }
+    
+    .folder-count {
+        display: none;
+    }
+
+    .file-tree-toggle {
+        right: -12px;
+        width: 22px;
+        height: 22px;
+        font-size: 9px;
+    }
+    
+    .file-tree-toggle i {
+        font-size: 9px;
+    }
+}
+
+/* ========== 滚动条样式 ========== */
+.file-tree::-webkit-scrollbar {
+    width: 4px;
+}
+
+.file-tree::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.file-tree::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 2px;
+    transition: background 0.2s ease;
+}
+
+.file-tree::-webkit-scrollbar-thumb:hover {
+    background: var(--border-secondary);
+}
+
+/* ========== 拖拽支持 ========== */
+.file-tree-item.drag-over {
+    background: rgba(6, 182, 212, 0.2);
+    border-color: var(--accent);
+    transform: scale(1.02);
+}
+
+.file-tree-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+} 
+
+.file-toggle-placeholder {
+    display: inline-block;
+    width: 18px; /* 与 .folder-toggle 宽度一致 */
+    height: 1em;
+    vertical-align: middle;
+    opacity: 0;
+} 
+
+/* ========== 行内操作按钮 ========== */
+.file-actions {
+    display: none; /* 默认不占位，避免压缩文件名 */
+    gap: 6px;
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.file-tree-item:hover .file-actions,
+.file-tree-item:focus-within .file-actions {
+    display: inline-flex;
+    opacity: 1;
+}
+
+.file-actions button {
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.file-actions button:hover {
+    color: var(--primary);
+    background: var(--bg-glass);
+    border-color: var(--border-primary);
+}
+
+.file-actions button i {
+    font-size: 12px;
+}
+
+/* 响应式设计 */
+@media (max-width: 640px) {
+    .file-tree-search-clear {
+        right: 8px;
+    }
+}
+
+/* ========== 标签视图样式 ========== */
+.file-tags-view {
+    padding: var(--spacing-md);
+    /* 移除独立的滚动，由 .file-tree-content 处理 */
+    overflow: visible;
+    height: auto;
+    min-height: 100%;
+}
+
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    align-items: flex-start;
+}
+
+.file-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: 11px;
+    color: var(--text-secondary);
+    position: relative;
+    border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.12));
+}
+
+.file-tag:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.file-tag.selected {
+    background: rgba(79, 70, 229, 0.15);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.file-tag.batch-selected {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+}
+
+.tag-icon {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+.tag-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+/* 响应式设计 */
+@media (max-width: 950px) {
+    .tags-container {
+        gap: var(--spacing-xs);
+    }
+    
+    .file-tag {
+        font-size: 11px;
+        padding: 2px 6px;
+    }
+    
+    .tag-name {
+        max-width: 150px;
+    }
+}
+
+@media (max-width: 640px) {
+    .file-tag {
+        font-size: 11px;
+        padding: 3px 6px;
+    }
+    
+    .tag-name {
+        max-width: 120px;
+    }
+    
+    .tag-icon {
+        font-size: 12px;
+    }
+}
