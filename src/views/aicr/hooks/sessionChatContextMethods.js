@@ -16,6 +16,15 @@ export const createSessionChatContextMethods = ({
         activeSessionLoading,
         activeSessionError,
         sessionChatInput,
+        sessionChatDraftImages,
+        sessionChatLastDraftText,
+        sessionChatLastDraftImages,
+        sessionChatSending,
+        sessionChatAbortController,
+        sessionChatStreamingTargetTimestamp,
+        sessionChatStreamingType,
+        sessionChatCopyFeedback,
+        sessionChatRegenerateFeedback,
         sessionContextEnabled,
         sessionContextDraft,
         sessionContextMode,
@@ -38,9 +47,16 @@ export const createSessionChatContextMethods = ({
         weChatSettingsVisible,
         weChatRobots,
         weChatRobotsDraft,
+        sessionMessageEditorVisible,
+        sessionMessageEditorDraft,
+        sessionMessageEditorMode,
+        sessionMessageEditorIndex,
     } = store || {};
  
     const defaultSessionBotSystemPrompt = '你是一个专业、简洁且可靠的 AI 助手。';
+    let _sessionChatIsComposing = false;
+    let _sessionChatCompositionEndTime = 0;
+    const _SESSION_CHAT_COMPOSITION_END_DELAY = 100;
  
     const _sessionContextTimeouts = new Set();
     let _sessionContextKeydownHandler = null;
@@ -48,9 +64,18 @@ export const createSessionChatContextMethods = ({
     let __aicrImagePreviewRoot = null;
  
     let sessionContextScrollSyncCleanup = null;
+    let sessionMessageEditorScrollSyncCleanup = null;
  
     const _escapeHtml = (v) => {
-        return String(v ?? '')
+        if (typeof v !== 'string' && v == null) return '';
+        const unescaped = String(v)
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&amp;/g, '&');
+
+        return unescaped
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
@@ -82,6 +107,169 @@ export const createSessionChatContextMethods = ({
         }
     };
  
+    const _isAbortError = (e) => {
+        try {
+            if (!e) return false;
+            if (e.name === 'AbortError') return true;
+            const msg = typeof e.message === 'string' ? e.message : '';
+            return msg.toLowerCase().includes('aborted');
+        } catch (_) {
+            return false;
+        }
+    };
+
+    const _truncateText = (v, maxLen) => {
+        const s = String(v ?? '');
+        const limit = Math.max(0, Number(maxLen) || 0);
+        if (!limit || s.length <= limit) return s;
+        return `${s.slice(0, limit)}\n\n...(内容已截断)`;
+    };
+
+    const _buildSessionChatHistoryText = (messages, endIndexExclusive) => {
+        const list = Array.isArray(messages) ? messages : [];
+        const end = Number(endIndexExclusive);
+        const upto = Number.isFinite(end) ? Math.max(0, Math.min(list.length, end)) : list.length;
+        const cleaned = list
+            .slice(0, upto)
+            .filter(m => m && (String(m.message ?? m.content ?? '').trim() || (m.imageDataUrl || (Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0))))
+            .slice(-30)
+            .map(m => {
+                const role = m.type === 'pet' ? '助手' : '用户';
+                const contentText = String(m.message ?? m.content ?? '').trim();
+                const imageCount = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.length : (m.imageDataUrl ? 1 : 0);
+                const content = (() => {
+                    if (contentText) return contentText;
+                    if (imageCount > 0) return imageCount === 1 ? '[图片]' : `[图片 x${imageCount}]`;
+                    return '';
+                })();
+                return `${role}：${content}`;
+            })
+            .join('\n\n');
+        return cleaned;
+    };
+
+    const _buildSessionChatUserPrompt = ({ text, images, pageContent, includeContext, historyText }) => {
+        const imageList = Array.isArray(images) ? images.filter(Boolean) : [];
+        if (imageList.length > 0) {
+            return String(text || '用户发送了图片，请结合图片内容回答。').trim();
+        }
+        const current = String(text || '').trim() || '请继续。';
+        const parts = [];
+        const ctx = String(pageContent || '').trim();
+        const hist = String(historyText || '').trim();
+        if (includeContext && ctx) {
+            parts.push(`## 页面上下文\n\n${_truncateText(ctx, 12000)}`);
+        }
+        if (hist) {
+            parts.push(`## 会话历史\n\n${_truncateText(hist, 12000)}`);
+        }
+        parts.push(`## 当前消息\n\n${_truncateText(current, 8000)}`);
+        return parts.join('\n\n');
+    };
+
+    const _sessionChatMessageKey = (m, idx) => {
+        const ts = typeof m?.timestamp === 'number' ? m.timestamp : null;
+        if (typeof ts === 'number' && Number.isFinite(ts)) return `ts_${ts}`;
+        const i = Number(idx);
+        if (Number.isFinite(i)) return `idx_${i}`;
+        return `k_${Date.now()}`;
+    };
+
+    const _setFeedbackFlag = (refMap, key, durationMs) => {
+        try {
+            if (!refMap) return;
+            const now = Date.now();
+            const expiresAt = now + Math.max(0, Number(durationMs) || 0);
+            const current = refMap.value && typeof refMap.value === 'object' ? refMap.value : {};
+            refMap.value = { ...current, [key]: expiresAt };
+            setTimeout(() => {
+                try {
+                    const cur = refMap.value && typeof refMap.value === 'object' ? refMap.value : {};
+                    if (cur[key] !== expiresAt) return;
+                    const next = { ...cur };
+                    delete next[key];
+                    refMap.value = next;
+                } catch (_) { }
+            }, Math.max(0, expiresAt - Date.now()) + 20);
+        } catch (_) { }
+    };
+
+    const _isStreamingMessage = (m) => {
+        try {
+            const sending = !!sessionChatSending?.value;
+            if (!sending) return false;
+            const targetTs = sessionChatStreamingTargetTimestamp?.value;
+            if (typeof targetTs !== 'number' || !Number.isFinite(targetTs)) return false;
+            const ts = typeof m?.timestamp === 'number' ? m.timestamp : null;
+            if (typeof ts !== 'number' || !Number.isFinite(ts)) return false;
+            return ts === targetTs;
+        } catch (_) {
+            return false;
+        }
+    };
+
+    const _scrollSessionChatToIndex = (idx) => {
+        try {
+            const i = Number(idx);
+            if (!Number.isFinite(i) || i < 0) return;
+            setTimeout(() => {
+                try {
+                    const el = document.querySelector(`[data-chat-idx="${i}"]`);
+                    if (el && typeof el.scrollIntoView === 'function') {
+                        el.scrollIntoView({ block: 'nearest' });
+                        return;
+                    }
+                    const container = document.getElementById('pet-chat-messages');
+                    if (container) container.scrollTop = container.scrollHeight;
+                } catch (_) { }
+            }, 0);
+        } catch (_) { }
+    };
+
+    const _saveActiveSession = async (nextSession) => {
+        try {
+            if (!nextSession) return;
+            const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
+            const sessionSync = getSessionSyncService();
+            await sessionSync.saveSession(nextSession);
+        } catch (_) { }
+    };
+
+    const _moveSessionChatMessageBlock = async (idx, direction) => {
+        const s = activeSession?.value;
+        if (!s) return;
+        const messages = Array.isArray(s.messages) ? [...s.messages] : [];
+        const i = Number(idx);
+        if (!Number.isFinite(i) || i < 0 || i >= messages.length) return;
+
+        if (String(direction) === 'up') {
+            if (i <= 0) return;
+            const nextMessages = [...messages];
+            const tmp = nextMessages[i - 1];
+            nextMessages[i - 1] = nextMessages[i];
+            nextMessages[i] = tmp;
+            const now = Date.now();
+            const nextSession = { ...s, messages: nextMessages, updatedAt: now, lastAccessTime: now };
+            activeSession.value = nextSession;
+            await _saveActiveSession(nextSession);
+            _scrollSessionChatToIndex(i - 1);
+            return;
+        }
+
+        if (String(direction) === 'down') {
+            if (i >= messages.length - 1) return;
+            const nextMessages = [...messages];
+            const tmp = nextMessages[i + 1];
+            nextMessages[i + 1] = nextMessages[i];
+            nextMessages[i] = tmp;
+            const now = Date.now();
+            const nextSession = { ...s, messages: nextMessages, updatedAt: now, lastAccessTime: now };
+            activeSession.value = nextSession;
+            await _saveActiveSession(nextSession);
+            _scrollSessionChatToIndex(i + 1);
+        }
+    };
+
     const _openAicrImagePreview = (src) => {
         try {
             const url = String(src || '').trim();
@@ -152,6 +340,13 @@ export const createSessionChatContextMethods = ({
         sessionContextScrollSyncCleanup = null;
     };
  
+    const cleanupSessionMessageEditorScrollSync = () => {
+        if (typeof sessionMessageEditorScrollSyncCleanup === 'function') {
+            sessionMessageEditorScrollSyncCleanup();
+        }
+        sessionMessageEditorScrollSyncCleanup = null;
+    };
+
     const setupSessionContextScrollSync = () => {
         cleanupSessionContextScrollSync();
  
@@ -209,6 +404,46 @@ export const createSessionChatContextMethods = ({
         };
     };
  
+    const setupSessionMessageEditorScrollSync = () => {
+        cleanupSessionMessageEditorScrollSync();
+
+        const root = document.querySelector('.aicr-session-context-modal[aria-label="消息编辑器"]');
+        const modal = root ? root.querySelector('.aicr-session-context-modal-body') : null;
+        if (!modal) return;
+
+        const split = modal.querySelector('.aicr-session-context-split');
+        if (!split) return;
+
+        const textarea = split.querySelector('.aicr-session-context-textarea');
+        const preview = split.querySelector('.aicr-session-context-preview');
+        if (!(textarea instanceof HTMLElement) || !(preview instanceof HTMLElement)) return;
+
+        let rafId = 0;
+
+        const syncScroll = () => {
+            const fromMax = Math.max(0, (textarea.scrollHeight || 0) - (textarea.clientHeight || 0));
+            const toMax = Math.max(0, (preview.scrollHeight || 0) - (preview.clientHeight || 0));
+            const ratio = fromMax > 0 ? (textarea.scrollTop / fromMax) : 0;
+            preview.scrollTop = ratio * toMax;
+        };
+
+        const onTextareaScroll = () => {
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => {
+                rafId = 0;
+                syncScroll();
+            });
+        };
+
+        textarea.addEventListener('scroll', onTextareaScroll, { passive: true });
+
+        sessionMessageEditorScrollSyncCleanup = () => {
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = 0;
+            textarea.removeEventListener('scroll', onTextareaScroll);
+        };
+    };
+
     const ensureSessionContextScrollSync = () => {
         const visible = !!sessionContextEditorVisible?.value;
         const mode = String(sessionContextMode?.value || '').toLowerCase();
@@ -225,6 +460,22 @@ export const createSessionChatContextMethods = ({
         setTimeout(schedule, 0);
     };
  
+    const ensureSessionMessageEditorScrollSync = () => {
+        const visible = !!sessionMessageEditorVisible?.value;
+        const mode = String(sessionMessageEditorMode?.value || '').toLowerCase();
+        if (!visible || mode !== 'split') {
+            cleanupSessionMessageEditorScrollSync();
+            return;
+        }
+
+        const schedule = () => setupSessionMessageEditorScrollSync();
+        if (typeof Vue !== 'undefined' && typeof Vue.nextTick === 'function') {
+            Vue.nextTick(schedule);
+            return;
+        }
+        setTimeout(schedule, 0);
+    };
+
     const _closeSessionContextEditorInternal = () => {
         try {
             if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
@@ -699,6 +950,68 @@ export const createSessionChatContextMethods = ({
             return '';
         }
     };
+
+    const bindWelcomeCardEvents = (container) => {
+        if (!container) return;
+
+        const copyButtons = container.querySelectorAll('[data-copy-target], [data-copy-text]');
+        copyButtons.forEach((btn) => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                let textToCopy = '';
+
+                const copyTarget = btn.getAttribute('data-copy-target');
+                if (copyTarget) {
+                    const targetElement = container.querySelector(`#${copyTarget}`);
+                    if (targetElement) {
+                        textToCopy = targetElement.textContent || targetElement.innerText || '';
+                    }
+                }
+
+                if (!textToCopy) {
+                    const copyText = btn.getAttribute('data-copy-text');
+                    if (copyText) {
+                        textToCopy = copyText;
+                    }
+                }
+
+                if (!textToCopy) return;
+
+                const showOk = () => {
+                    const icon = btn.querySelector('i');
+                    if (!icon) return;
+                    const originalClass = icon.className;
+                    icon.className = 'fas fa-check';
+                    btn.style.color = 'rgba(34, 197, 94, 0.9)';
+                    setTimeout(() => {
+                        icon.className = originalClass;
+                        btn.style.color = '';
+                    }, 2000);
+                };
+
+                try {
+                    await navigator.clipboard.writeText(textToCopy);
+                    showOk();
+                } catch (err) {
+                    try {
+                        const textArea = document.createElement('textarea');
+                        textArea.value = textToCopy;
+                        textArea.style.position = 'fixed';
+                        textArea.style.opacity = '0';
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        showOk();
+                    } catch (e2) {
+                        try { console.warn('Copy failed:', err, e2); } catch (_) { }
+                    }
+                }
+            });
+        });
+    };
  
     const sessionChatMethods = {
         selectSessionForChat,
@@ -707,15 +1020,1223 @@ export const createSessionChatContextMethods = ({
                 await selectSessionForChat(session, { toggleActive: false, openContextEditor: false });
             }, '选择会话');
         },
+        sessionChatMessages: (session) => {
+            try {
+                const msgs = Array.isArray(session?.messages) ? session.messages : [];
+                return [...msgs].map(m => {
+                    const timestamp = typeof m?.timestamp === 'number' ? m.timestamp : Date.now();
+                    const imageDataUrls = Array.isArray(m?.imageDataUrls) ? m.imageDataUrls.filter(Boolean) : [];
+                    const imageDataUrl = String(m?.imageDataUrl || (imageDataUrls[0] || '') || '');
+                    const message = String(m?.message || m?.content || m?.text || '');
+                    return {
+                        type: m?.type === 'pet' ? 'pet' : 'user',
+                        message,
+                        content: message,
+                        timestamp,
+                        imageDataUrls,
+                        imageDataUrl,
+                        error: !!m?.error,
+                        aborted: !!m?.aborted
+                    };
+                });
+            } catch (_) {
+                return [];
+            }
+        },
         renderSessionChatMarkdown: (text) => {
             return renderMarkdownHtml(text, { breaks: true, gfm: true });
         },
         renderSessionChatStreamingHtml: (text) => {
             return renderStreamingHtml(text);
         },
+        setSessionChatInput: (v) => {
+            if (!sessionChatInput) return;
+            sessionChatInput.value = String(v ?? '');
+        },
+        onSessionChatInput: (e) => {
+            try {
+                const v = e && e.target ? e.target.value : '';
+                if (sessionChatInput) sessionChatInput.value = String(v ?? '');
+                const el = e && e.target;
+                if (el && el.style) {
+                    el.style.height = 'auto';
+                    const min = 60;
+                    const max = 220;
+                    const next = Math.max(min, Math.min(max, el.scrollHeight || min));
+                    el.style.height = `${next}px`;
+                }
+            } catch (_) { }
+        },
+        onSessionChatCompositionStart: () => {
+            _sessionChatIsComposing = true;
+            _sessionChatCompositionEndTime = 0;
+        },
+        onSessionChatCompositionUpdate: () => {
+            _sessionChatIsComposing = true;
+            _sessionChatCompositionEndTime = 0;
+        },
+        onSessionChatCompositionEnd: () => {
+            _sessionChatIsComposing = false;
+            _sessionChatCompositionEndTime = Date.now();
+        },
+        onSessionChatPaste: (e) => {
+            try {
+                const clipboard = e?.clipboardData;
+                const items = clipboard?.items;
+                if (!items || typeof items.length !== 'number') return;
+
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if (!item || typeof item.type !== 'string') continue;
+                    if (!item.type.includes('image')) continue;
+                    const file = item.getAsFile && item.getAsFile();
+                    if (!file) continue;
+
+                    e.preventDefault();
+
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        try {
+                            const dataUrl = String(reader.result || '').trim();
+                            if (!dataUrl) return;
+                            const current = Array.isArray(sessionChatDraftImages?.value) ? [...sessionChatDraftImages.value] : [];
+                            if (current.length >= 4) {
+                                if (window.showError) window.showError('最多支持 4 张图片');
+                                return;
+                            }
+                            current.push(dataUrl);
+                            if (sessionChatDraftImages) sessionChatDraftImages.value = current;
+                            if (window.showSuccess) window.showSuccess('已添加图片');
+                        } catch (_) { }
+                    };
+                    reader.readAsDataURL(file);
+                    break;
+                }
+            } catch (_) { }
+        },
+        openSessionChatImagePicker: () => {
+            try {
+                const input = document.getElementById('pet-chat-image-input');
+                if (input && typeof input.click === 'function') input.click();
+            } catch (_) { }
+        },
+        onSessionChatImageInputChange: async (e) => {
+            try {
+                const input = e && e.target;
+                const files = input && input.files ? Array.from(input.files).filter(Boolean) : [];
+                if (!files || files.length === 0) return;
+
+                const current = Array.isArray(sessionChatDraftImages?.value) ? [...sessionChatDraftImages.value] : [];
+                const remaining = Math.max(0, 4 - current.length);
+                if (remaining <= 0) {
+                    if (window.showError) window.showError('最多支持 4 张图片');
+                    return;
+                }
+
+                const picked = files.slice(0, remaining);
+                const toDataUrl = (file) => new Promise((resolve, reject) => {
+                    try {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(String(reader.result || '').trim());
+                        reader.onerror = () => reject(new Error('读取图片失败'));
+                        reader.readAsDataURL(file);
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+
+                const dataUrls = await Promise.all(picked.map(toDataUrl));
+                const next = [...current, ...dataUrls.filter(v => v && v.startsWith('data:image/'))].slice(0, 4);
+                if (sessionChatDraftImages) sessionChatDraftImages.value = next;
+                if (window.showSuccess && next.length > current.length) window.showSuccess('已添加图片');
+            } catch (_) {
+            } finally {
+                try {
+                    const input = e && e.target;
+                    if (input) input.value = '';
+                } catch (_) { }
+            }
+        },
+        removeSessionChatDraftImage: (idx) => {
+            try {
+                const list = Array.isArray(sessionChatDraftImages?.value) ? [...sessionChatDraftImages.value] : [];
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i < 0 || i >= list.length) return;
+                list.splice(i, 1);
+                if (sessionChatDraftImages) sessionChatDraftImages.value = list;
+            } catch (_) { }
+        },
+        clearSessionChatDraftImages: () => {
+            if (sessionChatDraftImages) sessionChatDraftImages.value = [];
+        },
+        clearSessionChatInput: () => {
+            if (!sessionChatInput) return;
+            sessionChatInput.value = '';
+        },
+        onSessionChatKeydown: (e) => {
+            try {
+                if (!e) return;
+                if (e.isComposing || _sessionChatIsComposing) return;
+                if (e.key === 'Enter' && _sessionChatCompositionEndTime > 0) {
+                    if (Date.now() - _sessionChatCompositionEndTime < _SESSION_CHAT_COMPOSITION_END_DELAY) return;
+                }
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (typeof window.aicrApp?.sendSessionChatMessage === 'function') {
+                        window.aicrApp.sendSessionChatMessage();
+                    }
+                    _sessionChatCompositionEndTime = 0;
+                    return;
+                }
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    if (sessionChatInput) sessionChatInput.value = '';
+                    if (sessionChatDraftImages) sessionChatDraftImages.value = [];
+                    try {
+                        const el = document.getElementById('pet-chat-input');
+                        if (el && el.style) {
+                            el.style.height = '60px';
+                            el.blur();
+                        }
+                    } catch (_) { }
+                }
+            } catch (_) { }
+        },
+        abortSessionChatRequest: () => {
+            try {
+                const controller = sessionChatAbortController?.value;
+                if (controller && typeof controller.abort === 'function') {
+                    controller.abort();
+                }
+            } catch (_) { }
+        },
+        isSessionChatStreamingMessage: (m, idx) => {
+            try {
+                return _isStreamingMessage(m);
+            } catch (_) {
+                return false;
+            }
+        },
+        isSessionChatRegenerating: (m, idx) => {
+            try {
+                if (String(sessionChatStreamingType?.value || '') !== 'regenerate') return false;
+                return _isStreamingMessage(m);
+            } catch (_) {
+                return false;
+            }
+        },
+        sessionChatCopyButtonLabel: (m, idx) => {
+            try {
+                const key = _sessionChatMessageKey(m, idx);
+                const map = sessionChatCopyFeedback?.value && typeof sessionChatCopyFeedback.value === 'object'
+                    ? sessionChatCopyFeedback.value
+                    : {};
+                const expiresAt = map[key];
+                if (typeof expiresAt === 'number' && Date.now() < expiresAt) return '已复制';
+                return '复制';
+            } catch (_) {
+                return '复制';
+            }
+        },
+        sessionChatRegenerateButtonLabel: (m, idx) => {
+            try {
+                if (String(sessionChatStreamingType?.value || '') === 'regenerate' && _isStreamingMessage(m)) {
+                    return '生成中';
+                }
+                const key = _sessionChatMessageKey(m, idx);
+                const map = sessionChatRegenerateFeedback?.value && typeof sessionChatRegenerateFeedback.value === 'object'
+                    ? sessionChatRegenerateFeedback.value
+                    : {};
+                const expiresAt = map[key];
+                if (typeof expiresAt === 'number' && Date.now() < expiresAt) return '已生成';
+                if (m && (m.error || m.aborted)) return '重试';
+                return '重新生成';
+            } catch (_) {
+                return '重新生成';
+            }
+        },
+        canRegenerateSessionChatMessage: (session, idx) => {
+            try {
+                if (!session) return false;
+                const messages = Array.isArray(session?.messages) ? session.messages : [];
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i < 0 || i >= messages.length) return false;
+                const m = messages[i];
+                if (!m || m.type !== 'pet') return false;
+                for (let j = i - 1; j >= 0; j--) {
+                    const prev = messages[j];
+                    if (!prev || prev.type === 'pet') continue;
+                    const text = String(prev.message ?? prev.content ?? '').trim();
+                    const hasImages =
+                        (Array.isArray(prev.imageDataUrls) && prev.imageDataUrls.some(Boolean)) ||
+                        !!String(prev.imageDataUrl || '').trim();
+                    return !!(text || hasImages);
+                }
+                return false;
+            } catch (_) {
+                return false;
+            }
+        },
+        editSessionChatMessageAt: (idx) => {
+            try {
+                const s = activeSession?.value;
+                const messages = Array.isArray(s?.messages) ? s.messages : [];
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i < 0 || i >= messages.length) return;
+                const m = messages[i];
+                if (!m) return;
+                const text = String(m.message ?? m.content ?? '');
+
+                if (sessionMessageEditorMode) sessionMessageEditorMode.value = 'split';
+                if (sessionMessageEditorDraft) sessionMessageEditorDraft.value = text;
+                if (sessionMessageEditorIndex) sessionMessageEditorIndex.value = i;
+                if (sessionMessageEditorVisible) sessionMessageEditorVisible.value = true;
+                ensureSessionMessageEditorScrollSync();
+            } catch (_) { }
+        },
+        closeSessionMessageEditor: () => {
+            if (sessionMessageEditorVisible) sessionMessageEditorVisible.value = false;
+            if (sessionMessageEditorDraft) sessionMessageEditorDraft.value = '';
+            if (sessionMessageEditorIndex) sessionMessageEditorIndex.value = -1;
+            cleanupSessionMessageEditorScrollSync();
+        },
+        setSessionMessageEditorMode: (v) => {
+            if (!sessionMessageEditorMode) return;
+            sessionMessageEditorMode.value = v === 'preview' ? 'preview' : (v === 'split' ? 'split' : 'edit');
+            ensureSessionMessageEditorScrollSync();
+        },
+        setSessionMessageEditorDraft: (v) => {
+            if (!sessionMessageEditorDraft) return;
+            sessionMessageEditorDraft.value = String(v ?? '');
+        },
+        saveSessionMessageEdit: async () => {
+            return safeExecute(async () => {
+                const content = String(sessionMessageEditorDraft?.value ?? '').trim();
+                const idx = Number(sessionMessageEditorIndex?.value ?? -1);
+
+                if (!Number.isFinite(idx) || idx < 0) {
+                    throw new Error('无效的消息索引');
+                }
+
+                const s = activeSession?.value;
+                if (!s || !s.key) {
+                    throw new Error('未选择会话或会话缺少key');
+                }
+
+                const messages = Array.isArray(s.messages) ? [...s.messages] : [];
+                if (idx >= messages.length) {
+                    throw new Error('消息索引超出范围');
+                }
+
+                const m = messages[idx];
+                if (!m) {
+                    throw new Error('消息不存在');
+                }
+
+                messages[idx] = { ...m, message: content };
+
+                const now = Date.now();
+                const updatedSession = { ...s, messages, updatedAt: now, lastAccessTime: now };
+                if (activeSession) activeSession.value = updatedSession;
+
+                try {
+                    const updateData = {
+                        key: s.key,
+                        messages: messages,
+                        updatedAt: now,
+                        lastAccessTime: now
+                    };
+
+                    const payload = {
+                        module_name: SERVICE_MODULE,
+                        method_name: 'update_document',
+                        parameters: {
+                            cname: 'sessions',
+                            key: s.key,
+                            data: updateData
+                        }
+                    };
+
+                    const result = await postData(`${window.API_URL}/`, payload);
+
+                    if (result && result.success === false) {
+                        throw new Error(result.message || '保存失败');
+                    }
+
+                    if (store.sessions && store.sessions.value) {
+                        const sessionIndex = store.sessions.value.findIndex(sess => sess && sess.key === s.key);
+                        if (sessionIndex >= 0) {
+                            store.sessions.value = [...store.sessions.value];
+                            store.sessions.value[sessionIndex] = updatedSession;
+                        }
+                    }
+                } catch (error) {
+                    console.error('[保存消息编辑] 保存到服务器失败:', error);
+                    throw error;
+                }
+
+                if (sessionMessageEditorVisible) sessionMessageEditorVisible.value = false;
+                if (sessionMessageEditorDraft) sessionMessageEditorDraft.value = '';
+                if (sessionMessageEditorIndex) sessionMessageEditorIndex.value = -1;
+
+                if (window.showSuccess) window.showSuccess('已保存');
+            }, '保存消息编辑');
+        },
+        deleteSessionChatMessageAt: async (idx) => {
+            return safeExecute(async () => {
+                if (sessionChatSending?.value) return;
+                const s = activeSession?.value;
+                if (!s) return;
+                const messages = Array.isArray(s.messages) ? [...s.messages] : [];
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i < 0 || i >= messages.length) return;
+                if (!confirm('确定删除这条消息吗？')) return;
+
+                messages.splice(i, 1);
+
+                const now = Date.now();
+                const nextSession = { ...s, messages, updatedAt: now, lastAccessTime: now };
+                activeSession.value = nextSession;
+
+                try {
+                    const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.saveSession(nextSession);
+                } catch (_) { }
+            }, '删除消息');
+        },
+        canMoveSessionChatMessageUp: (session, idx) => {
+            try {
+                const s = session || activeSession?.value;
+                const messages = Array.isArray(s?.messages) ? s.messages : [];
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i <= 0) return false;
+                return i < messages.length;
+            } catch (_) {
+                return false;
+            }
+        },
+        canMoveSessionChatMessageDown: (session, idx) => {
+            try {
+                const s = session || activeSession?.value;
+                const messages = Array.isArray(s?.messages) ? s.messages : [];
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i < 0) return false;
+                return i < messages.length - 1;
+            } catch (_) {
+                return false;
+            }
+        },
+        moveSessionChatMessageUp: async (idx) => {
+            return safeExecute(async () => {
+                await _moveSessionChatMessageBlock(idx, 'up');
+            }, '上移消息');
+        },
+        moveSessionChatMessageDown: async (idx) => {
+            return safeExecute(async () => {
+                await _moveSessionChatMessageBlock(idx, 'down');
+            }, '下移消息');
+        },
+        resendSessionChatMessageAt: async (idx) => {
+            return safeExecute(async () => {
+                if (sessionChatSending?.value) return;
+                const s = activeSession?.value;
+                if (!s) return;
+                const originalMessages = Array.isArray(s.messages) ? s.messages : [];
+                const i = Number(idx);
+                if (!Number.isFinite(i) || i < 0 || i >= originalMessages.length) return;
+                const userMsg = originalMessages[i];
+                if (!userMsg || userMsg.type === 'pet') return;
+
+                const text = String(userMsg.message ?? userMsg.content ?? '').trim();
+                const images = (() => {
+                    const list = Array.isArray(userMsg.imageDataUrls) ? userMsg.imageDataUrls.filter(Boolean) : [];
+                    const first = String(userMsg.imageDataUrl || '').trim();
+                    if (first) list.unshift(first);
+                    return Array.from(new Set(list)).slice(0, 4);
+                })();
+                if (!text && images.length === 0) return;
+
+                const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
+                const sessionSync = getSessionSyncService();
+                const uploadOne = async (src) => {
+                    const raw = String(src || '').trim();
+                    if (!raw) return '';
+                    if (/^https?:\/\//i.test(raw)) return raw;
+                    if (!raw.startsWith('data:image/')) {
+                        throw new Error('图片格式不支持');
+                    }
+                    return await sessionSync.uploadImageToOss(raw, 'aicr/images');
+                };
+                const imageUrls = images.length > 0
+                    ? (await Promise.all(images.map((src, idx) => uploadOne(src, idx)))).filter(Boolean)
+                    : [];
+                if (images.length > 0 && imageUrls.length === 0) {
+                    throw new Error('上传图片失败');
+                }
+
+                const shouldAutoScroll = () => {
+                    try {
+                        const el = document.getElementById('pet-chat-messages');
+                        if (!el) return true;
+                        const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
+                        return distance < 140;
+                    } catch (_) {
+                        return true;
+                    }
+                };
+
+                const scrollToIndex = (targetIdx) => {
+                    try {
+                        const el = document.querySelector(`[data-chat-idx="${targetIdx}"]`);
+                        if (el && typeof el.scrollIntoView === 'function') {
+                            el.scrollIntoView({ block: 'nearest' });
+                            return;
+                        }
+                        const container = document.getElementById('pet-chat-messages');
+                        if (container) container.scrollTop = container.scrollHeight;
+                    } catch (_) { }
+                };
+
+                const now = Date.now();
+                const insertedPet = { type: 'pet', message: '', timestamp: now + 1 };
+                const updatedUserMsg = imageUrls.length > 0
+                    ? { ...userMsg, imageDataUrls: imageUrls, imageDataUrl: imageUrls[0] }
+                    : userMsg;
+                const nextMessages = [...originalMessages];
+                nextMessages[i] = updatedUserMsg;
+                nextMessages.splice(i + 1, 0, insertedPet);
+                const nextSession = { ...s, messages: nextMessages, updatedAt: now, lastAccessTime: now };
+                activeSession.value = nextSession;
+                setTimeout(() => scrollToIndex(i + 1), 0);
+
+                const pageContent = String(sessionContextDraft?.value ?? s.pageContent ?? '').trim();
+                const includeContext = sessionContextEnabled?.value === true;
+                const history = _buildSessionChatHistoryText(originalMessages, i);
+                const fromSystem = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim() || defaultSessionBotSystemPrompt;
+                const fromUser = _buildSessionChatUserPrompt({ text, images: imageUrls, pageContent, includeContext, historyText: history });
+
+                const { streamPrompt } = await import('/src/services/modules/crud.js');
+                const promptUrl = getPromptUrl();
+
+                let accumulated = '';
+                if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = insertedPet.timestamp;
+                if (sessionChatStreamingType) sessionChatStreamingType.value = 'resend';
+                if (sessionChatSending) sessionChatSending.value = true;
+                const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                if (sessionChatAbortController) sessionChatAbortController.value = controller;
+                let streamErrorMessage = '';
+                let streamAborted = false;
+
+                try {
+                    await streamPrompt(
+                        promptUrl,
+                        {
+                            module_name: 'services.ai.chat_service',
+                            method_name: 'chat',
+                            parameters: {
+                                system: fromSystem,
+                                user: fromUser,
+                                stream: true,
+                                ...(String(sessionBotModel?.value || '').trim()
+                                    ? { model: String(sessionBotModel.value || '').trim() }
+                                    : {}),
+                                ...(imageUrls.length > 0 ? { images: imageUrls } : {})
+                            }
+                        },
+                        controller ? { signal: controller.signal } : {},
+                        (chunk) => {
+                            const autoScroll = shouldAutoScroll();
+                            accumulated += String(chunk || '');
+                            try {
+                                const cur = activeSession.value || nextSession;
+                                const msgs = Array.isArray(cur.messages) ? [...cur.messages] : [];
+                                const targetIdx = msgs.findIndex(m => m && m.type === 'pet' && m.timestamp === insertedPet.timestamp);
+                                if (targetIdx >= 0) {
+                                    msgs[targetIdx] = { ...msgs[targetIdx], message: accumulated, error: false, aborted: false };
+                                    activeSession.value = { ...cur, messages: msgs };
+                                    if (autoScroll) scrollToIndex(targetIdx);
+                                }
+                            } catch (_) { }
+                        }
+                    );
+                } catch (e) {
+                    const aborted = _isAbortError(e);
+                    if (aborted) {
+                        streamAborted = true;
+                    } else {
+                        streamErrorMessage = String(e?.message || '请求失败');
+                    }
+                } finally {
+                    if (sessionChatSending) sessionChatSending.value = false;
+                    if (sessionChatAbortController) sessionChatAbortController.value = null;
+                    if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = null;
+                    if (sessionChatStreamingType) sessionChatStreamingType.value = '';
+                }
+
+                const finalSession = (() => {
+                    const cur = activeSession.value || nextSession;
+                    const msgs = Array.isArray(cur.messages) ? [...cur.messages] : [];
+                    const targetIdx = msgs.findIndex(m => m && m.type === 'pet' && m.timestamp === insertedPet.timestamp);
+                    if (targetIdx >= 0) {
+                        const trimmed = String(accumulated || '').trim();
+                        const content = streamErrorMessage
+                            ? (trimmed || `请求失败：${streamErrorMessage}`)
+                            : (streamAborted && !trimmed ? '已停止' : trimmed);
+                        msgs[targetIdx] = {
+                            ...msgs[targetIdx],
+                            message: content,
+                            ...(streamErrorMessage ? { error: true } : {}),
+                            ...(streamAborted ? { aborted: true } : {})
+                        };
+                    }
+                    return { ...cur, messages: msgs, pageContent: String(sessionContextDraft?.value ?? cur.pageContent ?? '') };
+                })();
+                activeSession.value = finalSession;
+
+                try {
+                    const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
+                } catch (_) { }
+
+                if (streamErrorMessage && window.showError) {
+                    window.showError(streamErrorMessage);
+                }
+            }, '重新发送消息', (info) => { try { if (window.showError) window.showError(String(info?.message || '重试失败')); } catch (_) { } });
+        },
+        regenerateSessionChatMessageAt: async (idx) => {
+            return safeExecute(async () => {
+                if (sessionChatSending?.value) return;
+                const currentSession = activeSession?.value;
+                if (!currentSession) return;
+                const originalMessages = Array.isArray(currentSession.messages) ? currentSession.messages : [];
+                const petIdx = Number(idx);
+                if (!Number.isFinite(petIdx) || petIdx < 0 || petIdx >= originalMessages.length) return;
+                const originalPet = originalMessages[petIdx];
+                if (!originalPet || originalPet.type !== 'pet') return;
+
+                let userIdx = -1;
+                for (let i = petIdx - 1; i >= 0; i--) {
+                    const m = originalMessages[i];
+                    if (m && m.type !== 'pet') {
+                        userIdx = i;
+                        break;
+                    }
+                }
+                if (userIdx < 0) return;
+
+                const userMsg = originalMessages[userIdx] || {};
+                const text = String(userMsg.message ?? userMsg.content ?? '').trim();
+                const images = (() => {
+                    const list = Array.isArray(userMsg.imageDataUrls) ? userMsg.imageDataUrls.filter(Boolean) : [];
+                    const first = String(userMsg.imageDataUrl || '').trim();
+                    if (first) list.unshift(first);
+                    return Array.from(new Set(list)).slice(0, 4);
+                })();
+                if (!text && images.length === 0) return;
+
+                if (sessionChatLastDraftText) sessionChatLastDraftText.value = text;
+                if (sessionChatLastDraftImages) sessionChatLastDraftImages.value = images;
+
+                const shouldAutoScroll = () => {
+                    try {
+                        const el = document.getElementById('pet-chat-messages');
+                        if (!el) return true;
+                        const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
+                        return distance < 140;
+                    } catch (_) {
+                        return true;
+                    }
+                };
+
+                const scrollToIndex = (targetIdx) => {
+                    try {
+                        const el = document.querySelector(`[data-chat-idx="${targetIdx}"]`);
+                        if (el && typeof el.scrollIntoView === 'function') {
+                            el.scrollIntoView({ block: 'nearest' });
+                            return;
+                        }
+                        const container = document.getElementById('pet-chat-messages');
+                        if (container) container.scrollTop = container.scrollHeight;
+                    } catch (_) { }
+                };
+
+                const now = Date.now();
+                const petTimestamp = typeof originalPet.timestamp === 'number' ? originalPet.timestamp : now;
+                const resetMessages = [...originalMessages];
+                resetMessages[petIdx] = { ...originalPet, type: 'pet', timestamp: petTimestamp, message: '', error: false, aborted: false };
+                activeSession.value = { ...currentSession, messages: resetMessages, updatedAt: now, lastAccessTime: now };
+                setTimeout(() => scrollToIndex(petIdx), 0);
+
+                const pageContent = String(sessionContextDraft?.value ?? currentSession.pageContent ?? '').trim();
+                const includeContext = sessionContextEnabled?.value === true;
+                const history = _buildSessionChatHistoryText(originalMessages, petIdx);
+                const fromSystem = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim() || defaultSessionBotSystemPrompt;
+                const fromUser = _buildSessionChatUserPrompt({ text, images, pageContent, includeContext, historyText: history });
+
+                const { streamPrompt } = await import('/src/services/modules/crud.js');
+                const promptUrl = getPromptUrl();
+
+                let accumulated = '';
+                if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = petTimestamp;
+                if (sessionChatStreamingType) sessionChatStreamingType.value = 'regenerate';
+                if (sessionChatSending) sessionChatSending.value = true;
+                const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                if (sessionChatAbortController) sessionChatAbortController.value = controller;
+                let streamErrorMessage = '';
+                let streamAborted = false;
+
+                try {
+                    await streamPrompt(
+                        promptUrl,
+                        {
+                            module_name: 'services.ai.chat_service',
+                            method_name: 'chat',
+                            parameters: {
+                                system: fromSystem,
+                                user: fromUser,
+                                stream: true,
+                                ...(String(sessionBotModel?.value || '').trim()
+                                    ? { model: String(sessionBotModel.value || '').trim() }
+                                    : {}),
+                                ...(images.length > 0 ? { images } : {})
+                            }
+                        },
+                        controller ? { signal: controller.signal } : {},
+                        (chunk) => {
+                            const autoScroll = shouldAutoScroll();
+                            accumulated += String(chunk || '');
+                            try {
+                                const cur = activeSession.value;
+                                const msgs = Array.isArray(cur.messages) ? [...cur.messages] : [];
+                                const targetIdx = msgs.findIndex(m => m && m.type === 'pet' && m.timestamp === petTimestamp);
+                                const useIdx = targetIdx >= 0 ? targetIdx : petIdx;
+                                if (useIdx >= 0 && msgs[useIdx] && msgs[useIdx].type === 'pet') {
+                                    msgs[useIdx] = { ...msgs[useIdx], message: accumulated, error: false, aborted: false };
+                                    activeSession.value = { ...cur, messages: msgs };
+                                    if (autoScroll) scrollToIndex(useIdx);
+                                }
+                            } catch (_) { }
+                        }
+                    );
+                } catch (e) {
+                    const aborted = _isAbortError(e);
+                    if (aborted) {
+                        streamAborted = true;
+                    } else {
+                        streamErrorMessage = String(e?.message || '请求失败');
+                    }
+                } finally {
+                    if (sessionChatSending) sessionChatSending.value = false;
+                    if (sessionChatAbortController) sessionChatAbortController.value = null;
+                    if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = null;
+                    if (sessionChatStreamingType) sessionChatStreamingType.value = '';
+                }
+
+                const finalSession = (() => {
+                    const cur = activeSession.value || currentSession;
+                    const msgs = Array.isArray(cur.messages) ? [...cur.messages] : [];
+                    const targetIdx = msgs.findIndex(m => m && m.type === 'pet' && m.timestamp === petTimestamp);
+                    const useIdx = targetIdx >= 0 ? targetIdx : petIdx;
+                    if (useIdx >= 0 && msgs[useIdx] && msgs[useIdx].type === 'pet') {
+                        const trimmed = String(accumulated || '').trim();
+                        const content = streamErrorMessage
+                            ? (trimmed || `请求失败：${streamErrorMessage}`)
+                            : (streamAborted && !trimmed ? '已停止' : trimmed);
+                        msgs[useIdx] = {
+                            ...msgs[useIdx],
+                            message: content,
+                            ...(streamErrorMessage ? { error: true } : {}),
+                            ...(streamAborted ? { aborted: true } : {})
+                        };
+                    }
+                    return { ...cur, messages: msgs, pageContent: String(sessionContextDraft?.value ?? cur.pageContent ?? '') };
+                })();
+                activeSession.value = finalSession;
+
+                try {
+                    const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
+                } catch (_) { }
+
+                try {
+                    const key = _sessionChatMessageKey({ timestamp: petTimestamp }, petIdx);
+                    if (!streamErrorMessage && !streamAborted && String(accumulated || '').trim()) {
+                        _setFeedbackFlag(sessionChatRegenerateFeedback, key, 1200);
+                    }
+                } catch (_) { }
+
+                if (streamErrorMessage && window.showError) {
+                    window.showError(streamErrorMessage);
+                }
+            }, '重新生成回复');
+        },
+        retryLastSessionChatMessage: async () => {
+            return safeExecute(async () => {
+                if (sessionChatSending?.value) return;
+                const currentSession = activeSession?.value;
+                if (!currentSession) return;
+                const originalMessages = Array.isArray(currentSession.messages) ? currentSession.messages : [];
+                if (originalMessages.length === 0) return;
+
+                let petIdx = -1;
+                for (let i = originalMessages.length - 1; i >= 0; i--) {
+                    const m = originalMessages[i];
+                    if (m && m.type === 'pet') {
+                        petIdx = i;
+                        break;
+                    }
+                }
+                if (petIdx < 0) return;
+
+                const originalPet = originalMessages[petIdx] || {};
+                if (!originalPet.error && !originalPet.aborted) return;
+
+                let userIdx = -1;
+                for (let i = petIdx - 1; i >= 0; i--) {
+                    const m = originalMessages[i];
+                    if (m && m.type !== 'pet') {
+                        userIdx = i;
+                        break;
+                    }
+                }
+                if (userIdx < 0) return;
+
+                const userMsg = originalMessages[userIdx] || {};
+                const text = String(userMsg.message ?? userMsg.content ?? '').trim();
+                const images = (() => {
+                    const list = Array.isArray(userMsg.imageDataUrls)
+                        ? userMsg.imageDataUrls.filter(Boolean)
+                        : [];
+                    const first = String(userMsg.imageDataUrl || '').trim();
+                    if (first) list.unshift(first);
+                    return Array.from(new Set(list)).slice(0, 4);
+                })();
+                if (!text && images.length === 0) return;
+
+                if (sessionChatLastDraftText) sessionChatLastDraftText.value = text;
+                if (sessionChatLastDraftImages) sessionChatLastDraftImages.value = images;
+
+                const shouldAutoScroll = () => {
+                    try {
+                        const el = document.getElementById('pet-chat-messages');
+                        if (!el) return true;
+                        const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
+                        return distance < 140;
+                    } catch (_) {
+                        return true;
+                    }
+                };
+
+                const scrollToBottom = () => {
+                    try {
+                        const el = document.getElementById('pet-chat-messages');
+                        if (el) el.scrollTop = el.scrollHeight;
+                    } catch (_) { }
+                };
+
+                const now = Date.now();
+                const petTimestamp = typeof originalPet.timestamp === 'number' ? originalPet.timestamp : now;
+                const resetMessages = [...originalMessages];
+                resetMessages[petIdx] = {
+                    ...originalPet,
+                    type: 'pet',
+                    timestamp: petTimestamp,
+                    message: '',
+                    error: false,
+                    aborted: false
+                };
+                activeSession.value = {
+                    ...currentSession,
+                    messages: resetMessages,
+                    updatedAt: now,
+                    lastAccessTime: now
+                };
+                setTimeout(scrollToBottom, 0);
+
+                const pageContent = String(sessionContextDraft?.value ?? currentSession.pageContent ?? '').trim();
+                const includeContext = sessionContextEnabled?.value === true;
+                const history = _buildSessionChatHistoryText(originalMessages, petIdx);
+                const fromSystem = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim() || defaultSessionBotSystemPrompt;
+
+                const fromUser = _buildSessionChatUserPrompt({ text, images, pageContent, includeContext, historyText: history });
+
+                const { streamPrompt } = await import('/src/services/modules/crud.js');
+                const promptUrl = getPromptUrl();
+
+                let accumulated = '';
+                if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = petTimestamp;
+                if (sessionChatStreamingType) sessionChatStreamingType.value = 'send';
+                if (sessionChatSending) sessionChatSending.value = true;
+                const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                if (sessionChatAbortController) sessionChatAbortController.value = controller;
+                let streamErrorMessage = '';
+                let streamAborted = false;
+
+                try {
+                    await streamPrompt(
+                        promptUrl,
+                        {
+                            module_name: 'services.ai.chat_service',
+                            method_name: 'chat',
+                            parameters: {
+                                system: fromSystem,
+                                user: fromUser,
+                                stream: true,
+                                ...(String(sessionBotModel?.value || '').trim()
+                                    ? { model: String(sessionBotModel.value || '').trim() }
+                                    : {}),
+                                ...(images.length > 0 ? { images } : {})
+                            }
+                        },
+                        controller ? { signal: controller.signal } : {},
+                        (chunk) => {
+                            const autoScroll = shouldAutoScroll();
+                            accumulated += String(chunk || '');
+                            try {
+                                const s = activeSession.value;
+                                const msgs = Array.isArray(s.messages) ? [...s.messages] : [];
+                                let idx = -1;
+                                for (let i = msgs.length - 1; i >= 0; i--) {
+                                    const m = msgs[i];
+                                    if (m && m.type === 'pet' && m.timestamp === petTimestamp) {
+                                        idx = i;
+                                        break;
+                                    }
+                                }
+                                if (idx < 0) idx = petIdx;
+                                if (idx >= 0 && msgs[idx] && msgs[idx].type === 'pet') {
+                                    msgs[idx] = { ...msgs[idx], message: accumulated, error: false, aborted: false };
+                                    activeSession.value = { ...s, messages: msgs };
+                                    if (autoScroll) scrollToBottom();
+                                }
+                            } catch (_) { }
+                        }
+                    );
+                } catch (e) {
+                    const aborted = _isAbortError(e);
+                    if (aborted) {
+                        streamAborted = true;
+                    } else {
+                        streamErrorMessage = String(e?.message || '请求失败');
+                    }
+                } finally {
+                    if (sessionChatSending) sessionChatSending.value = false;
+                    if (sessionChatAbortController) sessionChatAbortController.value = null;
+                    if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = null;
+                    if (sessionChatStreamingType) sessionChatStreamingType.value = '';
+                }
+
+                const finalSession = (() => {
+                    const s = activeSession.value || currentSession;
+                    const msgs = Array.isArray(s.messages) ? [...s.messages] : [];
+                    let idx = -1;
+                    for (let i = msgs.length - 1; i >= 0; i--) {
+                        const m = msgs[i];
+                        if (m && m.type === 'pet' && m.timestamp === petTimestamp) {
+                            idx = i;
+                            break;
+                        }
+                    }
+                    if (idx < 0) idx = petIdx;
+                    if (idx >= 0 && msgs[idx] && msgs[idx].type === 'pet') {
+                        const trimmed = String(accumulated || '').trim();
+                        const content = streamErrorMessage
+                            ? (trimmed || `请求失败：${streamErrorMessage}`)
+                            : (streamAborted && !trimmed ? '已停止' : trimmed);
+                        msgs[idx] = {
+                            ...msgs[idx],
+                            message: content,
+                            ...(streamErrorMessage ? { error: true } : {}),
+                            ...(streamAborted ? { aborted: true } : {})
+                        };
+                    }
+                    return { ...s, messages: msgs, pageContent: String(sessionContextDraft?.value ?? s.pageContent ?? '') };
+                })();
+                activeSession.value = finalSession;
+
+                try {
+                    const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
+                } catch (_) { }
+
+                if (streamErrorMessage && window.showError) {
+                    window.showError(streamErrorMessage);
+                }
+            }, '重试会话消息');
+        },
+        copySessionChatMessage: async (text, m, idx) => {
+            return safeExecute(async () => {
+                const content = String(text ?? '').trim();
+                if (!content) return;
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    await navigator.clipboard.writeText(content);
+                    _setFeedbackFlag(sessionChatCopyFeedback, _sessionChatMessageKey(m, idx), 1200);
+                    if (window.showSuccess) window.showSuccess('已复制');
+                    return;
+                }
+                const ta = document.createElement('textarea');
+                ta.value = content;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                ta.style.top = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                _setFeedbackFlag(sessionChatCopyFeedback, _sessionChatMessageKey(m, idx), 1200);
+                if (window.showSuccess) window.showSuccess('已复制');
+            }, '复制消息');
+        },
+        sendSessionChatMessageToRobot: async (robot, m, idx) => {
+            return safeExecute(async () => {
+                const r = robot || {};
+                const webhook = String(r.webhook || '').trim();
+                if (!webhook) return;
+                const content = String((m && (m.message || m.content)) || '').trim();
+                if (!content) return;
+
+                if (!window.API_URL) {
+                    throw new Error('API地址未配置');
+                }
+
+                try {
+                    const apiUrl = `${window.API_URL}/wework/send-message`;
+                    const payload = {
+                        webhook_url: webhook,
+                        content: content
+                    };
+
+                    const res = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await res.json().catch(() => ({}));
+
+                    if (!res.ok) {
+                        throw new Error(data?.message || data?.errmsg || `发送失败: ${res.status}`);
+                    }
+
+                    if (data.code !== 0 && data.code !== undefined) {
+                        throw new Error(data.message || data.errmsg || '发送失败');
+                    }
+
+                    if (window.showSuccess) window.showSuccess('已发送到机器人');
+                } catch (e) {
+                    if (window.showError) window.showError(e?.message || '发送失败');
+                    throw e;
+                }
+            }, '发送到机器人');
+        },
+        sendSessionChatMessage: async () => {
+            return safeExecute(async () => {
+                if (!activeSession?.value) return;
+                if (sessionChatSending?.value) return;
+                const rawText = String(sessionChatInput?.value ?? '');
+                const text = rawText.trim();
+                const images = Array.isArray(sessionChatDraftImages?.value) ? sessionChatDraftImages.value.filter(Boolean).slice(0, 4) : [];
+                if (!text && images.length === 0) return;
+
+                if (sessionChatLastDraftText) sessionChatLastDraftText.value = text;
+                if (sessionChatLastDraftImages) sessionChatLastDraftImages.value = images;
+
+                const now = Date.now();
+                const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
+                const sessionSync = getSessionSyncService();
+                const uploadOne = async (src) => {
+                    const raw = String(src || '').trim();
+                    if (!raw) return '';
+                    if (/^https?:\/\//i.test(raw)) return raw;
+                    if (!raw.startsWith('data:image/')) {
+                        throw new Error('图片格式不支持');
+                    }
+                    return await sessionSync.uploadImageToOss(raw, 'aicr/images');
+                };
+                const imageUrls = images.length > 0
+                    ? (await Promise.all(images.map((src) => uploadOne(src)))).filter(Boolean)
+                    : [];
+                if (images.length > 0 && imageUrls.length === 0) {
+                    throw new Error('上传图片失败');
+                }
+
+                const userMessage = {
+                    type: 'user',
+                    message: text,
+                    timestamp: now,
+                    ...(imageUrls.length > 0 ? { imageDataUrls: imageUrls, imageDataUrl: imageUrls[0] } : {})
+                };
+                const petMessage = { type: 'pet', message: '', timestamp: now + 1 };
+
+                const prevSession = activeSession.value;
+                const prevMessages = Array.isArray(prevSession.messages) ? prevSession.messages : [];
+                const nextSession = {
+                    ...prevSession,
+                    messages: [...prevMessages, userMessage, petMessage],
+                    updatedAt: now,
+                    lastAccessTime: now
+                };
+
+                activeSession.value = nextSession;
+                if (sessionChatInput) sessionChatInput.value = '';
+                if (sessionChatDraftImages) sessionChatDraftImages.value = [];
+
+                const shouldAutoScroll = () => {
+                    try {
+                        const el = document.getElementById('pet-chat-messages');
+                        if (!el) return true;
+                        const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
+                        return distance < 140;
+                    } catch (_) {
+                        return true;
+                    }
+                };
+
+                const scrollToBottom = () => {
+                    try {
+                        const el = document.getElementById('pet-chat-messages');
+                        if (el) el.scrollTop = el.scrollHeight;
+                    } catch (_) { }
+                };
+                setTimeout(scrollToBottom, 0);
+
+                const pageContent = String(sessionContextDraft?.value ?? nextSession.pageContent ?? '').trim();
+                const includeContext = sessionContextEnabled?.value === true;
+                const history = _buildSessionChatHistoryText(prevMessages, prevMessages.length);
+                const fromSystem = String(sessionBotSystemPrompt?.value || defaultSessionBotSystemPrompt).trim() || defaultSessionBotSystemPrompt;
+                const fromUser = _buildSessionChatUserPrompt({ text, images: imageUrls, pageContent, includeContext, historyText: history });
+
+                const { streamPrompt } = await import('/src/services/modules/crud.js');
+                const promptUrl = getPromptUrl();
+
+                let accumulated = '';
+                if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = petMessage.timestamp;
+                if (sessionChatStreamingType) sessionChatStreamingType.value = 'send';
+                if (sessionChatSending) sessionChatSending.value = true;
+                const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                if (sessionChatAbortController) sessionChatAbortController.value = controller;
+                let streamErrorMessage = '';
+                let streamAborted = false;
+
+                try {
+                    await streamPrompt(
+                        promptUrl,
+                        {
+                            module_name: 'services.ai.chat_service',
+                            method_name: 'chat',
+                            parameters: {
+                                system: fromSystem,
+                                user: fromUser,
+                                stream: true,
+                                ...(String(sessionBotModel?.value || '').trim()
+                                    ? { model: String(sessionBotModel.value || '').trim() }
+                                    : {}),
+                                ...(imageUrls.length > 0 ? { images: imageUrls } : {})
+                            }
+                        },
+                        controller ? { signal: controller.signal } : {},
+                        (chunk) => {
+                            const autoScroll = shouldAutoScroll();
+                            accumulated += String(chunk || '');
+                            try {
+                                const s = activeSession.value;
+                                const msgs = Array.isArray(s.messages) ? [...s.messages] : [];
+                                const lastIdx = msgs.length - 1;
+                                if (lastIdx >= 0) {
+                                    const last = msgs[lastIdx];
+                                    if (last && last.type === 'pet' && last.timestamp === petMessage.timestamp) {
+                                        msgs[lastIdx] = { ...last, message: accumulated, error: false, aborted: false };
+                                        activeSession.value = { ...s, messages: msgs };
+                                        if (autoScroll) scrollToBottom();
+                                    }
+                                }
+                            } catch (_) { }
+                        }
+                    );
+                } catch (e) {
+                    const aborted = _isAbortError(e);
+                    if (aborted) {
+                        streamAborted = true;
+                    } else {
+                        streamErrorMessage = String(e?.message || '请求失败');
+                    }
+                } finally {
+                    if (sessionChatSending) sessionChatSending.value = false;
+                    if (sessionChatAbortController) sessionChatAbortController.value = null;
+                    if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = null;
+                    if (sessionChatStreamingType) sessionChatStreamingType.value = '';
+                }
+
+                const finalSession = (() => {
+                    const s = activeSession.value || nextSession;
+                    const msgs = Array.isArray(s.messages) ? [...s.messages] : [];
+                    const lastIdx = msgs.length - 1;
+                    if (lastIdx >= 0) {
+                        const last = msgs[lastIdx];
+                        if (last && last.type === 'pet' && last.timestamp === petMessage.timestamp) {
+                            const trimmed = String(accumulated || '').trim();
+                            const content = streamErrorMessage
+                                ? (trimmed || `请求失败：${streamErrorMessage}`)
+                                : (streamAborted && !trimmed ? '已停止' : trimmed);
+                            msgs[lastIdx] = {
+                                ...last,
+                                message: content,
+                                ...(streamErrorMessage ? { error: true } : {}),
+                                ...(streamAborted ? { aborted: true } : {})
+                            };
+                        }
+                    }
+                    return { ...s, messages: msgs, pageContent: String(sessionContextDraft?.value ?? s.pageContent ?? '') };
+                })();
+                activeSession.value = finalSession;
+
+                try {
+                    const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
+                    const sessionSync = getSessionSyncService();
+                    await sessionSync.saveSession({ ...finalSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
+                } catch (_) { }
+
+                try {
+                    const robots = Array.isArray(weChatRobots?.value) ? weChatRobots.value : [];
+                    const msgs = Array.isArray(finalSession.messages) ? finalSession.messages : [];
+                    const last = msgs[msgs.length - 1];
+                    const content = String(last?.message || last?.content || '').trim();
+                    if (content) {
+                        const targets = robots.filter(r => r && r.enabled && r.autoForward && r.webhook);
+                        await Promise.all(targets.map(async (r) => {
+                            await fetch(String(r.webhook), {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ msgtype: 'text', text: { content } })
+                            }).catch(() => { });
+                        }));
+                    }
+                } catch (_) { }
+
+                if (streamErrorMessage && window.showError) {
+                    window.showError(streamErrorMessage);
+                }
+            }, '发送会话消息', (info) => { try { if (window.showError) window.showError(String(info?.message || '发送失败')); } catch (_) { } });
+        },
+        canSendSessionChat: Vue.computed(() => {
+            try {
+                const hasSession = !!(activeSession && activeSession.value);
+                const text = String(sessionChatInput?.value ?? '').trim();
+                const hasImages = Array.isArray(sessionChatDraftImages?.value) && sessionChatDraftImages.value.some(Boolean);
+                const sending = !!sessionChatSending?.value;
+                return hasSession && !sending && (!!text || hasImages);
+            } catch (_) {
+                return false;
+            }
+        }),
         formatDate,
         buildWelcomeCardHtml,
-        buildWelcomeCardHtmlForSession
+        buildWelcomeCardHtmlForSession,
+        bindWelcomeCardEvents
     };
  
     const sessionContextMethods = {
