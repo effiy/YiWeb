@@ -3,6 +3,7 @@
 @import url('/src/views/aicr/welcomeCard.css');
 @import url('/src/views/aicr/layout.css');
 @import url('/src/views/aicr/codePage.css');
+@import url('/src/views/aicr/codePage.contextModals.css');
 
 html, body {
     height: 100%;
