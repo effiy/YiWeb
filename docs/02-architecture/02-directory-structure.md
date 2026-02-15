@@ -4,11 +4,12 @@
 
 统计口径：
 
-- 文件数：141
-- 总行数：47261
+- 文件数：154
+- 总行数：47826
 
 ```text
 YiWeb/
+  .gitignore  # 28 lines
   docs/
     01-getting-started/
       01-quickstart.md  # 92 lines
@@ -21,6 +22,8 @@ YiWeb/
     04-runbook/
       01-troubleshooting.md  # 89 lines
     00-README.md  # 34 lines
+  favicon.ico  # 10 lines
+  index.html  # 10 lines
   src/
     assets/
       prompts/
@@ -72,14 +75,15 @@ YiWeb/
         yiTag/
           index.html  # 15 lines
           index.js  # 87 lines
+    config.js  # 103 lines
     markdown/
+      index.js  # 1 lines
+      markdownRenderer.js  # 1448 lines
       markdownView/
         index.js  # 44 lines
       mermaid/
         mermaid.js  # 1483 lines
         mermaidRenderer.js  # 1662 lines
-      index.js  # 1 lines
-      markdownRenderer.js  # 1448 lines
     services/
       aicr/
         sessionSyncService.js  # 845 lines
@@ -93,10 +97,10 @@ YiWeb/
         authUtils.js  # 372 lines
         checkStatus.js  # 99 lines
         requestHelper.js  # 607 lines
+      index.js  # 74 lines
       modules/
         crud.js  # 802 lines
         goals.js  # 103 lines
-      index.js  # 74 lines
     styles/
       base/
         animations.css  # 714 lines
@@ -112,11 +116,11 @@ YiWeb/
         loading.css  # 366 lines
         message.css  # 384 lines
         tag.css  # 56 lines
+      index.css  # 26 lines
       layout/
         layout.css  # 112 lines
       utils/
         typography.css  # 2 lines
-      index.css  # 26 lines
     utils/
       aicr/
         fileFieldNormalizer.js  # 221 lines
@@ -132,6 +136,7 @@ YiWeb/
         performance.js  # 362 lines
       data/
         domain.js  # 333 lines
+      index.js  # 11 lines
       io/
         exportUtils.js  # 423 lines
       render/
@@ -143,13 +148,13 @@ YiWeb/
         timeSelectors.js  # 148 lines
       ui/
         loading.js  # 121 lines
-        message.js  # 1040 lines
+        message.js  # 34 lines
+        messageCore.js  # 615 lines
         template.js  # 20 lines
       view/
         baseView.js  # 447 lines
         componentLoader.js  # 121 lines
         index.js  # 2 lines
-      index.js  # 11 lines
     views/
       aicr/
         components/
@@ -186,13 +191,25 @@ YiWeb/
             index.js  # 4 lines
         hooks/
           authDialogMethods.js  # 253 lines
+          fileDeleteService.js  # 212 lines
           fileTreeCrudMethods.js  # 282 lines
           folderTransferMethods.js  # 394 lines
           mainPageMethods.js  # 520 lines
           projectZipMethods.js  # 703 lines
-          sessionChatContextMethods.js  # 2728 lines
+          sessionChatContextChatMethods.js  # 1292 lines
+          sessionChatContextContextMethods.js  # 457 lines
+          sessionChatContextMethods.js  # 926 lines
+          sessionChatContextSettingsMethods.js  # 93 lines
+          sessionChatContextShared.js  # 1118 lines
           sessionFaqMethods.js  # 547 lines
-          store.js  # 2088 lines
+          store.js  # 3 lines
+          storeFactory.js  # 67 lines
+          storeFileContentOps.js  # 346 lines
+          storeFileTreeBuilders.js  # 112 lines
+          storeFileTreeOps.js  # 676 lines
+          storeSessionsOps.js  # 143 lines
+          storeState.js  # 221 lines
+          storeUiOps.js  # 106 lines
           tagManagerMethods.js  # 767 lines
           useComputed.js  # 270 lines
           useMethods.js  # 3583 lines
@@ -207,10 +224,6 @@ YiWeb/
         index.css  # 276 lines
         index.html  # 381 lines
         index.js  # 46 lines
-    config.js  # 103 lines
-  .gitignore  # 28 lines
-  favicon.ico  # 10 lines
-  index.html  # 10 lines
 ```
 
 ## 读代码建议（从哪里开始）
