@@ -7,7 +7,7 @@
  * @returns {Object} 方法集合
  */
 import { safeExecute, safeExecuteAsync, createError, ErrorTypes, showSuccessMessage } from '/src/utils/core/error.js';
-import { getData, postData, deleteData, batchOperations } from '/src/services/index.js';
+import { getData, postData, batchOperations } from '/src/services/index.js';
 import { getStoredToken, saveToken, clearToken as clearStoredToken, openAuth as openAuthSettings } from '/src/services/helper/authUtils.js?v=1';
 import {
     normalizeFilePath,
@@ -33,11 +33,7 @@ import { createSessionActionMethods } from './sessionActionMethods.js';
 export const useMethods = (store) => {
     const {
         fileTree,
-        selectedKey,
-        expandedFolders,
-        setSelectedKey,
         normalizeKey,
-        toggleFolder,
         toggleSidebar,
         toggleChatPanel,
         loadFileTree,
@@ -49,7 +45,6 @@ export const useMethods = (store) => {
         // 本地持久化
         // 会话相关方法
         loadSessions,
-        sessions,
 
         // 搜索相关状态
         searchQuery,
@@ -59,69 +54,9 @@ export const useMethods = (store) => {
         // 视图模式
         viewMode,
 
-        // 会话批量选择相关状态
-        sessionBatchMode,
-        selectedSessionKeys,
-
         activeSession,
-        activeSessionLoading,
-        activeSessionError,
-        sessionChatInput,
-        sessionChatDraftImages,
-        sessionChatLastDraftText,
-        sessionChatLastDraftImages,
-        sessionChatSending,
-        sessionChatAbortController,
-        sessionChatStreamingTargetTimestamp,
-        sessionChatStreamingType,
-        sessionChatCopyFeedback,
-        sessionChatRegenerateFeedback,
-        sessionContextEnabled,
-        sessionContextEditorVisible,
-        sessionContextDraft,
-        sessionContextMode,
-        sessionContextUserEdited,
-        sessionContextRefreshConfirmUntil,
-        sessionContextRefreshStatus,
-        sessionContextOptimizing,
-        sessionContextOptimizeStatus,
-        sessionContextTranslating,
-        sessionContextSaving,
-        sessionContextSaveStatus,
-        sessionContextUndoVisible,
-        sessionContextOptimizeBackup,
-        sessionMessageEditorVisible,
-        sessionMessageEditorDraft,
-        sessionMessageEditorMode,
-        sessionMessageEditorIndex,
-        sessionFaqVisible,
-        sessionFaqSearchKeyword,
-        sessionFaqItems,
-        sessionFaqLoading,
-        sessionFaqError,
-        sessionFaqDeletingMap,
-        sessionFaqSelectedTags,
-        sessionFaqTagFilterReverse,
-        sessionFaqTagFilterNoTags,
-        sessionFaqTagFilterExpanded,
-        sessionFaqTagFilterVisibleCount,
-        sessionFaqTagFilterSearchKeyword,
-        sessionFaqTagManagerVisible,
-        sessionSettingsVisible,
-        sessionBotModel,
-        sessionBotSystemPrompt,
-        sessionBotModelDraft,
-        sessionBotSystemPromptDraft,
-        weChatSettingsVisible,
-        weChatRobots,
-        weChatRobotsDraft
     } = store;
 
-    const defaultSessionBotSystemPrompt = '你是一个专业、简洁且可靠的 AI 助手。';
-    let _sessionContextKeydownHandler = null;
-    let _sessionContextPreviewClickHandler = null;
-    const _sessionContextTimeouts = new Set();
-    const { computed } = Vue;
     const sessionSync = getSessionSyncService();
 
     const getApiBaseUrl = () => {
@@ -142,298 +77,6 @@ export const useMethods = (store) => {
         getPromptUrl
     });
 
-    const _sessionContextClearTimeouts = () => {
-        try {
-            for (const t of Array.from(_sessionContextTimeouts)) {
-                clearTimeout(t);
-            }
-            _sessionContextTimeouts.clear();
-        } catch (_) { }
-    };
-
-    let __aicrImagePreviewOverlay = null;
-
-    const _ensureAicrImagePreviewOverlay = () => {
-        try {
-            if (__aicrImagePreviewOverlay) return __aicrImagePreviewOverlay;
-
-            const root = document.createElement('div');
-            root.className = 'aicr-image-preview-overlay';
-            root.setAttribute('aria-hidden', 'true');
-
-            const mask = document.createElement('div');
-            mask.className = 'aicr-image-preview-mask';
-
-            const body = document.createElement('div');
-            body.className = 'aicr-image-preview-body';
-
-            const closeBtn = document.createElement('button');
-            closeBtn.type = 'button';
-            closeBtn.className = 'aicr-image-preview-close';
-            closeBtn.setAttribute('aria-label', '关闭图片预览');
-            closeBtn.title = '关闭';
-            closeBtn.textContent = '✕';
-
-            const img = document.createElement('img');
-            img.className = 'aicr-image-preview-img';
-            img.alt = '图片预览';
-
-            const close = () => {
-                try {
-                    root.classList.remove('is-open');
-                    root.setAttribute('aria-hidden', 'true');
-                    img.src = '';
-                } catch (_) { }
-            };
-
-            mask.addEventListener('click', close);
-            closeBtn.addEventListener('click', close);
-            root.addEventListener('click', (e) => {
-                try {
-                    if (e && e.target === root) close();
-                } catch (_) { }
-            });
-
-            body.appendChild(closeBtn);
-            body.appendChild(img);
-            root.appendChild(mask);
-            root.appendChild(body);
-            document.body.appendChild(root);
-
-            __aicrImagePreviewOverlay = { root, img, close };
-            return __aicrImagePreviewOverlay;
-        } catch (_) {
-            return null;
-        }
-    };
-
-    const _isAicrImagePreviewOpen = () => {
-        try {
-            return !!(__aicrImagePreviewOverlay && __aicrImagePreviewOverlay.root && __aicrImagePreviewOverlay.root.classList.contains('is-open'));
-        } catch (_) {
-            return false;
-        }
-    };
-
-    const _openAicrImagePreview = (src) => {
-        try {
-            const s = String(src || '').trim();
-            if (!s) return;
-            const overlay = _ensureAicrImagePreviewOverlay();
-            if (!overlay || !overlay.root || !overlay.img) return;
-            overlay.img.src = s;
-            overlay.root.classList.add('is-open');
-            overlay.root.setAttribute('aria-hidden', 'false');
-        } catch (_) { }
-    };
-
-    const _closeAicrImagePreview = () => {
-        try {
-            const overlay = __aicrImagePreviewOverlay;
-            if (!overlay || typeof overlay.close !== 'function') return;
-            overlay.close();
-        } catch (_) { }
-    };
-
-    const _insertTextAtTextarea = (textarea, text, fallbackValue = '') => {
-        try {
-            const rawText = String(text ?? '');
-            if (!rawText) return fallbackValue;
-
-            const current = String(fallbackValue ?? '');
-            const ta = textarea;
-            const start = ta && typeof ta.selectionStart === 'number' ? ta.selectionStart : current.length;
-            const end = ta && typeof ta.selectionEnd === 'number' ? ta.selectionEnd : start;
-            const next = current.slice(0, start) + rawText + current.slice(end);
-
-            if (ta && typeof ta.focus === 'function') {
-                ta.focus();
-                const caret = start + rawText.length;
-                setTimeout(() => {
-                    try { ta.setSelectionRange(caret, caret); } catch (_) { }
-                }, 0);
-            }
-            return next;
-        } catch (_) {
-            return String(fallbackValue ?? '') + String(text ?? '');
-        }
-    };
-
-    const _sessionContextSetStatus = (refObj, value, resetMs = 0, resetValue = '') => {
-        try {
-            if (!refObj) return;
-            refObj.value = value;
-            if (resetMs > 0) {
-                const t = setTimeout(() => {
-                    try { refObj.value = resetValue; } catch (_) { }
-                }, resetMs);
-                _sessionContextTimeouts.add(t);
-            }
-        } catch (_) { }
-    };
-
-    const _sessionContextCleanAiText = (raw) => {
-        try {
-            let s = String(raw ?? '');
-            s = s.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-            if (!s) return '';
-
-            const tryParseJsonString = (text) => {
-                const t = String(text || '').trim();
-                if (!t) return '';
-                try {
-                    const parsed = JSON.parse(t);
-                    if (typeof parsed === 'string') return parsed;
-                } catch (_) { }
-                return '';
-            };
-
-            const parsed = tryParseJsonString(s);
-            if (parsed) s = parsed;
-
-            s = s.replace(/^\uFEFF/, '');
-            s = s.replace(/^\s*```(?:markdown|md|text)?\s*\n?/i, '');
-            s = s.replace(/\n?\s*```\s*$/i, '');
-            s = s.trim();
-
-            if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
-                s = s.slice(1, -1);
-            }
-
-            s = String(s || '')
-                .replace(/\r\n/g, '\n')
-                .replace(/[ \t]+\n/g, '\n')
-                .replace(/\n{3,}/g, '\n\n')
-                .trim();
-            return s;
-        } catch (_) {
-            return String(raw ?? '').trim();
-        }
-    };
-
-    const _sessionContextGetCleanPath = (key) => {
-        try {
-            const k = key || selectedKey?.value;
-            if (!k) return '';
-            const file = Array.isArray(files?.value)
-                ? files.value.find(f => f && (f.key === k || f.path === k))
-                : null;
-            const path = String(file?.path || file?.key || k || '').replace(/\\/g, '/').replace(/^\/+/, '');
-            const cleanPath = path.startsWith('static/') ? path.slice(7) : path;
-            return cleanPath.replace(/^\/+/, '');
-        } catch (_) {
-            return '';
-        }
-    };
-
-    const _closeSessionContextEditorInternal = () => {
-        try {
-            _closeAicrImagePreview();
-            if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
-            if (sessionContextUndoVisible) sessionContextUndoVisible.value = false;
-            if (sessionContextOptimizeBackup) sessionContextOptimizeBackup.value = '';
-            if (sessionContextUserEdited) sessionContextUserEdited.value = false;
-            if (sessionContextRefreshConfirmUntil) sessionContextRefreshConfirmUntil.value = 0;
-            if (_sessionContextKeydownHandler) {
-                document.removeEventListener('keydown', _sessionContextKeydownHandler, true);
-                _sessionContextKeydownHandler = null;
-            }
-            if (_sessionContextPreviewClickHandler) {
-                document.removeEventListener('click', _sessionContextPreviewClickHandler, true);
-                _sessionContextPreviewClickHandler = null;
-            }
-            _sessionContextClearTimeouts();
-            if (sessionContextRefreshStatus) sessionContextRefreshStatus.value = '';
-            if (sessionContextOptimizeStatus) sessionContextOptimizeStatus.value = '';
-            if (sessionContextSaveStatus) sessionContextSaveStatus.value = '';
-            if (sessionContextTranslating) sessionContextTranslating.value = '';
-            if (sessionContextOptimizing) sessionContextOptimizing.value = false;
-            if (sessionContextSaving) sessionContextSaving.value = false;
-            cleanupSessionContextScrollSync();
-        } catch (_) { }
-    };
-
-    const _sessionContextChatOnce = async ({ system, user }) => {
-        const { streamPrompt } = await import('/src/services/modules/crud.js');
-        const promptUrl = getPromptUrl();
-        const res = await streamPrompt(
-            promptUrl,
-            {
-                module_name: 'services.ai.chat_service',
-                method_name: 'chat',
-                parameters: {
-                    system: String(system || ''),
-                    user: String(user || ''),
-                    stream: false,
-                    ...(String(sessionBotModel?.value || '').trim()
-                        ? { model: String(sessionBotModel.value || '').trim() }
-                        : {})
-                }
-            },
-            { errorMessage: '请求失败' }
-        );
-        return _sessionContextCleanAiText(res);
-    };
-
-    const loadSessionBotSettings = () => {
-        try {
-            if (sessionBotModel) {
-                const model = localStorage.getItem('aicr_session_bot_model');
-                if (model != null) sessionBotModel.value = String(model || '').trim();
-            }
-            if (sessionBotSystemPrompt) {
-                const prompt = localStorage.getItem('aicr_session_bot_system_prompt');
-                if (prompt != null) {
-                    const normalized = String(prompt || '').trim();
-                    sessionBotSystemPrompt.value = normalized || defaultSessionBotSystemPrompt;
-                }
-            }
-        } catch (_) { }
-    };
-
-    const persistSessionBotSettings = () => {
-        try {
-            if (sessionBotModel) localStorage.setItem('aicr_session_bot_model', String(sessionBotModel.value || '').trim());
-            if (sessionBotSystemPrompt) localStorage.setItem('aicr_session_bot_system_prompt', String(sessionBotSystemPrompt.value || '').trim());
-        } catch (_) { }
-    };
-
-    loadSessionBotSettings();
-
-    const loadWeChatSettings = () => {
-        try {
-            const raw = localStorage.getItem('aicr_wechat_robots');
-            const arr = raw ? JSON.parse(raw) : [];
-            if (Array.isArray(arr)) weChatRobots.value = arr.filter(r => r && typeof r === 'object');
-            if ((!Array.isArray(weChatRobots.value) || weChatRobots.value.length === 0)) {
-                const enabledRaw = localStorage.getItem('aicr_wechat_enabled');
-                const webhookRaw = localStorage.getItem('aicr_wechat_webhook');
-                const autoRaw = localStorage.getItem('aicr_wechat_auto_forward');
-                const enabled = enabledRaw === 'true';
-                const webhook = String(webhookRaw || '').trim();
-                const autoForward = autoRaw === 'true';
-                if (webhook) {
-                    weChatRobots.value = [{
-                        id: 'wr_' + Date.now(),
-                        name: '机器人',
-                        webhook,
-                        enabled,
-                        autoForward
-                    }];
-                }
-            }
-        } catch (_) { }
-    };
-
-    const persistWeChatSettings = () => {
-        try {
-            const arr = Array.isArray(weChatRobots?.value) ? weChatRobots.value : [];
-            localStorage.setItem('aicr_wechat_robots', JSON.stringify(arr));
-        } catch (_) { }
-    };
-
-    loadWeChatSettings();
-
     const sessionFaqMethods = createSessionFaqMethods({
         store,
         safeExecute,
@@ -442,7 +85,7 @@ export const useMethods = (store) => {
         batchOperations,
         buildServiceUrl,
         SERVICE_MODULE,
-        closeSessionContextEditor: _closeSessionContextEditorInternal
+        closeSessionContextEditor: sessionChatContextMethods.closeSessionContextEditor
     });
 
     // 搜索相关状态
@@ -573,116 +216,6 @@ export const useMethods = (store) => {
     };
 
     /**
-     * 处理删除项
-     * @param {Object} payload - 删除事件负载 { itemId }
-     */
-    const handleDeleteItem = async (payload) => {
-        return safeExecute(async () => {
-            // 兼容 { key: '...' } 和 { itemId: '...' } 两种格式，统一使用 key
-            const key = (payload && payload.key) || (payload && payload.itemId);
-            if (!key) {
-                console.warn('[handleDeleteItem] 缺少 key 或 itemId:', payload);
-                return;
-            }
-
-            if (!confirm('确定删除该项及其子项？此操作不可撤销。')) return;
-
-            // 统一传递 key 参数
-            await deleteItem({ key });
-            showSuccessMessage('删除成功');
-
-            // 若删除的是当前选中文件，则清空选择
-            if (selectedKey && selectedKey.value && (selectedKey.value === key || selectedKey.value.startsWith(key + '/'))) {
-                setSelectedKey(null);
-            }
-        }, '删除');
-    };
-
-    /**
-     * 处理标签选择
-     * @param {string|Array} tag - 标签名称或标签数组
-     */
-    const handleTagSelect = (tag) => {
-        return safeExecute(() => {
-            if (!store.selectedSessionTags) return;
-
-            // 如果传入的是数组（来自文件树的多选或排序更新），直接替换
-            if (Array.isArray(tag)) {
-                store.selectedSessionTags.value = tag;
-                return;
-            }
-
-            // 单个标签切换
-            const currentTags = new Set(store.selectedSessionTags.value || []);
-            if (currentTags.has(tag)) {
-                currentTags.delete(tag);
-            } else {
-                currentTags.add(tag);
-            }
-            store.selectedSessionTags.value = Array.from(currentTags);
-
-            console.log('[TagSelect] 选中标签:', store.selectedSessionTags.value);
-        }, '处理标签选择');
-    };
-
-    /**
-     * 清除所有标签过滤
-     */
-    const handleTagClear = () => {
-        return safeExecute(() => {
-            if (store.selectedSessionTags) store.selectedSessionTags.value = [];
-            if (store.tagFilterNoTags) store.tagFilterNoTags.value = false;
-            if (store.tagFilterSearchKeyword) store.tagFilterSearchKeyword.value = '';
-            // 不清除反向过滤状态，或者根据需求清除
-            // if (store.tagFilterReverse) store.tagFilterReverse.value = false;
-        }, '清除标签过滤');
-    };
-
-    /**
-     * 切换反向过滤
-     */
-    const handleTagFilterReverse = () => {
-        return safeExecute(() => {
-            if (store.tagFilterReverse) {
-                store.tagFilterReverse.value = !store.tagFilterReverse.value;
-            }
-        }, '切换反向过滤');
-    };
-
-    /**
-     * 切换无标签筛选
-     */
-    const handleTagFilterNoTags = () => {
-        return safeExecute(() => {
-            if (store.tagFilterNoTags) {
-                store.tagFilterNoTags.value = !store.tagFilterNoTags.value;
-            }
-        }, '切换无标签筛选');
-    };
-
-    /**
-     * 切换标签列表展开/折叠
-     */
-    const handleTagFilterExpand = () => {
-        return safeExecute(() => {
-            if (store.tagFilterExpanded) {
-                store.tagFilterExpanded.value = !store.tagFilterExpanded.value;
-            }
-        }, '切换标签列表展开');
-    };
-
-    /**
-     * 处理标签搜索
-     */
-    const handleTagFilterSearch = (keyword) => {
-        return safeExecute(() => {
-            if (store.tagFilterSearchKeyword) {
-                store.tagFilterSearchKeyword.value = keyword || '';
-            }
-        }, '处理标签搜索');
-    };
-
-    /**
      * 处理消息输入键盘事件
      * @param {Event} event - 键盘事件
      */
@@ -776,40 +309,6 @@ export const useMethods = (store) => {
     try { window.openAuth = openAuth; } catch (_) { }
 
     /**
-     * 初始化项目根目录
-     */
-    const initializeProjectRootDirectory = async () => {
-        return safeExecuteAsync(async () => {
-            console.log('[初始化根目录] 开始初始化项目');
-
-            try {
-                // 导入会话同步服务
-                const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
-                const sessionSync = getSessionSyncService();
-
-                // 创建 README.md 文件对象
-                const readmeFile = {
-                    key: 'README.md',
-                    path: 'README.md',
-                    name: 'README.md',
-                    content: `# New Project\n\n项目描述：这是一个新创建的项目。\n\n## 开始使用\n\n请在此处添加项目的使用说明。`,
-                    type: 'file'
-                };
-
-                // 同步到会话 (forceUpdate = true)
-                console.log('[初始化根目录]正在创建README.md会话...');
-                await sessionSync.syncFileToSession(readmeFile, false, true);
-
-                console.log('[初始化根目录] 项目初始化完成 (README.md 已创建)');
-
-            } catch (error) {
-                console.error('[初始化根目录] 初始化失败:', error);
-                throw error;
-            }
-        }, '初始化项目根目录');
-    };
-
-    /**
      * 切换侧边栏
      */
     const handleToggleSidebar = () => {
@@ -898,88 +397,6 @@ export const useMethods = (store) => {
     /**
      * 版本选择器已改为select元素，不再需要切换方法
      */
-
-    let sessionContextScrollSyncCleanup = null;
-
-    const cleanupSessionContextScrollSync = () => {
-        if (typeof sessionContextScrollSyncCleanup === 'function') {
-            sessionContextScrollSyncCleanup();
-        }
-        sessionContextScrollSyncCleanup = null;
-    };
-
-    const setupSessionContextScrollSync = () => {
-        cleanupSessionContextScrollSync();
-
-        const modal = document.querySelector('.aicr-session-context-modal-body');
-        if (!modal) return;
-
-        const split = modal.querySelector('.aicr-session-context-split');
-        if (!split) return;
-
-        const textarea = split.querySelector('.aicr-session-context-textarea');
-        const preview = split.querySelector('.aicr-session-context-preview');
-        if (!(textarea instanceof HTMLElement) || !(preview instanceof HTMLElement)) return;
-
-        let lock = null;
-        let rafId = 0;
-
-        const syncScroll = (fromEl, toEl) => {
-            const fromMax = Math.max(0, (fromEl.scrollHeight || 0) - (fromEl.clientHeight || 0));
-            const toMax = Math.max(0, (toEl.scrollHeight || 0) - (toEl.clientHeight || 0));
-            const ratio = fromMax > 0 ? (fromEl.scrollTop / fromMax) : 0;
-            toEl.scrollTop = ratio * toMax;
-        };
-
-        const scheduleUnlock = () => {
-            if (rafId) cancelAnimationFrame(rafId);
-            rafId = requestAnimationFrame(() => {
-                lock = null;
-                rafId = 0;
-            });
-        };
-
-        const onTextareaScroll = () => {
-            if (lock === 'preview') return;
-            lock = 'textarea';
-            syncScroll(textarea, preview);
-            scheduleUnlock();
-        };
-
-        const onPreviewScroll = () => {
-            if (lock === 'textarea') return;
-            lock = 'preview';
-            syncScroll(preview, textarea);
-            scheduleUnlock();
-        };
-
-        textarea.addEventListener('scroll', onTextareaScroll, { passive: true });
-        preview.addEventListener('scroll', onPreviewScroll, { passive: true });
-
-        sessionContextScrollSyncCleanup = () => {
-            if (rafId) cancelAnimationFrame(rafId);
-            rafId = 0;
-            lock = null;
-            textarea.removeEventListener('scroll', onTextareaScroll);
-            preview.removeEventListener('scroll', onPreviewScroll);
-        };
-    };
-
-    const ensureSessionContextScrollSync = () => {
-        const visible = !!sessionContextEditorVisible?.value;
-        const mode = String(sessionContextMode?.value || '').toLowerCase();
-        if (!visible || mode !== 'split') {
-            cleanupSessionContextScrollSync();
-            return;
-        }
-
-        const schedule = () => setupSessionContextScrollSync();
-        if (typeof Vue !== 'undefined' && typeof Vue.nextTick === 'function') {
-            Vue.nextTick(schedule);
-            return;
-        }
-        setTimeout(schedule, 0);
-    };
 
     const selectSessionForChat = sessionChatContextMethods.selectSessionForChat;
     const fileTreeCrudMethods = createFileTreeCrudMethods({

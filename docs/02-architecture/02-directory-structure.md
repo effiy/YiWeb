@@ -4,8 +4,8 @@
 
 统计口径：
 
-- 文件数：154
-- 总行数：47826
+- 文件数：160
+- 总行数：46892
 
 ```text
 YiWeb/
@@ -15,17 +15,18 @@ YiWeb/
       01-quickstart.md  # 92 lines
     02-architecture/
       01-overview.md  # 73 lines
-      02-directory-structure.md  # 221 lines
+      02-directory-structure.md  # 242 lines
     03-guides/
       01-networking.md  # 88 lines
       02-components.md  # 154 lines
     04-runbook/
       01-troubleshooting.md  # 89 lines
     00-README.md  # 34 lines
-  favicon.ico  # 10 lines
+  favicon.ico  # 20 lines
   index.html  # 10 lines
   src/
     assets/
+      icons/
       prompts/
         aicr/
           codereview.txt  # 39 lines
@@ -190,18 +191,22 @@ YiWeb/
             index.html  # 234 lines
             index.js  # 4 lines
         hooks/
+          methods/
           authDialogMethods.js  # 253 lines
           fileDeleteService.js  # 212 lines
           fileTreeCrudMethods.js  # 282 lines
           folderTransferMethods.js  # 394 lines
           mainPageMethods.js  # 520 lines
           projectZipMethods.js  # 703 lines
+          sessionActionMethods.js  # 640 lines
           sessionChatContextChatMethods.js  # 1292 lines
           sessionChatContextContextMethods.js  # 457 lines
           sessionChatContextMethods.js  # 926 lines
           sessionChatContextSettingsMethods.js  # 93 lines
           sessionChatContextShared.js  # 1118 lines
+          sessionEditMethods.js  # 472 lines
           sessionFaqMethods.js  # 547 lines
+          sessionListMethods.js  # 843 lines
           store.js  # 3 lines
           storeFactory.js  # 67 lines
           storeFileContentOps.js  # 346 lines
@@ -212,10 +217,13 @@ YiWeb/
           storeUiOps.js  # 106 lines
           tagManagerMethods.js  # 767 lines
           useComputed.js  # 270 lines
-          useMethods.js  # 3583 lines
-        index.css  # 3011 lines
+          useMethods.js  # 669 lines
+        codePage.css  # 1591 lines
+        index.css  # 519 lines
         index.html  # 50 lines
         index.js  # 667 lines
+        layout.css  # 653 lines
+        welcomeCard.css  # 242 lines
       news/
         hooks/
           store.js  # 896 lines
