@@ -4,8 +4,8 @@
 
 统计口径：
 
-- 文件数：160
-- 总行数：46892
+- 文件数：171
+- 总行数：46731
 
 ```text
 YiWeb/
@@ -15,18 +15,15 @@ YiWeb/
       01-quickstart.md  # 92 lines
     02-architecture/
       01-overview.md  # 73 lines
-      02-directory-structure.md  # 242 lines
+      02-directory-structure.md  # 251 lines
     03-guides/
       01-networking.md  # 88 lines
       02-components.md  # 154 lines
     04-runbook/
       01-troubleshooting.md  # 89 lines
     00-README.md  # 34 lines
-  favicon.ico  # 20 lines
-  index.html  # 10 lines
   src/
     assets/
-      icons/
       prompts/
         aicr/
           codereview.txt  # 39 lines
@@ -76,15 +73,22 @@ YiWeb/
         yiTag/
           index.html  # 15 lines
           index.js  # 87 lines
-    config.js  # 103 lines
     markdown/
-      index.js  # 1 lines
-      markdownRenderer.js  # 1448 lines
       markdownView/
         index.js  # 44 lines
       mermaid/
-        mermaid.js  # 1483 lines
-        mermaidRenderer.js  # 1662 lines
+        mermaid.js  # 301 lines
+        mermaidClipboard.js  # 386 lines
+        mermaidDownload.js  # 470 lines
+        mermaidFullscreen.js  # 516 lines
+        mermaidRenderer.js  # 913 lines
+        mermaidRenderer.templates.js  # 249 lines
+        mermaidUi.js  # 151 lines
+      index.js  # 1 lines
+      markdownRenderer.frontmatter.js  # 312 lines
+      markdownRenderer.js  # 283 lines
+      markdownRenderer.sanitize.js  # 765 lines
+      markdownRenderer.utils.js  # 95 lines
     services/
       aicr/
         sessionSyncService.js  # 845 lines
@@ -98,10 +102,10 @@ YiWeb/
         authUtils.js  # 372 lines
         checkStatus.js  # 99 lines
         requestHelper.js  # 607 lines
-      index.js  # 74 lines
       modules/
         crud.js  # 802 lines
         goals.js  # 103 lines
+      index.js  # 74 lines
     styles/
       base/
         animations.css  # 714 lines
@@ -117,11 +121,11 @@ YiWeb/
         loading.css  # 366 lines
         message.css  # 384 lines
         tag.css  # 56 lines
-      index.css  # 26 lines
       layout/
         layout.css  # 112 lines
       utils/
         typography.css  # 2 lines
+      index.css  # 26 lines
     utils/
       aicr/
         fileFieldNormalizer.js  # 221 lines
@@ -137,7 +141,6 @@ YiWeb/
         performance.js  # 362 lines
       data/
         domain.js  # 333 lines
-      index.js  # 11 lines
       io/
         exportUtils.js  # 423 lines
       render/
@@ -156,6 +159,7 @@ YiWeb/
         baseView.js  # 447 lines
         componentLoader.js  # 121 lines
         index.js  # 2 lines
+      index.js  # 11 lines
     views/
       aicr/
         components/
@@ -191,7 +195,6 @@ YiWeb/
             index.html  # 234 lines
             index.js  # 4 lines
         hooks/
-          methods/
           authDialogMethods.js  # 253 lines
           fileDeleteService.js  # 212 lines
           fileTreeCrudMethods.js  # 282 lines
@@ -199,11 +202,13 @@ YiWeb/
           mainPageMethods.js  # 520 lines
           projectZipMethods.js  # 703 lines
           sessionActionMethods.js  # 640 lines
-          sessionChatContextChatMethods.js  # 1292 lines
+          sessionChatContextChatMethods.js  # 510 lines
+          sessionChatContextChatMethods.streaming.js  # 815 lines
           sessionChatContextContextMethods.js  # 457 lines
           sessionChatContextMethods.js  # 926 lines
           sessionChatContextSettingsMethods.js  # 93 lines
-          sessionChatContextShared.js  # 1118 lines
+          sessionChatContextShared.js  # 927 lines
+          sessionChatContextShared.welcomeCard.js  # 210 lines
           sessionEditMethods.js  # 472 lines
           sessionFaqMethods.js  # 547 lines
           sessionListMethods.js  # 843 lines
@@ -217,9 +222,10 @@ YiWeb/
           storeUiOps.js  # 106 lines
           tagManagerMethods.js  # 767 lines
           useComputed.js  # 270 lines
-          useMethods.js  # 669 lines
-        codePage.css  # 1591 lines
-        index.css  # 519 lines
+          useMethods.js  # 609 lines
+        codePage.contextModals.css  # 843 lines
+        codePage.css  # 747 lines
+        index.css  # 520 lines
         index.html  # 50 lines
         index.js  # 667 lines
         layout.css  # 653 lines
@@ -232,6 +238,9 @@ YiWeb/
         index.css  # 276 lines
         index.html  # 381 lines
         index.js  # 46 lines
+    config.js  # 103 lines
+  favicon.ico  # 10 lines
+  index.html  # 10 lines
 ```
 
 ## 读代码建议（从哪里开始）

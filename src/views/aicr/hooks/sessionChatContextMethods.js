@@ -2,6 +2,16 @@ import { createSessionChatContextShared } from './sessionChatContextShared.js';
 import { createSessionChatContextChatMethods } from './sessionChatContextChatMethods.js';
 import { createSessionChatContextContextMethods } from './sessionChatContextContextMethods.js';
 import { createSessionChatContextSettingsMethods } from './sessionChatContextSettingsMethods.js';
+import {
+    insertTextAtTextarea,
+    isAbortError,
+    buildSessionChatHistoryText,
+    buildSessionChatUserPrompt,
+    sessionChatMessageKey,
+    setFeedbackFlag
+} from './sessionChatContextMethods.helpers.js';
+import { createSessionChatContextScrollSync } from './sessionChatContextMethods.scrollSync.js';
+import { createSelectSessionForChat } from './sessionChatContextMethods.selectSession.js';
 
 export const createSessionChatContextMethods = ({
     store,
@@ -94,119 +104,24 @@ export const createSessionChatContextMethods = ({
     const getSessionChatCompositionEndTime = () => _sessionChatCompositionEndTime;
     const setSessionChatCompositionEndTime = (v) => { _sessionChatCompositionEndTime = Number(v) || 0; };
  
-    let sessionContextScrollSyncCleanup = null;
-    let sessionMessageEditorScrollSyncCleanup = null;
- 
-    const _insertTextAtTextarea = (textarea, text, fallbackValue = '') => {
-        try {
-            const t = textarea;
-            if (!t || typeof t.selectionStart !== 'number' || typeof t.selectionEnd !== 'number') {
-                return String(fallbackValue || '') + String(text || '');
-            }
-            const value = typeof t.value === 'string' ? t.value : String(fallbackValue || '');
-            const start = t.selectionStart;
-            const end = t.selectionEnd;
-            const before = value.slice(0, start);
-            const after = value.slice(end);
-            const next = before + String(text || '') + after;
-            try {
-                t.value = next;
-                const nextPos = start + String(text || '').length;
-                t.selectionStart = nextPos;
-                t.selectionEnd = nextPos;
-            } catch (_) { }
-            return next;
-        } catch (_) {
-            return String(fallbackValue || '') + String(text || '');
-        }
-    };
- 
-    const _isAbortError = (e) => {
-        try {
-            if (!e) return false;
-            if (e.name === 'AbortError') return true;
-            const msg = typeof e.message === 'string' ? e.message : '';
-            return msg.toLowerCase().includes('aborted');
-        } catch (_) {
-            return false;
-        }
-    };
+    const _insertTextAtTextarea = insertTextAtTextarea;
+    const _isAbortError = isAbortError;
+    const _buildSessionChatHistoryText = buildSessionChatHistoryText;
+    const _buildSessionChatUserPrompt = buildSessionChatUserPrompt;
+    const _sessionChatMessageKey = sessionChatMessageKey;
+    const _setFeedbackFlag = setFeedbackFlag;
 
-    const _truncateText = (v, maxLen) => {
-        const s = String(v ?? '');
-        const limit = Math.max(0, Number(maxLen) || 0);
-        if (!limit || s.length <= limit) return s;
-        return `${s.slice(0, limit)}\n\n...(内容已截断)`;
-    };
-
-    const _buildSessionChatHistoryText = (messages, endIndexExclusive) => {
-        const list = Array.isArray(messages) ? messages : [];
-        const end = Number(endIndexExclusive);
-        const upto = Number.isFinite(end) ? Math.max(0, Math.min(list.length, end)) : list.length;
-        const cleaned = list
-            .slice(0, upto)
-            .filter(m => m && (String(m.message ?? m.content ?? '').trim() || (m.imageDataUrl || (Array.isArray(m.imageDataUrls) && m.imageDataUrls.length > 0))))
-            .slice(-30)
-            .map(m => {
-                const role = m.type === 'pet' ? '助手' : '用户';
-                const contentText = String(m.message ?? m.content ?? '').trim();
-                const imageCount = Array.isArray(m.imageDataUrls) ? m.imageDataUrls.length : (m.imageDataUrl ? 1 : 0);
-                const content = (() => {
-                    if (contentText) return contentText;
-                    if (imageCount > 0) return imageCount === 1 ? '[图片]' : `[图片 x${imageCount}]`;
-                    return '';
-                })();
-                return `${role}：${content}`;
-            })
-            .join('\n\n');
-        return cleaned;
-    };
-
-    const _buildSessionChatUserPrompt = ({ text, images, pageContent, includeContext, historyText }) => {
-        const imageList = Array.isArray(images) ? images.filter(Boolean) : [];
-        if (imageList.length > 0) {
-            return String(text || '用户发送了图片，请结合图片内容回答。').trim();
-        }
-        const current = String(text || '').trim() || '请继续。';
-        const parts = [];
-        const ctx = String(pageContent || '').trim();
-        const hist = String(historyText || '').trim();
-        if (includeContext && ctx) {
-            parts.push(`## 页面上下文\n\n${_truncateText(ctx, 12000)}`);
-        }
-        if (hist) {
-            parts.push(`## 会话历史\n\n${_truncateText(hist, 12000)}`);
-        }
-        parts.push(`## 当前消息\n\n${_truncateText(current, 8000)}`);
-        return parts.join('\n\n');
-    };
-
-    const _sessionChatMessageKey = (m, idx) => {
-        const ts = typeof m?.timestamp === 'number' ? m.timestamp : null;
-        if (typeof ts === 'number' && Number.isFinite(ts)) return `ts_${ts}`;
-        const i = Number(idx);
-        if (Number.isFinite(i)) return `idx_${i}`;
-        return `k_${Date.now()}`;
-    };
-
-    const _setFeedbackFlag = (refMap, key, durationMs) => {
-        try {
-            if (!refMap) return;
-            const now = Date.now();
-            const expiresAt = now + Math.max(0, Number(durationMs) || 0);
-            const current = refMap.value && typeof refMap.value === 'object' ? refMap.value : {};
-            refMap.value = { ...current, [key]: expiresAt };
-            setTimeout(() => {
-                try {
-                    const cur = refMap.value && typeof refMap.value === 'object' ? refMap.value : {};
-                    if (cur[key] !== expiresAt) return;
-                    const next = { ...cur };
-                    delete next[key];
-                    refMap.value = next;
-                } catch (_) { }
-            }, Math.max(0, expiresAt - Date.now()) + 20);
-        } catch (_) { }
-    };
+    const {
+        cleanupSessionContextScrollSync,
+        cleanupSessionMessageEditorScrollSync,
+        ensureSessionContextScrollSync,
+        ensureSessionMessageEditorScrollSync
+    } = createSessionChatContextScrollSync({
+        sessionContextEditorVisible,
+        sessionContextMode,
+        sessionMessageEditorVisible,
+        sessionMessageEditorMode
+    });
 
     const _isStreamingMessage = (m) => {
         try {
@@ -346,149 +261,6 @@ export const createSessionChatContextMethods = ({
             }
         } catch (_) { }
     };
- 
-    const cleanupSessionContextScrollSync = () => {
-        if (typeof sessionContextScrollSyncCleanup === 'function') {
-            sessionContextScrollSyncCleanup();
-        }
-        sessionContextScrollSyncCleanup = null;
-    };
- 
-    const cleanupSessionMessageEditorScrollSync = () => {
-        if (typeof sessionMessageEditorScrollSyncCleanup === 'function') {
-            sessionMessageEditorScrollSyncCleanup();
-        }
-        sessionMessageEditorScrollSyncCleanup = null;
-    };
-
-    const setupSessionContextScrollSync = () => {
-        cleanupSessionContextScrollSync();
- 
-        const modal = document.querySelector('.aicr-session-context-modal-body');
-        if (!modal) return;
- 
-        const split = modal.querySelector('.aicr-session-context-split');
-        if (!split) return;
- 
-        const textarea = split.querySelector('.aicr-session-context-textarea');
-        const preview = split.querySelector('.aicr-session-context-preview');
-        if (!(textarea instanceof HTMLElement) || !(preview instanceof HTMLElement)) return;
- 
-        let lock = null;
-        let rafId = 0;
- 
-        const syncScroll = (fromEl, toEl) => {
-            const fromMax = Math.max(0, (fromEl.scrollHeight || 0) - (fromEl.clientHeight || 0));
-            const toMax = Math.max(0, (toEl.scrollHeight || 0) - (toEl.clientHeight || 0));
-            const ratio = fromMax > 0 ? (fromEl.scrollTop / fromMax) : 0;
-            toEl.scrollTop = ratio * toMax;
-        };
- 
-        const scheduleUnlock = () => {
-            if (rafId) cancelAnimationFrame(rafId);
-            rafId = requestAnimationFrame(() => {
-                lock = null;
-                rafId = 0;
-            });
-        };
- 
-        const onTextareaScroll = () => {
-            if (lock === 'preview') return;
-            lock = 'textarea';
-            syncScroll(textarea, preview);
-            scheduleUnlock();
-        };
- 
-        const onPreviewScroll = () => {
-            if (lock === 'textarea') return;
-            lock = 'preview';
-            syncScroll(preview, textarea);
-            scheduleUnlock();
-        };
- 
-        textarea.addEventListener('scroll', onTextareaScroll, { passive: true });
-        preview.addEventListener('scroll', onPreviewScroll, { passive: true });
- 
-        sessionContextScrollSyncCleanup = () => {
-            if (rafId) cancelAnimationFrame(rafId);
-            rafId = 0;
-            lock = null;
-            textarea.removeEventListener('scroll', onTextareaScroll);
-            preview.removeEventListener('scroll', onPreviewScroll);
-        };
-    };
- 
-    const setupSessionMessageEditorScrollSync = () => {
-        cleanupSessionMessageEditorScrollSync();
-
-        const root = document.querySelector('.aicr-session-context-modal[aria-label="消息编辑器"]');
-        const modal = root ? root.querySelector('.aicr-session-context-modal-body') : null;
-        if (!modal) return;
-
-        const split = modal.querySelector('.aicr-session-context-split');
-        if (!split) return;
-
-        const textarea = split.querySelector('.aicr-session-context-textarea');
-        const preview = split.querySelector('.aicr-session-context-preview');
-        if (!(textarea instanceof HTMLElement) || !(preview instanceof HTMLElement)) return;
-
-        let rafId = 0;
-
-        const syncScroll = () => {
-            const fromMax = Math.max(0, (textarea.scrollHeight || 0) - (textarea.clientHeight || 0));
-            const toMax = Math.max(0, (preview.scrollHeight || 0) - (preview.clientHeight || 0));
-            const ratio = fromMax > 0 ? (textarea.scrollTop / fromMax) : 0;
-            preview.scrollTop = ratio * toMax;
-        };
-
-        const onTextareaScroll = () => {
-            if (rafId) cancelAnimationFrame(rafId);
-            rafId = requestAnimationFrame(() => {
-                rafId = 0;
-                syncScroll();
-            });
-        };
-
-        textarea.addEventListener('scroll', onTextareaScroll, { passive: true });
-
-        sessionMessageEditorScrollSyncCleanup = () => {
-            if (rafId) cancelAnimationFrame(rafId);
-            rafId = 0;
-            textarea.removeEventListener('scroll', onTextareaScroll);
-        };
-    };
-
-    const ensureSessionContextScrollSync = () => {
-        const visible = !!sessionContextEditorVisible?.value;
-        const mode = String(sessionContextMode?.value || '').toLowerCase();
-        if (!visible || mode !== 'split') {
-            cleanupSessionContextScrollSync();
-            return;
-        }
- 
-        const schedule = () => setupSessionContextScrollSync();
-        if (typeof Vue !== 'undefined' && typeof Vue.nextTick === 'function') {
-            Vue.nextTick(schedule);
-            return;
-        }
-        setTimeout(schedule, 0);
-    };
- 
-    const ensureSessionMessageEditorScrollSync = () => {
-        const visible = !!sessionMessageEditorVisible?.value;
-        const mode = String(sessionMessageEditorMode?.value || '').toLowerCase();
-        if (!visible || mode !== 'split') {
-            cleanupSessionMessageEditorScrollSync();
-            return;
-        }
-
-        const schedule = () => setupSessionMessageEditorScrollSync();
-        if (typeof Vue !== 'undefined' && typeof Vue.nextTick === 'function') {
-            Vue.nextTick(schedule);
-            return;
-        }
-        setTimeout(schedule, 0);
-    };
 
     const _closeSessionContextEditorInternal = () => {
         try {
@@ -603,210 +375,20 @@ export const createSessionChatContextMethods = ({
     loadSessionBotSettings();
     loadWeChatSettings();
  
-    const selectSessionForChat = async (session, { toggleActive = true, openContextEditor = false, syncSelectedKey = true, fileKeyOverride = null } = {}) => {
-        if (!session || !session.key) {
-            if (window.showError) window.showError('无效的会话数据');
-            return;
-        }
- 
-        const targetSessionKey = String(session.key);
- 
-        if (toggleActive && activeSession?.value && String(activeSession.value.key || '') === targetSessionKey) {
-            if (setSelectedKey) setSelectedKey(null);
-            if (activeSession) activeSession.value = null;
-            if (sessionChatInput) sessionChatInput.value = '';
-            if (sessionContextEditorVisible) sessionContextEditorVisible.value = false;
-            if (sessionContextDraft) sessionContextDraft.value = '';
-            return;
-        }
- 
-        try {
-            if ((!store.sessions?.value || store.sessions.value.length === 0) && typeof store.loadSessions === 'function') {
-                await store.loadSessions(false);
-            }
-        } catch (_) { }
- 
-        let fileKey = null;
-        const findNodeBySessionKey = (nodes) => {
-            if (!nodes) return null;
-            const list = Array.isArray(nodes) ? nodes : [nodes];
-            for (const node of list) {
-                if (node && node.type === 'file' && String(node.sessionKey || '') === targetSessionKey) return node;
-                if (node && node.children) {
-                    const found = findNodeBySessionKey(node.children);
-                    if (found) return found;
-                }
-            }
-            return null;
-        };
- 
-        const foundNode = findNodeBySessionKey(store.fileTree?.value);
-        if (foundNode) {
-            fileKey = foundNode.key;
-        } else {
-            const tags = Array.isArray(session.tags) ? session.tags : [];
-            let currentPath = '';
-            tags.forEach((folderName) => {
-                if (!folderName || (folderName.toLowerCase && folderName.toLowerCase() === 'default')) return;
-                currentPath = currentPath ? currentPath + '/' + folderName : folderName;
-            });
-            let fileName = session.title || 'Untitled';
-            fileName = String(fileName).trim().replace(/\s+/g, '_').replace(/\//g, '-');
-            fileKey = currentPath ? currentPath + '/' + fileName : fileName;
-        }
- 
-        if (fileKeyOverride != null && String(fileKeyOverride).trim()) {
-            fileKey = String(fileKeyOverride).trim();
-        }
- 
-        if (syncSelectedKey) {
-            if (setSelectedKey) {
-                setSelectedKey(fileKey);
-            } else if (selectedKey) {
-                selectedKey.value = fileKey;
-            }
-        }
- 
-        if (activeSessionLoading) activeSessionLoading.value = true;
-        if (activeSessionError) activeSessionError.value = null;
-        if (activeSession) {
-            const baseSession = { ...(session || {}), key: targetSessionKey };
-            if (!baseSession.messages || !Array.isArray(baseSession.messages)) baseSession.messages = [];
-            activeSession.value = baseSession;
-        }
- 
-        try {
-            let fullSession = null;
-            try {
-                const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
-                const sessionSync = getSessionSyncService();
-                fullSession = await sessionSync.getSession(targetSessionKey);
-                console.log('[selectSessionForChat] 从后端加载会话数据，消息数量:', fullSession?.messages?.length || 0);
-            } catch (e) {
-                console.warn('[selectSessionForChat] 加载完整会话数据失败，使用传入的会话数据:', e);
-            }
- 
-            const sourceSession = fullSession || session;
-            const normalized = { ...(sourceSession || {}), key: targetSessionKey };
-            if (!normalized.messages || !Array.isArray(normalized.messages)) {
-                normalized.messages = [];
-            }
-            normalized.messages = normalized.messages.map(m => ({
-                type: m?.type === 'pet' ? 'pet' : 'user',
-                message: String(m?.message || m?.content || ''),
-                timestamp: typeof m?.timestamp === 'number' ? m.timestamp : Date.now(),
-                imageDataUrl: m?.imageDataUrl,
-                imageDataUrls: Array.isArray(m?.imageDataUrls) ? m.imageDataUrls : (m?.imageDataUrl ? [m.imageDataUrl] : [])
-            }));
- 
-            if (activeSession) activeSession.value = normalized;
- 
-            if (sessionContextEnabled) {
-                try {
-                    const saved = localStorage.getItem('aicr_context_switch_enabled');
-                    if (saved === '0') sessionContextEnabled.value = false;
-                    if (saved === '1') sessionContextEnabled.value = true;
-                } catch (_) { }
-            }
- 
-            if (sessionContextMode) sessionContextMode.value = openContextEditor ? 'split' : (sessionContextMode.value || 'edit');
- 
-            const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL)) ? String(window.API_URL).replace(/\/+$/, '') : '';
-            let staticContent = '';
- 
-            if (apiBase) {
-                let cleanPath = '';
- 
-                if (fileKey) {
-                    cleanPath = String(fileKey || '').replace(/\\/g, '/').replace(/^\/+/, '');
-                    if (cleanPath.startsWith('static/')) {
-                        cleanPath = cleanPath.substring(7);
-                    }
-                    cleanPath = cleanPath.replace(/^\/+/, '');
-                } else {
-                    const tags = Array.isArray(session.tags) ? session.tags : [];
-                    let currentPath = '';
-                    tags.forEach((folderName) => {
-                        if (!folderName || (folderName.toLowerCase && folderName.toLowerCase() === 'default')) return;
-                        currentPath = currentPath ? currentPath + '/' + folderName : folderName;
-                    });
-                    let fileName = session.title || 'Untitled';
-                    fileName = String(fileName).trim().replace(/\s+/g, '_').replace(/\//g, '-');
-                    cleanPath = currentPath ? currentPath + '/' + fileName : fileName;
-                    cleanPath = cleanPath.replace(/\\/g, '/').replace(/^\/+/, '');
-                    if (cleanPath.startsWith('static/')) {
-                        cleanPath = cleanPath.substring(7);
-                    }
-                    cleanPath = cleanPath.replace(/^\/+/, '');
-                }
- 
-                if (!cleanPath) {
-                    const pageDesc = session.pageDescription || '';
-                    if (pageDesc && pageDesc.includes('文件：')) {
-                        cleanPath = pageDesc.replace('文件：', '').trim();
-                        cleanPath = cleanPath.replace(/\\/g, '/').replace(/^\/+/, '');
-                        if (cleanPath.startsWith('static/')) {
-                            cleanPath = cleanPath.substring(7);
-                        }
-                        cleanPath = cleanPath.replace(/^\/+/, '');
-                    }
-                }
- 
-                if (!cleanPath && targetSessionKey) {
-                    cleanPath = `session_${targetSessionKey}.txt`;
-                }
- 
-                if (cleanPath) {
-                    try {
-                        console.log('[selectSessionForChat] 调用 read-file 接口，路径:', cleanPath);
-                        const res = await fetch(`${apiBase}/read-file`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ target_file: cleanPath })
-                        });
-                        if (res.ok) {
-                            const json = await res.json();
-                            if ((json.code === 200 || json.code === 0) && json.data && json.data.content) {
-                                if (json.data.type !== 'base64') {
-                                    staticContent = json.data.content;
-                                    console.log('[selectSessionForChat] read-file 接口调用成功，内容长度:', staticContent.length);
-                                } else {
-                                    console.log('[selectSessionForChat] read-file 接口返回 base64 类型，跳过');
-                                }
-                            } else {
-                                console.warn('[selectSessionForChat] read-file 接口返回异常:', json);
-                            }
-                        } else {
-                            console.warn('[selectSessionForChat] read-file 接口调用失败，状态码:', res.status);
-                        }
-                    } catch (error) {
-                        console.error('[selectSessionForChat] read-file 接口调用异常:', error);
-                    }
-                } else {
-                    console.warn('[selectSessionForChat] 无法确定文件路径，跳过 read-file 接口调用');
-                }
-            } else {
-                console.warn('[selectSessionForChat] API_URL 未配置，跳过 read-file 接口调用');
-            }
-            if (sessionContextDraft) sessionContextDraft.value = String(staticContent || '');
-            if (activeSession?.value) {
-                activeSession.value = { ...activeSession.value, pageContent: String(staticContent || '') };
-            }
-            if (sessionContextEditorVisible) sessionContextEditorVisible.value = !!openContextEditor;
-            ensureSessionContextScrollSync();
-            if (sessionChatInput) sessionChatInput.value = '';
- 
-            setTimeout(() => {
-                const el = document.getElementById('pet-chat-messages');
-                if (el) el.scrollTop = el.scrollHeight;
-            }, 0);
-        } catch (e) {
-            if (activeSessionError) activeSessionError.value = e?.message || '加载会话失败';
-            if (window.showError) window.showError(activeSessionError?.value || '加载会话失败');
-        } finally {
-            if (activeSessionLoading) activeSessionLoading.value = false;
-        }
-    };
+    const selectSessionForChat = createSelectSessionForChat({
+        store,
+        setSelectedKey,
+        selectedKey,
+        activeSession,
+        activeSessionLoading,
+        activeSessionError,
+        sessionChatInput,
+        sessionContextEditorVisible,
+        sessionContextDraft,
+        sessionContextEnabled,
+        sessionContextMode,
+        ensureSessionContextScrollSync
+    });
  
     const sessionChatMethods = createSessionChatContextChatMethods({
         store,
