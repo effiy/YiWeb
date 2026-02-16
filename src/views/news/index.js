@@ -15,6 +15,7 @@ import { createBaseView } from '/src/utils/view/baseView.js';
             useComputed,
             useMethods,
             components: [
+                'NewsPage',
                 'SearchHeader',
                 'MarkdownView',
                 'NewsList',
@@ -24,6 +25,7 @@ import { createBaseView } from '/src/utils/view/baseView.js';
                 'YiErrorState'
             ],
             componentModules: [
+                '/src/views/news/components/newsPage/index.js',
                 '/src/components/common/searchHeader/index.js',
                 '/src/markdown/markdownView/index.js',
                 '/src/components/business/newsList/index.js',

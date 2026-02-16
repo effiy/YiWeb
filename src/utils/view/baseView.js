@@ -10,6 +10,7 @@
 // 导入日志工具，确保 window.logError 等函数可用
 import '/src/utils/core/log.js';
 import { createError, ErrorCodes, ErrorTypes } from '/src/utils/core/error.js';
+import { loadCSS } from '/src/utils/view/componentLoader.js';
 
 /**
  * 视图配置选项
@@ -214,7 +215,6 @@ async function createBaseView(config = {}) {
         methods: extraMethods = {},
         data: extraData = {},
         computed: extraComputed = {},
-        props: extraProps = {}
     } = config;
 
     // 验证必需函数
@@ -366,24 +366,7 @@ function waitForComponents(componentNames, timeout = 5000) {
  * @param {Array} cssFiles - CSS文件路径列表
  */
 function loadCSSFiles(cssFiles) {
-    (Array.isArray(cssFiles) ? cssFiles : []).forEach(cssFile => {
-        if (!cssFile) return;
-        const targetHref = new URL(cssFile, location.href).href;
-        const exists = Array.from(document.querySelectorAll('link[rel="stylesheet"][href]')).some(link => {
-            try {
-                return new URL(link.href, location.href).href === targetHref;
-            } catch (_) {
-                return false;
-            }
-        });
-        if (!exists) {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = cssFile;
-            link.type = 'text/css';
-            document.head.appendChild(link);
-        }
-    });
+    loadCSS(cssFiles);
 }
 
 /**
