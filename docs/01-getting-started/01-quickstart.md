@@ -27,16 +27,12 @@
   - Network：排查接口 401、跨域、超时
   - Application → Local Storage：查看/清理 Token 与页面状态缓存
 
-可选：
-
-- Live Server（或任意静态服务器工具）：替代 Python 启动
-
 ## 启动与访问
 
 在项目根目录启动静态服务器：
 
 ```bash
-python3 -m http.server 5174
+python3 -m http.server 8080
 ```
 
 打开页面入口：
@@ -46,7 +42,7 @@ python3 -m http.server 5174
 
 端口冲突处理：
 
-- 5174 被占用时，换一个端口（例如 5175），并同步替换访问 URL
+- 8080 被占用时，换一个端口（例如 8090），并同步替换访问 URL
 
 ## 第一次使用（建议顺序）
 
