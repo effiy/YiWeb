@@ -1,4 +1,4 @@
-import { escapeHtml, sanitizeUrl } from './markdownRenderer.utils.js';
+import { ensureMermaidLoaded, escapeHtml, sanitizeUrl } from './markdownRenderer.utils.js';
 
 const sanitizeClassName = (className) => {
     if (!className || typeof className !== 'string') return '';
@@ -282,40 +282,31 @@ export const sanitizeMarkdownHtml = (html) => {
                     if (!String(diagramCode || '').trim()) return;
 
                     const diagramId = `md-mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-                    if (
-                        window.mermaidRenderer &&
-                        typeof window.mermaidRenderer.createDiagramContainer === 'function' &&
-                        typeof window.mermaidRenderer.renderDiagram === 'function'
-                    ) {
-                        const containerHtml = window.mermaidRenderer.createDiagramContainer(diagramId, diagramCode, {
-                            showHeader: false,
-                            showActions: true,
-                            headerLabel: 'MERMAID 图表',
-                            sourceLine: null
-                        });
-                        const tpl = document.createElement('template');
-                        tpl.innerHTML = String(containerHtml || '');
-                        const wrapper = tpl.content && tpl.content.firstElementChild ? tpl.content.firstElementChild : null;
-                        if (wrapper) {
-                            replaceWith(el, wrapper);
-                            markRenderedMarkdown(wrapper);
-                            setTimeout(() => {
-                                try {
-                                    window.mermaidRenderer.renderDiagram(diagramId, diagramCode, { showLoading: false });
-                                } catch (_) { }
-                            }, 0);
-                            return;
-                        }
-                    }
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'mermaid-diagram-wrapper';
+                    wrapper.setAttribute('data-source-line', '');
+                    const container = document.createElement('div');
+                    container.className = 'mermaid-diagram-container';
+                    container.id = diagramId;
+                    container.setAttribute('data-mermaid-code', diagramCode);
+                    wrapper.appendChild(container);
+                    replaceWith(el, wrapper);
+                    markRenderedMarkdown(wrapper);
 
-                    const pre = document.createElement('pre');
-                    pre.className = 'md-code';
-                    const codeEl = document.createElement('code');
-                    codeEl.className = 'language-mermaid';
-                    codeEl.textContent = diagramCode;
-                    pre.appendChild(codeEl);
-                    replaceWith(el, pre);
-                    markRenderedMarkdown(pre);
+                    setTimeout(() => {
+                        (async () => {
+                            const ok = await ensureMermaidLoaded();
+                            if (!ok || !window.mermaidRenderer || typeof window.mermaidRenderer.renderDiagram !== 'function') {
+                                container.innerHTML = `<pre class="md-code"><code class="language-mermaid">${escapeHtml(diagramCode)}</code></pre>`;
+                                return;
+                            }
+                            try {
+                                await window.mermaidRenderer.renderDiagram(diagramId, diagramCode, { showLoading: false });
+                            } catch (_) {
+                                container.innerHTML = `<pre class="md-code"><code class="language-mermaid">${escapeHtml(diagramCode)}</code></pre>`;
+                            }
+                        })();
+                    }, 0);
                 });
             };
 

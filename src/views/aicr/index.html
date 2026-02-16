@@ -13,8 +13,6 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@3.5.26/dist/vue.global.prod.js" crossorigin="anonymous"></script>
     <!-- Marked.js for Markdown rendering -->
     <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js" crossorigin="anonymous"></script>
-    <!-- Mermaid.js for diagram rendering -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -35,10 +33,6 @@
     <!-- 脚本标签移到Vue应用容器外部 -->
     <!-- 基础配置和工具 -->
     <script type="module" src="../../config.js"></script>
-
-    <!-- Mermaid 相关脚本（按依赖顺序加载） -->
-    <script type="module" src="../../markdown/mermaid/mermaid.js"></script>
-    <script type="module" src="../../markdown/mermaid/mermaidRenderer.js"></script>
 
     <!-- 主应用入口 -->
     <script type="module" src="../../views/aicr/index.js"></script>

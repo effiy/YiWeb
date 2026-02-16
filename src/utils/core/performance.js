@@ -321,6 +321,134 @@ function showSuccess(message) {
     }
 }
 
+const __yiPerf = (() => {
+    const marks = new Map();
+    const entries = [];
+    const maxEntries = 200;
+
+    const now = () => {
+        try {
+            if (typeof performance !== 'undefined' && typeof performance.now === 'function') return performance.now();
+        } catch (_) { }
+        return Date.now();
+    };
+
+    const push = (entry) => {
+        entries.push(entry);
+        if (entries.length > maxEntries) entries.splice(0, entries.length - maxEntries);
+    };
+
+    const mark = (name) => {
+        const t = now();
+        marks.set(String(name), t);
+        push({ kind: 'mark', name: String(name), t, at: Date.now() });
+        return t;
+    };
+
+    const measure = (name, startName, endName) => {
+        const start = marks.get(String(startName));
+        const end = endName ? marks.get(String(endName)) : now();
+        if (typeof start !== 'number' || typeof end !== 'number') return null;
+        const duration = end - start;
+        push({ kind: 'measure', name: String(name), startName: String(startName), endName: endName ? String(endName) : '', start, end, duration, at: Date.now() });
+        return duration;
+    };
+
+    const recordDuration = (name, duration, meta = null) => {
+        const d = Number(duration);
+        if (!Number.isFinite(d)) return null;
+        push({ kind: 'duration', name: String(name), duration: d, meta: meta && typeof meta === 'object' ? meta : null, at: Date.now() });
+        return d;
+    };
+
+    const getEntries = () => entries.slice();
+
+    const shouldShowPanel = () => {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('perf')) return params.get('perf') === 'true';
+        } catch (_) { }
+        try {
+            const stored = localStorage.getItem('perfPanel');
+            if (stored != null) return stored === 'true';
+        } catch (_) { }
+        return false;
+    };
+
+    const renderPanel = (root) => {
+        const list = entries.slice(-30).reverse();
+        const lines = list.map((e) => {
+            if (e.kind === 'duration') return `${e.duration.toFixed(1)}ms  ${e.name}`;
+            if (e.kind === 'measure') return `${e.duration.toFixed(1)}ms  ${e.name}`;
+            if (e.kind === 'mark') return `mark      ${e.name}`;
+            return `${e.kind} ${e.name || ''}`.trim();
+        });
+        root.querySelector('[data-perf-body]').textContent = lines.join('\n');
+    };
+
+    const showPanel = () => {
+        try {
+            if (typeof document === 'undefined') return;
+            let root = document.getElementById('yi-perf-panel');
+            if (!root) {
+                root = document.createElement('div');
+                root.id = 'yi-perf-panel';
+                root.style.position = 'fixed';
+                root.style.right = '12px';
+                root.style.bottom = '12px';
+                root.style.width = '420px';
+                root.style.maxWidth = 'calc(100vw - 24px)';
+                root.style.maxHeight = '50vh';
+                root.style.overflow = 'hidden';
+                root.style.zIndex = '99998';
+                root.style.border = '1px solid rgba(0,0,0,0.18)';
+                root.style.borderRadius = '12px';
+                root.style.background = 'rgba(17,24,39,0.92)';
+                root.style.color = 'rgba(255,255,255,0.92)';
+                root.style.backdropFilter = 'blur(10px)';
+                root.style.boxShadow = '0 18px 60px rgba(0,0,0,0.35)';
+                root.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
+                root.style.fontSize = '12px';
+                root.style.lineHeight = '1.4';
+                root.innerHTML = `
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.10);">
+                        <div style="font-weight:700;letter-spacing:.02em;">Perf</div>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <button data-perf-clear type="button" style="height:26px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.06);color:inherit;cursor:pointer;">Clear</button>
+                            <button data-perf-close type="button" style="height:26px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.06);color:inherit;cursor:pointer;">Close</button>
+                        </div>
+                    </div>
+                    <pre data-perf-body style="margin:0;padding:10px 12px;white-space:pre-wrap;word-break:break-word;overflow:auto;max-height:calc(50vh - 48px);"></pre>
+                `;
+                document.body.appendChild(root);
+                root.querySelector('[data-perf-close]').addEventListener('click', () => {
+                    try { localStorage.setItem('perfPanel', 'false'); } catch (_) { }
+                    root.remove();
+                });
+                root.querySelector('[data-perf-clear]').addEventListener('click', () => {
+                    entries.splice(0, entries.length);
+                    renderPanel(root);
+                });
+            }
+            renderPanel(root);
+            if (!root.__yiPerfTimer) {
+                root.__yiPerfTimer = setInterval(() => renderPanel(root), 800);
+            }
+        } catch (e) {
+            console.warn('[性能监控] Perf 面板启动失败:', e);
+        }
+    };
+
+    const init = () => {
+        try {
+            if (!checkEnvironmentCompatibility()) return;
+            if (shouldShowPanel()) showPanel();
+        } catch (_) { }
+    };
+
+    return { mark, measure, recordDuration, getEntries, showPanel, init };
+})();
+
 /**
  * 初始化性能监控
  * 启动所有监控功能
@@ -337,6 +465,12 @@ function initPerformanceMonitoring() {
         
         monitorPageLoadPerformance();
         monitorErrors();
+        try {
+            if (typeof window !== 'undefined') {
+                window.yiPerf = __yiPerf;
+                __yiPerf.init();
+            }
+        } catch (_) { }
         console.log('[性能监控] 已启动');
     } catch (error) {
         console.warn('[性能监控] 初始化失败:', error);

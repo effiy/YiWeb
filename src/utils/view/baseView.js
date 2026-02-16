@@ -9,8 +9,7 @@
 // import { window.logInfo, window.logWarn, window.logError } from './log.js';
 // 导入日志工具，确保 window.logError 等函数可用
 import '/src/utils/core/log.js';
-// 导入错误处理工具，确保 window.safeExecute 函数可用
-import '/src/utils/core/error.js';
+import { createError, ErrorCodes, ErrorTypes } from '/src/utils/core/error.js';
 
 /**
  * 视图配置选项
@@ -66,11 +65,15 @@ async function createVueApp(options = {}) {
     }
 
     if (Array.isArray(componentModules) && componentModules.length) {
+        try { if (window.timeStart) window.timeStart('app:loadJSFiles'); } catch (_) { }
         await loadJSFiles(componentModules);
+        try { if (window.timeEnd) window.timeEnd('app:loadJSFiles'); } catch (_) { }
     }
 
     // 注册组件（异步）
+    try { if (window.timeStart) window.timeStart('app:registerComponents'); } catch (_) { }
     await registerComponents(app, components);
+    try { if (window.timeEnd) window.timeEnd('app:registerComponents'); } catch (_) { }
 
     // 加载插件
     loadPlugins(app, plugins);
@@ -147,17 +150,20 @@ function mountApp(app, selector = '#app') {
  * @returns {Promise<Object>} 挂载后的应用实例
  */
 async function createAndMountApp(options = {}, selector = '#app') {
+    try { if (window.timeStart) window.timeStart('app:createAndMount'); } catch (_) { }
     // 在挂载前，从目标元素抓取静态模板并清空，避免DOM不一致导致的挂载错误
     const element = document.querySelector(selector);
     if (!element) {
-        throw new Error(`DOM元素未找到: ${selector}`);
+        throw createError(`DOM元素未找到: ${selector}`, ErrorTypes.RUNTIME, '应用挂载', ErrorCodes.UNKNOWN);
     }
     const rootTemplate = element.innerHTML;
     element.innerHTML = '';
 
     const app = await createVueApp({ ...options, rootTemplate });
     try {
-        return mountApp(app, selector);
+        const mounted = mountApp(app, selector);
+        try { if (window.timeEnd) window.timeEnd('app:createAndMount'); } catch (_) { }
+        return mounted;
     } catch (e) {
         // 回退方案：在body末尾创建全新容器再尝试一次，以规避个别环境DOM解析异常
         try {
@@ -171,7 +177,9 @@ async function createAndMountApp(options = {}, selector = '#app') {
                 fallback.innerHTML = '';
             }
             const app2 = await createVueApp({ ...options, rootTemplate });
-            return mountApp(app2, '#' + fallbackId);
+            const mounted2 = mountApp(app2, '#' + fallbackId);
+            try { if (window.timeEnd) window.timeEnd('app:createAndMount'); } catch (_) { }
+            return mounted2;
         } catch (_) {
             throw e;
         }
@@ -342,7 +350,7 @@ function waitForComponents(componentNames, timeout = 5000) {
             }
             
             if (Date.now() - startTime > timeout) {
-                reject(new Error(`组件加载超时: ${componentNames.join(', ')}`));
+                reject(createError(`组件加载超时: ${componentNames.join(', ')}`, ErrorTypes.RUNTIME, '组件注册', ErrorCodes.COMPONENT_LOAD_TIMEOUT));
                 return;
             }
             
@@ -389,7 +397,9 @@ function loadJSFiles(jsFiles) {
         .filter(Boolean)
         .map(async (jsFile) => {
             try {
+                try { if (window.timeStart) window.timeStart(`module:import ${jsFile}`); } catch (_) { }
                 await import(jsFile);
+                try { if (window.timeEnd) window.timeEnd(`module:import ${jsFile}`); } catch (_) { }
                 return;
             } catch (_) { }
 
@@ -408,7 +418,7 @@ function loadJSFiles(jsFiles) {
                 script.type = 'module';
                 script.src = jsFile;
                 script.onload = resolve;
-                script.onerror = () => reject(new Error(`加载失败: ${jsFile}`));
+                script.onerror = () => reject(createError(`加载失败: ${jsFile}`, ErrorTypes.RUNTIME, '模块加载', ErrorCodes.MODULE_LOAD_FAILED));
                 document.head.appendChild(script);
             });
         });

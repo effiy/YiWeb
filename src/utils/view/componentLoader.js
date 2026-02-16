@@ -3,6 +3,9 @@
  * 用于标准化 Vue 组件的加载、定义和样式注入
  */
 
+import { safeGetItem, safeSetItem } from '/src/utils/core/common.js';
+import { createError, ErrorCodes, ErrorTypes } from '/src/utils/core/error.js';
+
 /**
  * 加载 CSS 文件
  * @param {string|string[]} paths - CSS 文件路径或路径数组
@@ -11,8 +14,21 @@ export function loadCSS(paths) {
     const cssPaths = Array.isArray(paths) ? paths : [paths];
     cssPaths.forEach(path => {
         if (!path) return;
-        // 检查是否已加载
-        if (document.querySelector(`link[href="${path}"]`)) return;
+        const targetHref = (() => {
+            try {
+                return new URL(String(path), location.href).href;
+            } catch (_) {
+                return String(path);
+            }
+        })();
+        const exists = Array.from(document.querySelectorAll('link[rel="stylesheet"][href]')).some((link) => {
+            try {
+                return new URL(link.getAttribute('href') || link.href, location.href).href === targetHref;
+            } catch (_) {
+                return (link.getAttribute('href') || '') === String(path);
+            }
+        });
+        if (exists) return;
         
         const link = document.createElement('link');
         link.rel = 'stylesheet';
@@ -21,6 +37,17 @@ export function loadCSS(paths) {
     });
 }
 
+const __templateMemoryCache = new Map();
+const __templateCacheKey = (path) => {
+    const p = String(path || '').trim();
+    if (!p) return '';
+    try {
+        return `yiweb:template:v1:${new URL(p, location.href).href}`;
+    } catch (_) {
+        return `yiweb:template:v1:${p}`;
+    }
+};
+
 /**
  * 加载 HTML 模板
  * @param {string} path - HTML 文件路径
@@ -28,14 +55,42 @@ export function loadCSS(paths) {
  */
 export async function loadTemplate(path) {
     if (!path) return '';
+    const cacheKey = __templateCacheKey(path);
+    if (cacheKey && __templateMemoryCache.has(cacheKey)) {
+        return __templateMemoryCache.get(cacheKey) || '';
+    }
     try {
+        if (cacheKey) {
+            const cached = safeGetItem(cacheKey, null, true);
+            const ts = cached && typeof cached.ts === 'number' ? cached.ts : 0;
+            const content = cached && typeof cached.content === 'string' ? cached.content : '';
+            const maxAgeMs = 7 * 24 * 60 * 60 * 1000;
+            if (content && ts && Date.now() - ts < maxAgeMs) {
+                __templateMemoryCache.set(cacheKey, content);
+                return content;
+            }
+        }
+
         const response = await fetch(path);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return await response.text();
+        const text = await response.text();
+        if (cacheKey && text) {
+            __templateMemoryCache.set(cacheKey, text);
+            safeSetItem(cacheKey, { ts: Date.now(), content: text }, true);
+        }
+        return text;
     } catch (error) {
+        try {
+            createError(`加载模板失败: ${path}`, ErrorTypes.NETWORK, '组件模板加载', ErrorCodes.TEMPLATE_FETCH_FAILED).originalError = error;
+        } catch (_) { }
         console.error(`[ComponentLoader] 加载模板失败 (${path}):`, error);
+        if (cacheKey) {
+            const cached = safeGetItem(cacheKey, null, true);
+            const content = cached && typeof cached.content === 'string' ? cached.content : '';
+            if (content) return content;
+        }
         return '';
     }
 }
@@ -53,7 +108,7 @@ export async function defineComponent(options) {
     const { name, css, html, ...componentOptions } = options;
 
     if (!name) {
-        throw new Error('[ComponentLoader] 组件名称是必需的');
+        throw createError('[ComponentLoader] 组件名称是必需的', ErrorTypes.VALIDATION, '组件定义', ErrorCodes.UNKNOWN);
     }
 
     // 1. 加载样式

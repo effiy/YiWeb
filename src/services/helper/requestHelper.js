@@ -14,6 +14,7 @@ import '/src/services/helper/checkStatus.js';
 import { getAuthHeaders } from '/src/services/helper/authUtils.js?v=1';
 // 导入认证错误处理器
 import { isAuthError } from '/src/services/helper/authErrorHandler.js';
+import { ErrorCodes, ErrorTypes } from '/src/utils/core/error.js';
 
 /**
  * 默认请求配置
@@ -83,10 +84,10 @@ async function sendRequest(url, options = {}) {
   
   // 应用请求拦截器
   const interceptedConfig = requestInterceptor(config);
+  const timeLabel = `fetch:${config.method || 'GET'} ${url}`;
   
   try {
     // 计时
-    const timeLabel = `fetch:${config.method || 'GET'} ${url}`;
     window.timeStart(timeLabel);
 
     const controller = new AbortController();
@@ -125,7 +126,10 @@ async function sendRequest(url, options = {}) {
     const timeoutPromise = new Promise((_, reject) => {
       timeoutId = setTimeout(() => {
         try { controller.abort(); } catch (_) {}
-        reject(new Error(`请求超时：${timeoutMs}ms`));
+        const timeoutError = new Error(`请求超时：${timeoutMs}ms`);
+        timeoutError.code = ErrorCodes.REQUEST_TIMEOUT;
+        timeoutError.type = ErrorTypes.NETWORK;
+        reject(timeoutError);
       }, timeoutMs);
     });
     
@@ -206,12 +210,12 @@ async function sendRequest(url, options = {}) {
     const result = window.isJsonResponse(interceptedResponse)
       ? await interceptedResponse.json()
       : await interceptedResponse.text();
-    window.timeEnd(timeLabel);
     return result;
     
   } catch (error) {
     // 如果是认证错误，已经处理过了，直接抛出
     if (isAuthError(error)) {
+      try { if (!error.code) error.code = ErrorCodes.AUTH_401; } catch (_) { }
       throw error;
     }
     
@@ -230,6 +234,8 @@ async function sendRequest(url, options = {}) {
       const abortError = new Error('请求被取消或超时');
       abortError.originalError = error;
       abortError.isAbortError = true;
+      abortError.code = ErrorCodes.REQUEST_TIMEOUT;
+      abortError.type = ErrorTypes.NETWORK;
       throw abortError;
     }
 
@@ -237,6 +243,8 @@ async function sendRequest(url, options = {}) {
       const networkError = new Error('网络请求失败：无法连接到服务器，请检查网络连接和API地址');
       networkError.originalError = error;
       networkError.isNetworkError = true;
+      networkError.code = ErrorCodes.NETWORK_FETCH_FAILED;
+      networkError.type = ErrorTypes.NETWORK;
       throw networkError;
     }
     
@@ -245,10 +253,15 @@ async function sendRequest(url, options = {}) {
       const corsError = new Error('跨域请求被阻止：请检查API服务器的CORS配置');
       corsError.originalError = error;
       corsError.isCorsError = true;
+      corsError.code = ErrorCodes.CORS_BLOCKED;
+      corsError.type = ErrorTypes.NETWORK;
       throw corsError;
     }
+    try { if (!error.code) error.code = ErrorCodes.UNKNOWN; } catch (_) { }
     
     throw error;
+  } finally {
+    try { window.timeEnd(timeLabel); } catch (_) { }
   }
 }
 

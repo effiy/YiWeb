@@ -93,3 +93,66 @@ export const sanitizeUrl = (href) => {
         return '';
     }
 };
+
+let _mermaidLoadPromise = null;
+export const ensureMermaidLoaded = async () => {
+    try {
+        if (
+            typeof window !== 'undefined' &&
+            window.mermaidRenderer &&
+            typeof window.mermaidRenderer.renderDiagram === 'function'
+        ) {
+            return true;
+        }
+
+        if (_mermaidLoadPromise) return await _mermaidLoadPromise;
+
+        _mermaidLoadPromise = (async () => {
+            const w = typeof window !== 'undefined' ? window : null;
+            if (!w || typeof document === 'undefined') return false;
+
+            const ensureMermaidScript = async () => {
+                if (typeof w.mermaid !== 'undefined') return true;
+
+                const existing = document.querySelector('script[data-yiweb-mermaid="cdn"]');
+                if (existing) {
+                    await new Promise((resolve, reject) => {
+                        if (typeof w.mermaid !== 'undefined') return resolve(true);
+                        existing.addEventListener('load', () => resolve(true), { once: true });
+                        existing.addEventListener('error', () => reject(new Error('Mermaid.js 加载失败')), { once: true });
+                    });
+                    return typeof w.mermaid !== 'undefined';
+                }
+
+                await new Promise((resolve, reject) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js';
+                    s.crossOrigin = 'anonymous';
+                    s.referrerPolicy = 'no-referrer';
+                    s.setAttribute('data-yiweb-mermaid', 'cdn');
+                    s.onload = () => resolve(true);
+                    s.onerror = () => reject(new Error('Mermaid.js 加载失败'));
+                    document.head.appendChild(s);
+                });
+
+                return typeof w.mermaid !== 'undefined';
+            };
+
+            const ok = await ensureMermaidScript();
+            if (!ok) return false;
+
+            try { await import('/src/markdown/mermaid/mermaid.js'); } catch (_) { }
+            try { await import('/src/markdown/mermaid/mermaidRenderer.js'); } catch (_) { }
+
+            return !!(
+                w.mermaidRenderer &&
+                typeof w.mermaidRenderer.renderDiagram === 'function' &&
+                typeof w.mermaidRenderer.createDiagramContainer === 'function'
+            );
+        })();
+
+        return await _mermaidLoadPromise;
+    } catch (_) {
+        return false;
+    }
+};

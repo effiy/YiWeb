@@ -18,6 +18,7 @@ import '/src/services/helper/requestHelper.js';
 import { getAuthHeaders, getStoredModel } from '/src/services/helper/authUtils.js?v=1';
 // 导入认证错误处理器
 import { handle401Error, isAuthError } from '/src/services/helper/authErrorHandler.js';
+import { createError, ErrorCodes, ErrorTypes } from '/src/utils/core/error.js';
 
 /**
  * 简单的内存缓存
@@ -297,6 +298,7 @@ async function deleteData(url, options = {}) {
  * @returns {Promise<string>} - 返回完整的响应内容
  */
 async function streamPrompt(url, data, options = {}, onChunk = null) {
+  const timeLabel = `sse:POST ${url}`;
   try {
     // 支持三种请求结构：
     // 1) 服务调用结构：包含 module_name 和 method_name，直接透传
@@ -377,6 +379,7 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
     };
     
     // 发送请求
+    try { if (window.timeStart) window.timeStart(timeLabel); } catch (_) { }
     let response = await fetch(url, config);
     
     // 处理 401 错误
@@ -387,6 +390,7 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
         promptLogin: options.promptLogin !== false,
         customMessage: options.errorMessage
       });
+      try { if (!error.code) error.code = ErrorCodes.AUTH_401; } catch (_) { }
       throw error;
     }
     
@@ -424,6 +428,7 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
             promptLogin: options.promptLogin !== false,
             customMessage: options.errorMessage
           });
+          try { if (!error.code) error.code = ErrorCodes.AUTH_401; } catch (_) { }
           throw error;
         }
       } catch (_) {
@@ -440,12 +445,13 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
           promptLogin: options.promptLogin !== false,
           customMessage: options.errorMessage
         });
+        try { if (!error.code) error.code = ErrorCodes.AUTH_401; } catch (_) { }
         throw error;
       }
       
       // 其他错误
       const errorText = await response.text();
-      const error = new Error(`HTTP ${response.status}: ${errorText}`);
+      const error = createError(`HTTP ${response.status}: ${errorText}`, ErrorTypes.API, '流式请求', ErrorCodes.HTTP_ERROR);
       error.status = response.status;
       error.statusText = response.statusText;
       error.url = url;
@@ -500,7 +506,7 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
         const parsed = JSON.parse(rawText);
         if (parsed && typeof parsed === 'object') {
           if (parsed.type === 'error' || parsed.success === false) {
-            throw new Error(parsed.error || parsed.message || parsed.data || '请求失败');
+            throw createError(parsed.error || parsed.message || parsed.data || '请求失败', ErrorTypes.API, '流式请求', ErrorCodes.STREAM_API_ERROR);
           }
           const picked = pickTextFromResponse(parsed);
           if (picked !== undefined) {
@@ -526,6 +532,7 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
         onChunk(text, text);
       }
       CacheManager.clear();
+      try { if (window.timeEnd) window.timeEnd(timeLabel); } catch (_) { }
       return String(text || '').trim();
     }
     
@@ -574,7 +581,7 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
             
             // 处理错误（自定义错误格式，当 ollama 调用失败时）
             if (chunk.type === 'error') {
-              throw new Error(`API 错误: ${chunk.data || chunk.message || '未知错误'}`);
+              throw createError(`API 错误: ${chunk.data || chunk.message || '未知错误'}`, ErrorTypes.API, '流式请求', ErrorCodes.STREAM_API_ERROR);
             }
             
           } catch (e) {
@@ -604,7 +611,7 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
             }
           }
           if (chunk.type === 'error') {
-            throw new Error(`API 错误: ${chunk.data || chunk.message || '未知错误'}`);
+            throw createError(`API 错误: ${chunk.data || chunk.message || '未知错误'}`, ErrorTypes.API, '流式请求', ErrorCodes.STREAM_API_ERROR);
           }
         } catch (e) {
           if (e.message && !e.message.includes('JSON')) {
@@ -618,9 +625,36 @@ async function streamPrompt(url, data, options = {}, onChunk = null) {
     // 清除相关缓存
     CacheManager.clear();
     
+    try { if (window.timeEnd) window.timeEnd(timeLabel); } catch (_) { }
     return fullContent.trim();
     
   } catch (error) {
+    try { if (window.timeEnd) window.timeEnd(timeLabel); } catch (_) { }
+    try {
+      if (isAuthError(error)) {
+        if (!error.code) error.code = ErrorCodes.AUTH_401;
+      } else if (error && typeof error === 'object') {
+        const msg = typeof error.message === 'string' ? error.message : '';
+        const isAbort = error.name === 'AbortError' || error.isAbortError === true || msg.toLowerCase().includes('aborted');
+        if (isAbort) {
+          const abortError = createError('请求被取消或超时', ErrorTypes.NETWORK, '流式请求', ErrorCodes.REQUEST_TIMEOUT);
+          abortError.name = 'AbortError';
+          abortError.isAbortError = true;
+          abortError.originalError = error;
+          throw abortError;
+        }
+        const isNetwork = error.name === 'TypeError' && msg.includes('fetch');
+        if (isNetwork) {
+          const networkError = createError('网络请求失败：无法连接到服务器，请检查网络连接和API地址', ErrorTypes.NETWORK, '流式请求', ErrorCodes.NETWORK_FETCH_FAILED);
+          networkError.originalError = error;
+          throw networkError;
+        }
+        if (!error.code) error.code = ErrorCodes.UNKNOWN;
+      }
+    } catch (mapped) {
+      window.logError('流式请求失败：', mapped);
+      throw mapped;
+    }
     window.logError('流式请求失败：', error);
     throw error;
   }

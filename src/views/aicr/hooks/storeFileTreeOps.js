@@ -43,8 +43,13 @@ export function createAicrStoreFileTreeOps(deps, state, internals, extra) {
 
             return state.fileTree.value;
         }, '文件树数据加载', (errorInfo) => {
-            state.error.value = errorInfo.message;
-            state.errorMessage.value = errorInfo.message;
+            const debug = (() => {
+                try { return !!(window.__ENV__ && window.__ENV__.DEBUG); } catch (_) { return false; }
+            })();
+            const code = errorInfo && errorInfo.code ? String(errorInfo.code) : '';
+            const message = debug && code ? `[${code}] ${errorInfo.message}` : errorInfo.message;
+            state.error.value = message;
+            state.errorMessage.value = message;
             if (forceClear) state.fileTree.value = [];
         }).finally(() => {
             state.loading.value = false;

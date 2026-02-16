@@ -15,6 +15,20 @@ export const ErrorTypes = {
     UNKNOWN: 'UNKNOWN'
 };
 
+export const ErrorCodes = {
+    UNKNOWN: 'UNKNOWN',
+    AUTH_401: 'AUTH_401',
+    HTTP_ERROR: 'HTTP_ERROR',
+    REQUEST_TIMEOUT: 'REQUEST_TIMEOUT',
+    NETWORK_FETCH_FAILED: 'NETWORK_FETCH_FAILED',
+    CORS_BLOCKED: 'CORS_BLOCKED',
+    STREAM_API_ERROR: 'STREAM_API_ERROR',
+    STREAM_PARSE_FAILED: 'STREAM_PARSE_FAILED',
+    COMPONENT_LOAD_TIMEOUT: 'COMPONENT_LOAD_TIMEOUT',
+    MODULE_LOAD_FAILED: 'MODULE_LOAD_FAILED',
+    TEMPLATE_FETCH_FAILED: 'TEMPLATE_FETCH_FAILED'
+};
+
 /**
  * 错误级别枚举
  */
@@ -74,7 +88,8 @@ class ErrorLogger {
             stack: error.stack,
             context,
             level,
-            type: this.getErrorType(error)
+            type: this.getErrorType(error),
+            code: (error && typeof error === 'object' && error.code) ? String(error.code) : ErrorCodes.UNKNOWN
         };
 
         this.errors.push(errorRecord);
@@ -170,6 +185,9 @@ export function createError(message, type = ErrorTypes.UNKNOWN, context = '') {
     const error = new Error(message);
     error.type = type;
     error.context = context;
+    if (arguments.length >= 4 && arguments[3]) {
+        error.code = String(arguments[3]);
+    }
     errorLogger.log(error, context, ErrorLevels.ERROR);
     return error;
 }
@@ -192,6 +210,7 @@ export function handleError(error, context = '', onError = null) {
         type: errorType,
         title: errorConfig.title,
         message: error.message || errorConfig.defaultMessage,
+        code: (error && typeof error === 'object' && error.code) ? String(error.code) : ErrorCodes.UNKNOWN,
         context,
         timestamp: new Date().toISOString()
     };
@@ -540,6 +559,7 @@ export { errorLogger };
 // 在全局作用域中暴露（用于非模块环境）
 if (typeof window !== 'undefined') {
     window.ErrorTypes = ErrorTypes;
+    window.ErrorCodes = ErrorCodes;
     window.ErrorLevels = ErrorLevels;
     window.createError = createError;
     window.handleError = handleError;

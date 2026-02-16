@@ -1,4 +1,4 @@
-import { createHeadingSlugger, decodeHtmlText, escapeHtml, sanitizeUrl, stripInlineHtml } from './markdownRenderer.utils.js';
+import { createHeadingSlugger, decodeHtmlText, ensureMermaidLoaded, escapeHtml, sanitizeUrl, stripInlineHtml } from './markdownRenderer.utils.js';
 import { parseMarkdownFrontmatter, renderFrontmatterHtml } from './markdownRenderer.frontmatter.js';
 import { sanitizeMarkdownHtml } from './markdownRenderer.sanitize.js';
 
@@ -101,25 +101,28 @@ const ensureMarkedRenderer = () => {
             if (lang === 'mermaid' || lang === 'mmd') {
                 const diagramId = `md-mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
                 const diagramCode = String(src || '').trim();
-                if (
-                    window.mermaidRenderer &&
-                    typeof window.mermaidRenderer.createDiagramContainer === 'function' &&
-                    typeof window.mermaidRenderer.renderDiagram === 'function'
-                ) {
-                    const container = window.mermaidRenderer.createDiagramContainer(diagramId, diagramCode, {
-                        showHeader: false,
-                        showActions: true,
-                        headerLabel: 'MERMAID 图表',
-                        sourceLine: null
-                    });
-                    setTimeout(() => {
+                const containerHtml = `
+                    <div class="mermaid-diagram-wrapper" data-source-line="">
+                        <div class="mermaid-diagram-container" id="${escapeHtml(diagramId)}" data-mermaid-code="${escapeHtml(diagramCode)}"></div>
+                    </div>
+                `;
+                setTimeout(() => {
+                    (async () => {
+                        const ok = await ensureMermaidLoaded();
+                        if (!ok || !window.mermaidRenderer || typeof window.mermaidRenderer.renderDiagram !== 'function') {
+                            const el = document.getElementById(diagramId);
+                            if (el) el.innerHTML = `<pre class="md-code"><code class="language-mermaid">${escapeHtml(diagramCode)}</code></pre>`;
+                            return;
+                        }
                         try {
-                            window.mermaidRenderer.renderDiagram(diagramId, diagramCode, { showLoading: false });
-                        } catch (_) { }
-                    }, 0);
-                    return container;
-                }
-                return `<pre class="md-code"><code class="language-mermaid">${escapeHtml(diagramCode)}</code></pre>`;
+                            await window.mermaidRenderer.renderDiagram(diagramId, diagramCode, { showLoading: false });
+                        } catch (_) {
+                            const el = document.getElementById(diagramId);
+                            if (el) el.innerHTML = `<pre class="md-code"><code class="language-mermaid">${escapeHtml(diagramCode)}</code></pre>`;
+                        }
+                    })();
+                }, 0);
+                return containerHtml;
             }
 
             if (typeof originalCodeRenderer === 'function') {

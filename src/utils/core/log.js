@@ -80,8 +80,14 @@ function timeEnd(label) {
   if (!shouldDebug()) return;
   const start = timers.get(label);
   if (start != null) {
-    const ms = (performance.now() - start).toFixed(1);
-    console.info(`[TIME ] ${label}: ${ms}ms`);
+    const duration = performance.now() - start;
+    const msText = duration.toFixed(1);
+    console.info(`[TIME ] ${label}: ${msText}ms`);
+    try {
+      if (window.yiPerf && typeof window.yiPerf.recordDuration === 'function') {
+        window.yiPerf.recordDuration(label, duration, { source: 'log' });
+      }
+    } catch (_) { }
     timers.delete(label);
   }
 }
@@ -116,4 +122,3 @@ exposeToWindow();
 // 注意：由于HTML使用普通script标签，不支持ES6模块语法
 // 如果需要ES6模块支持，请将script标签改为 type="module"
 // 或者使用动态import()语法
-
