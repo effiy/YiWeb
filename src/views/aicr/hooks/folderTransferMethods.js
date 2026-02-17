@@ -6,7 +6,6 @@ export const createFolderTransferMethods = ({
     showSuccessMessage,
     normalizeFilePath,
     extractFileName,
-    getApiBaseUrl,
     sessionSync
 }) => {
     const {
@@ -82,31 +81,7 @@ export const createFolderTransferMethods = ({
             await store.saveFileContent(targetPath, String(content ?? ''), { isBase64: !!isBase64 });
             return true;
         }
-        const apiBase = getApiBaseUrl();
-        if (!apiBase) {
-            throw createError('API地址未配置，无法写入文件', ErrorTypes.VALIDATION, '目录导入');
-        }
-        let cleanPath = String(normalizeFilePath(targetPath) || '').replace(/^\/+/, '');
-        if (cleanPath.startsWith('static/')) cleanPath = cleanPath.slice(7);
-        cleanPath = cleanPath.replace(/^\/+/, '');
-
-        const res = await fetch(`${apiBase}/write-file`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                target_file: cleanPath,
-                content: String(content ?? ''),
-                is_base64: !!isBase64
-            })
-        });
-        if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            throw new Error(errorData?.message || `写入失败: ${res.status} ${res.statusText}`);
-        }
-        const json = await res.json().catch(() => ({}));
-        if (json && (json.code === 0 || json.code === 200)) return true;
-        if (json && json.success !== false) return true;
-        throw new Error(json?.message || '写入失败');
+        throw createError('保存能力不可用', ErrorTypes.API, '目录导入');
     };
 
     const deriveSessionPath = (session) => {
