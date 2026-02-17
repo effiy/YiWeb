@@ -39,12 +39,14 @@ function requestInterceptor(config) {
   config.timestamp = Date.now();
   
   // 自动添加认证请求头（如果存在 token）
-  const authHeaders = getAuthHeaders();
-  if (authHeaders['X-Token']) {
-    config.headers = {
-      ...config.headers,
-      ...authHeaders
-    };
+  if (config.withAuth !== false) {
+    const authHeaders = getAuthHeaders();
+    if (authHeaders['X-Token']) {
+      config.headers = {
+        ...config.headers,
+        ...authHeaders
+      };
+    }
   }
   
   // 记录请求日志

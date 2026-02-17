@@ -25,6 +25,7 @@ export const createSessionChatContextChatMethods = (ctx) => {
         sessionChatStreamingType,
         sessionChatCopyFeedback,
         sessionChatRegenerateFeedback,
+        sessionChatScrollRequest,
         sessionContextEnabled,
         sessionContextDraft,
         sessionBotModel,
@@ -56,6 +57,79 @@ export const createSessionChatContextChatMethods = (ctx) => {
         buildWelcomeCardHtmlForSession,
         bindWelcomeCardEvents
     } = ctx || {};
+
+    try {
+        if (sessionChatScrollRequest && Vue && typeof Vue.watch === 'function') {
+            Vue.watch(
+                () => sessionChatScrollRequest.value,
+                (req) => {
+                    if (!req || typeof req !== 'object') return;
+
+                    const run = () => {
+                        const getContainer = () => {
+                            try {
+                                return document.getElementById('pet-chat-messages');
+                            } catch (_) {
+                                return null;
+                            }
+                        };
+
+                        const shouldAutoScroll = () => {
+                            try {
+                                const el = getContainer();
+                                if (!el) return true;
+                                const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
+                                return distance < 140;
+                            } catch (_) {
+                                return true;
+                            }
+                        };
+
+                        const scrollToIndex = (targetIdx) => {
+                            try {
+                                const el = document.querySelector(`[data-chat-idx="${targetIdx}"]`);
+                                if (el && typeof el.scrollIntoView === 'function') {
+                                    el.scrollIntoView({ block: 'nearest' });
+                                    return;
+                                }
+                                const container = getContainer();
+                                if (container) container.scrollTop = container.scrollHeight;
+                            } catch (_) { }
+                        };
+
+                        const scrollToBottom = () => {
+                            try {
+                                const el = getContainer();
+                                if (el) el.scrollTop = el.scrollHeight;
+                            } catch (_) { }
+                        };
+
+                        const type = String(req.type || '');
+                        if (type === 'index') {
+                            scrollToIndex(Number(req.index));
+                            return;
+                        }
+                        if (type === 'autoIndex') {
+                            if (shouldAutoScroll()) scrollToIndex(Number(req.index));
+                            return;
+                        }
+                        if (type === 'bottom') {
+                            scrollToBottom();
+                            return;
+                        }
+                        if (type === 'autoBottom') {
+                            if (shouldAutoScroll()) scrollToBottom();
+                            return;
+                        }
+                    };
+
+                    setTimeout(run, 0);
+                    sessionChatScrollRequest.value = null;
+                },
+                { deep: false }
+            );
+        }
+    } catch (_) { }
 
     const sessionChatMethods = {
         selectSessionForChat,

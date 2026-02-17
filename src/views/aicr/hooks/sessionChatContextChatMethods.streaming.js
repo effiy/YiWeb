@@ -1,6 +1,7 @@
 export const createSessionChatContextChatStreamingMethods = (ctx) => {
     const {
         safeExecute,
+        postData,
         getPromptUrl,
         activeSession,
         sessionChatInput,
@@ -12,6 +13,7 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
         sessionChatStreamingTargetTimestamp,
         sessionChatStreamingType,
         sessionChatRegenerateFeedback,
+        sessionChatScrollRequest,
         sessionContextEnabled,
         sessionContextDraft,
         sessionBotModel,
@@ -64,29 +66,6 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                     throw new Error('上传图片失败');
                 }
 
-                const shouldAutoScroll = () => {
-                    try {
-                        const el = document.getElementById('pet-chat-messages');
-                        if (!el) return true;
-                        const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
-                        return distance < 140;
-                    } catch (_) {
-                        return true;
-                    }
-                };
-
-                const scrollToIndex = (targetIdx) => {
-                    try {
-                        const el = document.querySelector(`[data-chat-idx="${targetIdx}"]`);
-                        if (el && typeof el.scrollIntoView === 'function') {
-                            el.scrollIntoView({ block: 'nearest' });
-                            return;
-                        }
-                        const container = document.getElementById('pet-chat-messages');
-                        if (container) container.scrollTop = container.scrollHeight;
-                    } catch (_) { }
-                };
-
                 const now = Date.now();
                 const insertedPet = { type: 'pet', message: '', timestamp: now + 1 };
                 const updatedUserMsg = imageUrls.length > 0
@@ -97,7 +76,9 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                 nextMessages.splice(i + 1, 0, insertedPet);
                 const nextSession = { ...s, messages: nextMessages, updatedAt: now, lastAccessTime: now };
                 activeSession.value = nextSession;
-                setTimeout(() => scrollToIndex(i + 1), 0);
+                if (sessionChatScrollRequest) {
+                    sessionChatScrollRequest.value = { type: 'index', index: i + 1 };
+                }
 
                 const pageContent = String(sessionContextDraft?.value ?? s.pageContent ?? '').trim();
                 const includeContext = sessionContextEnabled?.value === true;
@@ -135,7 +116,6 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                         },
                         controller ? { signal: controller.signal } : {},
                         (chunk) => {
-                            const autoScroll = shouldAutoScroll();
                             accumulated += String(chunk || '');
                             try {
                                 const cur = activeSession.value || nextSession;
@@ -144,7 +124,6 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                                 if (targetIdx >= 0) {
                                     msgs[targetIdx] = { ...msgs[targetIdx], message: accumulated, error: false, aborted: false };
                                     activeSession.value = { ...cur, messages: msgs };
-                                    if (autoScroll) scrollToIndex(targetIdx);
                                 }
                             } catch (_) { }
                         }
@@ -228,35 +207,14 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                 if (sessionChatLastDraftText) sessionChatLastDraftText.value = text;
                 if (sessionChatLastDraftImages) sessionChatLastDraftImages.value = images;
 
-                const shouldAutoScroll = () => {
-                    try {
-                        const el = document.getElementById('pet-chat-messages');
-                        if (!el) return true;
-                        const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
-                        return distance < 140;
-                    } catch (_) {
-                        return true;
-                    }
-                };
-
-                const scrollToIndex = (targetIdx) => {
-                    try {
-                        const el = document.querySelector(`[data-chat-idx="${targetIdx}"]`);
-                        if (el && typeof el.scrollIntoView === 'function') {
-                            el.scrollIntoView({ block: 'nearest' });
-                            return;
-                        }
-                        const container = document.getElementById('pet-chat-messages');
-                        if (container) container.scrollTop = container.scrollHeight;
-                    } catch (_) { }
-                };
-
                 const now = Date.now();
                 const petTimestamp = typeof originalPet.timestamp === 'number' ? originalPet.timestamp : now;
                 const resetMessages = [...originalMessages];
                 resetMessages[petIdx] = { ...originalPet, type: 'pet', timestamp: petTimestamp, message: '', error: false, aborted: false };
                 activeSession.value = { ...currentSession, messages: resetMessages, updatedAt: now, lastAccessTime: now };
-                setTimeout(() => scrollToIndex(petIdx), 0);
+                if (sessionChatScrollRequest) {
+                    sessionChatScrollRequest.value = { type: 'index', index: petIdx };
+                }
 
                 const pageContent = String(sessionContextDraft?.value ?? currentSession.pageContent ?? '').trim();
                 const includeContext = sessionContextEnabled?.value === true;
@@ -268,6 +226,7 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                 const promptUrl = getPromptUrl();
 
                 let accumulated = '';
+                let lastScrollRequestAt = 0;
                 if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = petTimestamp;
                 if (sessionChatStreamingType) sessionChatStreamingType.value = 'regenerate';
                 if (sessionChatSending) sessionChatSending.value = true;
@@ -294,7 +253,6 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                         },
                         controller ? { signal: controller.signal } : {},
                         (chunk) => {
-                            const autoScroll = shouldAutoScroll();
                             accumulated += String(chunk || '');
                             try {
                                 const cur = activeSession.value;
@@ -304,7 +262,13 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                                 if (useIdx >= 0 && msgs[useIdx] && msgs[useIdx].type === 'pet') {
                                     msgs[useIdx] = { ...msgs[useIdx], message: accumulated, error: false, aborted: false };
                                     activeSession.value = { ...cur, messages: msgs };
-                                    if (autoScroll) scrollToIndex(useIdx);
+                                    if (sessionChatScrollRequest) {
+                                        const ts = Date.now();
+                                        if (ts - lastScrollRequestAt > 120) {
+                                            lastScrollRequestAt = ts;
+                                            sessionChatScrollRequest.value = { type: 'autoIndex', index: useIdx };
+                                        }
+                                    }
                                 }
                             } catch (_) { }
                         }
@@ -408,24 +372,6 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                 if (sessionChatLastDraftText) sessionChatLastDraftText.value = text;
                 if (sessionChatLastDraftImages) sessionChatLastDraftImages.value = images;
 
-                const shouldAutoScroll = () => {
-                    try {
-                        const el = document.getElementById('pet-chat-messages');
-                        if (!el) return true;
-                        const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
-                        return distance < 140;
-                    } catch (_) {
-                        return true;
-                    }
-                };
-
-                const scrollToBottom = () => {
-                    try {
-                        const el = document.getElementById('pet-chat-messages');
-                        if (el) el.scrollTop = el.scrollHeight;
-                    } catch (_) { }
-                };
-
                 const now = Date.now();
                 const petTimestamp = typeof originalPet.timestamp === 'number' ? originalPet.timestamp : now;
                 const resetMessages = [...originalMessages];
@@ -443,7 +389,9 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                     updatedAt: now,
                     lastAccessTime: now
                 };
-                setTimeout(scrollToBottom, 0);
+                if (sessionChatScrollRequest) {
+                    sessionChatScrollRequest.value = { type: 'bottom' };
+                }
 
                 const pageContent = String(sessionContextDraft?.value ?? currentSession.pageContent ?? '').trim();
                 const includeContext = sessionContextEnabled?.value === true;
@@ -456,6 +404,7 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                 const promptUrl = getPromptUrl();
 
                 let accumulated = '';
+                let lastScrollRequestAt = 0;
                 if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = petTimestamp;
                 if (sessionChatStreamingType) sessionChatStreamingType.value = 'send';
                 if (sessionChatSending) sessionChatSending.value = true;
@@ -482,7 +431,6 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                         },
                         controller ? { signal: controller.signal } : {},
                         (chunk) => {
-                            const autoScroll = shouldAutoScroll();
                             accumulated += String(chunk || '');
                             try {
                                 const s = activeSession.value;
@@ -499,7 +447,13 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                                 if (idx >= 0 && msgs[idx] && msgs[idx].type === 'pet') {
                                     msgs[idx] = { ...msgs[idx], message: accumulated, error: false, aborted: false };
                                     activeSession.value = { ...s, messages: msgs };
-                                    if (autoScroll) scrollToBottom();
+                                    if (sessionChatScrollRequest) {
+                                        const ts = Date.now();
+                                        if (ts - lastScrollRequestAt > 120) {
+                                            lastScrollRequestAt = ts;
+                                            sessionChatScrollRequest.value = { type: 'autoBottom' };
+                                        }
+                                    }
                                 }
                             } catch (_) { }
                         }
@@ -598,20 +552,11 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                         webhook_url: webhook,
                         content: content
                     };
-
-                    const res = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    const data = await res.json().catch(() => ({}));
-
-                    if (!res.ok) {
-                        throw new Error(data?.message || data?.errmsg || `发送失败: ${res.status}`);
+                    if (typeof postData !== 'function') {
+                        throw new Error('请求能力不可用');
                     }
-
-                    if (data.code !== 0 && data.code !== undefined) {
+                    const data = await postData(apiUrl, payload, {}, { showError: false, promptLogin: false });
+                    if (data && typeof data.code !== 'undefined' && data.code !== 0 && data.code !== 200) {
                         throw new Error(data.message || data.errmsg || '发送失败');
                     }
 
@@ -673,25 +618,9 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                 activeSession.value = nextSession;
                 if (sessionChatInput) sessionChatInput.value = '';
                 if (sessionChatDraftImages) sessionChatDraftImages.value = [];
-
-                const shouldAutoScroll = () => {
-                    try {
-                        const el = document.getElementById('pet-chat-messages');
-                        if (!el) return true;
-                        const distance = (el.scrollHeight || 0) - (el.scrollTop || 0) - (el.clientHeight || 0);
-                        return distance < 140;
-                    } catch (_) {
-                        return true;
-                    }
-                };
-
-                const scrollToBottom = () => {
-                    try {
-                        const el = document.getElementById('pet-chat-messages');
-                        if (el) el.scrollTop = el.scrollHeight;
-                    } catch (_) { }
-                };
-                setTimeout(scrollToBottom, 0);
+                if (sessionChatScrollRequest) {
+                    sessionChatScrollRequest.value = { type: 'bottom' };
+                }
 
                 const pageContent = String(sessionContextDraft?.value ?? nextSession.pageContent ?? '').trim();
                 const includeContext = sessionContextEnabled?.value === true;
@@ -703,6 +632,7 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                 const promptUrl = getPromptUrl();
 
                 let accumulated = '';
+                let lastScrollRequestAt = 0;
                 if (sessionChatStreamingTargetTimestamp) sessionChatStreamingTargetTimestamp.value = petMessage.timestamp;
                 if (sessionChatStreamingType) sessionChatStreamingType.value = 'send';
                 if (sessionChatSending) sessionChatSending.value = true;
@@ -729,7 +659,6 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                         },
                         controller ? { signal: controller.signal } : {},
                         (chunk) => {
-                            const autoScroll = shouldAutoScroll();
                             accumulated += String(chunk || '');
                             try {
                                 const s = activeSession.value;
@@ -740,7 +669,13 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                                     if (last && last.type === 'pet' && last.timestamp === petMessage.timestamp) {
                                         msgs[lastIdx] = { ...last, message: accumulated, error: false, aborted: false };
                                         activeSession.value = { ...s, messages: msgs };
-                                        if (autoScroll) scrollToBottom();
+                                        if (sessionChatScrollRequest) {
+                                            const ts = Date.now();
+                                            if (ts - lastScrollRequestAt > 120) {
+                                                lastScrollRequestAt = ts;
+                                                sessionChatScrollRequest.value = { type: 'autoBottom' };
+                                            }
+                                        }
                                     }
                                 }
                             } catch (_) { }
@@ -797,11 +732,15 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                     if (content) {
                         const targets = robots.filter(r => r && r.enabled && r.autoForward && r.webhook);
                         await Promise.all(targets.map(async (r) => {
-                            await fetch(String(r.webhook), {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ msgtype: 'text', text: { content } })
-                            }).catch(() => { });
+                            try {
+                                if (typeof postData !== 'function') return;
+                                await postData(
+                                    String(r.webhook),
+                                    { msgtype: 'text', text: { content } },
+                                    {},
+                                    { showError: false, promptLogin: false, autoClearToken: false, withAuth: false }
+                                );
+                            } catch (_) { }
                         }));
                     }
                 } catch (_) { }

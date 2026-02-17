@@ -47,6 +47,7 @@ export function createAicrStoreState(vueRef) {
     const sessionChatStreamingType = vueRef('');
     const sessionChatCopyFeedback = vueRef({});
     const sessionChatRegenerateFeedback = vueRef({});
+    const sessionChatScrollRequest = vueRef(null);
     const sessionContextEnabled = vueRef(true);
     const sessionContextEditorVisible = vueRef(false);
     const sessionContextDraft = vueRef('');
@@ -154,6 +155,7 @@ export function createAicrStoreState(vueRef) {
             sessionChatStreamingType,
             sessionChatCopyFeedback,
             sessionChatRegenerateFeedback,
+            sessionChatScrollRequest,
             sessionContextEnabled,
             sessionContextEditorVisible,
             sessionContextDraft,
