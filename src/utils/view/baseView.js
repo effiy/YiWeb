@@ -8,8 +8,8 @@
 // import { window.safeExecute } from './error.js';
 // import { window.logInfo, window.logWarn, window.logError } from './log.js';
 // 导入日志工具，确保 window.logError 等函数可用
-import '/src/utils/core/log.js';
-import { createError, ErrorCodes, ErrorTypes } from '/src/utils/core/error.js';
+import { logError, logInfo, logWarn, timeEnd, timeStart } from '/src/utils/core/log.js';
+import { createError, ErrorCodes, ErrorTypes, safeExecute } from '/src/utils/core/error.js';
 import { loadCSS } from '/src/utils/view/componentLoader.js';
 
 /**
@@ -24,7 +24,7 @@ const ViewConfig = {
     
     // 默认错误处理
     DEFAULT_ERROR_HANDLER: (error) => {
-        window.logError('[视图错误]', error);
+        logError('[视图错误]', error);
     }
 };
 
@@ -66,15 +66,15 @@ async function createVueApp(options = {}) {
     }
 
     if (Array.isArray(componentModules) && componentModules.length) {
-        try { if (window.timeStart) window.timeStart('app:loadJSFiles'); } catch (_) { }
+        timeStart('app:loadJSFiles');
         await loadJSFiles(componentModules);
-        try { if (window.timeEnd) window.timeEnd('app:loadJSFiles'); } catch (_) { }
+        timeEnd('app:loadJSFiles');
     }
 
     // 注册组件（异步）
-    try { if (window.timeStart) window.timeStart('app:registerComponents'); } catch (_) { }
+    timeStart('app:registerComponents');
     await registerComponents(app, components);
-    try { if (window.timeEnd) window.timeEnd('app:registerComponents'); } catch (_) { }
+    timeEnd('app:registerComponents');
 
     // 加载插件
     loadPlugins(app, plugins);
@@ -101,9 +101,9 @@ async function registerComponents(app, componentNames) {
             // 同时注册 kebab-case 名称（Vue 3 自动转换，但显式注册更安全）
             const kebabName = name.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
             app.component(kebabName, window[name]);
-            try { window.logInfo(`[组件注册] 已注册组件: ${name} (${kebabName})`); } catch (_) { /* 兼容性静默 */ }
+            try { logInfo(`[组件注册] 已注册组件: ${name} (${kebabName})`); } catch (_) { }
         } else {
-            try { window.logWarn(`[组件注册] 组件未找到: ${name}`); } catch (_) { /* 兼容性静默 */ }
+            try { logWarn(`[组件注册] 组件未找到: ${name}`); } catch (_) { }
         }
     });
 }
@@ -117,9 +117,9 @@ function loadPlugins(app, pluginNames) {
     pluginNames.forEach(pluginName => {
         try {
             // 这里可以扩展插件加载逻辑
-            try { window.logInfo(`[插件加载] 加载插件: ${pluginName}`); } catch (_) { /* 兼容性静默 */ }
+            try { logInfo(`[插件加载] 加载插件: ${pluginName}`); } catch (_) { }
         } catch (error) {
-            try { window.logError(`[插件加载] 插件加载失败: ${pluginName}`, error); } catch (_) { /* 兼容性静默 */ }
+            try { logError(`[插件加载] 插件加载失败: ${pluginName}`, error); } catch (_) { }
         }
     });
 }
@@ -131,7 +131,7 @@ function loadPlugins(app, pluginNames) {
  * @returns {Object} 挂载后的应用实例
  */
 function mountApp(app, selector = '#app') {
-    return window.safeExecute(() => {
+    return safeExecute(() => {
         const element = document.querySelector(selector);
         if (!element) {
             throw new Error(`DOM元素未找到: ${selector}`);
@@ -139,7 +139,7 @@ function mountApp(app, selector = '#app') {
         
         // 直接传入 DOM 元素，避免某些环境下 selector 触发的内部 nextSibling 错误
         const mountedApp = app.mount(element);
-        try { window.logInfo(`[应用挂载] 应用已挂载到: ${selector}`); } catch (_) { /* 兼容性静默 */ }
+        try { logInfo(`[应用挂载] 应用已挂载到: ${selector}`); } catch (_) { }
         return mountedApp;
     }, '应用挂载');
 }
@@ -151,7 +151,7 @@ function mountApp(app, selector = '#app') {
  * @returns {Promise<Object>} 挂载后的应用实例
  */
 async function createAndMountApp(options = {}, selector = '#app') {
-    try { if (window.timeStart) window.timeStart('app:createAndMount'); } catch (_) { }
+    timeStart('app:createAndMount');
     // 在挂载前，从目标元素抓取静态模板并清空，避免DOM不一致导致的挂载错误
     const element = document.querySelector(selector);
     if (!element) {
@@ -163,7 +163,7 @@ async function createAndMountApp(options = {}, selector = '#app') {
     const app = await createVueApp({ ...options, rootTemplate });
     try {
         const mounted = mountApp(app, selector);
-        try { if (window.timeEnd) window.timeEnd('app:createAndMount'); } catch (_) { }
+        timeEnd('app:createAndMount');
         return mounted;
     } catch (e) {
         // 回退方案：在body末尾创建全新容器再尝试一次，以规避个别环境DOM解析异常
@@ -179,7 +179,7 @@ async function createAndMountApp(options = {}, selector = '#app') {
             }
             const app2 = await createVueApp({ ...options, rootTemplate });
             const mounted2 = mountApp(app2, '#' + fallbackId);
-            try { if (window.timeEnd) window.timeEnd('app:createAndMount'); } catch (_) { }
+            timeEnd('app:createAndMount');
             return mounted2;
         } catch (_) {
             throw e;
@@ -315,13 +315,13 @@ async function createBaseView(config = {}) {
         cssFiles,
         componentModules,
         onError: (error) => {
-            console.error('[视图错误]', error);
+            logError('[视图错误]', error);
         }
     }, selector);
 
     // 执行挂载后回调
     if (typeof onMounted === 'function') {
-        window.safeExecute(() => {
+        safeExecute(() => {
             onMounted(app);
         }, '挂载后回调');
     }
@@ -336,28 +336,58 @@ async function createBaseView(config = {}) {
  * @returns {Promise} 等待完成的Promise
  */
 function waitForComponents(componentNames, timeout = 5000) {
+    const names = Array.isArray(componentNames) ? componentNames.filter(Boolean) : [];
+    const pending = new Set(names.filter((name) => typeof window[name] === 'undefined'));
+    if (!pending.size) return Promise.resolve();
+
     return new Promise((resolve, reject) => {
+        let settled = false;
         const startTime = Date.now();
-        
-        const checkComponents = () => {
-            const allLoaded = componentNames.every(name => 
-                typeof window[name] !== 'undefined'
-            );
-            
-            if (allLoaded) {
-                resolve();
-                return;
-            }
-            
-            if (Date.now() - startTime > timeout) {
-                reject(createError(`组件加载超时: ${componentNames.join(', ')}`, ErrorTypes.RUNTIME, '组件注册', ErrorCodes.COMPONENT_LOAD_TIMEOUT));
-                return;
-            }
-            
-            setTimeout(checkComponents, 100);
+        const cleanups = [];
+
+        const settle = (error) => {
+            if (settled) return;
+            settled = true;
+            cleanups.forEach((fn) => {
+                try { fn(); } catch (_) { }
+            });
+            if (error) reject(error);
+            else resolve();
         };
-        
-        checkComponents();
+
+        pending.forEach((name) => {
+            const eventName = `${name}Loaded`;
+            const handler = () => {
+                pending.delete(name);
+                if (!pending.size) settle();
+            };
+            try {
+                window.addEventListener(eventName, handler);
+                cleanups.push(() => window.removeEventListener(eventName, handler));
+            } catch (_) { }
+        });
+
+        const poll = () => {
+            if (settled) return;
+
+            pending.forEach((name) => {
+                if (typeof window[name] !== 'undefined') pending.delete(name);
+            });
+
+            if (!pending.size) {
+                settle();
+                return;
+            }
+
+            if (Date.now() - startTime > timeout) {
+                settle(createError(`组件加载超时: ${names.join(', ')}`, ErrorTypes.RUNTIME, '组件注册', ErrorCodes.COMPONENT_LOAD_TIMEOUT));
+                return;
+            }
+
+            setTimeout(poll, 100);
+        };
+
+        poll();
     });
 }
 
@@ -380,11 +410,13 @@ function loadJSFiles(jsFiles) {
         .filter(Boolean)
         .map(async (jsFile) => {
             try {
-                try { if (window.timeStart) window.timeStart(`module:import ${jsFile}`); } catch (_) { }
+                timeStart(`module:import ${jsFile}`);
                 await import(jsFile);
-                try { if (window.timeEnd) window.timeEnd(`module:import ${jsFile}`); } catch (_) { }
+                timeEnd(`module:import ${jsFile}`);
                 return;
-            } catch (_) { }
+            } catch (error) {
+                try { logWarn(`[模块加载] import 失败，回退为 script 注入: ${jsFile}`, error); } catch (_) { }
+            }
 
             const targetSrc = new URL(jsFile, location.href).href;
             const exists = Array.from(document.querySelectorAll('script[type="module"][src]')).some(script => {

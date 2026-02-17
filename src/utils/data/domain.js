@@ -331,3 +331,8 @@ export function extractDomainCategory(item) {
     const domain = extractDomain(item.link);
     return getDomainCategory(domain);
 }
+
+export function categorizeNewsItem(item) {
+    if (!item) return getDomainCategory('');
+    return extractDomainCategory(item);
+}

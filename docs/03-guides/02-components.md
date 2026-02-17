@@ -24,11 +24,13 @@ src/components/<scope>/<componentName>/
 - 搜索头组件：[searchHeader](../../src/components/common/searchHeader)
 - 新闻列表组件：[newsList](../../src/components/business/newsList)
 - 通用基础组件：
-  - [baseModal](../../src/components/common/baseModal)
-  - [baseLoading](../../src/components/common/baseLoading)
-  - [baseEmptyState](../../src/components/common/baseEmptyState)
-  - [baseErrorState](../../src/components/common/baseErrorState)
-  - [baseIconButton](../../src/components/common/baseIconButton)
+  - [yiModal](../../src/components/common/yiModal)
+  - [yiLoading](../../src/components/common/yiLoading)
+  - [yiEmptyState](../../src/components/common/yiEmptyState)
+  - [yiErrorState](../../src/components/common/yiErrorState)
+  - [yiIconButton](../../src/components/common/yiIconButton)
+  - [yiButton](../../src/components/common/yiButton)
+  - [yiTag](../../src/components/common/yiTag)
 
 也存在只有 JS + CSS 的组件（没有独立 HTML），由 `index.js` 内联模板或动态生成 DOM。
 
@@ -39,34 +41,34 @@ src/components/<scope>/<componentName>/
 - 默认复用现有 CSS class（通过 props 传入 className/containerClass 等），避免大改样式
 - 只做结构与交互封装，不绑定业务逻辑
 
-### BaseLoading
+### YiLoading
 
 用于统一加载态结构（spinner + 文案）。
 
 ```html
-<base-loading text="正在加载..." subtext="可选的次级说明"></base-loading>
+<yi-loading text="正在加载..." subtext="可选的次级说明"></yi-loading>
 ```
 
-### BaseErrorState
+### YiErrorState
 
 用于统一错误态结构（icon + message + 可选重试）。
 
 ```html
-<base-error-state
+<yi-error-state
   :message="error"
   icon-class="fas fa-exclamation-triangle"
   :show-retry="true"
   retry-text="重新加载"
   @retry="reload"
-></base-error-state>
+></yi-error-state>
 ```
 
-### BaseEmptyState
+### YiEmptyState
 
 用于统一空态结构（标题/副标题/提示 + 可选 icon slot）。
 
 ```html
-<base-empty-state
+<yi-empty-state
   wrapper-class="empty-state"
   :cardless="true"
   title="暂无数据"
@@ -79,15 +81,15 @@ src/components/<scope>/<componentName>/
       <i class="fas fa-inbox" aria-hidden="true"></i>
     </div>
   </template>
-</base-empty-state>
+</yi-empty-state>
 ```
 
-### BaseModal
+### YiModal
 
 用于统一遮罩弹窗结构（mask + body + Esc/点击遮罩关闭）。
 
 ```html
-<base-modal
+<yi-modal
   :visible="visible"
   wrapper-class="aicr-session-context-modal"
   mask-class="aicr-session-context-modal-mask"
@@ -97,22 +99,22 @@ src/components/<scope>/<componentName>/
   @close="close"
 >
   <div class="modal-body-content">...</div>
-</base-modal>
+</yi-modal>
 ```
 
-### BaseIconButton
+### YiIconButton
 
 用于统一“图标按钮”结构，便于复用 `.icon-button` 一类样式。
 
 ```html
-<base-icon-button
+<yi-icon-button
   class-name="icon-button"
   title="清除"
   aria-label="清除"
   @click="clear"
 >
   <i class="fas fa-times" aria-hidden="true"></i>
-</base-icon-button>
+</yi-icon-button>
 ```
 
 ## 组件注册方式（registerGlobalComponent）
@@ -126,6 +128,8 @@ src/components/<scope>/<componentName>/
 - CSS：会通过 `<link rel="stylesheet">` 注入到页面
 - HTML：会通过 `fetch()` 拉取为字符串作为 `template`
 - 注册：最终会把组件对象挂到 `window[ComponentName]`
+- 缓存：HTML 模板会按 URL 做内存缓存，并在 localStorage 里做带 TTL 的持久化缓存（默认 7 天）
+- 可观测：组件注册完成后会派发 `${ComponentName}Loaded` 事件（用于更低耦合的等待/装配）
 
 实现位置：
 
@@ -161,6 +165,6 @@ src/components/<scope>/<componentName>/
 
 ## 优化建议（偏可维护性与性能）
 
-- 组件资源缓存：对组件 HTML 模板与 CSS 加载做缓存（避免重复 fetch/重复插入 `<link>`）
-- 组件可观测性：把“组件加载开始/完成/失败/耗时”统一打点，超时提示给出更可执行的原因（路径 404 / 执行异常 / name 不一致）
+- 组件资源缓存：组件 HTML 模板已具备内存 + localStorage 缓存；CSS 注入已做去重，新增组件时尽量沿用该机制
+- 组件可观测性：优先使用 `${ComponentName}Loaded` 事件做装配等待，减少轮询带来的不确定性；超时提示优先落在“路径 404 / 执行异常 / name 不一致”
 - 组件边界：将 `common` 坚持做“纯 UI + 事件”，避免把业务流程塞进通用组件，减少耦合与复用成本

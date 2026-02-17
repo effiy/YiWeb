@@ -13,7 +13,7 @@ import {
     getTimeAgo, 
     generateCalendarDays 
 } from '/src/utils/time/date.js';
-import { categorizeNewsItem } from '/src/views/news/hooks/store.js';
+import { categorizeNewsItem } from '/src/utils/data/domain.js';
 
 /**
  * 根据文件扩展名获取文件类型
@@ -362,4 +362,3 @@ export const useComputed = (store) => {
 
     };
 };
-

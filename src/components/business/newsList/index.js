@@ -5,7 +5,7 @@
 import { getTimeAgo } from '/src/utils/time/date.js';
 import { safeExecute, createError, ErrorTypes } from '/src/utils/core/error.js';
 import { extractDomainCategory } from '/src/utils/data/domain.js';
-import { categorizeNewsItem } from '/src/views/news/hooks/store.js';
+import { categorizeNewsItem } from '/src/utils/data/domain.js';
 import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 import '/src/components/common/yiLoading/index.js';
 import '/src/components/common/yiEmptyState/index.js';

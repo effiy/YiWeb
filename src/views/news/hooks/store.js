@@ -6,26 +6,7 @@
 import { buildServiceUrl, SERVICE_MODULE } from "/src/services/helper/requestHelper.js";
 import { formatDate, isFutureDate } from "/src/utils/time/date.js";
 import { safeExecuteAsync, createError, ErrorTypes } from "/src/utils/core/error.js";
-import { extractDomainCategory } from "/src/utils/data/domain.js";
-
-/**
- * 对新闻项进行分类
- * @param {Object} item - 新闻项
- * @returns {Object} 分类信息
- */
-export const categorizeNewsItem = (item) => {
-  if (!item) {
-    return {
-      key: "unknown",
-      title: "未知来源",
-      icon: "fas fa-question-circle",
-      color: "#6c757d",
-    };
-  }
-
-  // 使用域名分类作为主要分类方式
-  return extractDomainCategory(item);
-};
+import { categorizeNewsItem } from "/src/utils/data/domain.js";
 
 // 兼容Vue2和Vue3的ref获取方式
 const vueRef =

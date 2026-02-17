@@ -34,9 +34,6 @@ YiWeb/  — 项目根目录（静态页面 + 原生 ES Modules + Vue3 CDN）
           books.txt  # 112 lines — 书单与摘要素材（供页面/功能展示）
     components/  — 可复用组件库（业务/通用/领域组件）
       business/  — 业务复用组件（偏场景）
-        calendarView/  — 日历视图（业务样式与交互）
-          index.css  # 634 lines — 日历视图样式
-          index.js  # 578 lines — 日历视图组件逻辑（渲染、交互、状态）
         newsList/  — 新闻列表（业务展示）
           index.css  # 563 lines — 新闻列表样式
           index.html  # 226 lines — 新闻列表模板
