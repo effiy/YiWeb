@@ -148,6 +148,79 @@ export function createIntersectionObserver(callback, options = {}) {
     return new IntersectionObserver(callback, {...defaultOptions, ...options});
 }
 
+export function getScrollDistanceToBottom(container) {
+    try {
+        if (!container) return 0;
+        const scrollHeight = Number(container.scrollHeight) || 0;
+        const scrollTop = Number(container.scrollTop) || 0;
+        const clientHeight = Number(container.clientHeight) || 0;
+        return scrollHeight - scrollTop - clientHeight;
+    } catch (_) {
+        return 0;
+    }
+}
+
+export function shouldAutoScrollToBottom(container, threshold = 140) {
+    try {
+        const t = Number(threshold);
+        const limit = Number.isFinite(t) ? t : 140;
+        return getScrollDistanceToBottom(container) < limit;
+    } catch (_) {
+        return true;
+    }
+}
+
+export function scrollElementToBottom(container) {
+    try {
+        if (!container) return false;
+        container.scrollTop = container.scrollHeight;
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+export function scrollIntoViewOrFallback(selector, fallbackContainer, options = {}) {
+    try {
+        const el = selector ? document.querySelector(selector) : null;
+        if (el && typeof el.scrollIntoView === 'function') {
+            const { block = 'nearest', behavior, inline } = options || {};
+            const params = {};
+            if (block) params.block = block;
+            if (behavior) params.behavior = behavior;
+            if (inline) params.inline = inline;
+            el.scrollIntoView(params);
+            return true;
+        }
+    } catch (_) { }
+    return scrollElementToBottom(fallbackContainer);
+}
+
+export function applyChatScrollRequest(container, request) {
+    try {
+        if (!request || typeof request !== 'object') return false;
+        const type = String(request.type || '');
+
+        if (type === 'index') {
+            return scrollIntoViewOrFallback(`[data-chat-idx="${Number(request.index)}"]`, container, { block: 'nearest' });
+        }
+        if (type === 'autoIndex') {
+            if (!shouldAutoScrollToBottom(container, 140)) return false;
+            return scrollIntoViewOrFallback(`[data-chat-idx="${Number(request.index)}"]`, container, { block: 'nearest' });
+        }
+        if (type === 'bottom') {
+            return scrollElementToBottom(container);
+        }
+        if (type === 'autoBottom') {
+            if (!shouldAutoScrollToBottom(container, 140)) return false;
+            return scrollElementToBottom(container);
+        }
+        return false;
+    } catch (_) {
+        return false;
+    }
+}
+
 /**
  * 安全地观察 DOM 节点
  * @param {Observer} observer - Observer 实例 (MutationObserver 或 IntersectionObserver)
@@ -367,5 +440,3 @@ export default {
     getFormData,
     setFormData
 }; 
-
-
