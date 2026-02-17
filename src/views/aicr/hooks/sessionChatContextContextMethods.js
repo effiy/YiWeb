@@ -2,6 +2,7 @@ import { normalizeFilePath } from '/src/utils/aicr/fileFieldNormalizer.js';
 
 export const createSessionChatContextContextMethods = (ctx) => {
     const {
+        store,
         safeExecute,
         files,
         selectedKey,
@@ -373,37 +374,12 @@ export const createSessionChatContextContextMethods = (ctx) => {
                     const content = String(sessionContextDraft?.value ?? '');
                     const key = selectedKey?.value;
 
-                    const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL))
-                        ? String(window.API_URL).replace(/\/+$/, '')
-                        : '';
-
-                    if (apiBase && key) {
+                    if (key && typeof store?.saveFileContent === 'function') {
                         const file = Array.isArray(files?.value)
                             ? files.value.find(f => f && (f.key === key || f.path === key))
                             : null;
                         const path = normalizeFilePath(file?.path || file?.key || key || '');
-                        const cleanPath = path.startsWith('static/') ? normalizeFilePath(path.slice(7)) : path;
-
-                        const res = await fetch(`${apiBase}/write-file`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ target_file: cleanPath, content, is_base64: false })
-                        });
-                        if (!res.ok) {
-                            const errorData = await res.json().catch(() => ({}));
-                            throw new Error(errorData.message || `保存失败: ${res.status}`);
-                        }
-                        const result = await res.json().catch(() => ({}));
-                        if (result && result.code != null && result.code !== 0 && result.code !== 200) {
-                            throw new Error(result.message || '保存失败');
-                        }
-
-                        if (Array.isArray(files?.value)) {
-                            const idx = files.value.findIndex(f => f && (f.key === key || f.path === key));
-                            if (idx >= 0) {
-                                files.value[idx] = { ...files.value[idx], content, __fromStatic: true };
-                            }
-                        }
+                        await store.saveFileContent(path, content, { isBase64: false });
                     }
 
                     if (activeSession?.value) {

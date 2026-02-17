@@ -166,36 +166,11 @@ export const createSessionActionMethods = ({
                     }
 
                     try {
-                        const baseUrl = window.API_URL || '';
-                        const url = `${baseUrl.replace(/\/$/, '')}/write-file`;
-
-                        const cleanPath = filePath.startsWith('static/')
-                            ? filePath.slice(7)
-                            : filePath;
-
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                target_file: cleanPath,
-                                content: sessionData.pageContent || '',
-                                is_base64: false
-                            })
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json().catch(() => ({}));
-                            throw new Error(errorData.message || `创建文件失败: ${response.status}`);
+                        if (typeof store?.saveFileContent !== 'function') {
+                            throw new Error('保存能力不可用');
                         }
-
-                        const result = await response.json();
-                        if (result.code !== 0 && result.code !== 200) {
-                            throw new Error(result.message || '创建文件失败');
-                        }
-
-                        console.log('[handleSessionCreate] 文件已通过 write-file 创建:', cleanPath);
+                        await store.saveFileContent(filePath, sessionData.pageContent || '', { isBase64: false });
+                        console.log('[handleSessionCreate] 文件已通过 write-file 创建:', filePath);
                     } catch (writeError) {
                         console.warn('[handleSessionCreate] 通过 write-file 创建文件失败（已忽略）:', writeError?.message);
                     }

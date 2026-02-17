@@ -127,83 +127,55 @@ export const createSelectSessionForChat = ({
             }
 
             if (sessionContextMode) sessionContextMode.value = openContextEditor ? 'split' : (sessionContextMode.value || 'edit');
-
-            const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL)) ? String(window.API_URL).replace(/\/+$/, '') : '';
             let staticContent = '';
+            let cleanPath = '';
 
-            if (apiBase) {
-                let cleanPath = '';
-
-                if (fileKey) {
-                    cleanPath = normalizeFilePath(fileKey || '');
-                    if (cleanPath.startsWith('static/')) {
-                        cleanPath = cleanPath.substring(7);
-                    }
-                    cleanPath = normalizeFilePath(cleanPath);
-                } else {
-                    const tags = Array.isArray(session.tags) ? session.tags : [];
-                    let currentPath = '';
-                    tags.forEach((folderName) => {
-                        if (!folderName || (folderName.toLowerCase && folderName.toLowerCase() === 'default')) return;
-                        currentPath = currentPath ? currentPath + '/' + folderName : folderName;
-                    });
-                    let fileName = session.title || 'Untitled';
-                    fileName = String(fileName).trim().replace(/\s+/g, '_').replace(/\//g, '-');
-                    cleanPath = currentPath ? currentPath + '/' + fileName : fileName;
-                    cleanPath = normalizeFilePath(cleanPath);
-                    if (cleanPath.startsWith('static/')) {
-                        cleanPath = cleanPath.substring(7);
-                    }
-                    cleanPath = normalizeFilePath(cleanPath);
+            if (fileKey) {
+                cleanPath = normalizeFilePath(fileKey || '');
+                if (cleanPath.startsWith('static/')) {
+                    cleanPath = cleanPath.substring(7);
                 }
-
-                if (!cleanPath) {
-                    const pageDesc = session.pageDescription || '';
-                    if (pageDesc && pageDesc.includes('文件：')) {
-                        cleanPath = pageDesc.replace('文件：', '').trim();
-                        cleanPath = normalizeFilePath(cleanPath);
-                        if (cleanPath.startsWith('static/')) {
-                            cleanPath = cleanPath.substring(7);
-                        }
-                        cleanPath = normalizeFilePath(cleanPath);
-                    }
-                }
-
-                if (!cleanPath && targetSessionKey) {
-                    cleanPath = `session_${targetSessionKey}.txt`;
-                }
-
-                if (cleanPath) {
-                    try {
-                        console.log('[selectSessionForChat] 调用 read-file 接口，路径:', cleanPath);
-                        const res = await fetch(`${apiBase}/read-file`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ target_file: cleanPath })
-                        });
-                        if (res.ok) {
-                            const json = await res.json();
-                            if ((json.code === 200 || json.code === 0) && json.data && json.data.content) {
-                                if (json.data.type !== 'base64') {
-                                    staticContent = json.data.content;
-                                    console.log('[selectSessionForChat] read-file 接口调用成功，内容长度:', staticContent.length);
-                                } else {
-                                    console.log('[selectSessionForChat] read-file 接口返回 base64 类型，跳过');
-                                }
-                            } else {
-                                console.warn('[selectSessionForChat] read-file 接口返回异常:', json);
-                            }
-                        } else {
-                            console.warn('[selectSessionForChat] read-file 接口调用失败，状态码:', res.status);
-                        }
-                    } catch (error) {
-                        console.error('[selectSessionForChat] read-file 接口调用异常:', error);
-                    }
-                } else {
-                    console.warn('[selectSessionForChat] 无法确定文件路径，跳过 read-file 接口调用');
-                }
+                cleanPath = normalizeFilePath(cleanPath);
             } else {
-                console.warn('[selectSessionForChat] API_URL 未配置，跳过 read-file 接口调用');
+                const tags = Array.isArray(session.tags) ? session.tags : [];
+                let currentPath = '';
+                tags.forEach((folderName) => {
+                    if (!folderName || (folderName.toLowerCase && folderName.toLowerCase() === 'default')) return;
+                    currentPath = currentPath ? currentPath + '/' + folderName : folderName;
+                });
+                let fileName = session.title || 'Untitled';
+                fileName = String(fileName).trim().replace(/\s+/g, '_').replace(/\//g, '-');
+                cleanPath = currentPath ? currentPath + '/' + fileName : fileName;
+                cleanPath = normalizeFilePath(cleanPath);
+                if (cleanPath.startsWith('static/')) {
+                    cleanPath = cleanPath.substring(7);
+                }
+                cleanPath = normalizeFilePath(cleanPath);
+            }
+
+            if (!cleanPath) {
+                const pageDesc = session.pageDescription || '';
+                if (pageDesc && pageDesc.includes('文件：')) {
+                    cleanPath = pageDesc.replace('文件：', '').trim();
+                    cleanPath = normalizeFilePath(cleanPath);
+                    if (cleanPath.startsWith('static/')) {
+                        cleanPath = cleanPath.substring(7);
+                    }
+                    cleanPath = normalizeFilePath(cleanPath);
+                }
+            }
+
+            if (!cleanPath && targetSessionKey) {
+                cleanPath = `session_${targetSessionKey}.txt`;
+            }
+
+            if (cleanPath && typeof store?.readFileContent === 'function') {
+                try {
+                    const res = await store.readFileContent(cleanPath);
+                    if (res && res.type !== 'base64') {
+                        staticContent = String(res.content || '');
+                    }
+                } catch (_) { }
             }
             if (sessionContextDraft) sessionContextDraft.value = String(staticContent || '');
             if (activeSession?.value) {

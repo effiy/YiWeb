@@ -78,6 +78,10 @@ export const createFolderTransferMethods = ({
     };
 
     const callWriteFile = async ({ targetPath, content, isBase64 }) => {
+        if (typeof store?.saveFileContent === 'function') {
+            await store.saveFileContent(targetPath, String(content ?? ''), { isBase64: !!isBase64 });
+            return true;
+        }
         const apiBase = getApiBaseUrl();
         if (!apiBase) {
             throw createError('API地址未配置，无法写入文件', ErrorTypes.VALIDATION, '目录导入');
@@ -320,11 +324,6 @@ export const createFolderTransferMethods = ({
                 }
                 const zip = new JSZip();
 
-                const apiBase = getApiBaseUrl();
-                if (!apiBase) {
-                    throw createError('API地址未配置，无法导出', ErrorTypes.VALIDATION, '目录导出');
-                }
-
                 for (let i = 0; i < fileKeys.length; i++) {
                     const fileKey = fileKeys[i];
                     const rel = fileKey.startsWith(folderKey + '/') ? fileKey.slice(folderKey.length + 1) : extractFileName(fileKey);
@@ -338,25 +337,14 @@ export const createFolderTransferMethods = ({
                     cleanPath = normalizeFilePath(cleanPath);
 
                     try {
-                        const res = await fetch(`${apiBase}/read-file`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ target_file: cleanPath })
-                        });
-                        if (!res.ok) throw new Error(`读取失败: ${res.status}`);
-                        const json = await res.json().catch(() => ({}));
-                        const ok = json && (json.code === 0 || json.code === 200);
-                        const data = json?.data || {};
-                        const content = data?.content;
-                        const type = String(data?.type || '');
-                        if (ok && typeof content === 'string') {
-                            if (type === 'base64') {
-                                zip.file(relPath, content, { base64: true });
-                            } else {
-                                zip.file(relPath, content);
-                            }
+                        if (typeof store?.readFileContent !== 'function') {
+                            throw new Error('读取能力不可用');
+                        }
+                        const { type, content } = await store.readFileContent(cleanPath);
+                        if (type === 'base64') {
+                            zip.file(relPath, String(content || ''), { base64: true });
                         } else {
-                            zip.file(relPath, '');
+                            zip.file(relPath, String(content || ''));
                         }
                     } catch (e) {
                         console.warn('[目录导出] 读取失败，写入空文件:', fileKey, e?.message || e);

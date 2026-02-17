@@ -330,10 +330,136 @@ export function createAicrStoreFileContentOps(deps, state, internals) {
         state.selectedKey.value = normalizeKey(key);
     };
 
+    const normalizeToWriteTargetFile = (rawPath) => {
+        let cleanPath = normalizeFilePath(String(rawPath || '').trim());
+        if (cleanPath.startsWith('static/')) cleanPath = cleanPath.substring(7);
+        cleanPath = cleanPath.replace(/^\/+/, '');
+        return cleanPath;
+    };
+
+    const readFileContent = async (rawPath) => {
+        return safeExecuteAsync(async () => {
+            const raw = String(rawPath || '').trim();
+            if (!raw) throw new Error('文件路径无效，无法读取');
+
+            const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL))
+                ? String(window.API_URL).replace(/\/+$/, '')
+                : '';
+            if (!apiBase) throw new Error('API地址未配置，无法读取');
+
+            const targetFile = normalizeToWriteTargetFile(raw);
+            if (!targetFile) throw new Error('文件路径无效，无法读取');
+
+            const res = await fetch(`${apiBase}/read-file`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target_file: targetFile })
+            });
+
+            if (!res.ok) {
+                throw new Error(`读取失败: ${res.status} ${res.statusText}`);
+            }
+
+            const json = await res.json().catch(() => ({}));
+            if (!json || (json.code !== 200 && json.code !== 0) || !json.data) {
+                throw new Error(json?.message || '读取失败');
+            }
+
+            const type = json.data.type === 'base64' ? 'base64' : 'text';
+            const content = typeof json.data.content === 'string' ? json.data.content : '';
+            return { type, content };
+        }, '读取文件内容');
+    };
+
+    const updateCachedFileContent = (rawPath, content) => {
+        const target = normalizeFilePath(String(rawPath || '').trim());
+        if (!target) return;
+
+        const nextContent = String(content == null ? '' : content);
+        if (!Array.isArray(state.files.value)) state.files.value = [];
+
+        const list = state.files.value.slice();
+        let updated = false;
+
+        for (let i = 0; i < list.length; i++) {
+            const it = list[i];
+            if (!it) continue;
+            const candidates = [it.path, it.treeKey, it.key, it.name]
+                .filter(Boolean)
+                .map((v) => normalizeFilePath(v));
+            if (candidates.includes(target)) {
+                list[i] = { ...it, content: nextContent, contentBase64: '', __fromStatic: true };
+                updated = true;
+                break;
+            }
+        }
+
+        if (!updated) {
+            list.push({
+                key: target,
+                path: target,
+                name: target.split('/').pop() || target,
+                content: nextContent,
+                type: 'file',
+                __fromStatic: true
+            });
+        }
+
+        state.files.value = list;
+    };
+
+    const saveFileContent = async (rawPath, content, options = {}) => {
+        return safeExecuteAsync(async () => {
+            const { isBase64 = false } = options || {};
+            const raw = String(rawPath || '').trim();
+            if (!raw) throw new Error('文件路径无效，无法保存');
+
+            const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL))
+                ? String(window.API_URL).replace(/\/+$/, '')
+                : '';
+            if (!apiBase) throw new Error('API地址未配置，无法保存');
+
+            const targetFile = normalizeToWriteTargetFile(raw);
+            if (!targetFile) throw new Error('文件路径无效，无法保存');
+
+            const res = await fetch(`${apiBase}/write-file`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    target_file: targetFile,
+                    content: String(content == null ? '' : content),
+                    is_base64: !!isBase64
+                })
+            });
+
+            if (!res.ok) {
+                throw new Error(`保存失败: ${res.status} ${res.statusText}`);
+            }
+
+            let ok = true;
+            try {
+                const json = await res.json();
+                if (json && typeof json.code !== 'undefined') {
+                    ok = (json.code === 200 || json.code === 0);
+                }
+                if (json && json.success === false) ok = false;
+            } catch (_) { }
+
+            if (!ok) throw new Error('保存失败');
+
+            if (!isBase64) {
+                updateCachedFileContent(raw, String(content == null ? '' : content));
+            }
+            return { success: true };
+        }, '保存文件内容');
+    };
+
     return {
         loadFiles,
         loadFileByKey,
         normalizeKey,
-        setSelectedKey
+        setSelectedKey,
+        readFileContent,
+        saveFileContent
     };
 }

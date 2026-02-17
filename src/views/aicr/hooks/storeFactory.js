@@ -25,6 +25,12 @@ export const createStore = () => {
         state
     );
 
+    const fileContentOps = createAicrStoreFileContentOps(
+        { safeExecuteAsync, normalizeFilePath },
+        state,
+        internals
+    );
+
     const fileTreeOps = createAicrStoreFileTreeOps(
         {
             safeExecuteAsync,
@@ -34,17 +40,12 @@ export const createStore = () => {
             normalizeFileObject,
             normalizeTreeNode,
             buildFileTreeFromSessions,
-            getFileDeleteService
+            getFileDeleteService,
+            saveFileContent: fileContentOps.saveFileContent
         },
         state,
         internals,
         { loadSessions: sessionsOps.loadSessions }
-    );
-
-    const fileContentOps = createAicrStoreFileContentOps(
-        { safeExecuteAsync, normalizeFilePath },
-        state,
-        internals
     );
 
     const boundLoadFiles = () => fileContentOps.loadFiles(fileTreeOps.loadFileTree);

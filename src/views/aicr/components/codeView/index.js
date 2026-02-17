@@ -1,5 +1,5 @@
 import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
-import { safeExecute } from '/src/utils/core/error.js';
+import { safeExecute, safeExecuteAsync } from '/src/utils/core/error.js';
 import { normalizeFilePath } from '/src/utils/aicr/fileFieldNormalizer.js';
 
 const normalizePath = (v) => normalizeFilePath(v);
@@ -53,6 +53,10 @@ const componentOptions = {
     name: 'CodeView',
     html: '/src/views/aicr/components/codeView/index.html',
     emits: ['create-session'],
+    setup() {
+        if (typeof Vue === 'undefined' || typeof Vue.inject !== 'function') return {};
+        return { viewContext: Vue.inject('viewContext', null) };
+    },
     props: {
         file: {
             type: [Object, null],
@@ -341,7 +345,7 @@ const componentOptions = {
                 }
             } catch (_) { }
             const textToCopy = `${window.location.origin}${window.location.pathname}${window.location.search}${hash}`;
-            safeExecute(async () => {
+            safeExecuteAsync(async () => {
                 try {
                     if (navigator.clipboard && navigator.clipboard.writeText) {
                         await navigator.clipboard.writeText(textToCopy);
@@ -396,67 +400,43 @@ const componentOptions = {
         },
         async saveEditedFile() {
             if (this.editSaving) return;
-            return safeExecute(async () => {
+            return safeExecuteAsync(async () => {
                 const f = this.file || {};
                 const rawPath = String(f.path || f.treeKey || '').trim();
                 if (!rawPath) {
                     throw new Error('文件路径无效，无法保存');
                 }
-                const apiBase = (window.API_URL && /^https?:\/\//i.test(window.API_URL))
-                    ? String(window.API_URL).replace(/\/+$/, '')
-                    : '';
-                if (!apiBase) {
-                    throw new Error('API地址未配置，无法保存');
+                const saveFn = this.viewContext && typeof this.viewContext.saveFileContent === 'function'
+                    ? this.viewContext.saveFileContent
+                    : null;
+                if (!saveFn) {
+                    throw new Error('保存能力不可用');
                 }
-                let cleanPath = normalizePath(rawPath);
-                if (cleanPath.startsWith('static/')) cleanPath = cleanPath.substring(7);
-                cleanPath = cleanPath.replace(/^\/+/, '');
                 this.editSaving = true;
                 this.saveError = '';
-                const res = await fetch(`${apiBase}/write-file`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ target_file: cleanPath, content: String(this.editingFileContent || ''), is_base64: false })
-                });
-                if (!res.ok) {
-                    throw new Error(`保存失败: ${res.status} ${res.statusText}`);
-                }
-                let ok = true;
-                try {
-                    const json = await res.json();
-                    if (json && typeof json.code !== 'undefined') {
-                        ok = (json.code === 200 || json.code === 0);
-                    }
-                    if (json && json.success === false) ok = false;
-                } catch (_) { }
-                if (!ok) {
-                    throw new Error('保存失败');
-                }
                 const content = String(this.editingFileContent || '');
+                try {
+                    await saveFn(rawPath, content);
+                } finally {
+                    this.editSaving = false;
+                }
                 if (f) {
                     try {
                         f.content = content;
                         if (f.contentBase64) f.contentBase64 = '';
                     } catch (_) { }
                 }
-                const store = window.aicrStore;
-                const list = store && store.files && store.files.value;
-                if (Array.isArray(list)) {
-                    const currentPath = normalizePath(f.path || f.treeKey || f.name || '');
-                    const idx = list.findIndex(it => {
-                        const p = normalizePath(it && (it.path || it.treeKey || it.name || it.key) || '');
-                        return p && currentPath && p === currentPath;
-                    });
-                    if (idx >= 0) {
-                        list[idx] = { ...list[idx], ...f, content, __fromStatic: true };
-                    }
-                }
                 this.isEditingFile = false;
                 this.editingFileContent = '';
-            }, '保存文件编辑');
+            }, '保存文件编辑', (errorInfo) => {
+                try {
+                    this.saveError = errorInfo?.message || '保存失败';
+                    this.editSaving = false;
+                } catch (_) { }
+            });
         },
         copyEntireFile() {
-            return safeExecute(async () => {
+            return safeExecuteAsync(async () => {
                 const text = String(this.rawContent || '');
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     await navigator.clipboard.writeText(text);
