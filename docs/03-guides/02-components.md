@@ -168,3 +168,4 @@ src/components/<scope>/<componentName>/
 - 组件资源缓存：组件 HTML 模板已具备内存 + localStorage 缓存；CSS 注入已做去重，新增组件时尽量沿用该机制
 - 组件可观测性：优先使用 `${ComponentName}Loaded` 事件做装配等待，减少轮询带来的不确定性；超时提示优先落在“路径 404 / 执行异常 / name 不一致”
 - 组件边界：将 `common` 坚持做“纯 UI + 事件”，避免把业务流程塞进通用组件，减少耦合与复用成本
+- 组件职责：组件内部尽量不直接发起网络请求；优先通过页面装配层提供的能力（例如 `provide/inject` 或 props 传入的函数）来触发“数据动作”，把协议与鉴权细节收敛到 `services`

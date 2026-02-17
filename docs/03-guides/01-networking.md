@@ -47,7 +47,8 @@
 - Token 存储与读取：[authUtils.js](../../src/services/helper/authUtils.js)
   - localStorage key：`YiWeb.apiToken.v1`
   - 请求头注入：`getAuthHeaders()` → `{ 'X-Token': token }`
-- 注入点：`requestHelper.js` 的请求拦截器会在发送前自动合并 `X-Token`
+- 注入点：`requestHelper.js` 的请求拦截器会在发送前自动合并 `X-Token`（默认开启）
+- 可选关闭：对“第三方 URL / Webhook”等不应携带 token 的请求，传 `withAuth: false`
 
 401 处理：
 
@@ -68,6 +69,31 @@
 
 - 直接使用 `window.API_URL` / `window.DATA_URL`
 - 或使用 `src/config.js` 暴露的 `buildApiUrl()` / `buildDataUrl()`
+
+### 1.1) 第三方 Webhook / 外部 URL（不带鉴权）
+
+原则：
+
+- 不要把 `X-Token` 带到外部域名（减少泄露面）
+- 不要对外部 URL 触发登录提示（避免“误判 401”干扰用户）
+
+推荐写法（以 `postData` 为例）：
+
+```js
+import { postData } from "/src/services/index.js";
+
+await postData(
+  webhookUrl,
+  payload,
+  {},
+  {
+    withAuth: false,
+    showError: false,
+    promptLogin: false,
+    autoClearToken: false,
+  },
+);
+```
 
 ### 2) 流式请求（Prompt / SSE）
 
