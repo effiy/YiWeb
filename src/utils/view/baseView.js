@@ -28,6 +28,26 @@ const ViewConfig = {
     }
 };
 
+const safeLogInfo = (...args) => {
+    try { logInfo(...args); } catch (_) { }
+};
+
+const safeLogWarn = (...args) => {
+    try { logWarn(...args); } catch (_) { }
+};
+
+const safeLogError = (...args) => {
+    try { logError(...args); } catch (_) { }
+};
+
+const isVueRef = (value) => {
+    try {
+        return typeof Vue !== 'undefined' && typeof Vue.isRef === 'function' && Vue.isRef(value);
+    } catch (_) {
+        return false;
+    }
+};
+
 /**
  * 创建Vue应用实例
  * @param {Object} options - 应用配置选项
@@ -101,9 +121,9 @@ async function registerComponents(app, componentNames) {
             // 同时注册 kebab-case 名称（Vue 3 自动转换，但显式注册更安全）
             const kebabName = name.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
             app.component(kebabName, window[name]);
-            try { logInfo(`[组件注册] 已注册组件: ${name} (${kebabName})`); } catch (_) { }
+            safeLogInfo(`[组件注册] 已注册组件: ${name} (${kebabName})`);
         } else {
-            try { logWarn(`[组件注册] 组件未找到: ${name}`); } catch (_) { }
+            safeLogWarn(`[组件注册] 组件未找到: ${name}`);
         }
     });
 }
@@ -117,9 +137,9 @@ function loadPlugins(app, pluginNames) {
     pluginNames.forEach(pluginName => {
         try {
             // 这里可以扩展插件加载逻辑
-            try { logInfo(`[插件加载] 加载插件: ${pluginName}`); } catch (_) { }
+            safeLogInfo(`[插件加载] 加载插件: ${pluginName}`);
         } catch (error) {
-            try { logError(`[插件加载] 插件加载失败: ${pluginName}`, error); } catch (_) { }
+            safeLogError(`[插件加载] 插件加载失败: ${pluginName}`, error);
         }
     });
 }
@@ -139,7 +159,7 @@ function mountApp(app, selector = '#app') {
         
         // 直接传入 DOM 元素，避免某些环境下 selector 触发的内部 nextSibling 错误
         const mountedApp = app.mount(element);
-        try { logInfo(`[应用挂载] 应用已挂载到: ${selector}`); } catch (_) { }
+        safeLogInfo(`[应用挂载] 应用已挂载到: ${selector}`);
         return mountedApp;
     }, '应用挂载');
 }
@@ -245,7 +265,7 @@ async function createBaseView(config = {}) {
             Object.keys(extraData).forEach(key => {
                 const value = extraData[key];
                 // 如果已经是 ref，直接使用；否则创建 ref
-                if (value && typeof value === 'object' && 'value' in value) {
+                if (isVueRef(value)) {
                     reactiveExtraData[key] = value;
                 } else {
                     reactiveExtraData[key] = Vue.ref(value);
@@ -415,7 +435,7 @@ function loadJSFiles(jsFiles) {
                 timeEnd(`module:import ${jsFile}`);
                 return;
             } catch (error) {
-                try { logWarn(`[模块加载] import 失败，回退为 script 注入: ${jsFile}`, error); } catch (_) { }
+                safeLogWarn(`[模块加载] import 失败，回退为 script 注入: ${jsFile}`, error);
             }
 
             const targetSrc = new URL(jsFile, location.href).href;
