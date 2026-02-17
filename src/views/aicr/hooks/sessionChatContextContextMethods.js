@@ -1,3 +1,5 @@
+import { normalizeFilePath } from '/src/utils/aicr/fileFieldNormalizer.js';
+
 export const createSessionChatContextContextMethods = (ctx) => {
     const {
         safeExecute,
@@ -379,8 +381,8 @@ export const createSessionChatContextContextMethods = (ctx) => {
                         const file = Array.isArray(files?.value)
                             ? files.value.find(f => f && (f.key === key || f.path === key))
                             : null;
-                        const path = String(file?.path || file?.key || key || '').replace(/\\/g, '/').replace(/^\/+/, '');
-                        const cleanPath = path.startsWith('static/') ? path.slice(7) : path;
+                        const path = normalizeFilePath(file?.path || file?.key || key || '');
+                        const cleanPath = path.startsWith('static/') ? normalizeFilePath(path.slice(7)) : path;
 
                         const res = await fetch(`${apiBase}/write-file`, {
                             method: 'POST',

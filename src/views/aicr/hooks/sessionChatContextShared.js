@@ -1,4 +1,5 @@
 import { createSessionChatContextWelcomeCard } from './sessionChatContextShared.welcomeCard.js';
+import { normalizeFilePath } from '/src/utils/aicr/fileFieldNormalizer.js';
 
 export const createSessionChatContextShared = ({
     store,
@@ -706,11 +707,11 @@ export const createSessionChatContextShared = ({
                 let cleanPath = '';
  
                 if (fileKey) {
-                    cleanPath = String(fileKey || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                        cleanPath = normalizeFilePath(fileKey || '');
                     if (cleanPath.startsWith('static/')) {
                         cleanPath = cleanPath.substring(7);
                     }
-                    cleanPath = cleanPath.replace(/^\/+/, '');
+                        cleanPath = normalizeFilePath(cleanPath);
                 } else {
                     const tags = Array.isArray(session.tags) ? session.tags : [];
                     let currentPath = '';
@@ -721,22 +722,22 @@ export const createSessionChatContextShared = ({
                     let fileName = session.title || 'Untitled';
                     fileName = String(fileName).trim().replace(/\s+/g, '_').replace(/\//g, '-');
                     cleanPath = currentPath ? currentPath + '/' + fileName : fileName;
-                    cleanPath = cleanPath.replace(/\\/g, '/').replace(/^\/+/, '');
+                        cleanPath = normalizeFilePath(cleanPath);
                     if (cleanPath.startsWith('static/')) {
                         cleanPath = cleanPath.substring(7);
                     }
-                    cleanPath = cleanPath.replace(/^\/+/, '');
+                        cleanPath = normalizeFilePath(cleanPath);
                 }
  
                 if (!cleanPath) {
                     const pageDesc = session.pageDescription || '';
                     if (pageDesc && pageDesc.includes('文件：')) {
                         cleanPath = pageDesc.replace('文件：', '').trim();
-                        cleanPath = cleanPath.replace(/\\/g, '/').replace(/^\/+/, '');
+                            cleanPath = normalizeFilePath(cleanPath);
                         if (cleanPath.startsWith('static/')) {
                             cleanPath = cleanPath.substring(7);
                         }
-                        cleanPath = cleanPath.replace(/^\/+/, '');
+                            cleanPath = normalizeFilePath(cleanPath);
                     }
                 }
  

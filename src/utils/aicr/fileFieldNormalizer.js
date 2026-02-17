@@ -33,10 +33,8 @@ export function normalizeFilePath(path) {
         // 4. 合并连续的斜杠
         s = s.replace(/\/+/g, '/');
         
-        // 5. 移除结尾的斜杠（除非是根路径）
-        if (s.length > 1 && s.endsWith('/')) {
-            s = s.replace(/\/+$/, '');
-        }
+        // 5. 移除结尾的斜杠
+        s = s.replace(/\/+$/, '');
         
         return s;
     } catch (e) {
@@ -58,19 +56,6 @@ export function extractFileName(path) {
 }
 
 /**
- * 从文件路径提取目录路径
- * @param {string} path - 文件路径
- * @returns {string} 目录路径（不包含文件名）
- */
-export function extractDirPath(path) {
-    if (!path || typeof path !== 'string') return '';
-    const normalized = normalizeFilePath(path);
-    const parts = normalized.split('/').filter(Boolean);
-    if (parts.length <= 1) return '';
-    return parts.slice(0, -1).join('/');
-}
-
-/**
  * 规范化文件对象，统一字段结构
  * 统一字段规则：
  * - key: 规范化后的文件路径（主要标识）
@@ -89,7 +74,7 @@ export function normalizeFileObject(file) {
     }
     
     // 提取原始路径（优先使用 key，兼容旧字段）
-    const rawPath = file.path || '';
+    const rawPath = file.key || file.path || '';
     
     // 规范化路径
     const normalizedPath = normalizeFilePath(rawPath);
@@ -116,10 +101,12 @@ export function normalizeFileObject(file) {
     }
     
     // 确定类型
-    const fileType = file.type || (normalizedPath.endsWith('/') ? 'folder' : 'file');
+    const fileType = file.type || 'file';
+    const now = Date.now();
     
     // 构建规范化对象
     const normalized = {
+        key: normalizedPath,
         path: normalizedPath,
         
         // 基本信息
@@ -131,9 +118,9 @@ export function normalizeFileObject(file) {
         size: fileSize,
         
         // 时间戳
-        createdAt: file.createdAt || file.createdTime || Date.now(),
-        updatedAt: file.updatedAt || file.updatedTime || Date.now(),
-        modified: file.modified || file.updatedAt || file.updatedTime || Date.now()
+        createdAt: file.createdAt || file.createdTime || now,
+        updatedAt: file.updatedAt || file.updatedTime || now,
+        modified: file.modified || file.updatedAt || file.updatedTime || now
     };
     
     return normalized;
@@ -162,18 +149,16 @@ export function normalizeTreeNode(node) {
     // 规范化路径
     const normalizedPath = normalizeFilePath(rawPath);
     
-    // 构建完整路径
-    let fullPath = normalizedPath;
-    
     // 提取名称
     const nodeName = node.name || extractFileName(normalizedPath) || normalizedPath;
+    const nodeType = node.type || (Array.isArray(node.children) ? 'folder' : 'file');
     
     // 规范化节点
     const normalized = {
-        key: fullPath,
+        key: normalizedPath,
         name: nodeName,
-        type: node.type || (normalizedPath.endsWith('/') ? 'folder' : 'file'),
-        path: fullPath
+        type: nodeType,
+        path: normalizedPath
     };
     
     // 如果是文件夹，处理子节点
@@ -192,30 +177,4 @@ export function normalizeTreeNode(node) {
     }
     
     return normalized;
-}
-
-/**
- * 构建完整的文件路径
- * 用于存储到数据库或静态文件系统
- * 
- * @param {string} fileKey - 规范化后的文件Key
- * @returns {string} 完整的文件路径
- */
-export function buildFullFilePath(fileKey) {
-    if (!fileKey) return '';
-    
-    const normalized = normalizeFilePath(fileKey);
-    return normalized || '';
-}
-
-/**
- * 从完整路径提取文件Key
- * 
- * @param {string} fullPath - 完整路径
- * @returns {string} 文件Key
- */
-export function extractFileKeyFromFullPath(fullPath) {
-    if (!fullPath) return '';
-    
-    return normalizeFilePath(fullPath);
 }

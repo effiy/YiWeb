@@ -62,19 +62,12 @@ export function createAicrStoreFileContentOps(deps, state, internals) {
     };
 
     const findFileByKey = (nodes, targetKey) => {
-        const normalize = (v) => {
-            try {
-                return normalizeFilePath(v);
-            } catch (e) {
-                return String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
-            }
-        };
-        const target = normalize(targetKey);
+        const target = normalizeFilePath(targetKey);
         const traverse = (node) => {
             if (!node || typeof node !== 'object') return null;
 
             if (node.type === 'file' || (node.type !== 'folder' && !node.children)) {
-                const nodeKey = normalize(node.key);
+                const nodeKey = normalizeFilePath(node.key);
                 if (nodeKey && target && nodeKey === target) {
                     return node;
                 }
@@ -246,12 +239,12 @@ export function createAicrStoreFileContentOps(deps, state, internals) {
                 if (processed.path || processed.key) {
                     try {
                         const path = processed.path || processed.key;
-                        let cleanPath = String(path || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                        let cleanPath = normalizeFilePath(path || '');
 
                         if (cleanPath.startsWith('static/')) {
                             cleanPath = cleanPath.substring(7);
                         }
-                        cleanPath = cleanPath.replace(/^\/+/, '');
+                        cleanPath = normalizeFilePath(cleanPath);
 
                         console.log('[loadFileByKey] 尝试通过API加载内容:', cleanPath);
 

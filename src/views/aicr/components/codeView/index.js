@@ -1,7 +1,8 @@
 import { registerGlobalComponent } from '/src/utils/view/componentLoader.js';
 import { safeExecute } from '/src/utils/core/error.js';
+import { normalizeFilePath } from '/src/utils/aicr/fileFieldNormalizer.js';
 
-const normalizePath = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+const normalizePath = (v) => normalizeFilePath(v);
 
 const decodeBase64Utf8 = (b64) => {
     try {

@@ -1,3 +1,5 @@
+import { normalizeFilePath } from '/src/utils/aicr/fileFieldNormalizer.js';
+
 export const createSelectSessionForChat = ({
     store,
     setSelectedKey,
@@ -68,9 +70,10 @@ export const createSelectSessionForChat = ({
             fileName = String(fileName).trim().replace(/\s+/g, '_').replace(/\//g, '-');
             fileKey = currentPath ? currentPath + '/' + fileName : fileName;
         }
+        fileKey = normalizeFilePath(fileKey);
 
         if (fileKeyOverride != null && String(fileKeyOverride).trim()) {
-            fileKey = String(fileKeyOverride).trim();
+            fileKey = normalizeFilePath(String(fileKeyOverride).trim());
         }
 
         if (syncSelectedKey) {
@@ -132,11 +135,11 @@ export const createSelectSessionForChat = ({
                 let cleanPath = '';
 
                 if (fileKey) {
-                    cleanPath = String(fileKey || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                    cleanPath = normalizeFilePath(fileKey || '');
                     if (cleanPath.startsWith('static/')) {
                         cleanPath = cleanPath.substring(7);
                     }
-                    cleanPath = cleanPath.replace(/^\/+/, '');
+                    cleanPath = normalizeFilePath(cleanPath);
                 } else {
                     const tags = Array.isArray(session.tags) ? session.tags : [];
                     let currentPath = '';
@@ -147,22 +150,22 @@ export const createSelectSessionForChat = ({
                     let fileName = session.title || 'Untitled';
                     fileName = String(fileName).trim().replace(/\s+/g, '_').replace(/\//g, '-');
                     cleanPath = currentPath ? currentPath + '/' + fileName : fileName;
-                    cleanPath = cleanPath.replace(/\\/g, '/').replace(/^\/+/, '');
+                    cleanPath = normalizeFilePath(cleanPath);
                     if (cleanPath.startsWith('static/')) {
                         cleanPath = cleanPath.substring(7);
                     }
-                    cleanPath = cleanPath.replace(/^\/+/, '');
+                    cleanPath = normalizeFilePath(cleanPath);
                 }
 
                 if (!cleanPath) {
                     const pageDesc = session.pageDescription || '';
                     if (pageDesc && pageDesc.includes('文件：')) {
                         cleanPath = pageDesc.replace('文件：', '').trim();
-                        cleanPath = cleanPath.replace(/\\/g, '/').replace(/^\/+/, '');
+                        cleanPath = normalizeFilePath(cleanPath);
                         if (cleanPath.startsWith('static/')) {
                             cleanPath = cleanPath.substring(7);
                         }
-                        cleanPath = cleanPath.replace(/^\/+/, '');
+                        cleanPath = normalizeFilePath(cleanPath);
                     }
                 }
 
@@ -222,4 +225,3 @@ export const createSelectSessionForChat = ({
         }
     };
 };
-

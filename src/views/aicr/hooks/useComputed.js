@@ -7,6 +7,8 @@
  * @returns {Object} 计算属性集合
  */
 
+import { normalizeFilePath } from '/src/utils/aicr/fileFieldNormalizer.js';
+
 export const useComputed = (store) => {
     const { computed } = Vue;
 
@@ -38,20 +40,7 @@ export const useComputed = (store) => {
         currentFile: computed(() => {
             const key = store.selectedKey?.value;
             if (!key) return null;
-            const normalize = (v) => {
-                try {
-                    if (v == null) return '';
-                    let s = String(v);
-                    s = s.replace(/\\/g, '/');
-                    s = s.replace(/^\.\//, '');
-                    s = s.replace(/^\/+/, '');
-                    s = s.replace(/\/\/+/, '/');
-                    return s;
-                } catch (e) {
-                    return String(v);
-                }
-            };
-            const target = normalize(key);
+            const target = normalizeFilePath(key);
 
             const findSessionKeyByTreeKey = (nodes, treeKey) => {
                 if (!nodes) return null;
@@ -59,7 +48,7 @@ export const useComputed = (store) => {
                 while (stack.length > 0) {
                     const n = stack.pop();
                     if (!n) continue;
-                    const k = normalize(n.key || n.path || n.id || '');
+                    const k = normalizeFilePath(n.key || n.path || n.id || '');
                     if (k && k === treeKey) {
                         return n.sessionKey != null ? String(n.sessionKey) : null;
                     }
@@ -79,7 +68,7 @@ export const useComputed = (store) => {
                     f.key,
                     f.path,
                     f.name
-                ].filter(Boolean).map(normalize);
+                ].filter(Boolean).map(normalizeFilePath);
 
                 // 检查是否与目标匹配
                 return candidates.some(c => {
@@ -267,4 +256,3 @@ export const useComputed = (store) => {
 
     };
 };
-

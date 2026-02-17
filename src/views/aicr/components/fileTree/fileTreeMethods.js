@@ -1,4 +1,5 @@
 import { safeExecute, createError, ErrorTypes } from '/src/utils/core/error.js';
+import { normalizeFilePath } from '/src/utils/aicr/fileFieldNormalizer.js';
 import { formatFileSizeCompact, sortFileTreeItems } from './fileTreeUtils.js';
 
 const fileTreeMethods = {
@@ -118,20 +119,7 @@ const fileTreeMethods = {
     isFileSelected(key) {
         return safeExecute(() => {
             if (!key || !this.selectedKey) return false;
-            const normalize = (v) => {
-                if (!v) return '';
-                let s = String(v).replace(/\\/g, '/');
-                s = s.replace(/^\.\//, '');
-                s = s.replace(/^\/+/, '');
-                s = s.replace(/\/\/+/g, '/');
-                return s;
-            };
-
-            const normalizedKey = normalize(key);
-            const normalizedSelectedKey = normalize(this.selectedKey);
-            const result = normalizedKey === normalizedSelectedKey;
-
-            return result;
+            return normalizeFilePath(key) === normalizeFilePath(this.selectedKey);
         }, '文件选中状态检查');
     },
     getFileIcon(item) {

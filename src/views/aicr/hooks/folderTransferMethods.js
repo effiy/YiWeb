@@ -191,7 +191,7 @@ export const createFolderTransferMethods = ({
                 for (let i = 0; i < pickedFiles.length; i++) {
                     const f = pickedFiles[i];
                     const rawRel = String(f.webkitRelativePath || f.name || '');
-                    const relParts = rawRel.replace(/\\/g, '/').split('/').filter(Boolean);
+                    const relParts = normalizeFilePath(rawRel).split('/').filter(Boolean);
                     const relPath = relParts.length > 1 ? relParts.slice(1).join('/') : String(f.name || relParts[0] || '');
                     const targetPath = normalizeImportTargetPath(folderKey ? `${folderKey}/${relPath}` : relPath);
                     if (!targetPath) continue;
@@ -333,9 +333,9 @@ export const createFolderTransferMethods = ({
 
                     showGlobalLoading(`正在读取 ${i + 1}/${fileKeys.length} ...`);
 
-                    let cleanPath = String(fileKey || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                    let cleanPath = normalizeFilePath(fileKey || '');
                     if (cleanPath.startsWith('static/')) cleanPath = cleanPath.slice(7);
-                    cleanPath = cleanPath.replace(/^\/+/, '');
+                    cleanPath = normalizeFilePath(cleanPath);
 
                     try {
                         const res = await fetch(`${apiBase}/read-file`, {

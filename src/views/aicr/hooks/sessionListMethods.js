@@ -1,3 +1,5 @@
+import { normalizeFilePath } from '/src/utils/aicr/fileFieldNormalizer.js';
+
 export const createSessionListMethods = ({
     store,
     safeExecute,
@@ -29,13 +31,8 @@ export const createSessionListMethods = ({
     } = store || {};
 
     const normalizeKeyText = (v) => {
-        if (!v) return '';
-        let s = String(v).replace(/\\/g, '/');
-        s = s.trim().replace(/\s+/g, '_');
-        s = s.replace(/^\.\//, '');
-        s = s.replace(/^\/+/, '');
-        s = s.replace(/\/\/+/g, '/');
-        return s;
+        const base = normalizeFilePath(v);
+        return base.trim().replace(/\s+/g, '_');
     };
 
     const ensureArraySessionsFromJsonValue = (value) => {

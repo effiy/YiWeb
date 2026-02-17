@@ -76,18 +76,8 @@ export const createFileTreeCrudMethods = ({
 
             try {
                 const normalize = (v) => {
-                    try {
-                        if (v == null) return '';
-                        let s = String(v);
-                        s = s.replace(/\\/g, '/');
-                        s = s.trim().replace(/\s+/g, '_');
-                        s = s.replace(/^\.\//, '');
-                        s = s.replace(/^\/+/, '');
-                        s = s.replace(/\/\/+/, '/');
-                        return s;
-                    } catch (_) {
-                        return String(v || '');
-                    }
+                    const base = typeof normalizeKey === 'function' ? normalizeKey(v) : String(v ?? '');
+                    return String(base ?? '').trim().replace(/\s+/g, '_');
                 };
 
                 if (!targetSessionKey) {

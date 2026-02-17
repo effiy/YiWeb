@@ -54,7 +54,7 @@ export const createProjectZipMethods = ({
                     const ext = filename.toLowerCase().substring(filename.lastIndexOf('.'));
                     return imageExtensions.includes(ext);
                 };
-                const normalizePathForFilter = (p) => String(p || '').replace(/\\/g, '/').replace(/^\/+/, '');
+                const normalizePathForFilter = (p) => normalizeFilePath(p);
                 const hasExcludedSegment = (p) => {
                     const segs = p.split('/');
                     return segs.some(seg => EXCLUDED_DIRS.includes(seg));

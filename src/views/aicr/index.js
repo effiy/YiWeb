@@ -198,7 +198,9 @@ import { logInfo, logWarn, logError } from '/src/utils/core/log.js';
                                 window.__aicrPendingHighlightRangeInfo = pendingHighlightRange;
                             }
                             if (fileParam) {
-                                const norm = String(fileParam).replace(/\\\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
+                                const norm = typeof store.normalizeKey === 'function'
+                                    ? store.normalizeKey(fileParam)
+                                    : String(fileParam || '');
                                 store.setSelectedKey(norm);
                                 if (typeof store.loadFileByKey === 'function') {
                                     store.loadFileByKey(norm).then(() => {
@@ -227,8 +229,9 @@ import { logInfo, logWarn, logError } from '/src/utils/core/log.js';
                                     const pending = window.__aicrPendingFileKey;
                                     const currentKey = pending || (store.selectedKey ? store.selectedKey.value : null);
                                     if (currentKey && typeof store.loadFileByKey === 'function') {
-                                        const normalize3 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
-                                        const keyNorm = normalize3(currentKey);
+                                        const keyNorm = typeof store.normalizeKey === 'function'
+                                            ? store.normalizeKey(currentKey)
+                                            : String(currentKey || '');
                                         // 无论是否已有内容，就绪后都按需加载一次，避免刷新后首次点击缺内容
                                         store.loadFileByKey(keyNorm).finally(() => { window.__aicrPendingFileKey = null; });
                                     }
@@ -246,8 +249,9 @@ import { logInfo, logWarn, logError } from '/src/utils/core/log.js';
                                     const pendingKey = window.__aicrPendingFileKey;
                                     const currentKey = pendingKey || (store.selectedKey ? store.selectedKey.value : null);
                                     if (currentKey && typeof store.loadFileByKey === 'function') {
-                                        const normalize4 = (v) => String(v || '').replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/\/+/g, '/');
-                                        const keyNorm = normalize4(currentKey);
+                                        const keyNorm = typeof store.normalizeKey === 'function'
+                                            ? store.normalizeKey(currentKey)
+                                            : String(currentKey || '');
 
                                         // 无论是否已有内容，确保按需加载一次
                                         logInfo('[主页面] 就绪后按需加载文件:', keyNorm);
