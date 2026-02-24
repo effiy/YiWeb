@@ -395,6 +395,7 @@ export const createProjectZipMethods = ({
                                         fileKey: fileKey,
                                         key: fileKey,
                                         path: fileKey,
+                                        sessionKey: node.sessionKey,
                                         name: node.name || (fileKey ? fileKey.split('/').pop() : ''),
                                         content: node.content || '',
                                         size: node.size || (node.content ? node.content.length : 0)
@@ -595,7 +596,10 @@ export const createProjectZipMethods = ({
                             try {
                                 const normalizedFileObj = normalizeFileObject(payload);
                                 if (normalizedFileObj) {
-                                    await sessionSync.syncFileToSession(normalizedFileObj, false, true);
+                                    const fileForSync = existingFile?.sessionKey
+                                        ? { ...normalizedFileObj, sessionKey: existingFile.sessionKey }
+                                        : normalizedFileObj;
+                                    await sessionSync.syncFileToSession(fileForSync, false, true);
 
                                     filesUploaded++;
                                     if (isExistingFile) {
@@ -701,3 +705,4 @@ export const createProjectZipMethods = ({
         triggerUploadProjectVersion
     };
 };
+

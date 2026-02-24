@@ -29,6 +29,26 @@ class SessionSyncService {
         this._imageUploadCache = new Map();
     }
 
+    isUuidLikeKey(value) {
+        if (value == null) return false;
+        const s = String(value).trim();
+        if (!s) return false;
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+    }
+
+    pickSessionKey(file) {
+        const candidates = [
+            file?.sessionKey,
+            file?.key,
+            file?.fileKey,
+            file?.id
+        ];
+        for (const c of candidates) {
+            if (this.isUuidLikeKey(c)) return String(c).trim();
+        }
+        return undefined;
+    }
+
     /**
      * 从文件路径提取标签（目录路径）
      * @param {string} filePath - 文件路径
@@ -114,7 +134,7 @@ class SessionSyncService {
         // 确保 pageDescription 中的 file_path 与用于生成 tags 的路径完全一致
         // 使用相同的 filePath 变量，确保一致性
         return {
-            key: file.key,
+            key: this.pickSessionKey(file),
             url: uniqueUrl,
             title: fileName,
             pageDescription: `文件：${filePath}`, // 使用与 tags 相同的 filePath
@@ -191,7 +211,7 @@ class SessionSyncService {
                 return { error: '无法创建会话数据' };
             }
             
-            if (immediate) {
+            if (immediate || !sessionData.key) {
                 return await this.saveSession(sessionData);
             } else {
                 // 加入同步队列
@@ -843,3 +863,4 @@ export function getSessionSyncService() {
 
 // 导出类（用于测试）
 export { SessionSyncService };
+

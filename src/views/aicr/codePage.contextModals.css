@@ -455,24 +455,25 @@
 .aicr-session-faq-tag-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 3px;
     align-items: center;
 }
 
 .aicr-session-faq-tag {
     border: 1px solid rgba(51, 65, 85, 0.75);
-    background: rgba(2, 6, 23, 0.35);
-    color: rgba(226, 232, 240, 0.9);
+    background: rgba(2, 6, 23, 0.28);
+    color: rgba(226, 232, 240, 0.92);
     border-radius: 999px;
-    padding: 6px 10px;
-    font-size: 12px;
+    padding: 4px 8px;
+    font-size: 11px;
+    line-height: 1.2;
     cursor: pointer;
-    transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .aicr-session-faq-tag:hover {
     background: rgba(51, 65, 85, 0.35);
-    transform: translateY(-1px);
+    border-color: rgba(148, 163, 184, 0.28);
 }
 
 .aicr-session-faq-tag.active {
@@ -658,26 +659,27 @@
 .aicr-session-faq-item-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 3px;
     margin-top: 0;
     min-width: 0;
     flex: 1;
 }
 
 .aicr-session-faq-item-tag {
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    background: rgba(15, 23, 42, 0.25);
-    color: rgba(226, 232, 240, 0.86);
+    border: 1px solid rgba(51, 65, 85, 0.75);
+    background: rgba(2, 6, 23, 0.28);
+    color: rgba(226, 232, 240, 0.9);
     border-radius: 999px;
-    padding: 5px 10px;
-    font-size: 12px;
+    padding: 4px 8px;
+    font-size: 11px;
+    line-height: 1.2;
     cursor: pointer;
-    transition: background 0.12s ease, border-color 0.12s ease;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .aicr-session-faq-item-tag:hover {
-    background: rgba(15, 23, 42, 0.45);
-    border-color: rgba(148, 163, 184, 0.32);
+    background: rgba(51, 65, 85, 0.35);
+    border-color: rgba(148, 163, 184, 0.28);
 }
 
 .aicr-session-faq-item-title {
@@ -841,3 +843,4 @@
     font-size: 12px;
     line-height: 1.5;
 }
+

@@ -158,7 +158,7 @@ function ensureTagManagerUi() {
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(2, 6, 23, 0.72);
             z-index: 9999;
             display: flex;
             align-items: center;
@@ -166,33 +166,37 @@ function ensureTagManagerUi() {
             animation: fadeIn 0.2s ease;
         }
         .tag-manager-content {
-            background: #fff;
-            border-radius: 12px;
-            width: 480px;
-            max-width: 90%;
+            background: var(--bg-elevated, rgba(30, 41, 59, 0.92));
+            border-radius: 16px;
+            width: 720px;
+            max-width: 92%;
             max-height: 80%;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            color-scheme: dark;
+            border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.1));
+            box-shadow: var(--shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.6));
+            backdrop-filter: blur(14px);
         }
         .tag-manager-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 16px 20px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--border-primary, rgba(255, 255, 255, 0.12));
         }
         .tag-manager-header h3 {
             margin: 0;
             font-size: 18px;
             font-weight: 600;
+            color: var(--text-primary, #f8fafc);
         }
         .tag-manager-close {
             background: none;
             border: none;
             font-size: 24px;
             cursor: pointer;
-            color: #666;
+            color: var(--text-muted, #94a3b8);
             padding: 0;
             width: 32px;
             height: 32px;
@@ -202,8 +206,8 @@ function ensureTagManagerUi() {
             border-radius: 50%;
         }
         .tag-manager-close:hover {
-            background: #f5f5f5;
-            color: #333;
+            background: var(--bg-surface-hover, rgba(51, 65, 85, 0.7));
+            color: var(--text-primary, #f8fafc);
         }
         .tag-manager-body {
             padding: 20px;
@@ -218,20 +222,25 @@ function ensureTagManagerUi() {
         .tag-manager-input {
             flex: 1;
             padding: 10px 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.12));
+            border-radius: 12px;
             font-size: 14px;
+            background: rgba(2, 6, 23, 0.55);
+            color: var(--text-primary, #f8fafc);
+        }
+        .tag-manager-input::placeholder {
+            color: var(--text-muted, #94a3b8);
         }
         .tag-manager-input:focus {
             outline: none;
-            border-color: #6366f1;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            border-color: var(--border-focus, #06b6d4);
+            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.18);
         }
         .tag-manager-add {
             width: 40px;
             height: 40px;
-            border-radius: 8px;
-            background: #6366f1;
+            border-radius: 12px;
+            background: var(--primary, #6366f1);
             color: white;
             border: none;
             font-size: 18px;
@@ -239,16 +248,17 @@ function ensureTagManagerUi() {
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 6px 18px rgba(99, 102, 241, 0.25);
         }
         .tag-manager-add:hover {
-            background: #4f46e5;
+            background: var(--primary-hover, #4f46e5);
         }
         .tag-manager-quick-tags {
             margin-bottom: 16px;
             padding: 12px;
-            background: #f9fafb;
-            border-radius: 8px;
-            border: 1px solid #eee;
+            background: var(--bg-surface, rgba(30, 41, 59, 0.6));
+            border-radius: 14px;
+            border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.1));
         }
         .quick-tags-header {
             display: flex;
@@ -256,112 +266,117 @@ function ensureTagManagerUi() {
             align-items: center;
             margin-bottom: 8px;
             font-size: 13px;
-            color: #666;
+            color: var(--text-secondary, #e2e8f0);
             font-weight: 500;
         }
         .quick-tags-refresh {
             background: none;
             border: none;
             cursor: pointer;
-            color: #666;
+            color: var(--text-muted, #94a3b8);
             font-size: 14px;
             padding: 2px 6px;
             border-radius: 4px;
         }
         .quick-tags-refresh:hover {
-            background: #eee;
-            color: #333;
+            background: var(--bg-surface-hover, rgba(51, 65, 85, 0.7));
+            color: var(--text-primary, #f8fafc);
         }
         .quick-tags-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
+            gap: 3px;
         }
         .quick-tag-btn {
-            padding: 4px 10px;
-            border-radius: 14px;
-            background: #fff;
-            border: 1px solid #ddd;
-            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: rgba(2, 6, 23, 0.28);
+            border: 1px solid rgba(51, 65, 85, 0.75);
+            font-size: 11px;
+            line-height: 1.2;
             cursor: pointer;
-            color: #555;
-            transition: all 0.2s ease;
+            color: rgba(226, 232, 240, 0.9);
+            transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
         }
         .quick-tag-btn:hover {
-            background: #f3f4f6;
-            border-color: #ccc;
+            background: rgba(51, 65, 85, 0.35);
+            border-color: rgba(148, 163, 184, 0.28);
         }
         .quick-tag-btn.active {
-            background: #6366f1;
-            border-color: #6366f1;
-            color: white;
+            background: rgba(79, 70, 229, 0.25);
+            border-color: rgba(79, 70, 229, 0.55);
+            color: rgba(226, 232, 240, 0.95);
         }
         .tag-manager-tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 3px;
         }
         .tag-item {
             display: inline-flex;
             align-items: center;
-            padding: 6px 12px;
-            border-radius: 16px;
-            background: #f3f4f6;
-            color: #374151;
-            font-size: 13px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: rgba(2, 6, 23, 0.28);
+            border: 1px solid rgba(51, 65, 85, 0.75);
+            color: rgba(226, 232, 240, 0.92);
+            font-size: 11px;
+            line-height: 1.2;
             gap: 6px;
         }
         .tag-item .tag-remove {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.1);
             border: none;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 12px;
-            color: #666;
+            color: var(--text-muted, #94a3b8);
             padding: 0;
         }
         .tag-item .tag-remove:hover {
-            background: rgba(0, 0, 0, 0.2);
-            color: #333;
+            background: rgba(255, 255, 255, 0.18);
+            color: var(--text-primary, #f8fafc);
         }
         .tag-manager-footer {
             display: flex;
             justify-content: flex-end;
             gap: 10px;
             padding: 16px 20px;
-            border-top: 1px solid #eee;
+            border-top: 1px solid var(--border-primary, rgba(255, 255, 255, 0.12));
         }
         .tag-manager-save {
             padding: 8px 16px;
-            background: #6366f1;
+            background: var(--primary, #6366f1);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
+            box-shadow: 0 10px 26px rgba(99, 102, 241, 0.25);
         }
         .tag-manager-save:hover {
-            background: #4f46e5;
+            background: var(--primary-hover, #4f46e5);
         }
         .tag-manager-cancel {
             padding: 8px 16px;
-            background: #fff;
-            color: #374151;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.35);
+            color: rgba(226, 232, 240, 0.92);
+            border: 1px solid rgba(51, 65, 85, 0.85);
+            border-radius: 12px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
+            transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
         }
         .tag-manager-cancel:hover {
-            background: #f9fafb;
-            border-color: #ccc;
+            background: rgba(30, 41, 59, 0.65);
+            border-color: rgba(148, 163, 184, 0.28);
         }
         @keyframes fadeIn {
             from { opacity: 0; }
