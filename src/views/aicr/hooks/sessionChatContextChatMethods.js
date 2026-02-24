@@ -261,7 +261,9 @@ export const createSessionChatContextChatMethods = (ctx) => {
                 }
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    if (typeof window.aicrApp?.sendSessionChatMessage === 'function') {
+                    if (typeof window.aicrApp?.sendSessionChatUserMessage === 'function') {
+                        window.aicrApp.sendSessionChatUserMessage();
+                    } else if (typeof window.aicrApp?.sendSessionChatMessage === 'function') {
                         window.aicrApp.sendSessionChatMessage();
                     }
                     if (typeof setSessionChatCompositionEndTime === 'function') setSessionChatCompositionEndTime(0);
@@ -536,3 +538,4 @@ export const createSessionChatContextChatMethods = (ctx) => {
 
     return sessionChatMethods;
 };
+

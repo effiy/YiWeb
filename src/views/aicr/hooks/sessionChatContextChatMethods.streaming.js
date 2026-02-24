@@ -567,6 +567,65 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
                 }
             }, '发送到机器人');
         },
+        sendSessionChatUserMessage: async () => {
+            return safeExecute(async () => {
+                if (!activeSession?.value) return;
+                if (sessionChatSending?.value) return;
+                const rawText = String(sessionChatInput?.value ?? '');
+                const text = rawText.trim();
+                const images = Array.isArray(sessionChatDraftImages?.value) ? sessionChatDraftImages.value.filter(Boolean).slice(0, 4) : [];
+                if (!text && images.length === 0) return;
+
+                if (sessionChatLastDraftText) sessionChatLastDraftText.value = text;
+                if (sessionChatLastDraftImages) sessionChatLastDraftImages.value = images;
+
+                const now = Date.now();
+                const { getSessionSyncService } = await import('/src/services/aicr/sessionSyncService.js');
+                const sessionSync = getSessionSyncService();
+                const uploadOne = async (src) => {
+                    const raw = String(src || '').trim();
+                    if (!raw) return '';
+                    if (/^https?:\/\//i.test(raw)) return raw;
+                    if (!raw.startsWith('data:image/')) {
+                        throw new Error('图片格式不支持');
+                    }
+                    return await sessionSync.uploadImageToOss(raw, 'aicr/images');
+                };
+                const imageUrls = images.length > 0
+                    ? (await Promise.all(images.map((src) => uploadOne(src)))).filter(Boolean)
+                    : [];
+                if (images.length > 0 && imageUrls.length === 0) {
+                    throw new Error('上传图片失败');
+                }
+
+                const userMessage = {
+                    type: 'user',
+                    message: text,
+                    timestamp: now,
+                    ...(imageUrls.length > 0 ? { imageDataUrls: imageUrls, imageDataUrl: imageUrls[0] } : {})
+                };
+
+                const prevSession = activeSession.value;
+                const prevMessages = Array.isArray(prevSession.messages) ? prevSession.messages : [];
+                const nextSession = {
+                    ...prevSession,
+                    messages: [...prevMessages, userMessage],
+                    updatedAt: now,
+                    lastAccessTime: now
+                };
+
+                activeSession.value = nextSession;
+                if (sessionChatInput) sessionChatInput.value = '';
+                if (sessionChatDraftImages) sessionChatDraftImages.value = [];
+                if (sessionChatScrollRequest) {
+                    sessionChatScrollRequest.value = { type: 'bottom' };
+                }
+
+                try {
+                    await sessionSync.saveSession({ ...nextSession, updatedAt: Date.now(), lastAccessTime: Date.now() });
+                } catch (_) { }
+            }, '发送会话消息', (info) => { try { if (window.showError) window.showError(String(info?.message || '发送失败')); } catch (_) { } });
+        },
         sendSessionChatMessage: async () => {
             return safeExecute(async () => {
                 if (!activeSession?.value) return;
@@ -752,3 +811,4 @@ export const createSessionChatContextChatStreamingMethods = (ctx) => {
         }
     };
 };
+
