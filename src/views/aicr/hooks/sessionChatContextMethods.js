@@ -93,6 +93,12 @@ export const createSessionChatContextMethods = ({
     let _sessionContextKeydownHandler = null;
     let _sessionContextPreviewClickHandler = null;
     let __aicrImagePreviewRoot = null;
+    let __aicrImagePreviewSrc = '';
+    let __aicrImagePreviewKeydownHandler = null;
+    let __aicrChatImagePreviewClickHandler = null;
+    let __aicrImagePreviewStyleMounted = false;
+    let __aicrImagePreviewCloseTimer = 0;
+    let __aicrImagePreviewPrevActiveEl = null;
 
     const getSessionContextTimeouts = () => _sessionContextTimeouts;
     const getSessionContextKeydownHandler = () => _sessionContextKeydownHandler;
@@ -200,18 +206,139 @@ export const createSessionChatContextMethods = ({
         }
     };
 
+    const _getAicrImagePreviewFilename = (url, contentType = '') => {
+        try {
+            const raw = String(url || '').trim();
+            const fromUrl = (() => {
+                try {
+                    if (!raw || raw.startsWith('data:')) return '';
+                    const u = new URL(raw, window.location.href);
+                    const parts = String(u.pathname || '').split('/').filter(Boolean);
+                    const last = parts.length ? parts[parts.length - 1] : '';
+                    const base = decodeURIComponent(last || '').trim();
+                    if (!base) return '';
+                    if (base.includes('.')) return base;
+                    return '';
+                } catch (_) {
+                    return '';
+                }
+            })();
+            if (fromUrl) return fromUrl;
+
+            const ext = (() => {
+                const ct = String(contentType || '').toLowerCase();
+                if (ct.includes('png')) return 'png';
+                if (ct.includes('jpeg') || ct.includes('jpg')) return 'jpg';
+                if (ct.includes('webp')) return 'webp';
+                if (ct.includes('gif')) return 'gif';
+                if (ct.includes('svg')) return 'svg';
+                if (raw.startsWith('data:image/')) {
+                    const m = raw.match(/^data:image\/([a-zA-Z0-9.+-]+);/);
+                    const k = String(m?.[1] || '').toLowerCase();
+                    if (k === 'jpeg') return 'jpg';
+                    if (k) return k;
+                }
+                return 'png';
+            })();
+            return `image_${Date.now()}.${ext}`;
+        } catch (_) {
+            return `image_${Date.now()}.png`;
+        }
+    };
+
+    const _triggerAicrImageDownload = (href, filename) => {
+        try {
+            const a = document.createElement('a');
+            a.href = String(href || '').trim();
+            a.download = String(filename || '').trim() || `image_${Date.now()}.png`;
+            a.rel = 'noopener';
+            a.target = '_self';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (_) { }
+    };
+
+    const _downloadAicrPreviewImage = async () => {
+        const url = String(__aicrImagePreviewSrc || '').trim();
+        if (!url) return;
+
+        if (url.startsWith('data:')) {
+            const filename = _getAicrImagePreviewFilename(url);
+            _triggerAicrImageDownload(url, filename);
+            return;
+        }
+
+        try {
+            const res = await fetch(url, { credentials: 'same-origin' });
+            if (!res || !res.ok) throw new Error('download_failed');
+            const blob = await res.blob();
+            const filename = _getAicrImagePreviewFilename(url, blob?.type || res.headers?.get?.('content-type') || '');
+            const objectUrl = URL.createObjectURL(blob);
+            _triggerAicrImageDownload(objectUrl, filename);
+            setTimeout(() => {
+                try { URL.revokeObjectURL(objectUrl); } catch (_) { }
+            }, 1200);
+        } catch (_) {
+            try {
+                const a = document.createElement('a');
+                a.href = url;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } catch (_) { }
+        }
+    };
+
+    const _ensureAicrImagePreviewStyle = () => {
+        try {
+            if (__aicrImagePreviewStyleMounted) return;
+            if (typeof document === 'undefined') return;
+            const existing = document.getElementById('aicr-image-preview-style');
+            if (existing) {
+                __aicrImagePreviewStyleMounted = true;
+                return;
+            }
+            const style = document.createElement('style');
+            style.id = 'aicr-image-preview-style';
+            style.textContent = `
+                #aicr-image-preview{color:#fff;opacity:0;pointer-events:auto;transition:opacity 140ms ease}
+                #aicr-image-preview.is-open{opacity:1}
+                #aicr-image-preview .aicr-image-preview-frame{position:relative;max-width:min(96vw,1400px);max-height:96vh;transform:translate3d(0,6px,0) scale(.985);opacity:.98;transition:transform 160ms cubic-bezier(.2,.9,.2,1),opacity 160ms ease}
+                #aicr-image-preview.is-open .aicr-image-preview-frame{transform:translate3d(0,0,0) scale(1);opacity:1}
+                #aicr-image-preview .aicr-image-preview-img{display:block;max-width:96vw;max-height:96vh;border-radius:14px;box-shadow:0 20px 80px rgba(0,0,0,.55);background:rgba(255,255,255,0.06);object-fit:contain}
+                #aicr-image-preview .aicr-image-preview-toolbar{position:absolute;top:10px;right:10px;display:flex;gap:8px;align-items:center}
+                #aicr-image-preview .aicr-image-preview-btn{position:relative;top:auto;right:auto;transform:none;height:34px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.22);background:rgba(0,0,0,0.38);color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(10px)}
+                #aicr-image-preview .aicr-image-preview-close{position:relative;top:auto;right:auto;transform:none;width:38px;height:38px;padding:0;font-size:18px;background:rgba(0,0,0,0.46)}
+                #aicr-image-preview .aicr-image-preview-btn:hover{background:rgba(0,0,0,0.6);border-color:rgba(255,255,255,0.3)}
+                #aicr-image-preview .aicr-image-preview-btn:active{transform:translateY(1px)}
+            `.trim();
+            document.head.appendChild(style);
+            __aicrImagePreviewStyleMounted = true;
+        } catch (_) { }
+    };
+
     const _openAicrImagePreview = (src) => {
         try {
             const url = String(src || '').trim();
             if (!url) return;
             if (!__aicrImagePreviewRoot) {
+                _ensureAicrImagePreviewStyle();
                 const root = document.createElement('div');
                 root.id = 'aicr-image-preview';
-                root.style.cssText = 'position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.72);backdrop-filter:blur(2px)';
+                root.className = 'aicr-image-preview';
+                root.setAttribute('role', 'dialog');
+                root.setAttribute('aria-modal', 'true');
+                root.style.cssText = 'position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,0.72);backdrop-filter:blur(2px)';
                 root.innerHTML = `
-                    <div style="position:relative;max-width:min(92vw,1200px);max-height:92vh;">
-                        <img class="aicr-image-preview-img" style="max-width:92vw;max-height:92vh;border-radius:12px;box-shadow:0 20px 80px rgba(0,0,0,.55);background:rgba(255,255,255,0.06);" />
-                        <button type="button" class="aicr-image-preview-close" style="position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.35);color:#fff;font-size:18px;cursor:pointer;">✕</button>
+                    <div class="aicr-image-preview-frame">
+                        <img class="aicr-image-preview-img" alt="预览图片" />
+                        <div class="aicr-image-preview-toolbar" aria-label="图片工具栏">
+                            <button type="button" class="aicr-image-preview-btn aicr-image-preview-download" title="下载" aria-label="下载">下载</button>
+                            <button type="button" class="aicr-image-preview-btn aicr-image-preview-close" title="关闭（Esc）" aria-label="关闭">✕</button>
+                        </div>
                     </div>
                 `;
                 root.addEventListener('click', (e) => {
@@ -219,25 +346,83 @@ export const createSessionChatContextMethods = ({
                         const t = e && e.target;
                         const close = t && t.closest ? t.closest('.aicr-image-preview-close') : null;
                         if (close) {
-                            _closeAicrImagePreview();
+                            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+                            if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+                            _closeAicrImagePreview({ immediate: true });
                             return;
                         }
-                        const img = t && t.closest ? t.closest('.aicr-image-preview-img') : null;
-                        if (!img) _closeAicrImagePreview();
+                        const download = t && t.closest ? t.closest('.aicr-image-preview-download') : null;
+                        if (download) {
+                            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+                            if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+                            _downloadAicrPreviewImage();
+                            return;
+                        }
+                        const frame = t && t.closest ? t.closest('.aicr-image-preview-frame') : null;
+                        if (!frame) _closeAicrImagePreview({ immediate: false });
                     } catch (_) { }
                 });
                 document.body.appendChild(root);
                 __aicrImagePreviewRoot = root;
+
+                if (!__aicrImagePreviewKeydownHandler) {
+                    __aicrImagePreviewKeydownHandler = (e) => {
+                        try {
+                            if (!_isAicrImagePreviewOpen()) return;
+                            if (!e) return;
+                            const key = String(e.key || '');
+                            if (key !== 'Escape' && key !== 'Esc') return;
+                            if (typeof e.preventDefault === 'function') e.preventDefault();
+                            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+                            _closeAicrImagePreview({ immediate: true });
+                        } catch (_) { }
+                    };
+                    document.addEventListener('keydown', __aicrImagePreviewKeydownHandler, true);
+                }
             }
             const img = __aicrImagePreviewRoot.querySelector('.aicr-image-preview-img');
             if (img) img.src = url;
+            if (__aicrImagePreviewCloseTimer) clearTimeout(__aicrImagePreviewCloseTimer);
+            __aicrImagePreviewCloseTimer = 0;
             __aicrImagePreviewRoot.style.display = 'flex';
+            if (__aicrImagePreviewRoot.classList) __aicrImagePreviewRoot.classList.remove('is-open');
+            requestAnimationFrame(() => {
+                try {
+                    if (__aicrImagePreviewRoot && __aicrImagePreviewRoot.classList) __aicrImagePreviewRoot.classList.add('is-open');
+                } catch (_) { }
+            });
+            __aicrImagePreviewSrc = url;
+            try {
+                __aicrImagePreviewPrevActiveEl = document.activeElement || null;
+                const closeBtn = __aicrImagePreviewRoot.querySelector('.aicr-image-preview-close');
+                if (closeBtn && typeof closeBtn.focus === 'function') closeBtn.focus({ preventScroll: true });
+            } catch (_) { }
         } catch (_) { }
     };
  
-    const _closeAicrImagePreview = () => {
+    const _closeAicrImagePreview = (options = {}) => {
         try {
-            if (__aicrImagePreviewRoot) __aicrImagePreviewRoot.style.display = 'none';
+            if (!__aicrImagePreviewRoot) return;
+            if (__aicrImagePreviewCloseTimer) clearTimeout(__aicrImagePreviewCloseTimer);
+            __aicrImagePreviewCloseTimer = 0;
+            if (__aicrImagePreviewRoot.classList) __aicrImagePreviewRoot.classList.remove('is-open');
+            const immediate = options && options.immediate === true;
+            if (immediate) {
+                __aicrImagePreviewRoot.style.display = 'none';
+            } else {
+                const root = __aicrImagePreviewRoot;
+                __aicrImagePreviewCloseTimer = setTimeout(() => {
+                    try {
+                        if (root) root.style.display = 'none';
+                    } catch (_) { }
+                }, 170);
+            }
+            __aicrImagePreviewSrc = '';
+            try {
+                const prev = __aicrImagePreviewPrevActiveEl;
+                __aicrImagePreviewPrevActiveEl = null;
+                if (prev && typeof prev.focus === 'function') prev.focus({ preventScroll: true });
+            } catch (_) { }
         } catch (_) { }
     };
  
@@ -248,6 +433,32 @@ export const createSessionChatContextMethods = ({
             return false;
         }
     };
+
+    try {
+        if (!__aicrChatImagePreviewClickHandler && typeof document !== 'undefined') {
+            __aicrChatImagePreviewClickHandler = (e) => {
+                try {
+                    const t = e && e.target;
+                    if (!t || t.nodeType !== 1) return;
+                    if (t.closest && t.closest('#aicr-image-preview')) return;
+                    const img = t.closest ? t.closest('img') : null;
+                    if (!img) return;
+                    const msg = img.closest ? img.closest('.pet-chat-message') : null;
+                    if (!msg) return;
+                    const bubble = img.closest ? img.closest('.pet-chat-bubble') : null;
+                    if (!bubble) return;
+                    const container = bubble.closest ? bubble.closest('#pet-chat-messages') : null;
+                    if (!container) return;
+                    const src = String(img.currentSrc || img.getAttribute?.('src') || '').trim();
+                    if (!src) return;
+                    if (typeof e.preventDefault === 'function') e.preventDefault();
+                    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+                    _openAicrImagePreview(src);
+                } catch (_) { }
+            };
+            document.addEventListener('click', __aicrChatImagePreviewClickHandler, true);
+        }
+    } catch (_) { }
  
     const _sessionContextSetStatus = (refObj, value, resetMs = 0, resetValue = '') => {
         try {
@@ -504,6 +715,7 @@ export const createSessionChatContextMethods = ({
         ...sessionChatMethods,
         ...sessionContextMethods,
         ...sessionSettingsMethods,
+        openAicrImagePreview: _openAicrImagePreview,
         postData,
         SERVICE_MODULE
     };
