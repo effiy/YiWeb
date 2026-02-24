@@ -226,6 +226,122 @@ export const createSessionFaqMethods = ({
         return loadSessionFaqs({ force: true });
     };
 
+    const ensureSessionFaqOrderReady = async () => {
+        const items = Array.isArray(sessionFaqItems?.value) ? sessionFaqItems.value : [];
+        if (items.length <= 1) return items;
+
+        let prev = -Infinity;
+        let ok = true;
+        for (const it of items) {
+            const n = Number(it?.order);
+            if (!Number.isFinite(n) || n <= prev) {
+                ok = false;
+                break;
+            }
+            prev = n;
+        }
+        if (ok) return items;
+
+        const normalized = items.map((it, idx) => ({ ...it, order: idx + 1 }));
+        const url = `${window.API_URL}/`;
+        const ops = normalized.map(it => ({
+            type: 'POST',
+            url,
+            data: {
+                module_name: SERVICE_MODULE,
+                method_name: 'update_document',
+                parameters: { cname: 'faqs', data: { key: it.key, order: it.order } }
+            }
+        }));
+        const res = await batchOperations(ops);
+        if (res?.errorCount) {
+            throw new Error(`部分顺序写入失败（${res.errorCount}条）`);
+        }
+        if (sessionFaqItems) sessionFaqItems.value = normalized;
+        return normalized;
+    };
+
+    const canMoveSessionFaqItem = (item, delta = 0) => {
+        const key = String(item?.key ?? '').trim();
+        if (!key) return false;
+        const list = Array.isArray(filteredSessionFaqItems?.value) ? filteredSessionFaqItems.value : [];
+        const idx = list.findIndex(it => String(it?.key ?? '') === key);
+        if (idx < 0) return false;
+        const next = idx + (Number(delta) || 0);
+        return next >= 0 && next < list.length;
+    };
+
+    const moveSessionFaqItem = async (item, delta = 0) => {
+        return safeExecute(async () => {
+            if (!window.API_URL) throw new Error('API地址未配置');
+            const step = Number(delta) || 0;
+            if (!step) return;
+
+            if (sessionFaqLoading) sessionFaqLoading.value = true;
+            await ensureSessionFaqOrderReady();
+
+            const key = String(item?.key ?? '').trim();
+            if (!key) return;
+            const list = Array.isArray(filteredSessionFaqItems?.value) ? filteredSessionFaqItems.value : [];
+            const idx = list.findIndex(it => String(it?.key ?? '') === key);
+            if (idx < 0) return;
+            const nextIdx = idx + step;
+            if (nextIdx < 0 || nextIdx >= list.length) return;
+
+            const neighbor = list[nextIdx];
+            const neighborKey = String(neighbor?.key ?? '').trim();
+            if (!neighborKey || neighborKey === key) return;
+
+            const all = Array.isArray(sessionFaqItems?.value) ? sessionFaqItems.value : [];
+            const cur = all.find(it => String(it?.key ?? '') === key);
+            const nb = all.find(it => String(it?.key ?? '') === neighborKey);
+            if (!cur || !nb) return;
+
+            const curOrder = Number(cur.order);
+            const nbOrder = Number(nb.order);
+            if (!Number.isFinite(curOrder) || !Number.isFinite(nbOrder)) return;
+            if (curOrder === nbOrder) return;
+
+            const url = `${window.API_URL}/`;
+            const ops = [
+                {
+                    type: 'POST',
+                    url,
+                    data: {
+                        module_name: SERVICE_MODULE,
+                        method_name: 'update_document',
+                        parameters: { cname: 'faqs', data: { key, order: nbOrder } }
+                    }
+                },
+                {
+                    type: 'POST',
+                    url,
+                    data: {
+                        module_name: SERVICE_MODULE,
+                        method_name: 'update_document',
+                        parameters: { cname: 'faqs', data: { key: neighborKey, order: curOrder } }
+                    }
+                }
+            ];
+            await batchOperations(ops);
+
+            patchLocalFaq(key, { order: nbOrder });
+            patchLocalFaq(neighborKey, { order: curOrder });
+            try {
+                const updated = Array.isArray(sessionFaqItems?.value) ? [...sessionFaqItems.value] : [];
+                updated.sort((a, b) => {
+                    const ao = Number(a?.order);
+                    const bo = Number(b?.order);
+                    if (ao !== bo) return ao - bo;
+                    return String(a?.key ?? '').localeCompare(String(b?.key ?? ''), 'zh-CN');
+                });
+                if (sessionFaqItems) sessionFaqItems.value = updated;
+            } catch (_) { }
+        }, '调整常见问题顺序').finally(() => {
+            if (sessionFaqLoading) sessionFaqLoading.value = false;
+        });
+    };
+
     const editSessionFaqTags = async (item) => {
         const key = String(item?.key ?? '').trim();
         if (!key) return;
@@ -541,6 +657,8 @@ export const createSessionFaqMethods = ({
         clearSessionFaqTagSearch,
         addSessionFaqFromInput,
         deleteSessionFaqItem,
+        canMoveSessionFaqItem,
+        moveSessionFaqItem,
         applySessionFaqItem,
         copySessionFaqItem
     };

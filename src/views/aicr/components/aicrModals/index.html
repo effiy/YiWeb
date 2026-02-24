@@ -288,6 +288,14 @@
                                 </div>
                                 <div class="aicr-session-faq-item-actions">
                                     <button type="button" class="aicr-session-faq-item-btn"
+                                        @click.stop="moveSessionFaqItem(item, -1)"
+                                        :disabled="!!sessionFaqLoading || !canMoveSessionFaqItem(item, -1)"
+                                        aria-label="上移">上移</button>
+                                    <button type="button" class="aicr-session-faq-item-btn"
+                                        @click.stop="moveSessionFaqItem(item, 1)"
+                                        :disabled="!!sessionFaqLoading || !canMoveSessionFaqItem(item, 1)"
+                                        aria-label="下移">下移</button>
+                                    <button type="button" class="aicr-session-faq-item-btn"
                                         @click.stop="editSessionFaqTags(item)"
                                         :disabled="!!sessionFaqLoading"
                                         aria-label="标签">标签</button>
