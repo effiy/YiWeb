@@ -1,4 +1,5 @@
-import { normalizeFilePath } from '/src/utils/aicr/fileFieldNormalizer.js';
+import { normalizeFilePath, extractTagsFromPath } from '/src/utils/aicr/fileFieldNormalizer.js';
+import { TAGS, TIMEOUTS, VIEW_MODES } from '/src/constants/aicr.js';
 
 export const createSessionListMethods = ({
     store,
@@ -57,13 +58,6 @@ export const createSessionListMethods = ({
         let successCount = 0;
         let failCount = 0;
 
-        const extractTagsFromPath = (filePath) => {
-            if (!filePath) return [];
-            const parts = String(filePath).split('/').filter(p => p && String(p).trim());
-            if (parts.length <= 1) return [];
-            return parts.slice(0, -1);
-        };
-
         for (const rawSession of Array.isArray(sessionsData) ? sessionsData : []) {
             try {
                 if (!rawSession || typeof rawSession !== 'object') {
@@ -98,11 +92,10 @@ export const createSessionListMethods = ({
                     }
                 }
 
-                const knowledgeTag = 'knowledge';
-                session.tags = session.tags.filter(tag => tag !== knowledgeTag);
-                session.tags.unshift(knowledgeTag);
-                if (!Array.isArray(session.tags) || session.tags.length === 0 || session.tags[0] !== knowledgeTag) {
-                    session.tags = [knowledgeTag, ...(session.tags || []).filter(tag => tag !== knowledgeTag)];
+                session.tags = session.tags.filter(tag => tag !== TAGS.KNOWLEDGE);
+                session.tags.unshift(TAGS.KNOWLEDGE);
+                if (!Array.isArray(session.tags) || session.tags.length === 0 || session.tags[0] !== TAGS.KNOWLEDGE) {
+                    session.tags = [TAGS.KNOWLEDGE, ...(session.tags || []).filter(tag => tag !== TAGS.KNOWLEDGE)];
                 }
 
                 const sessionToSave = { ...session, tags: session.tags };
@@ -138,8 +131,8 @@ export const createSessionListMethods = ({
     return {
         setViewMode: async (mode) => {
             return safeExecute(async () => {
-                mode = 'tree';
-                if (!viewMode || !(mode === 'tree' || mode === 'tags')) return;
+                mode = VIEW_MODES.TREE;
+                if (!viewMode || !(mode === VIEW_MODES.TREE || mode === VIEW_MODES.TAGS)) return;
 
                 const previousMode = viewMode.value;
                 viewMode.value = mode;
@@ -167,7 +160,7 @@ export const createSessionListMethods = ({
                 }
 
                 let pendingFileKey = null;
-                if (previousMode === 'tree' && mode === 'tags') {
+                if (previousMode === VIEW_MODES.TREE && mode === VIEW_MODES.TAGS) {
                     if (selectedKey && selectedKey.value) {
                         pendingFileKey = selectedKey.value;
                         console.log('[useMethods] 保存当前选中的文件Key:', pendingFileKey);
@@ -175,7 +168,7 @@ export const createSessionListMethods = ({
                 }
 
                 let pendingSessionKey = null;
-                if (previousMode === 'tags' && mode === 'tree') {
+                if (previousMode === VIEW_MODES.TAGS && mode === VIEW_MODES.TREE) {
                     if (activeSession && activeSession.value) {
                         const sessionKey = activeSession.value.key;
                         if (sessionKey) {
@@ -190,12 +183,12 @@ export const createSessionListMethods = ({
 
                 if (previousMode !== mode) {
                     try {
-                        if (mode === 'tree' && typeof window.aicrApp?.abortSessionChatRequest === 'function') {
+                        if (mode === VIEW_MODES.TREE && typeof window.aicrApp?.abortSessionChatRequest === 'function') {
                             window.aicrApp.abortSessionChatRequest();
                         }
                     } catch (_) { }
 
-                    if (!(previousMode === 'tags' && mode === 'tree' && pendingSessionKey)) {
+                    if (!(previousMode === VIEW_MODES.TAGS && mode === VIEW_MODES.TREE && pendingSessionKey)) {
                         if (typeof setSelectedKey === 'function') {
                             setSelectedKey(null);
                         } else if (selectedKey) {
@@ -203,8 +196,8 @@ export const createSessionListMethods = ({
                         }
                     }
 
-                    const hasPendingSync = (previousMode === 'tree' && mode === 'tags' && pendingFileKey) ||
-                        (previousMode === 'tags' && mode === 'tree' && pendingSessionKey);
+                    const hasPendingSync = (previousMode === VIEW_MODES.TREE && mode === VIEW_MODES.TAGS && pendingFileKey) ||
+                        (previousMode === VIEW_MODES.TAGS && mode === VIEW_MODES.TREE && pendingSessionKey);
                     if (!hasPendingSync) {
                         if (activeSession) activeSession.value = null;
                         if (activeSessionError) activeSessionError.value = null;
@@ -217,7 +210,7 @@ export const createSessionListMethods = ({
                     window.dispatchEvent(new CustomEvent('clearCodeHighlight'));
                 }
 
-                if (mode === 'tags') {
+                if (mode === VIEW_MODES.TAGS) {
                     const hasSessions = store.sessions && store.sessions.value && store.sessions.value.length > 0;
 
                     if (!hasSessions) {
@@ -244,7 +237,7 @@ export const createSessionListMethods = ({
                     }
 
                     if (pendingFileKey) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
+                        await new Promise(resolve => setTimeout(resolve, TIMEOUTS.DEFAULT_DELAY));
 
                         try {
                             const targetTreeKey = normalizeKeyText(pendingFileKey);
@@ -299,7 +292,7 @@ export const createSessionListMethods = ({
                                         await selectSessionForChat(targetSession, { toggleActive: false, openContextEditor: false });
                                     }
 
-                                    await new Promise(resolve => setTimeout(resolve, 200));
+                                    await new Promise(resolve => setTimeout(resolve, TIMEOUTS.MODERATE_DELAY));
 
                                     const sessionKey = targetSession.key;
                                     const sessionItem = document.querySelector(`.session-item[data-key="${sessionKey}"], .session-item[data-session-key="${sessionKey}"]`);
@@ -309,7 +302,7 @@ export const createSessionListMethods = ({
                                         sessionItem.classList.add('highlight-session');
                                         setTimeout(() => {
                                             sessionItem.classList.remove('highlight-session');
-                                        }, 2000);
+                                        }, TIMEOUTS.HIGHLIGHT_DURATION);
 
                                         console.log('[useMethods] 已滚动到会话位置:', sessionKey);
                                     } else {
@@ -325,7 +318,7 @@ export const createSessionListMethods = ({
                                                     item.classList.add('highlight-session');
                                                     setTimeout(() => {
                                                         item.classList.remove('highlight-session');
-                                                    }, 2000);
+                                                    }, TIMEOUTS.HIGHLIGHT_DURATION);
                                                     console.log('[useMethods] 已滚动到会话位置（通过标题匹配）');
                                                     break;
                                                 }
@@ -337,7 +330,7 @@ export const createSessionListMethods = ({
                                         if (store.externalSelectedSessionKey) {
                                             store.externalSelectedSessionKey.value = null;
                                         }
-                                    }, 1000);
+                                    }, TIMEOUTS.ONE_SECOND);
                                 } else {
                                     console.warn('[useMethods] 未找到对应的会话，sessionKey:', targetSessionKey);
                                 }
@@ -350,8 +343,8 @@ export const createSessionListMethods = ({
                     }
                 }
 
-                if (mode === 'tree' && pendingSessionKey) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                if (mode === VIEW_MODES.TREE && pendingSessionKey) {
+                    await new Promise(resolve => setTimeout(resolve, TIMEOUTS.DEFAULT_DELAY));
 
                     try {
                         const findNodeBySessionKey = (nodes, targetSessionKey) => {
@@ -432,7 +425,7 @@ export const createSessionListMethods = ({
                                 }
                             }
 
-                            await new Promise(resolve => setTimeout(resolve, 300));
+                            await new Promise(resolve => setTimeout(resolve, TIMEOUTS.LONG_DELAY));
 
                             const fileItem = document.querySelector(`.file-tree-item.file-item[data-key="${targetFileKey}"], .file-tree-item.file-item[data-file-key="${targetFileKey}"]`);
 
@@ -441,7 +434,7 @@ export const createSessionListMethods = ({
                                 fileItem.classList.add('highlight-file');
                                 setTimeout(() => {
                                     fileItem.classList.remove('highlight-file');
-                                }, 2000);
+                                }, TIMEOUTS.HIGHLIGHT_DURATION);
 
                                 console.log('[useMethods] 已滚动到文件位置:', targetFileKey);
                             } else {
@@ -459,7 +452,7 @@ export const createSessionListMethods = ({
                                                 item.classList.add('highlight-file');
                                                 setTimeout(() => {
                                                     item.classList.remove('highlight-file');
-                                                }, 2000);
+                                                }, TIMEOUTS.HIGHLIGHT_DURATION);
                                                 console.log('[useMethods] 已滚动到文件位置（通过文件名匹配）:', targetFileKey);
                                                 break;
                                             }
@@ -479,7 +472,7 @@ export const createSessionListMethods = ({
                     try {
                         const sidebar = document.querySelector('.aicr-sidebar');
                         if (!sidebar) return;
-                        if (mode === 'tags') {
+                        if (mode === VIEW_MODES.TAGS) {
                             const w = store.sessionSidebarWidth?.value;
                             if (typeof w === 'number' && w > 0) sidebar.style.width = `${w}px`;
                         } else {
@@ -487,7 +480,7 @@ export const createSessionListMethods = ({
                             if (typeof w === 'number' && w > 0) sidebar.style.width = `${w}px`;
                         }
                     } catch (_) { }
-                }, 0);
+                }, TIMEOUTS.IMMEDIATE);
             }, '视图模式切换');
         },
 
@@ -500,7 +493,7 @@ export const createSessionListMethods = ({
                     }
                 } catch (_) { }
                 if (viewMode) {
-                    viewMode.value = 'tree';
+                    viewMode.value = VIEW_MODES.TREE;
                 }
 
                 if (typeof setSelectedKey === 'function') {
@@ -524,7 +517,7 @@ export const createSessionListMethods = ({
                         const w = store.sidebarWidth?.value;
                         if (sidebar && typeof w === 'number' && w > 0) sidebar.style.width = `${w}px`;
                     } catch (_) { }
-                }, 0);
+                }, TIMEOUTS.IMMEDIATE);
             }, '返回文件树视图');
         },
 

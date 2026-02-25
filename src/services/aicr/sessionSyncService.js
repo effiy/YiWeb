@@ -17,7 +17,8 @@
 import { postData, getData } from '/src/services/index.js';
 import { buildServiceUrl, SERVICE_MODULE } from '/src/services/helper/requestHelper.js';
 import { safeExecuteAsync } from '/src/utils/core/error.js';
-import { normalizeFileObject, extractFileName } from '/src/utils/aicr/fileFieldNormalizer.js';
+import { normalizeFileObject, extractFileName, extractTagsFromPath } from '/src/utils/aicr/fileFieldNormalizer.js';
+import { COLLECTIONS, URL_PROTOCOLS, MESSAGE_TYPES, FILE_TYPES } from '/src/constants/aicr.js';
 
 class SessionSyncService {
     constructor() {
@@ -47,22 +48,6 @@ class SessionSyncService {
             if (this.isUuidLikeKey(c)) return String(c).trim();
         }
         return undefined;
-    }
-
-    /**
-     * 从文件路径提取标签（目录路径）
-     * @param {string} filePath - 文件路径
-     * @returns {Array<string>} 标签数组
-     */
-    extractTagsFromPath(filePath) {
-        if (!filePath) return [];
-        
-        const parts = filePath.split('/').filter(p => p && p.trim());
-        if (parts.length <= 1) return [];
-        
-        // 移除文件名，只保留目录路径作为标签
-        const dirs = parts.slice(0, -1);
-        return dirs;
     }
 
     /**
@@ -115,7 +100,7 @@ class SessionSyncService {
         // 确保 filePath 与用于生成 tags 的路径一致
         // 使用相同的路径来提取文件名和标签
         const fileName = String(extractFileName(filePath) || '').trim().replace(/\s+/g, '_');
-        let tags = this.extractTagsFromPath(filePath);
+        let tags = extractTagsFromPath(filePath);
         
         // 如果标签为空，不再使用默认标签，直接放在根目录
         if (!Array.isArray(tags)) {
@@ -156,18 +141,18 @@ class SessionSyncService {
     normalizeMessageType(msg) {
         const author = String(msg.author || '').toLowerCase();
         const role = String(msg.role || msg.type || '').toLowerCase();
-        
+
         // 判断是否为用户消息
-        if (role === 'user' || role === 'me' || author.includes('用户') || author.includes('user')) {
-            return 'user';
+        if (role === MESSAGE_TYPES.USER || role === MESSAGE_TYPES.ME || author.includes('用户') || author.includes(MESSAGE_TYPES.USER)) {
+            return MESSAGE_TYPES.USER;
         }
         // 判断是否为 AI 消息
-        if (role === 'pet' || role === 'assistant' || role === 'bot' || role === 'ai' || 
-            author.includes('AI') || author.includes('助手') || author.includes('assistant')) {
-            return 'pet';
+        if (role === MESSAGE_TYPES.PET || role === MESSAGE_TYPES.ASSISTANT || role === MESSAGE_TYPES.BOT || role === MESSAGE_TYPES.AI ||
+            author.includes('AI') || author.includes('助手') || author.includes(MESSAGE_TYPES.ASSISTANT)) {
+            return MESSAGE_TYPES.PET;
         }
         // 默认根据 author 判断
-        return author.includes('AI') ? 'pet' : 'user';
+        return author.includes('AI') ? MESSAGE_TYPES.PET : MESSAGE_TYPES.USER;
     }
 
     /**
@@ -230,22 +215,22 @@ class SessionSyncService {
      */
     normalizeMessages(messages) {
         if (!Array.isArray(messages)) return [];
-        
+
         return messages.map(msg => {
             if (!msg) return null;
-            
+
             // 统一 type 字段
             let type;
             if (msg.type) {
                 type = msg.type;
             } else if (msg.role) {
                 const role = String(msg.role).toLowerCase();
-                if (role === 'user' || role === 'me') {
-                    type = 'user';
-                } else if (role === 'assistant' || role === 'pet' || role === 'bot' || role === 'ai') {
-                    type = 'pet';
+                if (role === MESSAGE_TYPES.USER || role === MESSAGE_TYPES.ME) {
+                    type = MESSAGE_TYPES.USER;
+                } else if (role === MESSAGE_TYPES.ASSISTANT || role === MESSAGE_TYPES.PET || role === MESSAGE_TYPES.BOT || role === MESSAGE_TYPES.AI) {
+                    type = MESSAGE_TYPES.PET;
                 } else {
-                    type = 'user'; // 默认
+                    type = MESSAGE_TYPES.USER; // 默认
                 }
             } else {
                 // 根据 author 判断

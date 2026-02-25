@@ -56,6 +56,18 @@ export function extractFileName(path) {
 }
 
 /**
+ * 从文件路径提取标签（目录路径）
+ * @param {string} filePath - 文件路径
+ * @returns {Array<string>} 标签数组
+ */
+export function extractTagsFromPath(filePath) {
+    if (!filePath) return [];
+    const parts = String(filePath).split('/').filter(p => p && String(p).trim());
+    if (parts.length <= 1) return [];
+    return parts.slice(0, -1);
+}
+
+/**
  * 规范化文件对象，统一字段结构
  * 统一字段规则：
  * - key: 规范化后的文件路径（主要标识）
