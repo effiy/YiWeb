@@ -1,0 +1,278 @@
+/**
+ * 量子美学统一主题系统
+ * author: liangliang
+ * 说明：本文件定义了全局主题色、辅助色、中性色、背景色、文字色、边框色、阴影、透明度等变量
+ * 适用于：YiWeb、YiH5、YiPet、YiPot 等所有项目
+ */
+
+:root {
+  /* ============================================
+     主色调（现代量子蓝紫）
+     ============================================ */
+  --primary: #667eea;
+  --primary-hover: #5a67d8;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  --primary-blue: #3b82f6;
+  --primary-cyan: #06b6d4;
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --primary-gradient-hover: linear-gradient(135deg, #5a67d8 0%, #6b46c1 50%, #d946ef 100%);
+  --primary-rgb: 102, 126, 234;
+  --primary-dark-rgb: 79, 70, 229;
+  --primary-alpha: rgba(102, 126, 234, 0.1);
+
+  /* ============================================
+     辅助色系
+     ============================================ */
+  --accent: #06b6d4;
+  --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);
+  --accent-rgb: 6, 182, 212;
+  --success: #22c55e;
+  --success-gradient: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%);
+  --warning: #f59e0b;
+  --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  --error: #ef4444;
+  --error-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+  --info: #3b82f6;
+  --info-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  --danger-color: #ef4444;
+  --danger-color-alpha: rgba(239, 68, 68, 0.1);
+
+  /* ============================================
+     功能卡片专用色
+     ============================================ */
+  --scientist-purple: #9333ea;
+  --scientist-cyan: #06b6d4;
+  --geek-green: #22c55e;
+  --geek-teal: #10b981;
+  --artist-purple: #a855f7;
+  --artist-pink: #ec4899;
+  --artist-orange: #f59e0b;
+  --artist-emerald: #10b981;
+
+  /* ============================================
+     现代渐变色彩
+     ============================================ */
+  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  --gradient-secondary: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #6366f1 100%);
+  --gradient-success: linear-gradient(135deg, #22c55e 0%, #10b981 50%, #059669 100%);
+  --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ea580c 100%);
+  --gradient-error: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+  --gradient-info: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  --gradient-accent: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);
+
+  /* ============================================
+     特殊效果渐变
+     ============================================ */
+  --gradient-rainbow: linear-gradient(135deg, #6366f1 0%, #8b5cf6 25%, #ec4899 50%, #f59e0b 75%, #22c55e 100%);
+  --gradient-sunset: linear-gradient(135deg, #f59e0b 0%, #ec4899 50%, #a855f7 100%);
+  --gradient-ocean: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #6366f1 100%);
+  --gradient-forest: linear-gradient(135deg, #22c55e 0%, #10b981 50%, #059669 100%);
+
+  /* ============================================
+     宠物主题色（5种）
+     ============================================ */
+  --pet-color-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --pet-color-2: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  --pet-color-3: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #6366f1 100%);
+  --pet-color-4: linear-gradient(135deg, #22c55e 0%, #10b981 50%, #059669 100%);
+  --pet-color-5: linear-gradient(135deg, #f59e0b 0%, #ec4899 50%, #a855f7 100%);
+
+  /* ============================================
+     中性色（灰阶）
+     ============================================ */
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  /* ============================================
+     背景色
+     ============================================ */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --bg-elevated: rgba(30, 41, 59, 0.9);
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  --bg-surface: rgba(30, 41, 59, 0.6);
+  --bg-surface-hover: rgba(51, 65, 85, 0.7);
+  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #475569 75%, #64748b 100%);
+  --bg-primary-rgb: 15, 23, 42;
+  --bg-secondary-rgb: 30, 41, 59;
+  --bg-tertiary-rgb: 51, 65, 85;
+
+  /* ============================================
+     文字色
+     ============================================ */
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-inverse: #0f172a;
+  --text-accent: #06b6d4;
+  --text-tertiary: #64748b;
+  --text-on-accent: #ffffff;
+  --text-success: #22c55e;
+  --text-warning: #f59e0b;
+  --text-error: #ef4444;
+  --text-info: #3b82f6;
+  --text-primary-rgb: 248, 250, 252;
+  --text-secondary-rgb: 226, 232, 240;
+  --text-muted-rgb: 148, 163, 184;
+
+  /* ============================================
+     边框色
+     ============================================ */
+  --border-primary: rgba(255, 255, 255, 0.12);
+  --border-secondary: rgba(6, 182, 212, 0.3);
+  --border-focus: #06b6d4;
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-color: rgba(255, 255, 255, 0.12);
+  --border-hover: rgba(255, 255, 255, 0.2);
+  --border-success: rgba(34, 197, 94, 0.3);
+  --border-warning: rgba(245, 158, 11, 0.3);
+  --border-error: rgba(239, 68, 68, 0.3);
+  --border-info: rgba(59, 130, 246, 0.3);
+
+  /* ============================================
+     阴影系统
+     ============================================ */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.7);
+  --shadow-2xl: 0 32px 128px rgba(0, 0, 0, 0.8);
+  --shadow-primary: 0 4px 20px rgba(102, 126, 234, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  --shadow-glow: 0 0 30px rgba(6, 182, 212, 0.4);
+  --shadow-quantum: 0 0 50px rgba(102, 126, 234, 0.3);
+  --shadow-success: 0 4px 20px rgba(34, 197, 94, 0.3);
+  --shadow-warning: 0 4px 20px rgba(245, 158, 11, 0.3);
+  --shadow-error: 0 4px 20px rgba(239, 68, 68, 0.3);
+  --shadow-info: 0 4px 20px rgba(59, 130, 246, 0.3);
+  --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.15);
+  --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.2);
+
+  /* ============================================
+     透明度系统
+     ============================================ */
+  --opacity-light: 0.03;
+  --opacity-medium: 0.08;
+  --opacity-heavy: 0.15;
+  --opacity-hover: 0.25;
+  --opacity-overlay: 0.1;
+
+  /* ============================================
+     间距系统
+     ============================================ */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* ============================================
+     圆角系统
+     ============================================ */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* ============================================
+     字体系统
+     ============================================ */
+  --font-family-sans: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+  --font-family-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ============================================
+     过渡动画
+     ============================================ */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 350ms ease;
+
+  /* ============================================
+     Z-index 层级
+     ============================================ */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-pet: 2147483647;
+  --z-chat-window: 2147483648;
+  --z-modal-top: 2147483649;
+
+  /* ============================================
+     兼容性变量（保持向后兼容）
+     ============================================ */
+  --primary-color: var(--primary);
+  --primary-color-hover: var(--primary-hover);
+  --primary-color-alpha: var(--primary-alpha);
+  --bg-hover: rgba(255, 255, 255, 0.05);
+}
+
+/* ============================================
+   深色模式优化
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-secondary: #e2e8f0;
+    --text-muted: #a1a1aa;
+    --border-primary: rgba(255, 255, 255, 0.15);
+    --border-glass: rgba(255, 255, 255, 0.1);
+    --bg-glass: rgba(255, 255, 255, 0.05);
+    --shadow-primary: 0 4px 20px rgba(102, 126, 234, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+    --shadow-glow: 0 0 30px rgba(6, 182, 212, 0.5);
+    --shadow-quantum: 0 0 50px rgba(102, 126, 234, 0.4);
+  }
+}
+
+/* ============================================
+   高对比度模式支持
+   ============================================ */
+@media (prefers-contrast: high) {
+  :root {
+    --text-secondary: #f1f5f9;
+    --text-muted: #cbd5e1;
+    --border-primary: rgba(255, 255, 255, 0.3);
+    --border-secondary: rgba(6, 182, 212, 0.5);
+    --primary-alpha: rgba(99, 102, 241, 0.2);
+  }
+}
+
+/* ============================================
+   减少动画模式支持
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --primary-gradient: #6366f1;
+    --accent-gradient: #06b6d4;
+    --success-gradient: #22c55e;
+    --warning-gradient: #f59e0b;
+    --error-gradient: #ef4444;
+    --info-gradient: #3b82f6;
+  }
+}
