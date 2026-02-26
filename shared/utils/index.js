@@ -1114,6 +1114,539 @@ export function memoize(fn) {
 }
 
 // ============================================
+// DOM 操作
+// ============================================
+
+/**
+ * 查询元素
+ */
+export function $(selector, context = document) {
+  return context.querySelector(selector);
+}
+
+/**
+ * 查询所有元素
+ */
+export function $$(selector, context = document) {
+  return Array.from(context.querySelectorAll(selector));
+}
+
+/**
+ * 创建元素
+ */
+export function createElement(tag, attrs = {}, children = []) {
+  const el = document.createElement(tag);
+
+  Object.entries(attrs).forEach(([key, value]) => {
+    if (key === 'className') {
+      el.className = value;
+    } else if (key === 'style' && typeof value === 'object') {
+      Object.assign(el.style, value);
+    } else if (key.startsWith('on') && typeof value === 'function') {
+      el.addEventListener(key.slice(2).toLowerCase(), value);
+    } else {
+      el.setAttribute(key, value);
+    }
+  });
+
+  children.forEach(child => {
+    if (typeof child === 'string') {
+      el.appendChild(document.createTextNode(child));
+    } else if (child instanceof Node) {
+      el.appendChild(child);
+    }
+  });
+
+  return el;
+}
+
+/**
+ * 添加类名
+ */
+export function addClass(element, ...classes) {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (el) el.classList.add(...classes);
+  return el;
+}
+
+/**
+ * 移除类名
+ */
+export function removeClass(element, ...classes) {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (el) el.classList.remove(...classes);
+  return el;
+}
+
+/**
+ * 切换类名
+ */
+export function toggleClass(element, className) {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (el) el.classList.toggle(className);
+  return el;
+}
+
+/**
+ * 判断是否有类名
+ */
+export function hasClass(element, className) {
+  const el = typeof element === 'string' ? $(element) : element;
+  return el ? el.classList.contains(className) : false;
+}
+
+/**
+ * 设置样式
+ */
+export function setStyle(element, styles) {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (el && typeof styles === 'object') {
+    Object.assign(el.style, styles);
+  }
+  return el;
+}
+
+/**
+ * 获取样式
+ */
+export function getStyle(element, prop) {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (!el) return null;
+  return window.getComputedStyle(el)[prop];
+}
+
+/**
+ * 显示元素
+ */
+export function show(element, display = 'block') {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (el) el.style.display = display;
+  return el;
+}
+
+/**
+ * 隐藏元素
+ */
+export function hide(element) {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (el) el.style.display = 'none';
+  return el;
+}
+
+/**
+ * 切换显示/隐藏
+ */
+export function toggle(element, display = 'block') {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (!el) return null;
+  if (el.style.display === 'none') {
+    el.style.display = display;
+  } else {
+    el.style.display = 'none';
+  }
+  return el;
+}
+
+/**
+ * 获取/设置属性
+ */
+export function attr(element, name, value) {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (!el) return null;
+
+  if (value === undefined) {
+    return el.getAttribute(name);
+  }
+
+  if (value === null) {
+    el.removeAttribute(name);
+  } else {
+    el.setAttribute(name, value);
+  }
+  return el;
+}
+
+/**
+ * 获取/设置 data 属性
+ */
+export function data(element, key, value) {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (!el) return null;
+
+  if (value === undefined) {
+    return el.dataset[key];
+  }
+
+  el.dataset[key] = value;
+  return el;
+}
+
+/**
+ * 添加事件监听
+ */
+export function on(element, event, handler, options) {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (el) el.addEventListener(event, handler, options);
+  return el;
+}
+
+/**
+ * 移除事件监听
+ */
+export function off(element, event, handler, options) {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (el) el.removeEventListener(event, handler, options);
+  return el;
+}
+
+/**
+ * 触发事件
+ */
+export function trigger(element, eventName, detail) {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (!el) return null;
+
+  const event = new CustomEvent(eventName, { detail, bubbles: true, cancelable: true });
+  el.dispatchEvent(event);
+  return el;
+}
+
+/**
+ * 获取元素位置
+ */
+export function offset(element) {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (!el) return { top: 0, left: 0 };
+
+  const rect = el.getBoundingClientRect();
+  return {
+    top: rect.top + window.pageYOffset,
+    left: rect.left + window.pageXOffset,
+    width: rect.width,
+    height: rect.height
+  };
+}
+
+/**
+ * 获取元素尺寸
+ */
+export function size(element) {
+  const el = typeof element === 'string' ? $(element) : element;
+  if (!el) return { width: 0, height: 0 };
+
+  return {
+    width: el.offsetWidth,
+    height: el.offsetHeight
+  };
+}
+
+// ============================================
+// 网络请求
+// ============================================
+
+/**
+ * 简单的 fetch 封装
+ */
+export async function request(url, options = {}) {
+  const {
+    method = 'GET',
+    headers = {},
+    body = null,
+    timeout = 30000,
+    ...rest
+  } = options;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      },
+      body: body ? JSON.stringify(body) : null,
+      signal: controller.signal,
+      ...rest
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return await response.json();
+    }
+
+    return await response.text();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+    throw error;
+  }
+}
+
+/**
+ * GET 请求
+ */
+export function get(url, params = {}, options = {}) {
+  const query = buildQuery(params);
+  const fullUrl = query ? `${url}?${query}` : url;
+  return request(fullUrl, { method: 'GET', ...options });
+}
+
+/**
+ * POST 请求
+ */
+export function post(url, data = {}, options = {}) {
+  return request(url, { method: 'POST', body: data, ...options });
+}
+
+/**
+ * PUT 请求
+ */
+export function put(url, data = , options = {}) {
+  return request(url, { method: 'PUT', body: data, ...options });
+}
+
+/**
+ * DELETE 请求
+ */
+export function del(url, options = {}) {
+  return request(url, { method: 'DELETE', ...options });
+}
+
+/**
+ * PATCH 请求
+ */
+export function patch(url, data = {}, options = {}) {
+  return request(url, { method: 'PATCH', body: data, ...options });
+}
+
+// ============================================
+// 事件总线
+// ============================================
+
+class EventBus {
+  constructor() {
+    this.events = new Map();
+  }
+
+  on(event, handler) {
+    if (!this.events.has(event)) {
+      this.events.set(event, []);
+    }
+    this.events.get(event).push(handler);
+    return () => this.off(event, handler);
+  }
+
+  off(event, handler) {
+    if (!this.events.has(event)) return;
+
+    if (!handler) {
+      this.events.delete(event);
+      return;
+    }
+
+    const handlers = this.events.get(event);
+    const index = handlers.indexOf(handler);
+    if (index > -1) {
+      handlers.splice(index, 1);
+    }
+  }
+
+  emit(event, ...args) {
+    if (!this.events.has(event)) return;
+
+    this.events.get(event).forEach(handler => {
+      try {
+        handler(...args);
+      } catch (error) {
+        console.error(`Error in event handler for "${event}":`, error);
+      }
+    });
+  }
+
+  once(event, handler) {
+    const wrapper = (...args) => {
+      handler(...args);
+      this.off(event, wrapper);
+    };
+    this.on(event, wrapper);
+  }
+
+  clear() {
+    this.events.clear();
+  }
+}
+
+export const eventBus = new EventBus();
+
+// ============================================
+// 性能优化
+// ============================================
+
+/**
+ * 请求动画帧节流
+ */
+export function rafThrottle(fn) {
+  let rafId = null;
+  return function(...args) {
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => {
+      fn.apply(this, args);
+      rafId = null;
+    });
+  };
+}
+
+/**
+ * 空闲时执行
+ */
+export function idle(fn, options = {}) {
+  if ('requestIdleCallback' in window) {
+    return requestIdleCallback(fn, options);
+  }
+  return setTimeout(fn, 1);
+}
+
+/**
+ * 批量执行
+ */
+export function batch(tasks = [], batchSize = 10, delay = 0) {
+  return new Promise((resolve) => {
+    const results = [];
+    let index = 0;
+
+    function executeBatch() {
+      const end = Math.min(index + batchSize, tasks.length);
+
+      for (let i = index; i < end; i++) {
+        results.push(tasks[i]());
+      }
+
+      index = end;
+
+      if (index < tasks.length) {
+        setTimeout(executeBatch, delay);
+      } else {
+        resolve(results);
+      }
+    }
+
+    executeBatch();
+  });
+}
+
+// ============================================
+// 数据处理
+// ============================================
+
+/**
+ * 树形数据扁平化
+ */
+export function flattenTree(tree, childrenKey = 'children') {
+  const result = [];
+
+  function traverse(nodes) {
+    nodes.forEach(node => {
+      result.push(node);
+      if (node[childrenKey] && Array.isArray(node[childrenKey])) {
+        traverse(node[childrenKey]);
+      }
+    });
+  }
+
+  traverse(Array.isArray(tree) ? tree : [tree]);
+  return result;
+}
+
+/**
+ * 扁平数据转树形
+ */
+export function arrayToTree(items, options = {}) {
+  const {
+    idKey = 'id',
+    parentKey = 'parentId',
+    childrenKey = 'children',
+    rootValue = null
+  } = options;
+
+  const map = new Map();
+  const roots = [];
+
+  items.forEach(item => {
+    map.set(item[idKey], { ...item, [childrenKey]: [] });
+  });
+
+  items.forEach(item => {
+    const node = map.get(item[idKey]);
+    const parentId = item[parentKey];
+
+    if (parentId === rootValue || !map.has(parentId)) {
+      roots.push(node);
+    } else {
+      const parent = map.get(parentId);
+      parent[childrenKey].push(node);
+    }
+  });
+
+  return roots;
+}
+
+/**
+ * 查找树节点
+ */
+export function findTreeNode(tree, predicate, childrenKey = 'children') {
+  for (const node of tree) {
+    if (predicate(node)) return node;
+    if (node[childrenKey]) {
+      const found = findTreeNode(node[childrenKey], predicate, childrenKey);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
+ * 过滤树节点
+ */
+export function filterTree(tree, predicate, childrenKey = 'children') {
+  return tree.reduce((acc, node) => {
+    if (predicate(node)) {
+      const newNode = { ...node };
+      if (node[childrenKey]) {
+        newNode[childrenKey] = filterTree(node[childrenKey], predicate, childrenKey);
+      }
+      acc.push(newNode);
+    }
+    return acc;
+  }, []);
+}
+
+/**
+ * 遍历树
+ */
+export function traverseTree(tree, callback, childrenKey = 'children') {
+  function traverse(nodes, parent = null, level = 0) {
+    nodes.forEach((node, index) => {
+      callback(node, parent, level, index);
+      if (node[childrenKey]) {
+        traverse(node[childrenKey], node, level + 1);
+      }
+    });
+  }
+
+  traverse(Array.isArray(tree) ? tree : [tree]);
+}
+
+// ============================================
 // 导出默认对象
 // ============================================
 
@@ -1247,5 +1780,49 @@ export default {
   pipe,
   compose,
   curry,
-  memoize
+  memoize,
+
+  // DOM 操作
+  $,
+  $$,
+  createElement,
+  addClass,
+  removeClass,
+  toggleClass,
+  hasClass,
+  setStyle,
+  getStyle,
+  show,
+  hide,
+  toggle,
+  attr,
+  data,
+  on,
+  off,
+  trigger,
+  offset,
+  size,
+
+  // 网络请求
+  request,
+  get,
+  post,
+  put,
+  del,
+  patch,
+
+  // 事件总线
+  eventBus,
+
+  // 性能优化
+  rafThrottle,
+  idle,
+  batch,
+
+  // 数据处理
+  flattenTree,
+  arrayToTree,
+  findTreeNode,
+  filterTree,
+  traverseTree
 };

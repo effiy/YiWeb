@@ -750,6 +750,428 @@ export function createInput(options = {}) {
   `;
 }
 
+/**
+ * 创建文本域
+ */
+export function createTextarea(options = {}) {
+  const {
+    placeholder = '',
+    value = '',
+    rows = 4,
+    disabled = false,
+    className = '',
+    id = null,
+    name = null,
+    ...attrs
+  } = options;
+
+  const textareaId = id || generateId('textarea');
+  const classes = ['input'];
+  if (className) classes.push(className);
+
+  const extraAttrs = Object.entries(attrs)
+    .map(([key, val]) => `${key}="${escapeHtml(String(val))}"`)
+    .join(' ');
+
+  return `
+    <textarea
+      id="${textareaId}"
+      ${name ? `name="${name}"` : ''}
+      class="${classes.join(' ')}"
+      placeholder="${escapeHtml(placeholder)}"
+      rows="${rows}"
+      ${disabled ? 'disabled' : ''}
+      ${extraAttrs}
+    >${escapeHtml(value)}</textarea>
+  `;
+}
+
+/**
+ * 创建选择框
+ */
+export function createSelect(options = {}) {
+  const {
+    options: selectOptions = [],
+    value = '',
+    placeholder = '请选择',
+    disabled = false,
+    className = '',
+    id = null,
+    name = null,
+    ...attrs
+  } = options;
+
+  const selectId = id || generateId('select');
+  const classes = ['input'];
+  if (className) classes.push(className);
+
+  const extraAttrs = Object.entries(attrs)
+    .map(([key, val]) => `${key}="${escapeHtml(String(val))}"`)
+    .join(' ');
+
+  const optionsHtml = selectOptions.map(opt => {
+    const optValue = typeof opt === 'object' ? opt.value : opt;
+    const optLabel = typeof opt === 'object' ? opt.label : opt;
+    const selected = optValue === value ? 'selected' : '';
+    return `<option value="${escapeHtml(String(optValue))}" ${selected}>${escapeHtml(String(optLabel))}</option>`;
+  }).join('');
+
+  return `
+    <select
+      id="${selectId}"
+      ${name ? `name="${name}"` : ''}
+      class="${classes.join(' ')}"
+      ${disabled ? 'disabled' : ''}
+      ${extraAttrs}
+    >
+      ${placeholder ? `<option value="" disabled ${!value ? 'selected' : ''}>${escapeHtml(placeholder)}</option>` : ''}
+      ${optionsHtml}
+    </select>
+  `;
+}
+
+/**
+ * 创建复选框
+ */
+export function createCheckbox(options = {}) {
+  const {
+    label = '',
+    checked = false,
+    disabled = false,
+    className = '',
+    id = null,
+    name = null,
+    value = 'on',
+    ...attrs
+  } = options;
+
+  const checkboxId = id || generateId('checkbox');
+  const extraAttrs = Object.entries(attrs)
+    .map(([key, val]) => `${key}="${escapeHtml(String(val))}"`)
+    .join(' ');
+
+  return `
+    <label class="checkbox-wrapper ${className}">
+      <input
+        type="checkbox"
+        id="${checkboxId}"
+        ${name ? `name="${name}"` : ''}
+        value="${escapeHtml(String(value))}"
+        ${checked ? 'checked' : ''}
+        ${disabled ? 'disabled' : ''}
+        ${extraAttrs}
+      />
+      <span class="checkbox-label">${escapeHtml(label)}</span>
+    </label>
+  `;
+}
+
+/**
+ * 创建单选框
+ */
+export function createRadio(options = {}) {
+  const {
+    label = '',
+    checked = false,
+    disabled = false,
+    className = '',
+    id = null,
+    name = 'radio',
+    value = '',
+    ...attrs
+  } = options;
+
+  const radioId = id || generateId('radio');
+  const extraAttrs = Object.entries(attrs)
+    .map(([key, val]) => `${key}="${escapeHtml(String(val))}"`)
+    .join(' ');
+
+  return `
+    <label class="radio-wrapper ${className}">
+      <input
+        type="radio"
+        id="${radioId}"
+        name="${name}"
+        value="${escapeHtml(String(value))}"
+        ${checked ? 'checked' : ''}
+        ${disabled ? 'disabled' : ''}
+        ${extraAttrs}
+      />
+      <span class="radio-label">${escapeHtml(label)}</span>
+    </label>
+  `;
+}
+
+/**
+ * 创建开关
+ */
+export function createSwitch(options = {}) {
+  const {
+    label = '',
+    checked = false,
+    disabled = false,
+    className = '',
+    id = null,
+    name = null,
+    ...attrs
+  } = options;
+
+  const switchId = id || generateId('switch');
+  const extraAttrs = Object.entries(attrs)
+    .map(([key, val]) => `${key}="${escapeHtml(String(val))}"`)
+    .join(' ');
+
+  return `
+    <label class="switch-wrapper ${className}">
+      <input
+        type="checkbox"
+        id="${switchId}"
+        ${name ? `name="${name}"` : ''}
+        class="switch-input"
+        ${checked ? 'checked' : ''}
+        ${disabled ? 'disabled' : ''}
+        ${extraAttrs}
+      />
+      <span class="switch-slider"></span>
+      ${label ? `<span class="switch-label">${escapeHtml(label)}</span>` : ''}
+    </label>
+  `;
+}
+
+// ============================================
+// 徽章组件
+// ============================================
+
+/**
+ * 创建徽章
+ */
+export function createBadge(options = {}) {
+  const {
+    text = '',
+    variant = 'primary',
+    dot = false,
+    className = '',
+    ...attrs
+  } = options;
+
+  const classes = ['badge', `badge-${variant}`];
+  if (dot) classes.push('badge-dot');
+  if (className) classes.push(className);
+
+  const extraAttrs = Object.entries(attrs)
+    .map(([key, val]) => `${key}="${escapeHtml(String(val))}"`)
+    .join(' ');
+
+  return `
+    <span class="${classes.join(' ')}" ${extraAttrs}>
+      ${dot ? '' : escapeHtml(text)}
+    </span>
+  `;
+}
+
+// ============================================
+// 分隔线组件
+// ============================================
+
+/**
+ * 创建分隔线
+ */
+export function createDivider(options = {}) {
+  const { text = '', className = '' } = options;
+
+  if (text) {
+    return `
+      <div class="divider divider-text ${className}">
+        <span>${escapeHtml(text)}</span>
+      </div>
+    `;
+  }
+
+  return `<div class="divider ${className}"></div>`;
+}
+
+// ============================================
+// 工具提示组件
+// ============================================
+
+/**
+ * 创建工具提示
+ */
+export function createTooltip(options = {}) {
+  const {
+    content = '',
+    text = '',
+    position = 'top',
+    className = '',
+  } = options;
+
+  return `
+    <span class="tooltip-wrapper ${className}">
+      ${escapeHtml(text)}
+      <span class="tooltip tooltip-${position}">${escapeHtml(content)}</span>
+    </span>
+  `;
+}
+
+// ============================================
+// 面包屑组件
+// ============================================
+
+/**
+ * 创建面包屑
+ */
+export function createBreadcrumb(items = [], options = {}) {
+  const { separator = '/', className = '' } = options;
+
+  const itemsHtml = items.map((item, index) => {
+    const isLast = index === items.length - 1;
+    const itemClass = isLast ? 'breadcrumb-item active' : 'breadcrumb-item';
+
+    if (isLast || !item.href) {
+      return `<span class="${itemClass}">${escapeHtml(item.text || item)}</span>`;
+    }
+
+    return `
+      <a href="${sanitizeUrl(item.href)}" class="${itemClass}">
+        ${escapeHtml(item.text || item)}
+      </a>
+    `;
+  }).join(`<span class="breadcrumb-separator">${escapeHtml(separator)}</span>`);
+
+  return `<nav class="breadcrumb ${className}" aria-label="面包屑导航">${itemsHtml}</nav>`;
+}
+
+// ============================================
+// 分页组件
+// ============================================
+
+/**
+ * 创建分页
+ */
+export function createPagination(options = {}) {
+  const {
+    current = 1,
+    total = 1,
+    pageSize = 10,
+    showTotal = true,
+    className = '',
+    onChange = 'handlePageChange'
+  } = options;
+
+  const totalPages = Math.ceil(total / pageSize);
+  const pages = [];
+
+  // 生成页码
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(i);
+    }
+  } else {
+    if (current <= 4) {
+      pages.push(1, 2, 3, 4, 5, '...', totalPages);
+    } else if (current >= totalPages - 3) {
+      pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+    } else {
+      pages.push(1, '...', current - 1, current, current + 1, '...', totalPages);
+    }
+  }
+
+  const pagesHtml = pages.map(page => {
+    if (page === '...') {
+      return '<span class="pagination-ellipsis">...</span>';
+    }
+    const activeClass = page === current ? 'active' : '';
+    return `
+      <button
+        class="pagination-item ${activeClass}"
+        onclick="${onChange}(${page})"
+        ${page === current ? 'disabled' : ''}
+      >
+        ${page}
+      </button>
+    `;
+  }).join('');
+
+  const totalText = showTotal ? `<span class="pagination-total">共 ${total} 条</span>` : '';
+
+  return `
+    <div class="pagination ${className}">
+      ${totalText}
+      <div class="pagination-items">
+        <button
+          class="pagination-item pagination-prev"
+          onclick="${onChange}(${current - 1})"
+          ${current === 1 ? 'disabled' : ''}
+        >
+          上一页
+        </button>
+        ${pagesHtml}
+        <button
+          class="pagination-item pagination-next"
+          onclick="${onChange}(${current + 1})"
+          ${current === totalPages ? 'disabled' : ''}
+        >
+          下一页
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================
+// 表格组件
+// ============================================
+
+/**
+ * 创建表格
+ */
+export function createTable(options = {}) {
+  const {
+    columns = [],
+    data = [],
+    striped = false,
+    bordered = false,
+    hoverable = true,
+    className = '',
+  } = options;
+
+  const classes = ['table'];
+  if (striped) classes.push('table-striped');
+  if (bordered) classes.push('table-bordered');
+  if (hoverable) classes.push('table-hover');
+  if (className) classes.push(className);
+
+  const theadHtml = `
+    <thead>
+      <tr>
+        ${columns.map(col => `<th>${escapeHtml(col.title || col.key)}</th>`).join('')}
+      </tr>
+    </thead>
+  `;
+
+  const tbodyHtml = `
+    <tbody>
+      ${data.map(row => `
+        <tr>
+          ${columns.map(col => {
+            const value = col.render ? col.render(row[col.key], row) : row[col.key];
+            return `<td>${value !== undefined && value !== null ? escapeHtml(String(value)) : ''}</td>`;
+          }).join('')}
+        </tr>
+      `).join('')}
+    </tbody>
+  `;
+
+  return `
+    <div class="table-wrapper">
+      <table class="${classes.join(' ')}">
+        ${theadHtml}
+        ${tbodyHtml}
+      </table>
+    </div>
+  `;
+}
+
 // ============================================
 // 导出
 // ============================================
@@ -790,13 +1212,43 @@ export default {
   showMessage,
   message,
 
-  // 输入框
+  // 表单输入
   createInput,
+  createTextarea,
+  createSelect,
+  createCheckbox,
+  createRadio,
+  createSwitch,
+
+  // 徽章
+  createBadge,
+
+  // 分隔线
+  createDivider,
+
+  // 工具提示
+  createTooltip,
+
+  // 面包屑
+  createBreadcrumb,
+
+  // 分页
+  createPagination,
+
+  // 表格
+  createTable,
 
   // 别名 - 兼容 yi 组件命名
   yiButton: createButton,
   yiTag: createTag,
   yiModal: createModal,
   yiLoading: createSpinner,
-  yiAlert: createAlert
+  yiAlert: createAlert,
+  yiInput: createInput,
+  yiSelect: createSelect,
+  yiCheckbox: createCheckbox,
+  yiRadio: createRadio,
+  yiSwitch: createSwitch,
+  yiBadge: createBadge,
+  yiTable: createTable
 };
