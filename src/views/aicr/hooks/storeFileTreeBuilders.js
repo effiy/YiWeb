@@ -58,10 +58,23 @@ export function buildFileTreeFromSessions(allSessions) {
 
         const fileName = item.baseName;
 
-        let uniqueName = fileName;
+        // 确保文件名包含扩展名
+        let fileNameWithExt = fileName;
+        const extension = session.extension || '';
+        if (extension && !fileName.endsWith(extension)) {
+            fileNameWithExt = fileName + extension;
+        }
+
+        let uniqueName = fileNameWithExt;
         let counter = 1;
         while (currentLevelChildren.find(c => c.name === uniqueName && c.type === 'file')) {
-            uniqueName = `${fileName} (${counter})`;
+            // 如果有扩展名，在扩展名前插入计数器
+            if (extension && uniqueName.endsWith(extension)) {
+                const basePart = uniqueName.slice(0, -extension.length);
+                uniqueName = `${basePart} (${counter})${extension}`;
+            } else {
+                uniqueName = `${fileNameWithExt} (${counter})`;
+            }
             counter++;
         }
 
@@ -73,9 +86,11 @@ export function buildFileTreeFromSessions(allSessions) {
             name: uniqueName,
             type: 'file',
             content: '',
-            size: 0,
+            size: session.size || 0,
             lastModified: session.updatedAt || session.createdAt,
-            sessionKey: sessionKey
+            sessionKey: sessionKey,
+            url: session.url || '',
+            extension: extension
         });
 
         if (sessionKey != null) {
