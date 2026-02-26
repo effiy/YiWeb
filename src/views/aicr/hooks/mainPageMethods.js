@@ -301,6 +301,22 @@ export const createMainPageMethods = (store) => {
                 const methods = useMethods(store);
                 await methods.handleSessionDelete(sessionKey);
             } catch (error) {
+                logError('[主页面] 会话删除失败:', error);
+            }
+        },
+        handleSyncKnowledge: async function () {
+            logInfo('[主页面] 触发同步知识库');
+            try {
+                const methods = useMethods(store);
+                await methods.handleSyncKnowledge();
+            } catch (error) {
+                logError('[主页面] 同步知识库失败:', error);
+            }
+        },
+            try {
+                const methods = useMethods(store);
+                await methods.handleSessionDelete(sessionKey);
+            } catch (error) {
                 logError('[主页面] 会话删除处理失败:', error);
             }
         },

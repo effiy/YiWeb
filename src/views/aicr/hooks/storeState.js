@@ -98,6 +98,9 @@ export function createAicrStoreState(vueRef) {
     const sessionEditTitle = vueRef('');
     const sessionEditUrl = vueRef('');
     const sessionEditDescription = vueRef('');
+
+    // 同步知识库状态
+    const syncingKnowledge = vueRef(false);
     const sessionEditGenerating = vueRef(false);
     const sessionEditData = vueRef(null);
 
@@ -213,7 +216,8 @@ export function createAicrStoreState(vueRef) {
             tagFilterExpanded,
             tagFilterVisibleCount,
             tagFilterSearchKeyword,
-            tagOrder
+            tagOrder,
+            syncingKnowledge
         },
         internals: {
             pendingFileRequests,

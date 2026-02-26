@@ -26,6 +26,7 @@ import { createFileTreeCrudMethods } from './fileTreeCrudMethods.js';
 import { createProjectZipMethods } from './projectZipMethods.js';
 import { createFolderTransferMethods } from './folderTransferMethods.js';
 import { createAuthDialogMethods } from './authDialogMethods.js';
+import { getKnowledgeSyncService } from '/src/services/aicr/knowledgeSyncService.js';
 import { createSessionListMethods } from './sessionListMethods.js';
 import { createSessionEditMethods } from './sessionEditMethods.js';
 import { createSessionActionMethods } from './sessionActionMethods.js';
@@ -554,6 +555,47 @@ export const useMethods = (store) => {
         triggerUploadProjectVersion,
         toggleBatchMode: toggleBatchMode,
         toggleFileSelection: toggleFileSelection,
+
+        /**
+         * 同步 YiKnowledge 文档到数据库
+         */
+        handleSyncKnowledge: async () => {
+            return safeExecute(async () => {
+                if (store.syncingKnowledge && store.syncingKnowledge.value) {
+                    console.log('[handleSyncKnowledge] 同步正在进行中，跳过');
+                    return;
+                }
+
+                try {
+                    if (store.syncingKnowledge) {
+                        store.syncingKnowledge.value = true;
+                    }
+
+                    const knowledgeSync = getKnowledgeSyncService();
+                    const result = await knowledgeSync.syncKnowledgeToDatabase();
+
+                    if (result && result.success) {
+                        showSuccessMessage('YiKnowledge 文档同步成功！');
+                        console.log('[handleSyncKnowledge] 同步成功:', result);
+                    } else {
+                        throw new Error(result?.message || '同步失败');
+                    }
+                } catch (error) {
+                    console.error('[handleSyncKnowledge] 同步失败:', error);
+                    const errorMsg = error?.message || '同步失败，请稍后重试';
+                    if (window.showError) {
+                        window.showError(errorMsg);
+                    } else {
+                        alert(errorMsg);
+                    }
+                    throw error;
+                } finally {
+                    if (store.syncingKnowledge) {
+                        store.syncingKnowledge.value = false;
+                    }
+                }
+            }, '同步知识库');
+        },
 
         /**
          * 处理复制为Prompt

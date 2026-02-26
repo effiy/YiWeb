@@ -109,6 +109,7 @@ import { logInfo, logWarn, logError } from '/src/utils/core/log.js';
                 sessionEditUrl: store.sessionEditUrl,
                 sessionEditDescription: store.sessionEditDescription,
                 sessionEditGenerating: store.sessionEditGenerating,
+                syncingKnowledge: store.syncingKnowledge,
             },
             onMounted: (mountedApp) => {
                 logInfo('[代码审查页面] 应用已挂载');

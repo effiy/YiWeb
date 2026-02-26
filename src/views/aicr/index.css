@@ -518,3 +518,66 @@ html, body {
     margin-top: 14px;
     justify-content: center;
 }
+
+/* ========== 同步知识库按钮 ========== */
+.aicr-header-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.aicr-header-container > search-header {
+    flex: 1;
+}
+
+.sync-knowledge-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--primary-color, #4facfe);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(79, 172, 254, 0.2);
+}
+
+.sync-knowledge-btn:hover:not(:disabled) {
+    background: var(--primary-hover, #3b9aed);
+    box-shadow: 0 4px 8px rgba(79, 172, 254, 0.3);
+    transform: translateY(-1px);
+}
+
+.sync-knowledge-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(79, 172, 254, 0.2);
+}
+
+.sync-knowledge-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.sync-knowledge-btn i {
+    font-size: 14px;
+}
+
+.sync-btn-text {
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .sync-btn-text {
+        display: none;
+    }
+
+    .sync-knowledge-btn {
+        padding: 8px 12px;
+    }
+}
