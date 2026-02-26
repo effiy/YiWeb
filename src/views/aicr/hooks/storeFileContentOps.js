@@ -332,8 +332,12 @@ export function createAicrStoreFileContentOps(deps, state, internals) {
 
     const normalizeToWriteTargetFile = (rawPath) => {
         let cleanPath = normalizeFilePath(String(rawPath || '').trim());
-        if (cleanPath.startsWith('static/')) cleanPath = cleanPath.substring(7);
+        // 移除开头的斜杠
         cleanPath = cleanPath.replace(/^\/+/, '');
+        // 移除 static/ 前缀
+        if (cleanPath.startsWith('static/')) {
+            cleanPath = cleanPath.substring(7);
+        }
         return cleanPath;
     };
 
