@@ -1,0 +1,117 @@
+<!-- 键盘快捷键帮助面板 -->
+<div v-if="visible" class="keyboard-shortcuts-overlay" @click="handleOverlayClick">
+  <div class="keyboard-shortcuts-panel" @click.stop>
+    <div class="shortcuts-header">
+      <h2 class="shortcuts-title">
+        <i class="fas fa-keyboard" aria-hidden="true"></i>
+        键盘快捷键
+      </h2>
+      <button
+        type="button"
+        class="shortcuts-close-btn"
+        @click="close"
+        aria-label="关闭"
+        title="关闭 (ESC)"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="shortcuts-content">
+      <!-- 全局快捷键 -->
+      <div class="shortcuts-section">
+        <h3 class="shortcuts-section-title">全局</h3>
+        <div class="shortcuts-list">
+          <div class="shortcut-item">
+            <span class="shortcut-keys">
+              <kbd>?</kbd>
+            </span>
+            <span class="shortcut-description">显示/隐藏快捷键帮助</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-keys">
+              <kbd>ESC</kbd>
+            </span>
+            <span class="shortcut-description">关闭对话框或清除搜索</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 代码查看器 -->
+      <div class="shortcuts-section">
+        <h3 class="shortcuts-section-title">代码查看器</h3>
+        <div class="shortcuts-list">
+          <div class="shortcut-item">
+            <span class="shortcut-keys">
+              <kbd>Ctrl</kbd> + <kbd>F</kbd>
+            </span>
+            <span class="shortcut-description">搜索代码</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-keys">
+              <kbd>F3</kbd>
+            </span>
+            <span class="shortcut-description">下一个搜索结果</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-keys">
+              <kbd>Shift</kbd> + <kbd>F3</kbd>
+            </span>
+            <span class="shortcut-description">上一个搜索结果</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-keys">
+              <kbd>Ctrl</kbd> + <kbd>S</kbd>
+            </span>
+            <span class="shortcut-description">保存文件（编辑模式）</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 文件树 -->
+      <div class="shortcuts-section">
+        <h3 class="shortcuts-section-title">文件树</h3>
+        <div class="shortcuts-list">
+          <div class="shortcut-item">
+            <span class="shortcut-keys">
+              <kbd>Enter</kbd> / <kbd>Space</kbd>
+            </span>
+            <span class="shortcut-description">打开选中的文件或文件夹</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-keys">
+              <kbd>↑</kbd> <kbd>↓</kbd>
+            </span>
+            <span class="shortcut-description">在文件树中导航</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 聊天面板 -->
+      <div class="shortcuts-section">
+        <h3 class="shortcuts-section-title">聊天面板</h3>
+        <div class="shortcuts-list">
+          <div class="shortcut-item">
+            <span class="shortcut-keys">
+              <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+            </span>
+            <span class="shortcut-description">发送消息</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-keys">
+              <kbd>Shift</kbd> + <kbd>Enter</kbd>
+            </span>
+            <span class="shortcut-description">换行</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="shortcuts-footer">
+      <p class="shortcuts-hint">
+        <i class="fas fa-lightbulb" aria-hidden="true"></i>
+        提示：按 <kbd>?</kbd> 键可随时打开此帮助面板
+      </p>
+    </div>
+  </div>
+</div>

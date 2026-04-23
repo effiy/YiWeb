@@ -1,0 +1,192 @@
+/**
+ * 文件字段规范化工具
+ * 统一处理 projectTree、projectFiles、session、静态文件的字段规则
+ * 确保新建、删除、修改、导入操作的数据一致性
+ */
+
+/**
+ * 规范化文件路径/ID
+ * 统一规则：
+ * - 使用正斜杠 / 作为路径分隔符
+ * - 移除开头的 ./ 和多余的 /
+ * - 合并连续的 /
+ * - 移除结尾的 /（除非是根路径）
+ * 
+ * @param {string} path - 文件路径或ID
+ * @returns {string} 规范化后的路径
+ */
+export function normalizeFilePath(path) {
+    if (path == null || path === '') return '';
+    
+    try {
+        let s = String(path);
+        
+        // 1. 统一路径分隔符（Windows路径转正斜杠）
+        s = s.replace(/\\/g, '/');
+        
+        // 2. 移除开头的相对路径标记
+        s = s.replace(/^\.\//, '');
+        
+        // 3. 移除开头的斜杠
+        s = s.replace(/^\/+/, '');
+        
+        // 4. 合并连续的斜杠
+        s = s.replace(/\/+/g, '/');
+        
+        // 5. 移除结尾的斜杠
+        s = s.replace(/\/+$/, '');
+        
+        return s;
+    } catch (e) {
+        console.warn('[normalizeFilePath] 规范化失败:', e, '原始路径:', path);
+        return String(path || '');
+    }
+}
+
+/**
+ * 从文件路径提取文件名
+ * @param {string} path - 文件路径
+ * @returns {string} 文件名
+ */
+export function extractFileName(path) {
+    if (!path || typeof path !== 'string') return '';
+    const normalized = normalizeFilePath(path);
+    const parts = normalized.split('/').filter(Boolean);
+    return parts.length > 0 ? parts[parts.length - 1] : '';
+}
+
+/**
+ * 从文件路径提取标签（目录路径）
+ * @param {string} filePath - 文件路径
+ * @returns {Array<string>} 标签数组
+ */
+export function extractTagsFromPath(filePath) {
+    if (!filePath) return [];
+    const parts = String(filePath).split('/').filter(p => p && String(p).trim());
+    if (parts.length <= 1) return [];
+    return parts.slice(0, -1);
+}
+
+/**
+ * 规范化文件对象，统一字段结构
+ * 统一字段规则：
+ * - key: 规范化后的文件路径（主要标识）
+ * - path: 与 key 相同
+ * - name: 从路径提取的文件名
+ * - content: 文件内容（字符串）
+ * - size: 文件大小（字节数）
+ * - type: 'file' 或 'folder'
+ * 
+ * @param {Object} file - 文件对象（可能包含各种字段格式）
+ * @returns {Object} 规范化后的文件对象
+ */
+export function normalizeFileObject(file) {
+    if (!file || typeof file !== 'object') {
+        return null;
+    }
+    
+    // 提取原始路径（优先使用 key，兼容旧字段）
+    const rawPath = file.key || file.path || '';
+    
+    // 规范化路径
+    const normalizedPath = normalizeFilePath(rawPath);
+    
+    if (!normalizedPath) {
+        console.warn('[normalizeFileObject] 无法提取有效路径:', file);
+        return null;
+    }
+    
+    // 提取文件名
+    const fileName = extractFileName(normalizedPath);
+    
+    // 提取文件大小
+    let fileSize = 0;
+    if (Number.isFinite(file.size)) {
+        fileSize = file.size;
+    } else if (file.content && typeof file.content === 'string') {
+        // 如果没有 size，根据内容计算
+        try {
+            fileSize = new TextEncoder().encode(file.content).length;
+        } catch (e) {
+            fileSize = file.content.length;
+        }
+    }
+    
+    // 确定类型
+    const fileType = file.type || 'file';
+    const now = Date.now();
+    
+    // 构建规范化对象
+    const normalized = {
+        key: normalizedPath,
+        path: normalizedPath,
+        
+        // 基本信息
+        name: fileName || normalizedPath,
+        type: fileType,
+        
+        // 内容字段
+        content: file.content || '',
+        size: fileSize,
+        
+        // 时间戳
+        createdAt: file.createdAt || file.createdTime || now,
+        updatedAt: file.updatedAt || file.updatedTime || now,
+        modified: file.modified || file.updatedAt || file.updatedTime || now
+    };
+    
+    return normalized;
+}
+
+/**
+ * 规范化文件树节点
+ * 统一字段规则：
+ * - key: 节点路径
+ * - name: 节点名称
+ * - type: 'file' 或 'folder'
+ * - path: 与 key 相同
+ * - children: 子节点数组（仅文件夹有）
+ * 
+ * @param {Object} node - 文件树节点
+ * @returns {Object} 规范化后的节点
+ */
+export function normalizeTreeNode(node) {
+    if (!node || typeof node !== 'object') {
+        return null;
+    }
+    
+    // 提取原始路径
+    const rawPath = node.key || node.id || node.path || node.fileId || '';
+    
+    // 规范化路径
+    const normalizedPath = normalizeFilePath(rawPath);
+    
+    // 提取名称
+    const nodeName = node.name || extractFileName(normalizedPath) || normalizedPath;
+    const nodeType = node.type || (Array.isArray(node.children) ? 'folder' : 'file');
+    
+    // 规范化节点
+    const normalized = {
+        key: normalizedPath,
+        name: nodeName,
+        type: nodeType,
+        path: normalizedPath
+    };
+    
+    // 如果是文件夹，处理子节点
+    if (normalized.type === 'folder' && Array.isArray(node.children)) {
+        normalized.children = node.children
+            .map(child => normalizeTreeNode(child))
+            .filter(Boolean);
+    } else if (normalized.type === 'file') {
+        // 文件节点可以包含额外信息
+        if (Number.isFinite(node.size)) {
+            normalized.size = node.size;
+        }
+        if (node.modified) {
+            normalized.modified = node.modified;
+        }
+    }
+    
+    return normalized;
+}

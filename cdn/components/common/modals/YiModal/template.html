@@ -1,0 +1,27 @@
+<div v-if="visible" :class="wrapperClass" role="dialog" aria-modal="true" :aria-label="ariaLabel">
+    <div :class="maskClass" @click="onMaskClick"></div>
+    <div :class="bodyClass" :tabindex="bodyTabindex" @keydown.esc="onEscKeydown" @click.stop>
+        <div v-if="showHeader" :class="headerClass">
+            <h3 v-if="title" :class="titleClass">{{ title }}</h3>
+            <slot name="header"></slot>
+            <button
+                v-if="showClose"
+                type="button"
+                :class="closeClass"
+                @click="onClose"
+                aria-label="关闭"
+            >
+                <slot name="close-icon">×</slot>
+            </button>
+        </div>
+
+        <div :class="contentClass">
+            <slot></slot>
+        </div>
+
+        <div v-if="showFooter || $slots.footer" :class="footerClass">
+            <slot name="footer"></slot>
+        </div>
+    </div>
+</div>
+

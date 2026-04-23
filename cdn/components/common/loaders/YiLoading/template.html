@@ -1,0 +1,30 @@
+/**
+ * 优化后的加载组件HTML模板
+ * author: liangliang
+ */
+<div :class="computedContainerClass" role="status" aria-live="polite" :aria-label="text">
+    <!-- Spinner类型 -->
+    <div v-if="type === 'spinner'" :class="computedSpinnerClass" aria-hidden="true"></div>
+
+    <!-- Dots类型 -->
+    <div v-else-if="type === 'dots'" class="loading-dots" aria-hidden="true">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+    </div>
+
+    <!-- Pulse类型 -->
+    <div v-else-if="type === 'pulse'" class="loading-pulse" aria-hidden="true"></div>
+
+    <!-- Wave类型 -->
+    <div v-else-if="type === 'wave'" class="loading-wave" aria-hidden="true">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+    </div>
+
+    <div v-if="text" :class="textClass">{{ text }}</div>
+    <div v-if="subtext" :class="subtextClass">{{ subtext }}</div>
+</div>

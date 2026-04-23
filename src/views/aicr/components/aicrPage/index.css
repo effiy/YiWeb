@@ -1,0 +1,26 @@
+/**
+ * AicrPage 组件样式
+ * author: YiWeb
+ * 说明：AICR 主页面组件样式
+ */
+
+.aicr-main {
+    display: flex;
+    flex-direction: row;
+    height: calc(100vh - 64px); /* 减去 header 高度 */
+    overflow: hidden;
+}
+
+/* 响应式调整 */
+@media (max-width: 1024px) {
+    .aicr-main {
+        height: calc(100vh - 56px);
+    }
+}
+
+@media (max-width: 768px) {
+    .aicr-main {
+        flex-direction: column;
+        height: calc(100vh - 48px);
+    }
+}
