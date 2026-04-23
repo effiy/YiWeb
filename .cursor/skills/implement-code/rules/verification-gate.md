@@ -19,15 +19,16 @@
 
 ## 2. 检查项分类与验证方式
 
-### 2.1 P0 — 必须通过（自动验证）
+### 2.1 P0 — 必须通过（Playwright-MCP 自动验证）
 
-| 检查类型 | 验证方式 | 通过条件 |
-|---------|---------|---------|
-| UI 元素存在 | `expect(locator).toBeVisible()` | 元素可见，无控制台 JS 错误 |
-| UI 元素可操作 | `expect(locator).toBeEnabled()` | 元素未禁用、未被遮挡 |
-| 操作步骤可执行 | `page.click/fill` 不抛出异常 | 操作完成，无超时 |
-| 桩行为触发 | 操作后检查状态变更 | 对应结果区域可见 / 文本更新 |
-| data-testid 覆盖 | 枚举检查清单操作项，确认 testid 存在 | 无遗漏 testid |
+| 检查类型 | MCP 验证方式 | 通过条件 |
+|---------|------------|---------|
+| UI 元素存在 | `browser_snapshot` 后语义比对 + `browser_evaluate` 执行 `toBeVisible()` | 元素可见，无控制台 JS 错误 |
+| UI 元素可操作 | `browser_snapshot` 确认未禁用 + `browser_evaluate` 执行 `toBeEnabled()` | 元素未禁用、未被遮挡 |
+| 操作步骤可执行 | `browser_click / browser_fill` 无报错 | MCP 工具调用成功，无超时 |
+| 桩行为触发 | `browser_click` 后 `browser_snapshot` 比对状态变更 | 对应结果区域可见 / 文本更新 |
+| API Mock 生效 | `browser_evaluate` 检查 `page.route` 是否拦截请求 | mock 响应被正确返回 |
+| data-testid 覆盖 | `browser_evaluate` 枚举检查清单操作项的 testid | 无遗漏 testid |
 
 ### 2.2 P1 — 建议通过（自动 + 人工）
 
@@ -47,16 +48,24 @@
 
 ---
 
-## 3. 验证执行流程
+## 3. 验证执行流程（Playwright-MCP 驱动）
+
+阶段 3 的所有 P0 自动验证 **必须使用 Playwright-MCP 工具**执行交互式验证，流程如下：
 
 ```
 对每个场景（按动态检查清单顺序）：
-  1. 打开对应原型页面
-  2. 执行 P0 Playwright 检查
-  3. 记录结果（通过 / 未通过 / 人工确认）
-  4. 未通过 → 记录：检查项描述 + 实际行为 + 预期行为
-  5. 本轮结束后统计 P0 通过率
+  1. browser_navigate  → 导航至原型页面（本地 dev server 或 file://）
+  2. browser_snapshot  → 确认初始状态与前置条件一致（DOM 快照比对）
+  3. （若场景涉及 API）→ 确认 .spec.ts 中 page.route mock 已声明
+  4. 按操作步骤顺序执行 MCP 工具：
+       browser_click / browser_fill / browser_select_option
+  5. browser_snapshot  → 截取操作后状态，与预期结果语义比对
+  6. browser_evaluate  → 执行断言逻辑（对应检查清单预期结果）
+  7. 记录结果：✅ 通过 / ❌ 未通过（含 MCP 操作记录 + 截图描述）
+  8. 本轮结束后统计 P0 通过率
 ```
+
+**降级策略**：若 Playwright-MCP 不可用，降级为 `npx playwright test tests/e2e/<功能名>/ --reporter=list`，但必须在验证报告中注明"Playwright-MCP 不可用，降级为命令行执行"。
 
 ---
 
@@ -93,9 +102,10 @@ P0 未通过项：
   场景：<场景名>
   检查项：<检查项描述>
   来源：动态检查清单 § <章节> / 需求任务 US-{N}
-  实际行为：<Playwright 错误信息或截图描述>
+  MCP 操作记录：<执行的 MCP 工具序列>
+  实际行为：<browser_snapshot 截图描述 或 MCP 工具报错>
   预期行为：<来自动态检查清单的预期结果>
-  根因分类：□ UI 元素缺失  □ testid 错误  □ 桩行为未触发  □ 文档冲突  □ 其他
+  根因分类：□ UI 元素缺失  □ testid 错误  □ 桩行为未触发  □ API Mock 未生效  □ 文档冲突  □ 其他
   建议操作：<具体建议>
 
 人工确认项：
@@ -113,13 +123,17 @@ P0 未通过项：
 === 验证门禁通过报告 ===
 功能：<功能名>
 执行轮次：<N>（共 <M> 个场景）
+验证引擎：Playwright-MCP / 命令行降级（注明原因）
 时间：<ISO 时间戳>
 
 P0 总计：<N> 项，全部通过 ✅
 P1 通过：<N1> 项 / 总 <M1> 项
 P2 通过：<N2> 项 / 总 <M2> 项（仅供参考）
 
-人工确认项（<K> 项，不计入门禁）：
+API Mock 验证：
+  共 <K> 个接口已 mock，成功路径 ✅，失败路径 ✅
+
+人工确认项（<L> 项，不计入门禁）：
   - <项目描述>
 
 结论：验证门禁已通过，解锁阶段 4（项目代码实施）。
