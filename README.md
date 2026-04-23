@@ -1,12 +1,11 @@
 # YiWeb
 
-YiWeb 是一个使用原生 JavaScript + Vue 3 构建的前端项目，专注于简化开发流程。
+YiWeb 是一个使用原生 JavaScript + Vue 3 构建的前端项目，专注于 AI 辅助代码审查。
 
 ## 核心特性
 
 - 🤖 **AICR 应用** - 带 AI 聊天功能的代码审查界面
 - 📦 **CDN 组件库** - 可复用 UI 组件、Markdown/Mermaid 渲染
-- 🛠️ **技能系统** - Claude Code 开发规范和文档生成工具
 
 ### 设计理念
 
@@ -37,8 +36,7 @@ YiWeb/
 ├── src/
 │   ├── core/         # 配置、服务、工具
 │   └── views/        # 应用入口（aicr）
-├── docs/             # 项目文档
-└── .claude/skills/   # Claude Code 技能系统
+└── docs/             # 项目文档
 ```
 
 ## 开发指南
@@ -52,7 +50,7 @@ YiWeb/
 | 文件 | 用途 |
 |------|------|
 | `src/views/aicr/index.js` | AICR 应用入口 |
-| `cdn/utils/view/baseView.js` | Vue 应用工厂 |
+| `src/views/aicr/index.html` | AICR HTML 入口 |
 | `cdn/markdown/index.js` | Markdown 渲染器 |
 | `cdn/mermaid/index.js` | Mermaid 渲染器 |
 
@@ -64,4 +62,3 @@ YiWeb/
 ## 相关文档
 
 - [CLAUDE.md](./CLAUDE.md) - 开发规范
-- [docs/README.md](./docs/README.md) - 完整文档
