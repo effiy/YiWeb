@@ -1,0 +1,43 @@
+<button
+  v-if="as === 'button'"
+  :type="type"
+  :class="computedClass"
+  :disabled="isDisabled"
+  :title="title || null"
+  :aria-label="ariaLabel || null"
+  :aria-busy="loading ? 'true' : null"
+  @click="onClick"
+>
+  <span v-if="loading" class="btn-spinner" aria-hidden="true"></span>
+  <span v-if="icon && iconPosition === 'left'" class="btn-icon btn-icon-left">
+    <slot name="icon-left">{{ icon }}</slot>
+  </span>
+  <span class="btn-content">
+    <slot></slot>
+  </span>
+  <span v-if="icon && iconPosition === 'right'" class="btn-icon btn-icon-right">
+    <slot name="icon-right">{{ icon }}</slot>
+  </span>
+</button>
+<a
+  v-else
+  :href="href || null"
+  :target="target || null"
+  :rel="rel || null"
+  :class="computedClass"
+  :aria-disabled="isDisabled ? 'true' : null"
+  :title="title || null"
+  :aria-label="ariaLabel || null"
+  @click="onClick"
+>
+  <span v-if="loading" class="btn-spinner" aria-hidden="true"></span>
+  <span v-if="icon && iconPosition === 'left'" class="btn-icon btn-icon-left">
+    <slot name="icon-left">{{ icon }}</slot>
+  </span>
+  <span class="btn-content">
+    <slot></slot>
+  </span>
+  <span v-if="icon && iconPosition === 'right'" class="btn-icon btn-icon-right">
+    <slot name="icon-right">{{ icon }}</slot>
+  </span>
+</a>

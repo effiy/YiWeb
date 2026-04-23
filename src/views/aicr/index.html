@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="代码审查助手，支持文件树浏览">
+    <meta name="keywords" content="代码审查, AI, 代码评审, 文件树, YiWeb">
+    <meta name="author" content="liangliang">
+    <title>YiWeb_-_代码审查</title>
+    <link rel="stylesheet" href="../../views/aicr/styles/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.5.26/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js" crossorigin="anonymous"></script>
+    <!-- Mermaid.js for diagram rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <div id="app">
+        <aicr-page></aicr-page>
+    </div>
+
+    <!-- 全局加载指示器 -->
+    <section id="global-loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="全局加载中">
+        <div class="loading-content">
+            <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+            <p class="loading-text" id="loading-text">正在加载...</p>
+        </div>
+    </section>
+
+
+
+    <!-- 脚本标签移到Vue应用容器外部 -->
+    <!-- 基础配置和工具 -->
+    <script type="module" src="../../core/config.js"></script>
+
+    <!-- 主应用入口 -->
+    <script type="module" src="../../views/aicr/index.js"></script>
+
+    <!-- 性能监控（最后加载） -->
+    <script type="module" src="/cdn/utils/core/performance.js"></script>
+</body>
+
+</html>

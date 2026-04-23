@@ -1,0 +1,80 @@
+<header class="header-row" role="banner">
+  <div class="header-nav">
+    <button
+      type="button"
+      class="home-btn"
+      @click="goHome"
+      :title="homeButtonTitle"
+      :aria-label="homeButtonTitle"
+    >
+      <i :class="homeIconClass" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <div class="header-center">
+    <div class="search-box">
+      <textarea
+        v-model="searchQuery"
+        @input="handleInput"
+        @keydown="handleKeydown"
+        @compositionstart="handleCompositionStart"
+        @compositionend="handleCompositionEnd"
+        :placeholder="placeholder"
+        rows="1"
+        maxlength="2000"
+        aria-label="搜索输入框"
+        autocomplete="off"
+        spellcheck="false"
+        ref="searchInput"
+      ></textarea>
+      <button
+        v-if="searchQuery"
+        type="button"
+        class="clear-btn"
+        @click="clearSearch"
+        aria-label="清除搜索"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <button
+      v-if="showNewsButton"
+      type="button"
+      class="header-icon-btn"
+      @click="openNews"
+      title="新闻"
+      aria-label="新闻"
+    >
+      <i class="fas fa-newspaper" aria-hidden="true"></i>
+    </button>
+
+    <button
+      v-if="showAuthButton"
+      type="button"
+      class="header-icon-btn"
+      @click="openAuth"
+      title="API 鉴权"
+      aria-label="API 鉴权"
+    >
+      <i class="fas fa-key" aria-hidden="true"></i>
+    </button>
+
+    <button
+      v-if="showSidebarToggle"
+      type="button"
+      class="header-icon-btn"
+      @click="toggleSidebar"
+      :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+      :aria-label="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+    >
+      <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" aria-hidden="true"></i>
+    </button>
+
+    <span class="env-badge" :class="envType">
+      {{ envLabel }}
+    </span>
+  </div>
+</header>

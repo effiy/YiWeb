@@ -1,0 +1,112 @@
+<!--
+  YiPagination 分页组件模板
+  author: liangliang
+-->
+<div v-if="showPagination" :class="paginationClass">
+  <!-- 总数 -->
+  <span v-if="layoutComponents.includes('total')" class="yi-pagination__total">
+    共 {{ total }} 条
+  </span>
+
+  <!-- 每页条数选择器 -->
+  <div v-if="layoutComponents.includes('sizes')" class="yi-pagination__sizes">
+    <select
+      :value="internalPageSize"
+      :disabled="disabled"
+      @change="handleSizeChange"
+      class="yi-pagination__sizes-select"
+    >
+      <option v-for="size in pageSizes" :key="size" :value="size">
+        {{ size }} 条/页
+      </option>
+    </select>
+  </div>
+
+  <!-- 上一页 -->
+  <button
+    v-if="layoutComponents.includes('prev')"
+    type="button"
+    class="yi-pagination__btn yi-pagination__prev"
+    :disabled="prevDisabled"
+    @click="handlePrev"
+  >
+    <span v-if="prevText">{{ prevText }}</span>
+    <span v-else>‹</span>
+  </button>
+
+  <!-- 页码 -->
+  <ul v-if="layoutComponents.includes('pager')" class="yi-pagination__pager">
+    <!-- 第一页 -->
+    <li
+      :class="['yi-pagination__number', { 'is-active': internalCurrentPage === 1 }]"
+      @click="handlePagerClick(1)"
+    >
+      1
+    </li>
+
+    <!-- 向前省略 -->
+    <li
+      v-if="pagers.showPrevMore"
+      class="yi-pagination__more yi-pagination__more-prev"
+      @click="handlePrevMore"
+    >
+      <span class="more-icon">•••</span>
+      <span class="arrow-icon">«</span>
+    </li>
+
+    <!-- 中间页码 -->
+    <li
+      v-for="pager in pagers.pagers"
+      :key="pager"
+      :class="['yi-pagination__number', { 'is-active': internalCurrentPage === pager }]"
+      @click="handlePagerClick(pager)"
+    >
+      {{ pager }}
+    </li>
+
+    <!-- 向后省略 -->
+    <li
+      v-if="pagers.showNextMore"
+      class="yi-pagination__more yi-pagination__more-next"
+      @click="handleNextMore"
+    >
+      <span class="more-icon">•••</span>
+      <span class="arrow-icon">»</span>
+    </li>
+
+    <!-- 最后一页 -->
+    <li
+      v-if="totalPages > 1"
+      :class="['yi-pagination__number', { 'is-active': internalCurrentPage === totalPages }]"
+      @click="handlePagerClick(totalPages)"
+    >
+      {{ totalPages }}
+    </li>
+  </ul>
+
+  <!-- 下一页 -->
+  <button
+    v-if="layoutComponents.includes('next')"
+    type="button"
+    class="yi-pagination__btn yi-pagination__next"
+    :disabled="nextDisabled"
+    @click="handleNext"
+  >
+    <span v-if="nextText">{{ nextText }}</span>
+    <span v-else>›</span>
+  </button>
+
+  <!-- 跳转 -->
+  <div v-if="layoutComponents.includes('jumper')" class="yi-pagination__jumper">
+    <span>前往</span>
+    <input
+      type="text"
+      :value="jumperValue"
+      :disabled="disabled"
+      @input="handleJumperInput"
+      @keyup.enter="handleJumperEnter"
+      class="yi-pagination__jumper-input"
+    />
+    <span>页</span>
+  </div>
+</div>

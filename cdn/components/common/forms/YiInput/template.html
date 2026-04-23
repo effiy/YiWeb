@@ -1,0 +1,93 @@
+<div :class="wrapperClass">
+  <label v-if="label" :for="inputId" :class="labelClass">
+    {{ label }}
+    <span v-if="required" class="input-required" aria-label="必填">*</span>
+  </label>
+
+  <div :class="inputContainerClass">
+    <span v-if="prefix" :class="prefixClass">
+      <slot name="prefix">{{ prefix }}</slot>
+    </span>
+
+    <input
+      v-if="type !== 'textarea'"
+      :id="inputId"
+      :type="type"
+      :value="modelValue"
+      :placeholder="placeholder"
+      :disabled="disabled"
+      :readonly="readonly"
+      :required="required"
+      :maxlength="maxlength"
+      :minlength="minlength"
+      :min="min"
+      :max="max"
+      :step="step"
+      :pattern="pattern"
+      :autocomplete="autocomplete"
+      :class="inputClass"
+      :aria-label="ariaLabel || label"
+      :aria-invalid="error ? 'true' : null"
+      :aria-describedby="error ? `${inputId}-error` : null"
+      @input="onInput"
+      @change="onChange"
+      @focus="onFocus"
+      @blur="onBlur"
+      @keydown="onKeydown"
+    />
+
+    <textarea
+      v-else
+      :id="inputId"
+      :value="modelValue"
+      :placeholder="placeholder"
+      :disabled="disabled"
+      :readonly="readonly"
+      :required="required"
+      :maxlength="maxlength"
+      :minlength="minlength"
+      :rows="rows"
+      :class="inputClass"
+      :aria-label="ariaLabel || label"
+      :aria-invalid="error ? 'true' : null"
+      :aria-describedby="error ? `${inputId}-error` : null"
+      @input="onInput"
+      @change="onChange"
+      @focus="onFocus"
+      @blur="onBlur"
+    ></textarea>
+
+    <span v-if="suffix || showClear || showPasswordToggle" :class="suffixClass">
+      <button
+        v-if="showClear && modelValue && !disabled && !readonly"
+        type="button"
+        :class="clearButtonClass"
+        @click="onClear"
+        aria-label="清除"
+      >
+        <slot name="clear-icon">×</slot>
+      </button>
+
+      <button
+        v-if="showPasswordToggle && type === 'password'"
+        type="button"
+        :class="toggleButtonClass"
+        @click="onTogglePassword"
+        :aria-label="passwordVisible ? '隐藏密码' : '显示密码'"
+      >
+        <slot name="toggle-icon">{{ passwordVisible ? '👁️' : '👁️‍🗨️' }}</slot>
+      </button>
+
+      <slot name="suffix">{{ suffix }}</slot>
+    </span>
+  </div>
+
+  <div v-if="error || hint" :class="messageClass">
+    <span v-if="error" :id="`${inputId}-error`" class="input-error" role="alert">{{ error }}</span>
+    <span v-else-if="hint" class="input-hint">{{ hint }}</span>
+  </div>
+
+  <div v-if="showCount && maxlength" :class="countClass">
+    {{ (modelValue || '').length }} / {{ maxlength }}
+  </div>
+</div>

@@ -1,0 +1,70 @@
+<div class="ai-model-selector">
+  <label v-if="label" class="model-selector-label">{{ label }}</label>
+
+  <div class="model-selector-wrapper">
+    <!-- 下拉框模式 -->
+    <div v-if="!showManualInput" class="model-dropdown-wrapper">
+      <yi-select
+        :model-value="currentModel"
+        :options="modelOptions"
+        :placeholder="placeholder"
+        :disabled="disabled || (modelsLoading && availableModels.length === 0)"
+        :searchable="true"
+        search-placeholder="搜索模型..."
+        empty-text="暂无模型"
+        @change="handleModelChange"
+        class="model-select"
+      >
+        <template #option="{ option }">
+          <div class="model-option">
+            <span class="model-name">{{ option.label || option.name }}</span>
+            <span v-if="option.sizeFormatted" class="model-size">{{ option.sizeFormatted }}</span>
+          </div>
+        </template>
+      </yi-select>
+
+      <!-- 刷新按钮 -->
+      <button
+        type="button"
+        class="model-refresh-btn"
+        :disabled="modelsLoading"
+        @click="handleRefresh"
+        :title="modelsLoading ? '加载中...' : '刷新模型列表'"
+      >
+        <i v-if="modelsLoading" class="fas fa-spinner fa-spin"></i>
+        <i v-else class="fas fa-sync-alt"></i>
+      </button>
+    </div>
+
+    <!-- 手动输入模式 -->
+    <div v-else class="manual-input-wrapper">
+      <input
+        type="text"
+        class="model-manual-input"
+        :value="currentModel"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        @input="handleManualInput"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </div>
+
+    <!-- 模式切换按钮 -->
+    <button
+      type="button"
+      class="model-mode-toggle"
+      :disabled="disabled"
+      @click="toggleInputMode"
+      :title="showManualInput ? '切换到下拉框选择' : '手动输入模型名称'"
+    >
+      <i :class="showManualInput ? 'fas fa-list' : 'fas fa-keyboard'"></i>
+    </button>
+  </div>
+
+  <!-- 错误提示 -->
+  <div v-if="modelsError" class="model-error">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>{{ modelsError }}</span>
+  </div>
+</div>

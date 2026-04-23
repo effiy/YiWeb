@@ -1,0 +1,253 @@
+.file-tree > .file-tree-node {
+    margin-left: 0;
+}
+
+.file-tree-children {
+    padding-left: var(--spacing-sm);
+    margin-left: 20px; /* 优化缩进宽度 */
+    position: relative;
+}
+
+/* ========== 文件树标题 ========== */
+.file-tree-header {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-secondary);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.file-tree-header::before {
+    content: '📁';
+    font-size: 12px;
+}
+
+/* ========== 文件树项目 ========== */
+.file-tree-item {
+    cursor: pointer;
+    padding: 6px var(--spacing-sm);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    -webkit-user-select: none;
+    user-select: none;
+    transition: all 0.15s ease;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 2px 0;
+    position: relative;
+    min-width: 0;
+    will-change: transform;
+}
+
+.file-tree-item:focus-visible {
+    outline: 2px solid rgba(79, 70, 229, 0.6);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+}
+
+.file-tree-item:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+    transform: translateX(2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ========== 选中状态 ========== */
+.file-tree-item.selected {
+    background: rgba(79, 70, 229, 0.15);
+    color: var(--text-primary);
+    font-weight: 500;
+    border-left: 3px solid rgba(79, 70, 229, 0.8);
+    padding-left: calc(var(--spacing-sm) - 3px);
+    box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.1);
+}
+
+/* ========== 批量选择状态 ========== */
+.file-tree-item.batch-selected {
+    background: rgba(16, 185, 129, 0.15);
+    border-left: 3px solid rgba(16, 185, 129, 0.8);
+    padding-left: calc(var(--spacing-sm) - 3px);
+}
+
+/* ========== 高亮状态（用于视图切换时的锚定效果） ========== */
+.file-tree-item.highlight-file {
+    background: rgba(79, 70, 229, 0.25);
+    color: var(--text-primary);
+    font-weight: 600;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.4);
+    animation: highlightFilePulse 2s ease-out;
+}
+
+@keyframes highlightFilePulse {
+    0% {
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.6);
+        background: rgba(79, 70, 229, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+        background: rgba(79, 70, 229, 0.2);
+    }
+    100% {
+        box-shadow: none;
+        background: rgba(79, 70, 229, 0.15);
+    }
+}
+
+/* ========== 文件树高亮动画（从代码视图触发） ========== */
+.file-tree-item.file-tree-highlight {
+    background: rgba(234, 179, 8, 0.25);
+    color: var(--text-primary);
+    font-weight: 600;
+    box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.5);
+    animation: fileTreeHighlightPulse 2s ease-out;
+}
+
+@keyframes fileTreeHighlightPulse {
+    0% {
+        box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.7);
+        background: rgba(234, 179, 8, 0.35);
+        transform: scale(1.02);
+    }
+    50% {
+        box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.4);
+        background: rgba(234, 179, 8, 0.25);
+        transform: scale(1.01);
+    }
+    100% {
+        box-shadow: none;
+        background: rgba(79, 70, 229, 0.15);
+        transform: scale(1);
+    }
+}
+
+/* ========== 文件夹样式 ========== */
+.folder-item {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.folder-item.expanded {
+    color: var(--text-primary);
+}
+
+.folder-toggle {
+    margin-right: var(--spacing-xs);
+    color: var(--text-muted);
+    font-size: 12px;
+    transition: all 0.2s ease;
+    min-width: 30px;
+    text-align: center;
+}
+
+.folder-toggle:hover {
+    color: var(--primary);
+    transform: scale(1.1);
+}
+
+.folder-toggle.expanded {
+    transform: rotate(90deg);
+    color: var(--primary);
+}
+
+/* ========== 文件图标 ========== */
+.file-icon {
+    margin-right: var(--spacing-xs);
+    font-size: 12px;
+    min-width: 16px;
+    text-align: center;
+    opacity: 0.8;
+}
+
+/* ========== 文件名样式 ========== */
+.file-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ========== 搜索高亮 ========== */
+.file-name mark.search-highlight {
+    background: rgba(234, 179, 8, 0.35);
+    color: var(--text-primary);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.5);
+}
+
+.file-tree-item:hover .file-name mark.search-highlight {
+    background: rgba(234, 179, 8, 0.5);
+    box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.7);
+}
+
+/* ========== 文件大小显示 ========== */
+.file-size {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.file-size.large-file-size {
+    color: rgba(234, 179, 8, 0.9);
+    background: rgba(234, 179, 8, 0.15);
+    font-weight: 600;
+}
+
+/* ========== 大文件警告标识 ========== */
+.file-warning-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin-left: 4px;
+    color: rgba(234, 179, 8, 1);
+    font-size: 10px;
+    animation: warningPulse 2s ease-in-out infinite;
+}
+
+@keyframes warningPulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(0.95);
+    }
+}
+
+.file-tree-item.large-file {
+    border-left: 2px solid rgba(234, 179, 8, 0.3);
+    padding-left: calc(var(--spacing-sm) - 2px);
+}
+
+.file-tree-item.large-file:hover {
+    border-left-color: rgba(234, 179, 8, 0.6);
+}
+
+/* ========== 文件类型图标颜色 ========== */
+.file-icon.js { color: #f7df1e; }
+.file-icon.ts { color: #3178c6; }
+.file-icon.html { color: #e34f26; }
+.file-icon.css { color: #1572b6; }
+.file-icon.json { color: #fccc2e; }
+.file-icon.md { color: #4caf50; }
+.file-icon.vue { color: #4fc08d; }
+.file-icon.react { color: #61dafb; }
+.file-icon.svg { color: #ff9800; }
+.file-icon.png, .file-icon.jpg, .file-icon.gif { color: #9c27b0; }

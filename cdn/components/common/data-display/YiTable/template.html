@@ -1,0 +1,105 @@
+<!--
+  YiTable 表格组件模板
+  author: liangliang
+-->
+<div :class="tableClass">
+  <!-- 加载状态 -->
+  <div v-if="loading" class="yi-table__loading">
+    <yi-loading type="spinner" size="large"></yi-loading>
+  </div>
+
+  <!-- 表格容器 -->
+  <div class="yi-table__container" :style="tableStyle">
+    <table class="yi-table__table">
+      <!-- 表头 -->
+      <thead v-if="showHeader" class="yi-table__header">
+        <tr>
+          <!-- 选择列 -->
+          <th v-if="selectable" class="yi-table__cell yi-table__cell--selection">
+            <input
+              type="checkbox"
+              :checked="allSelected"
+              :indeterminate="someSelected"
+              @change="handleSelectAll"
+              class="yi-table__checkbox"
+            />
+          </th>
+
+          <!-- 数据列 -->
+          <th
+            v-for="column in columns"
+            :key="column.prop"
+            :class="['yi-table__cell', getSortClass(column)]"
+            :style="{ width: column.width, minWidth: column.minWidth, textAlign: column.align || 'left' }"
+            @click="handleSort(column)"
+          >
+            <div class="yi-table__cell-content">
+              <span>{{ column.label }}</span>
+              <span v-if="column.sortable" class="yi-table__sort-icon">
+                <span class="sort-asc">▲</span>
+                <span class="sort-desc">▼</span>
+              </span>
+            </div>
+          </th>
+        </tr>
+      </thead>
+
+      <!-- 表体 -->
+      <tbody class="yi-table__body">
+        <tr
+          v-for="(row, index) in sortedData"
+          :key="row[rowKey] || index"
+          :class="[
+            'yi-table__row',
+            {
+              'yi-table__row--current': isCurrentRow(row),
+              'yi-table__row--selected': isRowSelected(row)
+            }
+          ]"
+          @click="handleRowClick(row, index)"
+          @dblclick="handleRowDblClick(row, index)"
+        >
+          <!-- 选择列 -->
+          <td v-if="selectable" class="yi-table__cell yi-table__cell--selection">
+            <input
+              type="checkbox"
+              :checked="isRowSelected(row)"
+              @change.stop="handleSelectRow(row)"
+              class="yi-table__checkbox"
+            />
+          </td>
+
+          <!-- 数据列 -->
+          <td
+            v-for="column in columns"
+            :key="column.prop"
+            class="yi-table__cell"
+            :style="{ textAlign: column.align || 'left' }"
+          >
+            <div class="yi-table__cell-content">
+              <!-- 自定义渲染 -->
+              <template v-if="column.render">
+                <component
+                  :is="{ template: column.render(row, column, index) }"
+                ></component>
+              </template>
+              <!-- 默认渲染 -->
+              <template v-else>
+                {{ column.formatter ? column.formatter(row, column, getValueByPath(row, column.prop), index) : getValueByPath(row, column.prop) }}
+              </template>
+            </div>
+          </td>
+        </tr>
+
+        <!-- 空数据 -->
+        <tr v-if="!loading && sortedData.length === 0" class="yi-table__empty">
+          <td :colspan="columns.length + (selectable ? 1 : 0)" class="yi-table__cell">
+            <div class="yi-table__empty-content">
+              <yi-empty-state :message="emptyText"></yi-empty-state>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

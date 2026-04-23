@@ -1,0 +1,302 @@
+/* 快速操作提示（Tooltips）样式 */
+
+.tooltip {
+    position: absolute;
+    z-index: 10000;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    font-size: 13px;
+    line-height: 1.4;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.tooltip.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tooltip::before {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid rgba(0, 0, 0, 0.9);
+}
+
+.tooltip.tooltip-top::before {
+    bottom: -4px;
+    top: auto;
+    border-top: 5px solid rgba(0, 0, 0, 0.9);
+    border-bottom: none;
+}
+
+.tooltip.tooltip-bottom::before {
+    top: -4px;
+    bottom: auto;
+    border-bottom: 5px solid rgba(0, 0, 0, 0.9);
+    border-top: none;
+}
+
+.tooltip.tooltip-left::before {
+    right: -4px;
+    left: auto;
+    top: 50%;
+    transform: translateY(-50%);
+    border-left: 5px solid rgba(0, 0, 0, 0.9);
+    border-right: none;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+}
+
+.tooltip.tooltip-right::before {
+    left: -4px;
+    right: auto;
+    top: 50%;
+    transform: translateY(-50%);
+    border-right: 5px solid rgba(0, 0, 0, 0.9);
+    border-left: none;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+}
+
+/* 带快捷键的提示 */
+.tooltip-with-shortcut {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.tooltip-text {
+    flex: 1;
+}
+
+.tooltip-shortcut {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-weight: 600;
+}
+
+.tooltip-shortcut kbd {
+    display: inline-block;
+    padding: 0 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    font-size: 10px;
+}
+
+/* 首次使用提示 */
+.first-time-hint {
+    position: absolute;
+    z-index: 9999;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.95), rgba(99, 102, 241, 0.95));
+    color: white;
+    font-size: 14px;
+    line-height: 1.5;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
+    pointer-events: auto;
+    max-width: 280px;
+    animation: hintBounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes hintBounce {
+    0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(-10px);
+    }
+    50% {
+        transform: scale(1.05) translateY(0);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.first-time-hint::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.95), rgba(99, 102, 241, 0.95));
+    transform: rotate(45deg);
+}
+
+.first-time-hint.hint-top::before {
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.first-time-hint.hint-bottom::before {
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.first-time-hint.hint-left::before {
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+}
+
+.first-time-hint.hint-right::before {
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+}
+
+.hint-content {
+    position: relative;
+    z-index: 1;
+}
+
+.hint-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.hint-title i {
+    font-size: 16px;
+}
+
+.hint-description {
+    font-size: 13px;
+    opacity: 0.95;
+    margin-bottom: 8px;
+}
+
+.hint-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.hint-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.hint-btn-primary {
+    background: white;
+    color: rgba(79, 70, 229, 1);
+}
+
+.hint-btn-primary:hover {
+    background: rgba(255, 255, 255, 0.9);
+    transform: translateY(-1px);
+}
+
+.hint-btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.hint-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* 提示点（用于标记可交互元素） */
+.hint-dot {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: rgba(79, 70, 229, 0.8);
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3);
+    animation: hintDotPulse 2s ease-in-out infinite;
+    z-index: 9998;
+    pointer-events: none;
+}
+
+@keyframes hintDotPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3);
+    }
+    50% {
+        transform: scale(1.2);
+        box-shadow: 0 0 0 8px rgba(79, 70, 229, 0.1);
+    }
+}
+
+/* 遮罩层（用于聚焦特定元素） */
+.hint-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9997;
+    pointer-events: auto;
+    animation: overlayFadeIn 0.3s ease;
+}
+
+.hint-spotlight {
+    position: absolute;
+    background: transparent;
+    border: 2px solid rgba(79, 70, 229, 0.8);
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(79, 70, 229, 0.6);
+    pointer-events: none;
+    z-index: 9998;
+    transition: all 0.3s ease;
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+    .first-time-hint {
+        max-width: 240px;
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+
+    .hint-title {
+        font-size: 14px;
+    }
+
+    .hint-description {
+        font-size: 12px;
+    }
+
+    .hint-btn {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+}
+
+/* 禁用提示（用户已关闭） */
+.hints-disabled .first-time-hint,
+.hints-disabled .hint-dot,
+.hints-disabled .hint-overlay {
+    display: none !important;
+}

@@ -1,0 +1,199 @@
+<section class="code-view-container" role="main" aria-label="代码查看器">
+  <skeleton-loader v-if="loading" variant="code-view" :line-count="25"></skeleton-loader>
+  <yi-error-state
+    v-else-if="error"
+    :message="error"
+    icon-class="fas fa-exclamation-triangle"
+  ></yi-error-state>
+  <div v-else-if="file" class="code-content" :class="{ editing: isEditingFile, wrap: wrapEnabled, modified: hasUnsavedChanges }" :style="codeContentStyle">
+    <div class="code-header">
+      <div class="file-name" :title="fullFilePath">
+        <i :class="shouldShowImagePreview ? 'fas fa-file-image' : 'fas fa-file-code'" aria-hidden="true"></i>
+        <span class="file-name-text">{{ displayFileName }}</span>
+        <span v-if="hasUnsavedChanges" class="unsaved-indicator" title="有未保存的更改">●</span>
+      </div>
+      <div class="code-actions">
+        <button
+          v-if="!isEditingFile && !shouldShowImagePreview"
+          type="button"
+          class="action-button"
+          @click="startEditFile"
+          :disabled="!file"
+          title="编辑文件"
+          aria-label="编辑文件"
+        >
+          <i class="fas fa-pen" aria-hidden="true"></i>
+        </button>
+        <template v-else>
+          <button
+            type="button"
+            class="action-button"
+            :disabled="editSaving"
+            @click="saveEditedFile"
+            :title="editSaving ? '保存中' : '保存修改'"
+            aria-label="保存修改"
+          >
+            <i class="fas" :class="editSaving ? 'fa-spinner fa-spin' : 'fa-save'" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="action-button"
+            :disabled="editSaving"
+            @click="cancelEditFile"
+            title="取消编辑"
+            aria-label="取消编辑"
+          >
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </template>
+        <button
+          v-if="!isEditingFile"
+          type="button"
+          class="action-button"
+          @click="downloadCurrentFile"
+          :disabled="!file"
+          title="下载文件"
+          aria-label="下载文件"
+        >
+          <i class="fas fa-download" aria-hidden="true"></i>
+        </button>
+        <button
+          v-if="!isEditingFile"
+          type="button"
+          class="action-button"
+          @click="copyEntireFile"
+          :disabled="!file"
+          title="复制代码"
+          aria-label="复制代码"
+        >
+          <i class="fas fa-copy" aria-hidden="true"></i>
+        </button>
+        <button
+          v-if="!isEditingFile"
+          type="button"
+          class="action-button"
+          @click="scrollToFileInTree"
+          :disabled="!file"
+          title="在文件树中定位"
+          aria-label="在文件树中定位"
+        >
+          <i class="fas fa-crosshairs" aria-hidden="true"></i>
+        </button>
+        <button
+          v-if="!isEditingFile"
+          type="button"
+          class="action-button"
+          @click="toggleFullscreen"
+          :disabled="!file"
+          :title="isFullscreen ? '退出全屏' : '全屏模式'"
+          :aria-label="isFullscreen ? '退出全屏' : '全屏模式'"
+        >
+          <i class="fas" :class="isFullscreen ? 'fa-compress' : 'fa-expand'" aria-hidden="true"></i>
+        </button>
+        <button
+          v-if="!isEditingFile"
+          type="button"
+          class="action-button"
+          @click="openExternalUrl"
+          :disabled="!file"
+          title="在新标签页中打开静态文件"
+          aria-label="在新标签页中打开静态文件"
+        >
+          <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+
+    <div v-if="isEditingFile" class="edit-container">
+      <textarea
+        class="edit-textarea"
+        v-model="editingFileContent"
+        @keydown="onEditKeydown"
+        @paste="onEditPaste"
+        spellcheck="false"
+        placeholder="编辑文件内容..."
+        aria-label="编辑文件内容"
+      ></textarea>
+      <div class="save-error" v-if="saveError">
+        <i class="fas fa-exclamation-circle" aria-hidden="true"></i> {{ saveError }}
+      </div>
+    </div>
+
+    <div v-else-if="shouldShowMarkdownPreview" class="markdown-preview-container">
+      <div class="markdown-preview-wrapper">
+        <markdown-view class="markdown-preview-content md-preview-body" :content="rawContent" mode="markdown" :show-toc="true"></markdown-view>
+      </div>
+    </div>
+
+    <div v-else-if="shouldShowImagePreview" class="image-preview-container">
+      <div class="image-preview-wrapper">
+        <img
+          v-if="imageSrc"
+          class="image-preview-img"
+          :src="imageSrc"
+          :alt="displayFileName"
+          @click="openImagePreview"
+          title="点击查看大图"
+        />
+        <div v-else class="image-preview-error">
+          <i class="fas fa-image" aria-hidden="true"></i>
+          <p>无法加载图片</p>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="code-reader">
+      <div class="code-scroll" tabindex="0" aria-label="代码区域">
+        <pre class="code-block" :class="'language-' + languageType">
+          <code
+            v-for="(line, index) in codeLines"
+            :key="index + 1"
+            :id="'L' + (index + 1)"
+            :class="[
+              'code-line',
+              highlightedLines.includes(index + 1) ? 'highlight' : '',
+              isActiveMatchLine(index + 1) ? 'active-match' : ''
+            ]"
+            :data-line="index + 1"
+            @mouseenter="showCopyButton(index + 1)"
+            @mouseleave="hideCopyButton"
+          >
+            <span class="line-number" role="button" tabindex="0" @click="onLineNumberClick(index + 1)">{{ index + 1 }}</span>
+            <button
+              v-if="hoveredLine === index + 1"
+              class="line-copy-btn"
+              @click="copyLine(index + 1)"
+              title="复制此行"
+              aria-label="复制此行"
+            >
+              <i class="fas fa-copy" aria-hidden="true"></i>
+            </button>
+            <span class="line-content" v-html="renderLineContent(line) || ' '"></span>
+          </code>
+        </pre>
+      </div>
+    </div>
+  </div>
+  <yi-empty-state
+    v-else
+    wrapper-class="empty-container"
+    card-class="empty-card"
+    title="未选择文件"
+    title-class="empty-title"
+    @click="focusFileTree"
+  >
+    <template #icon>
+      <div class="empty-hero" aria-hidden="true">
+        <div class="empty-icon" aria-hidden="true">
+          <i class="fas fa-file-code" aria-hidden="true"></i>
+        </div>
+      </div>
+    </template>
+    <div class="empty-actions">
+      <yi-button variant="primary" size="small" @click.stop="emitCreateSession" aria-label="新建会话">
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        <span>新建会话</span>
+      </yi-button>
+    </div>
+  </yi-empty-state>
+</section>

@@ -1,0 +1,50 @@
+/**
+ * Utility Classes
+ * Generic utility CSS classes
+ */
+
+/* ============================================
+   工具类
+   ============================================ */
+
+/* 显示隐藏 */
+.hidden { display: none !important; }
+.visible { visibility: visible; }
+.invisible { visibility: hidden; }
+
+/* Flex */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.flex-1 { flex: 1; }
+
+/* 间距 */
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.gap-6 { gap: 1.5rem; }
+.gap-8 { gap: 2rem; }
+
+/* 文字 */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+.text-sm { font-size: 0.875rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+
+/* 颜色 */
+.text-primary { color: var(--text-primary, #f8fafc); }
+.text-secondary { color: var(--text-secondary, #e2e8f0); }
+.text-muted { color: var(--text-muted, #94a3b8); }
+.text-accent { color: var(--accent, #06b6d4); }
+.text-success { color: var(--success, #22c55e); }
+.text-warning { color: var(--warning, #f59e0b); }
+.text-error { color: var(--error, #ef4444); }
+

@@ -1,0 +1,27 @@
+<div :class="wrapperClass">
+    <div v-if="srText" class="sr-only" role="status" aria-live="polite">{{ srText }}</div>
+    <template v-if="cardless">
+        <template v-if="$slots.icon">
+            <slot name="icon"></slot>
+        </template>
+        <div v-else-if="iconClass" :class="iconWrapperClass" aria-hidden="true">
+            <i :class="iconClass"></i>
+        </div>
+        <h2 v-if="title" :class="titleClass">{{ title }}</h2>
+        <p v-if="subtitle" :class="subtitleClass">{{ subtitle }}</p>
+        <p v-if="hint" :class="hintClass">{{ hint }}</p>
+        <slot></slot>
+    </template>
+    <div v-else :class="cardClass">
+        <template v-if="$slots.icon">
+            <slot name="icon"></slot>
+        </template>
+        <div v-else-if="iconClass" :class="iconWrapperClass" aria-hidden="true">
+            <i :class="iconClass"></i>
+        </div>
+        <h2 v-if="title" :class="titleClass">{{ title }}</h2>
+        <p v-if="subtitle" :class="subtitleClass">{{ subtitle }}</p>
+        <p v-if="hint" :class="hintClass">{{ hint }}</p>
+        <slot></slot>
+    </div>
+</div>

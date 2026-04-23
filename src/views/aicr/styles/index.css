@@ -1,0 +1,369 @@
+@import url('/cdn/styles/index.css');
+@import url('/src/views/aicr/styles/welcomeCard.css');
+@import url('/src/views/aicr/styles/layout.css');
+@import url('/src/views/aicr/styles/codePage.css');
+@import url('/src/views/aicr/styles/codePage.contextModals.css');
+@import url('/src/views/aicr/components/keyboardShortcutsHelp/index.css');
+@import url('/src/views/aicr/components/aicrPage/index.css');
+@import url('/src/views/aicr/components/aicrHeader/index.css');
+@import url('/src/views/aicr/components/aicrSidebar/index.css');
+@import url('/src/views/aicr/components/aicrCodeArea/index.css');
+@import url('/src/views/aicr/components/aicrModals/index.css');
+
+html, body {
+    height: 100%;
+}
+
+#app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/**
+ * 代码审查页面样式
+ * 使用统一的设计系统变量，优化三栏布局
+ */
+
+/* ========== 主容器 ========== */
+.aicr-main {
+    display: flex;
+    height: calc(100vh - 56px);
+    background: var(--bg-primary);
+    min-width: 320px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ========== 侧边栏（文件树） ========== */
+.aicr-sidebar {
+    width: 320px;
+    min-width: 50px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-sm);
+    overflow: visible; /* Changed to visible to allow resizer to extend outside */
+    transition: width 0.2s ease, box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+}
+
+.aicr-sidebar:hover {
+    box-shadow: var(--shadow-md);
+    border-right-color: var(--border-secondary);
+}
+
+/* ========== 代码区域 ========== */
+.aicr-code {
+    flex: 1;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden; /* Changed from visible to hidden to contain scrolling children */
+    display: flex;
+    flex-direction: column;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    min-width: 0;
+    position: relative;
+}
+
+.aicr-code-layout {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    width: 100%;
+}
+
+.aicr-code-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.aicr-code-chat {
+    min-width: 320px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--border-primary);
+    background: var(--bg-primary);
+    position: relative;
+    overflow: visible;
+}
+
+.aicr-code-layout.is-tree .aicr-code-chat {
+    flex: 0 0 var(--aicr-chat-width, 420px);
+    width: var(--aicr-chat-width, 420px);
+}
+
+.aicr-code-layout.is-tags .aicr-code-chat {
+    flex: 1 1 auto;
+    width: auto;
+    border-left: none;
+}
+
+.aicr-code::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.02) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.aicr-code .code-view-container {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-lg);
+    box-sizing: border-box;
+}
+
+.aicr-code .code-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elevated);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.aicr-code .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-glass);
+    background: var(--bg-elevated);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+.aicr-code .file-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.aicr-code .file-name-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.aicr-code .unsaved-indicator {
+    color: rgba(234, 179, 8, 1);
+    font-size: 18px;
+    line-height: 1;
+    animation: unsavedPulse 2s ease-in-out infinite;
+    margin-left: 4px;
+}
+
+@keyframes unsavedPulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(0.9);
+    }
+}
+
+.aicr-code .code-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+/* 全屏模式样式 */
+.aicr-code.fullscreen-mode {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    background: var(--bg-primary);
+    padding: var(--spacing-lg);
+}
+
+.aicr-code.fullscreen-mode .code-view-container {
+    height: 100%;
+}
+
+.aicr-code.fullscreen-mode .code-content {
+    height: 100%;
+}
+
+.aicr-code .action-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    border: 1px solid var(--border-glass);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    will-change: transform;
+}
+
+.aicr-code .action-button:focus-visible {
+    outline: 2px solid rgba(79, 70, 229, 0.6);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+}
+
+.aicr-code .action-button:hover:not(:disabled) {
+    color: var(--text-primary);
+    border-color: var(--border-secondary);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px) scale(1.05);
+    background: var(--bg-elevated);
+}
+
+.aicr-code .action-button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none;
+    background: var(--bg-surface);
+    border-color: var(--border-glass);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.aicr-code .action-button:disabled:hover {
+    box-shadow: none;
+    transform: none;
+}
+
+.aicr-code .code-reader {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+
+.aicr-code .code-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    background: var(--bg-primary);
+    font-size: var(--code-font-size, 13px);
+    line-height: 1.7;
+    outline: none;
+}
+
+.aicr-code .code-scroll:focus {
+    box-shadow: inset 0 0 0 2px rgba(79, 70, 229, 0.25);
+}
+
+.aicr-code .code-block {
+    margin: 0;
+    padding: 10px 0 16px 0;
+    white-space: pre;
+    font-size: inherit;
+    line-height: inherit;
+    tab-size: 4;
+}
+
+.aicr-code .code-content.wrap .code-block {
+    white-space: pre-wrap;
+}
+
+.aicr-code .code-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 0 12px;
+    position: relative;
+}
+
+.aicr-code .code-line:hover {
+    background: var(--bg-surface);
+}
+
+.aicr-code .line-copy-btn {
+    position: absolute;
+    left: 70px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 1px solid var(--border-glass);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 10;
+    font-size: 11px;
+}
+
+.aicr-code .code-line:hover .line-copy-btn {
+    opacity: 1;
+}
+
+.aicr-code .line-copy-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: scale(1.1);
+}
+
+.aicr-code .line-copy-btn:active {
+    transform: scale(0.95);
+}
+
+.aicr-code .code-line.highlight {
+    background: rgba(79, 70, 229, 0.10);
+}
+
+.aicr-code .code-line.active-match {
+    background: rgba(234, 179, 8, 0.18);
+    box-shadow: inset 4px 0 0 rgba(234, 179, 8, 1);
+    position: relative;
+}
+
+.aicr-code .code-line.active-match::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: rgba(234, 179, 8, 1);
+    box-shadow: 0 0 8px rgba(234, 179, 8, 0.5);
+}
+

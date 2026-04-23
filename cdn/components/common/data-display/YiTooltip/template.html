@@ -1,0 +1,19 @@
+<div :class="wrapperClass" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @focus="onFocus" @blur="onBlur">
+  <div ref="trigger" :class="triggerClass">
+    <slot></slot>
+  </div>
+
+  <div
+    v-if="isVisible"
+    ref="tooltip"
+    :class="tooltipClass"
+    :style="tooltipStyle"
+    role="tooltip"
+    :aria-hidden="!isVisible"
+  >
+    <div :class="contentClass">
+      <slot name="content">{{ content }}</slot>
+    </div>
+    <div v-if="showArrow" :class="arrowClass" :style="arrowStyle"></div>
+  </div>
+</div>

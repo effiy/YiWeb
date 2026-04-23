@@ -1,0 +1,18 @@
+<div :class="containerClass" role="alert" aria-live="polite">
+    <div v-if="iconClass" :class="iconWrapperClass" aria-hidden="true">
+        <i :class="iconClass" aria-hidden="true"></i>
+    </div>
+    <div :class="messageClass">{{ message }}</div>
+    <button
+        v-if="showRetry"
+        type="button"
+        :class="retryButtonClass"
+        @click="$emit('retry')"
+        :disabled="retryDisabled"
+    >
+        <slot name="retryIcon"></slot>
+        {{ retryText }}
+    </button>
+    <slot></slot>
+</div>
+

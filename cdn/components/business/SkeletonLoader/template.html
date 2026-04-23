@@ -1,0 +1,70 @@
+<!-- 骨架屏加载组件 -->
+<div v-if="visible" :class="['skeleton-loader', variant]">
+  <div v-if="variant === 'file-tree'" class="skeleton-file-tree">
+    <!-- 搜索框骨架 -->
+    <div class="skeleton-search-box"></div>
+
+    <!-- 文件树项骨架 -->
+    <div v-for="i in itemCount" :key="i" class="skeleton-tree-item" :style="{ marginLeft: getRandomIndent() + 'px' }">
+      <div class="skeleton-icon"></div>
+      <div class="skeleton-text" :style="{ width: getRandomWidth() + '%' }"></div>
+    </div>
+  </div>
+
+  <div v-else-if="variant === 'code-view'" class="skeleton-code-view">
+    <!-- 代码头部骨架 -->
+    <div class="skeleton-code-header">
+      <div class="skeleton-file-name"></div>
+      <div class="skeleton-actions">
+        <div class="skeleton-action-btn"></div>
+        <div class="skeleton-action-btn"></div>
+        <div class="skeleton-action-btn"></div>
+      </div>
+    </div>
+
+    <!-- 工具栏骨架 -->
+    <div class="skeleton-toolbar">
+      <div class="skeleton-search"></div>
+      <div class="skeleton-toolbar-btns">
+        <div class="skeleton-toolbar-btn"></div>
+        <div class="skeleton-toolbar-btn"></div>
+        <div class="skeleton-toolbar-btn"></div>
+      </div>
+    </div>
+
+    <!-- 代码行骨架 -->
+    <div class="skeleton-code-lines">
+      <div v-for="i in lineCount" :key="i" class="skeleton-code-line">
+        <div class="skeleton-line-number"></div>
+        <div class="skeleton-line-content" :style="{ width: getRandomLineWidth() + '%' }"></div>
+      </div>
+    </div>
+  </div>
+
+  <div v-else-if="variant === 'chat-panel'" class="skeleton-chat-panel">
+    <!-- 聊天头部骨架 -->
+    <div class="skeleton-chat-header">
+      <div class="skeleton-session-title"></div>
+      <div class="skeleton-header-actions">
+        <div class="skeleton-header-btn"></div>
+        <div class="skeleton-header-btn"></div>
+      </div>
+    </div>
+
+    <!-- 消息列表骨架 -->
+    <div class="skeleton-messages">
+      <div v-for="i in messageCount" :key="i" class="skeleton-message" :class="i % 2 === 0 ? 'user' : 'assistant'">
+        <div class="skeleton-avatar"></div>
+        <div class="skeleton-message-content">
+          <div class="skeleton-message-line" v-for="j in getRandomMessageLines()" :key="j" :style="{ width: getRandomWidth() + '%' }"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 输入框骨架 -->
+    <div class="skeleton-input-area">
+      <div class="skeleton-textarea"></div>
+      <div class="skeleton-send-btn"></div>
+    </div>
+  </div>
+</div>

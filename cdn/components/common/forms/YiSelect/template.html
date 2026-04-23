@@ -1,0 +1,68 @@
+<div :class="wrapperClass" v-click-outside="closeDropdown">
+  <label v-if="label" :for="selectId" :class="labelClass">
+    {{ label }}
+    <span v-if="required" class="select-required" aria-label="必填">*</span>
+  </label>
+
+  <div
+    :id="selectId"
+    :class="selectClass"
+    :tabindex="disabled ? -1 : 0"
+    role="combobox"
+    :aria-expanded="isOpen ? 'true' : 'false'"
+    :aria-haspopup="'listbox'"
+    :aria-label="ariaLabel || label"
+    :aria-disabled="disabled ? 'true' : null"
+    :aria-invalid="error ? 'true' : null"
+    @click="toggleDropdown"
+    @keydown="onKeydown"
+  >
+    <div :class="valueClass">
+      <span v-if="selectedOption" class="select-value-text">
+        {{ selectedOption[labelKey] }}
+      </span>
+      <span v-else class="select-placeholder">{{ placeholder }}</span>
+    </div>
+
+    <span :class="arrowClass" :style="{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }">
+      <slot name="arrow">▼</slot>
+    </span>
+  </div>
+
+  <div v-if="isOpen" :class="dropdownClass" role="listbox">
+    <div v-if="searchable" class="select-search">
+      <input
+        ref="searchInput"
+        type="text"
+        v-model="searchQuery"
+        :placeholder="searchPlaceholder"
+        class="select-search-input"
+        @click.stop
+      />
+    </div>
+
+    <div :class="optionsClass">
+      <div
+        v-for="(option, index) in filteredOptions"
+        :key="option[valueKey]"
+        :class="getOptionClass(option)"
+        role="option"
+        :aria-selected="isSelected(option) ? 'true' : 'false'"
+        @click="selectOption(option)"
+      >
+        <slot name="option" :option="option">
+          {{ option[labelKey] }}
+        </slot>
+      </div>
+
+      <div v-if="filteredOptions.length === 0" class="select-empty">
+        <slot name="empty">{{ emptyText }}</slot>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="error || hint" :class="messageClass">
+    <span v-if="error" class="select-error" role="alert">{{ error }}</span>
+    <span v-else-if="hint" class="select-hint">{{ hint }}</span>
+  </div>
+</div>

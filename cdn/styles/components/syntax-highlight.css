@@ -1,0 +1,301 @@
+/* 基础代码语法高亮样式 */
+
+/* 通用代码样式 */
+.code-block code {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
+}
+
+/* ========== 关键字 ========== */
+.token.keyword,
+.token.control,
+.token.directive,
+.token.unit {
+    color: #c678dd;
+    font-weight: 600;
+}
+
+/* ========== 函数和方法 ========== */
+.token.function,
+.token.method {
+    color: #61afef;
+}
+
+/* ========== 字符串 ========== */
+.token.string,
+.token.attr-value {
+    color: #98c379;
+}
+
+/* ========== 数字 ========== */
+.token.number,
+.token.boolean,
+.token.constant {
+    color: #d19a66;
+}
+
+/* ========== 注释 ========== */
+.token.comment,
+.token.block-comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+    color: #5c6370;
+    font-style: italic;
+}
+
+/* ========== 操作符 ========== */
+.token.operator,
+.token.punctuation {
+    color: #abb2bf;
+}
+
+/* ========== 变量和属性 ========== */
+.token.variable,
+.token.property,
+.token.attr-name {
+    color: #e06c75;
+}
+
+/* ========== 类名和类型 ========== */
+.token.class-name,
+.token.type-annotation,
+.token.builtin {
+    color: #e5c07b;
+}
+
+/* ========== 标签（HTML/XML） ========== */
+.token.tag {
+    color: #e06c75;
+}
+
+.token.tag .token.punctuation {
+    color: #abb2bf;
+}
+
+/* ========== 正则表达式 ========== */
+.token.regex,
+.token.important {
+    color: #c678dd;
+}
+
+/* ========== URL 和链接 ========== */
+.token.url {
+    color: #56b6c2;
+    text-decoration: underline;
+}
+
+/* ========== 特殊符号 ========== */
+.token.symbol,
+.token.selector {
+    color: #61afef;
+}
+
+/* ========== 已删除和插入（Git diff） ========== */
+.token.deleted {
+    color: #e06c75;
+    background: rgba(224, 108, 117, 0.1);
+}
+
+.token.inserted {
+    color: #98c379;
+    background: rgba(152, 195, 121, 0.1);
+}
+
+/* ========== 语言特定样式 ========== */
+
+/* JavaScript/TypeScript */
+.language-javascript .token.keyword.module,
+.language-typescript .token.keyword.module {
+    color: #c678dd;
+}
+
+.language-javascript .token.template-string,
+.language-typescript .token.template-string {
+    color: #98c379;
+}
+
+.language-javascript .token.template-string .token.interpolation,
+.language-typescript .token.template-string .token.interpolation {
+    color: #e06c75;
+}
+
+/* CSS/SCSS */
+.language-css .token.selector,
+.language-scss .token.selector {
+    color: #e5c07b;
+}
+
+.language-css .token.property,
+.language-scss .token.property {
+    color: #61afef;
+}
+
+.language-css .token.unit,
+.language-scss .token.unit {
+    color: #d19a66;
+}
+
+/* HTML */
+.language-html .token.attr-name {
+    color: #d19a66;
+}
+
+.language-html .token.attr-value {
+    color: #98c379;
+}
+
+/* JSON */
+.language-json .token.property {
+    color: #61afef;
+}
+
+.language-json .token.string {
+    color: #98c379;
+}
+
+/* Python */
+.language-python .token.decorator {
+    color: #61afef;
+}
+
+.language-python .token.keyword {
+    color: #c678dd;
+}
+
+/* Markdown */
+.language-markdown .token.title {
+    color: #e06c75;
+    font-weight: 700;
+}
+
+.language-markdown .token.bold {
+    color: #e5c07b;
+    font-weight: 700;
+}
+
+.language-markdown .token.italic {
+    color: #c678dd;
+    font-style: italic;
+}
+
+.language-markdown .token.code {
+    color: #98c379;
+    background: rgba(152, 195, 121, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.language-markdown .token.url {
+    color: #61afef;
+}
+
+/* Shell/Bash */
+.language-bash .token.shebang,
+.language-sh .token.shebang {
+    color: #5c6370;
+    font-style: italic;
+}
+
+.language-bash .token.environment,
+.language-sh .token.environment {
+    color: #e5c07b;
+}
+
+/* ========== 简化的语法高亮（基于正则） ========== */
+
+/* 当没有完整的 tokenizer 时使用的简单高亮 */
+.simple-highlight .sh-keyword {
+    color: #c678dd;
+    font-weight: 600;
+}
+
+.simple-highlight .sh-string {
+    color: #98c379;
+}
+
+.simple-highlight .sh-number {
+    color: #d19a66;
+}
+
+.simple-highlight .sh-comment {
+    color: #5c6370;
+    font-style: italic;
+}
+
+.simple-highlight .sh-function {
+    color: #61afef;
+}
+
+.simple-highlight .sh-variable {
+    color: #e06c75;
+}
+
+/* ========== 行高亮增强 ========== */
+.code-line.highlight .token {
+    /* 在高亮行中保持语法颜色 */
+    opacity: 1;
+}
+
+/* ========== 暗色主题优化 ========== */
+@media (prefers-color-scheme: dark) {
+    .token.keyword {
+        color: #bb9af7;
+    }
+
+    .token.function {
+        color: #7aa2f7;
+    }
+
+    .token.string {
+        color: #9ece6a;
+    }
+
+    .token.number {
+        color: #ff9e64;
+    }
+
+    .token.comment {
+        color: #565f89;
+    }
+
+    .token.variable {
+        color: #f7768e;
+    }
+
+    .token.class-name {
+        color: #e0af68;
+    }
+}
+
+/* ========== 高对比度模式 ========== */
+@media (prefers-contrast: high) {
+    .token.keyword {
+        color: #ff79c6;
+        font-weight: 700;
+    }
+
+    .token.string {
+        color: #50fa7b;
+    }
+
+    .token.comment {
+        color: #6272a4;
+        font-weight: 600;
+    }
+}
+
+/* ========== 打印样式 ========== */
+@media print {
+    .token.keyword,
+    .token.function,
+    .token.string,
+    .token.number,
+    .token.variable,
+    .token.class-name {
+        color: #000 !important;
+    }
+
+    .token.comment {
+        color: #666 !important;
+    }
+}

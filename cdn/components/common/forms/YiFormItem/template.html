@@ -1,0 +1,25 @@
+<!--
+  YiFormItem 表单项组件模板
+  author: liangliang
+-->
+<div :class="formItemClass">
+  <label
+    v-if="label"
+    class="yi-form-item__label"
+    :style="labelStyle"
+  >
+    <span v-if="required" class="yi-form-item__required">*</span>
+    {{ label }}
+  </label>
+  <div class="yi-form-item__content">
+    <slot></slot>
+    <transition name="fade">
+      <div
+        v-if="hasError && showMessage"
+        class="yi-form-item__error"
+      >
+        {{ errorMessage }}
+      </div>
+    </transition>
+  </div>
+</div>

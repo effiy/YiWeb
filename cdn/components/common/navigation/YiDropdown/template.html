@@ -1,0 +1,21 @@
+<div :class="wrapperClass" v-click-outside="closeDropdown">
+  <div
+    ref="trigger"
+    :class="triggerClass"
+    @click="toggleDropdown"
+    :aria-expanded="isOpen ? 'true' : 'false'"
+    :aria-haspopup="'true'"
+  >
+    <slot name="trigger"></slot>
+  </div>
+
+  <div
+    v-if="isOpen"
+    ref="dropdown"
+    :class="dropdownClass"
+    :style="dropdownStyle"
+    role="menu"
+  >
+    <slot></slot>
+  </div>
+</div>
