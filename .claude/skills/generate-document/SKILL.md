@@ -1,6 +1,7 @@
 ---
 name: generate-document
 description: 用于创建/更新 YiWeb 项目文档（需求文档、需求任务、设计文档、使用文档、项目报告、通用文档、全文档）。当用户说"生成需求/设计/使用文档/项目报告/全文档"或输入 `/generate-document ...` 时必须使用。
+user_invocable: true
 ---
 
 # 文档生成技能
@@ -225,7 +226,7 @@ flowchart TD
 ## 支持文件结构
 
 ```
-.cursor/skills/generate-document/
+.claude/skills/generate-document/
 ├── SKILL.md                 # 本文件
 ├── README.md                # 快速开始
 ├── checklist.md             # 主检查清单入口

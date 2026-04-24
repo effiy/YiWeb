@@ -35,8 +35,8 @@ export const MermaidPlugin = {
     }
 
     try {
-      const { createMermaidRenderer } = await import('../../mermaid/index.js');
-      _mermaidRendererCache = createMermaidRenderer();
+      const { createMermaidRendererWithPlugins } = await import('../../mermaid/index.js');
+      _mermaidRendererCache = createMermaidRendererWithPlugins();
       this._mermaidRenderer = _mermaidRendererCache;
       return this._mermaidRenderer;
     } catch (e) {

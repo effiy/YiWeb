@@ -21,18 +21,49 @@
 
 ## 2. 文件结构
 
+所有测试产物必须放在 `tests/` 目录内，禁止在项目根目录或 `src/` 下散落测试相关文件。
+
 ```
 tests/
-└── e2e/
+├── e2e/
+│   └── <功能名>/
+│       ├── <场景名-1>.spec.ts        # Playwright 测试（含 page.route API mock）
+│       ├── <场景名-2>.spec.ts
+│       ├── fixtures/                  # 共享 mock 数据（可选）
+│       │   └── <功能名>-mock-data.ts
+│       └── pages/                     # 原型测试页面（阶段 2 专用，阶段 6 后可删除）
+│           ├── <场景名-1>/
+│           │   └── index.html         # 单场景原型页（复杂场景可拆子页）
+│           └── <场景名-2>/
+│               └── index.html
+├── screenshots/                       # Playwright-MCP 冒烟截图归档（自动生成）
+│   └── <功能名>/
+│       ├── <场景名>-initial.png       # 初始状态截图
+│       ├── <场景名>-after-action.png  # 操作后截图
+│       └── <场景名>-error.png         # 错误分支截图（如有）
+├── snapshots/                         # Playwright 快照基准（toHaveScreenshot 基准图）
+│   └── <功能名>/
+│       └── <场景名>-1.png
+└── downloads/                         # 测试中触发下载的文件落地目录
     └── <功能名>/
-        ├── <场景名-1>.spec.ts       # 含 page.route API mock
-        ├── <场景名-2>.spec.ts
-        ├── fixtures/                # 共享 mock 数据（可选）
-        │   └── <功能名>-mock-data.ts
-        └── pages/                   # 原型测试页面（阶段 2 专用，阶段 4 后可删除）
-            ├── <场景名-1>.html
-            └── <场景名-2>.html
+        └── <文件名>.png / .svg / ...
 ```
+
+**各目录用途说明**
+
+| 目录 | 用途 | 生命周期 |
+|------|------|---------|
+| `e2e/<功能名>/` | spec 测试文件 + fixtures | 长期保留 |
+| `e2e/<功能名>/pages/` | 阶段 2 原型 HTML 页面 | 阶段 6 冒烟测试通过后可删除 |
+| `screenshots/` | MCP `browser_snapshot` 输出的截图，用于实施总结和问题溯源 | 按功能归档，可按需清理 |
+| `snapshots/` | `toHaveScreenshot` 基准图（视觉回归测试） | 随代码提交，基准变更时需更新 |
+| `downloads/` | 测试触发文件下载的落地路径，需在 `playwright.config` 中配置 `downloadsPath` | 每次测试前清空 |
+
+**路径规范**
+
+- `screenshots/` 中的文件名格式：`<场景名>-<状态描述>.png`，状态描述使用英文小写（如 `initial`、`after-hover`、`fullscreen`、`error`）
+- `downloads/` 路径在 `playwright.config.ts` 中统一配置：`downloadsPath: 'tests/downloads'`
+- 所有目录均通过 `.gitignore` 控制提交策略：`screenshots/` 和 `downloads/` 默认忽略；`snapshots/` 提交基准图
 
 ---
 
@@ -86,6 +117,14 @@ import { test, expect } from '@playwright/test';
 // 场景：<场景名>
 // 来源：需求任务 US-{N} / 动态检查清单 <检查项编号>
 // 复杂度维度：异步状态 / 错误分支 / 多步骤流程（列出覆盖的维度）
+//
+// 【项目场景锚点 - 必须与 test-page.md 头注释一致】
+// 入口 URL  : <项目具体路由，如 http://localhost:8080/docs/example.md>
+// 前置内容  : <页面需要存在的具体数据/内容，如"含 mermaid 代码块的页面">
+// 触发路径  : <从 goto 到场景触发的操作序列，如"等待渲染 → hover .mermaid">
+// 可观测对象: <断言所用 data-testid 列表>
+//
+// ⚠️ 禁止：page.goto('/') 等无意义占位路由；前置内容不得写"某个页面"等泛化描述
 
 // --- Mock 数据定义（只在此测试文件中存在）---
 const mockSuccessResponse = {
@@ -99,8 +138,9 @@ const mockErrorResponse = {
 
 test.describe('<功能名> - <场景名>', () => {
   test.beforeEach(async ({ page }) => {
-    // 前置条件：<来自需求任务>
-    await page.goto('/path/to/feature');
+    // 前置条件（项目真实场景）：<来自需求任务，描述具体页面内容和状态>
+    // 例：打开包含 mermaid 代码块的 Markdown 文档页面，等待图表渲染完成
+    await page.goto('<项目具体路由 - 不得使用占位符>');
 
     // API Mock 注入（仅在测试中！）
     await page.route('**/api/exact/path', async route => {
@@ -256,3 +296,6 @@ rg -n "import\.meta\.env\.TEST\|process\.env\.TEST\|VITE_MOCK" src/ --type ts
 - ❌ Mock 数据使用 `{}` / `"test"` / `0` 等无意义占位符
 - ❌ 生产代码中出现 mock/stub/route 相关代码
 - ❌ 只测试成功路径，不覆盖失败分支
+- ❌ `page.goto` 使用泛化占位路由（如 `/`、`/test`、`/path/to/feature`），必须是项目中真实存在的页面路由
+- ❌ `beforeEach` 前置条件仅写"打开页面"，必须说明页面上需要存在的具体内容（如文件内容、数据状态）
+- ❌ 场景锚点（入口 URL / 前置内容 / 触发路径 / 可观测对象）四项有任一未填写或仍为模板占位符
