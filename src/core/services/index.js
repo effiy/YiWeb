@@ -58,3 +58,14 @@ export {
     reset401Handler
 } from './helper/authErrorHandler.js';
 
+// 从business/businessProcessManager.js导出
+export {
+    BusinessProcessManager,
+    businessProcessManager
+} from './business/businessProcessManager.js';
+
+// 从business/businessScenarioAnalyzer.js导出
+export {
+    BusinessScenarioAnalyzer,
+    businessScenarioAnalyzer
+} from './business/businessScenarioAnalyzer.js';

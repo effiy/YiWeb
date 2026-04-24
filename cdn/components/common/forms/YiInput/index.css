@@ -1,0 +1,78 @@
+/**
+ * YiInput Component Styles
+ * 输入框组件
+ */
+
+/* ============================================
+   输入框组件
+   ============================================ */
+
+.input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary, #f8fafc);
+  background: var(--bg-primary, #0f172a);
+  border: 1px solid var(--border-primary, rgba(255,255,255,0.12));
+  border-radius: var(--radius-md, 0.5rem);
+  outline: none;
+  transition: all var(--transition-fast, 150ms ease);
+}
+
+.input::placeholder {
+  color: var(--text-muted, #94a3b8);
+}
+
+.input:hover:not(:disabled):not(:focus) {
+  border-color: var(--border-hover, rgba(255,255,255,0.2));
+}
+
+.input:focus {
+  border-color: var(--border-focus, #06b6d4);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.input-sm {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.input-lg {
+  padding: 14px 18px;
+  font-size: 16px;
+}
+
+/* 带图标的输入框 */
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrapper .input-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted, #94a3b8);
+  pointer-events: none;
+}
+
+.input-wrapper .input-icon-right {
+  left: auto;
+  right: 12px;
+}
+
+.input-wrapper .input {
+  padding-left: 38px;
+}
+
+.input-wrapper .input-right {
+  padding-left: 14px;
+  padding-right: 38px;
+}
+

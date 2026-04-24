@@ -1,0 +1,258 @@
+# E2E 测试规范
+
+> 本规范约束 implement-code 技能在**阶段 2（E2E 测试页面生成）**和**阶段 4（Playwright 真实测试）**中的全部测试行为。  
+> 阶段 3 的门禁验证由 **Playwright-MCP** 工具执行，本规范同时约束 MCP 验证行为。
+
+---
+
+## 1. 核心约束（P0 — 不可违反）
+
+| 编号 | 约束 |
+|------|------|
+| E0-1 | 每个用户故事场景 **必须** 对应一个 `*.spec.ts` 文件，不得多个场景共享一个文件（除非场景间有显式的前置依赖）。 |
+| E0-2 | 所有可交互 UI 元素 **必须** 标记 `data-testid`，格式：`data-testid="<功能名>-<元素名>"`，如 `data-testid="toolbar-download-btn"`。 |
+| E0-3 | 断言 **必须** 来自动态检查清单的预期结果，不得自行发明断言。 |
+| E0-4 | 凡场景涉及 API 请求，**必须** 在 `.spec.ts` 中使用 `page.route` 声明 mock（含成功路径 + 至少一个失败路径），不得依赖真实后端。 |
+| E0-5 | 测试文件路径必须为 `tests/e2e/<功能名>/<场景名>.spec.ts`，不得任意放置。 |
+| E0-6 | **Mock 仅限测试文件**：`page.route`、`vi.mock`、stub 函数等 **只允许出现在 `tests/` 目录**；生产代码禁止出现条件性 mock 逻辑。 |
+| E0-7 | 测试场景必须还原项目真实复杂度，**禁止**使用单步骤、无状态变化的过度简化场景。 |
+
+---
+
+## 2. 文件结构
+
+```
+tests/
+└── e2e/
+    └── <功能名>/
+        ├── <场景名-1>.spec.ts       # 含 page.route API mock
+        ├── <场景名-2>.spec.ts
+        ├── fixtures/                # 共享 mock 数据（可选）
+        │   └── <功能名>-mock-data.ts
+        └── pages/                   # 原型测试页面（阶段 2 专用，阶段 4 后可删除）
+            ├── <场景名-1>.html
+            └── <场景名-2>.html
+```
+
+---
+
+## 3. 真实复杂场景构建要求
+
+### 3.1 复杂度维度检查（生成前必须逐项确认）
+
+| 维度 | 要求 | 示例 |
+|------|------|------|
+| **异步状态** | 覆盖 加载中 → 成功 / 加载中 → 失败 完整状态机 | 点击导出后显示 loading，成功后显示下载链接，失败后显示错误提示 |
+| **多步骤流程** | 步骤间有数据依赖或状态依赖 | 用户填写表单 → 提交 → 收到确认码 → 输入确认码 → 完成 |
+| **错误分支** | 涵盖 API 失败（4xx/5xx）、网络超时、输入校验失败 | 导出接口 500 错误时工具栏显示"导出失败，请重试"并恢复按钮状态 |
+| **边界条件** | 空状态、最大长度、并发操作、重复触发 | 图表为空时禁用导出按钮；连续快速点击不触发多次请求 |
+| **交互副作用** | 操作后影响其他 UI 区域的状态 | 导出成功后历史记录列表新增一条；按钮进入 disabled 状态直到完成 |
+
+### 3.2 Mock 数据真实性要求
+
+Mock 响应体必须：
+- **字段名与真实接口一致**（来自设计文档的接口规范）
+- **数据类型正确**（不用 `"string"` 代替 URL，不用 `0` 代替有意义的数字）
+- **包含真实业务含义的值**（文件名、用户名等使用合理的测试数据）
+
+```typescript
+// ✅ 正确：真实数据结构
+const mockExportResponse = {
+  id: 'export-abc123',
+  url: 'https://cdn.example.com/exports/architecture-2024.svg',
+  filename: 'architecture-2024.svg',
+  size: 48320,
+  format: 'svg',
+  createdAt: '2024-01-15T10:30:00Z',
+  expiresAt: '2024-01-16T10:30:00Z'
+};
+
+// ❌ 禁止：无意义占位数据
+const mockExportResponse = {
+  id: 'test',
+  url: 'http://test.com',
+  filename: 'test.svg',
+  size: 0
+};
+```
+
+---
+
+## 4. 测试文件模板（`.spec.ts`）
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+// 场景：<场景名>
+// 来源：需求任务 US-{N} / 动态检查清单 <检查项编号>
+// 复杂度维度：异步状态 / 错误分支 / 多步骤流程（列出覆盖的维度）
+
+// --- Mock 数据定义（只在此测试文件中存在）---
+const mockSuccessResponse = {
+  // 使用与真实接口一致的完整数据结构
+};
+
+const mockErrorResponse = {
+  error: 'Service unavailable',
+  code: 'EXPORT_FAILED'
+};
+
+test.describe('<功能名> - <场景名>', () => {
+  test.beforeEach(async ({ page }) => {
+    // 前置条件：<来自需求任务>
+    await page.goto('/path/to/feature');
+
+    // API Mock 注入（仅在测试中！）
+    await page.route('**/api/exact/path', async route => {
+      const request = route.request();
+      // 可根据请求参数返回不同响应
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(mockSuccessResponse)
+      });
+    });
+  });
+
+  test('成功路径：<预期结果描述>', async ({ page }) => {
+    // === 前置状态验证 ===
+    await expect(page.locator('[data-testid="<功能名>-<按钮>"]')).toBeEnabled();
+
+    // === 操作步骤（按需求任务顺序） ===
+    await page.click('[data-testid="<功能名>-<按钮>"]');
+
+    // === 异步等待（禁止 waitForTimeout）===
+    await expect(page.locator('[data-testid="<功能名>-loading"]')).toBeVisible();
+    await expect(page.locator('[data-testid="<功能名>-result"]')).toBeVisible();
+
+    // === 断言（必须对应动态检查清单预期结果）===
+    await expect(page.locator('[data-testid="<功能名>-result-url"]'))
+      .toHaveText(/https:\/\/cdn\.example\.com/);
+  });
+
+  test('失败路径：API 错误时显示错误提示', async ({ page }) => {
+    // 覆盖成功 mock，改为失败响应
+    await page.route('**/api/exact/path', route =>
+      route.fulfill({ status: 500, body: JSON.stringify(mockErrorResponse) })
+    );
+
+    await page.click('[data-testid="<功能名>-<按钮>"]');
+
+    await expect(page.locator('[data-testid="<功能名>-error-msg"]')).toBeVisible();
+    await expect(page.locator('[data-testid="<功能名>-error-msg"]'))
+      .toContainText('导出失败');
+    // 验证按钮恢复可用（可重试）
+    await expect(page.locator('[data-testid="<功能名>-<按钮>"]')).toBeEnabled();
+  });
+
+  test('边界条件：<边界场景描述>', async ({ page }) => {
+    // 边界场景验证
+  });
+});
+```
+
+---
+
+## 5. Playwright-MCP 验证流程（阶段 3 专用）
+
+阶段 3 的门禁验证使用 Playwright-MCP 工具按以下流程执行：
+
+```
+对每个 P0 检查项：
+  1. browser_navigate    → 导航至原型页面 URL
+  2. browser_snapshot    → 确认初始状态（截图 + DOM 快照）
+  3. （若有 API 依赖）   → 通过 page.route 注入 mock 后再操作
+  4. browser_click /
+     browser_fill /
+     browser_select_option → 执行操作步骤
+  5. browser_snapshot    → 截取操作后状态
+  6. browser_evaluate    → 执行 expect 断言逻辑
+  7. 记录：✅ 通过 / ❌ 失败（含 MCP 截图描述）
+```
+
+**MCP 验证的额外要求**：
+- 每次 `browser_snapshot` 后必须对照动态检查清单的预期描述进行人工语义比对
+- API Mock 注入后必须用 `browser_evaluate` 确认 `page.route` 已生效（检查 fetch 是否被拦截）
+- 失败时记录 MCP 工具调用序列，供修复参考
+
+---
+
+## 6. 选择器策略（优先级从高到低）
+
+1. `[data-testid="<功能名>-<元素名>"]` ← **强制首选**
+2. 语义标签：`button[type="submit"]`、`input[type="checkbox"]`
+3. ARIA 角色：`role=dialog`、`role=alert`
+4. 文本内容（`getByText`）← 仅用于只读断言，不用于操作
+5. CSS 类 / XPath ← **禁止使用**
+
+---
+
+## 7. API Mock 策略
+
+| 依赖类型 | Mock 方式 | 位置约束 |
+|---------|----------|---------|
+| HTTP API（成功路径） | `page.route('**/api/path', route => route.fulfill({...}))` | 仅 `tests/` 目录 |
+| HTTP API（失败路径） | `page.route` 返回 4xx/5xx 状态码 | 仅 `tests/` 目录 |
+| HTTP API（网络超时） | `page.route` 使用 `route.abort('timedout')` | 仅 `tests/` 目录 |
+| 文件系统操作 | 桩函数（在测试原型页面中内联） | 仅原型页面 |
+| 浏览器 API（如 `URL.createObjectURL`） | `page.addInitScript(...)` 注入 | 仅 `.spec.ts` 文件 |
+| 时间依赖 | `page.clock.set(...)` | 仅 `.spec.ts` 文件 |
+| 共享 Mock 数据 | `tests/e2e/<功能名>/fixtures/<名称>-mock-data.ts` | 仅 `tests/` 目录 |
+
+**Mock 覆盖完整性要求**：每个 API 接口的 mock 必须覆盖：
+- ✅ 正常响应（2xx + 完整数据结构）
+- ✅ 服务端错误（5xx）
+- ✅ 客户端错误（4xx，如 403 权限不足、404 资源不存在）
+- ✅ 网络层失败（连接超时、abort）（若场景要求展示离线提示）
+
+---
+
+## 8. Mock 隔离检查（code-review 阶段必查）
+
+在阶段 4 代码审查时，必须执行以下 grep 检查确保 Mock 未泄漏到生产代码：
+
+```bash
+# 检查生产代码目录（排除 tests/ 目录）是否含 mock 相关代码
+rg -n "vi\.mock|jest\.mock|page\.route|__mocks__|stub\(|mock\(" src/ --type ts
+rg -n "import\.meta\.env\.TEST\|process\.env\.TEST\|VITE_MOCK" src/ --type ts
+
+# 期望结果：无匹配（0 条结果）
+```
+
+任何匹配都是 P0 问题，必须在进入阶段 5 前修复。
+
+---
+
+## 9. 阶段 2 原型页面专项规范
+
+原型页面（`tests/e2e/pages/<功能名>/<场景名>.html`）要求：
+
+1. **最小化**：只包含该场景需要的 UI 元素，不引入完整应用框架。
+2. **data-testid 完整**：每个操作步骤涉及的元素均已标记。
+3. **可独立打开**：`file://` 协议或本地 dev server 均可访问，不依赖路由守卫。
+4. **桩行为覆盖完整状态**：包含加载中、成功、失败三种状态的 UI 切换逻辑。
+5. **无 fetch 调用**：原型页面内不得发出真实网络请求，用内联 JS 模拟异步状态切换。
+6. **标注来源**：页面顶部注释说明对应的用户故事和检查清单章节。
+
+---
+
+## 10. 一次性成功率提升要点
+
+- **生成测试前**：先读取设计文档中的接口规范，复制真实响应结构作为 mock 数据基础。
+- **生成 Mock 前**：确认 `page.route` 的 URL pattern 与接口规范的路径精确匹配（含 query 参数模式）。
+- **生成断言前**：逐字比对动态检查清单的"预期结果"，不意译、不简化。
+- **运行前**：确认 `playwright.config.*` 中 `baseURL` 已配置，测试文件中不硬编码端口。
+- **MCP 验证前**：先用 `browser_snapshot` 确认页面已正确加载，再开始操作步骤。
+
+---
+
+## 11. 禁止事项
+
+- ❌ 在 E2E 测试中 import 项目源码（如 `import { useStore } from '@/stores/...'`）
+- ❌ 测试间共享 `page` 对象或全局状态
+- ❌ 使用 `page.waitForTimeout(N)` 等待固定时间，改用 `page.waitForSelector` 或 `expect(...).toBeVisible()`
+- ❌ 断言 DOM 结构细节（如子元素数量）而非业务语义（如"下载按钮已启用"）
+- ❌ 阶段 2/3 测试中访问真实 API（全部 mock）
+- ❌ Mock 数据使用 `{}` / `"test"` / `0` 等无意义占位符
+- ❌ 生产代码中出现 mock/stub/route 相关代码
+- ❌ 只测试成功路径，不覆盖失败分支
