@@ -22,15 +22,16 @@ user_invocable: true
 
 ## 支持的文档类型
 
-| 类型 | 模板 | 规范 | 保存路径 | 依赖文档 | 生成方式 |
-|------|------|------|---------|---------|---------|
-| 需求文档 | ✅ | ✅ | `docs/01_需求文档/` | - | 模板骨架 + 规范约束 |
-| 需求任务 | ✅ | ✅ | `docs/02_需求任务/` | 需求文档 | 模板骨架 + 规范约束 |
-| 设计文档 | ❌（禁用） | ✅ | `docs/03_设计文档/` | 需求任务 | **仅规范驱动**（基于上游 + 代码） |
-| 使用文档 | ❌ | ✅ | `docs/04_使用文档/` | 设计文档 | 规范驱动 |
-| 项目报告 | ❌ | ✅ | `docs/05_项目报告/` | 设计文档 | 规范驱动 + 真实变更数据 |
-| 通用文档 | ✅ | ✅ | `docs/` | - | 模板骨架 + 规范约束 |
-| 动态检查清单 | ❌（禁用） | ✅ | `docs/00_rYr/<功能名>/` | 需求任务、设计文档 | **仅规范驱动**（从上游场景抽取） |
+| 类型 | 模板 | 规范 | 单独生成路径 | 全文档路径（`docs/00_rYr/<功能名>/`） | 依赖文档 | 生成方式 |
+|------|------|------|------------|--------------------------------------|---------|---------|
+| 需求文档 | ✅ | ✅ | `docs/01_需求文档/` | `01_需求文档.md` | - | 模板骨架 + 规范约束 |
+| 需求任务 | ✅ | ✅ | `docs/02_需求任务/` | `02_需求任务.md` | 需求文档 | 模板骨架 + 规范约束 |
+| 设计文档 | ❌（禁用） | ✅ | `docs/03_设计文档/` | `03_设计文档.md` | 需求任务 | **仅规范驱动**（基于上游 + 代码） |
+| 使用文档 | ❌ | ✅ | `docs/04_使用文档/` | `04_使用文档.md` | 设计文档 | 规范驱动 |
+| 动态检查清单 | ❌（禁用） | ✅ | —（仅全文档模式） | `05_动态检查清单.md` | 需求任务、设计文档 | **仅规范驱动**（从上游场景抽取） |
+| 实施总结 | — | — | —（由 implement-code 生成） | `06_实施总结.md` | — | implement-code 技能写入，本技能不创建 |
+| 项目报告 | ❌ | ✅ | `docs/05_项目报告/` | `07_项目报告.md` | 设计文档 | 规范驱动 + 真实变更数据 |
+| 通用文档 | ✅ | ✅ | `docs/` | — | - | 模板骨架 + 规范约束 |
 
 > 说明：**"禁用模板"** 意味着即使 `templates/` 目录下存在同名文件，也不作为生成输入；改为仅读取 `rules/<类型>.md` 并从上游文档/代码中提取事实。
 
@@ -45,7 +46,16 @@ user_invocable: true
 
 **全文档说明**：
 - 保存位置：`docs/00_rYr/简洁功能名/`
-- 包含：需求文档、需求任务、设计文档、使用文档、动态检查清单、项目报告
+- 包含（**文件名必须带序列号**）：
+  | 序号 | 文件名 |
+  |------|--------|
+  | 01 | `01_需求文档.md` |
+  | 02 | `02_需求任务.md` |
+  | 03 | `03_设计文档.md` |
+  | 04 | `04_使用文档.md` |
+  | 05 | `05_动态检查清单.md` |
+  | 06 | （`06_实施总结.md` 由 implement-code 技能生成，generate-document 不创建） |
+  | 07 | `07_项目报告.md` |
 
 ## 核心工作流
 
@@ -58,6 +68,13 @@ user_invocable: true
    - **设计文档 / 动态检查清单** → **跳过模板**，进入"规范驱动模式"。
    - 其他类型 → 若 `templates/<类型>.md` 存在，读取作为结构骨架；否则退回"规范驱动模式"。
 5. **读取上游文档（Grounding）** → 按依赖关系读取前一阶段文档；若是设计文档/项目报告，同时阅读相关源码（路径取自需求任务或用户输入）。
+   - **需求任务 / 设计文档专项——全项目影响分析（必须执行）**：
+     1. **搜索词来源**：
+        - 需求任务：从需求文档中提取核心模块名、组件名、事件名、Store key、路由路径、CSS 类名等。
+        - 设计文档：从需求任务文档中提取上述标识符及函数名。
+     2. 对每个搜索词使用 **Grep 工具**在整个仓库搜索，记录命中的文件路径与行号；排除 `node_modules/`、`dist/`、`*.lock` 等无关目录。
+     3. 将结果分类标注影响级别：🔴 直接修改 / 🟡 间接影响 / 🟢 参考引用。
+     4. 产出"引用清单"表格，写入对应章节（需求任务第 6 章 / 设计文档第 5 章）。**未完成此步骤禁止进入第 7 步生成文档正文**。
 6. **专家分派（find-agents）** → 按类型选择并行代理：
    - 设计文档 → `planner` + `architect`
    - 项目报告 → `code-reviewer` + `docs-lookup`
@@ -86,7 +103,12 @@ flowchart TD
 
     RulesOnly --> Upstream["5 读取上游 + Grounding\n按依赖读 docs/前一阶段/功能名.md\n设计文档或项目报告：读取相关源码\n建立事实-来源映射表"]
 
-    Upstream --> FA["6 find-agents\n分派并行代理\n设计文档：planner + architect\n项目报告：code-reviewer + docs-lookup\n含 E2E 场景：e2e-tester"]
+    Upstream --> ImpactAnalysis{"是需求任务\n或设计文档?"}
+    ImpactAnalysis -->|是| GrepSearch["5a 全项目影响分析（强制）\n需求任务：从需求文档提取标识符\n设计文档：从需求任务提取标识符\nGrep 搜索全仓库引用\n排除 node_modules / dist\n分类标注 🔴🟡🟢\n产出引用清单表格\n⛔ 未完成禁止进入生成步骤"]
+    ImpactAnalysis -->|否| FA
+    GrepSearch --> FA
+
+    FA["6 find-agents\n分派并行代理\n设计文档：planner + architect\n项目报告：code-reviewer + docs-lookup\n含 E2E 场景：e2e-tester"]
 
     FA --> Gen["7 生成文档\n严格按 rules 章节顺序\n每条技术断言关联来源\n无来源时写 待补充\n禁止虚构模块/接口/路径"]
 
@@ -100,9 +122,9 @@ flowchart TD
     P0 -->|是| Save
     Record --> Save
 
-    Save["9 保存\ndocs/阶段/功能名.md"] --> FullDoc{"是全文档?"}
+    Save["9 保存\n全文档：docs/00_rYr/功能名/NN_文件名.md\n单文档：docs/阶段/功能名.md"] --> FullDoc{"是全文档?"}
 
-    FullDoc -->|是| DynCL["生成动态检查清单\n从需求任务抽取场景\n从设计文档抽取实现路径\n使用 find-skills 映射验证技能\n完全基于规范 不使用模板"]
+    FullDoc -->|是| DynCL["生成动态检查清单\n从需求任务抽取场景\n从设计文档抽取实现路径\n使用 find-skills 映射验证技能\n完全基于规范 不使用模板\n文件名：05_动态检查清单.md"]
     FullDoc -->|否| ReviewGate
 
     DynCL --> ReviewGate{"进入 Agents 审查?"}
@@ -113,9 +135,11 @@ flowchart TD
     classDef skill fill:#e1f5ff,stroke:#0066cc,stroke-width:2
     classDef rules fill:#ffe6cc,stroke:#e67300,stroke-width:2
     classDef guard fill:#ffcccc,stroke:#cc0000,stroke-width:2
+    classDef impact fill:#fff0f0,stroke:#cc0000,stroke-width:3,stroke-dasharray:5 5
     class FS,FA,DynCL skill
     class LoadRules,RulesOnly,Upstream rules
     class P0,SelfCheck guard
+    class GrepSearch impact
 ```
 
 ### 防幻觉约束（强制）
