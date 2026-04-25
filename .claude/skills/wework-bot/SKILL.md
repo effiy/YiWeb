@@ -86,6 +86,8 @@ description: 发送企业微信机器人消息，用于 generate-document、impl
 | `model` | `AGENT_MODEL` / `CURSOR_AGENT_MODEL` / `Claude Sonnet 4.6` | `🤖 模型` | 本次执行使用的模型名称 |
 | `tools` | `AGENT_TOOLS` / `Cursor Agent / Playwright-MCP / Shell / wework-bot` | `🧰 工具` | 本次执行涉及的主要工具 |
 | `updatedAt` | 本地当前时间 | `🕒 最后更新` | `YYYY-MM-DD HH:mm:ss`，精确到秒 |
+| `tokenUsage` | `AGENT_SESSION_TOKEN_USAGE` / `--token-usage` | `🪙 会话用量` | 本会话 **Token 或用量摘要**（须与 Cursor/日志可核对，无法核对则写明「未提供，请从客户端核对」） |
+| `improvementHints` | `AGENT_SESSION_IMPROVEMENT_HINTS` / `--improvement-hints` | `💡 改进建议` | 基于**本次已发生事实**的 2～4 条可执行建议，**禁止**臆造指标或原因 |
 | `noAutoGit` | `WEWORK_BOT_NO_AUTO_GIT=1` | — | 关闭 git 分支 / commit 自动检测（沙箱安全） |
 
 ## 工作流程
@@ -97,6 +99,11 @@ description: 发送企业微信机器人消息，用于 generate-document、impl
 5. **校验凭据**：`X-Token` 和 webhook 必须来自参数或环境变量，不得写入仓库。
 6. **发送消息**：调用 `scripts/send-message.js`。
 7. **汇总结果**：记录 HTTP 状态码、响应摘要、机器人路由、消息时间和脱敏凭据摘要；失败时返回错误原因。若该消息用于门禁失败、门禁失效或流程阻断，发送失败也必须写入实施总结或兜底运行记录。
+
+## 推送文案与反幻觉（推荐代理）
+
+- 需要**先 Plan 再写稿**、并系统核对「模型 / 工具 / 用时 / Token / 改进建议」时，可调用 `.claude/agents/message-pusher.md`（`message-pusher` 代理），再执行 `send-message.js`。
+- **正文转义**：若从某处复制的内容里出现**字面** `\n` 而非真换行，可改用 `--content-file` 保存 UTF-8 多行文件，或依赖脚本在加载后对 `\\n` / `\\t` 做归一化（见 `send-message.js` 中 `normalizeMessageText`），避免企业微信中显示一坨反斜杠。
 
 ## 运行示例
 

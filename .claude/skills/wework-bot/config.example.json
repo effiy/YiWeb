@@ -30,6 +30,7 @@
     "architect": "code",
     "security-reviewer": "security",
     "e2e-tester": "testing",
-    "test-page-builder": "testing"
+    "test-page-builder": "testing",
+    "message-pusher": "general"
   }
 }

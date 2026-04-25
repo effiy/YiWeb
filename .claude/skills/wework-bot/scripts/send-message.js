@@ -49,6 +49,8 @@ const options = {
   mcpBreakdown: null,
   backlog: null,
   statusRewrite: null,
+  tokenUsage: process.env.AGENT_SESSION_TOKEN_USAGE || null,
+  improvementHints: process.env.AGENT_SESSION_IMPROVEMENT_HINTS || null,
   model: process.env.AGENT_MODEL || process.env.CURSOR_AGENT_MODEL || 'Claude Sonnet 4.6',
   tools: process.env.AGENT_TOOLS || 'Cursor Agent / Playwright-MCP / Shell / wework-bot',
   updatedAt: process.env.WEWORK_MESSAGE_UPDATED_AT || null,
@@ -197,6 +199,12 @@ for (let i = 0; i < args.length; i++) {
   } else if (arg === '--status-rewrite') {
     options.statusRewrite = readValue(i, arg);
     i++;
+  } else if (arg === '--token-usage') {
+    options.tokenUsage = readValue(i, arg);
+    i++;
+  } else if (arg === '--improvement-hints') {
+    options.improvementHints = readValue(i, arg);
+    i++;
   } else if (arg === '--model') {
     options.model = readValue(i, arg);
     i++;
@@ -273,6 +281,8 @@ Metadata:
   --model              Model name appended to message metadata (default from AGENT_MODEL or "Claude Sonnet 4.6")
   --tools              Tool summary appended to message metadata (default from AGENT_TOOLS or "Cursor Agent / Playwright-MCP / Shell / wework-bot")
   --updated-at         Last update time, precise to seconds (default local current time)
+  --token-usage        Session token / usage line, e.g. "输入 12k / 输出 3.2k / 合计 15.2k（来源：Cursor 用量）" (or AGENT_SESSION_TOKEN_USAGE)
+  --improvement-hints  Factual session improvement tips, semicolon-separated, ≤280 chars recommended (or AGENT_SESSION_IMPROVEMENT_HINTS)
   --dry-run            Print sanitized request summary without sending
   --help, -h           Show this help message
 `);
@@ -353,8 +363,24 @@ if (!options.token) {
   process.exit(1);
 }
 
+/**
+ * 将误打成字面量 "\\n" / "\\t" 的转义序列还原为真实换行与制表符（常见于从 JSON 再拷贝一层时）。
+ * 不修改已是真实换行的正文。
+ */
+function normalizeMessageText(text) {
+  if (!text || typeof text !== 'string') return text;
+  return text
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t');
+}
+
 if (options.contentFile) {
   options.content = fs.readFileSync(options.contentFile, 'utf-8');
+}
+
+if (options.content) {
+  options.content = normalizeMessageText(options.content);
 }
 
 if (!options.content) {
@@ -426,6 +452,8 @@ function contextLines() {
   const commitLine = buildLine('🔖', '提交', options.commit);
   const startedLine = buildLine('🟢', '开始时间', options.startedAt);
   const durationLine = buildLine('⏱️', '用时', options.duration);
+  const tokenUsageLine = buildLine('🪙', '会话用量', options.tokenUsage);
+  const improvementLine = buildLine('💡', '改进建议', options.improvementHints);
   const recoverLine = buildLine('🧭', '恢复点', options.recover);
 
   return [
@@ -457,6 +485,8 @@ function contextLines() {
     commitLine,
     startedLine,
     durationLine,
+    tokenUsageLine,
+    improvementLine,
     recoverLine
   ].filter(Boolean);
 }
@@ -592,6 +622,11 @@ if (charLength(description) > 100) {
   process.exit(1);
 }
 
+if (options.improvementHints && charLength(options.improvementHints) > 500) {
+  console.error(`Error: --improvement-hints should be 500 characters or fewer (current: ${charLength(options.improvementHints)})`);
+  process.exit(1);
+}
+
 options.content = ensureMetadata(ensureElevatorFormat(options.content, description));
 
 if (!options.webhookUrl && options.webhookKey) {
@@ -703,6 +738,8 @@ function request(apiUrl, token, data) {
     console.log('Model:', options.model);
     console.log('Tools:', options.tools);
     console.log('Updated at:', options.updatedAt || '(auto current local time)');
+    console.log('Token usage:', options.tokenUsage || '(not set)');
+    console.log('Improvement hints:', options.improvementHints || '(not set)');
     console.log('Content preview:');
     console.log(options.content);
     return;
