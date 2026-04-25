@@ -13,17 +13,19 @@ triggers:
 
 审查代码文件或片段是否符合 YiWeb 项目规范，输出 P0/P1/P2 分级问题列表，为项目报告和文档审查提供候选输入。
 
+本 agent 只提供专家视角与候选问题，不定义完整审查流程；正式输入输出格式以 `../skills/code-review/SKILL.md` 为准，边界说明见 `../shared/agent-skill-boundaries.md`。
+
 ## 必答问题（被调用时必须回答）
 
 1. 代码是否符合 Store 工厂模式和组件全局注册约定？
 2. 是否存在安全风险（XSS / 敏感信息泄露）？
-3. 命名和结构是否符合 `rules/编码规范.md`？
+3. 命名和结构是否符合 `../skills/generate-document/rules/编码规范.md`？
 4. 有哪些 P0 问题必须修复？
 
 ## 审查维度
 
-- **YiWeb 架构**：Store 工厂模式、组件注册、代码结构（对照 `rules/代码结构.md`）
-- **编码规范**：命名、注释、格式（对照 `rules/编码规范.md`）
+- **YiWeb 架构**：Store 工厂模式、组件注册、代码结构（对照 `../skills/generate-document/rules/代码结构.md`）
+- **编码规范**：命名、注释、格式（对照 `../skills/generate-document/rules/编码规范.md`）
 - **安全**：XSS、CSRF、敏感字段暴露
 - **边界处理**：空值、异常路径
 

@@ -818,50 +818,60 @@ export const renderMarkdownHtml = (text, options = {}) => {
         requestAnimationFrame(async () => {
           console.log('[Markdown] Starting mermaid rendering for', mermaidDiagrams.length, 'diagrams');
 
-          // 直接初始化 mermaid 并渲染，避免多层转义问题
           try {
-            if (typeof mermaid !== 'undefined') {
-              // 直接使用 mermaid 渲染，避免经过 MermaidRenderer 的多层处理
-              mermaid.initialize({
-                startOnLoad: false,
-                securityLevel: 'loose',
-                theme: 'dark',
-                flowchart: {
-                  useMaxWidth: false,
-                  htmlLabels: true,
-                  curve: 'basis',
-                  wrap: true
-                }
-              });
+            // 使用带插件的 MermaidRenderer，获得工具栏功能
+            const { createMermaidRendererWithPlugins } = await import('../mermaid/index.js');
+            const renderer = createMermaidRendererWithPlugins();
+            await renderer.initialize();
 
-              for (const { diagramId, diagramCode } of mermaidDiagrams) {
-                const el = document.getElementById(diagramId);
-                if (!el) continue;
+            for (const { diagramId, diagramCode } of mermaidDiagrams) {
+              const el = document.getElementById(diagramId);
+              if (!el) continue;
 
-                try {
-                  console.log('[Markdown] Rendering diagram', diagramId, 'with code:', diagramCode);
-                  const renderId = `md-mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-                  const { svg } = await mermaid.render(renderId, diagramCode);
-                  el.innerHTML = svg;
-                  el.setAttribute('data-mermaid-rendered', 'true');
-                  console.log('[Markdown] Diagram', diagramId, 'rendered successfully');
-                } catch (renderError) {
-                  console.error('[Markdown] Failed to render diagram', diagramId, ':', renderError);
-                  el.innerHTML = `<pre class="md-code"><code class="language-mermaid">${escapeHtml(diagramCode)}</code></pre><div style="color:#ef4444;padding:8px 12px;font-size:12px;">渲染失败: ${escapeHtml(String(renderError.message || renderError))}</div>`;
-                }
-              }
-            } else {
-              // Fallback if mermaid is not loaded
-              console.warn('[Markdown] mermaid not loaded, using fallback');
-              for (const { diagramId, diagramCode } of mermaidDiagrams) {
-                const el = document.getElementById(diagramId);
-                if (el) {
-                  el.innerHTML = `<pre class="md-code"><code class="language-mermaid">${escapeHtml(diagramCode)}</code></pre>`;
-                }
+              try {
+                console.log('[Markdown] Rendering diagram', diagramId, 'with code:', diagramCode);
+                await renderer.renderDiagram(diagramId, diagramCode);
+                console.log('[Markdown] Diagram', diagramId, 'rendered successfully with plugins');
+              } catch (renderError) {
+                console.error('[Markdown] Failed to render diagram', diagramId, ':', renderError);
+                el.innerHTML = `<pre class="md-code"><code class="language-mermaid">${escapeHtml(diagramCode)}</code></pre><div style="color:#ef4444;padding:8px 12px;font-size:12px;">渲染失败: ${escapeHtml(String(renderError.message || renderError))}</div>`;
               }
             }
           } catch (error) {
             console.error('[Markdown] Mermaid rendering setup failed:', error);
+            // 降级到直接 mermaid 渲染
+            try {
+              if (typeof mermaid !== 'undefined') {
+                mermaid.initialize({
+                  startOnLoad: false,
+                  securityLevel: 'loose',
+                  theme: 'dark',
+                  flowchart: {
+                    useMaxWidth: false,
+                    htmlLabels: true,
+                    curve: 'basis',
+                    wrap: true
+                  }
+                });
+
+                for (const { diagramId, diagramCode } of mermaidDiagrams) {
+                  const el = document.getElementById(diagramId);
+                  if (!el) continue;
+
+                  try {
+                    const renderId = `md-mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+                    const { svg } = await mermaid.render(renderId, diagramCode);
+                    el.innerHTML = svg;
+                    el.setAttribute('data-mermaid-rendered', 'true');
+                  } catch (renderError) {
+                    console.error('[Markdown] Fallback render failed for diagram', diagramId, ':', renderError);
+                    el.innerHTML = `<pre class="md-code"><code class="language-mermaid">${escapeHtml(diagramCode)}</code></pre><div style="color:#ef4444;padding:8px 12px;font-size:12px;">渲染失败: ${escapeHtml(String(renderError.message || renderError))}</div>`;
+                  }
+                }
+              }
+            } catch (fallbackError) {
+              console.error('[Markdown] Fallback also failed:', fallbackError);
+            }
           }
         });
       }

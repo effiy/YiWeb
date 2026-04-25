@@ -17,7 +17,7 @@ function escapeHtml(str) {
 
 export const MermaidPlugin = {
   name: 'mermaid',
-  version: '1.0.0',
+  version: '1.1.0',
   priority: 120,
 
   _mermaidRenderer: null,

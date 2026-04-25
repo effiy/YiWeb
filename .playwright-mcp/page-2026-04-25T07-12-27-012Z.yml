@@ -1,0 +1,53 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - button "首页" [ref=e5] [cursor=pointer]:
+      - generic [ref=e6]: 
+    - textbox "搜索输入框" [ref=e9]:
+      - /placeholder: 搜索网站、标签或描述...
+    - generic [ref=e10]:
+      - button "新闻" [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: 
+      - button "API 鉴权" [ref=e13] [cursor=pointer]:
+        - generic [ref=e14]: 
+      - generic [ref=e15]: LOCAL
+  - main [ref=e16]:
+    - text: 
+    - button "收起侧边栏" [ref=e17] [cursor=pointer]:
+      - generic [ref=e18]: 
+    - complementary "侧边栏" [ref=e19]
+    - region "代码区" [ref=e21]:
+      - text: 
+      - button "收起聊天面板" [ref=e22] [cursor=pointer]:
+        - generic [ref=e23]: 
+      - generic [ref=e24]:
+        - main "代码查看器" [ref=e26]:
+          - generic [ref=e28]:
+            - generic [ref=e31]: 
+            - heading "未选择文件" [level=2] [ref=e32]
+            - button "新建会话" [ref=e34] [cursor=pointer]:
+              - generic [ref=e35]:
+                - generic [ref=e36]: +
+                - text: 新建会话
+        - generic "会话聊天面板" [ref=e38]:
+          - log [ref=e39]:
+            - generic [ref=e40]:
+              - status [ref=e41]: 未选择会话，从左侧会话列表选择一个会话开始聊天
+              - generic [ref=e42]:
+                - generic [ref=e44]: 
+                - heading "未选择会话" [level=2] [ref=e45]
+                - paragraph [ref=e46]: 也可以在左侧搜索框输入关键词快速定位
+          - generic [ref=e47]:
+            - generic [ref=e48]:
+              - generic [ref=e49]:
+                - button "页面上下文" [ref=e50] [cursor=pointer]: 📝
+                - button "编辑标题" [disabled] [ref=e51]: ✏️
+                - button "管理标签" [disabled] [ref=e52]: 🏷️
+                - button "常见问题" [ref=e53] [cursor=pointer]: 💡
+                - button "微信机器人设置" [ref=e54] [cursor=pointer]: 🤖
+                - button "上传图片" [ref=e55] [cursor=pointer]: 🖼️
+              - generic [ref=e56]:
+                - generic "开启/关闭页面上下文" [ref=e57]:
+                  - checkbox "页面上下文开关" [checked]
+                - button "请求状态" [disabled] [ref=e60]: ⏹️
+            - textbox "会话输入框" [ref=e63]:
+              - /placeholder: 输入消息... (Enter 发送, Shift+Enter 换行)

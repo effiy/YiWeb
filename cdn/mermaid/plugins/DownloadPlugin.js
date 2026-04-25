@@ -1,6 +1,6 @@
 /**
  * Download Plugin
- * Adds download as SVG capability
+ * Adds download as SVG and PNG capability
  */
 
 function serializeSvg(svg) {
@@ -43,9 +43,80 @@ function downloadSvg(diagram) {
   }
 }
 
+async function convertSvgToPng(svgElement, options = {}) {
+  const {
+    scale = 2,
+    backgroundColor = 'white'
+  } = options;
+
+  return new Promise((resolve, reject) => {
+    try {
+      const svgStr = serializeSvg(svgElement);
+      const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      const img = new Image();
+
+      img.onload = function() {
+        try {
+          const canvas = document.createElement('canvas');
+          const width = img.width * scale;
+          const height = img.height * scale;
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+
+          if (backgroundColor) {
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(0, 0, width, height);
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            URL.revokeObjectURL(url);
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Canvas toBlob failed'));
+            }
+          }, 'image/png');
+        } catch (e) {
+          URL.revokeObjectURL(url);
+          reject(e);
+        }
+      };
+
+      img.onerror = function() {
+        URL.revokeObjectURL(url);
+        reject(new Error('SVG image load failed'));
+      };
+
+      img.src = url;
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+async function downloadPng(diagram) {
+  const svg = diagram.querySelector('svg');
+  if (!svg) return;
+
+  try {
+    const pngBlob = await convertSvgToPng(svg);
+    const filename = `mermaid-diagram-${Date.now()}.png`;
+    triggerDownload(pngBlob, filename);
+  } catch (e) {
+    console.error('[DownloadPlugin] PNG download failed:', e);
+    downloadSvg(diagram);
+  }
+}
+
 export const DownloadPlugin = {
   name: 'download',
-  version: '1.0.0',
+  version: '1.1.0',
 
   afterRender({ diagram, code, renderer }) {
     const wrapper = diagram.parentElement;
@@ -63,10 +134,15 @@ export const DownloadPlugin = {
     btn.className = 'mermaid-toolbar-btn';
     btn.setAttribute('data-testid', 'mermaid-toolbar-download-btn');
     btn.setAttribute('data-action', 'download');
-    btn.setAttribute('aria-label', '下载 SVG');
-    btn.textContent = '⬇';
+    btn.setAttribute('aria-label', '下载图片');
+    btn.textContent = '📷';
 
-    btn.addEventListener('click', () => downloadSvg(diagram));
+    btn.addEventListener('click', () => downloadPng(diagram));
+
+    btn.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      downloadSvg(diagram);
+    });
 
     toolbar.appendChild(btn);
   }

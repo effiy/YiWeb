@@ -1,0 +1,52 @@
+- generic [active] [ref=e1]:
+  - heading "🧪 Mermaid 工具栏功能测试" [level=1] [ref=e2]
+  - generic [ref=e3]:
+    - strong [ref=e4]: 测试说明：
+    - text: 将鼠标悬停在下方的 Mermaid 图表上，应该会在右上角显示工具栏（包含全屏和下载按钮）。
+  - generic [ref=e5]:
+    - heading "测试 1：流程图" [level=2] [ref=e6]
+    - generic [ref=e7]:
+      - heading "用户流程图" [level=2] [ref=e8]
+      - paragraph [ref=e9]: 这是一个简单的用户流程图：
+      - generic [ref=e10]:
+        - document [ref=e12]:
+          - generic [ref=e14]:
+            - generic [ref=e21]:
+              - generic [ref=e25]: 是
+              - generic [ref=e29]: 否
+            - generic [ref=e30]:
+              - generic [ref=e35]: 用户访问页面
+              - generic [ref=e40]: 是否已登录?
+              - generic [ref=e45]: 显示主内容
+              - generic [ref=e50]: 重定向到登录页
+              - generic [ref=e55]: 用户交互
+              - generic [ref=e60]: 完成登录
+        - generic:
+          - button "全屏查看": ⛶
+          - button "下载图片": 📷
+      - paragraph [ref=e61]: 将鼠标悬停在图表上查看工具栏！
+  - generic [ref=e62]:
+    - heading "测试 2：序列图" [level=2] [ref=e63]
+    - generic [ref=e64]:
+      - heading "API 调用序列图" [level=2] [ref=e65]
+      - paragraph [ref=e66]: 这是一个 API 调用的序列图：
+      - generic [ref=e67]:
+        - document [ref=e69]:
+          - generic [ref=e72]: 数据库
+          - generic [ref=e75]: API 服务
+          - generic [ref=e78]: 前端
+          - generic [ref=e81]: 用户
+          - generic [ref=e85]: 数据库
+          - generic [ref=e89]: API 服务
+          - generic [ref=e93]: 前端
+          - generic [ref=e97]: 用户
+          - generic [ref=e98]: 点击提交
+          - generic [ref=e99]: POST /api/data
+          - generic [ref=e100]: 查询数据库
+          - generic [ref=e101]: 返回结果
+          - generic [ref=e102]: 200 OK
+          - generic [ref=e103]: 显示成功提示
+        - generic:
+          - button "全屏查看": ⛶
+          - button "下载图片": 📷
+      - paragraph [ref=e104]: 每个图表都有独立的工具栏！

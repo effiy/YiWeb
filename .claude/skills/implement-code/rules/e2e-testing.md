@@ -1,7 +1,7 @@
 # E2E 测试规范
 
-> 本规范约束 implement-code 技能在**阶段 2（E2E 测试页面生成）**和**阶段 4（Playwright 真实测试）**中的全部测试行为。  
-> 阶段 3 的门禁验证由 **Playwright-MCP** 工具执行，本规范同时约束 MCP 验证行为。
+> 本规范约束 implement-code 技能在**阶段 1（测试先行）**以及**阶段 2 / 阶段 6（Playwright-MCP 验证）**中的全部测试行为。  
+> 阶段编号与阶段职责以 `../SKILL.md` 和 `./orchestration.md` 为准。
 
 ---
 
@@ -16,12 +16,14 @@
 | E0-5 | 测试文件路径必须为 `tests/e2e/<功能名>/<场景名>.spec.ts`，不得任意放置。 |
 | E0-6 | **Mock 仅限测试文件**：`page.route`、`vi.mock`、stub 函数等 **只允许出现在 `tests/` 目录**；生产代码禁止出现条件性 mock 逻辑。 |
 | E0-7 | 测试场景必须还原项目真实复杂度，**禁止**使用单步骤、无状态变化的过度简化场景。 |
+| E0-8 | 所有测试辅助产物（原型 HTML、fixtures、mock 数据、截图、下载文件、快照、临时调试页面）**必须**生成在 `tests/` 下；任何落在 `tests/` 外的测试文件都视为 P0 门禁失败。 |
 
 ---
 
 ## 2. 文件结构
 
 所有测试产物必须放在 `tests/` 目录内，禁止在项目根目录或 `src/` 下散落测试相关文件。
+该规则覆盖 agent 生成、MCP 导出、脚本下载和人工补充的全部测试文件；若第三方工具默认写入 `.playwright-mcp/`、项目根目录或其他临时目录，必须改用 `tests/` 下路径或在进入下一阶段前迁移并记录。
 
 ```
 tests/
@@ -31,7 +33,7 @@ tests/
 │       ├── <场景名-2>.spec.ts
 │       ├── fixtures/                  # 共享 mock 数据（可选）
 │       │   └── <功能名>-mock-data.ts
-│       └── pages/                     # 原型测试页面（阶段 2 专用，阶段 6 后可删除）
+│       └── pages/                     # 原型测试页面（阶段 1 产物，阶段 6 后可删除）
 │           ├── <场景名-1>/
 │           │   └── index.html         # 单场景原型页（复杂场景可拆子页）
 │           └── <场景名-2>/
@@ -54,7 +56,7 @@ tests/
 | 目录 | 用途 | 生命周期 |
 |------|------|---------|
 | `e2e/<功能名>/` | spec 测试文件 + fixtures | 长期保留 |
-| `e2e/<功能名>/pages/` | 阶段 2 原型 HTML 页面 | 阶段 6 冒烟测试通过后可删除 |
+| `e2e/<功能名>/pages/` | 阶段 1 原型 HTML 页面 | 阶段 6 冒烟测试通过后可删除 |
 | `screenshots/` | MCP `browser_snapshot` 输出的截图，用于实施总结和问题溯源 | 按功能归档，可按需清理 |
 | `snapshots/` | `toHaveScreenshot` 基准图（视觉回归测试） | 随代码提交，基准变更时需更新 |
 | `downloads/` | 测试触发文件下载的落地路径，需在 `playwright.config` 中配置 `downloadsPath` | 每次测试前清空 |
@@ -64,6 +66,7 @@ tests/
 - `screenshots/` 中的文件名格式：`<场景名>-<状态描述>.png`，状态描述使用英文小写（如 `initial`、`after-hover`、`fullscreen`、`error`）
 - `downloads/` 路径在 `playwright.config.ts` 中统一配置：`downloadsPath: 'tests/downloads'`
 - 所有目录均通过 `.gitignore` 控制提交策略：`screenshots/` 和 `downloads/` 默认忽略；`snapshots/` 提交基准图
+- 阶段退出前必须用文件清单核对是否存在 `tests/` 外测试产物；发现后必须移动到合规路径或删除误产物，并把处理结果写入 `06_实施总结.md`
 
 ---
 
@@ -193,9 +196,9 @@ test.describe('<功能名> - <场景名>', () => {
 
 ---
 
-## 5. Playwright-MCP 验证流程（阶段 3 专用）
+## 5. Playwright-MCP 验证流程（阶段 2 / 6）
 
-阶段 3 的门禁验证使用 Playwright-MCP 工具按以下流程执行：
+阶段 2 和阶段 6 的门禁验证都使用 Playwright-MCP 工具按以下流程执行：
 
 ```
 对每个 P0 检查项：
@@ -249,7 +252,7 @@ test.describe('<功能名> - <场景名>', () => {
 
 ## 8. Mock 隔离检查（code-review 阶段必查）
 
-在阶段 4 代码审查时，必须执行以下 grep 检查确保 Mock 未泄漏到生产代码：
+在阶段 5 代码评审时，必须执行以下 grep 检查确保 Mock 未泄漏到生产代码：
 
 ```bash
 # 检查生产代码目录（排除 tests/ 目录）是否含 mock 相关代码
@@ -263,9 +266,9 @@ rg -n "import\.meta\.env\.TEST\|process\.env\.TEST\|VITE_MOCK" src/ --type ts
 
 ---
 
-## 9. 阶段 2 原型页面专项规范
+## 9. 阶段 1 原型页面专项规范
 
-原型页面（`tests/e2e/pages/<功能名>/<场景名>.html`）要求：
+原型页面（`tests/e2e/<功能名>/pages/<场景名>/index.html`）要求：
 
 1. **最小化**：只包含该场景需要的 UI 元素，不引入完整应用框架。
 2. **data-testid 完整**：每个操作步骤涉及的元素均已标记。
@@ -292,9 +295,10 @@ rg -n "import\.meta\.env\.TEST\|process\.env\.TEST\|VITE_MOCK" src/ --type ts
 - ❌ 测试间共享 `page` 对象或全局状态
 - ❌ 使用 `page.waitForTimeout(N)` 等待固定时间，改用 `page.waitForSelector` 或 `expect(...).toBeVisible()`
 - ❌ 断言 DOM 结构细节（如子元素数量）而非业务语义（如"下载按钮已启用"）
-- ❌ 阶段 2/3 测试中访问真实 API（全部 mock）
+- ❌ 阶段 1 / 2 测试中访问真实 API（全部 mock）
 - ❌ Mock 数据使用 `{}` / `"test"` / `0` 等无意义占位符
 - ❌ 生产代码中出现 mock/stub/route 相关代码
+- ❌ 在 `tests/` 目录以外生成测试文件、原型页、fixtures、mock 数据、截图、下载结果或调试 HTML
 - ❌ 只测试成功路径，不覆盖失败分支
 - ❌ `page.goto` 使用泛化占位路由（如 `/`、`/test`、`/path/to/feature`），必须是项目中真实存在的页面路由
 - ❌ `beforeEach` 前置条件仅写"打开页面"，必须说明页面上需要存在的具体内容（如文件内容、数据状态）

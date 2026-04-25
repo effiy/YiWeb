@@ -63,3 +63,40 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+---
+
+## 5. 会话阻断通知（强制）
+
+**任何会话被阻断时，必须通过 wework-bot 推送阻断消息，不得省略。**
+
+适用场景（以下任意一种均视为"阻断"）：
+
+- 缺少必要前置文档或输入，无法继续
+- P0 门禁未通过且已达修复上限
+- 必要工具 / MCP 不可用且无降级方案
+- 用户请求无法解析或存在根本性歧义
+- 任何 skill / agent 流程在中途因错误停止
+
+**执行步骤：**
+
+1. 记录阻断原因（简短，≤ 2 条）
+2. 读取 `.claude/skills/wework-bot/SKILL.md`，按如下格式发送阻断通知：
+
+```
+⛔ 会话阻断
+━━━━━━━━━━━━━━━━━
+🛠️ 流程：<当前执行的 skill 或任务名>
+📌 功能 / 任务：<功能名或任务简述>
+📝 描述：<100字以内说明本次阻断背景和影响>
+❌ 阻断原因：<简短原因，≤ 2 条>
+📊 当前进度：<已完成阶段 / 总阶段，或"初始化阶段"如尚未进入>
+🤖 模型：<模型名>
+🧰 工具：<主要工具清单>
+🕒 最后更新：<YYYY-MM-DD HH:mm:ss>
+💡 恢复建议：<下一步操作或缺失输入>
+```
+
+3. 通知发送后才算阻断处理完成；发送失败时在回复中说明原因，并写入可落盘的总结或运行记录（包含脱敏路由、模型、工具和精确到秒的最后更新时间），但不因此阻断其他收尾操作。
+
+> ⛔ **此规则优先级高于所有 skill 内部规则。即便某个 skill 未显式提及 wework-bot，会话阻断时也必须发送通知。**

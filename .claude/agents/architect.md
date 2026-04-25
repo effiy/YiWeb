@@ -24,7 +24,7 @@ triggers:
 
 - **Store**：使用工厂函数创建，在 `src/stores/index.js` 统一注册
 - **组件**：在 `src/components/index.js` 全局注册
-- **代码结构**：遵循 `rules/代码结构.md`
+- **代码结构**：遵循 `../skills/generate-document/rules/代码结构.md`
 - **禁止**：直接 import Store 实例，避免循环依赖
 
 ## 输出格式
