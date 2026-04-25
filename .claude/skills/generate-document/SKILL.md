@@ -21,7 +21,7 @@ user_invocable: true
 > - 失败不阻断交付，但必须记录失败文件数和错误摘要
 >
 > **步骤 B：发送 wework-bot 完成通知**
-> 读取 `.claude/skills/wework-bot/SKILL.md`，选择对应模板发送完成通知，并把步骤 A 的真实同步结果写入 `☁️ 文档同步` 行：
+> 读取 `.claude/skills/wework-bot/SKILL.md`，选择对应模板发送完成通知，并把步骤 A 的真实同步结果写入 `☁️ 文档同步` 行；通知**必须**含本次会话 `⏱️ 用时` 与 `🪙 会话用量`（可用 `--duration` / `--token-usage` 或脚本缺省说明，见 wework-bot 技能）：
 > - P0 全部通过 → 使用 "generate-document 完成（成功）" 模板（📄✅）
 > - P0 有失败项 → 使用 "generate-document 完成（含 P0 失败）" 模板（⚠️❌）
 > - 每条信息独占一行，使用 `━━━` 分隔线，数字填写实际值（禁止发含 `<占位符>` 的消息）
@@ -126,7 +126,7 @@ user_invocable: true
 9. **保存 + 审查（可选）** → 保存后可触发 `doc-reviewer` / `code-reviewer` / `doc-updater` 并行审查；记录未修复问题。
 10. **文档同步 + 完成通知**（每次必须执行，不得省略）：
     - **import-docs**：读取 `import-docs` 技能，执行 `docs` 标准导入（见 `import-docs/SKILL.md §docs 标准导入`）；目录不存在时记录 `☁️ 文档同步：docs 不存在，跳过导入`；失败不阻断但须记录失败文件数和错误摘要。
-    - **wework-bot**：读取 `wework-bot` 技能，**严格按照** `wework-bot/SKILL.md §生动总结格式规范` 中的对应模板发送完成通知，并把 import-docs 的真实结果写入 `☁️ 文档同步` 行：
+    - **wework-bot**：读取 `wework-bot` 技能，**严格按照** `wework-bot/SKILL.md §生动总结格式规范` 中的对应模板发送完成通知，并把 import-docs 的真实结果写入 `☁️ 文档同步` 行；**须含** `⏱️ 用时` 与 `🪙 会话用量`（与 wework-bot 技能、脚本约定一致）：
       - P0 全部通过 → 使用 "generate-document 完成（成功）" 模板（📄✅）
       - P0 有失败项 → 使用 "generate-document 完成（含 P0 失败）" 模板（⚠️❌）
       - 每条信息独占一行，使用 `━━━` 分隔线，数字填写实际结果

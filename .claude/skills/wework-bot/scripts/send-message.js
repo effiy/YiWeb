@@ -6,6 +6,10 @@ const { execSync } = require('child_process');
 
 const args = process.argv.slice(2);
 const DEFAULT_CONFIG = '.claude/skills/wework-bot/config.local.json';
+/** 未传 --duration 且正文无该行时，仍输出本行，便于与 Cursor 会话核对，禁止留空。 */
+const DEFAULT_SESSION_DURATION = '未在本地记录，请从 Cursor 会话起止时间核对';
+/** 未传 --token-usage 且正文无该行时，仍输出本行；真实 Token 以 Cursor 用量为准。 */
+const DEFAULT_TOKEN_USAGE = '未在本地记录，请从 Cursor 用量面板核对';
 const options = {
   token: process.env.API_X_TOKEN || null,
   apiUrl: process.env.WEWORK_BOT_API_URL || 'https://api.effiy.cn/wework/send-message',
@@ -249,7 +253,7 @@ Context:
   --next-step          Required next action (default: view docs/logs when needed)
 
 Rich metrics:
-  --duration           Total elapsed time, e.g. "12m 34s" or "01:23:45"
+  --duration           Elapsed this session, e.g. "12m 34s" or "01:23:45" (omitted + missing in body → default "未在本地记录…" line is injected)
   --started-at         Run started at, format YYYY-MM-DD HH:mm:ss
   --ai-calls           AI call summary, e.g. "skills 7 / agents 4 / mcp 23 / tools 86"
   --call-chain         Compact AI call chain, e.g. "find-skills→find-agents→...→wework-bot"
@@ -281,7 +285,7 @@ Metadata:
   --model              Model name appended to message metadata (default from AGENT_MODEL or "Claude Sonnet 4.6")
   --tools              Tool summary appended to message metadata (default from AGENT_TOOLS or "Cursor Agent / Playwright-MCP / Shell / wework-bot")
   --updated-at         Last update time, precise to seconds (default local current time)
-  --token-usage        Session token / usage line, e.g. "输入 12k / 输出 3.2k / 合计 15.2k（来源：Cursor 用量）" (or AGENT_SESSION_TOKEN_USAGE)
+  --token-usage        This session's token/usage, e.g. "输入 12k / 输出 3.2k / 合计 15.2k（来源：Cursor 用量）" (or AGENT_SESSION_TOKEN_USAGE; omitted + missing in body → default line)
   --improvement-hints  Factual session improvement tips, semicolon-separated, ≤280 chars recommended (or AGENT_SESSION_IMPROVEMENT_HINTS)
   --dry-run            Print sanitized request summary without sending
   --help, -h           Show this help message
@@ -450,9 +454,9 @@ function contextLines() {
   const syncLine = buildLine('☁️', '文档同步', options.syncResult);
   const branchLine = buildLine('🌿', '分支', options.branch);
   const commitLine = buildLine('🔖', '提交', options.commit);
+  const durationLine = buildLine('⏱️', '用时', options.duration || DEFAULT_SESSION_DURATION);
+  const tokenUsageLine = buildLine('🪙', '会话用量', options.tokenUsage || DEFAULT_TOKEN_USAGE);
   const startedLine = buildLine('🟢', '开始时间', options.startedAt);
-  const durationLine = buildLine('⏱️', '用时', options.duration);
-  const tokenUsageLine = buildLine('🪙', '会话用量', options.tokenUsage);
   const improvementLine = buildLine('💡', '改进建议', options.improvementHints);
   const recoverLine = buildLine('🧭', '恢复点', options.recover);
 
@@ -483,9 +487,9 @@ function contextLines() {
     syncLine,
     branchLine,
     commitLine,
-    startedLine,
     durationLine,
     tokenUsageLine,
+    startedLine,
     improvementLine,
     recoverLine
   ].filter(Boolean);

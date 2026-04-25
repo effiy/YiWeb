@@ -31,6 +31,7 @@ node .claude/skills/wework-bot/scripts/send-message.js \
   --artifacts "代码 4 / 测试 6 / 文档 1" \
   --metrics "lint 0 / 影响链命中 4" \
   --duration "1h 23m 45s" --started-at "2026-04-25 13:08:15" \
+  --token-usage "输入 95k / 输出 8.2k / 合计 103.2k（来源：Cursor 用量）" \
   --report-path "docs/mermaid-toolbar/06_实施总结.md" \
   --diagram-summary "§1 流程图 32 节点 / §2 时序图 11 参与者" \
   --mcp-breakdown "nav 4 / snap 12 / click 6 / eval 8" \
@@ -65,6 +66,7 @@ node .claude/skills/wework-bot/scripts/send-message.js \
 🌐 影响：关键用户路径已验证，可进入总结和同步
 📎 证据：tests/e2e/mermaid-toolbar/*.spec.ts
 ⏱️ 用时：1h 23m 45s
+🪙 会话用量：输入 95k / 输出 8.2k / 合计 103.2k（来源：Cursor 用量）
 🟢 开始时间：2026-04-25 13:08:15
 🌿 分支：feature/mermaid-toolbar
 🔖 提交：a1b2c3d
@@ -132,7 +134,8 @@ node .claude/skills/wework-bot/scripts/send-message.js \
 - `--metrics`：业务指标摘要（lint / 影响链 / 冒烟时间）
 - `--p0-pass` / `--p0-total`：P0 自检通过数 / 总数
 - `--doc-type`：文档类型（需求文档 / 设计文档 / 全文档…）
-- `--duration` / `--started-at`：总耗时与开始时间
+- `--duration` / `--started-at`：本次会话总耗时与开始时间；未传且正文无 `⏱️ 用时` 时，脚本会注入可核对缺省句
+- `--token-usage` / `AGENT_SESSION_TOKEN_USAGE`：本次会话 Token/用量；未传且正文无 `🪙 会话用量` 时，脚本会注入可核对缺省句
 - `--report-path`：实施总结或文档报告路径
 - `--branch` / `--commit`：分支与短 SHA；未传时脚本自动从 git 检测，可通过 `--no-auto-git` 关闭
 - `--reason`：阻断 / 失败原因，渲染为 `❌ 原因：...`
@@ -168,7 +171,8 @@ node .claude/skills/wework-bot/scripts/send-message.js \
 📎 证据：<报告路径 / 命令 / MCP 序列 / 结果摘要>
 📂 报告：<报告路径>
 ☁️ 文档同步：<docs → YiAi 摘要>
-⏱️ 用时：<总耗时>
+⏱️ 用时：<本次会话总耗时>
+🪙 会话用量：<Token/用量 摘要，与 Cursor 可核对>
 🟢 开始时间：<YYYY-MM-DD HH:mm:ss>
 🌿 分支：<git-branch>
 🔖 提交：<short-sha>
@@ -178,7 +182,7 @@ node .claude/skills/wework-bot/scripts/send-message.js \
 👉 下一步：<需要执行的动作；无需行动时写"无需人工介入">
 ```
 
-门禁失败、门禁失效、证据缺失或流程阻断时必须发送通知，并在正文中写清门禁阶段、失败证据、通过/失败/未执行数量、影响范围、恢复点、调用链、产物、模型、工具和最后更新时间。发送脚本会自动补齐缺失的模型、工具、秒级时间、git 分支与 commit；也可通过 `--flow`、`--feature`、`--stage`、`--status`、`--impact`、`--evidence`、`--next-step`、`--conclusion`、`--ai-calls`、`--call-chain`、`--test-paths`、`--retries`、`--artifacts`、`--metrics`、`--duration`、`--report-path` 自动补齐上下文行。
+门禁失败、门禁失效、证据缺失或流程阻断时必须发送通知，并在正文中写清门禁阶段、失败证据、通过/失败/未执行数量、影响范围、恢复点、调用链、产物、**⏱️ 用时**、**🪙 会话用量**、模型、工具和最后更新时间。发送脚本会自动补齐缺失的模型、工具、秒级时间、git 分支与 commit，以及未写的 `⏱️ 用时` / `🪙 会话用量`（缺省为「请从 Cursor 核对」类说明）；也可通过 `--flow`、`--feature`、`--stage`、`--status`、`--impact`、`--evidence`、`--next-step`、`--conclusion`、`--ai-calls`、`--call-chain`、`--test-paths`、`--retries`、`--artifacts`、`--metrics`、`--duration`、`--token-usage`、`--report-path` 自动补齐上下文行。
 
 ## 配置说明
 

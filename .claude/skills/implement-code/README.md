@@ -46,3 +46,4 @@
 8. **测试产物**（spec、原型页、fixtures、截图、trace 等）**必须**在仓库 `tests/` 目录下，规范见 `rules/e2e-testing.md` 与 `rules/artifact-contracts.md §2`。
 9. `06_实施总结.md` 必须含 **AI 调用流程图** 与 **AI 调用时序图**（Mermaid），并满足 `rules/process-summary.md` 的 S0 约束与章节速查表；**§9.4/§9.5**（阻断时 **§8.3/§8.4**）为自我改进与可验证下一步，须证据驱动。  
 10. 阶段 0 完成 `orchestration.md §3.4` 的覆盖预检，再进阶段 1，减少「有场景无 P0 检查项」导致的返工。
+11. 每次调用结束前**必须**按技能先后调用 `import-docs` 与 `wework-bot`（先读各 `SKILL.md` 再执行），与 `SKILL.md`「强制最终步骤」及阶段 8 一致；不得省略任一技能或只跑脚本不读技能。
