@@ -39,46 +39,75 @@ docs/99_agent-runs/<YYYYMMDD-HHMMSS>_implement-code.md
 
 ## 2. 测试产物路径
 
-> **P0 规则**：所有由实施流程生成的测试相关文件（spec、原型页、fixtures、mock 数据、快照、截图、下载产物、测试辅助脚本）都必须位于 `tests/` 目录下。禁止在项目根目录、`src/`、`docs/`、`.claude/` 或临时隐藏目录中生成测试文件；如工具默认输出到其他目录，必须移动或重新配置到 `tests/` 后才可进入下一阶段。
+> **P0 规则**：所有由实施流程产生的测试相关文件（spec、原型页、fixtures、mock 数据、快照、截图、下载产物、测试辅助脚本、临时调试 HTML、playwright trace、HAR 文件等）**必须**位于仓库根的 `tests/` 目录下。
+> 禁止落地路径包括但不限于：项目根目录、`src/`、`docs/`、`.claude/`、`.playwright-mcp/`、`.cursor/`、`/tmp/`、用户家目录、节点 `node_modules/`、构建产物目录（`dist/`、`build/`）。
+> 第三方工具默认输出到非 `tests/` 路径时，必须**先**通过参数或配置重定向到 `tests/<子目录>/`，不允许“写完再迁移”作为常态做法；只在意外落地时才允许迁移并必须在 `06_实施总结.md` 中记录。
 
-### 2.1 Playwright 测试文件
-
-```text
-tests/e2e/<功能名>/<场景名>.spec.ts
-```
-
-### 2.2 测试原型页面
+### 2.1 标准目录结构
 
 ```text
-tests/e2e/<功能名>/pages/<场景名>/index.html
+tests/
+├── e2e/<功能名>/
+│   ├── <场景名>.spec.ts                 # Playwright 测试
+│   ├── fixtures/<名称>-mock-data.ts     # 共享 mock 数据
+│   ├── pages/<场景名>/index.html        # 原型测试页面
+│   └── tmp/                              # 该功能的临时调试副本（必须在阶段 7 前清理或保留并记录）
+├── screenshots/<功能名>/<场景名>-<状态>.png   # MCP / Playwright 截图归档
+├── snapshots/<功能名>/<场景名>-<index>.png    # toHaveScreenshot 基准图
+├── downloads/<功能名>/<文件名>               # 测试触发的文件下载落地
+├── traces/<功能名>/<场景名>.zip               # Playwright trace（如有）
+└── tmp/                                       # 跨功能临时文件（必须在阶段 7 前清理）
 ```
 
-### 2.3 共享 mock 数据
+| 路径 | 必须使用的功能 / 工具 | 提交策略 |
+|------|---------------------|----------|
+| `tests/e2e/<功能名>/<场景名>.spec.ts` | Playwright 用例 | 提交 |
+| `tests/e2e/<功能名>/pages/<场景名>/index.html` | 阶段 1 原型页 | 阶段 6 后可删除 |
+| `tests/e2e/<功能名>/fixtures/` | 共享 mock 数据 | 提交 |
+| `tests/screenshots/` | MCP `browser_snapshot` 输出 | 默认忽略 |
+| `tests/snapshots/` | Playwright `toHaveScreenshot` 基准 | 提交基准图 |
+| `tests/downloads/` | 测试触发下载 | 默认忽略，每次运行前清空 |
+| `tests/traces/` | Playwright trace | 默认忽略 |
+| `tests/tmp/` | 临时调试 | 阶段 7 前清理 |
 
-```text
-tests/e2e/<功能名>/fixtures/<名称>-mock-data.ts
+### 2.2 测试路径门禁扫描命令（阶段 1 / 2 / 6 退出前 P0 必跑）
+
+每次进入门禁退出判定前，必须执行以下扫描命令并把命中清单原样写入 `06_实施总结.md`「验证门禁结果归档 § 测试路径门禁」小节。任何一条命令命中非空即视为 P0 失败，必须先清理或迁移再重新扫描。
+
+```bash
+rg -nl --hidden \
+  --glob '!node_modules/**' --glob '!tests/**' --glob '!.git/**' \
+  -e '\.spec\.(ts|js|tsx|jsx)$' -e '\.test\.(ts|js|tsx|jsx)$'
+
+rg -n --hidden \
+  --glob '!node_modules/**' --glob '!tests/**' --glob '!.git/**' \
+  -e 'page\.route\(' -e '@playwright/test' -e 'expect\(page\b'
+
+find . -type f \
+  \( -path '*/.playwright-mcp/*' -o -path '*/playwright-report/*' \
+     -o -name '*-trace.zip' -o -name '*screenshot*.png' \) \
+  ! -path './node_modules/*' ! -path './.git/*' ! -path './tests/*'
 ```
 
-### 2.4 截图与下载
+> 失败处置：必须在 `06_实施总结.md` 中给出每个命中文件的「处置方式（迁移 / 删除 / 例外原因）」、「最终路径」与「重新扫描结果」三列。
+> 例外白名单：仅 `playwright.config.*`、`vitest.config.*`、`vite.config.*` 和源码中以 `// test-id:` 开头标记的注释允许命中关键词；其它命中一律按违规处理。
 
-```text
-tests/screenshots/<功能名>/<场景名>-<状态>.png
-tests/downloads/<功能名>/<文件名>
-```
+### 2.3 测试路径门禁结果回写
 
-### 2.5 测试路径门禁
-
-阶段 1、阶段 2、阶段 6 退出前必须检查测试产物路径：
-
-| 检查项 | 要求 |
+| 字段 | 要求 |
 |------|------|
-| spec 文件 | 只能匹配 `tests/**/*.spec.ts` / `tests/**/*.test.ts` |
-| 原型页面 | 只能位于 `tests/e2e/<功能名>/pages/` |
-| mock / fixture | 只能位于 `tests/e2e/<功能名>/fixtures/` 或对应 spec 文件内 |
-| 截图 / 下载 / 快照 | 只能位于 `tests/screenshots/`、`tests/downloads/`、`tests/snapshots/` |
-| 临时测试辅助文件 | 只能位于 `tests/tmp/` 或 `tests/e2e/<功能名>/tmp/`，并在总结中标注是否清理 |
+| 扫描时间 | 阶段 1 / 2 / 6 退出前一次，精确到秒 |
+| 扫描命令 | 原样列出第 2.2 节命令 |
+| 命中清单 | 路径 + 类型 + 处置 + 处置后路径 |
+| 最终结论 | `✅ 测试产物全部位于 tests/，无逸出` 或 `⛔ 仍有 N 个文件未迁移，已阻断` |
+| 通知字段 | 把结论写入 wework-bot 通知的 `📁 测试路径` 行（见 `wework-bot/rules/message-contract.md`） |
 
-若发现测试文件落在 `tests/` 外，属于 P0 门禁失败：必须停止进入下一阶段，移动到合规路径或删除误产物，并在 `06_实施总结.md` 的“变更文件清单”和“验证门禁结果归档”中记录处置结果。
+### 2.4 测试路径门禁与生产代码隔离
+
+- ❌ 生产代码（`src/`）禁止 `import` 任何 `tests/` 下文件、fixtures 或 mock 数据
+- ❌ 禁止在生产代码中保留 `if (process.env.NODE_ENV === 'test')` 或 `if (import.meta.env.TEST)` 这类测试桩分支
+- ❌ 禁止把 spec 文件重命名为 `*.dev.ts` / `*.story.ts` 放入 `src/` 来绕过扫描
+- ✅ 若需共享类型，应把类型放在 `src/types/` 并在 `tests/` 中 import；不得反向
 
 ---
 
@@ -109,7 +138,19 @@ tests/downloads/<功能名>/<文件名>
 
 ### 3.4 最终完成门禁
 
-正常完成 `implement-code` 前，必须对 `docs/<功能名>/05_动态检查清单.md` 执行最终完成门禁：
+> 正常完成 `implement-code` 前的**唯一关卡**。详细执行序列见 `verification-gate.md §9.8`，本节给出门禁先决条件与判定矩阵。
+
+#### 3.4.1 门禁先决条件（必须先做完才允许执行下表的门禁判定）
+
+| 先决条件 | 来源规则 | 说明 |
+|---------|---------|------|
+| 全部应完成项的最终状态已回写 | §3.1-3.3 + `verification-gate.md §9.7` | 状态列、备注列、底部"检查总结"必须刷到本次实施的最终值 |
+| 阶段 2 临时 `🏃` 已升级 | `verification-gate.md §9.7` | 阶段 6 通过后必须升级为 `✅`，未通过必须降级为 `❌` 或 `⚠️` 并写明原因 |
+| 回写后磁盘内容已二次读取确认 | `verification-gate.md §9.8.1` | 防止幻觉式确认；必须重新读取文件再判定 |
+
+任一先决条件未达成，**禁止**执行下表的门禁判定，直接按门禁失效处理（`verification-gate.md §9.8.3`）。
+
+#### 3.4.2 门禁判定矩阵
 
 | 检查项 | 完成要求 |
 |------|----------|
@@ -120,7 +161,11 @@ tests/downloads/<功能名>/<文件名>
 | 失败状态 | 不得存在 `❌`；如存在则必须按阻断流程处理 |
 | 检查总结 | 总体进度、待完成项、结论必须与表格状态一致 |
 
-最终完成门禁结果必须写入 `06_实施总结.md` 的“验证门禁结果归档”和“状态回写记录”。若门禁不通过，禁止执行正常完成通知，必须改用门禁异常 / 阻断通知。
+#### 3.4.3 结果归档与处置
+
+- 门禁结果必须写入 `06_实施总结.md` **第 5 节「验证门禁结果归档」§5.5「动态检查清单最终完成复查」**以及**第 6 节「状态回写记录」**（与 `process-summary.md` 约定一致，勿与第 4 节「资源与耗时摘要」混淆）
+- **门禁通过** → 允许走阶段 8 的"完成（成功）"通知模板
+- **门禁不通过** → 禁止执行正常完成通知；必须按 `verification-gate.md §9.8.3` 切换为阻断版总结、回写阻断状态、使用"门禁异常"通知模板，再结束本次调用
 
 ---
 

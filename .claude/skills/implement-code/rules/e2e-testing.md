@@ -65,8 +65,10 @@ tests/
 
 - `screenshots/` 中的文件名格式：`<场景名>-<状态描述>.png`，状态描述使用英文小写（如 `initial`、`after-hover`、`fullscreen`、`error`）
 - `downloads/` 路径在 `playwright.config.ts` 中统一配置：`downloadsPath: 'tests/downloads'`
-- 所有目录均通过 `.gitignore` 控制提交策略：`screenshots/` 和 `downloads/` 默认忽略；`snapshots/` 提交基准图
-- 阶段退出前必须用文件清单核对是否存在 `tests/` 外测试产物；发现后必须移动到合规路径或删除误产物，并把处理结果写入 `06_实施总结.md`
+- `traces/` 路径在 `playwright.config.ts` 中显式配置：`use: { trace: 'on-first-retry' }`，输出根目录通过 `outputDir: 'tests/traces'` 指定
+- 所有目录均通过 `.gitignore` 控制提交策略：`screenshots/`、`downloads/`、`traces/`、`tmp/` 默认忽略；`snapshots/` 提交基准图
+- Playwright-MCP 默认会写入 `.playwright-mcp/`：阶段退出前必须重定向到 `tests/screenshots/<功能名>/` 或在意外落地时迁移；不得把 `.playwright-mcp/` 当作长期路径
+- 阶段 1 / 2 / 6 退出前必须执行 `artifact-contracts.md §2.2 测试路径门禁扫描命令`，命中非空属于 P0 阻断；扫描记录、命中清单、处置结果必须写入 `06_实施总结.md` 的「验证门禁结果归档 § 测试路径门禁」小节，并在 wework-bot 通知的 `📁 测试路径` 行写入最终结论
 
 ---
 
@@ -298,7 +300,9 @@ rg -n "import\.meta\.env\.TEST\|process\.env\.TEST\|VITE_MOCK" src/ --type ts
 - ❌ 阶段 1 / 2 测试中访问真实 API（全部 mock）
 - ❌ Mock 数据使用 `{}` / `"test"` / `0` 等无意义占位符
 - ❌ 生产代码中出现 mock/stub/route 相关代码
-- ❌ 在 `tests/` 目录以外生成测试文件、原型页、fixtures、mock 数据、截图、下载结果或调试 HTML
+- ❌ 在 `tests/` 目录以外生成测试文件、原型页、fixtures、mock 数据、截图、下载结果、trace、HAR 或调试 HTML
+- ❌ 让 Playwright-MCP 长期使用 `.playwright-mcp/` 默认路径而不重定向到 `tests/screenshots/<功能名>/`
+- ❌ 阶段退出前未执行 `artifact-contracts.md §2.2` 测试路径门禁扫描命令，或扫描结果未写入 `06_实施总结.md`
 - ❌ 只测试成功路径，不覆盖失败分支
 - ❌ `page.goto` 使用泛化占位路由（如 `/`、`/test`、`/path/to/feature`），必须是项目中真实存在的页面路由
 - ❌ `beforeEach` 前置条件仅写"打开页面"，必须说明页面上需要存在的具体内容（如文件内容、数据状态）

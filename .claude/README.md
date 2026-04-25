@@ -28,9 +28,10 @@
 1. `skills/generate-document/SKILL.md`
 2. `skills/generate-document/README.md`
 3. `shared/document-contracts.md`
-4. `shared/impact-analysis-contract.md`
-5. `shared/path-conventions.md`
-6. `shared/agent-skill-boundaries.md`
+4. `shared/evidence-and-uncertainty.md`（generate-document / implement-code 共享：反幻觉、可采纳性、`06` 中自我改进与可验证下一步）
+5. `shared/impact-analysis-contract.md`
+6. `shared/path-conventions.md`
+7. `shared/agent-skill-boundaries.md`
 
 完成阶段固定顺序：先调用 `skills/import-docs/SKILL.md` 同步 `docs`，再调用 `skills/wework-bot/SKILL.md` 发送带真实同步数字的完成通知。
 

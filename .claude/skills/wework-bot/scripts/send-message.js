@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const https = require('https');
+const { execSync } = require('child_process');
 
 const args = process.argv.slice(2);
 const DEFAULT_CONFIG = '.claude/skills/wework-bot/config.local.json';
@@ -23,15 +24,45 @@ const options = {
   impact: null,
   evidence: null,
   nextStep: null,
-  model: process.env.AGENT_MODEL || process.env.CURSOR_AGENT_MODEL || 'GPT-5.5',
-  tools: process.env.AGENT_TOOLS || 'Cursor Agent / wework-bot',
+  conclusion: null,
+  duration: null,
+  startedAt: null,
+  aiCalls: null,
+  callChain: null,
+  testPaths: null,
+  testStats: null,
+  retries: null,
+  artifacts: null,
+  metrics: null,
+  branch: process.env.GIT_BRANCH || null,
+  commit: process.env.GIT_COMMIT || null,
+  recover: null,
+  reason: null,
+  gateName: null,
+  gateResult: null,
+  syncResult: null,
+  docType: null,
+  p0Pass: null,
+  p0Total: null,
+  reportPath: null,
+  diagramSummary: null,
+  mcpBreakdown: null,
+  backlog: null,
+  statusRewrite: null,
+  model: process.env.AGENT_MODEL || process.env.CURSOR_AGENT_MODEL || 'Claude Sonnet 4.6',
+  tools: process.env.AGENT_TOOLS || 'Cursor Agent / Playwright-MCP / Shell / wework-bot',
   updatedAt: process.env.WEWORK_MESSAGE_UPDATED_AT || null,
+  noAutoGit: process.env.WEWORK_BOT_NO_AUTO_GIT === '1',
   dryRun: false
 };
 
 function readValue(index, flag) {
   const value = args[index + 1];
-  if (!value || value.startsWith('-')) {
+  if (value === undefined || value === null) {
+    console.error(`Error: ${flag} requires a value`);
+    process.exit(1);
+  }
+  if (value.startsWith('-') && value.length > 1 && Number.isNaN(Number(value))) {
     console.error(`Error: ${flag} requires a value`);
     process.exit(1);
   }
@@ -91,6 +122,81 @@ for (let i = 0; i < args.length; i++) {
   } else if (arg === '--next-step') {
     options.nextStep = readValue(i, arg);
     i++;
+  } else if (arg === '--conclusion') {
+    options.conclusion = readValue(i, arg);
+    i++;
+  } else if (arg === '--duration') {
+    options.duration = readValue(i, arg);
+    i++;
+  } else if (arg === '--started-at') {
+    options.startedAt = readValue(i, arg);
+    i++;
+  } else if (arg === '--ai-calls') {
+    options.aiCalls = readValue(i, arg);
+    i++;
+  } else if (arg === '--call-chain') {
+    options.callChain = readValue(i, arg);
+    i++;
+  } else if (arg === '--test-paths') {
+    options.testPaths = readValue(i, arg);
+    i++;
+  } else if (arg === '--test-stats') {
+    options.testStats = readValue(i, arg);
+    i++;
+  } else if (arg === '--retries') {
+    options.retries = readValue(i, arg);
+    i++;
+  } else if (arg === '--artifacts') {
+    options.artifacts = readValue(i, arg);
+    i++;
+  } else if (arg === '--metrics') {
+    options.metrics = readValue(i, arg);
+    i++;
+  } else if (arg === '--branch') {
+    options.branch = readValue(i, arg);
+    i++;
+  } else if (arg === '--commit') {
+    options.commit = readValue(i, arg);
+    i++;
+  } else if (arg === '--recover') {
+    options.recover = readValue(i, arg);
+    i++;
+  } else if (arg === '--reason') {
+    options.reason = readValue(i, arg);
+    i++;
+  } else if (arg === '--gate-name') {
+    options.gateName = readValue(i, arg);
+    i++;
+  } else if (arg === '--gate-result') {
+    options.gateResult = readValue(i, arg);
+    i++;
+  } else if (arg === '--sync-result') {
+    options.syncResult = readValue(i, arg);
+    i++;
+  } else if (arg === '--doc-type') {
+    options.docType = readValue(i, arg);
+    i++;
+  } else if (arg === '--p0-pass') {
+    options.p0Pass = readValue(i, arg);
+    i++;
+  } else if (arg === '--p0-total') {
+    options.p0Total = readValue(i, arg);
+    i++;
+  } else if (arg === '--report-path') {
+    options.reportPath = readValue(i, arg);
+    i++;
+  } else if (arg === '--diagram-summary') {
+    options.diagramSummary = readValue(i, arg);
+    i++;
+  } else if (arg === '--mcp-breakdown') {
+    options.mcpBreakdown = readValue(i, arg);
+    i++;
+  } else if (arg === '--backlog') {
+    options.backlog = readValue(i, arg);
+    i++;
+  } else if (arg === '--status-rewrite') {
+    options.statusRewrite = readValue(i, arg);
+    i++;
   } else if (arg === '--model') {
     options.model = readValue(i, arg);
     i++;
@@ -100,15 +206,17 @@ for (let i = 0; i < args.length; i++) {
   } else if (arg === '--updated-at') {
     options.updatedAt = readValue(i, arg);
     i++;
+  } else if (arg === '--no-auto-git') {
+    options.noAutoGit = true;
   } else if (arg === '--dry-run') {
     options.dryRun = true;
   } else if (arg === '--help' || arg === '-h') {
     console.log(`
-WeWork Bot - Send monitoring or alert messages
+WeWork Bot - Send rich monitoring or alert messages
 
 Usage: node .claude/skills/wework-bot/scripts/send-message.js [options]
 
-Options:
+Routing & Auth:
   --token, -t          X-Token authentication (default from API_X_TOKEN env var)
   --api-url, -a        API endpoint (default from WEWORK_BOT_API_URL or https://api.effiy.cn/wework/send-message)
   --config             Robot routing config JSON (default from WEWORK_BOT_CONFIG or config.local.json when present)
@@ -116,18 +224,54 @@ Options:
   --robot, -r          Robot name; resolves webhook from config robots map
   --webhook-url, -w    Full WeWork webhook URL (default from WEWORK_WEBHOOK_URL)
   --webhook-key, -k    WeWork webhook key; builds the standard qyapi webhook URL (default from WEWORK_WEBHOOK_KEY)
-  --content, -c        Message content
+
+Content:
+  --content, -c        Message body (one-line conclusion or full multi-line elevator block)
   --description, -d    Required short description, max 100 characters
-  --content-file, -f   Read message content from file
+  --content-file, -f   Read message body from file
+  --conclusion         Force the 🎯 结论 line value (overrides any heuristic from --content)
+
+Context:
   --flow               Flow name, e.g. implement-code or generate-document
   --feature            Feature name or document path
   --stage              Current stage name
-  --status             Current status, e.g. started, passed, blocked
+  --status             Current status, e.g. started / passed / blocked / failed
   --impact             User-visible impact or delivery scope
   --evidence           Evidence path, command, MCP sequence, or result summary
   --next-step          Required next action (default: view docs/logs when needed)
-  --model              Model name appended to message metadata (default from AGENT_MODEL or GPT-5.5)
-  --tools              Tool summary appended to message metadata (default from AGENT_TOOLS or Cursor Agent / wework-bot)
+
+Rich metrics:
+  --duration           Total elapsed time, e.g. "12m 34s" or "01:23:45"
+  --started-at         Run started at, format YYYY-MM-DD HH:mm:ss
+  --ai-calls           AI call summary, e.g. "skills 7 / agents 4 / mcp 23 / tools 86"
+  --call-chain         Compact AI call chain, e.g. "find-skills→find-agents→...→wework-bot"
+  --test-paths         Test path gate result, e.g. "tests/ 内 12 spec / 5 page / 3 fixture，无逸出"
+  --test-stats         Test execution stats, e.g. "spec 12 / case 47 / 通过 47 / 失败 0"
+  --retries            Self-repair retries, e.g. "阶段2: 1 轮 / 阶段6: 0 轮"
+  --artifacts          Artifact summary, e.g. "代码 8 / 测试 12 / 文档 6"
+  --metrics            Other metrics, e.g. "lint 0 / 影响链命中 23"
+  --branch             Git branch name (auto-detected when omitted)
+  --commit             Git short commit SHA (auto-detected when omitted)
+  --no-auto-git        Disable auto detection of branch/commit (offline / sandbox safe)
+
+Block / Gate specific:
+  --recover            Recovery point, written to 🧭 恢复点
+  --reason             Failure reason, written to ❌ 原因
+  --gate-name          Gate name, written to 🔍 门禁
+  --gate-result        Gate result, written to 📊 结果
+  --sync-result        Doc sync result, written to ☁️ 文档同步
+  --doc-type           Document type (generate-document only), written to 📋 类型
+  --p0-pass            P0 pass count, written to 🔍 P0 自检 / 🧪 P0 检查项
+  --p0-total           P0 total count, paired with --p0-pass
+  --report-path        Report or summary path, written to 📂 报告
+  --diagram-summary    Mermaid diagrams in 06_实施总结: e.g. "§1 流程图 28 节点 / §2 时序图 12 参与者"
+  --mcp-breakdown      Playwright-MCP tool counts: e.g. "nav 12 / snap 24 / click 8 / eval 9"
+  --backlog            P1/P2 or follow-ups: e.g. "P1 2 项 / P2 5 项（见 §9）"
+  --status-rewrite     Doc status writeback: e.g. "01-07 已更新，05 已最终回写"
+
+Metadata:
+  --model              Model name appended to message metadata (default from AGENT_MODEL or "Claude Sonnet 4.6")
+  --tools              Tool summary appended to message metadata (default from AGENT_TOOLS or "Cursor Agent / Playwright-MCP / Shell / wework-bot")
   --updated-at         Last update time, precise to seconds (default local current time)
   --dry-run            Print sanitized request summary without sending
   --help, -h           Show this help message
@@ -182,6 +326,28 @@ function applyRobotConfig() {
 
 applyRobotConfig();
 
+function safeExec(command) {
+  try {
+    return execSync(command, { stdio: ['ignore', 'pipe', 'ignore'], timeout: 2000, encoding: 'utf-8' }).trim();
+  } catch (error) {
+    return null;
+  }
+}
+
+function autoDetectGit() {
+  if (options.noAutoGit) {
+    return;
+  }
+  if (!options.branch) {
+    options.branch = safeExec('git rev-parse --abbrev-ref HEAD') || null;
+  }
+  if (!options.commit) {
+    options.commit = safeExec('git rev-parse --short HEAD') || null;
+  }
+}
+
+autoDetectGit();
+
 if (!options.token) {
   console.error('Error: --token is required or set API_X_TOKEN environment variable');
   process.exit(1);
@@ -223,32 +389,83 @@ function hasLinePrefix(content, prefixes) {
   });
 }
 
+function buildLine(emoji, label, value) {
+  if (!value) return null;
+  return `${emoji} ${label}：${value}`;
+}
+
 function contextLines() {
   const lines = [];
-  if (options.flow) {
-    lines.push(`🛠️ 流程：${options.flow}`);
-  }
-  if (options.feature) {
-    lines.push(`📌 功能：${options.feature}`);
-  }
-  if (options.stage) {
-    lines.push(`📍 阶段：${options.stage}`);
-  }
-  if (options.status) {
-    lines.push(`📊 状态：${options.status}`);
-  }
-  if (options.impact) {
-    lines.push(`🌐 影响：${options.impact}`);
-  }
-  if (options.evidence) {
-    lines.push(`📎 证据：${options.evidence}`);
-  }
-  return lines;
+  const flowLine = buildLine('🛠️', '流程', options.flow);
+  const featureLine = buildLine('📌', '功能', options.feature);
+  const stageLine = buildLine('📍', '阶段', options.stage);
+  const statusLine = buildLine('📊', '状态', options.status);
+  const docTypeLine = buildLine('📋', '类型', options.docType);
+  const p0Line = (options.p0Pass != null && options.p0Total != null)
+    ? `🧪 P0 检查项：通过 ${options.p0Pass} / 共 ${options.p0Total}`
+    : null;
+  const gateNameLine = buildLine('🔍', '门禁', options.gateName);
+  const gateResultLine = buildLine('📊', '结果', options.gateResult);
+  const reasonLine = buildLine('❌', '原因', options.reason);
+  const impactLine = buildLine('🌐', '影响', options.impact);
+  const evidenceLine = buildLine('📎', '证据', options.evidence);
+  const reportLine = buildLine('📂', '报告', options.reportPath);
+  const diagramLine = buildLine('📐', '实施总结图表', options.diagramSummary);
+  const mcpDetailLine = buildLine('🧩', 'MCP 明细', options.mcpBreakdown);
+  const backlogLine = buildLine('🧾', '待办与风险', options.backlog);
+  const statusRewriteLine = buildLine('🗂️', '状态回写', options.statusRewrite);
+  const callChainLine = buildLine('🔗', '调用链', options.callChain);
+  const aiCallsLine = buildLine('🤝', 'AI 调用', options.aiCalls);
+  const testPathsLine = buildLine('📁', '测试路径', options.testPaths);
+  const testStatsLine = buildLine('🧫', '测试统计', options.testStats);
+  const retriesLine = buildLine('🔁', '修复轮次', options.retries);
+  const metricsLine = buildLine('📈', '指标', options.metrics);
+  const artifactsLine = buildLine('📦', '产物', options.artifacts);
+  const syncLine = buildLine('☁️', '文档同步', options.syncResult);
+  const branchLine = buildLine('🌿', '分支', options.branch);
+  const commitLine = buildLine('🔖', '提交', options.commit);
+  const startedLine = buildLine('🟢', '开始时间', options.startedAt);
+  const durationLine = buildLine('⏱️', '用时', options.duration);
+  const recoverLine = buildLine('🧭', '恢复点', options.recover);
+
+  return [
+    flowLine,
+    featureLine,
+    stageLine,
+    statusLine,
+    docTypeLine,
+    p0Line,
+    gateNameLine,
+    gateResultLine,
+    reasonLine,
+    impactLine,
+    evidenceLine,
+    reportLine,
+    diagramLine,
+    mcpDetailLine,
+    backlogLine,
+    statusRewriteLine,
+    callChainLine,
+    aiCallsLine,
+    testPathsLine,
+    testStatsLine,
+    retriesLine,
+    metricsLine,
+    artifactsLine,
+    syncLine,
+    branchLine,
+    commitLine,
+    startedLine,
+    durationLine,
+    recoverLine
+  ].filter(Boolean);
 }
 
 function ensureContext(content) {
   const lines = contextLines().filter((line) => {
-    const label = line.slice(0, line.indexOf('：') + 1);
+    const colonIndex = line.indexOf('：');
+    if (colonIndex === -1) return true;
+    const label = line.slice(0, colonIndex + 1);
     return !hasLinePrefix(content, [label]);
   });
 
@@ -279,21 +496,37 @@ function ensureNextStep(content) {
   return `${content.trim()}\n👉 下一步：${nextStep}`;
 }
 
+function ensureConclusion(content) {
+  if (!options.conclusion) return content;
+  if (hasLinePrefix(content, ['🎯 结论：', '结论：'])) {
+    return content;
+  }
+  const lines = content.split(/\r?\n/);
+  const headerIndex = lines.findIndex((line) => /^[━─]{3,}/.test(line.trim()));
+  const insertion = `🎯 结论：${options.conclusion}`;
+  if (headerIndex >= 0) {
+    lines.splice(headerIndex + 1, 0, insertion);
+    return lines.join('\n');
+  }
+  return `${insertion}\n${content}`;
+}
+
 function ensureElevatorFormat(content, description) {
   const trimmedContent = content.trim();
 
   if (extractDescription(trimmedContent)) {
-    return ensureNextStep(ensureContext(trimmedContent));
+    return ensureNextStep(ensureContext(ensureConclusion(trimmedContent)));
   }
 
   if (hasMultilineFormat(trimmedContent)) {
-    return ensureNextStep(ensureContext(`${trimmedContent}\n📝 描述：${description}`));
+    return ensureNextStep(ensureContext(ensureConclusion(`${trimmedContent}\n📝 描述：${description}`)));
   }
 
+  const conclusion = options.conclusion || trimmedContent;
   return [
     '📣 消息推送',
     '━━━━━━━━━━━━━━━━━',
-    `🎯 结论：${trimmedContent}`,
+    `🎯 结论：${conclusion}`,
     `📝 描述：${description}`,
     ...contextLines(),
     `👉 下一步：${options.nextStep || '请按结论处理，必要时查看对应文档或日志。'}`
@@ -446,6 +679,26 @@ function request(apiUrl, token, data) {
     console.log('Status:', options.status || '(not set)');
     console.log('Impact:', options.impact || '(not set)');
     console.log('Evidence:', options.evidence || '(not set)');
+    console.log('Conclusion:', options.conclusion || '(not set)');
+    console.log('Duration:', options.duration || '(not set)');
+    console.log('Started at:', options.startedAt || '(not set)');
+    console.log('AI calls:', options.aiCalls || '(not set)');
+    console.log('Call chain:', options.callChain || '(not set)');
+    console.log('Test paths:', options.testPaths || '(not set)');
+    console.log('Test stats:', options.testStats || '(not set)');
+    console.log('Retries:', options.retries || '(not set)');
+    console.log('Artifacts:', options.artifacts || '(not set)');
+    console.log('Metrics:', options.metrics || '(not set)');
+    console.log('Branch:', options.branch || '(not detected)');
+    console.log('Commit:', options.commit || '(not detected)');
+    console.log('Sync result:', options.syncResult || '(not set)');
+    console.log('Recover:', options.recover || '(not set)');
+    console.log('Reason:', options.reason || '(not set)');
+    console.log('Gate name:', options.gateName || '(not set)');
+    console.log('Gate result:', options.gateResult || '(not set)');
+    console.log('Doc type:', options.docType || '(not set)');
+    console.log('P0:', (options.p0Pass != null && options.p0Total != null) ? `${options.p0Pass}/${options.p0Total}` : '(not set)');
+    console.log('Report path:', options.reportPath || '(not set)');
     console.log('Next step:', options.nextStep || '(default)');
     console.log('Model:', options.model);
     console.log('Tools:', options.tools);

@@ -1,8 +1,8 @@
 # YiWeb 文档质量检查清单入口
 
-> **版本**: v3.0 | **最后更新**: 2026-04-23
+> **版本**: v3.1 | **最后更新**: 2026-04-25
 >
-> **关联规范**: [通用文档规范](./rules/通用文档.md) | [文档契约总览](../../shared/document-contracts.md)
+> **关联规范**: [通用文档规范](./rules/通用文档.md) | [文档契约总览](../../shared/document-contracts.md) | [证据与不确定性](../../shared/evidence-and-uncertainty.md)
 >
 > **注**: 本文件只负责导航与快速判断，专项检查项以 `checklists/` 子目录为准
 
@@ -60,6 +60,7 @@
 - 标题层级不超过 H3
 - Mermaid 图表有说明
 - 链接使用相对路径
+- 技术断言可溯源；无虚构路径/依赖；待补充与开放问题按 [证据与不确定性](../../shared/evidence-and-uncertainty.md) 显式标注（详见 [通用文档检查清单](./checklists/通用文档.md) P0 证据类项）
 
 ### P1 - 应该通过（摘要）
 

@@ -18,6 +18,7 @@
 - 行为真源：`./SKILL.md`
 - 文档契约：`../../shared/document-contracts.md`
 - 影响分析契约：`../../shared/impact-analysis-contract.md`
+- 证据与反幻觉：`../../shared/evidence-and-uncertainty.md`（与 `checklists/通用文档.md` P0 证据类项一起约束采纳率）
 - 路径约定：`../../shared/path-conventions.md`
 - Skill / Agent 边界：`../../shared/agent-skill-boundaries.md`
 
@@ -49,3 +50,4 @@
 4. 所有路径和 agent 名称必须与仓库内真实文件保持一致，不得引用旧路径或虚构代理。
 5. 每次调用都必须写入 `docs/` 下至少一个 Markdown 文件；无法确定目标文档时，写入 `docs/99_agent-runs/<YYYYMMDD-HHMMSS>_generate-document.md`。
 6. 完成阶段必须先执行 `import-docs` 的 `docs` 标准导入，再调用 `wework-bot` 发送带真实同步数字的完成通知。
+7. 全文档/需求任务产出应便于 `implement-code` 做 **02↔05 P0 覆盖** 核对：见 `implement-code` 的 `rules/orchestration.md §3.4` 与 `SKILL.md` 原则 12；避免场景与检查项脱钩。

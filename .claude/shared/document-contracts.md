@@ -25,13 +25,15 @@
 - **Grounding**：所有技术事实必须能追溯到上游文档或代码。
 - **运行/阻断记录**：当 skill 因缺少参数、目标目录不可定位或前置材料缺失而无法写入目标产物时，仍必须写入 `docs/99_agent-runs/` 的 Markdown 记录。
 - **全项目影响链分析**：按 `impact-analysis-contract.md` 搜索上游依赖、反向依赖、传递依赖、导出链、注册链、测试、文档、配置与外部依赖影响，作为需求任务、设计文档和代码实施的 P0 前置条件。
+- **证据与不确定性**：可采纳、可核对的陈述与待补充的边界，见 `evidence-and-uncertainty.md`；`generate-document` 与 `implement-code` 的正文与总结均须遵守，禁止用叙事代替证据。
 
 ## 真源优先级
 
 1. `SKILL.md`
-2. `rules/*.md`
-3. `checklists/*.md`
-4. `templates/*.md`
-5. `README.md`
+2. `shared/evidence-and-uncertainty.md`（与 `rules` 同遇冲突时，以本矩阵未覆盖的禁止性条款为准，其余以 `SKILL` / `rules` 为准）
+3. `rules/*.md`
+4. `checklists/*.md`
+5. `templates/*.md`
+6. `README.md`
 
 若不同文件之间存在冲突，以上述优先级解决，不得反向以模板覆盖规范。
