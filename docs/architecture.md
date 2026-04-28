@@ -18,20 +18,53 @@ YiWeb/
 │       ├── services/             # 业务服务
 │       └── config.js             # 配置文件
 ├── cdn/                          # CDN 资源
-│   ├── components/               # Vue 组件库
+│   ├── components/               # Vue 组件库（被 AICR 使用）
 │   │   ├── common/               # 通用组件
+│   │   │   ├── buttons/          # YiButton, YiIconButton
+│   │   │   ├── feedback/         # YiEmptyState, YiErrorState
+│   │   │   ├── forms/            # YiInput, YiSelect, YiCheckbox, YiRadio, YiSwitch, YiForm, YiCalendar
+│   │   │   ├── loaders/          # YiLoading
+│   │   │   ├── modals/           # YiModal, YiDialog
+│   │   │   ├── navigation/       # YiDropdown, YiPagination
+│   │   │   ├── data-display/     # YiTable, YiTooltip, YiBadge
+│   │   │   └── tags/             # YiTag
 │   │   └── business/             # 业务组件
+│   │       ├── MarkdownView/     # Markdown 视图组件
+│   │       ├── SearchHeader/     # 搜索头部组件
+│   │       └── SkeletonLoader/   # 骨架屏组件
 │   ├── utils/                    # 工具函数
-│   │   ├── core/                 # 核心工具
-│   │   └── view/                 # 视图工具
+│   │   ├── core/                 # 核心工具（log, error, common等）
+│   │   ├── view/                 # 视图工具（baseView, componentLoader）
+│   │   ├── ui/                   # UI 工具
+│   │   ├── browser/              # 浏览器工具
+│   │   ├── time/                 # 时间工具
+│   │   └── render/               # 渲染工具
 │   ├── styles/                   # 样式文件
-│   ├── markdown/                 # Markdown 处理
-│   └── mermaid/                  # Mermaid 图表处理
+│   │   ├── base/                 # 基础样式
+│   │   ├── components/           # 组件样式
+│   │   └── utils.css             # 工具样式
+│   ├── markdown/                 # Markdown 处理（核心系统）
+│   │   ├── core/                 # 核心渲染器
+│   │   └── plugins/              # 插件系统
+│   └── mermaid/                  # Mermaid 图表处理（核心系统）
+│       ├── core/                 # 核心渲染器
+│       └── plugins/              # 插件系统
 ├── docs/                         # 文档目录
+│   └── 重构cdn目录/             # cdn 重构相关文档
 ├── .claude/                      # Claude 配置
 ├── index.html                    # 根页面
 └── CLAUDE.md                     # Claude 配置
 ```
+
+### cdn 目录重构状态
+
+**当前阶段**：第一阶段完成（文档完善）
+
+- 完整文档：`docs/重构cdn目录/`
+- 核心系统：markdown 和 mermaid 保持不变
+- 组件库：待评估去留（AICR 正在使用）
+
+**详细信息**：参见 `docs/重构cdn目录/`
 
 ## 放置规则
 
