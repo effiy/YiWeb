@@ -25,7 +25,6 @@ export { default as YiPagination } from './common/navigation/YiPagination/index.
 // Business Components
 export { default as SkeletonLoader } from './business/SkeletonLoader/index.js';
 export { default as SearchHeader } from './business/SearchHeader/index.js';
-export { default as NewsList } from './business/NewsList/index.js';
 export { default as MarkdownView } from './business/MarkdownView/index.js';
 // ... more to come
 
@@ -54,6 +53,5 @@ export default {
   YiPagination,
   SearchHeader,
   SkeletonLoader,
-  NewsList,
   MarkdownView
 };

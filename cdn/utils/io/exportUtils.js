@@ -52,7 +52,6 @@ export async function exportToZip(data, filename = 'export') {
         // 创建目录结构
         const dailyChecklistDir = zip.folder('每日清单');
         const projectFilesDir = zip.folder('项目文件');
-        const newsDir = zip.folder('新闻');
         
         // 导出每日清单数据
         if (data.dailyChecklist && data.dailyChecklist.length > 0) {
@@ -69,15 +68,6 @@ export async function exportToZip(data, filename = 'export') {
                 const content = formatProjectFileItem(item);
                 const fileName = generateItemFileName(item, '项目文件', index);
                 projectFilesDir.file(`${fileName}.md`, content);
-            });
-        }
-        
-        // 导出新闻数据
-        if (data.news && data.news.length > 0) {
-            data.news.forEach((item, index) => {
-                const content = formatNewsItem(item);
-                const fileName = generateItemFileName(item, '新闻', index);
-                newsDir.file(`${fileName}.md`, content);
             });
         }
         
@@ -183,49 +173,6 @@ function formatProjectFileItem(item) {
     return lines.join('\n');
 }
 
-/**
- * 格式化新闻项目
- * @param {Object} item - 新闻项目
- * @returns {string} 格式化后的内容
- */
-function formatNewsItem(item) {
-    const lines = [];
-    lines.push(`# 新闻 - ${item.title || '未知标题'}`);
-    lines.push('');
-    lines.push(`**标题**: ${item.title || '未知'}`);
-    lines.push(`**来源**: ${item.link ? `[${new URL(item.link).hostname}](${item.link})` : '未知'}`);
-    lines.push(`**发布时间**: ${item.isoDate ? new Date(item.isoDate).toLocaleString('zh-CN') : '未知'}`);
-    lines.push(`**分类**: ${item.category || '未知'}`);
-    lines.push('');
-    
-    if (item.contentSnippet || item.content) {
-        lines.push('## 内容摘要');
-        lines.push(item.contentSnippet || item.content || '无摘要');
-        lines.push('');
-    }
-    
-    if (item.description) {
-        lines.push('## 详细描述');
-        lines.push(item.description);
-        lines.push('');
-    }
-    
-    if (item.tags && item.tags.length > 0) {
-        lines.push('## 标签');
-        lines.push(item.tags.map(tag => `#${tag}`).join(' '));
-        lines.push('');
-    }
-    
-    if (item.link) {
-        lines.push('## 原文链接');
-        lines.push(`[查看原文](${item.link})`);
-        lines.push('');
-    }
-    
-    lines.push(`**导出时间**: ${new Date().toLocaleString('zh-CN')}`);
-    
-    return lines.join('\n');
-}
 
 /**
  * 下载Blob文件
@@ -285,9 +232,6 @@ function generateOptimizedFileName(baseName, category = '', data = null) {
         if (data.projectFiles && data.projectFiles.length > 0) {
             stats.push(`文件${data.projectFiles.length}个`);
         }
-        if (data.news && data.news.length > 0) {
-            stats.push(`新闻${data.news.length}条`);
-        }
         
         if (stats.length > 0) {
             fileName += `_${stats.join('_')}`;
@@ -328,7 +272,7 @@ function generateItemFileName(item, category, index) {
             // 移除原有的文件扩展名，避免重复
             const baseFileName = fileName_part.replace(/\.[^/.]+$/, '');
             const cleanFileName = baseFileName.replace(/\s+/g, '_').replace(/[<>:"/\\|?*]/g, '_');
-            
+
             if (fileType && fileType !== 'unknown') {
                 fileName = `${cleanFileName}_${fileType}`;
             } else {
@@ -336,21 +280,12 @@ function generateItemFileName(item, category, index) {
             }
             break;
             
-        case '新闻':
-            // 使用标题和来源，不添加新闻前缀，不添加日期后缀
-            const title = item.title || `新闻${index + 1}`;
-            const source = item.link ? new URL(item.link).hostname : '未知来源';
-            const cleanTitle = title.substring(0, 30).replace(/\s+/g, '_').replace(/[<>:"/\\|?*\n\r]/g, '_');
-            const cleanSource = source.replace(/\s+/g, '_').replace(/[<>:"/\\|?*]/g, '_');
-            fileName = `${cleanTitle}_${cleanSource}`;
-            break;
-            
         default:
             fileName = `${category}_${index + 1}`;
     }
     
-    // 添加日期（可选，但新闻和项目文件不添加日期后缀）
-    if (category !== '新闻' && category !== '项目文件' && (item.isoDate || item.timestamp || item.createdAt)) {
+    // 添加日期（可选，项目文件不添加日期后缀）
+    if (category !== '项目文件' && (item.isoDate || item.timestamp || item.createdAt)) {
         const itemDate = new Date(item.isoDate || item.timestamp || item.createdAt);
         const itemDateStr = itemDate.toISOString().slice(0, 10);
         fileName += `_${itemDateStr}`;
@@ -390,9 +325,6 @@ export async function exportCategoryData(data, category, filename = 'export') {
                     break;
                 case '项目文件':
                     content = formatProjectFileItem(item);
-                    break;
-                case '新闻':
-                    content = formatNewsItem(item);
                     break;
                 default:
                     content = JSON.stringify(item, null, 2);
