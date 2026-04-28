@@ -37,4 +37,6 @@ test-*.html
 .claude/settings.local.json
 .claude/memory/user/*.md
 .claude/worktrees/
+.worktrees/
 .claude/cron/scheduled_tasks.json
+.claude/skills/wework-bot/config.local.json

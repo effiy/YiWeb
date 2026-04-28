@@ -67,4 +67,4 @@ YiWeb/
 ## 相关文档
 
 - [CLAUDE.md](./CLAUDE.md) - 开发规范
-- [docs/README.md](./docs/README.md) - 完整文档
+

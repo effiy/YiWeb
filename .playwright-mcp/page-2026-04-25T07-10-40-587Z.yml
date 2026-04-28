@@ -1,0 +1,5 @@
+- generic [ref=e2]:
+  - generic [ref=e3]: 📊 模拟 Mermaid 图表
+  - generic:
+    - button "全屏查看": ⛶
+    - button "下载图片": 📷

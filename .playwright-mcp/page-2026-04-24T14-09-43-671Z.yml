@@ -1,0 +1,61 @@
+- generic [active] [ref=e1]:
+  - heading "mermaid图工具栏 - 测试页面" [level=1] [ref=e2]
+  - generic [ref=e3]:
+    - heading "测试1：流程图" [level=2] [ref=e4]
+    - generic [ref=e5]:
+      - document [ref=e7]:
+        - generic [ref=e9]:
+          - generic [ref=e16]:
+            - generic [ref=e20]: 是
+            - generic [ref=e24]: 否
+          - generic [ref=e25]:
+            - generic [ref=e30]: 开始
+            - generic [ref=e35]: 判断
+            - generic [ref=e40]: 处理A
+            - generic [ref=e45]: 处理B
+            - generic [ref=e50]: 结束
+      - generic:
+        - button "全屏查看": ⛶
+        - button "下载 PNG": ⬇
+  - generic [ref=e51]:
+    - heading "测试2：时序图" [level=2] [ref=e52]
+    - generic [ref=e53]:
+      - document [ref=e55]:
+        - generic [ref=e58]: Server
+        - generic [ref=e61]: Browser
+        - generic [ref=e64]: User
+        - generic [ref=e68]: Server
+        - generic [ref=e72]: Browser
+        - generic [ref=e76]: User
+        - generic [ref=e77]: 点击按钮
+        - generic [ref=e78]: 发送请求
+        - generic [ref=e79]: 返回数据
+        - generic [ref=e80]: 显示结果
+      - generic:
+        - button "全屏查看": ⛶
+        - button "下载 PNG": ⬇
+  - generic [ref=e81]:
+    - heading "测试3：甘特图" [level=2] [ref=e82]
+    - generic [ref=e83]:
+      - document [ref=e85]:
+        - generic [ref=e86]:
+          - generic [ref=e89]: 2024-01-01
+          - generic [ref=e91]: 2024-01-03
+          - generic [ref=e93]: 2024-01-05
+          - generic [ref=e95]: 2024-01-07
+          - generic [ref=e97]: 2024-01-09
+          - generic [ref=e99]: 2024-01-11
+          - generic [ref=e101]: 2024-01-13
+          - generic [ref=e103]: 2024-01-15
+        - generic [ref=e109]:
+          - generic [ref=e114]: 任务1
+          - generic [ref=e115]: 任务2
+          - generic [ref=e116]: 任务3
+          - generic [ref=e117]: 任务4
+        - generic [ref=e118]:
+          - generic [ref=e119]: 阶段1
+          - generic [ref=e120]: 阶段2
+        - generic [ref=e121]: 项目计划
+      - generic:
+        - button "全屏查看": ⛶
+        - button "下载 PNG": ⬇

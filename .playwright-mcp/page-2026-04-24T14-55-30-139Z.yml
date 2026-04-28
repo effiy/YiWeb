@@ -1,0 +1,4 @@
+- generic [active] [ref=e1]:
+  - heading "Mermaid 工具栏功能测试" [level=1] [ref=e2]
+  - heading "测试图 1 - 流程图" [level=2] [ref=e4]
+  - heading "测试图 2 - 时序图" [level=2] [ref=e6]

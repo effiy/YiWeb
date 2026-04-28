@@ -1,0 +1,33 @@
+- generic [ref=e1]:
+  - heading "Mermaid 工具栏功能测试" [level=1] [ref=e2]
+  - generic [ref=e3]:
+    - heading "测试图 1 - 流程图" [level=2] [ref=e4]
+    - generic [ref=e5]:
+      - document [ref=e7]:
+        - generic [ref=e9]:
+          - generic [ref=e16]:
+            - generic [ref=e20]: 是
+            - generic [ref=e24]: 否
+          - generic [ref=e25]:
+            - generic [ref=e30]: 开始
+            - generic [ref=e35]: 判断
+            - generic [ref=e40]: 处理
+            - generic [ref=e45]: 跳过
+            - generic [ref=e50]: 结束
+      - generic [ref=e74]:
+        - button "全屏查看" [ref=e75] [cursor=pointer]: ⛶
+        - button "下载 PNG" [active] [ref=e76] [cursor=pointer]: ⬇
+  - generic [ref=e51]:
+    - heading "测试图 2 - 时序图" [level=2] [ref=e52]
+    - generic [ref=e53]:
+      - document [ref=e55]:
+        - generic [ref=e58]: 系统
+        - generic [ref=e61]: 用户
+        - generic [ref=e65]: 系统
+        - generic [ref=e69]: 用户
+        - generic [ref=e70]: 请求
+        - generic [ref=e71]: 处理
+        - generic [ref=e73]: 响应
+      - generic:
+        - button "全屏查看": ⛶
+        - button "下载 PNG": ⬇
