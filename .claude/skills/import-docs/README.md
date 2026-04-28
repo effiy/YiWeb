@@ -35,6 +35,27 @@ node .claude/import-docs.js --dir docs --prefix Projects,YiWeb
 - `--api-url, -a`：API 地址，默认 `https://api.effiy.cn`
 - `--prefix, -p`：远端路径前缀，逗号分隔
 
+特殊规则：
+
+- 当 `--dir` 是 `.claude` 或 `.cursor` 时，`--exts` 会被忽略，脚本始终递归导入目录下所有文件。
+
+
+## 列举 docs 文件
+
+在执行导入前，先列出 `docs/` 文件名用于用户多选：
+
+```bash
+node .claude/skills/import-docs/scripts/import-docs.js list
+```
+
+可选参数与导入命令一致，例：
+
+```bash
+node .claude/skills/import-docs/scripts/import-docs.js list --dir docs --exts md
+```
+
+`list` 仅打印文件清单，不会调用远端 API，也不需要 `API_X_TOKEN`。
+
 ## 标准链路
 
 ```bash

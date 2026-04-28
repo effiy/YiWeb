@@ -34,8 +34,16 @@
 | `rules/process-summary.md` | `06_实施总结.md` 的结构与阻断总结 |
 | `../../shared/impact-analysis-contract.md` | 全项目影响链分析范围、依赖闭合标准与 P0 门禁 |
 
+## list 快捷用法
+
+- 命令：`/implement-code list`
+- 行为：仅列出当前项目 `docs/` 下可用于实施的功能目录（一级子目录，排除 `99_agent-runs`）。
+- 结果用途：用户可一次多选，再继续执行 `/implement-code <功能名1,功能名2,...>` 进入实施。
+- 空目录处理：若 `docs/` 不存在或无可选功能目录，提示先补齐文档（如先运行 `generate-document`）。
+
 ## 核心约定
 
+12. 进入 `/implement-code <功能名>` 实施前，若当前项目是 git 仓库则必须先按功能名创建并切换分支（建议 `feat/<功能名>`）；若无 git 仓库则跳过该步骤，不阻断流程。
 1. `SKILL.md` 只保留阶段编排与强门禁，不重复规则文件中的长模板、示例代码和报告格式。
 2. 阶段编号以 `SKILL.md` 和 `rules/orchestration.md` 为准，其他规则文件不得自定义一套新的阶段映射。
 3. 产物路径以 `rules/artifact-contracts.md` 为准；若与其他文件冲突，必须收敛到该文件后再继续修改。

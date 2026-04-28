@@ -63,7 +63,8 @@ description: 发送企业微信机器人消息，用于 generate-document、impl
 | 参数 | 默认值 | 写入字段 | 说明 |
 |------|--------|---------|------|
 | `duration` | 无（脚本可写入缺省说明） | `⏱️ 用时` | **必含**：本次会话耗时；如 `12m 34s` 或 `01:23:45`；未记时/未传参时脚本注入「未在本地记录，请从 Cursor 会话起止时间核对」 |
-| `startedAt` | 无 | `🟢 开始时间` | 任务开始时间，`YYYY-MM-DD HH:mm:ss` |
+| `startedAt` | 无（可自动读取 `.claude/session-time.json`） | `🟢 开始时间` | **必含**：任务开始时间，`YYYY-MM-DD HH:mm:ss`；未传且未自动检测到时脚本注入缺省说明 |
+| `endedAt` | 无（可自动读取 `.claude/session-time.json`） | `🔴 结束时间` | **必含**：任务结束时间，`YYYY-MM-DD HH:mm:ss`；未传且未自动检测到时脚本注入缺省说明 |
 | `aiCalls` | 无 | `🤝 AI 调用` | AI 调用统计，如 `skills 7 / agents 4 / mcp 23 / tools 86` |
 | `callChain` | 无 | `🔗 调用链` | 紧凑调用链，如 `find-skills→find-agents→...→wework-bot` |
 | `testPaths` | 无 | `📁 测试路径` | 测试路径门禁结论，如 `tests/ 内 12 spec / 5 page，无逸出` |
@@ -94,6 +95,7 @@ description: 发送企业微信机器人消息，用于 generate-document、impl
 
 1. **组装消息**：按电梯法则组织内容：先给一句话结论，再给 100 字以内描述、流程、功能、阶段、状态、影响、证据和下一步；每条信息独占一行，并使用匹配状态的表情符号。
 2. **补齐业务度量与会话成本**：完成通知、阻断通知、门禁异常通知**必须**出现 `⏱️ 用时`（本次会话耗时）与 `🪙 会话用量`（本次会话 Token/用量，与 Cursor 可核对）。须尽量再补齐 `🤝 AI 调用`、`🔗 调用链`、`📐 实施总结图表`、`🧩 MCP 明细`、`🧾 待办与风险`、`🗂️ 状态回写`、`📁 测试路径`、`🧫 测试统计`、`🔁 修复轮次`、`📦 产物`、`☁️ 文档同步`、`🌿 分支`、`🔖 提交` 等；其中前四项与 `06_实施总结.md` 的「AI 调用记录」及 §1/§2 Mermaid 图一致。脚本会自动检测 git 分支和 commit，并在未手写/未传 `--duration` / `--token-usage` 时**仍注入**上述两行（缺省为可核对说明，避免空项）。其余字段由调用方传入（可在命令行使用 `--diagram-summary`、`--mcp-breakdown`、`--backlog`、`--status-rewrite`）。
+2.1 **会话起止时间强制**：任意 wework-bot 推送（含阶段通知、完成/阻断/门禁异常）**必须**包含 `🟢 开始时间` 与 `🔴 结束时间` 两行。推荐不手填，由 `send-message.js` 从 `.claude/session-time.json` 自动读取；若本地未启用 hooks 或文件缺失，脚本会注入缺省说明以保证字段不缺失（并提示从 Cursor 会话历史核对）。
 3. **补齐元信息**：每条消息必须包含 `🤖 模型`、`🧰 工具`、`🕒 最后更新` 三行；脚本会在缺失时自动补齐。长流程类推送在元信息前还应已有 `⏱️ 用时` 与 `🪙 会话用量`（见上条）。
 4. **选择机器人**：优先使用显式 `webhookUrl` / `webhookKey`；其次使用环境变量；否则按 `robot` 或 `agent` 从配置中解析；未指定时走配置中的 `default_robot`。
 5. **校验凭据**：`X-Token` 和 webhook 必须来自参数或环境变量，不得写入仓库。
@@ -247,7 +249,8 @@ node .claude/skills/wework-bot/scripts/send-message.js \
 ☁️ 文档同步：docs → YiAi（创建 N，覆盖 N，失败 N）
 ⏱️ 用时：<Hh Mm Ss>（本次会话起止或累计耗时）
 🪙 会话用量：<Token 或用量摘要>
-🟢 开始时间：<YYYY-MM-DD HH:mm:ss>（有则写）
+🟢 开始时间：<YYYY-MM-DD HH:mm:ss>
+🔴 结束时间：<YYYY-MM-DD HH:mm:ss>
 🌿 分支：<git-branch>
 🔖 提交：<short-sha>
 🤖 模型：<模型名>
@@ -283,7 +286,8 @@ node .claude/skills/wework-bot/scripts/send-message.js \
 ☁️ 文档同步：docs → YiAi（创建 N，覆盖 N，失败 N）
 ⏱️ 用时：<Hh Mm Ss>（本次会话已耗费时间）
 🪙 会话用量：<Token 或用量摘要>
-🟢 开始时间：<YYYY-MM-DD HH:mm:ss>（有则写）
+🟢 开始时间：<YYYY-MM-DD HH:mm:ss>
+🔴 结束时间：<YYYY-MM-DD HH:mm:ss>
 🌿 分支：<git-branch>
 🔖 提交：<short-sha>
 🧭 恢复点：从阶段 <N> 重新开始，先处理 <具体动作>
@@ -328,6 +332,15 @@ node .claude/skills/wework-bot/scripts/send-message.js \
 - 门禁检查执行失败：P0 未通过、命令失败、MCP 操作失败、脚本退出码非 0
 - 门禁失效：应执行的门禁未执行、被跳过、缺少验证证据、只口头声明通过、降级未记录
 - 阻断收尾失败：`06_实施总结.md` 未能写入、状态回写失败、`import-docs` 失败、通知发送失败
+
+## 会话中断强制通知（与仓库规则一致）
+
+除上述门禁类场景外，**任何会话出现非正常结束（中断/阻断/流程异常停止）都必须发送 wework-bot 消息**，参见仓库级规则 `CLAUDE.md §5 会话中断 / 阻断通知（强制）`。
+
+要求：
+
+- 必须包含：`🟢 开始时间`、`🔴 结束时间`、`⏱️ 用时`、`🪙 会话用量`（缺失时由脚本注入可核对缺省说明，但不得整段省略）
+- 必须说明：发生在哪个流程/阶段、为何中断、影响范围、证据与恢复点
 
 门禁类消息必须补充：
 

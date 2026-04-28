@@ -48,9 +48,9 @@ playwright 探针（UI 验证场景时执行）：
 **playwright 不可用时的明确提示（禁止静默跳过）**：
 
 ```
-⚠️ Playwright-MCP 未配置，本次 UI 验证将降级为 npx playwright test（需人工确认截图）。
+⚠️ Playwright-MCP 未配置，本次 UI 验证将通过手动浏览器操作执行。
 
-若要启用全自动 E2E 验证，请按以下步骤配置 Playwright-MCP：
+若要启用自动化 E2E 验证，请安装 Playwright：
 
   方式一：Cursor MCP 配置（推荐）
     在 ~/.cursor/mcp.json 中添加：

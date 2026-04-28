@@ -40,7 +40,7 @@ YiWeb/
 │   ├── core/         # 配置、服务、工具
 │   └── views/        # 应用入口（aicr、news）
 ├── docs/             # 项目文档
-└── .claude/          # Claude / Cursor 协作层（commands、skills、agents、shared）
+└── .claude/skills/   # Claude Code 技能系统
 ```
 
 ## 开发指南
@@ -66,5 +66,4 @@ YiWeb/
 ## 相关文档
 
 - [CLAUDE.md](./CLAUDE.md) - 开发规范
-- [docs/README.md](./docs/README.md) - 完整文档
-- [.claude/README.md](./.claude/README.md) - `.claude` 目录结构与真源说明
+

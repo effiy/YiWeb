@@ -13,7 +13,19 @@ const options = {
   prefix: []
 };
 
-for (let i = 0; i < args.length; i++) {
+let command = 'import';
+let argStartIndex = 0;
+if (args[0] && !args[0].startsWith('-')) {
+  command = args[0];
+  argStartIndex = 1;
+}
+
+if (!['import', 'list'].includes(command)) {
+  console.error(`Error: unsupported command "${command}". Use "import" or "list".`);
+  process.exit(1);
+}
+
+for (let i = argStartIndex; i < args.length; i++) {
   const arg = args[i];
   if (arg === '--dir' || arg === '-d') {
     options.dir = path.resolve(args[++i]);
@@ -29,12 +41,15 @@ for (let i = 0; i < args.length; i++) {
     console.log(`
 YiDocs Import - Import documentation files to YiAi
 
-Usage: node .claude/skills/import-docs/scripts/import-docs.js [options]
+Usage:
+  node .claude/skills/import-docs/scripts/import-docs.js import [options]
+  node .claude/skills/import-docs/scripts/import-docs.js list [options]
+  node .claude/skills/import-docs/scripts/import-docs.js [options]   # defaults to import
 
 Options:
-  --dir, -d     Directory to traverse (default: current directory)
+  --dir, -d     Directory to traverse (default: current directory for import, ./docs for list)
   --exts, -e    File extensions (comma-separated, default: md)
-  --token, -t   X-Token authentication (default from API_X_TOKEN env var)
+  --token, -t   X-Token authentication (default from API_X_TOKEN env var, import only)
   --api-url, -a API base URL (default: https://api.effiy.cn)
   --prefix, -p  Path prefix (comma-separated, e.g. Projects,YiWeb)
   --help, -h    Show this help message
@@ -43,21 +58,30 @@ Options:
   }
 }
 
-if (!options.token) {
-  console.error('Error: --token is required or set API_X_TOKEN environment variable');
-  process.exit(1);
+if (command === 'list' && options.dir === process.cwd()) {
+  options.dir = path.resolve(process.cwd(), 'docs');
 }
 
+const targetDirName = path.basename(options.dir);
+const shouldImportAllFiles = ['.claude', '.cursor'].includes(targetDirName);
+
 console.log('=== YiDocs Import ===');
+console.log('Command:', command);
 console.log('Directory:', options.dir);
-console.log('Extensions:', options.exts.join(', '));
-console.log('API:', options.apiUrl);
-if (options.prefix.length > 0) {
-  console.log('Prefix:', options.prefix.join('/'));
+if (shouldImportAllFiles) {
+  console.log('Extensions: all files (forced for .claude/.cursor)');
+} else {
+  console.log('Extensions:', options.exts.join(', '));
+}
+if (command === 'import') {
+  console.log('API:', options.apiUrl);
+  if (options.prefix.length > 0) {
+    console.log('Prefix:', options.prefix.join('/'));
+  }
 }
 console.log();
 
-async function findFiles(dir, exts) {
+async function findFiles(dir, exts, includeAllFiles = false) {
   const results = [];
 
   async function traverse(currentDir) {
@@ -69,6 +93,10 @@ async function findFiles(dir, exts) {
       if (entry.isDirectory()) {
         await traverse(fullPath);
       } else if (entry.isFile()) {
+        if (includeAllFiles) {
+          results.push(fullPath);
+          continue;
+        }
         const ext = path.extname(entry.name).slice(1).toLowerCase();
         if (exts.includes(ext)) {
           results.push(fullPath);
@@ -214,14 +242,34 @@ async function importFile(fullPath, baseDir, apiUrl, token, existingSet, prefix)
   return { status: 'ok', path: targetPath };
 }
 
+function toSortedRelativePaths(files, baseDir) {
+  return files
+    .map(file => path.relative(baseDir, file).split(path.sep).join('/'))
+    .sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+}
+
 (async function main() {
   try {
-    const files = await findFiles(options.dir, options.exts);
+    const files = await findFiles(options.dir, options.exts, shouldImportAllFiles);
     console.log(`Found ${files.length} files`);
 
     if (files.length === 0) {
       console.log('No files to process');
       return;
+    }
+
+    if (command === 'list') {
+      const relativePaths = toSortedRelativePaths(files, options.dir);
+      console.log('Files:');
+      for (const relativePath of relativePaths) {
+        console.log(`- ${relativePath}`);
+      }
+      return;
+    }
+
+    if (!options.token) {
+      console.error('Error: --token is required or set API_X_TOKEN environment variable');
+      process.exit(1);
     }
 
     console.log('Querying existing sessions...');

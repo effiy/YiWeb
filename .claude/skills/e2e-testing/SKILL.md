@@ -1,6 +1,6 @@
 ---
 name: e2e-testing
-description: 为 UI 用户流程场景设计 E2E 测试方案，推荐 Playwright 测试策略与用例结构。当动态检查清单或需求任务中存在 UI 操作场景时使用。
+description: 为 UI 用户流程场景设计 E2E 测试方案，推荐手动浏览器验证 + data-testid 策略。当动态检查清单或需求任务中存在 UI 操作场景时使用。
 ---
 
 # e2e-testing
@@ -20,7 +20,7 @@ description: 为 UI 用户流程场景设计 E2E 测试方案，推荐 Playwrigh
 ## 工作步骤
 
 1. 分析每个场景，判断测试类型（UI 交互 / 数据流 / 权限 / 边界）
-2. 为每个场景设计 Playwright 测试用例骨架
+2. 为每个场景设计验证步骤清单
 3. 给出选择器策略（优先 `data-testid`，次选语义标签）
 4. 识别需要 mock 的外部依赖
 5. 给出测试数据策略
@@ -30,7 +30,7 @@ description: 为 UI 用户流程场景设计 E2E 测试方案，推荐 Playwrigh
 ```
 场景：<场景名>
 测试类型：UI 交互 / 数据流 / 权限 / 边界
-Playwright 骨架：
+验证清单：
   test('<场景名>', async ({ page }) => {
     // 前置条件
     // 操作步骤
@@ -44,8 +44,8 @@ Mock 依赖：<需要 mock 的接口/模块，或"无">
 ## YiWeb 项目约定
 
 - 选择器优先级：`data-testid` > 语义标签（`button[type=submit]`）> 文本内容
-- 测试文件位置：`tests/e2e/<功能名>.spec.ts`
-- 基础 URL：读取 `vite.config.*` 中的 `server.port`
+- 测试文件位置：`tests/e2e/<功能名>.spec.js`
+- 基础 URL：YiWeb 为 CDN SPA 无构建工具，需手动启动本地静态服务器或使用 `index.html` 文件路径
 
 ## 使用规则
 

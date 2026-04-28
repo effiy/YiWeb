@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: 审查代码示例和架构实现是否符合 YiWeb 项目规范（Store 工厂模式、组件全局注册、编码规范等）。当项目报告或动态检查清单中包含代码实现验证场景时使用。
+description: 审查代码示例和架构实现是否符合 YiWeb CDN SPA 项目规范（createBaseView + hooks 工厂、CDN 组件注册、编码规范等）。当项目报告或动态检查清单中包含代码实现验证场景时使用。
 ---
 
 # code-review
@@ -21,8 +21,9 @@ description: 审查代码示例和架构实现是否符合 YiWeb 项目规范（
 
 ### YiWeb 项目专项
 
-- **Store 工厂模式**：Store 是否使用工厂函数，是否全局注册
-- **组件全局注册**：组件是否按约定在入口注册
+- **createBaseView 工厂模式**：视图入口是否使用 createBaseView 初始化
+- **Hooks 工厂模式**：Store 是否使用 createStore + useComputed + useMethods 三文件模式
+- **CDN 组件注册**：共享组件是否在 `cdn/components/` 下并 barrel export
 - **代码结构**：是否符合 `../generate-document/rules/代码结构.md` 约定
 - **编码规范**：是否符合 `../generate-document/rules/编码规范.md`（命名、注释、格式）
 
