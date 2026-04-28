@@ -138,3 +138,8 @@ node .claude/skills/import-docs/scripts/import-docs.js --help
 - 移除旧的默认行为（默认导入当前目录而非项目根）
 - `--dir` 和 `--exts` 的语义简化
 - `.cursor` 仅在 `--dir` 模式下识别，自动检测模式不处理 `.cursor`
+
+## 向后兼容性
+
+- 保留旧入口 `.claude/import-docs.js`，它会调用新脚本
+- `generate-document` / `implement-code` 的标准调用方式 `--dir docs --exts md` 仍然有效
