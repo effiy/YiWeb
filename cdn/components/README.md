@@ -20,24 +20,9 @@ cdn/components/
 │   ├── loaders/      # 加载组件
 │   │   └── YiLoading/
 │   ├── modals/       # 模态框组件
-│   │   ├── YiModal/
-│   │   └── YiDialog/
+│   │   └── YiModal/
 │   ├── forms/        # 表单组件
-│   │   ├── YiInput/
-│   │   ├── YiSelect/
-│   │   ├── YiCheckbox/
-│   │   ├── YiRadio/
-│   │   ├── YiSwitch/
-│   │   ├── YiForm/
-│   │   ├── YiFormItem/
-│   │   └── YiCalendar/
-│   ├── navigation/   # 导航组件
-│   │   ├── YiDropdown/
-│   │   └── YiPagination/
-│   ├── data-display/ # 数据展示组件
-│   │   ├── YiTable/
-│   │   ├── YiTooltip/
-│   │   └── YiBadge/
+│   │   └── YiSelect/
 │   └── tags/         # 标签组件
 │       └── YiTag/
 └── business/         # 业务组件
@@ -101,14 +86,17 @@ const app = await createBaseView({
 
 ## 重构状态
 
-**当前状态**: 待评估
+**当前状态**: 已完成精简（2026-04-28）
 
-- ⏳ 第一阶段：文档完善（已完成）
-- ⏳ 第二阶段：待决策组件去留
+- ✅ 第一阶段：文档完善（已完成）
+- ✅ 第二阶段：方案C - 彻底精简（已完成）
 
-**可能的选项**:
-1. 保持现状（所有组件保留）
-2. 将使用中的组件迁移到 src/views/aicr/components/
-3. 逐步替换为更轻量的方案
+**已删除的组件**（13个）:
+- YiDialog, YiInput, YiCheckbox, YiRadio, YiSwitch, YiForm, YiFormItem, YiCalendar
+- YiTooltip, YiBadge, YiTable, YiDropdown, YiPagination
+
+**保留的组件**（11个，AICR 正在使用）:
+- YiButton, YiIconButton, YiTag, YiModal, YiSelect, YiLoading
+- YiEmptyState, YiErrorState, MarkdownView, SearchHeader, SkeletonLoader
 
 **详细文档**: 参见 `../../docs/重构cdn目录/`
