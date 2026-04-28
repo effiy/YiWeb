@@ -77,7 +77,7 @@ user_invocable: true
 
 - 保存 `docs/<功能名>/` 下 01-05, 07（06 不创建）
 - **必须调用 `knowledge-curator`**：策展本次任务的可复用知识到 `.claude/agents/memory/knowledge.md`
-- 可选执行 `import-docs` 文档同步 + `wework-bot` 完成通知（完成后建议执行，但不作为强制门禁）
+- **必须执行 `import-docs` 文档同步 + `wework-bot` 完成通知**：严格按 `../wework-bot/SKILL.md` 的「生动总结格式规范」发送通知，通知内容必须包含 `⏱️ 用时`、`🪙 会话用量`、`🤖 模型`、`🧰 工具`、`🕒 最后更新时间`（精确到秒）
 
 ## Agent 调用契约
 
