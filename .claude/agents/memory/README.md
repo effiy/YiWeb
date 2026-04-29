@@ -25,6 +25,8 @@
 | `docs-lookup.md` | docs-lookup | 文档查询记忆 |
 | `impl-reporter.md` | impl-reporter | 实施报告记忆 |
 | `message-pusher.md` | message-pusher | 推送文案记忆 |
+| `weekly-analyzer.md` | weekly-analyzer | 周报分析与提炼记忆 |
+| `mermaid-expert.md` | mermaid-expert | Mermaid 语法常见问题与修复模式 |
 
 ## 核心规则
 

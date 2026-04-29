@@ -1,16 +1,16 @@
 .session-list-tags {
-  padding: 8px var(--spacing-md);
+  padding: 6px var(--spacing-md) 8px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-primary);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .tags-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   min-width: 0;
 }
@@ -157,8 +157,8 @@
   border: 1px solid var(--border-primary);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
-  padding: 8px 14px;
-  font-size: 13px;
+  padding: 6px 12px;
+  font-size: 12px;
   line-height: 1.2;
   cursor: pointer;
   white-space: nowrap;

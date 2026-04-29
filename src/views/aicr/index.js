@@ -43,7 +43,6 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 'KeyboardShortcutsHelp',
                 'SkeletonLoader',
                 'AiModelSelector',
-                'SessionListTags',
             ],
             componentModules: [
                 '/src/views/aicr/components/aicrPage/index.js',
@@ -65,8 +64,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 '/cdn/components/business/MarkdownView/index.js',
                 '/src/views/aicr/components/keyboardShortcutsHelp/index.js',
                 '/cdn/components/business/SkeletonLoader/index.js',
-                '/src/views/aicr/components/AiModelSelector/index.js',
-                '/src/views/aicr/components/sessionListTags/index.js'
+                '/src/views/aicr/components/AiModelSelector/index.js'
             ],
             data: {
                 // 暴露store数据给模板
@@ -310,7 +308,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
             // 传递props给子组件
             props: {
                 'code-view': {},
-                'session-list-tags': {
+                'aicr-header': {
                     allTags: function () { return this.allTags; },
                     selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
                     tagFilterReverse: function () { return store.tagFilterReverse ? store.tagFilterReverse.value : false; },
@@ -318,7 +316,9 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     tagFilterExpanded: function () { return store.tagFilterExpanded ? store.tagFilterExpanded.value : false; },
                     tagFilterSearchKeyword: function () { return store.tagFilterSearchKeyword ? store.tagFilterSearchKeyword.value : ''; },
                     tagCounts: function () { return this.tagCounts; },
-                    tagFilterVisibleCount: function () { return store.tagFilterVisibleCount ? store.tagFilterVisibleCount.value : 8; }
+                    tagFilterVisibleCount: function () { return store.tagFilterVisibleCount ? store.tagFilterVisibleCount.value : 8; },
+                    searchQuery: function () { return store.searchQuery ? store.searchQuery.value : ''; },
+                    sidebarCollapsed: function () { return store.sidebarCollapsed ? store.sidebarCollapsed.value : false; }
                 },
                 'file-tree': {
                     tree: function () { return store.fileTree; },

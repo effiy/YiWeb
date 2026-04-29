@@ -31,7 +31,7 @@
 ## 3. 桩行为约束
 
 **允许**：classList.add/remove、textContent 设置、disabled 切换、aria 属性设置
-**禁止**：fetch/XMLHttpRequest、引入框架、超过 10 行的业务逻辑函数
+**禁止**：fetch/XMLHttpRequest、引入框架、超过 10 行的领域逻辑函数
 
 ---
 

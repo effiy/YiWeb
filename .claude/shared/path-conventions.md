@@ -8,6 +8,7 @@
 - 技能真源：`.claude/skills/<skill-name>/SKILL.md`
 - 代理目录：`.claude/agents/<agent-name>.md`
 - 命令目录：`.claude/commands/<command-name>.md`
+- 评测示例：`.claude/eval/skills/<skill>.md`、`eval/agents/<agent>.md`（用户故事与示例输入；首期 `skills/wework-bot.md`、`agents/message-pusher.md`，非技能真源）
 
 ## 禁止使用的旧路径
 
@@ -35,6 +36,6 @@
 
 ## 链接治理规则
 
-- 只链接到仓库里真实存在的 skill、agent、rule、template、checklist。
+- 只链接到仓库里真实存在的 skill、agent、rule、template、checklist、eval 示例文档。
 - 若某能力没有对应 skill 或 agent，应明确写“未提供专用入口”，而不是编造名字。
 - 目录结构调整后，必须做一次全仓 `.claude/` 链接回归搜索。

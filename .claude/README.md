@@ -1,6 +1,6 @@
 # `.claude` 目录说明
 
-`.claude` 是 YiWeb 项目的 Claude / Cursor 协作层，承载命令入口、技能定义、专家代理和共享规范。
+`.claude` 目录承载本仓库的 Claude / Cursor 协作层：命令入口、技能定义、专家代理和共享规范。
 
 ## 目录职责
 
@@ -9,11 +9,13 @@
 | `commands/` | Slash Command 包装层，只负责转调 skill | 是 |
 | `skills/` | 可被直接调用的技能定义，`SKILL.md` 是技能真源 | 是 |
 | `agents/` | 专家代理定义，负责角色、输入输出和必答问题 | 是 |
+| `eval/` | 评测示例：`eval/skills/`、`eval/agents/`（首期 wework-bot + message-pusher），非真源 | 否 |
+| `scripts/` | 编排会话日志等辅助脚本（如 `log-orchestration.js`），由技能文档引用，非 Slash 入口 | 否 |
 | `shared/` | 共享解释性文档，统一约定、路径和边界说明 | 否 |
 
 ## 真源规则
 
-1. `commands/*.md` 只保留一句话入口说明，不承载业务规则。
+1. `commands/*.md` 只保留一句话入口说明，不承载领域规则。
 2. `skills/<name>/SKILL.md` 是该 skill 的行为真源。
 3. `skills/<name>/README.md` 仅用于快速开始、导航和索引，不重复完整规则。
 4. `skills/<name>/rules/*.md` 定义结构契约。
@@ -47,11 +49,11 @@
 1. `skills/wework-bot/SKILL.md`
 2. `skills/wework-bot/README.md`
 3. `skills/wework-bot/rules/message-contract.md`
-4. `skills/wework-bot/config.example.json`
+4. `skills/wework-bot/config.example.json`（路由与 webhook 结构示例；本地可把 `config.json` 复制自此并填入真实地址）
 5. `skills/wework-bot/scripts/send-message.js`
 6. 长流程推送正文策划与反幻觉核对：`agents/message-pusher.md`（先 Plan 后写稿，再调 `send-message.js`）
 
-本地默认机器人配置在未提交的 `skills/wework-bot/config.local.json` 中；脚本会在该文件存在时自动加载，作为 `generate-document`、`import-docs` 和长流程阻断通知的默认推送通道。
+仓库内 `skills/wework-bot/config.json` 仅保留占位 webhook；本地开发请复制 `config.example.json` 为 `config.json` 并填入真实地址，或通过环境变量 `WEWORK_BOT_CONFIG` 指向私有路径。`API_X_TOKEN` **仅**来自环境变量（不从配置文件读取）。
 
 ### 技能与代理分工
 
@@ -61,6 +63,6 @@
 
 ## 维护约定
 
-- 不要改动 `.claude/skills/`、`.claude/agents/`、`.claude/commands/` 的顶层命名约定。
+- 不要改动 `.claude/skills/`、`.claude/agents/`、`.claude/commands/` 的顶层命名约定；评测示例按 `.claude/eval/skills/<skill>.md`、`eval/agents/<agent>.md` 增补（首期见 `eval/skills/wework-bot.md`）。
 - 若新增共享规范，优先放在 `shared/`，避免把说明性内容散落到多个 skill/agent。
 - 若更新路径约定，必须同步检查 `README.md`、`rules/`、`templates/`、`checklists/` 中的链接。

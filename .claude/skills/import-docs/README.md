@@ -1,6 +1,6 @@
 # import-docs 快速索引
 
-`import-docs` 用于把本地文档批量导入 YiAi / YiDocs。行为真源在 `SKILL.md`，实际导入由 `scripts/import-docs.js` 执行。
+`import-docs` 用于把本地文档批量导入远端文档 API。行为真源在 `SKILL.md`，实际导入由 `scripts/import-docs.js` 执行。
 
 在 `generate-document` / `implement-code` 的完成阶段，本 skill 是 `wework-bot` 之前的强制步骤：先同步 `docs`，再把 created / overwritten / failed 结果写入企业微信完成通知。
 
@@ -11,13 +11,13 @@
 API_X_TOKEN=*** node .claude/skills/import-docs/scripts/import-docs.js
 
 # 指定目录
-API_X_TOKEN=*** node .claude/skills/import-docs/scripts/import-docs.js --dir docs --exts md --prefix Projects,YiWeb
+API_X_TOKEN=*** node .claude/skills/import-docs/scripts/import-docs.js --dir docs --exts md --prefix Projects,YourNamespace
 ```
 
 兼容旧入口：
 
 ```bash
-node .claude/import-docs.js --dir docs --prefix Projects,YiWeb
+node .claude/import-docs.js --dir docs --prefix Projects,YourNamespace
 ```
 
 ## 自动检测规则
@@ -38,8 +38,8 @@ node .claude/import-docs.js --dir docs --prefix Projects,YiWeb
 
 - `--dir, -d`：导入目录（默认：自动检测）
 - `--exts, -e`：扩展名（默认：自动检测）
-- `--token, -t`：API X-Token，默认读取 `API_X_TOKEN`
-- `--api-url, -a`：API 地址，默认 `https://api.effiy.cn`
+- `--token, -t`：已禁用；`X-Token` 仅从系统环境变量 `API_X_TOKEN` 读取
+- `--api-url, -a`：API 地址，默认 `https://api.example.com`
 - `--prefix, -p`：远端路径前缀，逗号分隔
 
 特殊规则：

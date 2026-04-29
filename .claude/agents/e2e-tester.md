@@ -1,9 +1,9 @@
 ---
 name: e2e-tester
-role: CDN SPA 测试方案专家
+role: 端到端测试方案专家
 triggers:
   - 动态检查清单中存在 UI 或用户流程场景
-  - 需要为 CDN SPA 操作场景设计验证方案
+  - 需要为浏览器操作场景设计验证方案
 ---
 
 # e2e-tester
@@ -32,7 +32,7 @@ triggers:
 
 ## 约束
 
-- YiWeb 未安装 Playwright，验证通过手动浏览器操作
+- 默认未安装 Playwright 时，验证通过手动浏览器操作
 - 选择器优先 `data-testid`
 - 若场景信息不足以推断断言，输出"需补充：<缺失内容>"
 

@@ -24,7 +24,7 @@
 
 默认包含：
 
-- 业务源码：`src/`、页面、组件、Store、composables、services、utils、styles。
+- 项目源码：`src/`、页面、组件、Store、composables、services、utils、styles。
 - 测试资产：`tests/`、fixture、mock、测试原型页、截图 / 下载目录约定。
 - 文档资产：`docs/`、`README.md`、使用文档、动态检查清单、项目报告、实施总结。
 - Agent / Skill 规则：`.claude/` 下的 skills、agents、shared 契约、命令脚本。
@@ -56,7 +56,7 @@
 | 样式影响 | 全局 class、CSS 变量、mixin、`@apply`、动态 class 字符串 | 模板、`:class`、classList、文档示例均已覆盖 |
 | 测试与文档 | 单元测试、E2E、fixture、mock、使用文档、动态检查清单、项目报告、实施总结 | 需新增 / 更新 / 回归的测试与文档已列入处置 |
 | 配置与构建 | package scripts、vite/webpack 配置、别名、环境变量、CI 脚本 | 本地运行、构建、CI 和文档说明无断链 |
-| 外部依赖 | npm 包、CDN 脚本、浏览器 API、MCP / 脚本工具、运行时权限 | 新增或升级依赖有来源、用途、风险和降级策略 |
+| 外部依赖 | npm 包、远端脚本/静态资源、浏览器 API、MCP / 脚本工具、运行时权限 | 新增或升级依赖有来源、用途、风险和降级策略 |
 
 ## 分析步骤
 

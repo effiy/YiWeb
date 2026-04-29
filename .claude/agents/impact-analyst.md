@@ -63,9 +63,44 @@ triggers:
 | 风险来源 | 原因 | 影响 | 缓解方式 |
 |----------|------|------|----------|
 
+## 输出契约附录（强制，供门禁校验）
+
+为使调用方能做“必答问题覆盖”与“四部分产物齐全”门禁，你的输出末尾必须追加一段 **JSON fenced code block**（不替代上面的可读输出，只做附录），字段规范见 `shared/agent-output-contract.md`。
+
+最小示例（字段需与本次任务一致）：
+
+```json
+{
+  "agent": "impact-analyst",
+  "contract_version": "1.0",
+  "task": {
+    "skill": "generate-document",
+    "stage": "stage-2",
+    "doc_type": "设计文档",
+    "feature": "N/A"
+  },
+  "required_answers": [
+    { "id": "Q1", "answered": true, "evidence": [] },
+    { "id": "Q2", "answered": true, "evidence": [] },
+    { "id": "Q3", "answered": true, "evidence": [] },
+    { "id": "Q4", "answered": true, "evidence": [] }
+  ],
+  "artifacts": {
+    "parts": {
+      "search_terms": true,
+      "impact_chain": true,
+      "closure_summary": true,
+      "uncovered_risks": true
+    }
+  },
+  "warnings": [],
+  "notes": "一行摘要"
+}
+```
+
 ## 记忆协议
 
-- **记忆文件**：`.claude/agents/memory/impact-analyst.md`
+- **记忆文件**：`agents/memory/impact-analyst.md`
 - **读取策略**：调用前读取记忆文件，获取历史分析经验（如常见遗漏维度、高频风险点）
 - **写入策略**：调用后追加关键发现（1-3 条：高频遗漏维度、常见风险模式、搜索词优化经验）
 - **跨查阅**：可读取 `knowledge.md` 获取跨 agent 共性知识

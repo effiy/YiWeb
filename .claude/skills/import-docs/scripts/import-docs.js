@@ -12,18 +12,24 @@ const http = require('https');
  */
 function findProjectRoot(startDir) {
   let currentDir = path.resolve(startDir);
+  let foundRoot = null;
+  // 一直向上找，直到文件系统根目录
   while (true) {
     try {
       fs.accessSync(path.join(currentDir, '.git'));
-      return currentDir;
+      foundRoot = currentDir; // 记录找到的，但继续往上找
     } catch {
-      const parentDir = path.dirname(currentDir);
-      if (parentDir === currentDir) {
-        return startDir;
-      }
-      currentDir = parentDir;
+      // 没找到，继续
     }
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) {
+      break; // 到达文件系统根目录
+    }
+    currentDir = parentDir;
   }
+  // 如果找到了任何 .git，返回最顶层的那个（最接近文件系统根目录的）
+  // 否则返回起始目录
+  return foundRoot || startDir;
 }
 
 /**
@@ -75,6 +81,14 @@ async function findFiles(dir, exts) {
   return results;
 }
 
+/** X-Token 仅从系统环境变量 `API_X_TOKEN` 读取，不接受配置文件或其它来源。 */
+function readApiXTokenFromEnv() {
+  const v = process.env.API_X_TOKEN;
+  if (v == null || v === '') return null;
+  const t = String(v).trim();
+  return t || null;
+}
+
 /**
  * 确定导入配置
  * @returns {object} 配置对象
@@ -85,8 +99,8 @@ function determineConfig() {
     command: 'import',
     dir: null,
     exts: null,
-    token: process.env.API_X_TOKEN || null,
-    apiUrl: 'https://api.effiy.cn',
+    token: readApiXTokenFromEnv(),
+    apiUrl: 'https://api.example.com',
     prefix: []
   };
 
@@ -103,7 +117,8 @@ function determineConfig() {
     } else if (arg === '--exts' || arg === '-e') {
       config.exts = args[++i].split(',').map(e => e.trim().toLowerCase());
     } else if (arg === '--token' || arg === '-t') {
-      config.token = args[++i];
+      console.error('Error: --token 已禁用。出于安全原因，仅允许使用系统环境变量 API_X_TOKEN。');
+      process.exit(1);
     } else if (arg === '--api-url' || arg === '-a') {
       config.apiUrl = args[++i];
     } else if (arg === '--prefix' || arg === '-p') {
@@ -146,7 +161,7 @@ function determineConfig() {
 
 function printHelp() {
   console.log(`
-YiDocs Import - Import documentation files to YiAi
+Document import — sync local files to remote documentation API
 
 Usage:
   node .claude/skills/import-docs/scripts/import-docs.js import [options]
@@ -156,9 +171,9 @@ Usage:
 Options:
   --dir, -d     Directory to import (default: auto-detect)
   --exts, -e    File extensions (comma-separated, default: auto-detect)
-  --token, -t   X-Token authentication (default from API_X_TOKEN env var, import only)
-  --api-url, -a API base URL (default: https://api.effiy.cn)
-  --prefix, -p  Path prefix (comma-separated, e.g. Projects,YiWeb)
+  --token, -t   [disabled] use API_X_TOKEN environment variable only
+  --api-url, -a API base URL (default: https://api.example.com)
+  --prefix, -p  Path prefix (comma-separated, e.g. Projects,YourNamespace)
   --help, -h    Show this help message
 `);
 }
@@ -279,7 +294,7 @@ async function importFile(fullPath, baseDir, projectRoot, apiUrl, token, existin
     parameters: {
       cname: 'sessions',
       data: {
-        url: `aicr-session://${now}-${random}`,
+        url: `app-session://${now}-${random}`,
         title,
         file_path: targetPath,
         messages: [],
@@ -320,7 +335,7 @@ async function main() {
   const explicitDir = process.argv.includes('--dir') || process.argv.includes('-d');
   const mode = config.exts.length === 0 ? 'all files' : config.exts.join(', ');
 
-  console.log('=== YiDocs Import ===');
+  console.log('=== Document import ===');
   console.log('Command:', config.command);
   console.log('Directory:', config.dir);
   console.log('Mode:', mode);
@@ -350,7 +365,7 @@ async function main() {
   }
 
   if (!config.token) {
-    console.error('Error: --token is required or set API_X_TOKEN environment variable');
+    console.error('Error: missing API_X_TOKEN environment variable');
     process.exit(1);
   }
 

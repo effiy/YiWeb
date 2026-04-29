@@ -1,7 +1,4 @@
-<aicr-header></aicr-header>
-
-<!-- 标签筛选器 -->
-<session-list-tags
+<aicr-header
     :all-tags="allTags"
     :selected-tags="selectedSessionTags"
     :tag-filter-reverse="tagFilterReverse"
@@ -9,13 +6,20 @@
     :tag-filter-expanded="tagFilterExpanded"
     :tag-filter-search-keyword="tagFilterSearchKeyword"
     :tag-counts="tagCounts"
+    :search-query="searchQuery"
+    :sidebar-collapsed="sidebarCollapsed"
     @tag-select="handleTagSelect"
     @tag-clear="handleTagClear"
     @tag-filter-reverse="handleTagFilterReverse"
     @tag-filter-no-tags="handleTagFilterNoTags"
     @tag-filter-expand="handleTagFilterExpand"
-    @tag-filter-search="handleTagFilterSearch">
-</session-list-tags>
+    @tag-filter-search="handleTagFilterSearch"
+    @search-input="handleSearchInput"
+    @search-keydown="handleMessageInput"
+    @composition-start="handleCompositionStart"
+    @composition-end="handleCompositionEnd"
+    @clear-search="clearSearch"
+></aicr-header>
 
 <main class="aicr-main">
     <aicr-sidebar></aicr-sidebar>
@@ -25,5 +29,5 @@
 <!-- 键盘快捷键帮助面板 -->
 <keyboard-shortcuts-help
     :visible="showKeyboardShortcuts"
-    @close="showKeyboardShortcuts = false">
-</keyboard-shortcuts-help>
+    @close="showKeyboardShortcuts = false"
+></keyboard-shortcuts-help>

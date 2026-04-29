@@ -1,11 +1,17 @@
 # generate-document 快速索引
 
-`generate-document` 是 YiWeb 的文档生成主 skill。行为真源在 `SKILL.md`，本文件只保留快速开始、目录索引和常用入口。
+`generate-document` 是文档生成主 skill。行为真源在 `SKILL.md`，本文件只保留快速开始、目录索引和常用入口。
 
 ## 快速开始
 
 ```bash
 /generate-document 简洁功能名-用户故事简短描述
+```
+
+周报（单文档命令）：
+
+```bash
+/generate-document weekly
 ```
 
 - 落盘目录：`docs/简洁功能名/`，含 `01_需求文档.md` … `05_动态检查清单.md`、`07_项目报告.md`（`06_实施总结.md` 由 `implement-code` 写入，本技能不创建）。
@@ -31,6 +37,11 @@
 | 动态检查清单 | ❌ | ✅ | `05_动态检查清单.md` |
 | 实施总结 | — | — | `06_实施总结.md`（非本 skill） |
 | 项目报告 | ❌ | ✅ | `07_项目报告.md` |
+
+## 扩展命令
+
+- `weekly`：生成周报单文档，规则见 `rules/周报.md`，落盘到 `docs/周报/<YYYY-MM-DD>~<YYYY-MM-DD>/周报.md`（自然周周一至周日，例：`2026-04-27~2026-05-03/周报.md`）；结束时仍强制执行 `import-docs`→`wework-bot`。
+- `from-weekly <周报路径>`：从周报「后期规划与改进优先级总表」拆解为多个 `docs/<功能名>/` 全文档集；映射表见 `docs/99_agent-runs/*_from-weekly.md`，全部完成后**一次** `import-docs` + **一条**汇总通知（详见 `SKILL.md`）。
 
 ## 目录导航
 

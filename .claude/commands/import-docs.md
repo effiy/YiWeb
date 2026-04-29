@@ -1,5 +1,12 @@
-调用 import-docs 技能导入文档到 YiAi / YiDocs。
+调用 `import-docs` 技能，将本地文档同步到远端文档 API。
 
-参数：$ARGUMENTS
+参数：`$ARGUMENTS`
 
-请使用 Skill 工具调用 import-docs 技能，传入上述参数。
+执行要求（加强）：
+- 若用户未给参数，默认按标准导入执行：`--dir docs --exts md`。
+- 若用户明确要求“导入 / 同步到远端”，必须走脚本真实 `import` 路径，不得只给命令草稿。
+- 若用户要求“先看清单”，先执行 `list`（不需要 token），再根据结果执行 `import`。
+- 返回结果必须包含可核对统计：创建 N、覆盖 N、失败 N（或说明 `docs` 不存在而跳过）。
+- 不得在回复中输出 `API_X_TOKEN` 明文。
+
+请使用 Skill 工具调用 `import-docs` 技能并实际执行，最后返回导入统计结果。
