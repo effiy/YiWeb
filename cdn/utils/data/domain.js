@@ -319,20 +319,15 @@ export function getDomainCategory(domain) {
 }
 
 /**
- * 从新闻项中提取域名分类信息
- * @param {Object} item - 新闻项
+ * 从项中提取域名分类信息
+ * @param {Object} item - 数据项
  * @returns {Object} 域名分类信息
  */
 export function extractDomainCategory(item) {
     if (!item || !item.link) {
         return getDomainCategory('');
     }
-    
+
     const domain = extractDomain(item.link);
     return getDomainCategory(domain);
-}
-
-export function categorizeNewsItem(item) {
-    if (!item) return getDomainCategory('');
-    return extractDomainCategory(item);
 }

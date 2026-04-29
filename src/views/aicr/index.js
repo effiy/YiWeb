@@ -9,6 +9,8 @@ import { createMainPageMethods } from '/src/views/aicr/hooks/mainPageMethods.js'
 import { createBaseView } from '/cdn/utils/view/baseView.js';
 import { logInfo, logWarn, logError } from '/cdn/utils/core/log.js';
 import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
+import { createSidebarResizers } from '/src/views/aicr/utils/resizer.js';
+import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.js';
 
 // 创建代码审查页面应用
 (async function initAicrApp() {
@@ -41,6 +43,7 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 'KeyboardShortcutsHelp',
                 'SkeletonLoader',
                 'AiModelSelector',
+                'SessionListTags',
             ],
             componentModules: [
                 '/src/views/aicr/components/aicrPage/index.js',
@@ -62,7 +65,8 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 '/cdn/components/business/MarkdownView/index.js',
                 '/src/views/aicr/components/keyboardShortcutsHelp/index.js',
                 '/cdn/components/business/SkeletonLoader/index.js',
-                '/src/views/aicr/components/AiModelSelector/index.js'
+                '/src/views/aicr/components/AiModelSelector/index.js',
+                '/src/views/aicr/components/sessionListTags/index.js'
             ],
             data: {
                 // 暴露store数据给模板
@@ -187,7 +191,7 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                         ]).then(() => {
                             // 如果URL带了key，尝试预选并按需加载
                             const params2 = new URLSearchParams(window.location.search);
-                            
+
                             // 处理 tag 参数
                             const tagParam = params2.get('tag');
                             if (tagParam) {
@@ -300,102 +304,22 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                         });
                     });
                 }
-                // 添加ESC快捷键监听，取消文件选中
-                // 监听模态框的ESC事件，如果模态框已处理则跳过
-                const modalEscListener = (e) => {
-                    logInfo('[代码审查页面] 检测到模态框ESC事件，跳过文件选中取消');
-                };
-                window.addEventListener('modalEscPressed', modalEscListener);
-
-                const keydownListener = (e) => {
-                    if (e.key === 'Escape') {
-                        // 检查是否有模态框打开，如果有则跳过处理
-                        if (document.querySelector('.modal, .modal-backdrop')) {
-                            logInfo('[代码审查页面] 模态框已打开，跳过ESC处理');
-                            return;
-                        }
-
-                        logInfo('[代码审查页面] ESC键被按下，取消文件选中');
-                        if (store && store.selectedKey.value) {
-                            const previousKey = store.selectedKey.value;
-                            store.setSelectedKey(null);
-                            logInfo('[代码审查页面] 已取消文件选中，之前文件Key:', previousKey);
-
-                            // 发送清除高亮事件，通知代码视图组件清除高亮
-                            setTimeout(() => {
-                                logInfo('[代码审查页面] 发送清除高亮事件');
-                                window.dispatchEvent(new CustomEvent('clearCodeHighlight'));
-                            }, 50);
-                        }
-                    }
-                };
-                window.addEventListener('keydown', keydownListener);
-
-                // 监听高亮事件，必要时切换文件后转发
-                const highlightListener = (e) => {
-                    // 如果事件已经被转发过，避免死循环
-                    if (e.detail && e.detail._forwarded) {
-                        return;
-                    }
-
-                    const { fileKey, rangeInfo } = e.detail || {};
-                    logInfo('[代码审查页面] 收到代码高亮事件:', { fileKey, rangeInfo });
-
-                    if (fileKey) {
-                        // 如果当前没有选中该文件，先选中文件
-                        const needSwitchFile = store && store.selectedKey.value !== fileKey;
-                        if (needSwitchFile) {
-                            logInfo('[代码审查页面] 切换到文件:', fileKey);
-                            store.setSelectedKey(fileKey);
-                        }
-
-                        // 发送高亮事件给代码视图组件
-                        // 如果切换了文件，需要等待更长时间让文件加载和渲染完成
-                        const delay = needSwitchFile ? 500 : 100;
-                        setTimeout(() => {
-                            window.dispatchEvent(new CustomEvent('highlightCodeLines', {
-                                detail: {
-                                    rangeInfo,
-                                    _forwarded: true // 标记为已转发，避免死循环
-                                }
-                            }));
-                        }, delay);
-                    } else {
-                        // 如果没有文件Key，直接发送事件（可能是当前文件）
-                        setTimeout(() => {
-                            window.dispatchEvent(new CustomEvent('highlightCodeLines', {
-                                detail: {
-                                    rangeInfo,
-                                    _forwarded: true // 标记为已转发，避免死循环
-                                }
-                            }));
-                        }, 100);
-                    }
-                };
-                window.addEventListener('highlightCodeLines', highlightListener);
-
-                // 保存监听器引用到全局，供清理时使用
-                window.__aicrMountedListeners = {
-                    modalEscPressed: modalEscListener,
-                    keydown: keydownListener,
-                    highlightCodeLines: highlightListener
-                };
-
-                // 提供清理函数
-                window.__aicrCleanupMountedListeners = () => {
-                    const listeners = window.__aicrMountedListeners;
-                    if (listeners) {
-                        if (listeners.modalEscPressed) window.removeEventListener('modalEscPressed', listeners.modalEscPressed);
-                        if (listeners.keydown) window.removeEventListener('keydown', listeners.keydown);
-                        if (listeners.highlightCodeLines) window.removeEventListener('highlightCodeLines', listeners.highlightCodeLines);
-                        window.__aicrMountedListeners = null;
-                        logInfo('[代码审查页面] 已清理onMounted中添加的事件监听器');
-                    }
-                };
+                // 使用新的监听器管理器设置事件
+                setupAicrEventListeners(store);
             },
             // 传递props给子组件
             props: {
                 'code-view': {},
+                'session-list-tags': {
+                    allTags: function () { return this.allTags; },
+                    selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
+                    tagFilterReverse: function () { return store.tagFilterReverse ? store.tagFilterReverse.value : false; },
+                    tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; },
+                    tagFilterExpanded: function () { return store.tagFilterExpanded ? store.tagFilterExpanded.value : false; },
+                    tagFilterSearchKeyword: function () { return store.tagFilterSearchKeyword ? store.tagFilterSearchKeyword.value : ''; },
+                    tagCounts: function () { return this.tagCounts; },
+                    tagFilterVisibleCount: function () { return store.tagFilterVisibleCount ? store.tagFilterVisibleCount.value : 8; }
+                },
                 'file-tree': {
                     tree: function () { return store.fileTree; },
                     selectedKey: function () { return store.selectedKey.value; },
@@ -406,7 +330,13 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                     batchMode: function () { return store.batchMode ? store.batchMode.value : false; },
                     selectedKeys: function () { return store.selectedKeys ? store.selectedKeys.value : new Set(); },
                     viewMode: function () { return store.viewMode ? store.viewMode.value : 'tree'; },
-                    searchQuery: function () { return store.searchQuery ? store.searchQuery.value : ''; }
+                    searchQuery: function () { return store.searchQuery ? store.searchQuery.value : ''; },
+                    selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
+                    tagFilterReverse: function () { return store.tagFilterReverse ? store.tagFilterReverse.value : false; },
+                    tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; },
+                    tagFilterExpanded: function () { return store.tagFilterExpanded ? store.tagFilterExpanded.value : false; },
+                    tagFilterSearchKeyword: function () { return store.tagFilterSearchKeyword ? store.tagFilterSearchKeyword.value : ''; },
+                    tagFilterVisibleCount: function () { return store.tagFilterVisibleCount ? store.tagFilterVisibleCount.value : 8; }
                 }
             },
             methods: createMainPageMethods(store),
@@ -424,6 +354,69 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                         return false;
                     }
                     return visibleSessions.every(session => store.selectedSessionKeys.value.has(session.key));
+                },
+                // 所有标签列表
+                allTags: function () {
+                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
+
+                    // 只收集一级目录作为标签
+                    const tags = new Set();
+                    for (const item of store.fileTree.value) {
+                        if (item.type === 'folder') {
+                            tags.add(item.name);
+                        }
+                    }
+
+                    const allTagsArray = Array.from(tags).sort();
+
+                    try {
+                        const saved = localStorage.getItem('aicr_file_tag_order');
+                        const savedOrder = saved ? JSON.parse(saved) : null;
+
+                        if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+                            const orderedTags = savedOrder.filter(tag => tags.has(tag));
+                            const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
+                            return [...orderedTags, ...newTags];
+                        }
+                    } catch (e) {
+                        console.warn('[index.js] 加载标签顺序失败:', e);
+                    }
+
+                    return allTagsArray;
+                },
+                // 标签计数
+                tagCounts: function () {
+                    const counts = {};
+                    let noTagsCount = 0;
+
+                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) {
+                        return { counts, noTagsCount };
+                    }
+
+                    // 统计一级目录下所有文件数量（包括子文件夹中的文件）
+                    const countFilesInFolder = (items) => {
+                        let fileCount = 0;
+                        if (!Array.isArray(items)) return fileCount;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                fileCount++;
+                            } else if (item.type === 'folder' && item.children) {
+                                fileCount += countFilesInFolder(item.children);
+                            }
+                        }
+                        return fileCount;
+                    };
+
+                    // 遍历根目录
+                    for (const item of store.fileTree.value) {
+                        if (item.type === 'file') {
+                            noTagsCount++;
+                        } else if (item.type === 'folder') {
+                            counts[item.name] = countFilesInFolder(item.children || []);
+                        }
+                    }
+
+                    return { counts, noTagsCount };
                 }
             }
         });
@@ -454,203 +447,3 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
         logError('[代码审查页面] 应用初始化失败:', error);
     }
 })();
-
-/**
- * 创建侧边栏拖拽条
- * 参考 YiPet 项目的实现
- */
-function createSidebarResizers(store) {
-    if (!store) return;
-
-    // 创建文件树侧边栏拖拽条
-    const sidebar = document.querySelector('.aicr-sidebar');
-    if (sidebar) {
-        createResizer(sidebar, store, 'sidebar', {
-            minWidth: 240,
-            maxWidth: 400,
-            defaultWidth: 320,
-            storageKey: 'aicrSidebarWidth',
-            saveWidth: store.saveSidebarWidth
-        });
-
-        // 应用保存的宽度
-        if (store.sidebarWidth && store.sidebarWidth.value) {
-            sidebar.style.width = `${store.sidebarWidth.value}px`;
-        }
-    }
-
-    const chatPanel = document.querySelector('.aicr-code-chat');
-    if (chatPanel) {
-        createResizer(chatPanel, store, 'chatPanel', {
-            minWidth: 280,
-            maxWidth: 980,
-            defaultWidth: 420,
-            storageKey: 'aicrChatPanelWidth',
-            saveWidth: store.saveChatPanelWidth,
-            position: 'left',
-            enforceLimits: true
-        });
-
-        if (store.chatPanelWidth && store.chatPanelWidth.value) {
-            chatPanel.style.setProperty('--aicr-chat-width', `${store.chatPanelWidth.value}px`);
-        }
-    }
-}
-
-/**
- * 创建单个拖拽条
- */
-function createResizer(sidebarElement, store, type, options) {
-    const {
-        minWidth = 240,
-        maxWidth = 400,
-        defaultWidth = 320,
-        storageKey,
-        saveWidth,
-        position = 'right', // 'right' 或 'left'
-        enforceLimits = false
-    } = options;
-
-    // 检查是否已存在拖拽条
-    const existingResizer = sidebarElement.querySelector('.sidebar-resizer');
-    if (existingResizer) {
-        return existingResizer;
-    }
-
-    const resizer = document.createElement('div');
-    resizer.className = 'sidebar-resizer';
-    resizer.setAttribute('data-type', type);
-
-    // 设置样式
-    resizer.style.cssText = `
-        position: absolute !important;
-        top: 0 !important;
-        ${position === 'right' ? 'right: -4px' : 'left: -4px'} !important;
-        width: 8px !important;
-        height: 100% !important;
-        cursor: col-resize !important;
-        z-index: 10 !important;
-        background: transparent !important;
-        transition: background 0.2s ease !important;
-    `;
-
-    let isResizing = false;
-
-    // 鼠标悬停效果
-    resizer.addEventListener('mouseenter', () => {
-        if (!isResizing) {
-            resizer.style.setProperty('background', 'rgba(59, 130, 246, 0.3)', 'important');
-        }
-    });
-
-    resizer.addEventListener('mouseleave', () => {
-        if (!isResizing) {
-            resizer.style.setProperty('background', 'transparent', 'important');
-        }
-    });
-
-    // 拖拽开始
-    resizer.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        isResizing = true;
-        resizer.style.setProperty('background', 'rgba(59, 130, 246, 0.5)', 'important');
-        resizer.style.setProperty('cursor', 'col-resize', 'important');
-
-        // 记录初始位置和宽度
-        const startX = e.clientX;
-        const currentWidth = sidebarElement.offsetWidth;
-        const startWidth = currentWidth || defaultWidth;
-
-        // 禁用过渡效果，确保拖拽流畅
-        sidebarElement.style.transition = 'none';
-
-        // 添加全局样式，禁用文本选择
-        document.body.style.userSelect = 'none';
-        document.body.style.cursor = 'col-resize';
-
-        // 拖拽中
-        const handleMouseMove = (e) => {
-            if (!isResizing) return;
-
-            const diffX = position === 'right'
-                ? e.clientX - startX
-                : startX - e.clientX;
-            let newWidth = startWidth + diffX;
-
-            if (enforceLimits) {
-                const min = typeof minWidth === 'number' && minWidth > 0 ? minWidth : 50;
-                const max = typeof maxWidth === 'number' && maxWidth > 0 ? maxWidth : Infinity;
-                newWidth = Math.max(min, Math.min(max, newWidth));
-            } else {
-                newWidth = Math.max(50, newWidth);
-            }
-
-            // 更新宽度
-            if (type === 'chatPanel') {
-                sidebarElement.style.setProperty('--aicr-chat-width', `${newWidth}px`);
-            } else {
-                sidebarElement.style.width = `${newWidth}px`;
-            }
-
-            // 更新 store 中的宽度值
-            if (type === 'sidebar') {
-                if (store.sidebarWidth) {
-                    store.sidebarWidth.value = newWidth;
-                }
-            } else if (type === 'chatPanel') {
-                if (store.chatPanelWidth) {
-                    store.chatPanelWidth.value = newWidth;
-                }
-            }
-        };
-
-        // 拖拽结束
-        const handleMouseUp = () => {
-            isResizing = false;
-            resizer.style.setProperty('background', 'transparent', 'important');
-            resizer.style.setProperty('cursor', 'col-resize', 'important');
-
-            // 恢复过渡效果
-            sidebarElement.style.transition = '';
-
-            // 恢复全局样式
-            document.body.style.userSelect = '';
-            document.body.style.cursor = '';
-
-            // 保存宽度
-            const finalWidth = type === 'chatPanel'
-                ? (store.chatPanelWidth ? store.chatPanelWidth.value : sidebarElement.getBoundingClientRect().width)
-                : sidebarElement.offsetWidth;
-
-            if (type === 'sidebar') {
-                if (typeof store.saveSidebarWidth === 'function') {
-                    store.saveSidebarWidth(finalWidth);
-                } else if (saveWidth && typeof saveWidth === 'function') {
-                    saveWidth(finalWidth);
-                }
-            } else if (type === 'chatPanel') {
-                if (typeof store.saveChatPanelWidth === 'function') {
-                    store.saveChatPanelWidth(finalWidth);
-                } else if (saveWidth && typeof saveWidth === 'function') {
-                    saveWidth(finalWidth);
-                }
-            } else if (saveWidth && typeof saveWidth === 'function') {
-                saveWidth(finalWidth);
-            }
-
-            // 移除事件监听器
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-
-        // 添加全局事件监听器
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-    });
-
-    sidebarElement.appendChild(resizer);
-
-    return resizer;
-}

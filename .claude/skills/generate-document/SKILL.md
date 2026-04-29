@@ -76,8 +76,29 @@ user_invocable: true
 ### 步骤 5：保存 + 知识策展
 
 - 保存 `docs/<功能名>/` 下 01-05, 07（06 不创建）
+- **init 命令例外**：保存 8 个项目基础文件 + `docs/项目初始化/` 下 01-07（含 06_实施总结）
 - **必须调用 `knowledge-curator`**：策展本次任务的可复用知识到 `.claude/agents/memory/knowledge.md`
-- 可选执行 `import-docs` 文档同步 + `wework-bot` 完成通知（完成后建议执行，但不作为强制门禁）
+
+### 步骤 6：文档同步与通知（强制，所有命令适用）
+
+> **重要**：无论功能文档生成还是 `init` 命令，所有 `generate-document` 调用都必须执行此步骤
+
+- **必须先执行 `import-docs` 文档同步**：
+  - 功能文档：`node .claude/skills/import-docs/scripts/import-docs.js --dir docs --exts md`
+  - init 命令：同样执行 `docs` 目录标准导入（覆盖新生成的项目基础文件和 `docs/项目初始化/`）
+  - 记录真实结果：创建 N、覆盖 N、失败 N，供 wework-bot 使用
+  - 导入失败不阻断：记录失败摘要，继续通知
+- **必须调用 `wework-bot` 发送完成通知**：
+  - 严格按 `../wework-bot/SKILL.md` 的「生动总结格式规范」发送
+  - 通知内容必须包含：
+    - `⏱️ 用时`（本次会话总耗时）
+    - `🪙 会话用量`（与 Cursor 一致）
+    - `🤖 模型`
+    - `🧰 工具`
+    - `🕒 最后更新时间`（精确到秒）
+    - `☁️ 文档同步`（必须使用 import-docs 真实结果，不得虚构）
+  - init 命令的通知模板：使用「generate-document 完成（成功）」或「含 P0 失败」，`📋 类型` 填「项目初始化」
+- **执行顺序强制**：先 import-docs，再 wework-bot，禁止颠倒
 
 ## Agent 调用契约
 

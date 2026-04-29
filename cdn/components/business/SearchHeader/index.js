@@ -51,14 +51,6 @@ registerGlobalComponent({
       type: String,
       default: '搜索网站、标签或描述...'
     },
-    showNewsButton: {
-      type: Boolean,
-      default: true
-    },
-    newsHref: {
-      type: String,
-      default: 'https://effiy.cn/src/views/news/index.html'
-    },
     showAuthButton: {
       type: Boolean,
       default: true
@@ -157,15 +149,6 @@ registerGlobalComponent({
       }
     };
 
-    const openNews = () => {
-      if (props.newsHref) {
-        if (/^https?:\/\//.test(props.newsHref)) {
-          window.open(props.newsHref, '_blank', 'noopener,noreferrer');
-        } else {
-          window.location.href = props.newsHref;
-        }
-      }
-    };
 
     const openAuth = () => {
       emit('open-auth');
@@ -213,7 +196,6 @@ registerGlobalComponent({
       envType,
       envLabel,
       goHome,
-      openNews,
       openAuth,
       toggleSidebar,
       handleInput,

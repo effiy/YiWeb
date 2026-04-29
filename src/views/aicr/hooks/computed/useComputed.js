@@ -297,5 +297,74 @@ export const useComputed = (store) => {
             return visibleSessions.every(session => store.selectedSessionKeys.value.has(session.key));
         }),
 
+        /**
+         * 所有标签列表
+         */
+        allTags: computed(() => {
+            if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
+
+            // 只收集一级目录作为标签
+            const tags = new Set();
+            for (const item of store.fileTree.value) {
+                if (item.type === 'folder') {
+                    tags.add(item.name);
+                }
+            }
+
+            const allTagsArray = Array.from(tags).sort();
+
+            try {
+                const saved = localStorage.getItem('aicr_file_tag_order');
+                const savedOrder = saved ? JSON.parse(saved) : null;
+
+                if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+                    const orderedTags = savedOrder.filter(tag => tags.has(tag));
+                    const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
+                    return [...orderedTags, ...newTags];
+                }
+            } catch (e) {
+                console.warn('[useComputed] 加载标签顺序失败:', e);
+            }
+
+            return allTagsArray;
+        }),
+
+        /**
+         * 标签计数
+         */
+        tagCounts: computed(() => {
+            const counts = {};
+            let noTagsCount = 0;
+
+            if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) {
+                return { counts, noTagsCount };
+            }
+
+            // 统计一级目录下所有文件数量（包括子文件夹中的文件）
+            const countFilesInFolder = (items) => {
+                let fileCount = 0;
+                if (!Array.isArray(items)) return fileCount;
+                for (const item of items) {
+                    if (item.type === 'file') {
+                        fileCount++;
+                    } else if (item.type === 'folder' && item.children) {
+                        fileCount += countFilesInFolder(item.children);
+                    }
+                }
+                return fileCount;
+            };
+
+            // 遍历根目录
+            for (const item of store.fileTree.value) {
+                if (item.type === 'file') {
+                    noTagsCount++;
+                } else if (item.type === 'folder') {
+                    counts[item.name] = countFilesInFolder(item.children || []);
+                }
+            }
+
+            return { counts, noTagsCount };
+        }),
+
     };
 };

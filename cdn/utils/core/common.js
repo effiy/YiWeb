@@ -105,7 +105,7 @@ export function safeGetItem(key, defaultValue = null, parse = true) {
  */
 function handleStorageQuotaExceeded(key, value, stringify) {
     // 清理策略：删除最老的缓存数据
-    const keysToClean = ['newsCache', 'searchHistory', 'tempData'];
+    const keysToClean = ['searchHistory', 'tempData'];
     
     for (const cleanKey of keysToClean) {
         if (cleanKey !== key && localStorage.getItem(cleanKey)) {
@@ -344,27 +344,6 @@ export function formatFileSize(bytes, decimals = 2) {
         : `${truncated.toFixed(dm)} ${units[idx]}`;
 }
 
-/**
- * 构建新闻会话的标签数组
- * 标签顺序固定为：
- * 1. knowledge（第一位）
- * 2. news（第二位，确保在新闻自带的标签前面）
- * 3. 新闻自带的标签（第三位及之后）
- * @param {Array<string>} newsTags - 新闻的原始标签数组
- * @returns {Array<string>} 构建后的标签数组，顺序为 [knowledge, news, ...新闻原有标签]
- */
-export function buildNewsSessionTags(newsTags = []) {
-    // 确保输入是数组并规范化
-    const tags = Array.isArray(newsTags) ? newsTags : [];
-    
-    // 过滤并规范化新闻原有标签，移除 knowledge 和 news 避免重复
-    const filteredTags = tags
-        .map(tag => String(tag || "").trim())
-        .filter(tag => tag && tag !== "knowledge" && tag !== "news");
-    
-    // 按固定顺序构建标签数组：第一位 knowledge，第二位 news（在新闻自带标签前面），第三位及之后是新闻原有标签
-    return ["knowledge", "news", ...filteredTags];
-}
 
 // 导出默认工具对象
 export default {
@@ -381,6 +360,5 @@ export default {
     updateUrlParams,
     getUrlParam,
     detectDevice,
-    formatFileSize,
-    buildNewsSessionTags
+    formatFileSize
 }; 
