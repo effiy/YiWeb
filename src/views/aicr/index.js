@@ -43,6 +43,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 'KeyboardShortcutsHelp',
                 'SkeletonLoader',
                 'AiModelSelector',
+                'SessionListTags',
             ],
             componentModules: [
                 '/src/views/aicr/components/aicrPage/index.js',
@@ -64,7 +65,8 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 '/cdn/components/business/MarkdownView/index.js',
                 '/src/views/aicr/components/keyboardShortcutsHelp/index.js',
                 '/cdn/components/business/SkeletonLoader/index.js',
-                '/src/views/aicr/components/AiModelSelector/index.js'
+                '/src/views/aicr/components/AiModelSelector/index.js',
+                '/src/views/aicr/components/sessionListTags/index.js'
             ],
             data: {
                 // 暴露store数据给模板
@@ -308,6 +310,16 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
             // 传递props给子组件
             props: {
                 'code-view': {},
+                'session-list-tags': {
+                    allTags: function () { return this.allTags; },
+                    selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
+                    tagFilterReverse: function () { return store.tagFilterReverse ? store.tagFilterReverse.value : false; },
+                    tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; },
+                    tagFilterExpanded: function () { return store.tagFilterExpanded ? store.tagFilterExpanded.value : false; },
+                    tagFilterSearchKeyword: function () { return store.tagFilterSearchKeyword ? store.tagFilterSearchKeyword.value : ''; },
+                    tagCounts: function () { return this.tagCounts; },
+                    tagFilterVisibleCount: function () { return store.tagFilterVisibleCount ? store.tagFilterVisibleCount.value : 8; }
+                },
                 'file-tree': {
                     tree: function () { return store.fileTree; },
                     selectedKey: function () { return store.selectedKey.value; },
@@ -318,7 +330,13 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     batchMode: function () { return store.batchMode ? store.batchMode.value : false; },
                     selectedKeys: function () { return store.selectedKeys ? store.selectedKeys.value : new Set(); },
                     viewMode: function () { return store.viewMode ? store.viewMode.value : 'tree'; },
-                    searchQuery: function () { return store.searchQuery ? store.searchQuery.value : ''; }
+                    searchQuery: function () { return store.searchQuery ? store.searchQuery.value : ''; },
+                    selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
+                    tagFilterReverse: function () { return store.tagFilterReverse ? store.tagFilterReverse.value : false; },
+                    tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; },
+                    tagFilterExpanded: function () { return store.tagFilterExpanded ? store.tagFilterExpanded.value : false; },
+                    tagFilterSearchKeyword: function () { return store.tagFilterSearchKeyword ? store.tagFilterSearchKeyword.value : ''; },
+                    tagFilterVisibleCount: function () { return store.tagFilterVisibleCount ? store.tagFilterVisibleCount.value : 8; }
                 }
             },
             methods: createMainPageMethods(store),
@@ -336,6 +354,69 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                         return false;
                     }
                     return visibleSessions.every(session => store.selectedSessionKeys.value.has(session.key));
+                },
+                // 所有标签列表
+                allTags: function () {
+                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
+
+                    // 只收集一级目录作为标签
+                    const tags = new Set();
+                    for (const item of store.fileTree.value) {
+                        if (item.type === 'folder') {
+                            tags.add(item.name);
+                        }
+                    }
+
+                    const allTagsArray = Array.from(tags).sort();
+
+                    try {
+                        const saved = localStorage.getItem('aicr_file_tag_order');
+                        const savedOrder = saved ? JSON.parse(saved) : null;
+
+                        if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+                            const orderedTags = savedOrder.filter(tag => tags.has(tag));
+                            const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
+                            return [...orderedTags, ...newTags];
+                        }
+                    } catch (e) {
+                        console.warn('[index.js] 加载标签顺序失败:', e);
+                    }
+
+                    return allTagsArray;
+                },
+                // 标签计数
+                tagCounts: function () {
+                    const counts = {};
+                    let noTagsCount = 0;
+
+                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) {
+                        return { counts, noTagsCount };
+                    }
+
+                    // 统计一级目录下所有文件数量（包括子文件夹中的文件）
+                    const countFilesInFolder = (items) => {
+                        let fileCount = 0;
+                        if (!Array.isArray(items)) return fileCount;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                fileCount++;
+                            } else if (item.type === 'folder' && item.children) {
+                                fileCount += countFilesInFolder(item.children);
+                            }
+                        }
+                        return fileCount;
+                    };
+
+                    // 遍历根目录
+                    for (const item of store.fileTree.value) {
+                        if (item.type === 'file') {
+                            noTagsCount++;
+                        } else if (item.type === 'folder') {
+                            counts[item.name] = countFilesInFolder(item.children || []);
+                        }
+                    }
+
+                    return { counts, noTagsCount };
                 }
             }
         });

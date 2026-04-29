@@ -1,4 +1,22 @@
 <aicr-header></aicr-header>
+
+<!-- 标签筛选器 -->
+<session-list-tags
+    :all-tags="allTags"
+    :selected-tags="selectedSessionTags"
+    :tag-filter-reverse="tagFilterReverse"
+    :tag-filter-no-tags="tagFilterNoTags"
+    :tag-filter-expanded="tagFilterExpanded"
+    :tag-filter-search-keyword="tagFilterSearchKeyword"
+    :tag-counts="tagCounts"
+    @tag-select="handleTagSelect"
+    @tag-clear="handleTagClear"
+    @tag-filter-reverse="handleTagFilterReverse"
+    @tag-filter-no-tags="handleTagFilterNoTags"
+    @tag-filter-expand="handleTagFilterExpand"
+    @tag-filter-search="handleTagFilterSearch">
+</session-list-tags>
+
 <main class="aicr-main">
     <aicr-sidebar></aicr-sidebar>
     <aicr-code-area></aicr-code-area>

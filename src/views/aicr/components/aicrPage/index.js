@@ -3,6 +3,10 @@ import { registerGlobalComponent } from '/cdn/utils/view/componentLoader.js';
 registerGlobalComponent({
     name: 'AicrPage',
     html: '/src/views/aicr/components/aicrPage/index.html',
+    setup() {
+        const ctx = Vue.inject('viewContext') || {};
+        return ctx;
+    },
     data() {
         return {
             showKeyboardShortcuts: false

@@ -421,6 +421,42 @@ export const createMainPageMethods = (store) => {
                 logError('[主页面] 清除标签处理失败:', error);
             }
         },
+        handleTagFilterReverse: function (reverse) {
+            logInfo('[主页面] 收到反向筛选切换事件:', reverse);
+            try {
+                const methods = useMethods(store);
+                methods.handleTagFilterReverse(reverse);
+            } catch (error) {
+                logError('[主页面] 反向筛选切换处理失败:', error);
+            }
+        },
+        handleTagFilterNoTags: function (noTags) {
+            logInfo('[主页面] 收到无标签筛选切换事件:', noTags);
+            try {
+                const methods = useMethods(store);
+                methods.handleTagFilterNoTags(noTags);
+            } catch (error) {
+                logError('[主页面] 无标签筛选切换处理失败:', error);
+            }
+        },
+        handleTagFilterExpand: function (expanded) {
+            logInfo('[主页面] 收到标签展开切换事件:', expanded);
+            try {
+                const methods = useMethods(store);
+                methods.handleTagFilterExpand(expanded);
+            } catch (error) {
+                logError('[主页面] 标签展开切换处理失败:', error);
+            }
+        },
+        handleTagFilterSearch: function (keyword) {
+            logInfo('[主页面] 收到标签搜索事件:', keyword);
+            try {
+                const methods = useMethods(store);
+                methods.handleTagFilterSearch(keyword);
+            } catch (error) {
+                logError('[主页面] 标签搜索处理失败:', error);
+            }
+        },
         handleSessionSearchChange: function (query) {
             logInfo('[主页面] 收到会话搜索变化事件:', query);
             try {
