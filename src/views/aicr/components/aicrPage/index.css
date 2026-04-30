@@ -7,20 +7,20 @@
 .aicr-main {
     display: flex;
     flex-direction: row;
-    height: calc(100vh - 64px); /* 减去 header 高度 */
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
 }
 
 /* 响应式调整 */
 @media (max-width: 1024px) {
     .aicr-main {
-        height: calc(100vh - 56px);
+        flex-direction: column;
     }
 }
 
 @media (max-width: 768px) {
     .aicr-main {
         flex-direction: column;
-        height: calc(100vh - 48px);
     }
 }

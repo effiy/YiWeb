@@ -17,6 +17,21 @@
 | `find-skills` | 发现当前仓库内真实存在的 skill | 不适用 |
 | `find-agents` | 发现当前仓库内真实存在的 agent，并给出组合建议 | 不适用 |
 | `generate-document` | 负责文档生成主流程与规则装配 | 可按场景调用多个 agent 作为候选输入 |
+| `implement-code` | 负责代码实施主流程与门禁规则 | 可按场景调用多个 agent 作为候选输入 |
+
+## generate-document 代理清单
+
+| Agent | 阶段 | 职责 |
+|-------|------|------|
+| `spec-retriever` | 1 | 规范检索：根据文档类型和关键词返回适用的 rules/、shared/、checklists/ 规范集合 |
+| `impact-analyst` | 2 | 影响链分析：全项目搜索与依赖闭合分析，输出四表（搜索词清单、影响链、闭合摘要、未覆盖风险） |
+| `architect` | 3 | 架构设计：回答 5 个必答问题，输出模块划分、接口规范、数据流方案 |
+| `planner` | 3 | 实施策略：回答必答问题，输出实施策略与风险清单 |
+| `docs-lookup` | 2-3 | 文档歧义定位：按需检索历史文档结构与表达 |
+| `mermaid-expert` | 4 | Mermaid 语法审查与修复：对含图文档做语法校验和修复建议 |
+| `code-reviewer` | 4 | 架构一致性审查：审查设计文档的架构一致性，P0 问题必须修复 |
+| `quality-tracker` | 4 | 质量统计：统计本次 P0/P1/P2 数据 |
+| `knowledge-curator` | 5 | 知识策展：整理本次任务的可复用知识 |
 
 ## 何时优先用 Skill
 

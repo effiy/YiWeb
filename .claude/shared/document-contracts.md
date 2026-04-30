@@ -13,6 +13,7 @@
 | 动态检查清单 | `skills/generate-document/rules/动态检查清单.md` | 禁用 | 仅全文档模式 | `docs/<功能名>/05_动态检查清单.md` | 从上游文档动态抽取 |
 | 实施总结 | `implement-code` 技能输出 | 不适用 | 不单独生成 | `docs/<功能名>/06_实施总结.md` | 不由 `generate-document` 生成 |
 | 项目报告 | `skills/generate-document/rules/项目报告.md` | 不提供 | `docs/05_项目报告/` | `docs/<功能名>/07_项目报告.md` | 基于真实变更数据 |
+| 周报 | `skills/generate-document/rules/周报.md` | 禁用 | `docs/周报/<自然周>/周报.md` | 不适用 | 单文档，不与全文档编号集关联；规范驱动 |
 | 通用文档 | `skills/generate-document/rules/通用文档.md` | 可用 | `docs/` | 不适用 | 模板骨架 + 规范约束 |
 | 运行/阻断记录 | skill 强制落盘契约 | 不适用 | `docs/99_agent-runs/` | 不适用 | 当无法确定目标文档路径时的兜底记录 |
 

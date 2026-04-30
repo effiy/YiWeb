@@ -1,61 +1,59 @@
-# generate-document 快速索引
+# generate-document README
 
-`generate-document` 是文档生成主 skill。行为真源在 `SKILL.md`，本文件只保留快速开始、目录索引和常用入口。
+> 行为真源：[SKILL.md](./SKILL.md)；本文件只保留快速开始与命令速查。
 
 ## 快速开始
 
 ```bash
-/generate-document 简洁功能名-用户故事简短描述
+/generate-document init                           # 项目初始化
+/generate-document 用户登录-支持手机号验证码登录    # 功能文档集
+/generate-document weekly                         # 本周周报
+/generate-document weekly 2026-04-29              # 指定日期周报
+/generate-document from-weekly docs/周报/<自然周>/周报.md  # 从周报拆解全文档
 ```
 
-周报（单文档命令）：
+- 所有命令可反复调用，已存在则增量更新
+- 落盘目录：`docs/<功能名>/`，编号集 01-05, 07（06 仅由 `implement-code` 写入）
+- 结束时强制：`import-docs`（同步）→ `wework-bot`（通知），中断/完成均不可省略
 
-```bash
-/generate-document weekly
-```
+## 命令速查
 
-- 落盘目录：`docs/简洁功能名/`，含 `01_需求文档.md` … `05_动态检查清单.md`、`07_项目报告.md`（`06_实施总结.md` 由 `implement-code` 写入，本技能不创建）。
-- 本技能**不展示、不推荐**仅生成单份需求/设计等命令；与单文档平铺目录（如 `docs/01_需求文档/`）无交付关系，标交付仅为上述全文档编号集。
+| 命令 | 产出 | 首次行为 | 再次行为 | 版本处理 |
+|------|------|---------|---------|---------|
+| `init` | 10 个基础文件 + `docs/项目初始化/01-07` | 新建 | 更新事实，保留约定 | 头部日期更新 |
+| `<功能名>-<描述>` | `docs/<功能名>/01-05,07` | 新建全文档集 | 差异对比，级联更新 | 次版本 `+1` |
+| `weekly [日期]` | `docs/周报/<自然周>/周报.md` | 新建 | 同周覆盖更新 | 次版本 `+1` |
+| `from-weekly <周报路径>` | 多个 `docs/<功能名>/` 全文档集 | 新建多个目录 | 各目录独立按"已存在则更新" | 各目录独立 `+1` |
 
-## 真源说明
+## 全文档类型一览
 
-- 行为真源：`./SKILL.md`
-- 文档契约：`../../shared/document-contracts.md`
-- 影响分析契约：`../../shared/impact-analysis-contract.md`
-- 证据与反幻觉：`../../shared/evidence-and-uncertainty.md`（与 `checklists/通用文档.md` P0 证据类项一起约束采纳率）
-- 路径约定：`../../shared/path-conventions.md`
-- Skill / Agent 边界：`../../shared/agent-skill-boundaries.md`
+| 类型 | 文件名 | 模板 | 生成方式 |
+|------|--------|------|----------|
+| 需求文档 | `01_需求文档.md` | ✅ | 模板骨架 + 规范约束 |
+| 需求任务 | `02_需求任务.md` | ✅ | 模板骨架 + 规范约束 |
+| 设计文档 | `03_设计文档.md` | ❌ | **仅规范驱动** |
+| 使用文档 | `04_使用文档.md` | ❌ | 规范驱动 |
+| 动态检查清单 | `05_动态检查清单.md` | ❌ | **仅规范驱动** |
+| 实施总结 | `06_实施总结.md` | — | **仅 implement-code 写入** |
+| 项目报告 | `07_项目报告.md` | ❌ | 规范驱动 + 真实变更数据 |
+| 周报 | `docs/周报/<自然周>/周报.md` | ❌ | 单文档，非编号集 |
 
-## 全文档类型一览（`docs/<功能名>/`）
+## 真源与契约
 
-| 类型 | 模板 | 规范 | 文件名 |
-|------|------|------|--------|
-| 需求文档 | ✅ | ✅ | `01_需求文档.md` |
-| 需求任务 | ✅ | ✅ | `02_需求任务.md` |
-| 设计文档 | ❌ | ✅ | `03_设计文档.md` |
-| 使用文档 | ❌ | ✅ | `04_使用文档.md` |
-| 动态检查清单 | ❌ | ✅ | `05_动态检查清单.md` |
-| 实施总结 | — | — | `06_实施总结.md`（非本 skill） |
-| 项目报告 | ❌ | ✅ | `07_项目报告.md` |
-
-## 扩展命令
-
-- `weekly`：生成周报单文档，规则见 `rules/周报.md`，落盘到 `docs/周报/<YYYY-MM-DD>~<YYYY-MM-DD>/周报.md`（自然周周一至周日，例：`2026-04-27~2026-05-03/周报.md`）；结束时仍强制执行 `import-docs`→`wework-bot`。
-- `from-weekly <周报路径>`：从周报「后期规划与改进优先级总表」拆解为多个 `docs/<功能名>/` 全文档集；映射表见 `docs/99_agent-runs/*_from-weekly.md`，全部完成后**一次** `import-docs` + **一条**汇总通知（详见 `SKILL.md`）。
+| 来源 | 路径 | 用途 |
+|------|------|------|
+| 行为真源 | `./SKILL.md` | 核心原则 + 工作流 + 命令 |
+| 文档契约 | `../../shared/document-contracts.md` | 文档结构与回写 |
+| 影响分析契约 | `../../shared/impact-analysis-contract.md` | 影响链闭合 |
+| 证据与反幻觉 | `../../shared/evidence-and-uncertainty.md` | 事实来源约束 |
+| Agent 输出契约 | `../../shared/agent-output-contract.md` | 门禁校验 |
+| 路径约定 | `../../shared/path-conventions.md` | 目录与命名 |
+| Skill/Agent 边界 | `../../shared/agent-skill-boundaries.md` | 职责划分 |
 
 ## 目录导航
 
-- `rules/`：结构契约
-- `templates/`：可选骨架
-- `checklists/`：专项检查清单
+- `SKILL.md`：唯一真源（9 条核心原则 + 命令 + 工作流入口）
+- `rules/`：各文档类型规范 + 编排细则
+- `templates/`：可选骨架（03/05 禁用模板）
+- `checklists/`：专项检查清单（P0/P1/P2）
 - `checklist.md`：检查清单入口索引
-
-## 使用原则
-
-1. 先读 `SKILL.md`，再读具体 `rules/<类型>.md`。
-2. 设计文档与动态检查清单禁用模板，只能基于规范和上游事实生成。
-3. 需求任务与设计文档的影响分析必须按 `../../shared/impact-analysis-contract.md` 覆盖全项目、上游依赖、反向依赖、传递依赖、导出链、注册链、测试、文档、配置和外部依赖。
-4. 所有路径和 agent 名称必须与仓库内真实文件保持一致，不得引用旧路径或虚构代理。
-5. 每次调用都必须写入 `docs/` 下至少一个 Markdown 文件；无法按全文档继续时，写入 `docs/99_agent-runs/<YYYYMMDD-HHMMSS>_generate-document.md`。
-6. **每次调用结束后必须**：先按 `import-docs` 技能执行 `docs` 标准导入，再按 `wework-bot` 技能发送带真实 `☁️ 文档同步` 结果的完成通知；两步缺一不可（详见 `SKILL.md` 顶部「强制最终步骤」）。
-7. 全文档产出应便于 `implement-code` 做 **02↔05 P0 覆盖** 核对：见 `implement-code` 的 `rules/orchestration.md §3.4` 与 `SKILL.md` 原则 12；避免场景与检查项脱钩。

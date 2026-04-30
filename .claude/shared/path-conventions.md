@@ -23,12 +23,23 @@
 
 ### 在 `docs/` 文档中引用 `.claude`
 
-从 `docs/01_需求文档/*.md`、`docs/02_需求任务/*.md` 等文档回链到 `.claude` 时，使用从 `docs/` 回到仓库根目录的相对路径，例如：
+从 `docs/` 下不同深度的文档回链到 `.claude` 时，使用从当前位置到仓库根目录的相对路径：
 
-- `../../.claude/skills/generate-document/SKILL.md`
-- `../../.claude/skills/generate-document/rules/需求文档.md`
-- `../../.claude/skills/generate-document/templates/需求任务.md`
-- `../../.claude/skills/generate-document/checklists/需求文档.md`
+- **2 级深度**（如 `docs/<功能名>/`）：`../../.claude/skills/generate-document/SKILL.md`
+- **3 级深度**（如 `docs/周报/<自然周>/`）：`../../../.claude/skills/generate-document/SKILL.md`
+- **4 级深度**（如更深嵌套）：逐级增加 `../`
+
+示例：
+
+- `../../.claude/skills/generate-document/SKILL.md`（2 级）
+- `../../.claude/skills/generate-document/rules/需求文档.md`（2 级）
+- `../../../.claude/skills/generate-document/SKILL.md`（3 级，周报目录内）
+
+### 兜底路径
+
+当 skill 因缺少参数、目标目录不可定位或前置材料缺失而无法写入目标产物时，仍必须写入：
+
+- `docs/99_agent-runs/<YYYYMMDD-HHMMSS>_<skill-name>.md`
 
 ### 在 `.claude` 内部互相引用
 

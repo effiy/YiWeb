@@ -1,12 +1,96 @@
-/**
+/*
  * AicrHeader 组件样式
- * author: YiWeb
+ * 作者：YiWeb
  * 说明：AICR 页面头部组件样式
  */
 
-/* 优化头部区域间距 */
+/* 优化头部区域为 flex 单行布局 */
 .aicr-header {
-  padding: 8px var(--spacing-md);
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-primary);
+    padding: 10px var(--spacing-md);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    min-height: 64px;
+    transition: all 0.2s ease;
+}
+
+/* SearchHeader 集成优化：移除独立背景和边框，与整体风格统一 */
+/* 注意：SearchHeader 渲染后根元素为 .header-row，不保留 search-header 标签 */
+.aicr-header > .header-row {
+    flex: 0 1 auto;
+    max-width: 420px;
+    min-width: 280px;
+    display: flex;
+    width: auto;
+    grid-template-columns: unset;
+    height: auto;
+    padding: 0;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: none;
+    box-shadow: none;
+    gap: 12px;
+}
+
+.aicr-header > .header-row .header-center {
+    max-width: 420px;
+}
+
+.aicr-header > .header-row .search-box textarea {
+    height: 40px;
+    min-height: 40px;
+}
+
+/* 桌面端：session-list-tags 填充剩余空间 */
+@media (min-width: 1025px) {
+    .aicr-header .session-list-tags {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+    }
+}
+
+/* 平板端：垂直排列 */
+@media (max-width: 1024px) {
+    .aicr-header {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px var(--spacing-md);
+        min-height: auto;
+        align-items: stretch;
+    }
+
+    .aicr-header > .header-row .header-center {
+        max-width: 600px;
+    }
+}
+
+/* 移动端：增大间距 */
+@media (max-width: 768px) {
+    .aicr-header {
+        padding: 12px var(--spacing-md);
+        gap: 10px;
+    }
+}
+
+/* 超宽屏优化 */
+@media (min-width: 1440px) {
+    .aicr-header {
+        gap: 24px;
+    }
+
+    .aicr-header > .header-row .header-center {
+        max-width: 520px;
+    }
+}
+
+/* 尊重用户减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+    .aicr-header {
+        transition: none;
+    }
 }

@@ -1,263 +1,367 @@
 .session-list-tags {
-  padding: 6px var(--spacing-md) 8px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-primary);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    padding: 0;
+    background: transparent;
+    border-bottom: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+    transition: all 0.2s ease;
 }
 
 .tags-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-width: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
 }
 
 .tag-search-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1;
 }
 
 .tag-search-input {
-  width: 100%;
-  min-width: 0;
-  height: 36px;
-  padding: 8px 46px 8px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border-primary);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  outline: none;
-  box-sizing: border-box;
-  font-size: 14px;
-  transition: all 0.12s ease;
+    width: 100%;
+    min-width: 0;
+    height: 36px;
+    padding: 8px 46px 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    outline: none;
+    box-sizing: border-box;
+    font-size: 14px;
+    transition: all 0.12s ease;
 }
 
 .tag-search-input::placeholder {
-  color: rgba(var(--text-muted-rgb), 0.85);
+    color: rgba(var(--text-muted-rgb), 0.85);
 }
 
 .tag-search-input:focus {
-  border-color: rgba(var(--accent-rgb), 0.55);
-  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
-  background: var(--bg-elevated);
+    border-color: rgba(var(--accent-rgb), 0.55);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
+    background: var(--bg-elevated);
 }
 
 .tag-search-clear {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.12s ease;
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.12s ease;
 }
 
 .tag-search-clear:hover {
-  background: var(--bg-surface-hover);
-  border-color: var(--border-primary);
-  color: var(--text-secondary);
-  transform: translateY(-50%) scale(1.1);
+    background: var(--bg-surface-hover);
+    border-color: var(--border-primary);
+    color: var(--text-secondary);
+    transform: translateY(-50%) scale(1.1);
 }
 
 .tag-search-clear:active {
-  transform: translateY(-50%) scale(0.95);
+    transform: translateY(-50%) scale(0.95);
 }
 
 .tags-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
 }
 
 .tag-filter-btn,
 .tags-clear-btn {
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  border: 1px solid var(--border-primary);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
-  flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+    flex: 0 0 auto;
 }
 
 .tag-filter-btn:hover,
 .tags-clear-btn:hover {
-  background: var(--bg-surface-hover);
-  border-color: var(--border-hover);
-  transform: scale(1.05);
-  box-shadow: var(--shadow-sm);
+    background: var(--bg-surface-hover);
+    border-color: var(--border-hover);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-sm);
 }
 
 .tag-filter-btn:active,
 .tags-clear-btn:active {
-  transform: scale(0.96);
+    transform: scale(0.96);
 }
 
 .tag-filter-btn:disabled,
 .tags-clear-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .tag-filter-btn.active,
 .tags-clear-btn.active {
-  background: rgba(var(--primary-dark-rgb), 0.18);
-  border-color: rgba(var(--primary-dark-rgb), 0.55);
-  box-shadow: 0 0 0 3px rgba(var(--primary-dark-rgb), 0.18);
+    background: rgba(var(--primary-dark-rgb), 0.18);
+    border-color: rgba(var(--primary-dark-rgb), 0.55);
+    box-shadow: 0 0 0 3px rgba(var(--primary-dark-rgb), 0.18);
 }
 
 .tag-icon-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
 }
 
 .tag-ban-overlay {
-  position: absolute;
-  right: -6px;
-  bottom: -6px;
-  font-size: 10px;
-  color: var(--danger);
+    position: absolute;
+    right: -6px;
+    bottom: -6px;
+    font-size: 10px;
+    color: var(--danger);
 }
 
 .tags-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  width: 100%;
-  min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
 }
 
 .tag-item {
-  border-radius: 999px;
-  border: 1px solid var(--border-primary);
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-secondary);
-  padding: 6px 12px;
-  font-size: 12px;
-  line-height: 1.2;
-  cursor: pointer;
-  white-space: nowrap;
-  max-width: 100%;
-  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+    border-radius: 999px;
+    border: 1px solid var(--border-primary);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    font-size: 12px;
+    line-height: 1.2;
+    cursor: pointer;
+    white-space: nowrap;
+    max-width: 100%;
+    transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
 }
 
 .tag-item:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: var(--border-hover);
-  transform: scale(1.02);
-  box-shadow: var(--shadow-xs);
+    background: rgba(255, 255, 255, 0.09);
+    border-color: var(--border-hover);
+    transform: scale(1.02);
+    box-shadow: var(--shadow-xs);
 }
 
 .tag-item:active {
-  transform: scale(0.98);
+    transform: scale(0.98);
 }
 
 .tag-item.active {
-  background: rgba(var(--primary-dark-rgb), 0.18);
-  border-color: rgba(var(--primary-dark-rgb), 0.55);
-  box-shadow: 0 0 0 3px rgba(var(--primary-dark-rgb), 0.18);
+    background: rgba(var(--primary-dark-rgb), 0.18);
+    border-color: rgba(var(--primary-dark-rgb), 0.55);
+    box-shadow: 0 0 0 3px rgba(var(--primary-dark-rgb), 0.18);
 }
 
 .tag-item.tag-expand-btn {
-  background: transparent;
-  border-style: dashed;
-  color: rgba(var(--text-muted-rgb), 0.95);
+    background: transparent;
+    border-style: dashed;
+    color: rgba(var(--text-muted-rgb), 0.95);
 }
 
 .tag-item.tag-expand-btn:hover {
-  border-color: rgba(var(--primary-dark-rgb), 0.55);
-  color: rgba(var(--primary-dark-rgb), 0.9);
-  transform: none;
+    border-color: rgba(var(--primary-dark-rgb), 0.55);
+    color: rgba(var(--primary-dark-rgb), 0.9);
+    transform: none;
 }
 
 .tag-item.tag-no-tags {
-  color: rgba(var(--text-muted-rgb), 0.95);
+    color: rgba(var(--text-muted-rgb), 0.95);
 }
 
 .tag-item.dragging {
-  opacity: 0.55;
-  transform: scale(0.98);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0.55;
+    transform: scale(0.98);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .tag-item.drag-hover {
-  border-color: rgba(var(--accent-rgb), 0.55);
-  background: rgba(var(--accent-rgb), 0.12);
+    border-color: rgba(var(--accent-rgb), 0.55);
+    background: rgba(var(--accent-rgb), 0.12);
 }
 
 .tag-item.drag-over-top {
-  border-color: rgba(var(--accent-rgb), 0.55);
-  box-shadow: inset 0 3px 0 rgba(var(--accent-rgb), 0.95);
+    border-color: rgba(var(--accent-rgb), 0.55);
+    box-shadow: inset 0 3px 0 rgba(var(--accent-rgb), 0.95);
 }
 
 .tag-item.drag-over-bottom {
-  border-color: rgba(var(--accent-rgb), 0.55);
-  box-shadow: inset 0 -3px 0 rgba(var(--accent-rgb), 0.95);
+    border-color: rgba(var(--accent-rgb), 0.55);
+    box-shadow: inset 0 -3px 0 rgba(var(--accent-rgb), 0.95);
+}
+
+.tag-item.drag-over-left {
+    border-color: rgba(var(--accent-rgb), 0.55);
+    box-shadow: inset 3px 0 0 rgba(var(--accent-rgb), 0.95);
+}
+
+.tag-item.drag-over-right {
+    border-color: rgba(var(--accent-rgb), 0.55);
+    box-shadow: inset -3px 0 0 rgba(var(--accent-rgb), 0.95);
+}
+
+/* 桌面端：SessionListTags 内部也改为行布局 */
+@media (min-width: 1025px) {
+    .session-list-tags {
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .tags-header {
+        flex: 0 0 auto;
+        width: auto;
+        gap: 8px;
+    }
+
+    .tag-search-container {
+        width: 200px;
+        flex: 0 0 auto;
+    }
+
+    .tags-list {
+        flex: 1;
+        justify-content: flex-start;
+        overflow: hidden;
+    }
+
+    .tags-list .tag-item {
+        flex-shrink: 0;
+    }
+}
+
+/* 超宽屏优化 */
+@media (min-width: 1440px) {
+    .session-list-tags {
+        gap: 16px;
+    }
+
+    .tag-search-container {
+        width: 240px;
+    }
+}
+
+/* 平板端优化 */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .session-list-tags {
+        gap: 8px;
+    }
+
+    .tag-search-container {
+        flex: 0 0 180px;
+    }
 }
 
 /* 响应式优化 - 移动端触摸目标 */
 @media (max-width: 768px) {
-  .tag-item {
-    padding: 12px 16px;
-    min-height: 44px;
-  }
+    .session-list-tags {
+        gap: 8px;
+    }
 
-  .tag-filter-btn,
-  .tags-clear-btn {
-    width: 44px;
-    height: 44px;
-    min-height: 44px;
-  }
+    .tag-item {
+        padding: 10px 14px;
+        min-height: 44px;
+        font-size: 13px;
+    }
 
-  .tag-search-input {
-    height: 44px;
-    padding: 10px 46px 10px 14px;
-  }
+    .tag-filter-btn,
+    .tags-clear-btn {
+        width: 44px;
+        height: 44px;
+        min-height: 44px;
+    }
 
-  .session-list-tags {
-    padding: 10px var(--spacing-md);
-  }
+    .tag-search-input {
+        height: 40px;
+        padding: 9px 44px 9px 12px;
+        font-size: 14px;
+    }
+
+    .tags-header-actions {
+        gap: 6px;
+    }
+}
+
+/* 小屏手机优化 */
+@media (max-width: 480px) {
+    .tags-header {
+        gap: 8px;
+    }
+
+    .tag-search-container {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .tags-header-actions {
+        gap: 4px;
+    }
+
+    .tag-filter-btn,
+    .tags-clear-btn {
+        width: 38px;
+        height: 38px;
+    }
+
+    .tags-list {
+        gap: 6px;
+    }
+
+    .tag-item {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
 }
 
 /* 尊重用户减少动画偏好 */
 @media (prefers-reduced-motion: reduce) {
-  .tag-item,
-  .tag-filter-btn,
-  .tags-clear-btn,
-  .tag-search-clear,
-  .tag-search-input {
-    transition: none;
-  }
+    .tag-item,
+    .tag-filter-btn,
+    .tags-clear-btn,
+    .tag-search-clear,
+    .tag-search-input {
+        transition: none;
+    }
 
-  .tag-item:hover,
-  .tag-filter-btn:hover,
-  .tags-clear-btn:hover,
-  .tag-search-clear:hover {
-    transform: none;
-  }
+    .tag-item:hover,
+    .tag-filter-btn:hover,
+    .tags-clear-btn:hover,
+    .tag-search-clear:hover {
+        transform: none;
+    }
 }

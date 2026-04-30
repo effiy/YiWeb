@@ -72,6 +72,9 @@ const sessionListTagsMethods = {
         e.dataTransfer.setData('text/plain', tag);
         e.currentTarget.classList.add('dragging');
 
+        // 缓存拖拽方向，避免 dragover 高频事件中触发强制同步布局
+        this._dragDirectionHorizontal = this.isHorizontalDrag();
+
         const dragImage = e.currentTarget.cloneNode(true);
         dragImage.style.opacity = '0.8';
         dragImage.style.transform = 'rotate(3deg)';
@@ -87,12 +90,20 @@ const sessionListTagsMethods = {
             }
         }, 0);
     },
+    isHorizontalDrag() {
+        const header = this.$el ? this.$el.closest('.aicr-header') : document.querySelector('.aicr-header');
+        if (!header) return false;
+        return getComputedStyle(header).flexDirection === 'row';
+    },
     handleDragEnd(e) {
         e.currentTarget.classList.remove('dragging');
 
-        document.querySelectorAll('.tag-item').forEach(item => {
-            item.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+        const container = this.$el || document;
+        container.querySelectorAll('.tag-item').forEach(item => {
+            item.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-left', 'drag-over-right', 'drag-hover');
         });
+
+        delete this._dragDirectionHorizontal;
     },
     handleDragOver(e) {
         e.preventDefault();
@@ -104,20 +115,35 @@ const sessionListTagsMethods = {
         }
 
         const rect = e.currentTarget.getBoundingClientRect();
-        const midY = rect.top + rect.height / 2;
+        const isHorizontal = this._dragDirectionHorizontal !== undefined
+            ? this._dragDirectionHorizontal
+            : this.isHorizontalDrag();
 
-        document.querySelectorAll('.tag-item').forEach(item => {
+        const container = this.$el || document;
+        container.querySelectorAll('.tag-item').forEach(item => {
             if (!item.classList.contains('dragging')) {
-                item.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+                item.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-left', 'drag-over-right', 'drag-hover');
             }
         });
 
-        if (e.clientY < midY) {
-            e.currentTarget.classList.add('drag-over-top');
-            e.currentTarget.classList.remove('drag-over-bottom');
+        if (isHorizontal) {
+            const midX = rect.left + rect.width / 2;
+            if (e.clientX < midX) {
+                e.currentTarget.classList.add('drag-over-left');
+                e.currentTarget.classList.remove('drag-over-right');
+            } else {
+                e.currentTarget.classList.add('drag-over-right');
+                e.currentTarget.classList.remove('drag-over-left');
+            }
         } else {
-            e.currentTarget.classList.add('drag-over-bottom');
-            e.currentTarget.classList.remove('drag-over-top');
+            const midY = rect.top + rect.height / 2;
+            if (e.clientY < midY) {
+                e.currentTarget.classList.add('drag-over-top');
+                e.currentTarget.classList.remove('drag-over-bottom');
+            } else {
+                e.currentTarget.classList.add('drag-over-bottom');
+                e.currentTarget.classList.remove('drag-over-top');
+            }
         }
 
         e.currentTarget.classList.add('drag-hover');
@@ -128,7 +154,7 @@ const sessionListTagsMethods = {
         const y = e.clientY;
 
         if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-            e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+            e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-left', 'drag-over-right', 'drag-hover');
         }
     },
     handleDrop(e, targetTag) {
@@ -150,12 +176,21 @@ const sessionListTagsMethods = {
         }
 
         const rect = e.currentTarget.getBoundingClientRect();
-        const midY = rect.top + rect.height / 2;
+        const isHorizontal = this._dragDirectionHorizontal !== undefined
+            ? this._dragDirectionHorizontal
+            : this.isHorizontalDrag();
         let insertIndex = targetIndex;
-        if (e.clientY < midY) {
-            insertIndex = targetIndex;
+
+        if (isHorizontal) {
+            const midX = rect.left + rect.width / 2;
+            if (e.clientX >= midX) {
+                insertIndex = targetIndex + 1;
+            }
         } else {
-            insertIndex = targetIndex + 1;
+            const midY = rect.top + rect.height / 2;
+            if (e.clientY >= midY) {
+                insertIndex = targetIndex + 1;
+            }
         }
 
         const newOrder = [...currentOrder];
@@ -167,7 +202,7 @@ const sessionListTagsMethods = {
 
         this.saveTagOrder(newOrder);
 
-        e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-hover');
+        e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-left', 'drag-over-right', 'drag-hover');
     }
 };
 

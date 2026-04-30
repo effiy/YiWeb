@@ -1,12 +1,16 @@
-调用 generate-document 技能生成文档。
+调用 `generate-document` 技能生成或更新文档。
 
-参数：$ARGUMENTS
+参数：`$ARGUMENTS`
 
-常用示例：
+## 命令速查
 
-- `/generate-document <功能名>-<一句话描述>`：生成 `docs/<功能名>/` 下全文档编号集（01-05, 07）
-- `/generate-document weekly`：生成周报（单文档），落盘到 `docs/周报/<YYYY-MM-DD>~<YYYY-MM-DD>/周报.md`（例：`docs/周报/2026-04-27~2026-05-03/周报.md`）
-- `/generate-document weekly <日期或起止日期>`：按自然周（周一~周日）生成周报
-- `/generate-document from-weekly docs/周报/<YYYY-MM-DD>~<YYYY-MM-DD>/周报.md`：从该周报「后期规划与改进」梳理需求，生成**多个** `docs/<功能名>/` 全文档编号集（01–05、07）；收尾仍为一次 `import-docs` + 一条汇总 `wework-bot`
+| 命令 | 作用 |
+|------|------|
+| `init` | 初始化项目基础文件 + `docs/项目初始化/` 全文档集 |
+| `<功能名>-<描述>` | 生成/更新 `docs/<功能名>/` 下文档集（01-05, 07） |
+| `weekly [日期]` | 生成/更新本周周报 |
+| `from-weekly <周报路径>` | 从周报「后期规划」拆解为多个功能文档集 |
 
-请使用 Skill 工具调用 generate-document 技能，传入上述参数。
+所有命令可反复调用，已存在则增量更新。每次结束必须先 `import-docs` 再 `wework-bot`。
+
+详细规则见 `skills/generate-document/SKILL.md` 与 `README.md`。

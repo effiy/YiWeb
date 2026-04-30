@@ -4,23 +4,22 @@
 
 ## 目录职责
 
-| 目录 | 作用 | 是否为稳定入口 |
-|------|------|---------------|
-| `commands/` | Slash Command 包装层，只负责转调 skill | 是 |
-| `skills/` | 可被直接调用的技能定义，`SKILL.md` 是技能真源 | 是 |
-| `agents/` | 专家代理定义，负责角色、输入输出和必答问题 | 是 |
-| `eval/` | 评测示例：`eval/skills/`、`eval/agents/`（首期 wework-bot + message-pusher），非真源 | 否 |
-| `scripts/` | 编排会话日志等辅助脚本（如 `log-orchestration.js`），由技能文档引用，非 Slash 入口 | 否 |
-| `shared/` | 共享解释性文档，统一约定、路径和边界说明 | 否 |
+| 目录        | 作用                                                                                 | 是否为稳定入口 |
+| ----------- | ------------------------------------------------------------------------------------ | -------------- |
+| `commands/` | Slash Command 包装层，只负责转调 skill                                               | 是             |
+| `skills/`   | 可被直接调用的技能定义，`SKILL.md` 是技能真源                                        | 是             |
+| `agents/`   | 专家代理定义，负责角色、输入输出和必答问题                                           | 是             |
+| `eval/`     | 评测示例：`eval/skills/`、`eval/agents/`（首期 wework-bot + message-pusher），非真源 | 否             |
+| `shared/`   | 共享解释性文档，统一约定、路径和边界说明                                             | 否             |
 
 ## 真源规则
 
 1. `commands/*.md` 只保留一句话入口说明，不承载领域规则。
 2. `skills/<name>/SKILL.md` 是该 skill 的行为真源。
 3. `skills/<name>/README.md` 仅用于快速开始、导航和索引，不重复完整规则。
-4. `skills/<name>/rules/*.md` 定义结构契约。
-5. `skills/<name>/templates/*.md` 只提供可选骨架，不得覆盖 `rules/`。
-6. `skills/<name>/checklists/*.md` 定义验收项，`checklist.md` 仅作为入口索引。
+4. `skills/<name>/rules/*.md` 定义结构契约（部分 skill 提供，非必需）。
+5. `skills/<name>/templates/*.md` 只提供可选骨架，不得覆盖 `rules/`（部分 skill 提供，非必需）。
+6. `skills/<name>/checklists/*.md` 定义验收项，`checklist.md` 仅作为入口索引（部分 skill 提供，非必需）。
 7. `agents/*.md` 只描述代理角色，不复制 skill 的完整流程。
 
 ## 推荐阅读顺序

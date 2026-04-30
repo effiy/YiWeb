@@ -17,7 +17,7 @@ const SCRIPT_DIR = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(SCRIPT_DIR, '../../../..');
 const CLAUDE_ROOT = path.join(PROJECT_ROOT, '.claude');
 const DEFAULT_CONFIG_BASE = path.join(CLAUDE_ROOT, 'skills/wework-bot/config.json');
-const DEFAULT_API_URL = 'https://api.example.com/wework/send-message';
+const DEFAULT_API_URL = 'https://api.effiy.cn/wework/send-message';
 
 /** X-Token 仅从系统环境变量 `API_X_TOKEN` 读取，不接受配置文件或其它来源。 */
 function readApiXTokenFromEnv() {
