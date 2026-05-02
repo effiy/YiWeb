@@ -91,9 +91,14 @@ const sessionListTagsMethods = {
         }, 0);
     },
     isHorizontalDrag() {
-        const header = this.$el ? this.$el.closest('.aicr-header') : document.querySelector('.aicr-header');
-        if (!header) return false;
-        return getComputedStyle(header).flexDirection === 'row';
+        // 查询实际的标签列表容器而非祖先 header，
+        // 因为布局重构后 .aicr-header 改为 column，
+        // 而 .tags-list 始终为 row 方向（即使换行也是水平 flex）
+        const list = this.$el
+            ? this.$el.querySelector('.tags-list')
+            : document.querySelector('.tags-list');
+        if (!list) return false;
+        return getComputedStyle(list).flexDirection === 'row';
     },
     handleDragEnd(e) {
         e.currentTarget.classList.remove('dragging');

@@ -4,22 +4,33 @@
  * 说明：AICR 页面头部组件样式
  */
 
-/* 优化头部区域为 flex 单行布局 */
+/* 优化头部区域为 flex 双行布局：
+   第一行：header-row（搜索）+ tags-header（标签控制）
+   第二行：tags-list（标签列表，居中） */
 .aicr-header {
     padding: 10px var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    min-height: auto;
+    transition: all 0.2s ease;
+}
+
+/* 顶部控件行：搜索 + 标签控制按钮合并到同一行 */
+.header-top-row {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 16px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-primary);
-    min-height: 64px;
-    transition: all 0.2s ease;
+    flex-wrap: wrap;
 }
 
 /* SearchHeader 集成优化：移除独立背景和边框，与整体风格统一 */
 /* 注意：SearchHeader 渲染后根元素为 .header-row，不保留 search-header 标签 */
-.aicr-header > .header-row {
+.header-top-row .header-row {
     flex: 0 1 auto;
     max-width: 420px;
     min-width: 280px;
@@ -36,21 +47,28 @@
     gap: 12px;
 }
 
-.aicr-header > .header-row .header-center {
+.header-top-row .header-row .header-center {
     max-width: 420px;
 }
 
-.aicr-header > .header-row .search-box textarea {
+.header-top-row .header-row .search-box textarea {
     height: 40px;
     min-height: 40px;
 }
 
-/* 桌面端：session-list-tags 填充剩余空间 */
+/* 桌面端：header-top-row 横向排列，tags-list 独占一行居中 */
 @media (min-width: 1025px) {
+    .header-top-row {
+        flex-wrap: nowrap;
+    }
+
     .aicr-header .session-list-tags {
         flex: 1;
         min-width: 0;
-        overflow: hidden;
+    }
+
+    .tags-list {
+        justify-content: center;
     }
 }
 
@@ -64,8 +82,18 @@
         align-items: stretch;
     }
 
-    .aicr-header > .header-row .header-center {
+    .header-top-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .header-top-row .header-row .header-center {
         max-width: 600px;
+    }
+
+    .aicr-header .session-list-tags {
+        width: 100%;
     }
 }
 
@@ -75,15 +103,19 @@
         padding: 12px var(--spacing-md);
         gap: 10px;
     }
+
+    .header-top-row {
+        gap: 10px;
+    }
 }
 
 /* 超宽屏优化 */
 @media (min-width: 1440px) {
     .aicr-header {
-        gap: 24px;
+        gap: 16px;
     }
 
-    .aicr-header > .header-row .header-center {
+    .header-top-row .header-row .header-center {
         max-width: 520px;
     }
 }

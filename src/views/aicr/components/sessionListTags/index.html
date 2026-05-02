@@ -1,76 +1,77 @@
 <!-- 会话标签筛选器组件 -->
-<div
-    class="session-list-tags">
-    <div class="tags-header">
-        <!-- 标签搜索框 -->
-        <div class="tag-search-container">
-            <input
-                type="text"
-                class="tag-search-input"
-                :value="tagFilterSearchKeyword"
-                @input="updateTagSearch($event.target.value)"
-                placeholder="搜索标签..."
-                aria-label="搜索标签">
-            <yi-icon-button
-                v-if="tagFilterSearchKeyword"
-                type="button"
-                class-name="tag-search-clear"
-                @click="updateTagSearch('')"
-                title="清除搜索"
-                aria-label="清除搜索">
-                <i class="fas fa-times" aria-hidden="true"></i>
-            </yi-icon-button>
-        </div>
-        <div class="tags-header-actions">
-            <!-- 筛选无标签按钮 -->
-            <button
-                type="button"
-                class="tag-filter-btn tag-filter-no-tags-btn"
-                :class="{ active: tagFilterNoTags }"
-                @click="toggleNoTags"
-                :title="tagFilterNoTags ? '取消筛选无标签文件' : '筛选没有标签的文件'"
-                aria-label="筛选无标签">
-                <span class="tag-icon-wrapper">
-                    <i class="fas fa-tag" aria-hidden="true"></i>
+<div class="session-list-tags">
+    <div class="header-top-row">
+        <div class="tags-header">
+            <!-- 标签搜索框 -->
+            <div class="tag-search-container">
+                <input
+                    type="text"
+                    class="tag-search-input"
+                    :value="tagFilterSearchKeyword"
+                    @input="updateTagSearch($event.target.value)"
+                    placeholder="搜索标签..."
+                    aria-label="搜索标签">
+                <yi-icon-button
+                    v-if="tagFilterSearchKeyword"
+                    type="button"
+                    class-name="tag-search-clear"
+                    @click="updateTagSearch('')"
+                    title="清除搜索"
+                    aria-label="清除搜索">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </yi-icon-button>
+            </div>
+            <div class="tags-header-actions">
+                <!-- 筛选无标签按钮 -->
+                <button
+                    type="button"
+                    class="tag-filter-btn tag-filter-no-tags-btn"
+                    :class="{ active: tagFilterNoTags }"
+                    @click="toggleNoTags"
+                    :title="tagFilterNoTags ? '取消筛选无标签文件' : '筛选没有标签的文件'"
+                    aria-label="筛选无标签">
+                    <span class="tag-icon-wrapper">
+                        <i class="fas fa-tag" aria-hidden="true"></i>
+                        <i
+                            v-if="tagFilterNoTags"
+                            class="fas fa-ban tag-ban-overlay"
+                            aria-hidden="true"></i>
+                    </span>
+                </button>
+                <!-- 反向过滤按钮 -->
+                <button
+                    type="button"
+                    class="tag-filter-btn tag-filter-reverse"
+                    :class="{ active: tagFilterReverse }"
+                    @click="toggleReverse"
+                    :title="tagFilterReverse ? '取消反向过滤' : '反向过滤（排除选中标签）'"
+                    aria-label="反向过滤">
+                    <i class="fas fa-exchange-alt" aria-hidden="true"></i>
+                </button>
+                <!-- 展开/折叠按钮 -->
+                <button
+                    type="button"
+                    class="tag-filter-btn"
+                    :class="{ active: tagFilterExpanded }"
+                    @click="toggleExpand"
+                    :title="tagFilterExpanded ? '收起标签列表' : '展开标签列表'"
+                    aria-label="展开/折叠标签">
                     <i
-                        v-if="tagFilterNoTags"
-                        class="fas fa-ban tag-ban-overlay"
+                        class="fas"
+                        :class="tagFilterExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"
                         aria-hidden="true"></i>
-                </span>
-            </button>
-            <!-- 反向过滤按钮 -->
-            <button
-                type="button"
-                class="tag-filter-btn tag-filter-reverse"
-                :class="{ active: tagFilterReverse }"
-                @click="toggleReverse"
-                :title="tagFilterReverse ? '取消反向过滤' : '反向过滤（排除选中标签）'"
-                aria-label="反向过滤">
-                <i class="fas fa-exchange-alt" aria-hidden="true"></i>
-            </button>
-            <!-- 展开/折叠按钮 -->
-            <button
-                type="button"
-                class="tag-filter-btn"
-                :class="{ active: tagFilterExpanded }"
-                @click="toggleExpand"
-                :title="tagFilterExpanded ? '收起标签列表' : '展开标签列表'"
-                aria-label="展开/折叠标签">
-                <i
-                    class="fas"
-                    :class="tagFilterExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"
-                    aria-hidden="true"></i>
-            </button>
-            <!-- 清除所有过滤按钮 -->
-            <button
-                type="button"
-                class="tags-clear-btn"
-                :class="{ active: selectedTags && (selectedTags.length > 0 || tagFilterNoTags || tagFilterSearchKeyword) }"
-                :disabled="!selectedTags || (selectedTags.length === 0 && !tagFilterNoTags && !tagFilterSearchKeyword)"
-                @click="clearAllFilters"
-                :title="(selectedTags && (selectedTags.length > 0 || tagFilterNoTags || tagFilterSearchKeyword)) ? '清除所有过滤条件' : '无过滤条件'">
-                <i class="fas fa-times" aria-hidden="true"></i>
-            </button>
+                </button>
+                <!-- 清除所有过滤按钮 -->
+                <button
+                    type="button"
+                    class="tags-clear-btn"
+                    :class="{ active: selectedTags && (selectedTags.length > 0 || tagFilterNoTags || tagFilterSearchKeyword) }"
+                    :disabled="!selectedTags || (selectedTags.length === 0 && !tagFilterNoTags && !tagFilterSearchKeyword)"
+                    @click="clearAllFilters"
+                    :title="(selectedTags && (selectedTags.length > 0 || tagFilterNoTags || tagFilterSearchKeyword)) ? '清除所有过滤条件' : '无过滤条件'">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
         </div>
     </div>
 
