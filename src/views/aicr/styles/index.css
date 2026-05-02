@@ -15,7 +15,7 @@ html, body {
 }
 
 #app {
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
 }
@@ -33,7 +33,7 @@ html, body {
     background: var(--bg-primary);
     min-width: 320px;
     position: relative;
-    overflow: hidden;
+    overflow: auto;
 }
 
 /* ========== 侧边栏（文件树） ========== */

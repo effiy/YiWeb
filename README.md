@@ -19,11 +19,11 @@ YiWeb 是一个使用原生 JavaScript + Vue 3 构建的前端项目，专注于
 
 ```bash
 cd /var/www/YiWeb
-python -m http.server 8000
+python -m http.server 8080
 ```
 
 **访问应用**：
-- AICR: `http://localhost:8000/src/views/aicr/index.html`
+- AICR: `http://localhost:8080/src/views/aicr/index.html`
 
 **环境切换**：
 - URL 参数: `?env=local`

@@ -9,7 +9,7 @@
     flex-direction: row;
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow: auto;
 }
 
 /* 响应式调整 */

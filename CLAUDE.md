@@ -59,12 +59,12 @@
 ## 构建与运行
 
 - 安装：无需安装依赖
-- 开发：使用 `python -m http.server 8000` 启动本地服务器
+- 开发：使用 `python -m http.server 8080` 启动本地服务器
 - 构建：无需构建
 - 测试：待补充
 
 访问应用：
-- AICR：http://localhost:8000/src/views/aicr/index.html
+- AICR：http://localhost:8080/src/views/aicr/index.html
 
 环境切换：
 - URL 参数：`?env=local`
