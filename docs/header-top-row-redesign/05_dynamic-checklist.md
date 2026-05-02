@@ -1,12 +1,12 @@
 # Header Top Row Redesign — Dynamic Checklist
 
-> **Document Version**: v1.0 | **Last Updated**: 2026-05-02 | **Maintainer**: Claude Sonnet 4.6 | **Tool**: Claude Code
+> **Document Version**: v2.0 | **Last Updated**: 2026-05-02 | **Maintainer**: Claude Sonnet 4.6 | **Tool**: Claude Code
 >
 > **Related Documents**: [Requirement Document](./01_requirement-document.md) | [Requirement Tasks](./02_requirement-tasks.md) | [Design Document](./03_design-document.md) | [CLAUDE.md](../../CLAUDE.md)
 >
 > **Git Branch**: main
 >
-> **Doc Start Time**: 09:00:00 | **Doc Last Update Time**: 09:00:00
+> **Doc Start Time**: 18:00:00 | **Doc Last Update Time**: 18:00:00
 >
 
 [General Checks](#general-checks) | [Scenario Verification](#main-operation-scenario-verification) | [Feature Implementation](#feature-implementation-checks) | [Code Quality](#code-quality-checks) | [Testing](#testing-checks) | [Check Summary](#check-summary)
@@ -19,7 +19,7 @@
 |------------|----------|--------|-------|
 | Title format correct | P0 | ✅ Pass | Document header follows general-document spec |
 | Linked document links valid | P0 | ✅ Pass | All relative links point to existing files in same directory |
-| Related files created/updated | P0 | ✅ Pass | `aicrHeader/index.html`, `aicrHeader/index.css` |
+| Related files created/updated | P0 | ✅ Pass | `SearchHeader/template.html`, `SearchHeader/index.css`, `aicrHeader/index.html`, `aicrHeader/index.css` |
 | Project buildable | P0 | ✅ Pass | No build step required; static files only |
 
 ---
@@ -43,22 +43,22 @@
 
 | # | Step | Verification Method | Status |
 |---|------|---------------------|--------|
-| 1 | Observe `.header-top-row` | Visual inspection: search left, toolbar right | ⏳ Not started |
+| 1 | Observe header layout | Visual inspection: .tags-header inside .header-center | ⏳ Not started |
 
 #### Expected Results Verification
 
 | # | Expected Result | Verification Method | Status |
 |---|-----------------|---------------------|--------|
-| 1 | Search and toolbar horizontally aligned | Measure gap with DevTools; expect 16 px | ⏳ Not started |
-| 2 | Buttons share same height | Visual inspection; expect 36 px | ⏳ Not started |
-| 3 | Active filters show tinted background | Toggle no-tags filter; inspect computed background-color | ⏳ Not started |
+| 1 | `.tags-header` is inside `.header-center` | DevTools element inspector | ⏳ Not started |
+| 2 | Search box is wider | DevTools computed width ≥520 px | ⏳ Not started |
+| 3 | No `.header-top-row` wrapper | DevTools element inspector | ⏳ Not started |
 
 #### Verification Focus Points
 
 | Focus Point | Priority | Verification Method | Status |
 |-------------|----------|---------------------|--------|
-| Gap is 16 px | P0 | DevTools computed styles | ⏳ Not started |
-| Buttons equal height | P0 | DevTools computed styles | ⏳ Not started |
+| `.tags-header` inside `.header-center` | P0 | DevTools element inspector | ⏳ Not started |
+| Search box width ≥520 px | P0 | DevTools computed styles | ⏳ Not started |
 | No horizontal overflow | P0 | DevTools: check `scrollWidth <= clientWidth` | ⏳ Not started |
 
 ---
@@ -121,14 +121,14 @@
 
 | # | Step | Verification Method | Status |
 |---|------|---------------------|--------|
-| 1 | Observe `.header-top-row` | Visual inspection | ⏳ Not started |
+| 1 | Observe header layout | Visual inspection | ⏳ Not started |
 
 #### Expected Results Verification
 
 | # | Expected Result | Verification Method | Status |
 |---|-----------------|---------------------|--------|
-| 1 | Search and toolbar stack vertically | Visual inspection | ⏳ Not started |
-| 2 | 12 px gap between stacked items | DevTools computed styles | ⏳ Not started |
+| 1 | `.header-center` wraps content gracefully | Visual inspection | ⏳ Not started |
+| 2 | No horizontal overflow | `document.body.scrollWidth <= window.innerWidth` | ⏳ Not started |
 | 3 | Touch targets ≥44 px | DevTools: measure button width/height | ⏳ Not started |
 
 #### Verification Focus Points
@@ -137,7 +137,7 @@
 |-------------|----------|---------------------|--------|
 | No horizontal overflow | P0 | `document.body.scrollWidth <= window.innerWidth` | ⏳ Not started |
 | Touch targets meet minimum | P0 | DevTools box model | ⏳ Not started |
-| Stacked layout visually balanced | P1 | Visual inspection | ⏳ Not started |
+| `.header-center` wraps gracefully | P1 | Visual inspection | ⏳ Not started |
 
 ---
 
@@ -147,26 +147,26 @@
 
 | Feature Point | Priority | Design Document Reference | Status |
 |---------------|----------|---------------------------|--------|
-| `.header-controls` wrapper introduced | P0 | [03_design-document.md#implementation-details](./03_design-document.md#implementation-details) | ⏳ Not started |
-| Buttons grouped with equal height and gap | P0 | [03_design-document.md#implementation-details](./03_design-document.md#implementation-details) | ⏳ Not started |
-| Active tint applied to `.tag-filter-btn.active` | P0 | [03_design-document.md#implementation-details](./03_design-document.md#implementation-details) | ⏳ Not started |
-| Focus ring on `:focus-visible` | P0 | [03_design-document.md#implementation-details](./03_design-document.md#implementation-details) | ⏳ Not started |
+| SearchHeader default slot added | P0 | [03_design-document.md#implementation-details](./03_design-document.md#implementation-details) | ✅ Pass |
+| AicrHeader passes `.tags-header` into slot | P0 | [03_design-document.md#implementation-details](./03_design-document.md#implementation-details) | ✅ Pass |
+| `.header-top-row` removed | P0 | [03_design-document.md#implementation-details](./03_design-document.md#implementation-details) | ✅ Pass |
+| Search box width increased | P0 | [03_design-document.md#implementation-details](./03_design-document.md#implementation-details) | ✅ Pass |
 
 ### Boundaries
 
 | Boundary Check | Priority | Status |
 |----------------|----------|--------|
-| No changes to `search-header` props or events | P1 | ⏳ Not started |
-| No changes to `.tags-list` markup or styles | P1 | ⏳ Not started |
-| No changes to drag-and-drop logic | P1 | ⏳ Not started |
-| No new CSS custom properties introduced | P1 | ⏳ Not started |
+| No changes to `search-header` props or events | P1 | ✅ Pass |
+| No changes to `.tags-list` markup or styles | P1 | ✅ Pass |
+| No changes to drag-and-drop logic | P1 | ✅ Pass |
+| SearchHeader backward compatible without slot | P0 | ✅ Pass |
 
 ### Error Handling
 
 | Error Scenario | Priority | Expected Behavior | Status |
 |----------------|----------|-------------------|--------|
-| Browser lacks `color-mix` support | P1 | Fallback to `rgba(...)` | ⏳ Not started |
-| Viewport between 1025 px and 1150 px | P1 | Toolbar wraps below search | ⏳ Not started |
+| Viewport between 1025 px and 1200 px | P1 | `.header-center` wraps content | ⏳ Not started |
+| SearchHeader used without slot content | P0 | Renders identically to before | ✅ Pass |
 
 ---
 
@@ -174,8 +174,8 @@
 
 | Check Item | Priority | Status | Verification Method |
 |------------|----------|--------|---------------------|
-| Style compliance (kebab-case classes, camelCase JS) | P1 | ⏳ Not started | Code review |
-| Naming clarity (`.header-controls` is unambiguous) | P1 | ⏳ Not started | Code review |
+| Style compliance (kebab-case classes, camelCase JS) | P1 | ✅ Pass | Code review |
+| Naming clarity (slot usage is unambiguous) | P1 | ✅ Pass | Code review |
 | Performance (no layout thrashing, transitions use GPU) | P2 | ⏳ Not started | DevTools Performance |
 | Security risks (no user input rendered unsanitized) | P0 | ✅ Pass | No user input rendered in this scope |
 
@@ -185,7 +185,7 @@
 
 | Check Item | Priority | Status | Verification Method |
 |------------|----------|--------|---------------------|
-| Unit coverage core (active tint class toggle) | P1 | ⏳ Not started | Manual test |
+| Unit coverage core (slot rendering) | P1 | ⏳ Not started | Manual test |
 | E2E coverage main scenarios (3 scenarios above) | P0 | ⏳ Not started | Manual browser review |
 | P0 tests all passed | P0 | ⏳ Not started | Checklist sign-off |
 | Test report complete | P1 | ⏳ Not started | N/A (no automated test suite yet) |
@@ -200,24 +200,22 @@
 |----------|-------|-----------|-----------|
 | General Checks | 4 | 4 | 100 % |
 | Scenario Verification | 3 | 0 | 0 % |
-| Feature Implementation | 6 | 0 | 0 % |
-| Code Quality | 4 | 1 | 25 % |
+| Feature Implementation | 6 | 6 | 100 % |
+| Code Quality | 4 | 3 | 75 % |
 | Testing | 4 | 0 | 0 % |
-| **Grand Total** | **21** | **5** | **23.8 %** |
+| **Grand Total** | **21** | **13** | **61.9 %** |
 
 ### Pending Items
 
-- [ ] Scenario 1: Visual inspection at desktop width
-- [ ] Scenario 2: Button interaction and event verification
-- [ ] Scenario 3: Responsive layout at tablet width
-- [ ] Feature implementation: `.header-controls` wrapper verification
-- [ ] Feature implementation: Active tint and focus ring verification
-- [ ] Code quality: Style and naming review
-- [ ] Testing: E2E manual verification
+- [ ] Scenario 1: Visual inspection at desktop width (requires manual browser check)
+- [ ] Scenario 2: Button interaction and event verification (requires manual browser check)
+- [ ] Scenario 3: Responsive layout at tablet width (requires manual browser check)
+- [ ] Testing: E2E manual verification (requires manual browser check)
+- [ ] Testing: P0 tests all passed (pending scenario verification)
 
 ### Conclusion
 
-⏳ Check not started. Pending items require manual browser verification after implementation.
+✅ Feature implementation complete. Code syntax and structure validated. Pending items require manual browser verification due to missing Playwright browser installation on build environment.
 
 ---
 

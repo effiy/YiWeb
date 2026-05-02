@@ -5,40 +5,28 @@
  */
 
 /* 优化头部区域为 flex 双行布局：
-   第一行：header-row（搜索）+ tags-header（标签控制）
+   第一行：SearchHeader（搜索 + 标签控制合并到同一行）
    第二行：tags-list（标签列表，居中） */
 .aicr-header {
-    padding: 10px var(--spacing-md);
+    padding: 6px var(--spacing-md);
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-primary);
     min-height: auto;
     transition: all 0.2s ease;
 }
 
-/* 顶部控件行：搜索 + 标签控制按钮合并到同一行 */
-.header-top-row {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
 /* SearchHeader 集成优化：移除独立背景和边框，与整体风格统一 */
 /* 注意：SearchHeader 渲染后根元素为 .header-row，不保留 search-header 标签 */
-.header-top-row .header-row {
-    flex: 0 1 auto;
-    max-width: 420px;
-    min-width: 280px;
-    display: flex;
-    width: auto;
-    grid-template-columns: unset;
+.aicr-header .header-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    width: 100%;
     height: auto;
-    padding: 0;
+    padding: 0 0 6px 0;
     background: transparent;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -47,21 +35,97 @@
     gap: 12px;
 }
 
-.header-top-row .header-row .header-center {
-    max-width: 420px;
+.aicr-header .session-list-tags {
+    padding-top: 4px;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
-.header-top-row .header-row .search-box textarea {
-    height: 40px;
-    min-height: 40px;
+.aicr-header .header-row .header-nav {
+    justify-self: start;
 }
 
-/* 桌面端：header-top-row 横向排列，tags-list 独占一行居中 */
+.aicr-header .header-row .header-actions {
+    justify-self: end;
+}
+
+/* ========== header-center 重新设计 ========== */
+.aicr-header .header-row .header-center {
+    justify-content: center;
+    align-items: center;
+    max-width: 1100px;
+    flex-wrap: nowrap;
+    gap: 12px;
+}
+
+/* 搜索框：加宽，与工具区之间有视觉分隔 */
+.aicr-header .header-row .search-box {
+    flex: 0 1 560px;
+    min-width: 360px;
+    padding-right: 12px;
+}
+
+.aicr-header .header-row .search-box textarea {
+    height: 32px;
+    min-height: 32px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+/* 按钮组：扁平化 segment-control 风格 */
+.aicr-header .header-row .header-center .header-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    padding: 2px;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+}
+
+.aicr-header .header-row .header-center .tag-filter-btn,
+.aicr-header .header-row .header-center .tags-clear-btn {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+    flex: 0 0 auto;
+}
+
+.aicr-header .header-row .header-center .tag-filter-btn:hover,
+.aicr-header .header-row .header-center .tags-clear-btn:hover {
+    background: var(--bg-surface-hover);
+    color: var(--text-primary);
+}
+
+/* Active 状态：扁平主题色填充 */
+.aicr-header .header-row .header-center .tag-filter-btn.active,
+.aicr-header .header-row .header-center .tags-clear-btn.active {
+    background: rgba(var(--accent-rgb), 0.18);
+    color: var(--accent);
+}
+
+/* 清除按钮的显示/隐藏过渡 */
+.aicr-header .header-row .header-center .tags-clear-btn {
+    transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s ease;
+}
+
+/* focus-visible */
+.aicr-header .header-row .header-center .tag-filter-btn:focus-visible,
+.aicr-header .header-row .header-center .tags-clear-btn:focus-visible {
+    outline: 2px solid rgba(var(--accent-rgb), 0.85);
+    outline-offset: 2px;
+    z-index: 1;
+}
+
+/* 桌面端：SearchHeader 横向排列，tags-list 独占一行居中 */
 @media (min-width: 1025px) {
-    .header-top-row {
-        flex-wrap: nowrap;
-    }
-
     .aicr-header .session-list-tags {
         flex: 1;
         min-width: 0;
@@ -72,51 +136,15 @@
     }
 }
 
-/* 平板端：垂直排列 */
-@media (max-width: 1024px) {
-    .aicr-header {
-        flex-direction: column;
-        gap: 12px;
-        padding: 12px var(--spacing-md);
-        min-height: auto;
-        align-items: stretch;
-    }
-
-    .header-top-row {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 12px;
-    }
-
-    .header-top-row .header-row .header-center {
-        max-width: 600px;
-    }
-
-    .aicr-header .session-list-tags {
-        width: 100%;
-    }
-}
-
-/* 移动端：增大间距 */
-@media (max-width: 768px) {
-    .aicr-header {
-        padding: 12px var(--spacing-md);
-        gap: 10px;
-    }
-
-    .header-top-row {
-        gap: 10px;
-    }
-}
-
 /* 超宽屏优化 */
 @media (min-width: 1440px) {
-    .aicr-header {
+    .aicr-header .header-row .header-center {
+        max-width: 1200px;
         gap: 16px;
     }
 
-    .header-top-row .header-row .header-center {
-        max-width: 520px;
+    .aicr-header .header-row .search-box {
+        flex-basis: 640px;
     }
 }
 
@@ -124,5 +152,10 @@
 @media (prefers-reduced-motion: reduce) {
     .aicr-header {
         transition: none;
+    }
+
+    .aicr-header .header-row .header-center .tag-filter-btn.active,
+    .aicr-header .header-row .header-center .tags-clear-btn.active {
+        animation: none;
     }
 }

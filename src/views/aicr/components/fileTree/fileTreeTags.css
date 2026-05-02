@@ -1,7 +1,6 @@
 .session-list-tags {
     padding: 10px var(--spacing-sm);
     background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-primary) !important;
     display: flex;
     flex-direction: column;
     gap: 10px;
