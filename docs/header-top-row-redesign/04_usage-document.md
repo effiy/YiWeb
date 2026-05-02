@@ -1,12 +1,12 @@
 # Header Top Row Redesign — Usage Document
 
-> **Document Version**: v1.0 | **Last Updated**: 2026-05-02 | **Maintainer**: Claude Sonnet 4.6 | **Tool**: Claude Code
+> **Document Version**: v2.0 | **Last Updated**: 2026-05-02 | **Maintainer**: Claude Sonnet 4.6 | **Tool**: Claude Code
 >
 > **Related Documents**: [Requirement Document](./01_requirement-document.md) | [Requirement Tasks](./02_requirement-tasks.md) | [Design Document](./03_design-document.md) | [CLAUDE.md](../../CLAUDE.md)
 >
 > **Git Branch**: main
 >
-> **Doc Start Time**: 08:58:00 | **Doc Last Update Time**: 08:58:00
+> **Doc Start Time**: 17:58:00 | **Doc Last Update Time**: 17:58:00
 >
 
 [Feature Intro](#feature-introduction) | [Quick Start](#quick-start) | [Operation Scenarios](#operation-scenarios) | [FAQ](#faq) | [Tips](#tips-and-hints)
@@ -15,13 +15,13 @@
 
 ## Feature Introduction
 
-The redesigned `header-top-row` makes the AICR page header cleaner and easier to use. The search box and tag-filter controls now occupy distinct visual zones, and the filter buttons are grouped into a compact toolbar with clear active states. Whether you are searching for files, filtering by tags, or clearing filters, the controls are easier to locate and interact with.
+The redesigned `header-top-row` moves the tag-filter controls into the same visual zone as the search box. Instead of sitting in a separate container to the right, the tag toolbar now lives inside the search header's center area, directly after the search input. The search box itself is wider, giving you more room for queries.
 
 This update is purely visual: all keyboard shortcuts, click behaviors, and tag-dragging features work exactly as before.
 
-🎯 **Clearer layout**: Search and filters are visually separated.  
-⚡ **Faster recognition**: Active filters show a tinted background.  
-🔧 **Better accessibility**: Focus rings help keyboard users track their position.
+🎯 **Unified surface**: Search and filters share one line.  
+⚡ **Wider search**: More room for long queries.  
+🔧 **Simpler DOM**: Fewer wrapper layers behind the scenes.
 
 **Target audience**: All AICR users who interact with the header search and tag filters.
 
@@ -36,8 +36,8 @@ This update is purely visual: all keyboard shortcuts, click behaviors, and tag-d
 
 ### 30-Second Onboarding
 
-1. **Locate the search box** on the left side of the header top row.
-2. **Locate the tag toolbar** to the right of the search box (or below it on narrow screens).
+1. **Locate the search box** in the center of the header.
+2. **Locate the tag toolbar** immediately to the right of the search box (or below it on narrow screens).
 3. **Click a filter button** (no-tags, reverse, expand) to toggle it; notice the tinted background when active.
 4. **Click the clear-all button** (× icon, rightmost) to reset all filters.
 5. **Use `Tab`** to move focus between controls; a blue focus ring shows the current item.
@@ -94,38 +94,38 @@ This update is purely visual: all keyboard shortcuts, click behaviors, and tag-d
 
 ## FAQ
 
-### 💡 Basics
+### Ὂ1 Basics
 
-**Q: Why did the header layout change?**  
-A: The previous layout placed search and filter controls side by side without clear grouping, which made scanning harder. The redesign adds a unified toolbar for filters and improves visual separation.
+**Q: Why did the header layout change?**
+A: The previous layout placed search and filter controls in separate containers, which required an extra wrapper layer. The redesign moves the tag toolbar into the search header's center area, creating a tighter visual grouping and allowing the search box to grow wider.
 
-**Q: Do I need to learn new shortcuts?**  
+**Q: Do I need to learn new shortcuts?**
 A: No. All existing behaviors remain the same. Only the visual presentation changed.
 
-**Q: What does the tinted background mean?**  
+**Q: What does the tinted background mean?**
 A: A tinted background on a filter button means that filter is currently active. For example, the no-tags button turns tinted when you are viewing files without tags.
 
 ### ⚙️ Advanced
 
-**Q: Can I customize the toolbar order?**  
+**Q: Can I customize the toolbar order?**
 A: Not through the UI. The order (no-tags → reverse → expand → clear) is fixed by design to match frequency of use.
 
-**Q: Why does the toolbar move below the search box on some screens?**  
-A: On narrow desktops (`1025 px–1150 px`), the toolbar wraps beneath the search box to prevent controls from being cut off. This is intentional responsive behavior.
+**Q: Why does the toolbar move below the search box on some screens?**
+A: On narrow desktops (`1025 px–1200 px`), the toolbar may wrap beneath the search box to prevent controls from being cut off. This is intentional responsive behavior.
 
-### 🔧 Troubleshooting
+### ὒ7 Troubleshooting
 
-**Q: The focus ring is not showing. Is something broken?**  
+**Q: The focus ring is not showing. Is something broken?**
 A: Focus rings appear only when navigating with the keyboard (`Tab`). If you are using a mouse, they are intentionally hidden to reduce visual clutter.
 
-**Q: An active filter looks too subtle on my monitor.**  
+**Q: An active filter looks too subtle on my monitor.**
 A: The active tint uses your theme's accent color at `15 %` opacity. If your monitor has low contrast, try increasing the browser zoom or adjusting your OS contrast settings.
 
 ---
 
 ## Tips and Hints
 
-### 💡 Practical tips
+### Ὂ1 Practical tips
 
 1. **Combine filters**: You can use no-tags + reverse together to fine-tune your view.
 2. **Quick clear**: The clear-all button is always the rightmost item, so you can find it without reading labels.

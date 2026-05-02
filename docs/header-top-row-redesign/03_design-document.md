@@ -1,12 +1,12 @@
 # Header Top Row Redesign — Design Document
 
-> **Document Version**: v1.0 | **Last Updated**: 2026-05-02 | **Maintainer**: Claude Sonnet 4.6 | **Tool**: Claude Code
+> **Document Version**: v2.0 | **Last Updated**: 2026-05-02 | **Maintainer**: Claude Sonnet 4.6 | **Tool**: Claude Code
 >
 > **Related Documents**: [Requirement Document](./01_requirement-document.md) | [Requirement Tasks](./02_requirement-tasks.md) | [Usage Document](./04_usage-document.md) | [CLAUDE.md](../../CLAUDE.md)
 >
 > **Git Branch**: main
 >
-> **Doc Start Time**: 08:55:00 | **Doc Last Update Time**: 08:55:00
+> **Doc Start Time**: 17:55:00 | **Doc Last Update Time**: 17:55:00
 >
 
 [Design Overview](#design-overview) | [Architecture Design](#architecture-design) | [Changes](#changes) | [Implementation Details](#implementation-details) | [Impact Analysis](#impact-analysis) | [Main Operation Scenario Implementation](#main-operation-scenario-implementation) | [Data Structure Design](#data-structure-design)
@@ -15,13 +15,13 @@
 
 ## Design Overview
 
-This design restructures the `.header-top-row` flex container inside `AicrHeader` to improve visual clarity and ease of use. The current row places `search-header` and `.tags-header` side by side without an explicit grouping frame for the filter buttons, which makes the control surface feel scattered. The redesign introduces a `.header-controls` wrapper around the four filter buttons, reorders them by frequency of use, adds an active-state tint, and ensures visible focus rings. All changes are strictly presentational: no Vue props, events, computed properties, or drag-and-drop logic are modified.
+This design restructures the AICR header by moving `.tags-header` from an external sibling of `SearchHeader` into `SearchHeader`'s own `.header-center` via a Vue default slot. The search box is widened to take advantage of the reclaimed horizontal space. All changes are strictly presentational: no Vue props, events, computed properties, or tag logic are modified.
 
-The design favors a single-wrapper approach: by adding `.header-controls` inside `.tags-header` and moving the four buttons into it, we create a unified toolbar that users can scan as one unit. CSS changes are limited to `aicrHeader/index.css`; HTML changes are limited to `aicrHeader/index.html`.
+The design favors slot composition over external wrappers: by placing `.tags-header` inside `SearchHeader`'s `.header-center`, the search and filter controls become a single visual unit that aligns naturally. The obsolete `.header-top-row` wrapper is removed, simplifying the DOM.
 
-🎯 **Separation of concerns**: Search zone vs. filter zone.  
-⚡ **Minimum touch**: Only `.header-top-row` and `.tags-header` markup and styles change.  
-🔧 **Fix the root cause**: Uneven spacing and lack of visual grouping stem from buttons being direct children of `.tags-header` with inconsistent margins.
+🎯 **Separation of concerns**: Search box and tag controls share `.header-center`; tag list remains below.  
+⚡ **Minimum touch**: Only DOM nesting and CSS widths change.  
+🔧 **Fix the root cause**: `.header-top-row` was an extra flex layer created solely to align search and tags side by side; slot composition makes it unnecessary.
 
 ---
 
@@ -32,38 +32,36 @@ The design favors a single-wrapper approach: by adding `.header-controls` inside
 ```mermaid
 graph TB
     A["AicrHeader Component"] --> B["SearchHeader .header-row"]
+    B --> B1[".header-nav"]
+    B --> B2[".header-center"]
+    B2 --> B2a[".search-box"]
+    B2 --> B2b["Slot Content .tags-header"]
+    B2b --> B2b1["Tag Search Input"]
+    B2b --> B2b2["Header Controls .header-controls"]
+    B2b2 --> B2b2a["No-Tags Filter"]
+    B2b2 --> B2b2b["Reverse Filter"]
+    B2b2 --> B2b2c["Expand/Collapse"]
+    B2b2 --> B2b2d["Clear All"]
+    B --> B3[".header-actions"]
     A --> C["SessionListTags Container .session-list-tags"]
-    C --> D["Tags-Header .tags-header"]
-    D --> D1["Tag Search Input"]
-    D --> D2["Header Controls .header-controls"]
-    D2 --> D2a["No-Tags Filter"]
-    D2 --> D2b["Reverse Filter"]
-    D2 --> D2c["Expand/Collapse"]
-    D2 --> D2d["Clear All"]
-    C --> E["Tags-List .tags-list"]
+    C --> C1["Tags-List .tags-list"]
     style A fill:#ccffcc
     style B fill:#e1f5ff
+    style B2 fill:#ccffcc
+    style B2b fill:#ccffcc
     style C fill:#e1f5ff
-    style D fill:#e1f5ff
-    style D1 fill:#e1f5ff
-    style D2 fill:#ccffcc
-    style D2a fill:#e1f5ff
-    style D2b fill:#e1f5ff
-    style D2c fill:#e1f5ff
-    style D2d fill:#e1f5ff
-    style E fill:#e1f5ff
 ```
 
-`AicrHeader` owns the entire header area. It renders `SearchHeader` as its first child and `.session-list-tags` as its second child. Inside `.session-list-tags`, `.tags-header` now contains both the tag search input and the new `.header-controls` wrapper. The `.header-controls` wrapper groups the four filter buttons into a single flex row.
+`AicrHeader` owns the entire header area. It renders `SearchHeader` as its first child and passes `.tags-header` into `SearchHeader`'s default slot. `SessionListTags` remains a separate child below. Inside `SearchHeader`, `.header-center` now contains both `.search-box` and the slot content.
 
 ### Module Division
 
 | Module | Responsibility | Location |
 |--------|---------------|----------|
-| `AicrHeader` | Orchestrates header children; emits tag and search events upward | `src/views/aicr/components/aicrHeader/index.js` |
-| `SearchHeader` | Global search input, home/news buttons, composition handling | `cdn/components/SearchHeader/` (external; unchanged) |
-| `.header-top-row` (inline) | Hosts search-header and tags-header; provides flex layout | Inline in `aicrHeader/index.html`; styles in `aicrHeader/index.css` |
-| `.header-controls` (new wrapper) | Groups filter buttons into a unified toolbar | Inline in `aicrHeader/index.html`; styles in `aicrHeader/index.css` |
+| `SearchHeader` | Renders global search input, home/news buttons, composition handling; accepts default slot inside `.header-center` | `cdn/components/business/SearchHeader/` |
+| `.header-center` (inline) | Hosts `.search-box` and slot content; provides flex layout | Inline in `SearchHeader/template.html`; styles in `SearchHeader/index.css` |
+| `AicrHeader` | Orchestrates header children; passes `.tags-header` into SearchHeader slot; emits tag and search events upward | `src/views/aicr/components/aicrHeader/index.js` |
+| `SessionListTags` | Renders tag list strip below the header | `src/views/aicr/components/sessionListTags/` |
 | `AicrPage` | Parent view; passes tag state and listens to header events | `src/views/aicr/components/aicrPage/index.js` |
 
 ### Core Flow
@@ -71,10 +69,8 @@ graph TB
 ```mermaid
 flowchart TD
     A["User opens AICR"] --> B["Vue mounts AicrHeader"]
-    B --> C["Render SearchHeader + tags-header"]
-    C --> D["Apply refined CSS:
-    .header-top-row = row, gap 16px
-    .header-controls = row, gap 8px"]
+    B --> C["Render SearchHeader + slot content (.tags-header)"]
+    C --> D["Apply CSS: .header-center flex row, .search-box max-width increased"]
     D --> E["User clicks no-tags filter"]
     E --> F["toggleNoTags emits 'tag-select'"]
     F --> G["AicrPage handles event"]
@@ -83,7 +79,7 @@ flowchart TD
     I --> J[":focus-visible ring shown"]
 ```
 
-The core flow is identical to the current implementation; only the visual presentation changes.
+The core flow is identical to the current implementation; only the visual nesting changes.
 
 ---
 
@@ -91,51 +87,54 @@ The core flow is identical to the current implementation; only the visual presen
 
 ### Problem Analysis
 
-The current desktop layout has two presentational issues in `.header-top-row`:
+The current desktop layout has two presentational issues:
 
-1. **No visual grouping**: The four filter buttons (`no-tags`, `reverse`, `expand`, `clear`) are direct children of `.tags-header-actions` with uneven gaps and no shared background or border, making them read as separate, unrelated widgets.
-2. **Subtle active states**: The current `.active` class only changes border color, which is hard to notice on monitors with low contrast or when viewed at an angle.
-3. **Missing focus indicators**: Filter buttons have no visible focus ring, making keyboard navigation impossible to follow.
+1. **Extra wrapper layer**: `.header-top-row` exists solely to place `search-header` and `.tags-header` side by side. It adds an unnecessary DOM level and complicates responsive CSS.
+2. **Search box too narrow**: `.header-top-row .header-row` is capped at `420 px`, truncating longer search queries.
 
 ### Solution
 
 #### Idea
 
-Introduce `.header-controls` as a flex wrapper around the filter buttons. Apply a shared height, border radius, and subtle background to the wrapper so the buttons read as a single toolbar. Add an active-state tint (`--accent-primary` at `15 %` opacity) and a `2 px` focus ring. Allow `.header-top-row` to wrap on narrow desktop to prevent truncation.
+Introduce a default slot in `SearchHeader`'s `.header-center`, positioned after `.search-box`. Move `.tags-header` from `AicrHeader`'s `.header-top-row` into this slot. Remove `.header-top-row` entirely. Increase `.search-box` `max-width` in the AICR context.
 
 #### File List and Selection Rationale
 
 | # | File | Change Type | Rationale |
 |---|------|-------------|-----------|
-| 1 | `src/views/aicr/components/aicrHeader/index.html` | Restructure | Wrap filter buttons in `.header-controls`; reorder buttons |
-| 2 | `src/views/aicr/components/aicrHeader/index.css` | Rewrite styles | Add `.header-controls` rules; add active tint and focus ring; adjust responsive breakpoints |
+| 1 | `cdn/components/business/SearchHeader/template.html` | Modify | Add default `<slot>` inside `.header-center` after `.search-box` |
+| 2 | `cdn/components/business/SearchHeader/index.css` | Modify | Add `flex-wrap: wrap` to `.header-center` so slot content can wrap on narrow viewports |
+| 3 | `src/views/aicr/components/aicrHeader/index.html` | Restructure | Remove `.header-top-row`; pass `.tags-header` into `<search-header>` slot |
+| 4 | `src/views/aicr/components/aicrHeader/index.css` | Rewrite styles | Remove `.header-top-row` rules; increase `.search-box` width; adjust `.header-row` constraints |
 
 #### Before/After Comparison
 
 **Before (desktop ≥1025px)**:
 ```
-.header-top-row [flex row]
-├── .header-row [auto width]
-└── .tags-header [auto width]
-    ├── .tag-search-container
-    └── .tags-header-actions [no wrapper]
-        ├── no-tags button
-        ├── reverse button
-        ├── expand button
-        └── clear-all button
+.aicr-header
+└── .header-top-row [flex row]
+    ├── .header-row [auto width, max-width 420px]
+    │   ├── .header-nav
+    │   ├── .header-center (.search-box)
+    │   └── .header-actions
+    └── .tags-header
+        ├── .tag-search-container
+        └── .header-controls
+└── .session-list-tags
 ```
 
 **After (desktop ≥1025px)**:
 ```
-.header-top-row [flex row]
-├── .header-row [auto width]
-└── .tags-header [auto width]
-    ├── .tag-search-container
-    └── .header-controls [new flex row wrapper]
-        ├── no-tags button
-        ├── reverse button
-        ├── expand button
-        └── clear-all button
+.aicr-header
+├── .header-row
+│   ├── .header-nav
+│   ├── .header-center [flex row]
+│   │   ├── .search-box [wider]
+│   │   └── .tags-header [slot content]
+│   │       ├── .tag-search-container
+│   │       └── .header-controls
+│   └── .header-actions
+└── .session-list-tags
 ```
 
 ---
@@ -146,29 +145,29 @@ Introduce `.header-controls` as a flex wrapper around the filter buttons. Apply 
 
 | # | Search Term | Found In | Change Point |
 |---|-------------|----------|--------------|
-| 1 | `.header-top-row` | `aicrHeader/index.html`, `aicrHeader/index.css` | Restructure flex layout |
-| 2 | `.tags-header` | `aicrHeader/index.html`, `aicrHeader/index.css` | Reorder buttons; add `.header-controls` wrapper |
-| 3 | `.header-controls` | `aicrHeader/index.css` | New CSS rule for button grouping |
-| 4 | `tag-filter-btn` | `aicrHeader/index.css` | Add active-tint and focus-ring styles |
-| 5 | `@media (min-width: 1025px)` | `aicrHeader/index.css` | Update gap and alignment |
-| 6 | `@media (max-width: 1024px)` | `aicrHeader/index.css` | Preserve vertical stack |
-| 7 | `--accent-primary` | `theme.css`, `aicrHeader/index.css` | Use for active tint and focus ring |
+| 1 | `.header-top-row` | `aicrHeader/index.html`, `aicrHeader/index.css` | Remove wrapper and related CSS |
+| 2 | `<slot>` | `SearchHeader/template.html` | New slot after `.search-box` |
+| 3 | `.header-center` | `SearchHeader/index.css`, `aicrHeader/index.css` | Adjust flex and max-width |
+| 4 | `.search-box` | `SearchHeader/index.css`, `aicrHeader/index.css` | Increase max-width in AICR context |
+| 5 | `.tags-header` | `sessionListTags/index.css` | Verify styles when nested in `.header-center` |
+| 6 | `@media (min-width: 1025px)` | `aicrHeader/index.css` | Remove `.header-top-row` references |
+| 7 | `@media (max-width: 1024px)` | `aicrHeader/index.css` | Remove `.header-top-row` references |
 
 ### Change Point Impact Chain
 
 | Change Point | Direct Impact | Transitive Impact | Closure |
 |--------------|---------------|-------------------|---------|
-| `.header-top-row` restructure | `aicrHeader/index.html` | CSS selectors updated within component | Closed: scoped to AicrHeader |
-| `.header-controls` wrapper | `aicrHeader/index.css` | `.tags-header-actions` repurposed | Closed: CSS rewritten |
-| Active-tint styles | `aicrHeader/index.css` | No JavaScript changes | Closed: `.tag-filter-btn.active` rule added |
-| Focus-ring styles | `aicrHeader/index.css` | No component logic changes | Closed: pure CSS |
+| `.header-top-row` removal | `aicrHeader/index.html`, `aicrHeader/index.css` | `.session-list-tags` margin may need adjustment | Closed: CSS rewritten |
+| SearchHeader slot addition | `SearchHeader/template.html`, `SearchHeader/index.css` | Other consumers must be verified | Closed: backward compatible |
+| `.tags-header` moved to slot | `aicrHeader/index.html` | `sessionListTags/index.css` selectors still valid | Closed: class names unchanged |
+| Search box width increase | `aicrHeader/index.css` | No JavaScript changes | Closed: pure CSS |
 | Responsive breakpoints | `aicrHeader/index.css` | No other components affected | Closed: scoped to AicrHeader |
 
 ### Dependency Closure Summary
 
 | Dependency | Status | Verification |
-|------------|--------|------------|
-| `SearchHeader` (CDN) | ✅ Compatible | No props/events changed |
+|------------|--------|--------------|
+| `SearchHeader` (CDN) | ✅ Compatible | Slot is optional; no props/events changed |
 | `YiIconButton` (CDN) | ✅ Compatible | Used inside tag search clear; untouched |
 | `AicrPage` | ✅ Compatible | No event renames or payload changes |
 | CSS custom properties | ✅ Compatible | Existing variables remain valid |
@@ -178,16 +177,16 @@ Introduce `.header-controls` as a flex wrapper around the filter buttons. Apply 
 
 | Risk | Likelihood | Disposal |
 |------|------------|----------|
-| `.header-controls` may wrap awkwardly on narrow desktop (`1025 px–1150 px`) | Medium | Allow `flex-wrap: wrap` with `gap` preserved |
-| Active tint may clash with existing `.active` border color | Low | Verify contrast; adjust opacity if needed |
-| Users may not recognize reordered controls immediately | Low | Document in usage doc |
+| `.header-center` may not fit both `.search-box` and `.tags-header` on narrow desktop (`1025 px–1200 px`) | Medium | Allow `flex-wrap: wrap` on `.header-center`; test at `1025 px` |
+| SearchHeader slot may affect other consumers if they inadvertently pass child content | Low | Verify no other `<search-header>` usage has child content |
+| `.tags-header` styles from `sessionListTags/index.css` may conflict with `.header-center` flex context | Low | Inspect computed styles after move |
 
 ### Change Scope Summary
 
-- **Directly modify**: 2 files (`aicrHeader/index.html`, `aicrHeader/index.css`)
-- **Verify compatibility**: 1 file (`aicrHeader/index.js`)
-- **Trace transitive**: 0 files
-- **Need manual review**: 1 file (`aicrHeader/index.css` — visual regression at breakpoints)
+- **Directly modify**: 4 files (`SearchHeader/template.html`, `SearchHeader/index.css`, `aicrHeader/index.html`, `aicrHeader/index.css`)
+- **Verify compatibility**: 1 file (`SearchHeader/index.js` — no logic changes)
+- **Trace transitive**: 1 file (`sessionListTags/index.css` — verify styles still apply)
+- **Need manual review**: 2 files (`SearchHeader/index.css`, `aicrHeader/index.css` — visual regression at breakpoints)
 
 ---
 
@@ -195,107 +194,164 @@ Introduce `.header-controls` as a flex wrapper around the filter buttons. Apply 
 
 ### Technical Points
 
-1. **HTML Nesting**: Introduce `.header-controls` as a child of `.tags-header`. Move the four filter buttons from `.tags-header-actions` into `.header-controls`.
-   - *What*: Add wrapper; move buttons.
+1. **SearchHeader Template**: Introduce `<slot></slot>` as the last child of `.header-center`, after `.search-box`.
+   - *What*: Add default slot.
+   - *How*: Edit `SearchHeader/template.html`.
+   - *Why*: Vue 3 slots let consumers inject content without prop drilling or wrapper divs.
+
+2. **SearchHeader CSS**: Add `flex-wrap: wrap` to `.header-center` so that `.search-box` and slot content can wrap on narrow viewports.
+   - *What*: One new rule.
+   - *How*: Edit `SearchHeader/index.css`.
+   - *Why*: `.header-center` previously only held `.search-box`; now it may hold additional content.
+
+3. **AicrHeader Template**: Remove `.header-top-row`. Place `.tags-header` inside `<search-header>` as slot content.
+   - *What*: Remove wrapper; move content.
    - *How*: Edit `aicrHeader/index.html`.
-   - *Why*: Flex containers can only align their direct children. A shared wrapper enables unified styling.
+   - *Why*: Slot composition replaces the need for an external flex wrapper.
 
-2. **CSS Grouping Styles**:
-   - `.header-controls`: `display: flex`, `flex-direction: row`, `align-items: center`, `gap: 8px`, `padding: 4px`, `background: var(--bg-tertiary)`, `border-radius: 8px`.
-   - `.header-controls .tag-filter-btn`: remove individual margins; rely on parent `gap`.
-
-3. **Active-State Tint**:
-   - `.tag-filter-btn.active`: `background-color: color-mix(in srgb, var(--accent-primary) 15%, transparent)`.
-   - Fallback for browsers without `color-mix`: `background-color: rgba(59, 130, 246, 0.15)` (if `--accent-primary` is blue).
-
-4. **Focus Rings**:
-   - `.tag-filter-btn:focus-visible`, `.tags-clear-btn:focus-visible`: `outline: 2px solid var(--accent-primary)`, `outline-offset: 2px`.
-
-5. **Responsive Wrap**:
-   - `@media (min-width: 1025px)`: `.header-top-row` keeps `flex-wrap: nowrap` by default, but if viewport is `1025 px–1150 px`, allow `flex-wrap: wrap` with `gap` preserved.
+4. **AicrHeader CSS**: Remove all `.header-top-row` rules. Increase `.search-box` max-width. Adjust `.header-row` constraints.
+   - *What*: Rewrite aicrHeader CSS.
+   - *How*: Edit `aicrHeader/index.css`.
+   - *Why*: `.header-top-row` no longer exists; search box should be wider.
 
 ### Key Code
 
-**`aicrHeader/index.html` — updated button grouping**:
+**`SearchHeader/template.html` — added slot**:
 ```html
-<div class="tags-header">
-    <!-- 标签搜索框 -->
-    <div class="tag-search-container">...</div>
+<div class="header-center">
+    <div class="search-box">...</div>
+    <slot></slot>
+</div>
+```
 
-    <!-- 过滤控制工具栏 -->
-    <div class="header-controls">
-        <button type="button" class="tag-filter-btn tag-filter-no-tags-btn" ...>...</button>
-        <button type="button" class="tag-filter-btn tag-filter-reverse" ...>...</button>
-        <button type="button" class="tag-filter-btn" ...>...</button>
-        <button type="button" class="tags-clear-btn" ...>...</button>
+**`SearchHeader/index.css` — flex-wrap support**:
+```css
+.header-center {
+    /* existing rules preserved */
+    flex-wrap: wrap;
+}
+```
+
+**`aicrHeader/index.html` — slot usage**:
+```html
+<div class="aicr-header">
+    <search-header
+        v-model:search-query="searchQuery"
+        placeholder="搜索网站、标签或描述..."
+        ...
+    >
+        <div
+            v-if="allTags && (allTags.length > 0 || (tagCounts && tagCounts.noTagsCount > 0))"
+            class="tags-header">
+            <div class="tag-search-container">...</div>
+            <div class="header-controls">...</div>
+        </div>
+    </search-header>
+
+    <div
+        v-if="allTags && (allTags.length > 0 || (tagCounts && tagCounts.noTagsCount > 0))"
+        class="session-list-tags">
+        <div class="tags-list">...</div>
     </div>
 </div>
 ```
 
-**`aicrHeader/index.css` — new grouping and state styles**:
+**`aicrHeader/index.css` — wider search box, no header-top-row**:
 ```css
-/* 过滤控制工具栏 */
-.header-controls {
+.aicr-header {
+    padding: 10px var(--spacing-md);
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 8px;
-    background: var(--bg-tertiary);
-    border-radius: 8px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
 }
 
-/* 按钮统一高度和圆角 */
-.header-controls .tag-filter-btn,
-.header-controls .tags-clear-btn {
-    height: 36px;
-    width: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    border: 1px solid var(--border-secondary);
+/* SearchHeader integration: wider search box */
+.aicr-header .header-row {
+    flex: 0 1 auto;
+    display: flex;
+    width: 100%;
+    height: auto;
+    padding: 0;
     background: transparent;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.2s ease;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: none;
+    box-shadow: none;
+    gap: 12px;
 }
 
-/* 悬停状态 */
-.header-controls .tag-filter-btn:hover,
-.header-controls .tags-clear-btn:hover {
-    background-color: var(--bg-hover);
+.aicr-header .header-row .header-center {
+    max-width: 800px;
+    flex-wrap: nowrap;
+    gap: 12px;
 }
 
-/* 激活状态 tinted background */
-.header-controls .tag-filter-btn.active {
-    background-color: color-mix(in srgb, var(--accent-primary) 15%, transparent);
-    border-color: var(--accent-primary);
+.aicr-header .header-row .search-box {
+    max-width: 520px;
+    flex: 1 1 auto;
 }
 
-/* 焦点环 */
-.header-controls .tag-filter-btn:focus-visible,
-.header-controls .tags-clear-btn:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
+/* Desktop */
+@media (min-width: 1025px) {
+    .aicr-header .session-list-tags {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .tags-list {
+        justify-content: center;
+    }
 }
 
-/* 清除按钮在最右侧 */
-.header-controls .tags-clear-btn {
-    margin-left: 4px;
+/* Ultra-wide */
+@media (min-width: 1440px) {
+    .aicr-header .header-row .header-center {
+        max-width: 900px;
+    }
+
+    .aicr-header .header-row .search-box {
+        max-width: 600px;
+    }
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .aicr-header {
+        padding: 12px var(--spacing-md);
+    }
+
+    .aicr-header .header-row .header-center {
+        flex-wrap: wrap;
+    }
+
+    .aicr-header .session-list-tags {
+        width: 100%;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .aicr-header {
+        padding: 12px var(--spacing-md);
+        gap: 10px;
+    }
 }
 ```
 
 ### Dependencies
 
-- `SearchHeader` (CDN component): no version change.
+- `SearchHeader` (CDN component): no version change; slot is backward compatible.
 - `YiIconButton` (CDN component): no version change.
-- Existing CSS custom properties: `--accent-primary`, `--bg-tertiary`, `--border-secondary`, `--bg-hover`.
+- Existing CSS custom properties: `--accent-primary`, `--bg-secondary`, `--border-primary`, `--spacing-md`.
 
 ### Testing Considerations
 
 1. Visual regression at `1025 px`, `1200 px`, `1440 px`, `1920 px`.
-2. Keyboard tab order through search box → tag search → no-tags → reverse → expand → clear.
-3. Focus ring visibility on all buttons.
+2. Verify `SearchHeader` without slot content still renders correctly on other pages.
+3. Keyboard tab order through search box → tag search → no-tags → reverse → expand → clear.
 4. Active tint applies correctly when each filter is toggled.
 5. Clear-all button disables when no filters are active.
 6. Touch targets remain `≥44 px` on tablet.
@@ -307,16 +363,19 @@ Introduce `.header-controls` as a flex wrapper around the filter buttons. Apply 
 ### Scenario 1 — Desktop user views optimized header-top-row layout
 
 - **Linked requirement task**: [02 Requirement Tasks — Scenario 1](./02_requirement-tasks.md#scenario-1--desktop-user-views-optimized-header-top-row-layout)
-- **Implementation overview**: Restructure `AicrHeader` HTML and CSS so that `.header-row` and `.tags-header` appear on the same line, with `.header-controls` grouping the filter buttons.
+- **Implementation overview**: Restructure `AicrHeader` to use `SearchHeader` slot. `.tags-header` is now inside `.header-center`, after `.search-box`. Search box is wider.
 - **Modules and responsibilities**:
-  - `AicrHeader` template: introduce `.header-controls` wrapper.
-  - `AicrHeader` styles: style `.header-controls` as a flex row toolbar.
+  - `SearchHeader` template: add default slot.
+  - `AicrHeader` template: remove `.header-top-row`; pass `.tags-header` into slot.
+  - `AicrHeader` styles: remove `.header-top-row` rules; increase search box width.
 - **Key code paths**:
-  - `aicrHeader/index.html` — wrapper insertion.
-  - `aicrHeader/index.css` — `.header-controls` and responsive rules.
+  - `SearchHeader/template.html` — slot insertion.
+  - `aicrHeader/index.html` — slot usage.
+  - `aicrHeader/index.css` — width and responsive rules.
 - **Verification points**:
-  - `.header-row` and `.tags-header` share the same visual baseline.
-  - `.header-controls` buttons are equal height and evenly spaced.
+  - `.tags-header` is inside `.header-center`.
+  - `.search-box` is at least `520 px` wide on desktop.
+  - No `.header-top-row` wrapper exists.
 
 ### Scenario 2 — User interacts with consolidated tag filter controls
 
@@ -337,15 +396,17 @@ Introduce `.header-controls` as a flex wrapper around the filter buttons. Apply 
 ### Scenario 3 — Tablet user views responsive header-top-row layout
 
 - **Linked requirement task**: [02 Requirement Tasks — Scenario 3](./02_requirement-tasks.md#scenario-3--tablet-user-views-responsive-header-top-row-layout)
-- **Implementation overview**: Reuse existing tablet/mobile breakpoints; ensure `.header-top-row` stacks vertically and `.header-controls` remains horizontal.
+- **Implementation overview**: Reuse existing tablet/mobile breakpoints; ensure `.header-center` wraps its contents on narrow viewports.
 - **Modules and responsibilities**:
+  - `SearchHeader` styles: `flex-wrap: wrap` on `.header-center`.
   - `AicrHeader` styles: `@media (max-width: 1024px)` and `@media (max-width: 768px)` blocks.
 - **Key code paths**:
+  - `SearchHeader/index.css` — `.header-center` responsive behavior.
   - `aicrHeader/index.css` — responsive media queries.
 - **Verification points**:
   - No horizontal overflow at `768 px`.
   - Touch targets `≥44 px`.
-  - `.header-controls` does not wrap on tablet.
+  - `.header-center` wraps content gracefully.
 
 ---
 
@@ -357,6 +418,7 @@ No new data structures are introduced. The existing data flow is:
 sequenceDiagram
     actor User
     participant AicrHeader
+    participant SearchHeader
     participant AicrPage
     participant Store
     participant localStorage
@@ -380,6 +442,6 @@ The layout refactor does not alter this sequence. Props and events remain identi
 
 ## Postscript: Future Planning & Improvements
 
-- Evaluate collapsing `.header-controls` into an icon-only dropdown on widths between `1025 px` and `1100 px`.
-- If the two-row header grows too tall, consider hiding the tag search input behind a search icon on narrow desktops.
+- Evaluate collapsing `.tags-header` into an icon-only dropdown on widths between `1025 px` and `1200 px`.
+- If the header grows too tall, consider hiding the tag search input behind a search icon on narrow desktops.
 - Add a visual "filter count" badge to the clear-all button when multiple filters are active.
