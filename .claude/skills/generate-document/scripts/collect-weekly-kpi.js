@@ -30,7 +30,8 @@ const path = require('path');
 const { execSync } = require('child_process');
 const { getNaturalWeekRange } = require('./natural-week.js');
 
-const DOCS_DIR = path.resolve('docs');
+const REPO_ROOT = path.resolve(__dirname, '../../..');
+const DOCS_DIR = path.join(REPO_ROOT, 'docs');
 const KPI_FILES = ['05_dynamic-checklist.md', '06_process-summary.md', '07_project-report.md'];
 
 function printHelp(stream) {

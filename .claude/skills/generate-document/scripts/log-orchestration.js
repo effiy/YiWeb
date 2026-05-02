@@ -204,8 +204,7 @@ async function main() {
     process.exit(1);
   }
 
-  // In this repo, scripts/ is under repo root: <repo>/scripts
-  const repoRoot = path.resolve(__dirname, '..');
+  const repoRoot = path.resolve(__dirname, '../../..');
   const week = getNaturalWeekRange(new Date());
   const logsDir = path.join(repoRoot, 'docs', 'weekly', week.range);
   await fsp.mkdir(logsDir, { recursive: true });

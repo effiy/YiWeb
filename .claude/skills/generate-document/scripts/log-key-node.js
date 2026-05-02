@@ -102,8 +102,7 @@ async function main() {
     process.exit(1);
   }
 
-  // In this repo, scripts/ is under repo root: <repo>/scripts
-  const repoRoot = path.resolve(__dirname, '..');
+  const repoRoot = path.resolve(__dirname, '../../..');
 
   await appendKeyNodeRecord(repoRoot, {
     title: args.title,

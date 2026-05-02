@@ -23,7 +23,8 @@ const { execSync } = require('child_process');
 const { getNaturalWeekRange } = require('./natural-week.js');
 
 const SCRIPT_DIR = path.dirname(__filename);
-const MEMORY_FILE = path.resolve('docs', '.memory', 'execution-memory.jsonl');
+const REPO_ROOT = path.resolve(__dirname, '../../..');
+const MEMORY_FILE = path.join(REPO_ROOT, 'docs', '.memory', 'execution-memory.jsonl');
 
 function printHelp() {
   console.log(`Usage:
@@ -74,7 +75,7 @@ async function readExecutionMemory(sinceDate) {
 }
 
 async function readWeeklyLogs(weekRange) {
-  const logsDir = path.resolve('docs', 'weekly', weekRange);
+  const logsDir = path.join(REPO_ROOT, 'docs', 'weekly', weekRange);
   const logsPath = path.join(logsDir, 'logs.md');
   const keysPath = path.join(logsDir, 'key-notes.md');
   const logs = { logs: '', keys: '' };

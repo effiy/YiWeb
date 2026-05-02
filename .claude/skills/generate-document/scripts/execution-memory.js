@@ -21,7 +21,8 @@ const fsp = fs.promises;
 const path = require('path');
 const { getNaturalWeekRange } = require('./natural-week.js');
 
-const MEMORY_DIR = path.resolve('docs', '.memory');
+const REPO_ROOT = path.resolve(__dirname, '../../..');
+const MEMORY_DIR = path.join(REPO_ROOT, 'docs', '.memory');
 const MEMORY_FILE = path.join(MEMORY_DIR, 'execution-memory.jsonl');
 
 function printHelp() {

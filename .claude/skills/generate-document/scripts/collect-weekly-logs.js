@@ -382,7 +382,8 @@ function main() {
   }
 
   const weekRange = getNaturalWeekRange(baseDate);
-  const weeklyDir = path.resolve('docs', 'weekly', weekRange.range);
+  const REPO_ROOT = path.resolve(__dirname, '../../..');
+  const weeklyDir = path.join(REPO_ROOT, 'docs', 'weekly', weekRange.range);
 
   let keyNotesResult = { entries: [], note: 'Skipped key nodes' };
   let logsResult = { entries: [], note: 'Skipped orchestration logs' };
