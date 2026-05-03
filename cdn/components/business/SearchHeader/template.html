@@ -12,7 +12,7 @@
   </div>
 
   <div class="header-center">
-    <div class="search-box">
+    <div v-if="showSearch" class="search-box">
       <textarea
         v-model="searchQuery"
         @input="handleInput"

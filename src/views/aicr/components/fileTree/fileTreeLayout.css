@@ -297,12 +297,13 @@
     position: relative;
     display: flex;
     align-items: center;
-    width: 100%;
     min-width: 0;
     background: rgba(255, 255, 255, 0.06);
     border-radius: 5px;
     transition: all 0.2s ease;
     padding-right: 2px;
+    margin: var(--spacing-xs) var(--spacing-sm);
+    flex-shrink: 0;
 }
 
 .file-tree-search-wrapper:focus-within {

@@ -87,6 +87,10 @@ registerGlobalComponent({
       type: Boolean,
       default: false
     },
+    showSearch: {
+      type: Boolean,
+      default: true
+    },
     sidebarToggleEnabled: {
       type: Boolean,
       default: false
