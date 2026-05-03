@@ -125,7 +125,7 @@ No data contracts change; the sequence is identical to the current implementatio
 - **Scenario description**: On a desktop viewport (`≥1025 px`), the user sees the search box and tag toolbar sharing the same `.header-center` row. The search box is wider than before.
 - **Pre-conditions**: AICR page is loaded; viewport width is at least `1025 px`.
 - **Operation steps**:
-  1. Open `http://localhost:8000/src/views/aicr/index.html` on a desktop browser.
+  1. Open `http://localhost:8080/src/views/aicr/index.html` on a desktop browser.
   2. Observe the header area.
 - **Expected result**: `SearchHeader`'s `.header-center` contains `.search-box` followed by `.tags-header`. Search box is at least `520 px` wide. No `.header-top-row` wrapper exists.
 - **Verification focus points**: `.tags-header` is inside `.header-center`; search box width increased; gap between search box and tags is `12 px`.

@@ -74,7 +74,7 @@ export const batchOperations = (operations) => Promise.all(operations);
 
 | 环境 | DATA_URL | API_URL | OLLAMA_URL |
 |------|----------|---------|------------|
-| local | http://localhost:9000 | http://localhost:8000 | http://localhost:11434 |
+| local | http://localhost:9000 | http://localhost:8080 | http://localhost:11434 |
 | prod | https://data.effiy.cn | https://api.effiy.cn | https://ollama.effiy.cn |
 
 ## 环境切换

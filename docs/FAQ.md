@@ -11,14 +11,14 @@
 cd /var/www/YiWeb
 python -m http.server 8000
 ```
-确保访问 `http://localhost:8000/src/views/aicr/index.html`
+确保访问 `http://localhost:8080/src/views/aicr/index.html`
 
 ### Q: CORS 错误
 
 **原因**: 前端页面域名与 API 域名不一致。
 
 **解决**:
-- 本地开发时确保 API 服务允许 `localhost:8000`
+- 本地开发时确保 API 服务允许 `localhost:8080`
 - 检查 `src/core/config.js` 中的端点配置
 
 ### Q: Vue 组件未注册

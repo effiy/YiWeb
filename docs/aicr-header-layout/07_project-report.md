@@ -56,7 +56,7 @@
 
 | Verification Item | Command/Method | Result | Evidence | Notes |
 |-------------------|---------------|--------|----------|-------|
-| Desktop layout (≥1025px) | Manual browser verification at `http://localhost:8000/src/views/aicr/index.html` | ⏳ Deferred | — | Playwright unavailable; manual verification required |
+| Desktop layout (≥1025px) | Manual browser verification at `http://localhost:8080/src/views/aicr/index.html` | ⏳ Deferred | — | Playwright unavailable; manual verification required |
 | Tag filter interactions | Click through search, no-tags, reverse, expand, clear | ✅ Code review | Event bindings preserved | No functional logic changes |
 | Drag-and-drop reordering | Drag tag left/right; check drop indicator classes | ✅ Code review | `isHorizontalDrag()` patched | Selector now targets `.tags-list` |
 | Responsive fallback (≤1024px, ≤768px) | DevTools responsive mode | ⏳ Deferred | — | Playwright unavailable; manual verification required |

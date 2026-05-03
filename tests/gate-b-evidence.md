@@ -87,7 +87,7 @@ index 6842656..9844981 100644
 -| Check | Method | Result |
 -|-------|--------|--------|
 -| Local server starts | `python3 -m http.server 8000` | ✅ Exit 0, port 8000 listening |
--| AICR page accessible | `curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/src/views/aicr/index.html` | ✅ HTTP 200 |
+-| AICR page accessible | `curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/src/views/aicr/index.html` | ✅ HTTP 200 |
 -
 -## Playwright Degradation
 -

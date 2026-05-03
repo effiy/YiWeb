@@ -18,7 +18,7 @@ let ENV = 'prod';
 const ENDPOINTS = {
   local: {
     DATA_URL: 'http://localhost:9000',
-    API_URL: 'http://localhost:8000',
+    API_URL: 'http://localhost:8080',
     OLLAMA_URL: 'http://localhost:11434'
   },
   prod: {

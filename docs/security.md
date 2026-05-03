@@ -33,7 +33,7 @@ escapeHtml(userInput) // 将 <, >, &, ", ' 转为实体
 
 ```javascript
 // local 环境与 prod 环境使用不同的 API 端点
-local:  http://localhost:8000
+local:  http://localhost:8080
 prod:   https://api.effiy.cn
 ```
 

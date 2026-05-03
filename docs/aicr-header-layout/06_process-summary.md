@@ -139,7 +139,7 @@ sequenceDiagram
 
 | # | Issue | Severity | Follow-Up |
 |---|-------|----------|-----------|
-| 1 | Visual layout not verified by automated screenshot | Medium | Manual browser open at `http://localhost:8000/src/views/aicr/index.html` to confirm two-row layout |
+| 1 | Visual layout not verified by automated screenshot | Medium | Manual browser open at `http://localhost:8080/src/views/aicr/index.html` to confirm two-row layout |
 | 2 | Drag-and-drop drop indicators not tested in live browser | Medium | Manual drag test to confirm left/right indicators appear |
 | 3 | Responsive breakpoints not tested by automation | Low | Resize browser to 1024px and 768px to confirm stack layout |
 

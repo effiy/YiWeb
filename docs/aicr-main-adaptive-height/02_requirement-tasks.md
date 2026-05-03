@@ -115,7 +115,7 @@ sequenceDiagram
 - **Scenario description**: 用户在桌面浏览器打开 AICR 页面，主区域应占满 header 下方的全部视口空间
 - **Pre-conditions**: 浏览器窗口宽度 >= 1024px，页面正常加载
 - **Operation steps**:
-  1. 打开 `http://localhost:8000/src/views/aicr/index.html`
+  1. 打开 `http://localhost:8080/src/views/aicr/index.html`
   2. 等待页面加载完成
   3. 观察 `aicr-main` 区域底部是否与视口底部对齐
 - **Expected result**: `aicr-main` 底部与视口底部对齐，无空白间隙

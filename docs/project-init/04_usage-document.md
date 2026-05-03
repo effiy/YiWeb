@@ -11,7 +11,7 @@ python -m http.server 8000
 
 ### 访问应用
 
-- AICR: http://localhost:8000/src/views/aicr/index.html
+- AICR: http://localhost:8080/src/views/aicr/index.html
 
 ### 环境切换
 

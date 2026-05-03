@@ -36,7 +36,7 @@
 
 | # | Precondition | Verification Method | Status |
 |---|--------------|---------------------|--------|
-| 1 | AICR page loaded | Open `http://localhost:8000/src/views/aicr/index.html` | ⏳ Not started |
+| 1 | AICR page loaded | Open `http://localhost:8080/src/views/aicr/index.html` | ⏳ Not started |
 | 2 | Viewport width ≥1025 px | Set browser width to 1440 px | ⏳ Not started |
 
 #### Operation Steps Verification

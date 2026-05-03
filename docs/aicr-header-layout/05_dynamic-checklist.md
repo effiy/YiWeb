@@ -37,7 +37,7 @@
 
 | # | Step | Verification Method | Status |
 |---|------|---------------------|--------|
-| 1 | Navigate to AICR page | Browser navigation | ✅ Page served at localhost:8000 |
+| 1 | Navigate to AICR page | Browser navigation | ✅ Page served at localhost:8080 |
 | 2 | Observe header area | Visual inspection | ⏳ Manual verification required |
 
 #### Expected Results Verification
