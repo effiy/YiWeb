@@ -1,5 +1,16 @@
 # import-docs 导入契约
 
+```mermaid
+graph LR
+    SRC[Source Files] --> DET{Auto-detect}
+    DET -->|.claude/| ALL[All files]
+    DET -->|other| MD[.md only]
+    ALL --> PATH[Path: prefix/repo/dir/file]
+    MD --> PATH
+    PATH --> GIT[git ls-files filter]
+    GIT --> SEND[Send to API]
+```
+
 ## 路径生成
 
 远端 `target_file` 按以下顺序拼接：
@@ -26,8 +37,10 @@
 
 - 始终忽略 `.git` 目录
 - 不跟随符号链接
-- `.claude` 模式：导入所有文件
-- 根目录模式：仅导入 `.md` 文件
+- **遵循 `.gitignore`**：若目标目录位于 git 仓库内，使用 `git ls-files --cached --others --exclude-standard` 获取文件列表，与 git push 规则保持一致（仅导入未被 `.gitignore` 忽略的文件）
+- 若无法使用 git（如目录在仓库外或无 `.git`），回退到文件系统遍历
+- `.claude` 模式：导入所有未被忽略的文件
+- 根目录模式：仅导入未被忽略的 `.md` 文件
 
 ## 去重与覆盖
 
