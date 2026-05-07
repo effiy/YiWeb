@@ -1,88 +1,82 @@
 # YiWeb Design System
 
-> 基线文档，rui init 生成 | 2026-05-07
+> Web 端视觉与交互规范
 
-## 设计语言
+## 色彩
 
-**专业、高效、开发者友好**。AI 代码审查工具，视觉风格服务于代码阅读和审查效率。
+| Token | 值 | 用途 |
+|-------|-----|------|
+| Primary | `#2563EB` (Blue-600) | 主色调、链接、活跃状态 |
+| Primary Light | `#3B82F6` (Blue-500) | Hover 状态 |
+| Background Light | `#F8FAFC` (Slate-50) | 浅色模式背景 |
+| Background Dark | `#0F172A` (Slate-900) | 深色模式背景 |
+| Surface | `#FFFFFF` / `#1E293B` | 卡片、面板背景 |
+| Text Primary | `#0F172A` / `#F8FAFC` | 正文 |
+| Text Secondary | `#64748B` / `#94A3B8` | 辅助文字 |
+| Border | `#E2E8F0` / `#334155` | 分割线、边框 |
+| Success | `#16A34A` (Green-600) | P2 标记 |
+| Warning | `#D97706` (Amber-600) | P1 标记 |
+| Error | `#DC2626` (Red-600) | P0 标记 |
 
-## Design Tokens
+## 字体
 
-定义在 `cdn/styles/theme.css`：
-- 背景: #ffffff (primary), #f5f5f5 (secondary)
-- 主色: #2563eb (blue-600)
-- 成功: #16a34a (green-600)
-- 警告: #f59e0b (amber-500)
-- 错误: #dc2626 (red-600)
-- 文字: #1a1a1a (primary), #666666 (secondary)
+| 属性 | 值 |
+|------|-----|
+| Font Stack | `Inter, -apple-system, system-ui, sans-serif` |
+| Heading | 600 weight, 24px/32px (h1), 18px/26px (h2) |
+| Body | 400 weight, 14px/22px |
+| Code | `'JetBrains Mono', 'Fira Code', monospace` 13px |
 
-### 间距
-- 基础: 4px / 8px / 12px / 16px / 24px / 32px
-- CSS 变量: `--spacing-xs` ~ `--spacing-xl`
+## 间距
 
-### 字体
-- 正文: system-ui, sans-serif
-- 代码: JetBrains Mono, Fira Code, monospace
-- 字号: 12px(辅助) 14px(正文) 16px(标题) 20px(H2)
+4px 基准体系: 4 / 8 / 12 / 16 / 24 / 32 / 48
 
-## 组件
+## 圆角
 
-`cdn/components/` 共享组件库：
+| 元素 | 值 |
+|------|-----|
+| 卡片 | 8px |
+| 按钮 | 4px |
+| 标签/徽章 | 2px |
+| 模态框 | 12px |
 
-### 通用组件
-| 组件 | 路径 | 说明 |
+## 阴影
+
+| 层级 | 值 |
+|------|-----|
+| 卡片 | `0 1px 3px rgba(0,0,0,0.08)` |
+| 下拉 | `0 4px 8px rgba(0,0,0,0.1)` |
+| 模态框 | `0 4px 12px rgba(0,0,0,0.12)` |
+
+## 动效
+
+| 场景 | 时长 | 缓动 |
 |------|------|------|
-| YiButton | `common/` | 多 variant: primary/secondary/danger/ghost |
-| YiModal | `common/` | 对话框 + 背景遮罩 |
-| YiForm | `common/` | 表单容器 + 验证 |
-| YiToast | `common/` | 消息通知(右上弹出) |
-| YiBadge | `common/` | 标签/状态 |
-| YiLoader | `common/` | 加载 spinner/skeleton |
+| hover | 200ms | ease |
+| transition | 300ms | ease-in-out |
+| 骨架屏 | 1.5s | ease-in-out infinite |
 
-### 业务组件
-| 组件 | 路径 | 说明 |
-|------|------|------|
-| MarkdownView | `business/` | Markdown 渲染(代码高亮+表格+图表) |
-| SearchHeader | `business/` | 搜索栏 |
-| SkeletonLoader | `business/` | 骨架屏占位 |
+## 响应式断点
 
-## 页面模板
+| 断点 | 布局 |
+|------|------|
+| >= 1024px | 双栏 (主内容 + 侧栏) |
+| < 1024px | 单栏堆叠 |
+| < 768px | 紧凑模式 (减少间距) |
 
-**AICR 审查页**:
-```
-[顶栏: 环境切换 + 设置]
-[主体: 左右分栏]
-├── [左侧 40%: 代码输入区]
-│   ├── [语言选择器]
-│   ├── [代码编辑器 textarea]
-│   └── [审查维度 checkboxes]
-└── [右侧 60%: 审查结果]
-    ├── [Markdown 渲染结果]
-    └── [操作: 复制/导出]
-```
+## 组件规范
 
-## 交互
+### 代码差异视图
+- 左右分栏 (旧/新), 差异行高亮
+- 新增行: `#DCFCE7` 背景 (Green-100)
+- 删除行: `#FEE2E2` 背景 (Red-100)
+- 行号列: 48px 宽, `#F1F5F9` 背景
 
-- 代码提交: 按钮提交 → loading → 流式渲染结果
-- 环境切换: 即时生效，无刷新
-- 组件加载: 声明式注册 + 自动模板缓存
-- 错误提示: Toast 3 秒自动消失
-- 确认操作: Modal 确认
+### 问题列表
+- 右侧可折叠侧栏, 320px 宽
+- 按严重程度排序: P0 → P1 → P2
+- P0 红色左边框, P1 琥珀色, P2 绿色
 
-## 无障碍 (a11y)
-
-- 语义化 HTML 标签
-- Button: aria-label on icon-only
-- Modal: aria-modal + focus trap
-- 表单: label 关联 input
-
-## 响应式
-
-- 断点: 768px
-- 桌面: 左右分栏
-- 移动: 上下堆叠，代码区在上
-
-## 图标
-
-- Unicode 符号 + CSS 图标
-- 无外部图标库依赖
+### 加载状态
+- SkeletonLoader 组件: 灰色脉冲, 圆角 4px
+- 内容过渡: opacity 300ms ease-in-out
