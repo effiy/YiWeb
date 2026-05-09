@@ -117,24 +117,28 @@ function defineComponentSync(options) {
         loadCSS(css);
     }
 
-    // 2. 创建组件对象（带空模板占位符）
+    // 2. 创建组件对象
     const component = {
         name,
         template: componentOptions.template || '',
         ...componentOptions
     };
 
-    // 3. 立即注册到全局 window 对象（关键：完全同步，不等待任何东西）
-    window[name] = component;
+    // 3. 注册到 window（无 HTML 模板时立即可用；有 HTML 模板时延后到模板加载完成）
+    if (!html) {
+        window[name] = component;
+    }
 
-    // 4. 异步加载模板，加载完成后更新组件
+    // 4. 异步加载模板，加载完成后更新组件并注册到 window
     if (html) {
         loadTemplate(html).then((loadedTemplate) => {
             if (loadedTemplate) {
                 component.template = loadedTemplate;
             }
+            window[name] = component;
         }).catch((error) => {
             console.error(`[ComponentLoader] 异步加载模板失败 (${html}):`, error);
+            window[name] = component;
         });
     }
 
@@ -151,11 +155,12 @@ function defineComponentSync(options) {
  * @returns {Promise<Object>} Vue 组件定义对象
  */
 export async function defineComponent(options) {
-    // 使用同步版本先注册
     const component = defineComponentSync(options);
-    // 等待模板加载完成后返回完整组件
     if (options.html) {
-        await loadTemplate(options.html);
+        const loadedTemplate = await loadTemplate(options.html);
+        if (loadedTemplate) {
+            component.template = loadedTemplate;
+        }
     }
     return component;
 }
@@ -166,7 +171,7 @@ export async function defineComponent(options) {
  * @param {Object} [options] - 注册选项
  * @returns {Promise<Object>} 组件 Promise
  */
-export function registerGlobalComponent(componentOptions, options = {}) {
+export async function registerGlobalComponent(componentOptions, options = {}) {
     const exposeName = options.exposeName || componentOptions?.name;
     const eventName = options.eventName || (exposeName ? `${exposeName}Loaded` : '');
     const errorPrefix = options.errorPrefix || exposeName || componentOptions?.name || 'Component';
@@ -176,10 +181,10 @@ export function registerGlobalComponent(componentOptions, options = {}) {
         return Promise.resolve(null);
     }
 
-    // 1. 同步定义并立即注册组件（关键：不使用 async/await，完全同步）
+    // 1. 等待模板就绪（defineComponent 会 await 模板加载）
     let component;
     try {
-        component = defineComponentSync(componentOptions);
+        component = await defineComponent(componentOptions);
     } catch (error) {
         console.error(`[${errorPrefix}] 组件定义失败:`, error);
         return Promise.resolve(null);
@@ -190,7 +195,7 @@ export function registerGlobalComponent(componentOptions, options = {}) {
         window[exposeName] = component;
     }
 
-    // 3. 立即触发加载完成事件（关键：同步触发，不等待任何 Promise）
+    // 3. 模板就绪后触发加载完成事件
     try {
         if (eventName) {
             console.log(`[ComponentLoader] 触发组件加载事件: ${eventName}`);
@@ -200,9 +205,5 @@ export function registerGlobalComponent(componentOptions, options = {}) {
         console.warn(`[ComponentLoader] 触发事件失败: ${eventName}`, e);
     }
 
-    // 4. 返回一个 Promise 供需要的地方使用（但不阻塞注册流程）
-    return defineComponent(componentOptions).catch((error) => {
-        console.error(`${errorPrefix} 组件完整初始化失败:`, error);
-        return window[exposeName] || component;
-    });
+    return component;
 }

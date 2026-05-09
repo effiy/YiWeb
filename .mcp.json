@@ -9,7 +9,7 @@
     },
     "playwright": {
       "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"]
+      "args": ["-y", "@playwright/mcp@latest", "--browser", "chromium", "--executable-path", "/home/claude/.cache/ms-playwright/chromium-1117/chrome-linux/chrome"]
     }
   }
 }
