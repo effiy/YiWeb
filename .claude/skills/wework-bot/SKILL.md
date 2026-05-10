@@ -20,6 +20,42 @@ graph LR
     F -->|error| H[Log + retry note]
 ```
 
+---
+
+## --help
+
+`/wework-bot` 支持 `--help` 标志，输出用法说明后退出，不发送任何消息、不写日志。
+
+### 输出格式
+
+```
+📖 /wework-bot — WeChat Work bot notifications
+
+Usage: node skills/wework-bot/scripts/send-message.js [options]
+
+Options:
+  --agent <name>        Route via config.agents mapping (recommended)
+  --robot <name>        Direct robot name (rare)
+  --name, -n <story>    Story name; appends to 09-消息通知列表.md before send
+  --content, -c <text>  Message body as string
+  --content-file, -f <path>  Read body from UTF-8 file
+  --no-send             Append to log only, skip HTTP send
+  --help                Show this help
+
+Environment:
+  API_X_TOKEN               Auth token (required)
+  WEWORK_BOT_WEBHOOK_URL    WeCom webhook URL (required, from env)
+  WEWORK_BOT_API_URL        Override default API URL
+  WEWORK_BOT_CONFIG         Config JSON path (default: repo config.json)
+
+Examples:
+  API_X_TOKEN=*** node skills/wework-bot/scripts/send-message.js --agent rui --name user-login -f ./tmp/body.md
+```
+
+输出后立即退出，不触发管线、不写文件、不发送通知。
+
+---
+
 ## 定位
 
 企业微信机器人通知 skill：将阶段状态、阻断原因和验证结果推送到企业微信群机器人，支持按 agent 路由到不同机器人。

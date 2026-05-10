@@ -27,6 +27,45 @@ flowchart TD
 
 ---
 
+## --help
+
+`/import-docs` 支持 `--help` 标志，输出用法说明后退出，不执行任何导入操作。
+
+### 触发规则
+
+| 输入 | 行为 |
+|------|------|
+| `/import-docs --help` | 输出完整用法（全部命令 + 参数表） |
+| `/import-docs list --help` | 输出 `list` 子命令用法 |
+
+### 输出格式
+
+```
+📖 /import-docs — Batch sync local docs to remote API
+
+Usage: /import-docs [command] [options]
+
+Commands:
+  import (default)      Scan and import files
+  list                  Enumerate files only, no import
+
+Options:
+  --workspace, -w       Scan by workspace rules (.claude all files, others .md only)
+  --dir, -d <path>      Single directory import
+  --exts, -e <csv>      Extension filter, comma-separated (default: md)
+  --exclude, -x <csv>   Exclude subdirectories (default: .git,node_modules)
+  --prefix, -p <path>   Remote path prefix
+  --api-url, -a <url>   API base URL (default: https://api.effiy.cn)
+  --help                Show this help
+
+Environment:
+  API_X_TOKEN           Auth token (required, read from env only)
+```
+
+输出后立即退出，不触发管线、不写文件、不发送通知。
+
+---
+
 ## rui 自动触发
 
 import-docs 是 rui 管线交付阶段的强制步骤（Step 2/3），由 rui 通过 `Skill(import-docs, --workspace)` 自动调用，不等待用户指令。

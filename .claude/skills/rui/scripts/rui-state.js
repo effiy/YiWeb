@@ -8,10 +8,15 @@
  *   node scripts/rui-state.js load [--name <story-name>] [--json]
  *   node scripts/rui-state.js clear [--name <story-name>]
  *   node scripts/rui-state.js next-step
+ *   node scripts/rui-state.js all-init [--file <path>] [--force]
+ *   node scripts/rui-state.js all-module-done --name <module-name> [--stories <csv>]
+ *   node scripts/rui-state.js all-module-blocked --name <module-name> --reason <text>
+ *   node scripts/rui-state.js all-status [--json]
  *
  * Storage:
  *   Global: docs/.memory/rui-state.json (session state + next-step context)
  *   Per-story: docs/故事任务面板/<name>/.memory/rui-state.json (pipeline progress + change history)
+ *   All-run: docs/.memory/all-modules.json (module-level tracking for --all mode)
  *
  * Schema:
  *   session_id, command, name, story_name, current_stage, blocked, block_reason, timestamp, storyboard
@@ -27,6 +32,7 @@ const path = require('path');
 const REPO_ROOT = path.resolve(__dirname, '../../..');
 const MEMORY_DIR = path.join(REPO_ROOT, 'docs', '.memory');
 const STATE_FILE = path.join(MEMORY_DIR, 'rui-state.json');
+const ALL_MODULES_FILE = path.join(MEMORY_DIR, 'all-modules.json');
 const STORIES_DIR = path.join(REPO_ROOT, 'docs', '故事任务面板');
 
 function storyMemoryDir(name) { return path.join(STORIES_DIR, name, '.memory'); }
@@ -36,7 +42,7 @@ const ALL_PHASES = ['自适应规划', '影响分析', '架构设计', '文档�
 const UPDATE_PHASES = ['存在性检查', '版本/结构检测', '结构补齐', '上下文解析', '变更分级', '增量更新'];
 
 function parseArgs(argv) {
-  const out = { command: null, name: null, stage: null, blocked: false, reason: '', json: false, prevStage: null, trigger: null };
+  const out = { command: null, name: null, stage: null, blocked: false, reason: '', json: false, prevStage: null, trigger: null, file: null, stories: null, force: false };
   const args = argv.slice(2);
   out.action = args[0];
   for (let i = 1; i < args.length; i++) {
@@ -49,6 +55,9 @@ function parseArgs(argv) {
     else if (a === '--prev-stage') out.prevStage = args[++i];
     else if (a === '--trigger') out.trigger = args[++i];
     else if (a === '--json') out.json = true;
+    else if (a === '--file') out.file = args[++i];
+    else if (a === '--stories') out.stories = args[++i];
+    else if (a === '--force') out.force = true;
   }
   return out;
 }
@@ -305,6 +314,237 @@ async function findStoryboards() {
   }
 }
 
+// ── all-modules helpers ──
+
+async function readAllModules() {
+  try {
+    const raw = await fsp.readFile(ALL_MODULES_FILE, 'utf8');
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+async function writeAllModules(data) {
+  await ensureDir();
+  data.updated_at = new Date().toISOString();
+  await fsp.writeFile(ALL_MODULES_FILE, JSON.stringify(data, null, 2), 'utf8');
+}
+
+function readStdin() {
+  return new Promise((resolve) => {
+    if (process.stdin.isTTY) { resolve(''); return; }
+    let data = '';
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', chunk => { data += chunk; });
+    process.stdin.on('end', () => resolve(data));
+  });
+}
+
+function validateModules(modules) {
+  if (!Array.isArray(modules) || modules.length === 0) {
+    return 'modules must be a non-empty array';
+  }
+  const names = new Set();
+  for (let i = 0; i < modules.length; i++) {
+    const m = modules[i];
+    if (!m.name || typeof m.name !== 'string' || !m.name.trim()) {
+      return `modules[${i}].name is required and must be a non-empty string`;
+    }
+    if (names.has(m.name)) {
+      return `duplicate module name: "${m.name}"`;
+    }
+    names.add(m.name);
+  }
+  return null;
+}
+
+function normalizeModules(modules) {
+  return modules.map((m, i) => ({
+    name: m.name.trim(),
+    description: m.description || '',
+    source_dirs: Array.isArray(m.source_dirs) ? m.source_dirs : [],
+    order: m.order != null ? m.order : i + 1,
+    status: 'pending',
+    block_reason: null,
+    stories_created: [],
+    started_at: null,
+    completed_at: null,
+  }));
+}
+
+function formatDuration(startedAt) {
+  const ms = Date.now() - new Date(startedAt).getTime();
+  if (ms < 60000) return `${Math.round(ms / 1000)}s`;
+  if (ms < 3600000) return `${Math.round(ms / 60000)}min`;
+  return `${Math.round(ms / 3600000)}h${Math.round((ms % 3600000) / 60000)}min`;
+}
+
+// ── all-* commands ──
+
+async function cmdAllInit(opts) {
+  // Check for existing run
+  const existing = await readAllModules();
+  if (existing && (existing.status === 'in_progress' || existing.status === 'blocked') && !opts.force) {
+    const pending = existing.modules.filter(m => m.status === 'pending' || m.status === 'in_progress');
+    const blocked = existing.modules.filter(m => m.status === 'blocked');
+    console.error(`⚠ Existing --all run found (status: ${existing.status}) with ${pending.length} pending, ${blocked.length} blocked modules.`);
+    console.error(`  Run \`node skills/rui/scripts/rui-state.js all-status\` to see progress. Use --force to overwrite.`);
+    process.exit(1);
+  }
+
+  // Read input
+  let input;
+  if (opts.file) {
+    input = await fsp.readFile(opts.file, 'utf8');
+  } else {
+    input = await readStdin();
+  }
+
+  if (!input || !input.trim()) {
+    console.error('No input provided. Pipe JSON to stdin or use --file <path>.');
+    console.error('Expected format: {"modules":[{"name":"...","description":"...","source_dirs":[...]},...]}');
+    process.exit(1);
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(input);
+  } catch (e) {
+    console.error(`Invalid JSON input: ${e.message}`);
+    process.exit(1);
+  }
+
+  const err = validateModules(parsed.modules);
+  if (err) {
+    console.error(`Validation error: ${err}`);
+    process.exit(1);
+  }
+
+  const now = new Date().toISOString();
+  const data = {
+    session_id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    started_at: now,
+    updated_at: now,
+    status: 'in_progress',
+    modules: normalizeModules(parsed.modules),
+  };
+
+  await writeAllModules(data);
+  console.log(`All run initialized: ${data.modules.length} modules pending`);
+}
+
+async function cmdAllModuleDone(opts) {
+  if (!opts.name) {
+    console.error('--name <module-name> is required');
+    process.exit(1);
+  }
+
+  const data = await readAllModules();
+  if (!data) {
+    console.error('No active --all run found. Run all-init first.');
+    process.exit(1);
+  }
+
+  const mod = data.modules.find(m => m.name === opts.name);
+  if (!mod) {
+    console.error(`Module "${opts.name}" not found in module list.`);
+    process.exit(1);
+  }
+
+  const now = new Date().toISOString();
+  mod.status = 'completed';
+  mod.completed_at = now;
+  if (!mod.started_at) mod.started_at = now;
+  if (opts.stories) {
+    const newStories = opts.stories.split(',').map(s => s.trim()).filter(Boolean);
+    for (const s of newStories) {
+      if (!mod.stories_created.includes(s)) mod.stories_created.push(s);
+    }
+  }
+
+  // Update top-level status
+  const allTerminal = data.modules.every(m => m.status === 'completed' || m.status === 'blocked');
+  if (allTerminal) {
+    data.status = data.modules.some(m => m.status === 'blocked') ? 'blocked' : 'completed';
+  }
+
+  const done = data.modules.filter(m => m.status === 'completed').length;
+  const total = data.modules.length;
+  await writeAllModules(data);
+  console.log(`Module "${opts.name}" marked as completed [${done}/${total} done]`);
+}
+
+async function cmdAllModuleBlocked(opts) {
+  if (!opts.name) {
+    console.error('--name <module-name> is required');
+    process.exit(1);
+  }
+  if (!opts.reason) {
+    console.error('--reason <text> is required');
+    process.exit(1);
+  }
+
+  const data = await readAllModules();
+  if (!data) {
+    console.error('No active --all run found. Run all-init first.');
+    process.exit(1);
+  }
+
+  const mod = data.modules.find(m => m.name === opts.name);
+  if (!mod) {
+    console.error(`Module "${opts.name}" not found in module list.`);
+    process.exit(1);
+  }
+
+  mod.status = 'blocked';
+  mod.block_reason = opts.reason;
+  mod.completed_at = null;
+  data.status = 'blocked';
+
+  await writeAllModules(data);
+  console.log(`Module "${opts.name}" blocked: ${opts.reason}`);
+}
+
+async function cmdAllStatus(opts) {
+  const data = await readAllModules();
+  if (!data) {
+    console.log('> No active --all run found. Run /rui init --all first.');
+    process.exit(0);
+  }
+
+  if (opts.json) {
+    console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+
+  const done = data.modules.filter(m => m.status === 'completed').length;
+  const blocked = data.modules.filter(m => m.status === 'blocked').length;
+  const total = data.modules.length;
+  const duration = formatDuration(data.started_at);
+
+  const statusBadge = data.status === 'completed' ? '✅ 完成' :
+    data.status === 'blocked' ? '⛔ 有阻断' : '🔄 进行中';
+
+  console.log(`📦 rui init --all 模块进度 · ${statusBadge} · ${done}/${total} 完成 · 已运行 ${duration}\n`);
+  console.log('| # | 模块 | 状态 | 故事数 | 备注 |');
+  console.log('|---|------|------|--------|------|');
+
+  const statusIcon = { pending: '⏳', in_progress: '🔄', completed: '✅', blocked: '⛔' };
+  const statusLabel = { pending: '待处理', in_progress: '进行中', completed: '完成', blocked: '阻断' };
+
+  for (const m of data.modules) {
+    const icon = statusIcon[m.status] || '?';
+    const label = statusLabel[m.status] || m.status;
+    const storyCount = m.stories_created.length;
+    const note = m.status === 'blocked' ? m.block_reason || '—' : '—';
+    console.log(`| ${m.order} | ${m.name} | ${icon} ${label} | ${storyCount} | ${note} |`);
+  }
+
+  const blockedMods = data.modules.filter(m => m.status === 'blocked');
+  if (blockedMods.length > 0) {
+    console.log(`\n阻断: ${blockedMods.length} 个模块需要人工介入`);
+  }
+}
+
 async function main() {
   const opts = parseArgs(process.argv);
   switch (opts.action) {
@@ -312,6 +552,10 @@ async function main() {
     case 'load': await cmdLoad(opts); break;
     case 'clear': await cmdClear(opts); break;
     case 'next-step': await cmdNextStep(); break;
+    case 'all-init': await cmdAllInit(opts); break;
+    case 'all-module-done': await cmdAllModuleDone(opts); break;
+    case 'all-module-blocked': await cmdAllModuleBlocked(opts); break;
+    case 'all-status': await cmdAllStatus(opts); break;
     default:
       console.error(`Unknown action: ${opts.action}`);
       process.exit(1);

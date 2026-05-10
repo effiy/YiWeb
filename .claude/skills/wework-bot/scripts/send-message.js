@@ -330,6 +330,10 @@ if (!options.content || !String(options.content).trim()) {
 
 options.content = String(options.content).trimEnd();
 
+// Prepend project name (root directory name) to every message
+const projectName = path.basename(PROJECT_ROOT);
+options.content = `【${projectName}】\n${options.content}`;
+
 if (options.name) {
   appendToStoryNotificationLog(options.name, options.content);
 }

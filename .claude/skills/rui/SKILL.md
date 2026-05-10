@@ -35,6 +35,127 @@ flowchart TD
 
 ---
 
+## --help
+
+`/rui` 及其子命令均支持 `--help` 标志，输出对应层级用法说明后退出，不执行任何管线操作。
+
+### 触发规则
+
+| 输入 | 行为 |
+|------|------|
+| `/rui --help` | 输出技能级总览（全部命令 + 常用示例） |
+| `/rui init --help` | 输出 `init` 子命令详细用法（含 `--all`） |
+| `/rui doc --help` | 输出 `doc` 子命令详细用法 |
+| `/rui update --help` | 输出 `update` 子命令详细用法 |
+| `/rui code --help` | 输出 `code` 子命令详细用法 |
+| `/rui list --help` | 输出 `list` 子命令用法 |
+
+### 输出格式（技能级）
+
+```
+📖 /rui — Story-driven SDLC orchestrator
+
+Usage: /rui <command> [input] [options]
+
+Commands:
+  init [--all]          Establish project baseline (--all: full coverage)
+  doc <requirement>     Split requirement into stories, run doc pipeline
+  update <name> [ctx]   Upgrade existing story (structure + content)
+  code <name>           Implement story (precheck → test → code → verify → self-improve)
+  <requirement>         End-to-end: doc pipeline → code pipeline
+  list                  List all incomplete stories with progress
+  (no args)             Scan project + story status, recommend 5-10 tasks
+
+<requirement> can be:
+  - Text description (e.g. "用户登录功能，支持密码和OAuth")
+  - @file reference (e.g. @docs/req/login.md)
+  - URL (e.g. https://example.com/req.md)
+
+Options:
+  --help                Show this help
+
+Use /rui <command> --help for detailed usage of a specific command.
+```
+
+### 子命令 --help 输出格式
+
+`/rui init --help`：
+```
+📖 /rui init — Establish project baseline
+
+Usage: /rui init [--all]
+
+  (no flag)   Generate CLAUDE.md + README.md, agents/, rules/, templates/, .mcp.json
+              → readiness check → deliver. No stories generated.
+  --all       After readiness check: module analysis → per-module end-to-end
+              (story split → doc pipeline → code pipeline). Supports resume.
+
+Options:
+  --help      Show this help
+```
+
+`/rui doc --help`：
+```
+📖 /rui doc — Split requirement and run doc pipeline
+
+Usage: /rui doc <requirement>
+
+  Parse requirement → split into stories → per story: adaptive planning →
+  impact analysis → architecture design → doc generation → deliver.
+  Produces 01-故事任务.md + 02/03/04 tech reviews per story.
+
+Options:
+  --help      Show this help
+```
+
+`/rui update --help`：
+```
+📖 /rui update — Upgrade/update existing story
+
+Usage: /rui update <name> [context]
+
+  Existence check → version/structure detection → gap fill →
+  context parse → change level (T1/T2/T3) → incremental update → deliver.
+
+  [context] optional: supplementary info for content update.
+  Without [context]: auto-detect optimization suggestions from story docs.
+
+Options:
+  --help      Show this help
+```
+
+`/rui code --help`：
+```
+📖 /rui code — Implement story (code pipeline)
+
+Usage: /rui code <name>
+
+  Precheck (impact analysis + branch isolation + doc fill) →
+  test-first (Gate A) → implement (module-by-module, P0 clearance) →
+  verify (Gate B, ≤2 repair rounds) → self-improve → deliver.
+  Final output: 8 docs + .improvement/ + .memory/ per story.
+
+Options:
+  --help      Show this help
+```
+
+`/rui list --help`：
+```
+📖 /rui list — List incomplete stories
+
+Usage: /rui list
+
+  Scan docs/故事任务面板/, output progress table with status per story.
+  Pure query, no pipeline execution.
+
+Options:
+  --help      Show this help
+```
+
+输出后立即退出，不触发管线、不写文件、不发送通知。
+
+---
+
 ## 命令概览
 
 | 命令 | 流程 |
