@@ -5,8 +5,7 @@ const fsp = fs.promises;
 const path = require('path');
 
 const PROJECT = path.basename(process.cwd());
-const REPO_ROOT = path.resolve(__dirname, '../../../../');
-const OUTPUT_DIR = path.join(REPO_ROOT, 'docs', '自改进故事面板');
+const OUTPUT_DIR = path.join(process.cwd(), 'docs', '自改进故事面板');
 const CLAUDE_DIR = path.join(process.cwd(), '.claude');
 
 function table(headers, rows) {
@@ -29,7 +28,7 @@ function collectStats() {
 
   if (!fs.existsSync(CLAUDE_DIR)) return stats;
 
-  for (const sub of ['agents', 'rules', 'templates', 'skills']) {
+  for (const sub of ['agents', 'rules']) {
     const dir = path.join(CLAUDE_DIR, sub);
     if (!fs.existsSync(dir)) continue;
     const entries = fs.readdirSync(dir).filter(f => {
@@ -42,6 +41,47 @@ function collectStats() {
       } catch {}
     }
     stats[sub] = { files: entries.length, lines, names: entries };
+  }
+
+  // templates: 实际路径在 skills/rui/templates/
+  {
+    const tdir = path.join(CLAUDE_DIR, 'skills', 'rui', 'templates');
+    if (fs.existsSync(tdir)) {
+      const entries = fs.readdirSync(tdir).filter(f => {
+        try { return fs.statSync(path.join(tdir, f)).isFile(); } catch { return false; }
+      });
+      let lines = 0;
+      for (const f of entries) {
+        try { lines += fs.readFileSync(path.join(tdir, f), 'utf8').split('\n').length; } catch {}
+      }
+      stats.templates = { files: entries.length, lines, names: entries };
+    }
+  }
+
+  // skills: 递归扫描子目录（skill 定义在 skills/<name>/ 下）
+  {
+    const sdir = path.join(CLAUDE_DIR, 'skills');
+    if (fs.existsSync(sdir)) {
+      const entries = [];
+      const skillDirs = fs.readdirSync(sdir).filter(f => {
+        try { return fs.statSync(path.join(sdir, f)).isDirectory(); } catch { return false; }
+      });
+      for (const sd of skillDirs) {
+        const ssub = path.join(sdir, sd);
+        const files = fs.readdirSync(ssub, { recursive: true }).filter(f => {
+          try { return fs.statSync(path.join(ssub, f)).isFile(); } catch { return false; }
+        });
+        for (const f of files) {
+          if (f.includes('templates/')) continue; // 模板已在独立区统计
+          entries.push(`${sd}/${f}`);
+        }
+      }
+      let lines = 0;
+      for (const f of entries) {
+        try { lines += fs.readFileSync(path.join(sdir, f), 'utf8').split('\n').length; } catch {}
+      }
+      stats.skills = { files: entries.length, lines, names: entries.sort() };
+    }
   }
 
   for (const f of ['CLAUDE.md', '.mcp.json', 'settings.json', 'settings.local.json']) {
@@ -169,6 +209,23 @@ function generateDoc(stats, opts) {
 
 async function main() {
   const args = process.argv.slice(2);
+
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log('用法: node retro.js [选项]');
+    console.log('');
+    console.log('  采集 .claude/ 目录统计（agents/rules/templates/skills），');
+    console.log('  生成配置健康度复盘文档。');
+    console.log('');
+    console.log('选项:');
+    console.log('  --help          显示此帮助');
+    console.log('  --name <story>  关联故事名，写入文档元信息');
+    console.log('  --json          输出原始统计数据（JSON），不写文件');
+    console.log('');
+    console.log('输出路径: docs/自改进故事面板/<project>-<date>.md');
+    console.log('数据范围: .claude/ 目录，不涉及执行记忆或项目代码');
+    process.exit(0);
+  }
+
   const jsonOutput = args.includes('--json');
   const nameIdx = args.indexOf('--name');
   const storyName = nameIdx !== -1 ? args[nameIdx + 1] : null;

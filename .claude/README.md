@@ -57,8 +57,7 @@ YrY/
 │   ├── code-pipeline.md   # 代码管线规则（分支隔离、逐模块审查、禁止自动合并等 14 条）
 │   ├── doc-generation.md  # 文档生成规则（版本信息、证据标准、增量裁剪等 5 条）
 │   ├── gate-rules.md      # 门禁规则（Gate A/B + P0 审查标准）
-│   ├── self-improve.md    # 自改进规则（数据驱动、H11 降级、append-only 等 5 条）
-│   └── rui-docs.md        # 文档管理规则（操作范围、增量合并、分支隔离等 8 条）
+│   └── self-improve.md    # 自改进规则（数据驱动、H11 降级、append-only 等 5 条）
 └── skills/                # 技能定义
     ├── rui/               # SDLC 编排器（全流程定义 + 命令体系）
     │   ├── SKILL.md       # 完整管线文档
@@ -68,14 +67,9 @@ YrY/
     │   ├── SKILL.md
     │   ├── config.json
     │   └── scripts/send-message.js
-    ├── import-docs/       # 文档远程同步（管线强制步骤）
-    │   ├── SKILL.md
-    │   └── scripts/import-docs.js
-    └── rui-docs/          # 文档目录管理（sync / retro / 健康度扫描）
+    └── import-docs/       # 文档远程同步（管线强制步骤）
         ├── SKILL.md
-        └── scripts/
-            ├── sync.js
-            └── retro.js
+        └── scripts/import-docs.js
 ```
 
 ## 命令
@@ -101,16 +95,6 @@ YrY/
 ### `/import-docs` — 文档同步
 
 递归扫描项目目录（`.claude` 内全部文件，其余仅 `.md`），批量 POST 到远端文档 API。rui 交付管线自动触发。
-
-### `/rui-docs` — 文档目录管理
-
-| 命令 | 流程 | 产出 |
-|------|------|------|
-| `/rui-docs sync` | fetch 远端 → diff 对比 → 增量合并本地 `docs/` | 补齐缺失文档 |
-| `/rui-docs retro` | 采集 `docs/` 结构 → 健康度分析 → 生成复盘 | `${PROJECT}-docs-<date>.md` |
-| `/rui-docs`（空输入） | 扫描 `docs/` 状态 → 推荐 5~10 条任务 | 任务推荐列表 |
-
-对称 `rui-claude`（管理 `.claude/`）而 `rui-docs` 管理 `docs/`。互补 `import-docs`（推送本地→远端）而 `rui-docs sync`（拉取远端→本地）。
 
 ## 故事管线详解
 
@@ -169,5 +153,3 @@ YrY/
 | 故事列表 | `node skills/rui/scripts/list.js` | `/rui list` |
 | 文档同步 | `Skill(import-docs, --workspace)` | rui 交付自动触发 |
 | 企微通知 | `Skill(wework-bot, --name <name>)` | rui 交付自动触发 |
-| 文档健康度 | `node skills/rui-docs/scripts/retro.js` | `/rui-docs retro` |
-| 文档远端同步 | `node skills/rui-docs/scripts/sync.js` | `/rui-docs sync` |

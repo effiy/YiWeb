@@ -4,11 +4,15 @@ const fileTreeComputed = {
     allTags() {
         if (!Array.isArray(this.tree)) return [];
 
-        // 只收集一级目录作为标签
+        // 始终收集所有二级目录名（跨全部一级目录）
         const tags = new Set();
         for (const item of this.tree) {
-            if (item.type === 'folder') {
-                tags.add(item.name);
+            if (item.type === 'folder' && Array.isArray(item.children)) {
+                for (const child of item.children) {
+                    if (child.type === 'folder') {
+                        tags.add(child.name);
+                    }
+                }
             }
         }
 
@@ -33,7 +37,6 @@ const fileTreeComputed = {
         const counts = {};
         let noTagsCount = 0;
 
-        // 统计一级目录下所有文件数量（包括子文件夹中的文件）
         const countFilesInFolder = (items) => {
             let fileCount = 0;
             if (!Array.isArray(items)) return fileCount;
@@ -47,24 +50,26 @@ const fileTreeComputed = {
             return fileCount;
         };
 
-        // 遍历根目录
+        // 始终统计所有二级目录下的文件数（跨全部一级目录累加）
         for (const item of this.tree) {
-            if (item.type === 'file') {
-                noTagsCount++;
-            } else if (item.type === 'folder') {
-                counts[item.name] = countFilesInFolder(item.children || []);
+            if (item.type === 'folder' && Array.isArray(item.children)) {
+                for (const child of item.children) {
+                    if (child.type === 'folder') {
+                        counts[child.name] = (counts[child.name] || 0) + countFilesInFolder(child.children || []);
+                    }
+                }
             }
+        }
+
+        // 根级文件视为无标签
+        for (const item of this.tree) {
+            if (item.type === 'file') noTagsCount++;
         }
 
         return { counts, noTagsCount };
     },
     filteredTags() {
-        let tags = this.allTags;
-
-        if (this.tagFilterSearchKeyword) {
-            const keyword = this.tagFilterSearchKeyword.toLowerCase();
-            tags = tags.filter(tag => tag.toLowerCase().includes(keyword));
-        }
+        const tags = this.allTags;
 
         return tags.sort((a, b) => {
             const isSelectedA = this.selectedTags.includes(a);
@@ -79,7 +84,7 @@ const fileTreeComputed = {
         });
     },
     visibleTags() {
-        if (this.tagFilterExpanded || this.tagFilterSearchKeyword) {
+        if (this.tagFilterExpanded) {
             return this.filteredTags;
         }
         return this.filteredTags.slice(0, this.tagFilterVisibleCount);
@@ -90,22 +95,28 @@ const fileTreeComputed = {
     sortedTree() {
         if (!Array.isArray(this.tree)) return [];
 
+        // 区分一级标签（header 层级）和二级标签（sidebar 层级）
+        const firstLevelNames = new Set();
+        for (const item of this.tree) {
+            if (item.type === 'folder') firstLevelNames.add(item.name);
+        }
+        const firstLevelTags = this.selectedTags.filter(t => firstLevelNames.has(t));
+        const secondLevelTags = this.selectedTags.filter(t => !firstLevelNames.has(t));
+
         let filteredItems = this.tree;
 
-        // 如果有任何筛选条件
-        if (this.selectedTags.length > 0 || this.tagFilterNoTags) {
+        // 一级标签筛选
+        if (firstLevelTags.length > 0 || this.tagFilterNoTags) {
             const result = [];
 
             for (const item of this.tree) {
                 if (item.type === 'folder') {
-                    const isTagSelected = this.selectedTags.includes(item.name);
+                    const isTagSelected = firstLevelTags.includes(item.name);
                     let shouldInclude = false;
 
-                    if (this.selectedTags.length > 0) {
-                        // 根据是否反向过滤决定是否包含该文件夹
+                    if (firstLevelTags.length > 0) {
                         shouldInclude = this.tagFilterReverse ? !isTagSelected : isTagSelected;
                     } else if (this.tagFilterNoTags) {
-                        // 只选中无标签筛选时，不包含文件夹
                         shouldInclude = false;
                     }
 
@@ -116,10 +127,8 @@ const fileTreeComputed = {
                     let shouldInclude = false;
 
                     if (this.tagFilterNoTags) {
-                        // 无标签筛选时包含根目录文件
                         shouldInclude = true;
-                    } else if (this.selectedTags.length > 0 && this.tagFilterReverse) {
-                        // 反向过滤时也包含根目录文件
+                    } else if (firstLevelTags.length > 0 && this.tagFilterReverse) {
                         shouldInclude = true;
                     }
 
@@ -130,6 +139,20 @@ const fileTreeComputed = {
             }
 
             filteredItems = result;
+        }
+
+        // 二级标签筛选：过滤已选一级目录下的子目录
+        if (secondLevelTags.length > 0) {
+            filteredItems = filteredItems.map(item => {
+                if (item.type !== 'folder' || !Array.isArray(item.children)) return item;
+                const filteredChildren = item.children.filter(child => {
+                    if (child.type === 'folder') {
+                        return secondLevelTags.includes(child.name);
+                    }
+                    return true;
+                });
+                return { ...item, children: filteredChildren };
+            });
         }
 
         const sorted = filteredItems.map(item => sortFileTreeRecursively(item));

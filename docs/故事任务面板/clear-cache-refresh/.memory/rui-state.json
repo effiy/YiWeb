@@ -1,0 +1,33 @@
+{
+  "session_id": "clear-cache-refresh-20260510",
+  "command": "full",
+  "name": "clear-cache-refresh",
+  "current_stage": "自改进",
+  "blocked": false,
+  "block_reason": null,
+  "timestamp": "2026-05-10T09:50:00+08:00",
+  "storyboard": "docs/故事任务面板/clear-cache-refresh/01-故事任务.md",
+  "pipeline_progress": {
+    "自适应规划": "completed",
+    "影响分析": "completed",
+    "架构设计": "completed",
+    "文档生成": "completed",
+    "预检": "completed",
+    "测试先行": "completed",
+    "实现": "completed",
+    "验证": "completed",
+    "自改进": "completed"
+  },
+  "change_history": [
+    {"timestamp": "2026-05-10T09:20:00+08:00", "from_stage": "", "to_stage": "自适应规划", "trigger": "rui full"},
+    {"timestamp": "2026-05-10T09:22:00+08:00", "from_stage": "自适应规划", "to_stage": "影响分析", "trigger": "rui full"},
+    {"timestamp": "2026-05-10T09:25:00+08:00", "from_stage": "影响分析", "to_stage": "架构设计", "trigger": "rui full"},
+    {"timestamp": "2026-05-10T09:28:00+08:00", "from_stage": "架构设计", "to_stage": "文档生成", "trigger": "rui full"},
+    {"timestamp": "2026-05-10T09:35:00+08:00", "from_stage": "文档生成", "to_stage": "预检", "trigger": "rui full"},
+    {"timestamp": "2026-05-10T09:37:00+08:00", "from_stage": "预检", "to_stage": "测试先行", "trigger": "rui full"},
+    {"timestamp": "2026-05-10T09:38:00+08:00", "from_stage": "测试先行", "to_stage": "实现", "trigger": "rui full"},
+    {"timestamp": "2026-05-10T09:45:00+08:00", "from_stage": "实现", "to_stage": "验证", "trigger": "rui full"},
+    {"timestamp": "2026-05-10T09:48:00+08:00", "from_stage": "验证", "to_stage": "自改进", "trigger": "rui full"}
+  ],
+  "related_proposals": []
+}

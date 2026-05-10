@@ -4,7 +4,7 @@ const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
 
-const REPO_ROOT = path.resolve(__dirname, '../../..');
+const REPO_ROOT = path.resolve(__dirname, '../../../..');
 const PANEL_DIR = path.join(REPO_ROOT, 'docs', '故事任务面板');
 
 const STORY_FILES = [
@@ -15,10 +15,12 @@ const STORY_FILES = [
   '05-后端实施报告.md',
   '06-前端实施报告.md',
   '07-测试用例报告.md',
+  '08-自改进复盘.md',
 ];
 
 const DOC_FILES = ['01-故事任务.md', '02-后端技术评审.md', '03-前端技术评审.md', '04-测试用例评审.md'];
 const REPORT_FILES = ['05-后端实施报告.md', '06-前端实施报告.md', '07-测试用例报告.md'];
+const BASELINE_FILES = [...STORY_FILES];
 
 function statusLabel(status) {
   const map = {
@@ -81,16 +83,20 @@ async function checkStory(dirPath, name) {
 }
 
 async function main() {
+  const jsonMode = process.argv.includes('--json');
+
   let dirs = [];
   try {
     const entries = await fsp.readdir(PANEL_DIR, { withFileTypes: true });
     dirs = entries.filter(e => e.isDirectory()).map(e => e.name).sort();
   } catch {
+    if (jsonMode) { console.log('[]'); process.exit(0); }
     console.log('docs/故事任务面板/ 目录不存在。运行 `/rui doc <requirement>` 创建故事。');
     process.exit(0);
   }
 
   if (dirs.length === 0) {
+    if (jsonMode) { console.log('[]'); process.exit(0); }
     console.log('暂无故事任务。运行 `/rui doc <requirement>` 创建故事。');
     process.exit(0);
   }
@@ -99,6 +105,11 @@ async function main() {
   for (const dir of dirs) {
     const r = await checkStory(path.join(PANEL_DIR, dir), dir);
     results.push(r);
+  }
+
+  if (jsonMode) {
+    console.log(JSON.stringify(results, null, 2));
+    process.exit(0);
   }
 
   const incomplete = results.filter(r => r.status !== 'code_done');

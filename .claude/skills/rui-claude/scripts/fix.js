@@ -53,7 +53,6 @@ const SYNCABLE_FILES = [
   'rules/gate-rules.md',
   'rules/self-improve.md',
   'rules/rui-claude.md',
-  'rules/rui-docs.md',
 ];
 
 // ---- 可从根同步的目录（递归，按文件粒度比较） ----
