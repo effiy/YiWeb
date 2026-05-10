@@ -1,4 +1,5 @@
 import { registerGlobalComponent } from '/cdn/utils/view/componentLoader.js';
+import { clearCacheAndRefresh } from '/src/views/aicr/hooks/clearCacheMethods.js';
 
 registerGlobalComponent({
     name: 'AicrPage',
@@ -37,7 +38,8 @@ registerGlobalComponent({
             if (!activeEl) return false;
             const tagName = activeEl.tagName.toLowerCase();
             return tagName === 'input' || tagName === 'textarea' || activeEl.isContentEditable;
-        }
+        },
+        clearCacheAndRefresh
     }
 });
 

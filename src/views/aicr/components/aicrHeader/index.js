@@ -290,6 +290,9 @@ registerGlobalComponent({
         handleCompositionEnd(event) {
             this.$emit('composition-end', event);
         },
+        handleClearCache() {
+            this.$emit('clear-cache');
+        },
         clearSearch() {
             this.$emit('clear-search');
         }

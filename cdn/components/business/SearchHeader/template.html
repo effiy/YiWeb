@@ -74,6 +74,17 @@
       <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" aria-hidden="true"></i>
     </button>
 
+    <button
+      v-if="showClearCacheButton"
+      type="button"
+      class="header-icon-btn"
+      @click="clearCache"
+      title="清缓存并刷新"
+      aria-label="清缓存并刷新"
+    >
+      <i class="fas fa-trash-can" aria-hidden="true"></i>
+    </button>
+
     <span class="env-badge" :class="envType">
       {{ envLabel }}
     </span>

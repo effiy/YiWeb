@@ -15,6 +15,8 @@
         :sidebar-collapsed="sidebarCollapsed"
         :original-data="[]"
         :show-search="false"
+        :show-clear-cache-button="true"
+        @clear-cache="handleClearCache"
         @search-input="handleSearchInput"
         @search-keydown="handleMessageInput"
         @composition-start="handleCompositionStart"

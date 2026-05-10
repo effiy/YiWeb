@@ -87,6 +87,10 @@ registerGlobalComponent({
       type: Boolean,
       default: false
     },
+    showClearCacheButton: {
+      type: Boolean,
+      default: false
+    },
     showSearch: {
       type: Boolean,
       default: true
@@ -111,7 +115,8 @@ registerGlobalComponent({
     'composition-start',
     'composition-end',
     'clear-search',
-    'open-rss-manager'
+    'open-rss-manager',
+    'clear-cache'
   ],
   setup(props, { emit }) {
     const Vue = window.Vue;
@@ -166,6 +171,10 @@ registerGlobalComponent({
       emit('toggle-sidebar');
     };
 
+    const clearCache = () => {
+      emit('clear-cache');
+    };
+
     const handleInput = (event) => {
       emit('search-input', event);
     };
@@ -202,6 +211,7 @@ registerGlobalComponent({
       goHome,
       openAuth,
       toggleSidebar,
+      clearCache,
       handleInput,
       handleKeydown,
       clearSearch,
