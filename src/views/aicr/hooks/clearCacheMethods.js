@@ -1,8 +1,9 @@
 /**
- * 清除浏览器缓存并刷新页面工具函数
- * 清除 localStorage（保留 Token/模型选择）、sessionStorage、CacheStorage（JS/CSS/HTML 等 HTTP 缓存）
- * 最后执行硬刷新确保不从浏览器缓存加载资源
- * author: Claude Code
+ * 清除浏览器全部缓存并硬刷新页面
+ * 1. localStorage — 保留 Token 和模型选择，其余键全部移除
+ * 2. sessionStorage — 全部清除
+ * 3. CacheStorage — 清除所有 Service Worker 缓存的 JS/CSS/HTML 等静态资源
+ * 4. 硬刷新 — 使用缓存爆破参数绕过浏览器 HTTP 缓存，确保从服务器重新请求所有静态文件
  */
 
 // 需要保留的 localStorage 键名
@@ -11,14 +12,7 @@ const PRESERVE_KEYS = new Set([
     'YiWeb.apiModel.v1'
 ]);
 
-/**
- * 清除浏览器全部缓存并硬刷新页面
- * 1. localStorage — 保留 Token 和模型选择，其余键全部移除
- * 2. sessionStorage — 全部清除
- * 3. CacheStorage — 清除所有 Service Worker 缓存的 JS/CSS/HTML 等资源
- * 4. 硬刷新 — 绕过浏览器 HTTP 缓存重新请求所有资源
- */
-export const clearCacheAndRefresh = () => {
+export const clearCacheAndRefresh = async () => {
     const confirmed = window.confirm('确定要清空缓存并刷新页面？Token 将被保留。');
     if (!confirmed) return;
 
@@ -49,21 +43,18 @@ export const clearCacheAndRefresh = () => {
         // sessionStorage 异常静默忽略
     }
 
-    // 3. 清除 CacheStorage（Service Worker 缓存的 JS/CSS/HTML 等静态资源）
+    // 3. 清除 CacheStorage — 等待所有异步删除完成后再刷新，避免竞态
     if ('caches' in window) {
         try {
-            caches.keys().then(names => {
-                for (const name of names) {
-                    caches.delete(name);
-                }
-            }).catch(() => {});
+            const names = await caches.keys();
+            await Promise.all(names.map(name => caches.delete(name)));
         } catch (_) {
             // CacheStorage 异常静默忽略
         }
     }
 
-    // 4. 硬刷新 — 绕过浏览器 HTTP 缓存
-    window.location.reload(true);
+    // 4. 硬刷新 — CacheStorage 已清除，直接 reload 即可从服务器获取最新资源
+    window.location.reload();
 };
 
 // 向后兼容：暴露到全局
