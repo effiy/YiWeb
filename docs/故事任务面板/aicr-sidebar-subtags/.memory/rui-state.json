@@ -1,11 +1,11 @@
 {
-  "session_id": "aicr-sidebar-subtags-20260510-update",
+  "session_id": "aicr-sidebar-subtags-20260511-update-3",
   "command": "update",
   "story_name": "aicr-sidebar-subtags",
   "current_stage": "交付",
   "blocked": false,
   "block_reason": null,
-  "timestamp": "2026-05-10T21:45:00+08:00",
+  "timestamp": "2026-05-11T13:00:00+08:00",
   "storyboard": "docs/故事任务面板/aicr-sidebar-subtags/01-故事任务.md",
   "pipeline_progress": {
     "需求解析": "completed",
@@ -22,11 +22,84 @@
     "交付": "completed"
   },
   "change_history": [
-    { "timestamp": "2026-05-10T09:15:00+08:00", "from_stage": "-", "to_stage": "需求解析", "trigger": "/rui" },
-    { "timestamp": "2026-05-10T09:20:00+08:00", "from_stage": "文档生成", "to_stage": "实现", "trigger": "code pipeline" },
-    { "timestamp": "2026-05-10T09:30:00+08:00", "from_stage": "自改进", "to_stage": "交付", "trigger": "delivery" },
-    { "timestamp": "2026-05-10T21:30:00+08:00", "from_stage": "-", "to_stage": "文档生成", "trigger": "/rui code --from-doc" },
-    { "timestamp": "2026-05-10T21:45:00+08:00", "from_stage": "-", "to_stage": "实现", "trigger": "/rui update" }
+    {
+      "timestamp": "2026-05-10T09:15:00+08:00",
+      "from_stage": "-",
+      "to_stage": "需求解析",
+      "trigger": "/rui"
+    },
+    {
+      "timestamp": "2026-05-10T09:20:00+08:00",
+      "from_stage": "文档生成",
+      "to_stage": "实现",
+      "trigger": "code pipeline"
+    },
+    {
+      "timestamp": "2026-05-10T09:30:00+08:00",
+      "from_stage": "自改进",
+      "to_stage": "交付",
+      "trigger": "delivery"
+    },
+    {
+      "timestamp": "2026-05-10T21:30:00+08:00",
+      "from_stage": "-",
+      "to_stage": "文档生成",
+      "trigger": "/rui code --from-doc"
+    },
+    {
+      "timestamp": "2026-05-10T21:45:00+08:00",
+      "from_stage": "-",
+      "to_stage": "实现",
+      "trigger": "/rui update"
+    },
+    {
+      "timestamp": "2026-05-11T10:15:00+08:00",
+      "from_stage": "-",
+      "to_stage": "影响分析",
+      "trigger": "/rui update"
+    },
+    {
+      "timestamp": "2026-05-11T10:30:00+08:00",
+      "from_stage": "影响分析",
+      "to_stage": "交付",
+      "trigger": "T2 update: 二级标签解耦"
+    },
+    {
+      "timestamp": "2026-05-11T10:45:00+08:00",
+      "from_stage": "影响分析",
+      "to_stage": "交付",
+      "trigger": "T2 update: 标签位置稳定"
+    },
+    {
+      "timestamp": "2026-05-11T11:00:00+08:00",
+      "from_stage": "影响分析",
+      "to_stage": "交付",
+      "trigger": "T2 update: 二级标签联动+左对齐+缩小"
+    },
+    {
+      "timestamp": "2026-05-11T11:15:00+08:00",
+      "from_stage": "影响分析",
+      "to_stage": "交付",
+      "trigger": "T2 update: header一级标签放大（14px + 8px 16px padding）"
+    },
+    {
+      "timestamp": "2026-05-11T11:30:00+08:00",
+      "from_stage": "影响分析",
+      "to_stage": "交付",
+      "trigger": "T2 update: header一级标签再次放大（16px + 10px 20px padding）"
+    },
+    {
+      "timestamp": "2026-05-11T12:20:00+08:00",
+      "from_stage": "-",
+      "to_stage": "交付",
+      "trigger": "/rui code: 预检→Gate A→Gate B→自改进→交付"
+    },
+    {
+      "timestamp": "2026-05-11T13:00:00+08:00",
+      "from_stage": "影响分析",
+      "to_stage": "交付",
+      "trigger": "T2 update: sidebar高度100vh + 搜索框和二级标签吸顶容器"
+    }
   ],
   "related_proposals": [],
   "docs_baseline": {
@@ -39,6 +112,6 @@
     "07-测试用例报告.md": "updated",
     "08-自改进复盘.md": "updated"
   },
-  "update_context": "不需要搜索标签输入框，sidebar-subtags 只需要显示二级目录标签即可，不需要一级目录的标签列表",
+  "update_context": "sidebar 的高度需要自适应铺满屏幕高度（height: 100vh 替代 max-height: 100vh），搜索文件输入框和二级目录标签包裹在 .file-tree-sticky-header 吸顶容器中（position: sticky; top: 0），不随文件树内容滚动",
   "change_level": "T2"
 }

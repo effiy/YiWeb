@@ -4,7 +4,7 @@ const fileTreeComputed = {
     allTags() {
         if (!Array.isArray(this.tree)) return [];
 
-        // 识别选中的一级标签（header 层级），用于联动过滤二级标签
+        // 联动一级标签：一级标签选中后才显示对应的二级标签
         const firstLevelNames = new Set();
         for (const item of this.tree) {
             if (item.type === 'folder') firstLevelNames.add(item.name);
@@ -13,10 +13,11 @@ const fileTreeComputed = {
 
         // 未选一级标签时不显示二级标签；已选时仅显示匹配一级目录下的二级标签
         if (firstLevelTags.length === 0) return [];
+
         const tags = new Set();
         for (const item of this.tree) {
             if (item.type === 'folder' && Array.isArray(item.children)) {
-                if (firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) continue;
+                if (!firstLevelTags.includes(item.name)) continue;
                 for (const child of item.children) {
                     if (child.type === 'folder') {
                         tags.add(child.name);
@@ -59,18 +60,18 @@ const fileTreeComputed = {
             return fileCount;
         };
 
-        // 识别选中的一级标签，联动过滤
+        // 联动一级标签：仅统计选中一级目录下的二级目录文件数
         const firstLevelNames = new Set();
         for (const item of this.tree) {
             if (item.type === 'folder') firstLevelNames.add(item.name);
         }
         const firstLevelTags = this.selectedTags.filter(t => firstLevelNames.has(t));
 
-        // 未选一级标签时不统计；已选时仅统计匹配一级目录下的二级目录文件数
         if (firstLevelTags.length === 0) return { counts: {}, noTagsCount: 0 };
+
         for (const item of this.tree) {
             if (item.type === 'folder' && Array.isArray(item.children)) {
-                if (firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) continue;
+                if (!firstLevelTags.includes(item.name)) continue;
                 for (const child of item.children) {
                     if (child.type === 'folder') {
                         counts[child.name] = (counts[child.name] || 0) + countFilesInFolder(child.children || []);
@@ -89,11 +90,9 @@ const fileTreeComputed = {
     filteredTags() {
         const tags = this.allTags;
 
+        // 稳定排序：按文件数量降序，数量相同按名称排序
+        // 不按选中状态排序，避免点击标签时位置跳变
         return tags.sort((a, b) => {
-            const isSelectedA = this.selectedTags.includes(a);
-            const isSelectedB = this.selectedTags.includes(b);
-            if (isSelectedA !== isSelectedB) return isSelectedA ? -1 : 1;
-
             const countA = this.tagCounts.counts[a] || 0;
             const countB = this.tagCounts.counts[b] || 0;
             if (countA !== countB) return countB - countA;

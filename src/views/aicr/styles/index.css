@@ -49,7 +49,7 @@ html, body {
     position: sticky;
     top: 0;
     align-self: flex-start;
-    max-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
 }
