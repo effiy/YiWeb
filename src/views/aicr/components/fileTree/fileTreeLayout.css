@@ -471,6 +471,7 @@
     overflow: visible;
     display: flex;
     flex-direction: column;
+    padding-bottom: var(--spacing-lg);
 }
 
 /* ========== 文件树 ========== */

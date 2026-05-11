@@ -58,20 +58,6 @@
                         {{ tag }} ({{ tagCounts && tagCounts.counts ? (tagCounts.counts[tag] || 0) : 0 }})
                     </button>
 
-                    <!-- 展开/折叠按钮（仅在标签列表底部显示，当有更多标签时，不允许拖拽） -->
-                    <button
-                        type="button"
-                        v-if="hasMoreTags && !tagFilterSearchKeyword"
-                        class="tag-item tag-expand-btn"
-                        :draggable="false"
-                        @click="toggleExpand"
-                        :title="tagFilterExpanded ? '收起标签' : '展开标签'">
-                        <i
-                            class="fas"
-                            :class="tagFilterExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"
-                            aria-hidden="true"></i>
-                        {{ tagFilterExpanded ? '收起' : `展开 (${filteredTags.length - visibleTags.length})` }}
-                    </button>
                 </div>
             </div>
         </template>
