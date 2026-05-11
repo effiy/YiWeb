@@ -4,10 +4,19 @@ const fileTreeComputed = {
     allTags() {
         if (!Array.isArray(this.tree)) return [];
 
-        // 始终收集所有二级目录名（跨全部一级目录）
+        // 识别选中的一级标签（header 层级），用于联动过滤二级标签
+        const firstLevelNames = new Set();
+        for (const item of this.tree) {
+            if (item.type === 'folder') firstLevelNames.add(item.name);
+        }
+        const firstLevelTags = this.selectedTags.filter(t => firstLevelNames.has(t));
+
+        // 未选一级标签时不显示二级标签；已选时仅显示匹配一级目录下的二级标签
+        if (firstLevelTags.length === 0) return [];
         const tags = new Set();
         for (const item of this.tree) {
             if (item.type === 'folder' && Array.isArray(item.children)) {
+                if (firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) continue;
                 for (const child of item.children) {
                     if (child.type === 'folder') {
                         tags.add(child.name);
@@ -50,9 +59,18 @@ const fileTreeComputed = {
             return fileCount;
         };
 
-        // 始终统计所有二级目录下的文件数（跨全部一级目录累加）
+        // 识别选中的一级标签，联动过滤
+        const firstLevelNames = new Set();
+        for (const item of this.tree) {
+            if (item.type === 'folder') firstLevelNames.add(item.name);
+        }
+        const firstLevelTags = this.selectedTags.filter(t => firstLevelNames.has(t));
+
+        // 未选一级标签时不统计；已选时仅统计匹配一级目录下的二级目录文件数
+        if (firstLevelTags.length === 0) return { counts: {}, noTagsCount: 0 };
         for (const item of this.tree) {
             if (item.type === 'folder' && Array.isArray(item.children)) {
+                if (firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) continue;
                 for (const child of item.children) {
                     if (child.type === 'folder') {
                         counts[child.name] = (counts[child.name] || 0) + countFilesInFolder(child.children || []);
