@@ -85,12 +85,12 @@
     border: 1px solid var(--border-primary);
     background: rgba(255, 255, 255, 0.06);
     color: var(--text-secondary);
-    padding: 2px 6px;
-    font-size: 10px;
+    padding: 4px 8px;
+    font-size: 12px;
     line-height: 1.2;
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+    transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
 }
 
 .tag-item:hover {
@@ -99,7 +99,7 @@
 }
 
 .tag-item:active {
-    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .tag-item.active {

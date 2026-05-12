@@ -53,7 +53,29 @@ export const clearCacheAndRefresh = async () => {
         }
     }
 
-    // 4. 硬刷新 — CacheStorage 已清除，直接 reload 即可从服务器获取最新资源
+    // 4. 清除 IndexedDB
+    if ('indexedDB' in window) {
+        try {
+            const dbs = await indexedDB.databases?.();
+            if (dbs) {
+                await Promise.all(dbs.map(db => indexedDB.deleteDatabase(db.name)));
+            }
+        } catch (_) {
+            // IndexedDB 异常静默忽略
+        }
+    }
+
+    // 5. 注销所有 Service Worker
+    if ('serviceWorker' in navigator) {
+        try {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(reg => reg.unregister()));
+        } catch (_) {
+            // Service Worker 异常静默忽略
+        }
+    }
+
+    // 6. 硬刷新
     window.location.reload();
 };
 

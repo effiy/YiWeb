@@ -172,24 +172,22 @@
     border: 1px solid var(--border-primary);
     background: rgba(255, 255, 255, 0.06);
     color: var(--text-secondary);
-    padding: 10px 20px;
-    font-size: 16px;
+    padding: 4px 8px;
+    font-size: 12px;
     line-height: 1.2;
     cursor: pointer;
     white-space: nowrap;
     max-width: 100%;
-    transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+    transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
 }
 
 .tag-item:hover {
     background: rgba(255, 255, 255, 0.09);
     border-color: var(--border-hover);
-    transform: scale(1.02);
-    box-shadow: var(--shadow-xs);
 }
 
 .tag-item:active {
-    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .tag-item.active {

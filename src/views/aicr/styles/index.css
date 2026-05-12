@@ -33,7 +33,7 @@ html, body {
     background: var(--bg-primary);
     min-width: 320px;
     position: relative;
-    overflow: auto;
+    overflow: hidden;
 }
 
 /* ========== 侧边栏（文件树） ========== */
