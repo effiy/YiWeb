@@ -1,0 +1,13 @@
+{
+  "story_name": "rui-init",
+  "current_stage": "init",
+  "blocked": false,
+  "timestamp": "2026-05-12T16:00:00.000Z",
+  "delivery_pipeline": {
+    "log_appended": true,
+    "docs_synced": true,
+    "notification_sent": true,
+    "last_step": "notification_sent",
+    "last_step_at": "2026-05-12T15:50:38.500Z"
+  }
+}
