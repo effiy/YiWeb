@@ -85,6 +85,13 @@
     }
 }
 
+/* Header 一级目录标签：与侧边栏二级标签同尺寸，通过字重区分层级 */
+.aicr-header .tag-item {
+    font-size: 16px;
+    padding: 10px 20px;
+    font-weight: 600;
+}
+
 /* 尊重用户减少动画偏好 */
 @media (prefers-reduced-motion: reduce) {
     .aicr-header {
