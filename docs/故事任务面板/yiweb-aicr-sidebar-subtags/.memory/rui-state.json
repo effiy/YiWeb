@@ -6,7 +6,7 @@
   "blocked": false,
   "block_reason": null,
   "timestamp": "2026-05-11T13:00:00+08:00",
-  "storyboard": "docs/故事任务面板/aicr-sidebar-subtags/01-故事任务.md",
+  "storyboard": "docs/故事任务面板/yiweb-aicr-sidebar-subtags/01-故事任务.md",
   "pipeline_progress": {
     "需求解析": "completed",
     "故事拆分": "completed",

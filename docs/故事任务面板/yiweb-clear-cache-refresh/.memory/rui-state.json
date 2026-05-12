@@ -6,7 +6,7 @@
   "blocked": false,
   "block_reason": null,
   "timestamp": "2026-05-11T17:00:00+08:00",
-  "storyboard": "docs/故事任务面板/clear-cache-refresh/01-故事任务.md",
+  "storyboard": "docs/故事任务面板/yiweb-clear-cache-refresh/01-故事任务.md",
   "pipeline_progress": {
     "自适应规划": "completed",
     "影响分析": "completed",
