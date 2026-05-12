@@ -2,6 +2,15 @@
 
 AI-powered code review web application. Browse file trees, review code with AI assistance, and analyze business processes — all in the browser.
 
+## 系统能力
+
+| 能力 | 说明 | 状态 |
+|------|------|------|
+| AICR 代码审查 | AI 辅助代码评审与文件浏览 | 已上线 |
+| Markdown 渲染 | 插件化 Markdown 解析与展示 | 已上线 |
+| Mermaid 图表 | 流程图/时序图渲染 | 已上线 |
+| 企业微信通知 | 构建状态推送 | 已配置 |
+
 ## Tech Stack
 
 - **Vue 3.5** — reactive UI (global build, no bundler)
@@ -10,9 +19,15 @@ AI-powered code review web application. Browse file trees, review code with AI a
 - **Mermaid.js** — diagram rendering
 - **Font Awesome 6.4** — icon set
 
-## Getting Started
+## 快速开始
 
-Serve the project root with any static file server:
+初始化项目基线（仅需一次）：
+
+```bash
+/rui init
+```
+
+启动本地开发服务器：
 
 ```bash
 # Python
@@ -29,7 +44,7 @@ Open `http://localhost:8080/src/views/aicr/` to access the code review interface
 
 Environment switches automatically based on hostname. Append `?debug=true` for debug logging, or `?env=local` to force local endpoints.
 
-## Project Structure
+## 项目结构
 
 ```
 YiWeb/
