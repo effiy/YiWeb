@@ -95,7 +95,7 @@ export function createResizer(sidebarElement, store, type, options) {
     // 鼠标悬停效果
     resizer.addEventListener('mouseenter', () => {
         if (!isResizing) {
-            resizer.style.setProperty('background', 'rgba(59, 130, 246, 0.3)', 'important');
+            resizer.style.setProperty('background', 'rgba(37, 99, 235, 0.3)', 'important');
         }
     });
 
@@ -111,7 +111,7 @@ export function createResizer(sidebarElement, store, type, options) {
         e.stopPropagation();
 
         isResizing = true;
-        resizer.style.setProperty('background', 'rgba(59, 130, 246, 0.5)', 'important');
+        resizer.style.setProperty('background', 'rgba(37, 99, 235, 0.5)', 'important');
         resizer.style.setProperty('cursor', 'col-resize', 'important');
 
         // 记录初始位置和宽度

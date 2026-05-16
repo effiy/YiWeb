@@ -35,7 +35,7 @@
     align-items: center;
     justify-content: center;
     padding: 40px;
-    color: var(--text-secondary, #888);
+    color: var(--yi-text-secondary, #888888);
 }
 
 .image-preview-error i {

@@ -11,10 +11,10 @@
 /* ========== 文件树标题 ========== */
 .file-tree-header {
     padding: var(--spacing-sm) var(--spacing-md);
-    background: var(--bg-secondary);
+    background: var(--yi-code-bg);
     font-weight: 600;
     font-size: 14px;
-    color: var(--text-primary);
+    color: var(--yi-code-text);
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
@@ -54,14 +54,14 @@
 }
 
 .file-tree-item:hover {
-    background: var(--bg-surface-hover);
-    color: var(--text-primary);
+    background: var(--yi-surface-hover);
+    color: var(--yi-code-text);
 }
 
 /* ========== 选中状态 ========== */
 .file-tree-item.selected {
     background: rgba(var(--yi-primary-rgb), 0.15);
-    color: var(--text-primary);
+    color: var(--yi-code-text);
     font-weight: 500;
     border-left: 3px solid rgba(var(--yi-primary-rgb), 0.8);
     padding-left: calc(var(--spacing-sm) - 3px);
@@ -78,7 +78,7 @@
 /* ========== 高亮状态（用于视图切换时的锚定效果） ========== */
 .file-tree-item.highlight-file {
     background: rgba(var(--yi-primary-rgb), 0.25);
-    color: var(--text-primary);
+    color: var(--yi-code-text);
     font-weight: 600;
     box-shadow: 0 0 0 2px rgba(var(--yi-primary-rgb), 0.4);
 }
@@ -101,7 +101,7 @@
 /* ========== 文件树高亮动画（从代码视图触发） ========== */
 .file-tree-item.file-tree-highlight {
     background: rgba(var(--yi-warning-rgb), 0.25);
-    color: var(--text-primary);
+    color: var(--yi-code-text);
     font-weight: 600;
     box-shadow: 0 0 0 2px rgba(var(--yi-warning-rgb), 0.5);
 }
@@ -127,16 +127,16 @@
 /* ========== 文件夹样式 ========== */
 .folder-item {
     font-weight: 500;
-    color: var(--text-secondary);
+    color: var(--yi-text-secondary);
 }
 
 .folder-item.expanded {
-    color: var(--text-primary);
+    color: var(--yi-code-text);
 }
 
 .folder-toggle {
     margin-right: var(--spacing-xs);
-    color: var(--text-muted);
+    color: var(--yi-text-muted);
     font-size: 12px;
     transition: all var(--yi-duration-fast) var(--yi-easing-default);
     min-width: 30px;
@@ -144,13 +144,13 @@
 }
 
 .folder-toggle:hover {
-    color: var(--primary);
+    color: var(--yi-primary);
     transform: scale(1.1);
 }
 
 .folder-toggle.expanded {
     transform: rotate(90deg);
-    color: var(--primary);
+    color: var(--yi-primary);
 }
 
 /* ========== 文件图标 ========== */
@@ -174,7 +174,7 @@
 /* ========== 搜索高亮 ========== */
 .file-name mark.search-highlight {
     background: rgba(var(--yi-warning-rgb), 0.35);
-    color: var(--text-primary);
+    color: var(--yi-code-text);
     padding: 2px 4px;
     border-radius: 3px;
     font-weight: 600;
@@ -190,7 +190,7 @@
 .file-size {
     margin-left: auto;
     font-size: 11px;
-    color: var(--text-muted);
+    color: var(--yi-text-muted);
     font-variant-numeric: tabular-nums;
     padding: 2px 6px;
     border-radius: 4px;

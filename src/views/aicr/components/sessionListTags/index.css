@@ -34,9 +34,9 @@
     height: 36px;
     padding: 8px 46px 8px 12px;
     border-radius: 10px;
-    border: 1px solid var(--border-primary);
-    background: var(--bg-surface);
-    color: var(--text-secondary);
+    border: 1px solid var(--yi-border);
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
     outline: none;
     box-sizing: border-box;
     font-size: 14px;
@@ -50,7 +50,7 @@
 .tag-search-input:focus {
     border-color: rgba(var(--yi-primary-rgb), 0.55);
     box-shadow: var(--yi-shadow-focus);
-    background: var(--bg-elevated);
+    background: var(--yi-surface-elevated);
 }
 
 .tag-search-clear {
@@ -66,15 +66,15 @@
     border-radius: 8px;
     border: 1px solid transparent;
     background: transparent;
-    color: var(--text-muted);
+    color: var(--yi-text-muted);
     cursor: pointer;
     transition: all var(--yi-duration-fast) var(--yi-easing-default);
 }
 
 .tag-search-clear:hover {
-    background: var(--bg-surface-hover);
-    border-color: var(--border-primary);
-    color: var(--text-secondary);
+    background: var(--yi-surface-hover);
+    border-color: var(--yi-border);
+    color: var(--yi-text-secondary);
     transform: translateY(-50%) scale(1.1);
 }
 
@@ -88,7 +88,7 @@
     gap: 8px;
     flex: 0 0 auto;
     padding: 4px 8px;
-    background: var(--bg-tertiary);
+    background: var(--gray-700);
     border-radius: 10px;
 }
 
@@ -100,9 +100,9 @@
     align-items: center;
     justify-content: center;
     border-radius: 10px;
-    border: 1px solid var(--border-primary);
-    background: var(--bg-surface);
-    color: var(--text-secondary);
+    border: 1px solid var(--yi-border);
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
     cursor: pointer;
     transition: background var(--yi-duration-fast) var(--yi-easing-default), border-color var(--yi-duration-fast) var(--yi-easing-default), transform var(--yi-duration-fast) var(--yi-easing-default), box-shadow var(--yi-duration-fast) var(--yi-easing-default);
     flex: 0 0 auto;
@@ -110,8 +110,8 @@
 
 .tag-filter-btn:hover,
 .tags-clear-btn:hover {
-    background: var(--bg-surface-hover);
-    border-color: var(--border-hover);
+    background: var(--yi-surface-hover);
+    border-color: var(--yi-border-focus);
     transform: scale(1.05);
     box-shadow: var(--yi-shadow-sm);
 }
@@ -156,7 +156,7 @@
     right: -6px;
     bottom: -6px;
     font-size: 10px;
-    color: var(--danger);
+    color: var(--yi-danger);
 }
 
 .tags-list {
@@ -169,9 +169,9 @@
 
 .tag-item {
     border-radius: 999px;
-    border: 1px solid var(--border-primary);
+    border: 1px solid var(--yi-border);
     background: var(--yi-surface-hover);
-    color: var(--text-secondary);
+    color: var(--yi-text-secondary);
     padding: 4px 8px;
     font-size: 12px;
     line-height: 1.2;
@@ -182,12 +182,12 @@
 }
 
 .tag-item:hover {
-    background: var(--bg-surface-hover);
-    border-color: var(--border-hover);
+    background: var(--yi-surface-hover);
+    border-color: var(--yi-border-focus);
 }
 
 .tag-item:active {
-    background: var(--bg-surface-hover);
+    background: var(--yi-surface-hover);
 }
 
 .tag-item.active {

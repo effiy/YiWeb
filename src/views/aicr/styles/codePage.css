@@ -12,7 +12,7 @@
 
 .aicr-code-header {
     background: var(--yi-surface);
-    border-bottom: 1px solid var(--border-primary);
+    border-bottom: 1px solid var(--yi-border);
     padding: 1rem;
     display: flex;
     align-items: center;
@@ -31,7 +31,7 @@
 
 .aicr-code-back-btn {
     background: var(--yi-dark-surface);
-    border: 1px solid var(--border-primary);
+    border: 1px solid var(--yi-border);
     border-radius: 6px;
     padding: 0.5rem 1rem;
     cursor: pointer;
@@ -43,7 +43,7 @@
 }
 
 .aicr-code-back-btn:hover {
-    background: var(--bg-surface-hover);
+    background: var(--yi-surface-hover);
     color: var(--yi-text);
 }
 
@@ -112,7 +112,7 @@
 
     .aicr-code-chat {
         border-left: none;
-        border-top: 1px solid var(--border-primary);
+        border-top: 1px solid var(--yi-border);
     }
 
     .aicr-code-layout.is-tree .aicr-code-chat {
@@ -126,8 +126,8 @@
 }
 
 .pet-chat-right-panel {
-    --pet-chat-bg-gradient: var(--bg-secondary);
-    --pet-chat-main-color: #3b82f6;
+    --pet-chat-bg-gradient: var(--yi-code-bg);
+    --pet-chat-main-color: var(--yi-primary);
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -728,16 +728,16 @@
     flex-shrink: 0;
     width: 50px;
     text-align: right;
-    color: var(--text-muted);
+    color: var(--yi-text-muted);
     user-select: none;
     cursor: pointer;
     padding-right: 12px;
-    border-right: 1px solid var(--border-glass);
+    border-right: 1px solid var(--yi-border-subtle);
     margin-right: 12px;
 }
 
 .line-number:hover {
-    color: var(--text-primary);
+    color: var(--yi-code-text);
 }
 
 .line-content {
@@ -764,10 +764,10 @@
     resize: none;
     border: none;
     outline: none;
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    background: var(--yi-dark-surface);
+    color: var(--yi-code-text);
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Fira Code', monospace;
-    font-size: var(--code-font-size, 13px);
+    font-size: var(--yi-code-font-size, 13px);
     line-height: 1.7;
     padding: 12px;
     tab-size: 4;
@@ -804,7 +804,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     padding: 20px;
-    background: var(--bg-primary);
+    background: var(--yi-dark-surface);
 }
 
 .markdown-preview-content {
