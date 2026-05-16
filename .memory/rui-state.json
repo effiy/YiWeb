@@ -1,13 +1,13 @@
 {
   "project": "YiWeb",
-  "story": "YiWeb-unify-basic-components",
-  "branch": "feat/YiWeb-unify-basic-components",
+  "story": "YiWeb-unify-theme-colors",
+  "branch": "feat/YiWeb-unify-theme-colors",
   "blocked": false,
   "current_stage": "delivery",
   "timestamp": "2026-05-17T00:00:00Z",
   "delivery_pipeline": {
     "log_appended": true,
     "docs_synced": true,
-    "notification_sent": false
+    "notification_sent": true
   }
 }
