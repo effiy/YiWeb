@@ -1,28 +1,26 @@
 /**
  * YiTag Component Styles
- * 标签组件 - 增强版
+ * Soft UI — based on --yi-* design tokens
  */
-
-/* ============================================
-   标签组件 - 增强版
-   ============================================ */
 
 .tag {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-xs, 4px);
-  padding: var(--spacing-1, 4px) var(--spacing-3, 10px);
-  border-radius: 999px;
-  font-size: var(--font-size-sm, 12px);
-  font-weight: var(--font-weight-medium, 500);
-  line-height: var(--line-height-tight, 1.4);
+  gap: var(--yi-space-1);
+  padding: var(--yi-space-1) var(--yi-space-3);
+  border-radius: var(--yi-radius-full);
+  font-family: var(--yi-font-ui);
+  font-size: var(--yi-text-sm);
+  font-weight: 500;
+  line-height: var(--yi-leading-tight);
   letter-spacing: 0.01em;
-  color: var(--tag-text, var(--text-secondary, #e2e8f0));
-  background: var(--tag-bg, rgba(30, 41, 59, 0.6));
-  border: 1px solid var(--tag-border, rgba(148, 163, 184, 0.25));
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--yi-text-secondary);
+  background: var(--yi-surface-hover);
+  border: 1px solid var(--yi-border);
+  transition: all var(--yi-duration-fast) var(--yi-easing-default);
   user-select: none;
+  min-height: 28px;
 }
 
 .tag-clickable {
@@ -30,74 +28,86 @@
 }
 
 .tag-clickable:hover:not([aria-disabled="true"]):not(.tag-disabled) {
-  background: var(--tag-bg-hover, rgba(51, 65, 85, 0.72));
-  border-color: var(--tag-border-hover, rgba(148, 163, 184, 0.4));
-  color: var(--tag-text-hover, var(--text-primary, #f8fafc));
+  background: var(--yi-surface-active);
+  border-color: var(--yi-border-focus);
+  color: var(--yi-text);
   transform: translateY(-1px);
+  box-shadow: var(--yi-shadow-sm);
 }
 
 .tag:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--primary-alpha, rgba(102, 126, 234, 0.5));
+  box-shadow: var(--yi-shadow-focus);
 }
 
 .tag-active {
-  background: rgba(var(--primary-rgb, 102, 126, 234), 0.12);
-  border-color: rgba(var(--primary-rgb, 102, 126, 234), 0.5);
-  color: var(--primary, #667eea);
+  background: var(--yi-primary-subtle);
+  border-color: rgba(var(--yi-primary-rgb), 0.4);
+  color: var(--yi-primary);
 }
 
 .tag-disabled,
 .tag[aria-disabled="true"] {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
 }
 
 .tag-small {
-  padding: 2px 8px;
-  font-size: var(--font-size-xs, 11px);
+  padding: 2px var(--yi-space-2);
+  font-size: var(--yi-text-xs);
+  min-height: 22px;
 }
 
 .tag-large {
-  padding: var(--spacing-2, 6px) var(--spacing-4, 14px);
-  font-size: var(--font-size-base, 14px);
+  padding: var(--yi-space-2) var(--yi-space-4);
+  font-size: var(--yi-text-base);
+  min-height: 36px;
 }
 
-/* 标签颜色变体 */
+/* Color variants */
 .tag-primary {
-  background: rgba(102, 126, 234, 0.15);
-  color: var(--primary-light, #818cf8);
-  border-color: rgba(102, 126, 234, 0.3);
+  background: var(--yi-primary-subtle);
+  color: var(--yi-primary);
+  border-color: rgba(var(--yi-primary-rgb), 0.25);
 }
 
 .tag-accent {
-  background: rgba(6, 182, 212, 0.15);
-  color: var(--accent, #06b6d4);
-  border-color: rgba(6, 182, 212, 0.3);
+  background: var(--yi-info-subtle);
+  color: var(--yi-info);
+  border-color: rgba(6, 182, 212, 0.25);
 }
 
 .tag-success {
-  background: rgba(34, 197, 94, 0.15);
-  color: var(--success, #22c55e);
-  border-color: rgba(34, 197, 94, 0.3);
+  background: var(--yi-success-subtle);
+  color: var(--yi-success);
+  border-color: rgba(16, 185, 129, 0.25);
 }
 
 .tag-warning {
-  background: rgba(245, 158, 11, 0.15);
-  color: var(--warning, #f59e0b);
-  border-color: rgba(245, 158, 11, 0.3);
+  background: var(--yi-warning-subtle);
+  color: var(--yi-warning);
+  border-color: rgba(245, 158, 11, 0.25);
 }
 
 .tag-error {
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--error, #ef4444);
-  border-color: rgba(239, 68, 68, 0.3);
+  background: var(--yi-danger-subtle);
+  color: var(--yi-danger);
+  border-color: rgba(239, 68, 68, 0.25);
 }
 
 .tag-gray {
-  background: var(--bg-tertiary, #334155);
-  color: var(--text-muted, #94a3b8);
-  border-color: rgba(148, 163, 184, 0.25);
+  background: var(--yi-surface-hover);
+  color: var(--yi-text-muted);
+  border-color: var(--yi-border);
 }
 
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .tag {
+    transition: none;
+  }
+  .tag-clickable:hover:not([aria-disabled="true"]):not(.tag-disabled) {
+    transform: none;
+  }
+}

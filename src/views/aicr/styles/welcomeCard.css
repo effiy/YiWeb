@@ -1,60 +1,44 @@
 .welcome-card {
-    margin-bottom: 20px !important;
-    padding: 18px !important;
-    background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(59, 130, 246, 0.08)) !important;
-    border-radius: 12px !important;
-    border-left: 3px solid rgba(34, 211, 238, 0.5) !important;
-    transition: all 0.3s ease !important;
+    margin-bottom: var(--yi-space-5) !important;
+    padding: var(--yi-space-4) !important;
+    background: var(--yi-surface) !important;
+    border-radius: var(--yi-radius-xl) !important;
+    border-left: 3px solid var(--yi-info) !important;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default) !important;
     position: relative !important;
     overflow: hidden !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    box-shadow: var(--yi-shadow-sm) !important;
     max-width: min(900px, 85%) !important;
     width: 100% !important;
     margin-left: 0 !important;
     margin-right: auto !important;
 }
 
-.welcome-card::before {
-    content: '' !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    height: 2px !important;
-    background: linear-gradient(90deg, rgba(34, 211, 238, 0.3), rgba(59, 130, 246, 0.3)) !important;
-    opacity: 0 !important;
-    transition: opacity 0.3s ease !important;
-}
-
-.welcome-card:hover::before {
-    opacity: 1 !important;
-}
-
 .welcome-card:hover {
-    background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(59, 130, 246, 0.12)) !important;
-    border-left-color: rgba(34, 211, 238, 0.7) !important;
-    box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1) !important;
+    background: var(--yi-surface-hover) !important;
+    border-left-color: var(--yi-info) !important;
+    box-shadow: var(--yi-shadow-md) !important;
 }
 
 .welcome-card-header {
-    margin-bottom: 12px !important;
+    margin-bottom: var(--yi-space-3) !important;
     display: flex !important;
     align-items: center !important;
-    gap: 8px !important;
-    padding-bottom: 8px !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    gap: var(--yi-space-2) !important;
+    padding-bottom: var(--yi-space-2) !important;
+    border-bottom: 1px solid var(--yi-border) !important;
 }
 
 .welcome-card-title {
     font-weight: 600 !important;
-    font-size: 15px !important;
-    color: rgba(226, 232, 240, 0.95) !important;
-    line-height: 1.4 !important;
+    font-size: var(--yi-text-base) !important;
+    color: var(--yi-text) !important;
+    line-height: var(--yi-leading-tight) !important;
     word-break: break-word !important;
 }
 
 .welcome-card-section {
-    margin-bottom: 12px !important;
+    margin-bottom: var(--yi-space-3) !important;
 }
 
 .welcome-card-section-header {
@@ -65,8 +49,8 @@
 }
 
 .welcome-card-section-title {
-    font-size: 12px !important;
-    color: rgba(148, 163, 184, 0.85) !important;
+    font-size: var(--yi-text-xs) !important;
+    color: var(--yi-text-muted) !important;
     font-weight: 500 !important;
     flex: 1 !important;
 }
@@ -80,21 +64,21 @@
 .welcome-card-action-btn {
     background: transparent !important;
     border: none !important;
-    color: rgba(148, 163, 184, 0.7) !important;
+    color: var(--yi-text-muted) !important;
     cursor: pointer !important;
     padding: 4px 6px !important;
-    border-radius: 4px !important;
-    font-size: 11px !important;
+    border-radius: var(--yi-radius-sm) !important;
+    font-size: var(--yi-text-xs) !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    transition: all 0.2s ease !important;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default) !important;
     opacity: 0.7 !important;
 }
 
 .welcome-card-action-btn:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: rgba(148, 163, 184, 0.9) !important;
+    background: var(--yi-surface-hover) !important;
+    color: var(--yi-text-secondary) !important;
     opacity: 1 !important;
 }
 
@@ -103,44 +87,44 @@
 }
 
 .welcome-card-action-btn i {
-    font-size: 11px !important;
+    font-size: var(--yi-text-xs) !important;
 }
 
 .welcome-card-url {
     word-break: break-all !important;
-    color: rgba(59, 130, 246, 0.9) !important;
+    color: var(--yi-primary) !important;
     text-decoration: none !important;
-    font-size: 13px !important;
+    font-size: var(--yi-text-sm) !important;
     display: inline-block !important;
     max-width: 100% !important;
-    line-height: 1.5 !important;
-    transition: all 0.2s ease !important;
+    line-height: var(--yi-leading-normal) !important;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default) !important;
     padding: 2px 0 !important;
-    border-radius: 3px !important;
+    border-radius: var(--yi-radius-sm) !important;
 }
 
 .welcome-card-url:hover {
     text-decoration: underline !important;
-    color: rgba(59, 130, 246, 1) !important;
-    background: rgba(59, 130, 246, 0.1) !important;
+    color: var(--yi-primary-hover) !important;
+    background: var(--yi-primary-subtle) !important;
     padding: 2px 4px !important;
 }
 
 .welcome-card-url:active {
-    color: rgba(37, 99, 235, 1) !important;
+    color: var(--yi-primary-hover) !important;
 }
 
 .welcome-card-description .markdown-content {
-    font-size: 13px !important;
-    color: rgba(203, 213, 225, 0.85) !important;
-    line-height: 1.6 !important;
+    font-size: var(--yi-text-sm) !important;
+    color: var(--yi-text-secondary) !important;
+    line-height: var(--yi-leading-normal) !important;
     max-height: 300px !important;
     overflow-y: auto !important;
     padding-right: 4px !important;
 }
 
 .welcome-card-description .markdown-content p {
-    margin: 0 0 8px 0 !important;
+    margin: 0 0 var(--yi-space-2) 0 !important;
 }
 
 .welcome-card-description .markdown-content p:last-child {
@@ -158,47 +142,30 @@
     display: inline-flex !important;
     align-items: center !important;
     padding: 4px 10px !important;
-    border-radius: 6px !important;
-    font-size: 11px !important;
+    border-radius: var(--yi-radius-md) !important;
+    font-size: var(--yi-text-xs) !important;
     font-weight: 500 !important;
-    color: rgba(59, 130, 246, 0.9) !important;
-    background: rgba(59, 130, 246, 0.15) !important;
-    border: 1px solid rgba(59, 130, 246, 0.2) !important;
-    transition: all 0.2s ease !important;
+    color: var(--yi-primary) !important;
+    background: var(--yi-primary-subtle) !important;
+    border: 1px solid rgba(var(--yi-primary-rgb), 0.25) !important;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default) !important;
     cursor: default !important;
-    position: relative !important;
-    overflow: hidden !important;
-}
-
-.welcome-card-tag::before {
-    content: '' !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: -100% !important;
-    width: 100% !important;
-    height: 100% !important;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent) !important;
-    transition: left 0.5s ease !important;
 }
 
 .welcome-card-tag:hover {
-    background: rgba(59, 130, 246, 0.25) !important;
-    border-color: rgba(59, 130, 246, 0.4) !important;
+    background: rgba(var(--yi-primary-rgb), 0.12) !important;
+    border-color: rgba(var(--yi-primary-rgb), 0.4) !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2) !important;
-}
-
-.welcome-card-tag:hover::before {
-    left: 100% !important;
+    box-shadow: var(--yi-shadow-sm) !important;
 }
 
 .welcome-card-meta {
-    font-size: 12px !important;
-    color: rgba(203, 213, 225, 0.8) !important;
+    font-size: var(--yi-text-sm) !important;
+    color: var(--yi-text-secondary) !important;
     margin-top: 4px !important;
     display: flex !important;
     align-items: center !important;
-    gap: 8px !important;
+    gap: var(--yi-space-2) !important;
     flex-wrap: wrap !important;
 }
 
@@ -209,8 +176,8 @@
 
 .welcome-card-meta > span:not(:last-child)::after {
     content: '•' !important;
-    color: rgba(148, 163, 184, 0.5) !important;
-    margin-left: 8px !important;
+    color: var(--yi-text-muted) !important;
+    margin-left: var(--yi-space-2) !important;
 }
 
 .welcome-card-description .markdown-content::-webkit-scrollbar {
@@ -219,24 +186,36 @@
 }
 
 .welcome-card-description .markdown-content::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05) !important;
+    background: var(--yi-border-subtle) !important;
     border-radius: 3px !important;
 }
 
 .welcome-card-description .markdown-content::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.3) !important;
+    background: var(--yi-border) !important;
     border-radius: 3px !important;
-    transition: background 0.2s ease !important;
+    transition: background var(--yi-duration-fast) var(--yi-easing-default) !important;
 }
 
 .welcome-card-description .markdown-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(148, 163, 184, 0.5) !important;
+    background: var(--yi-text-muted) !important;
 }
 
 .welcome-card-empty {
-    font-size: 13px !important;
-    color: rgba(148, 163, 184, 0.7) !important;
+    font-size: var(--yi-text-sm) !important;
+    color: var(--yi-text-muted) !important;
     font-style: italic !important;
     text-align: center !important;
-    padding: 12px 0 !important;
+    padding: var(--yi-space-3) 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .welcome-card,
+    .welcome-card-tag,
+    .welcome-card-action-btn,
+    .welcome-card-url {
+        transition: none !important;
+    }
+    .welcome-card-tag:hover {
+        transform: none !important;
+    }
 }

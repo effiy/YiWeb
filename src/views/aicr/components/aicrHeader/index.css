@@ -14,7 +14,7 @@
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-primary);
     min-height: auto;
-    transition: all 0.2s ease;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
 }
 
 /* SearchHeader 集成优化：移除独立背景和边框，与整体风格统一 */

@@ -41,7 +41,7 @@
     /* 添加底部边框，增强视觉分离 */
     border-bottom: 1px solid var(--border-primary);
     /* 添加阴影，增强置顶效果 */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--yi-shadow-sm);
     /* 确保在滚动时保持可见 */
     will-change: transform;
 }
@@ -94,12 +94,12 @@
     min-height: 32px;
     font-size: 13px;
     font-weight: 500;
-    color: white;
-    background: linear-gradient(135deg, #6366f1, #4f46e5);
-    border: 1px solid #4f46e5;
-    border-radius: 6px;
+    color: var(--yi-text-on-primary);
+    background: var(--yi-primary);
+    border: 1px solid var(--yi-primary);
+    border-radius: var(--yi-radius-md);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
     white-space: nowrap;
     box-sizing: border-box;
     width: 100%;
@@ -119,9 +119,9 @@
 }
 
 .toolbar-btn:hover {
-    background: linear-gradient(135deg, #4f46e5, #4338ca);
+    background: var(--yi-primary-hover);
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    box-shadow: var(--yi-shadow-sm);
 }
 
 .toolbar-btn:active {
@@ -135,24 +135,24 @@
 }
 
 .toolbar-btn.active {
-    background: linear-gradient(135deg, #10b981, #059669);
-    border-color: #059669;
+    background: var(--yi-success);
+    border-color: var(--yi-success);
 }
 
 .toolbar-btn.active:hover {
-    background: linear-gradient(135deg, #059669, #047857);
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    background: #059669;
+    box-shadow: var(--yi-shadow-sm);
 }
 
 /* 批量删除按钮样式 */
 .toolbar-btn-danger {
-    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-    border-color: #dc2626 !important;
+    background: var(--yi-danger) !important;
+    border-color: var(--yi-danger) !important;
 }
 
 .toolbar-btn-danger:hover {
-    background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+    background: #dc2626 !important;
+    box-shadow: var(--yi-shadow-sm) !important;
 }
 
 .toolbar-btn-danger:disabled {
@@ -167,48 +167,48 @@
     padding: 4px 10px;
     font-size: 12px;
     font-weight: 500;
-    color: #6b7280;
+    color: var(--yi-text-muted);
     white-space: nowrap;
     flex-shrink: 0;
 }
 
 .toolbar-selected-count.has-selection {
-    color: #4338ca;
+    color: var(--yi-primary);
     font-weight: 600;
 }
 
 /* 全选按钮样式 */
 .toolbar-btn-select-all {
-    background: #ffffff !important;
-    color: #374151 !important;
-    border: 1px solid #e5e7eb !important;
+    background: var(--yi-surface) !important;
+    color: var(--yi-text) !important;
+    border: 1px solid var(--yi-border) !important;
 }
 
 .toolbar-btn-select-all:hover {
-    background: #f9fafb !important;
-    border-color: #d1d5db !important;
+    background: var(--yi-surface-hover) !important;
+    border-color: var(--yi-border-focus) !important;
 }
 
 /* 下载按钮样式 */
 .toolbar-btn:has(.fa-download) {
-    background: linear-gradient(135deg, #2196F3, #1976D2);
-    border-color: #1976D2;
+    background: var(--yi-info);
+    border-color: var(--yi-info);
 }
 
 .toolbar-btn:has(.fa-download):hover {
-    background: linear-gradient(135deg, #1976D2, #1565C0);
-    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+    background: #0891b2;
+    box-shadow: var(--yi-shadow-sm);
 }
 
 /* 上传按钮样式 */
 .toolbar-btn:has(.fa-upload) {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
-    border-color: #45a049;
+    background: var(--yi-success);
+    border-color: var(--yi-success);
 }
 
 .toolbar-btn:has(.fa-upload):hover {
-    background: linear-gradient(135deg, #45a049, #3d8b40);
-    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    background: #059669;
+    box-shadow: var(--yi-shadow-sm);
 }
 
 .toolbar-btn i {
@@ -307,17 +307,17 @@
     display: flex;
     align-items: center;
     min-width: 0;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--yi-surface-hover);
     border-radius: 5px;
-    transition: all 0.2s ease;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
     padding-right: 2px;
     margin: var(--spacing-xs) var(--spacing-sm);
     flex-shrink: 0;
 }
 
 .file-tree-search-wrapper:focus-within {
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+    background: var(--bg-surface-hover);
+    box-shadow: var(--yi-shadow-focus);
 }
 
 .file-tree-search-icon {
@@ -327,7 +327,7 @@
     pointer-events: none;
     z-index: 1;
     opacity: 0.6;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--yi-duration-fast) var(--yi-easing-default);
     top: 50%;
     transform: translateY(-50%);
 }
@@ -343,7 +343,7 @@
     border-radius: 6px;
     background: transparent;
     outline: none;
-    transition: all 0.2s ease;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
     box-sizing: border-box;
     flex: 1;
     min-width: 0;
@@ -373,7 +373,7 @@
     justify-content: center;
     font-size: 10px;
     padding: 0;
-    transition: all 0.2s ease;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
     z-index: 2;
     line-height: 1;
     opacity: 0.5;
@@ -406,31 +406,18 @@
     justify-content: center;
     cursor: pointer;
     z-index: 30;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--yi-duration-normal) var(--yi-easing-default);
     color: var(--text-secondary);
-    box-shadow: 0 6px 18px rgba(79,70,229,0.15);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    box-shadow: var(--yi-shadow-sm);
     font-size: 12px;
-}
-
-.file-tree-toggle::before {
-    content: '';
-    position: absolute;
-    inset: -8px;
-    border-radius: 50%;
-    background: radial-gradient(closest-side, rgba(79,70,229,0.18), rgba(79,70,229,0.00));
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    pointer-events: none;
 }
 
 .file-tree-toggle:hover {
     background: var(--primary);
     color: #fff;
     border-color: var(--primary);
-    box-shadow: 0 8px 24px rgba(79,70,229,0.28), 0 0 0 8px rgba(79,70,229,0.10);
-    transform: translateY(-50%) scale(1.08) translateX(1px);
+    box-shadow: var(--yi-shadow-md);
+    transform: translateY(-50%) scale(1.05);
 }
 
 .file-tree-toggle:active {
@@ -439,11 +426,11 @@
 
 .file-tree-toggle:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(79,70,229,0.35), 0 6px 18px rgba(79,70,229,0.25);
+    box-shadow: var(--yi-shadow-focus);
 }
 
 .file-tree-toggle i {
-    transition: transform 0.25s ease;
+    transition: transform var(--yi-duration-fast) var(--yi-easing-default);
     font-size: 12px;
 }
 
@@ -498,13 +485,13 @@
 .file-tree-container .empty-icon {
     width: 64px;
     height: 64px;
-    border-radius: 50%;
+    border-radius: var(--yi-radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(79, 172, 254, 0.10);
-    border: 1px solid rgba(79, 172, 254, 0.18);
-    color: rgba(2, 132, 199, 0.95);
+    background: var(--yi-primary-subtle);
+    border: 1px solid rgba(var(--yi-primary-rgb), 0.2);
+    color: var(--yi-primary);
     font-size: 28px;
     margin-bottom: 16px;
 }

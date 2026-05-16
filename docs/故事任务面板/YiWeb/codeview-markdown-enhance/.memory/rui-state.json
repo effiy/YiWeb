@@ -1,0 +1,14 @@
+{
+  "project": "YiWeb",
+  "command": "rui",
+  "story": "codeview-markdown-enhance",
+  "init_at": "2026-05-16T19:45:00+08:00",
+  "current_stage": "delivered",
+  "blocked": false,
+  "block_reason": null,
+  "delivery_pipeline": {
+    "log_appended": true,
+    "docs_synced": true,
+    "notification_sent": true
+  }
+}

@@ -1,4 +1,61 @@
 /**
  * YiErrorState Component Styles
- * (No styles yet defined)
+ * Soft UI — based on --yi-* design tokens
  */
+
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--yi-space-12) var(--yi-space-5);
+  text-align: center;
+  font-family: var(--yi-font-ui);
+}
+
+.error-icon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--yi-space-4);
+  color: var(--yi-danger);
+  opacity: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+}
+
+.error-title {
+  font-size: var(--yi-text-lg);
+  font-weight: 600;
+  color: var(--yi-danger);
+  margin-bottom: var(--yi-space-2);
+  line-height: var(--yi-leading-tight);
+}
+
+.error-description {
+  font-size: var(--yi-text-base);
+  margin-bottom: var(--yi-space-5);
+  max-width: 400px;
+  line-height: var(--yi-leading-normal);
+  color: var(--yi-text-secondary);
+}
+
+.error-code {
+  font-family: var(--yi-font-code);
+  font-size: var(--yi-text-sm);
+  color: var(--yi-text-muted);
+  background: var(--yi-danger-subtle);
+  padding: var(--yi-space-1) var(--yi-space-3);
+  border-radius: var(--yi-radius-sm);
+  margin-bottom: var(--yi-space-4);
+  border: 1px solid rgba(var(--yi-danger-rgb), 0.15);
+}
+
+.error-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--yi-space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
