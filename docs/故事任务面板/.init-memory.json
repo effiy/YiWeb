@@ -1,22 +1,18 @@
 {
-  "init_time": "2026-05-16T17:40:00+08:00",
   "project": "YiWeb",
+  "type": "frontend",
+  "init_at": "2026-05-16T21:20:00+08:00",
   "profile": {
+    "name": "YiWeb",
     "type": "frontend",
-    "stack": "Vue 3.5.26 + marked 9.1.6 + mermaid 10.9.1 + Font Awesome 6.4.0",
+    "stack": "vanilla-js-esm",
     "build_tool": "none",
-    "package_manager": "none",
     "test_framework": "none",
-    "deployment": "static file hosting (Nginx / CDN)"
+    "architecture": "single-spa-view-isolation"
   },
-  "generated_files": [
-    "CLAUDE.md",
-    "README.md"
-  ],
-  "verify": {
-    "claue_md_marker": true,
-    "readme_project_name": true,
-    "story_panel_dir": true,
-    "wework_bot_config": true
+  "delivery_pipeline": {
+    "log_appended": false,
+    "docs_synced": false,
+    "notification_sent": false
   }
 }
