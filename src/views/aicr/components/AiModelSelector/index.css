@@ -34,8 +34,8 @@
   width: 100%;
   height: 38px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-primary);
+  background: var(--bg-glass);
   color: var(--text-primary, #f1f5f9);
   padding: 0 12px;
   outline: none;
@@ -44,8 +44,8 @@
 }
 
 .model-manual-input:focus {
-  border-color: rgba(99, 102, 241, 0.7);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+  border-color: rgba(var(--yi-primary-rgb), 0.7);
+  box-shadow: var(--yi-shadow-focus);
 }
 
 .model-manual-input::placeholder {
@@ -76,20 +76,20 @@
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-primary);
+  background: var(--bg-glass);
   color: var(--text-secondary, #94a3b8);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: all var(--yi-duration-fast) var(--yi-easing-default);
   flex-shrink: 0;
 }
 
 .model-refresh-btn:hover:not(:disabled),
 .model-mode-toggle:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.10);
+  background: var(--bg-surface-hover);
   color: var(--text-primary, #f1f5f9);
 }
 
@@ -106,14 +106,14 @@
 .model-error {
   margin-top: 8px;
   padding: 8px 12px;
-  background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
+  background: rgba(var(--yi-danger-rgb), 0.15);
+  color: rgba(var(--yi-danger-rgb), 0.85);
   border-radius: 8px;
   font-size: 13px;
   display: flex;
   gap: 8px;
   align-items: center;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(var(--yi-danger-rgb), 0.3);
 }
 
 .model-error i {

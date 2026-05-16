@@ -1,45 +1,72 @@
 /**
- * Utility Classes
- * Generic utility CSS classes
+ * YiWeb Utility Classes
+ * Based on design system tokens (--yi-*)
  */
 
 /* ============================================
-   工具类
+   Display
    ============================================ */
-
-/* 显示隐藏 */
 .hidden { display: none !important; }
 .visible { visibility: visible; }
 .invisible { visibility: hidden; }
 
-/* Flex */
+/* ============================================
+   Flexbox
+   ============================================ */
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
 .flex-wrap { flex-wrap: wrap; }
 .items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.items-end { align-items: flex-end; }
 .justify-center { justify-content: center; }
 .justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }
 .flex-1 { flex: 1; }
+.flex-none { flex: none; }
 
-/* 间距 */
-.gap-1 { gap: 0.25rem; }
-.gap-2 { gap: 0.5rem; }
-.gap-3 { gap: 0.75rem; }
-.gap-4 { gap: 1rem; }
-.gap-6 { gap: 1.5rem; }
-.gap-8 { gap: 2rem; }
+/* ============================================
+   Gap (based on --yi-space-*)
+   ============================================ */
+.gap-1 { gap: var(--yi-space-1); }
+.gap-2 { gap: var(--yi-space-2); }
+.gap-3 { gap: var(--yi-space-3); }
+.gap-4 { gap: var(--yi-space-4); }
+.gap-5 { gap: var(--yi-space-5); }
+.gap-6 { gap: var(--yi-space-6); }
+.gap-8 { gap: var(--yi-space-8); }
 
-/* 文字 */
+/* ============================================
+   Text alignment
+   ============================================ */
 .text-center { text-align: center; }
 .text-left { text-align: left; }
 .text-right { text-align: right; }
-.text-sm { font-size: 0.875rem; }
-.text-lg { font-size: 1.125rem; }
-.text-xl { font-size: 1.25rem; }
+
+/* ============================================
+   Text size (based on --yi-text-*)
+   ============================================ */
+.text-xs { font-size: var(--yi-text-xs); }
+.text-sm { font-size: var(--yi-text-sm); }
+.text-base { font-size: var(--yi-text-base); }
+.text-md { font-size: var(--yi-text-md); }
+.text-lg { font-size: var(--yi-text-lg); }
+.text-xl { font-size: var(--yi-text-xl); }
+.text-2xl { font-size: var(--yi-text-2xl); }
+.text-3xl { font-size: var(--yi-text-3xl); }
+.text-4xl { font-size: var(--yi-text-4xl); }
+
+/* ============================================
+   Font weight
+   ============================================ */
+.font-normal { font-weight: 400; }
 .font-medium { font-weight: 500; }
 .font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
 
-/* 颜色 */
+/* ============================================
+   Text color (semantic)
+   ============================================ */
 .text-primary { color: var(--text-primary, #f8fafc); }
 .text-secondary { color: var(--text-secondary, #e2e8f0); }
 .text-muted { color: var(--text-muted, #94a3b8); }
@@ -48,3 +75,61 @@
 .text-warning { color: var(--warning, #f59e0b); }
 .text-error { color: var(--error, #ef4444); }
 
+/* ============================================
+   Background color (semantic)
+   ============================================ */
+.bg-primary { background-color: var(--bg-primary, #0f172a); }
+.bg-secondary { background-color: var(--bg-secondary, #1e293b); }
+.bg-surface { background-color: var(--bg-surface, rgba(30, 41, 59, 0.6)); }
+.bg-elevated { background-color: var(--bg-elevated, rgba(30, 41, 59, 0.95)); }
+
+/* ============================================
+   Yi token utilities (new canonical namespace)
+   ============================================ */
+.yi-text-primary { color: var(--yi-text); }
+.yi-text-secondary { color: var(--yi-text-secondary); }
+.yi-text-muted { color: var(--yi-text-muted); }
+.yi-text-on-primary { color: var(--yi-text-on-primary); }
+
+.yi-bg-surface { background-color: var(--yi-surface); }
+.yi-bg-bg { background-color: var(--yi-bg); }
+.yi-bg-primary { background-color: var(--yi-primary); }
+.yi-bg-success { background-color: var(--yi-success); }
+.yi-bg-danger { background-color: var(--yi-danger); }
+.yi-bg-warning { background-color: var(--yi-warning); }
+
+.yi-shadow-sm { box-shadow: var(--yi-shadow-sm); }
+.yi-shadow-md { box-shadow: var(--yi-shadow-md); }
+.yi-shadow-lg { box-shadow: var(--yi-shadow-lg); }
+.yi-shadow-xl { box-shadow: var(--yi-shadow-xl); }
+
+.yi-radius-sm { border-radius: var(--yi-radius-sm); }
+.yi-radius-md { border-radius: var(--yi-radius-md); }
+.yi-radius-lg { border-radius: var(--yi-radius-lg); }
+.yi-radius-xl { border-radius: var(--yi-radius-xl); }
+.yi-radius-full { border-radius: var(--yi-radius-full); }
+
+.yi-font-ui { font-family: var(--yi-font-ui); }
+.yi-font-code { font-family: var(--yi-font-code); }
+
+/* ============================================
+   Spacing utilities (margin/padding)
+   ============================================ */
+.p-1 { padding: var(--yi-space-1); }
+.p-2 { padding: var(--yi-space-2); }
+.p-3 { padding: var(--yi-space-3); }
+.p-4 { padding: var(--yi-space-4); }
+.p-6 { padding: var(--yi-space-6); }
+
+.m-1 { margin: var(--yi-space-1); }
+.m-2 { margin: var(--yi-space-2); }
+.m-3 { margin: var(--yi-space-3); }
+.m-4 { margin: var(--yi-space-4); }
+.m-6 { margin: var(--yi-space-6); }
+
+/* ============================================
+   Transition utilities
+   ============================================ */
+.transition-fast { transition: all var(--yi-duration-fast) var(--yi-easing-default); }
+.transition-normal { transition: all var(--yi-duration-normal) var(--yi-easing-default); }
+.transition-colors { transition: color, background-color, border-color var(--yi-duration-fast) var(--yi-easing-default); }

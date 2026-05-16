@@ -25,7 +25,7 @@
     background: var(--bg-surface);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+    transition: background var(--yi-duration-fast) var(--yi-easing-default), border-color var(--yi-duration-fast) var(--yi-easing-default), transform var(--yi-duration-fast) var(--yi-easing-default), box-shadow var(--yi-duration-fast) var(--yi-easing-default);
     flex: 0 0 auto;
 }
 
@@ -49,9 +49,9 @@
 
 .tag-filter-btn.active,
 .tags-clear-btn.active {
-    background: rgba(var(--primary-dark-rgb), 0.18);
-    border-color: rgba(var(--primary-dark-rgb), 0.55);
-    box-shadow: 0 0 0 3px rgba(var(--primary-dark-rgb), 0.18);
+    background: rgba(var(--yi-primary-rgb), 0.18);
+    border-color: rgba(var(--yi-primary-rgb), 0.55);
+    box-shadow: 0 0 0 3px rgba(var(--yi-primary-rgb), 0.18);
 }
 
 .tag-icon-wrapper {
@@ -83,38 +83,38 @@
 .tag-item {
     border-radius: 999px;
     border: 1px solid var(--border-primary);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--yi-surface-hover);
     color: var(--text-secondary);
     padding: 4px 8px;
     font-size: 12px;
     line-height: 1.2;
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+    transition: background var(--yi-duration-fast) var(--yi-easing-default), border-color var(--yi-duration-fast) var(--yi-easing-default), box-shadow var(--yi-duration-fast) var(--yi-easing-default), opacity var(--yi-duration-fast) var(--yi-easing-default);
 }
 
 .tag-item:hover {
-    background: rgba(255, 255, 255, 0.09);
+    background: var(--bg-surface-hover);
     border-color: var(--border-hover);
 }
 
 .tag-item:active {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--bg-surface-hover);
 }
 
 .tag-item.active {
-    background: rgba(var(--primary-dark-rgb), 0.18);
-    border-color: rgba(var(--primary-dark-rgb), 0.55);
+    background: rgba(var(--yi-primary-rgb), 0.18);
+    border-color: rgba(var(--yi-primary-rgb), 0.55);
 }
 
 .tag-item.tag-expand-btn {
     background: transparent;
     border-style: dashed;
-    color: rgba(var(--text-muted-rgb), 0.95);
+    color: var(--yi-text-muted);
 }
 
 .tag-item.tag-no-tags {
-    color: rgba(var(--text-muted-rgb), 0.95);
+    color: var(--yi-text-muted);
 }
 
 .tag-item.dragging {
@@ -123,20 +123,34 @@
 }
 
 .tag-item.drag-hover {
-    border-color: rgba(var(--accent-rgb), 0.55);
-    background: rgba(var(--accent-rgb), 0.12);
+    border-color: rgba(var(--yi-primary-rgb), 0.55);
+    background: rgba(var(--yi-primary-rgb), 0.12);
 }
 
 .tag-item.drag-over-top {
-    border-color: rgba(var(--accent-rgb), 0.55);
-    box-shadow: inset 0 2px 0 rgba(var(--accent-rgb), 0.95);
+    border-color: rgba(var(--yi-primary-rgb), 0.55);
+    box-shadow: inset 0 2px 0 rgba(var(--yi-primary-rgb), 0.95);
 }
 
 .tag-item.drag-over-bottom {
-    border-color: rgba(var(--accent-rgb), 0.55);
-    box-shadow: inset 0 -2px 0 rgba(var(--accent-rgb), 0.95);
+    border-color: rgba(var(--yi-primary-rgb), 0.55);
+    box-shadow: inset 0 -2px 0 rgba(var(--yi-primary-rgb), 0.95);
 }
 
 .file-tree-container.collapsed .session-list-tags {
     display: none;
+}
+
+/* 尊重用户减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+    .tag-filter-btn,
+    .tags-clear-btn,
+    .tag-item {
+        transition: none;
+    }
+    .tag-filter-btn:active,
+    .tags-clear-btn:active,
+    .tag-item.dragging {
+        transform: none;
+    }
 }

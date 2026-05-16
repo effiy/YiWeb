@@ -1,0 +1,20 @@
+{
+  "project": "YiWeb",
+  "init_at": "2026-05-16T11:53:00+08:00",
+  "rui_version": "1.0.3",
+  "profile": {
+    "type": "frontend",
+    "runtime": "browser-native-esm",
+    "ui_framework": "vue-3.5.26-cdn",
+    "build_tool": "none",
+    "package_manager": "none",
+    "test_framework": "none",
+    "deployment": "static-hosting"
+  },
+  "generated_files": [
+    "CLAUDE.md",
+    "README.md",
+    ".claude/skills/wework-bot/config.json"
+  ],
+  "notes": "首次初始化，全量生成项目基线文档与配置。"
+}

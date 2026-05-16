@@ -17,19 +17,19 @@
     color: var(--text-muted);
     font-size: 11px;
     margin-left: auto;
-    background: var(--bg-glass);
+    background: var(--yi-surface-hover);
     padding: 1px var(--spacing-xs);
     border-radius: 10px;
     min-width: 16px;
     text-align: center;
     opacity: 0.7;
-    transition: all 0.2s ease;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
     flex: 0 0 auto; /* 防止挤压文件名 */
 }
 
 .file-tree-item:hover .folder-count {
     opacity: 1;
-    background: rgba(79, 70, 229, 0.2);
+    background: rgba(var(--yi-primary-rgb), 0.2);
     color: var(--primary);
 }
 
@@ -43,7 +43,7 @@
 /* ========== 展开/折叠动画 ========== */
 .file-tree-collapse {
     overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--yi-duration-normal) var(--yi-easing-default);
 }
 
 .file-tree-collapse.collapsed {
@@ -103,27 +103,24 @@
     justify-content: center;
     padding: 48px 0 32px 0;
     color: var(--text-muted);
-    background: var(--bg-secondary);
+    background: var(--yi-surface);
     border-radius: 12px;
     min-height: 180px;
-    box-shadow: 0 2px 12px 0 rgba(60,60,60,0.04);
+    border: 1px solid var(--yi-border);
     margin: 32px 16px 0 16px;
-    opacity: 0.85;
-    transition: background 0.2s;
+    transition: background var(--yi-duration-fast) var(--yi-easing-default);
 }
 .empty-state:hover {
-    background: var(--bg-glass);
-    opacity: 1;
+    background: var(--yi-surface-hover);
 }
 .empty-icon {
     font-size: 44px;
-    color: var(--primary);
+    color: var(--yi-primary);
     margin-bottom: 12px;
     opacity: 0.7;
-    transition: color 0.2s;
+    transition: color var(--yi-duration-fast) var(--yi-easing-default);
 }
 .empty-state:hover .empty-icon {
-    color: var(--accent);
     opacity: 1;
 }
 .empty-title {
@@ -238,7 +235,7 @@
 .file-tree::-webkit-scrollbar-thumb {
     background: var(--border-primary);
     border-radius: 2px;
-    transition: background 0.2s ease;
+    transition: background var(--yi-duration-fast) var(--yi-easing-default);
 }
 
 .file-tree::-webkit-scrollbar-thumb:hover {
@@ -247,17 +244,12 @@
 
 /* ========== 拖拽支持 ========== */
 .file-tree-item.drag-over {
-    background: rgba(6, 182, 212, 0.25);
-    border-color: var(--accent);
-    transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
-    border: 2px dashed rgba(6, 182, 212, 0.6);
+    background: rgba(var(--yi-info-rgb), 0.2);
+    border: 2px dashed rgba(var(--yi-info-rgb), 0.5);
 }
 
 .file-tree-item.dragging {
     opacity: 0.6;
-    transform: scale(0.95) rotate(2deg);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
     cursor: grabbing;
 }
 
@@ -268,9 +260,8 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: rgba(6, 182, 212, 0.8);
+    background: rgba(var(--yi-info-rgb), 0.8);
     border-radius: 2px;
-    box-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
 }
 
 .file-tree-item.drag-over-bottom::after {
@@ -280,9 +271,8 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: rgba(6, 182, 212, 0.8);
+    background: rgba(var(--yi-info-rgb), 0.8);
     border-radius: 2px;
-    box-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
 } 
 
 .file-toggle-placeholder {
@@ -299,7 +289,7 @@
     gap: 6px;
     margin-left: auto;
     opacity: 0;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--yi-duration-fast) var(--yi-easing-default);
 }
 
 .file-tree-item:hover .file-actions,
@@ -323,7 +313,7 @@
 
 .file-actions button:hover {
     color: var(--primary);
-    background: var(--bg-glass);
+    background: var(--yi-surface-hover);
     border-color: var(--border-primary);
 }
 
@@ -335,6 +325,25 @@
 @media (max-width: 640px) {
     .file-tree-search-clear {
         right: 8px;
+    }
+}
+
+/* 尊重用户减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+    .file-tree-collapse,
+    .empty-state,
+    .empty-icon,
+    .file-tag,
+    .file-actions,
+    .file-tree-item,
+    .folder-count {
+        transition: none;
+    }
+
+    .file-tree-item.dragging,
+    .file-tag:hover,
+    .empty-state:hover .empty-icon {
+        transform: none;
     }
 }
 
@@ -359,31 +368,30 @@
     align-items: center;
     gap: 4px;
     padding: 2px 6px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--yi-surface-hover);
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
     font-size: 11px;
     color: var(--text-secondary);
     position: relative;
-    border: 1px solid var(--border-primary, rgba(255, 255, 255, 0.12));
+    border: 1px solid var(--border-primary, var(--bg-surface-hover));
 }
 
 .file-tag:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--yi-surface-hover);
     color: var(--text-primary);
-    transform: translateY(-1px);
 }
 
 .file-tag.selected {
-    background: rgba(79, 70, 229, 0.15);
+    background: rgba(var(--yi-primary-rgb), 0.15);
     color: var(--text-primary);
     font-weight: 500;
 }
 
 .file-tag.batch-selected {
-    background: rgba(16, 185, 129, 0.15);
-    border-color: #10b981;
+    background: rgba(var(--yi-success-rgb), 0.15);
+    border-color: var(--yi-success);
 }
 
 .tag-icon {

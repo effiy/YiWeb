@@ -1,0 +1,14 @@
+{
+  "project": "YiWeb",
+  "command": "rui",
+  "story": "micro-interactions",
+  "init_at": "2026-05-16T20:00:00+08:00",
+  "current_stage": "delivered",
+  "blocked": false,
+  "block_reason": null,
+  "delivery_pipeline": {
+    "log_appended": true,
+    "docs_synced": true,
+    "notification_sent": true
+  }
+}

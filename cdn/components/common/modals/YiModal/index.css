@@ -1,40 +1,38 @@
 /**
  * YiModal Component Styles
- * 模态框组件
+ * Soft UI — based on --yi-* design tokens
  */
-
-/* ============================================
-   模态框组件
-   ============================================ */
 
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(var(--bg-primary-rgb), 0.6);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-modal, 1050);
-  padding: 20px;
+  z-index: var(--yi-z-modal);
+  padding: var(--yi-space-5);
 }
 
 .modal {
-  background: var(--bg-secondary, #1e293b);
-  border: 1px solid var(--border-primary, rgba(255,255,255,0.12));
-  border-radius: var(--radius-xl, 1rem);
-  box-shadow: var(--shadow-xl, 0 16px 64px rgba(0,0,0,0.7));
+  background: var(--yi-code-bg);
+  border: 1px solid var(--yi-border);
+  border-radius: var(--yi-radius-xl);
+  box-shadow: var(--yi-shadow-xl);
   max-width: 90vw;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: modal-in 0.2s ease;
+  animation: modal-in var(--yi-duration-normal) var(--yi-easing-out);
 }
 
 @keyframes modal-in {
   from {
     opacity: 0;
-    transform: scale(0.95) translateY(10px);
+    transform: scale(0.96) translateY(8px);
   }
   to {
     opacity: 1;
@@ -42,59 +40,97 @@
   }
 }
 
+@keyframes modal-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+}
+
+.modal.closing {
+  animation: modal-out var(--yi-duration-fast) var(--yi-easing-in) forwards;
+}
+
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-primary, rgba(255,255,255,0.12));
+  padding: var(--yi-space-4) var(--yi-space-5);
+  border-bottom: 1px solid var(--yi-border);
 }
 
 .modal-title {
-  font-size: 18px;
+  font-family: var(--yi-font-ui);
+  font-size: var(--yi-text-lg);
   font-weight: 600;
-  color: var(--text-primary, #f8fafc);
+  color: var(--yi-code-text);
+  line-height: var(--yi-leading-tight);
 }
 
 .modal-close {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   background: transparent;
-  color: var(--text-muted, #94a3b8);
-  border-radius: var(--radius-md, 0.5rem);
+  color: var(--yi-text-muted);
+  border-radius: var(--yi-radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast, 150ms ease);
+  transition: all var(--yi-duration-fast) var(--yi-easing-default);
+  min-width: 36px;
+  min-height: 36px;
 }
 
 .modal-close:hover {
-  background: var(--bg-tertiary, #334155);
-  color: var(--text-primary, #f8fafc);
+  background: var(--yi-surface-hover);
+  color: var(--yi-code-text);
+}
+
+.modal-close:focus-visible {
+  outline: none;
+  box-shadow: var(--yi-shadow-focus);
 }
 
 .modal-body {
-  padding: 20px;
+  padding: var(--yi-space-5);
   overflow: auto;
   flex: 1;
+  color: var(--yi-code-text);
+  font-family: var(--yi-font-ui);
+  font-size: var(--yi-text-base);
+  line-height: var(--yi-leading-normal);
 }
 
 .modal-footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
-  padding: 16px 20px;
-  border-top: 1px solid var(--border-primary, rgba(255,255,255,0.12));
-  background: var(--bg-tertiary, #334155);
+  gap: var(--yi-space-3);
+  padding: var(--yi-space-4) var(--yi-space-5);
+  border-top: 1px solid var(--yi-border);
+  background: rgba(var(--bg-secondary-rgb), 0.5);
 }
 
-/* 模态框尺寸 */
+/* Sizes */
 .modal-sm { width: 400px; }
 .modal-md { width: 560px; }
 .modal-lg { width: 720px; }
 .modal-xl { width: 960px; }
 .modal-full { width: 100%; max-width: 1200px; }
 
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .modal {
+    animation: none;
+  }
+  .modal.closing {
+    animation: none;
+    opacity: 0;
+  }
+}

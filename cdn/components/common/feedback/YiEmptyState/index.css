@@ -1,39 +1,43 @@
 /**
  * YiEmptyState Component Styles
- * 空状态组件
+ * Soft UI — based on --yi-* design tokens
  */
-
-/* ============================================
-   空状态组件
-   ============================================ */
 
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: var(--yi-space-12) var(--yi-space-5);
   text-align: center;
-  color: var(--text-muted, #94a3b8);
+  color: var(--yi-text-muted);
+  font-family: var(--yi-font-ui);
 }
 
 .empty-icon {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 16px;
-  opacity: 0.5;
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--yi-space-4);
+  opacity: 0.4;
+  color: var(--yi-text-muted);
 }
 
 .empty-title {
-  font-size: 16px;
+  font-size: var(--yi-text-lg);
   font-weight: 600;
-  color: var(--text-secondary, #e2e8f0);
-  margin-bottom: 8px;
+  color: var(--yi-text-secondary);
+  margin-bottom: var(--yi-space-2);
+  line-height: var(--yi-leading-tight);
 }
 
 .empty-description {
-  font-size: 14px;
-  margin-bottom: 20px;
+  font-size: var(--yi-text-base);
+  margin-bottom: var(--yi-space-5);
   max-width: 360px;
+  line-height: var(--yi-leading-normal);
+  color: var(--yi-text-muted);
 }
 
+.empty-action {
+  margin-top: var(--yi-space-2);
+}
