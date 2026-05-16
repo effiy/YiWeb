@@ -17,6 +17,8 @@
         v-model="searchQuery"
         @input="handleInput"
         @keydown="handleKeydown"
+        @focus="handleFocus"
+        @blur="handleBlur"
         @compositionstart="handleCompositionStart"
         @compositionend="handleCompositionEnd"
         :placeholder="placeholder"
@@ -26,6 +28,9 @@
         autocomplete="off"
         spellcheck="false"
         ref="searchInput"
+        :aria-expanded="isPanelVisible"
+        aria-controls="search-panel"
+        aria-activedescendant="search-panel-option-active"
       ></textarea>
       <button
         v-if="searchQuery"
@@ -36,6 +41,51 @@
       >
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
+      <div
+        id="search-panel"
+        class="search-panel"
+        :class="{ 'is-visible': isPanelVisible }"
+        role="listbox"
+        v-if="isPanelVisible"
+        @mousedown.prevent
+      >
+        <ul v-if="displayItems.length" class="search-panel-list">
+          <li
+            v-for="(item, index) in displayItems"
+            :key="item"
+            class="search-panel-item"
+            :class="{ 'is-active': index === activeIndex }"
+            :id="index === activeIndex ? 'search-panel-option-active' : undefined"
+            role="option"
+            :aria-selected="index === activeIndex"
+            @click="selectItem(item)"
+            @mouseenter="activeIndex = index"
+          >
+            <span class="search-panel-text" v-html="highlightMatch(item)"></span>
+            <button
+              type="button"
+              class="search-panel-delete"
+              @click.stop="deleteItem(item)"
+              :aria-label="'删除 ' + item"
+              title="删除"
+            >
+              <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+          </li>
+        </ul>
+        <div v-else class="search-panel-empty">
+          无匹配历史记录
+        </div>
+        <div v-if="filteredHistory.length && !searchQuery" class="search-panel-footer">
+          <button
+            type="button"
+            class="search-panel-clear"
+            @click="clearAllHistory"
+          >
+            清空全部
+          </button>
+        </div>
+      </div>
     </div>
     <slot></slot>
   </div>

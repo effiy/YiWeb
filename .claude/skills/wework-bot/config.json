@@ -1,12 +1,12 @@
 {
   "default_robot": "general",
-  "api_url": "https://api.effiy.cn/wework/send-message",
-  "robots": {
-    "general": {
-      "webhook_url_env": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=80bcaa68-6511-4766-bfb3-510291371090"
-    }
-  },
   "agents": {
     "rui": "general"
+  },
+  "robots": {
+    "general": {
+      "webhook_url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=776f0637-80ab-4c60-a503-03c35c19d9fd",
+      "webhook_url_env": "WEWORK_BOT_WEBHOOK_URL"
+    }
   }
 }

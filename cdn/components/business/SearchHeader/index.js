@@ -1,4 +1,5 @@
 import { registerGlobalComponent } from '/cdn/utils/view/componentLoader.js';
+import { SearchHandler } from '/cdn/utils/browser/events.js';
 
 /**
  * Detect current environment
@@ -128,11 +129,25 @@ registerGlobalComponent({
     const searchQuery = Vue.ref(props.modelValue || '');
     const isComposing = Vue.ref(false);
     const searchInput = Vue.ref(null);
+    const isPanelVisible = Vue.ref(false);
+    const activeIndex = Vue.ref(-1);
+    const searchHandler = Vue.ref(null);
 
     // Detect environment
     const envType = Vue.ref(detectEnvironment());
     const envLabel = Vue.computed(() => {
       return envType.value === 'local' ? 'LOCAL' : 'PROD';
+    });
+
+    // Filtered history based on current input
+    const filteredHistory = Vue.computed(() => {
+      if (!searchHandler.value) return [];
+      return searchHandler.value.filterHistory(searchQuery.value.trim());
+    });
+
+    // Items to display in panel
+    const displayItems = Vue.computed(() => {
+      return filteredHistory.value;
     });
 
     // Watch for modelValue changes from parent
@@ -145,6 +160,26 @@ registerGlobalComponent({
     // Watch searchQuery and emit updates
     Vue.watch(searchQuery, (newVal) => {
       emit('update:modelValue', newVal);
+    });
+
+    // Initialize SearchHandler (data layer only; Vue handles events)
+    Vue.onMounted(() => {
+      if (!searchInput.value) return;
+      const handler = new SearchHandler();
+      handler.searchInput = searchInput.value;
+      handler.searchCallback = (query) => emit('search', query);
+      handler.options = { debounceDelay: 300, minLength: 1 };
+      handler.loadSearchHistory();
+      searchHandler.value = handler;
+    });
+
+    Vue.onUnmounted(() => {
+      if (searchHandler.value) {
+        searchHandler.value.onShowPanel = null;
+        searchHandler.value.onHidePanel = null;
+        searchHandler.value.onActiveIndexChange = null;
+        searchHandler.value = null;
+      }
     });
 
     // Methods
@@ -177,20 +212,107 @@ registerGlobalComponent({
 
     const handleInput = (event) => {
       emit('search-input', event);
+      if (searchHandler.value && searchHandler.value.searchHistory.length) {
+        isPanelVisible.value = true;
+        activeIndex.value = -1;
+      }
+    };
+
+    const handleFocus = (event) => {
+      if (searchHandler.value && searchHandler.value.searchHistory.length) {
+        isPanelVisible.value = true;
+        activeIndex.value = -1;
+      }
+    };
+
+    const handleBlur = (event) => {
+      activeIndex.value = -1;
+      setTimeout(() => {
+        isPanelVisible.value = false;
+      }, 200);
     };
 
     const handleKeydown = (event) => {
       emit('search-keydown', event);
+      if (!searchHandler.value) return;
+
+      if (isPanelVisible.value && displayItems.value.length) {
+        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+          event.preventDefault();
+          const direction = event.key === 'ArrowUp' ? -1 : 1;
+          const count = displayItems.value.length;
+          activeIndex.value = ((activeIndex.value + direction) % count + count) % count;
+          return;
+        }
+        if (event.key === 'Enter' && activeIndex.value >= 0 && !isComposing.value) {
+          event.preventDefault();
+          selectItem(displayItems.value[activeIndex.value]);
+          return;
+        }
+      }
+
+      if (event.key === 'Enter' && !isComposing.value) {
+        const query = searchQuery.value.trim();
+        if (query) {
+          searchHandler.value.addToHistory(query);
+          isPanelVisible.value = false;
+          activeIndex.value = -1;
+          emit('search', query);
+        }
+      }
     };
 
     const clearSearch = () => {
       searchQuery.value = '';
+      isPanelVisible.value = false;
+      activeIndex.value = -1;
       emit('clear');
       emit('clear-search');
-      // Focus back on input
       if (searchInput.value) {
         searchInput.value.focus();
       }
+    };
+
+    const selectItem = (item) => {
+      searchQuery.value = item;
+      isPanelVisible.value = false;
+      activeIndex.value = -1;
+      emit('search', item);
+      if (searchInput.value) {
+        searchInput.value.focus();
+      }
+    };
+
+    const deleteItem = (item) => {
+      if (!searchHandler.value) return;
+      searchHandler.value.removeHistoryItem(item);
+      if (activeIndex.value >= displayItems.value.length) {
+        activeIndex.value = displayItems.value.length - 1;
+      }
+      if (!displayItems.value.length) {
+        isPanelVisible.value = false;
+      }
+    };
+
+    const clearAllHistory = () => {
+      if (!searchHandler.value) return;
+      searchHandler.value.clearHistory();
+      isPanelVisible.value = false;
+      activeIndex.value = -1;
+    };
+
+    const escapeHtml = (str) => {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    };
+
+    const highlightMatch = (text) => {
+      const query = searchQuery.value.trim();
+      const safeText = escapeHtml(text);
+      if (!query) return safeText;
+      const regex = new RegExp('(' + escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return safeText.replace(regex, '<mark>$1</mark>');
     };
 
     const handleCompositionStart = (event) => {
@@ -208,13 +330,23 @@ registerGlobalComponent({
       searchInput,
       envType,
       envLabel,
+      isPanelVisible,
+      activeIndex,
+      filteredHistory,
+      displayItems,
       goHome,
       openAuth,
       toggleSidebar,
       clearCache,
       handleInput,
+      handleFocus,
+      handleBlur,
       handleKeydown,
       clearSearch,
+      selectItem,
+      deleteItem,
+      clearAllHistory,
+      highlightMatch,
       handleCompositionStart,
       handleCompositionEnd
     };

@@ -329,6 +329,10 @@ export class SearchHandler {
         this.searchCallback = null;
         this.searchHistory = [];
         this.maxHistoryLength = 10;
+        this.activeIndex = -1;
+        this.onActiveIndexChange = null;
+        this.onShowPanel = null;
+        this.onHidePanel = null;
     }
 
     /**
@@ -444,8 +448,14 @@ export class SearchHandler {
      * @param {KeyboardEvent} event - 键盘事件
      */
     handleArrowKeys(event) {
-        // 实现搜索历史导航
-        // TODO: 实现搜索建议选择
+        if (!this.searchHistory.length) return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowUp' ? -1 : 1;
+        const count = this.searchHistory.length;
+        this.activeIndex = ((this.activeIndex + direction) % count + count) % count;
+        if (this.onActiveIndexChange) {
+            this.onActiveIndexChange(this.activeIndex, this.searchHistory[this.activeIndex]);
+        }
     }
 
     /**
@@ -453,7 +463,9 @@ export class SearchHandler {
      * @param {Event} event - 焦点事件
      */
     handleFocus(event) {
-        this.showSearchHistory();
+        if (this.onShowPanel) {
+            this.onShowPanel(this.searchHistory);
+        }
     }
 
     /**
@@ -461,9 +473,15 @@ export class SearchHandler {
      * @param {Event} event - 失焦事件
      */
     handleBlur(event) {
-        // 延迟隐藏，允许点击搜索结果
+        this.activeIndex = -1;
+        if (this.onActiveIndexChange) {
+            this.onActiveIndexChange(-1, null);
+        }
+        // 延迟隐藏，允许点击面板内元素
         setTimeout(() => {
-            this.hideSearchHistory();
+            if (this.onHidePanel) {
+                this.onHidePanel();
+            }
         }, 200);
     }
 
@@ -508,15 +526,32 @@ export class SearchHandler {
     /**
      * 显示搜索历史
      */
-    showSearchHistory() {
-        // TODO: 实现搜索历史显示
+    /**
+     * 从历史中移除单条
+     * @param {string} query - 要移除的查询
+     */
+    removeHistoryItem(query) {
+        this.searchHistory = this.searchHistory.filter(q => q !== query);
+        this.saveSearchHistory();
     }
 
     /**
-     * 隐藏搜索历史
+     * 清空全部历史
      */
-    hideSearchHistory() {
-        // TODO: 实现搜索历史隐藏
+    clearHistory() {
+        this.searchHistory = [];
+        this.saveSearchHistory();
+    }
+
+    /**
+     * 根据输入过滤历史
+     * @param {string} query - 搜索查询
+     * @returns {string[]} 过滤后的历史记录
+     */
+    filterHistory(query) {
+        if (!query) return this.searchHistory;
+        const lower = query.toLowerCase();
+        return this.searchHistory.filter(item => item.toLowerCase().includes(lower));
     }
 
     /**
