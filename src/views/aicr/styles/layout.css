@@ -2,8 +2,8 @@
 .aicr-session-sidebar {
     width: 320px;
     min-width: 50px;
-    background: var(--bg-secondary);
-    border-left: 1px solid var(--border-primary);
+    background: var(--yi-code-bg);
+    border-left: 1px solid var(--yi-border);
     box-shadow: var(--yi-shadow-sm);
     overflow-y: auto;
     overflow-x: hidden;
@@ -14,7 +14,7 @@
 
 .aicr-session-sidebar:hover {
     box-shadow: var(--yi-shadow-md);
-    border-left-color: var(--border-secondary);
+    border-left-color: var(--yi-border-focus);
 }
 
 /* ========== 响应式设计 ========== */
@@ -50,7 +50,7 @@
     }
     
     .aicr-sidebar {
-        border-bottom: 1px solid var(--border-primary);
+        border-bottom: 1px solid var(--yi-border);
         order: 1;
     }
     
@@ -96,7 +96,7 @@
 .aicr-sidebar::-webkit-scrollbar-thumb,
 .aicr-code::-webkit-scrollbar-thumb,
 .aicr-session-sidebar::-webkit-scrollbar-thumb {
-    background: var(--border-primary);
+    background: var(--yi-border);
     border-radius: 3px;
     transition: background var(--yi-duration-fast) var(--yi-easing-default);
 }
@@ -104,7 +104,7 @@
 .aicr-sidebar::-webkit-scrollbar-thumb:hover,
 .aicr-code::-webkit-scrollbar-thumb:hover,
 .aicr-session-sidebar::-webkit-scrollbar-thumb:hover {
-    background: var(--border-secondary);
+    background: var(--yi-border-focus);
 }
 
 /* ========== 面板切换动画 ========== */
@@ -164,8 +164,8 @@
     align-items: center;
     gap: 16px;
     padding: 12px 16px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-primary);
+    background: var(--yi-code-bg);
+    border-bottom: 1px solid var(--yi-border);
     box-shadow: var(--yi-shadow-sm);
 }
 
@@ -182,9 +182,9 @@
     font-size: 13px;
     line-height: 1.5;
     border-radius: 6px;
-    border: 1px solid var(--border-primary);
-    background: var(--bg-secondary);
-    color: var(--text-primary);
+    border: 1px solid var(--yi-border);
+    background: var(--yi-code-bg);
+    color: var(--yi-code-text);
     transition: all var(--yi-duration-fast) var(--yi-easing-default);
 }
 
@@ -202,9 +202,9 @@
     margin-left: 16px;
 }
 .collapse-btns button {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-primary);
+    background: var(--yi-code-bg);
+    color: var(--yi-code-text);
+    border: 1px solid var(--yi-border);
     border-radius: 6px;
     padding: 4px 14px;
     font-size: 14px;
@@ -212,9 +212,9 @@
     transition: background var(--yi-duration-fast) var(--yi-easing-default), color var(--yi-duration-fast) var(--yi-easing-default), border-color var(--yi-duration-fast) var(--yi-easing-default);
 }
 .collapse-btns button:hover {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
+    background: var(--yi-primary);
+    color: var(--yi-text-on-primary);
+    border-color: var(--yi-primary);
 }
 
 /* ========== 侧边栏展开把手样式 ========== */
@@ -239,11 +239,11 @@
 }
 .aicr-code.with-sidebar-collapsed {
   --aicr-edge-left-gradient: linear-gradient(90deg, var(--yi-border) 0%, transparent 100%);
-  box-shadow: inset 4px 0 8px -6px rgba(0,0,0,0.15);
+  box-shadow: inset 4px 0 8px -6px rgba(var(--yi-dark-surface-rgb), 0.15);
 }
 .aicr-code.with-chat-collapsed {
   --aicr-edge-right-gradient: linear-gradient(270deg, var(--yi-border) 0%, transparent 100%);
-  box-shadow: inset -4px 0 8px -6px rgba(0,0,0,0.15);
+  box-shadow: inset -4px 0 8px -6px rgba(var(--yi-dark-surface-rgb), 0.15);
 }
 
 /* 展开把手：增加可点击面积与光晕效果 */
@@ -256,8 +256,8 @@
   align-items: center;
   gap: 0; /* 默认收拢时不占空间 */
   background: var(--yi-primary);
-  color: #fff;
-  border: 1px solid var(--primary);
+  color: var(--yi-text-on-primary);
+  border: 1px solid var(--yi-primary);
   border-radius: 999px;
   padding: 8px 10px; /* 紧凑，默认仅图标 */
   cursor: pointer;
@@ -307,8 +307,8 @@
   align-items: center;
   gap: 0;
   background: var(--yi-primary);
-  color: #fff;
-  border: 1px solid var(--primary);
+  color: var(--yi-text-on-primary);
+  border: 1px solid var(--yi-primary);
   border-radius: 999px;
   padding: 8px 10px;
   cursor: pointer;
@@ -403,8 +403,8 @@
   transform: translateY(-50%);
   width: 28px;
   height: 28px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
+  background: var(--yi-code-bg);
+  border: 1px solid var(--yi-border);
   border-radius: 50%;
   padding: 0;
   appearance: none;
@@ -415,7 +415,7 @@
   cursor: pointer;
   z-index: 30; /* Match z-index */
   transition: all var(--yi-duration-normal) var(--yi-easing-default);
-  color: var(--text-secondary);
+  color: var(--yi-text-secondary);
   box-shadow: 0 6px 18px rgba(var(--yi-primary-rgb),0.15); /* Match initial shadow */
   backdrop-filter: blur(10px); /* Match backdrop-filter */
   -webkit-backdrop-filter: blur(10px);
@@ -441,9 +441,9 @@
 
 .file-tree-toggle:hover,
 .file-tree-toggle:hover {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
+  background: var(--yi-primary);
+  color: var(--yi-text-on-primary);
+  border-color: var(--yi-primary);
   box-shadow: 0 8px 24px rgba(var(--yi-primary-rgb),0.28), 0 0 0 8px rgba(var(--yi-primary-rgb),0.10); /* Match hover shadow */
   transform: translateY(-50%) scale(1.08) translateX(1px); /* Match hover transform */
 }
@@ -467,9 +467,9 @@
 /* 收起状态：让按钮更贴合边缘且高亮 */
 .file-tree-container.collapsed .file-tree-toggle,
 .file-tree-container.collapsed .file-tree-toggle {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
+  background: var(--yi-primary);
+  color: var(--yi-text-on-primary);
+  border-color: var(--yi-primary);
 }
 
 .file-tree-container.collapsed .file-tree-toggle {
@@ -487,8 +487,8 @@
   transform: translateY(-50%);
   width: 28px;
   height: 28px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
+  background: var(--yi-code-bg);
+  border: 1px solid var(--yi-border);
   border-radius: 50%;
   padding: 0;
   appearance: none;
@@ -499,7 +499,7 @@
   cursor: pointer;
   z-index: 30;
   transition: all var(--yi-duration-normal) var(--yi-easing-default);
-  color: var(--text-secondary);
+  color: var(--yi-text-secondary);
   box-shadow: 0 6px 18px rgba(var(--yi-primary-rgb),0.15);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -519,9 +519,9 @@
 .chat-panel-toggle:hover::before { opacity: 1; }
 
 .chat-panel-toggle:hover {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
+  background: var(--yi-primary);
+  color: var(--yi-text-on-primary);
+  border-color: var(--yi-primary);
   box-shadow: 0 8px 24px rgba(var(--yi-primary-rgb),0.28), 0 0 0 8px rgba(var(--yi-primary-rgb),0.10);
   transform: translateY(-50%) scale(1.08) translateX(-1px);
 }
@@ -542,8 +542,8 @@
 /* 暗色模式适配 */
 @media (prefers-color-scheme: dark) {
     .sidebar-expand-handle {
-        background: var(--primary-dark, #4338ca);
-        border-color: var(--primary-dark, #4338ca);
+        background: var(--yi-primary-hover);
+        border-color: var(--yi-primary-hover);
     }
 }
 
@@ -559,12 +559,12 @@
 
 /* ========== 快捷键提示样式 ========== */
 .shortcut-hint {
-    color: var(--text-secondary);
+    color: var(--yi-text-secondary);
     font-size: 12px;
     padding: 4px 8px;
-    background: var(--bg-tertiary);
+    background: var(--gray-700);
     border-radius: 4px;
-    border: 1px solid var(--border-primary);
+    border: 1px solid var(--yi-border);
     cursor: help;
     transition: all var(--yi-duration-fast) var(--yi-easing-default);
     white-space: nowrap;
@@ -573,8 +573,8 @@
 
 .shortcut-hint:hover {
     opacity: 1;
-    background: var(--bg-secondary);
-    border-color: var(--border-secondary);
+    background: var(--yi-code-bg);
+    border-color: var(--yi-border-focus);
 }
 
 /* ========== 搜索清除按钮样式 ========== */
@@ -599,9 +599,9 @@
     background: var(--yi-surface-hover);
     border: 1px solid var(--yi-border);
     border-radius: 50%;
-    color: var(--text-secondary);
+    color: var(--yi-text-secondary);
     cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-smooth);
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
     pointer-events: auto;
     font-size: 11px;
     box-sizing: border-box;
@@ -609,7 +609,7 @@
 
 .search-clear .clear-search-btn:hover {
     background: var(--yi-surface-active);
-    color: var(--text-primary);
+    color: var(--yi-code-text);
     transform: scale(1.1);
 }
 
@@ -643,12 +643,12 @@
 /* 暗色模式适配 */
 @media (prefers-color-scheme: dark) {
     .search-clear .clear-search-btn {
-        background: rgba(79, 172, 254, 0.15);
-        border-color: rgba(79, 172, 254, 0.25);
+        background: rgba(var(--yi-info-rgb), 0.15);
+        border-color: rgba(var(--yi-info-rgb), 0.25);
     }
     .search-clear .clear-search-btn:hover {
-        background: rgba(79, 172, 254, 0.25);
-        border-color: rgba(79, 172, 254, 0.35);
+        background: rgba(var(--yi-info-rgb), 0.25);
+        border-color: rgba(var(--yi-info-rgb), 0.35);
     }
 }
 

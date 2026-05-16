@@ -37,9 +37,9 @@
     /* 防止被压缩 */
     flex-shrink: 0;
     /* 确保背景不透明，避免滚动时内容透过 */
-    background-color: var(--bg-secondary) !important;
+    background-color: var(--yi-code-bg) !important;
     /* 添加底部边框，增强视觉分离 */
-    border-bottom: 1px solid var(--border-primary);
+    border-bottom: 1px solid var(--yi-border);
     /* 添加阴影，增强置顶效果 */
     box-shadow: var(--yi-shadow-sm);
     /* 确保在滚动时保持可见 */
@@ -140,7 +140,7 @@
 }
 
 .toolbar-btn.active:hover {
-    background: #059669;
+    background: var(--yi-success-hover);
     box-shadow: var(--yi-shadow-sm);
 }
 
@@ -151,7 +151,7 @@
 }
 
 .toolbar-btn-danger:hover {
-    background: #dc2626 !important;
+    background: var(--yi-danger-hover) !important;
     box-shadow: var(--yi-shadow-sm) !important;
 }
 
@@ -196,7 +196,7 @@
 }
 
 .toolbar-btn:has(.fa-download):hover {
-    background: #0891b2;
+    background: var(--yi-info-hover);
     box-shadow: var(--yi-shadow-sm);
 }
 
@@ -207,7 +207,7 @@
 }
 
 .toolbar-btn:has(.fa-upload):hover {
-    background: #059669;
+    background: var(--yi-success-hover);
     box-shadow: var(--yi-shadow-sm);
 }
 
@@ -297,7 +297,7 @@
     position: sticky;
     top: 0;
     z-index: 10;
-    background: var(--bg-secondary);
+    background: var(--yi-code-bg);
     flex-shrink: 0;
 }
 
@@ -316,7 +316,7 @@
 }
 
 .file-tree-search-wrapper:focus-within {
-    background: var(--bg-surface-hover);
+    background: var(--yi-surface-hover);
     box-shadow: var(--yi-shadow-focus);
 }
 
@@ -337,7 +337,7 @@
     height: 32px;
     font-weight: 400;
     font-size: 13px;
-    color: var(--text-primary);
+    color: var(--yi-code-text);
     padding: 6px 6px 6px 28px;
     border: none;
     border-radius: 6px;
@@ -350,7 +350,7 @@
 }
 
 .file-tree-search-input::placeholder {
-    color: var(--text-muted);
+    color: var(--yi-text-muted);
     opacity: 1;
 }
 
@@ -365,7 +365,7 @@
     height: 16px;
     border: none;
     background: transparent;
-    color: var(--text-secondary);
+    color: var(--yi-text-secondary);
     border-radius: 50%;
     cursor: pointer;
     display: flex;
@@ -380,8 +380,8 @@
 }
 
 .file-tree-search-clear:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
+    background: var(--yi-border-subtle);
+    color: var(--yi-code-text);
     opacity: 1;
     transform: scale(1.1);
 }
@@ -398,8 +398,8 @@
     transform: translateY(-50%);
     width: 28px;
     height: 28px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
+    background: var(--yi-code-bg);
+    border: 1px solid var(--yi-border);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -407,15 +407,15 @@
     cursor: pointer;
     z-index: 30;
     transition: all var(--yi-duration-normal) var(--yi-easing-default);
-    color: var(--text-secondary);
+    color: var(--yi-text-secondary);
     box-shadow: var(--yi-shadow-sm);
     font-size: 12px;
 }
 
 .file-tree-toggle:hover {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
+    background: var(--yi-primary);
+    color: var(--yi-text-on-primary);
+    border-color: var(--yi-primary);
     box-shadow: var(--yi-shadow-md);
     transform: translateY(-50%) scale(1.05);
 }
@@ -441,13 +441,13 @@
 /* 收起状态下的特殊样式 */
 .file-tree-container.collapsed .file-tree-toggle {
     right: -12px;
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
+    background: var(--yi-primary);
+    color: var(--yi-text-on-primary);
+    border-color: var(--yi-primary);
 }
 
 .file-tree-container.collapsed .file-tree-toggle:hover {
-    background: var(--primary-dark, #4338ca);
+    background: var(--yi-primary-hover);
 }
 
 /* ========== 文件树内容容器 ========== */
@@ -467,7 +467,7 @@
     margin: 0px;
     padding: var(--spacing-sm);
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
-    background: var(--bg-secondary);
+    background: var(--yi-code-bg);
     /* 移除独立的滚动，由 .file-tree-content 处理 */
     overflow: visible;
     flex: 1;
@@ -499,7 +499,7 @@
 .file-tree-container .empty-title {
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--yi-code-text);
     margin-bottom: 8px;
 }
 

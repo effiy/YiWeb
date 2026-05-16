@@ -1,6 +1,6 @@
 .session-list-tags {
     padding: 10px var(--spacing-sm);
-    background: var(--bg-secondary);
+    background: var(--yi-code-bg);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -21,9 +21,9 @@
     align-items: center;
     justify-content: center;
     border-radius: 10px;
-    border: 1px solid var(--border-primary);
-    background: var(--bg-surface);
-    color: var(--text-secondary);
+    border: 1px solid var(--yi-border);
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
     cursor: pointer;
     transition: background var(--yi-duration-fast) var(--yi-easing-default), border-color var(--yi-duration-fast) var(--yi-easing-default), transform var(--yi-duration-fast) var(--yi-easing-default), box-shadow var(--yi-duration-fast) var(--yi-easing-default);
     flex: 0 0 auto;
@@ -31,8 +31,8 @@
 
 .tag-filter-btn:hover,
 .tags-clear-btn:hover {
-    background: var(--bg-surface-hover);
-    border-color: var(--border-hover);
+    background: var(--yi-surface-hover);
+    border-color: var(--yi-border-focus);
 }
 
 .tag-filter-btn:active,
@@ -68,7 +68,7 @@
     right: -6px;
     bottom: -6px;
     font-size: 10px;
-    color: var(--danger-color);
+    color: var(--yi-danger);
 }
 
 .tags-list {
@@ -82,9 +82,9 @@
 
 .tag-item {
     border-radius: 999px;
-    border: 1px solid var(--border-primary);
+    border: 1px solid var(--yi-border);
     background: var(--yi-surface-hover);
-    color: var(--text-secondary);
+    color: var(--yi-text-secondary);
     padding: 4px 8px;
     font-size: 12px;
     line-height: 1.2;
@@ -94,12 +94,12 @@
 }
 
 .tag-item:hover {
-    background: var(--bg-surface-hover);
-    border-color: var(--border-hover);
+    background: var(--yi-surface-hover);
+    border-color: var(--yi-border-focus);
 }
 
 .tag-item:active {
-    background: var(--bg-surface-hover);
+    background: var(--yi-surface-hover);
 }
 
 .tag-item.active {

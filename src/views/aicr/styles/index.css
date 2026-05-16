@@ -30,7 +30,7 @@ html, body {
     display: flex;
     flex: 1;
     min-height: 0;
-    background: var(--bg-primary);
+    background: var(--yi-dark-surface);
     min-width: 320px;
     position: relative;
     overflow: hidden;
@@ -40,8 +40,8 @@ html, body {
 .aicr-sidebar {
     width: 320px;
     min-width: 50px;
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border-primary);
+    background: var(--yi-code-bg);
+    border-right: 1px solid var(--yi-border);
     box-shadow: var(--yi-shadow-sm);
     overflow: visible;
     transition: width var(--yi-duration-fast) var(--yi-easing-default), box-shadow var(--yi-duration-normal) var(--yi-easing-default), border-color var(--yi-duration-normal) var(--yi-easing-default);
@@ -71,14 +71,14 @@ html, body {
 
 .aicr-sidebar:hover {
     box-shadow: var(--yi-shadow-md);
-    border-right-color: var(--border-secondary);
+    border-right-color: rgba(var(--yi-info-rgb), 0.3);
 }
 
 /* ========== 代码区域 ========== */
 .aicr-code {
     flex: 1;
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    background: var(--yi-dark-surface);
+    color: var(--yi-code-text);
     overflow: hidden; /* Changed from visible to hidden to contain scrolling children */
     display: flex;
     flex-direction: column;
@@ -109,8 +109,8 @@ html, body {
     min-height: 0;
     display: flex;
     flex-direction: column;
-    border-left: 1px solid var(--border-primary);
-    background: var(--bg-primary);
+    border-left: 1px solid var(--yi-border);
+    background: var(--yi-dark-surface);
     position: relative;
     overflow: visible;
 }
@@ -151,9 +151,9 @@ html, body {
     min-height: 0;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--border-glass);
+    border: 1px solid var(--yi-border-subtle);
     border-radius: var(--radius-lg);
-    background: var(--bg-elevated);
+    background: var(--yi-surface-elevated);
     overflow: hidden;
     box-shadow: var(--yi-shadow-sm);
 }
@@ -164,8 +164,8 @@ html, body {
     justify-content: space-between;
     gap: var(--spacing-md);
     padding: 10px 12px;
-    border-bottom: 1px solid var(--border-glass);
-    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--yi-border-subtle);
+    background: var(--yi-surface-elevated);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
 }
@@ -176,7 +176,7 @@ html, body {
     gap: 8px;
     min-width: 0;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--yi-code-text);
 }
 
 .aicr-code .file-name-text {
@@ -218,7 +218,7 @@ html, body {
     right: 0;
     bottom: 0;
     z-index: 9999;
-    background: var(--bg-primary);
+    background: var(--yi-dark-surface);
     padding: var(--spacing-lg);
 }
 
@@ -234,9 +234,9 @@ html, body {
     width: 32px;
     height: 32px;
     border-radius: 10px;
-    border: 1px solid var(--border-glass);
-    background: var(--bg-surface);
-    color: var(--text-secondary);
+    border: 1px solid var(--yi-border-subtle);
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -252,20 +252,20 @@ html, body {
 }
 
 .aicr-code .action-button:hover:not(:disabled) {
-    color: var(--text-primary);
-    border-color: var(--border-secondary);
+    color: var(--yi-code-text);
+    border-color: rgba(var(--yi-info-rgb), 0.3);
     box-shadow: var(--yi-shadow-sm);
     transform: translateY(-1px);
-    background: var(--bg-elevated);
+    background: var(--yi-surface-elevated);
 }
 
 .aicr-code .action-button:disabled {
     opacity: 0.35;
     cursor: not-allowed;
     transform: none;
-    background: var(--bg-surface);
-    border-color: var(--border-glass);
-    color: var(--text-muted);
+    background: var(--yi-surface);
+    border-color: var(--yi-border-subtle);
+    color: var(--yi-text-muted);
     pointer-events: none;
 }
 
@@ -287,8 +287,8 @@ html, body {
     flex: 1;
     min-height: 0;
     overflow: auto;
-    background: var(--bg-primary);
-    font-size: var(--code-font-size, 13px);
+    background: var(--yi-dark-surface);
+    font-size: var(--yi-code-font-size, 13px);
     line-height: 1.7;
     outline: none;
 }
@@ -319,7 +319,7 @@ html, body {
 }
 
 .aicr-code .code-line:hover {
-    background: var(--bg-surface);
+    background: var(--yi-surface);
 }
 
 .aicr-code .line-copy-btn {
@@ -328,9 +328,9 @@ html, body {
     width: 24px;
     height: 24px;
     border-radius: 6px;
-    border: 1px solid var(--border-glass);
-    background: var(--bg-elevated);
-    color: var(--text-secondary);
+    border: 1px solid var(--yi-border-subtle);
+    background: var(--yi-surface-elevated);
+    color: var(--yi-text-secondary);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -346,9 +346,9 @@ html, body {
 }
 
 .aicr-code .line-copy-btn:hover {
-    background: var(--primary);
+    background: var(--yi-primary);
     color: white;
-    border-color: var(--primary);
+    border-color: var(--yi-primary);
     transform: scale(1.1);
 }
 
@@ -381,8 +381,8 @@ html, body {
 }
 
 .aicr-code .code-line.active-match {
-    background: rgba(234, 179, 8, 0.18);
-    box-shadow: inset 4px 0 0 rgba(234, 179, 8, 1);
+    background: rgba(var(--yi-warning-rgb), 0.18);
+    box-shadow: inset 4px 0 0 rgba(var(--yi-warning-rgb), 1);
     position: relative;
 }
 
@@ -393,7 +393,7 @@ html, body {
     top: 0;
     bottom: 0;
     width: 4px;
-    background: rgba(234, 179, 8, 1);
-    box-shadow: 0 0 8px rgba(234, 179, 8, 0.5);
+    background: rgba(var(--yi-warning-rgb), 1);
+    box-shadow: 0 0 8px rgba(var(--yi-warning-rgb), 0.5);
 }
 

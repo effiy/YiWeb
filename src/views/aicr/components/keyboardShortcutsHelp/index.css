@@ -6,7 +6,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(var(--yi-dark-surface-rgb), 0.6);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     display: flex;
@@ -27,8 +27,8 @@
 }
 
 .keyboard-shortcuts-panel {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-primary);
+    background: var(--yi-surface-elevated);
+    border: 1px solid var(--yi-border);
     border-radius: 16px;
     box-shadow: var(--yi-shadow-xl);
     max-width: 700px;
@@ -55,8 +55,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 20px 24px;
-    border-bottom: 1px solid var(--border-glass);
-    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--yi-border-subtle);
+    background: var(--yi-code-bg);
     border-radius: 16px 16px 0 0;
 }
 
@@ -64,7 +64,7 @@
     margin: 0;
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--yi-code-text);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -79,9 +79,9 @@
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    border: 1px solid var(--border-glass);
-    background: var(--bg-surface);
-    color: var(--text-secondary);
+    border: 1px solid var(--yi-border-subtle);
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -90,9 +90,9 @@
 }
 
 .shortcuts-close-btn:hover {
-    background: var(--bg-elevated);
-    color: var(--text-primary);
-    border-color: var(--border-secondary);
+    background: var(--yi-surface-elevated);
+    color: var(--yi-code-text);
+    border-color: var(--yi-border-focus);
     transform: scale(1.05);
 }
 
@@ -114,7 +114,7 @@
     margin: 0 0 14px 0;
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--yi-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -130,15 +130,15 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-glass);
+    background: var(--yi-surface);
+    border: 1px solid var(--yi-border-subtle);
     border-radius: 10px;
     transition: all var(--yi-duration-fast) var(--yi-easing-default);
 }
 
 .shortcut-item:hover {
-    background: var(--bg-elevated);
-    border-color: var(--border-secondary);
+    background: var(--yi-surface-elevated);
+    border-color: var(--yi-border-focus);
 }
 
 .shortcut-keys {
@@ -155,14 +155,14 @@
     min-width: 32px;
     height: 28px;
     padding: 0 10px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
+    background: var(--yi-dark-surface);
+    border: 1px solid var(--yi-border);
     border-radius: 6px;
     box-shadow: var(--yi-shadow-sm);
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--yi-code-text);
     text-transform: uppercase;
 }
 
@@ -170,20 +170,20 @@
     flex: 1;
     margin-left: 16px;
     font-size: 0.95rem;
-    color: var(--text-primary);
+    color: var(--yi-code-text);
 }
 
 .shortcuts-footer {
     padding: 16px 24px;
-    border-top: 1px solid var(--border-glass);
-    background: var(--bg-secondary);
+    border-top: 1px solid var(--yi-border-subtle);
+    background: var(--yi-code-bg);
     border-radius: 0 0 16px 16px;
 }
 
 .shortcuts-hint {
     margin: 0;
     font-size: 0.9rem;
-    color: var(--text-secondary);
+    color: var(--yi-text-secondary);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -200,13 +200,13 @@
     min-width: 24px;
     height: 22px;
     padding: 0 8px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
+    background: var(--yi-dark-surface);
+    border: 1px solid var(--yi-border);
     border-radius: 4px;
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--yi-code-text);
 }
 
 /* 响应式优化 */
@@ -264,15 +264,15 @@
 }
 
 .shortcuts-content::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
+    background: var(--yi-code-bg);
     border-radius: 4px;
 }
 
 .shortcuts-content::-webkit-scrollbar-thumb {
-    background: var(--border-secondary);
+    background: var(--yi-border-focus);
     border-radius: 4px;
 }
 
 .shortcuts-content::-webkit-scrollbar-thumb:hover {
-    background: var(--text-muted);
+    background: var(--yi-text-muted);
 }
