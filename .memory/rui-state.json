@@ -8,6 +8,6 @@
   "delivery_pipeline": {
     "log_appended": true,
     "docs_synced": true,
-    "notification_sent": false
+    "notification_sent": true
   }
 }
