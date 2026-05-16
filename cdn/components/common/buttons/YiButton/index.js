@@ -34,7 +34,7 @@ registerGlobalComponent({
         variant: {
             type: String,
             default: '',
-            validator: (value) => !value || ['primary', 'secondary', 'outline', 'ghost', 'danger'].includes(value)
+            validator: (value) => !value || ['primary', 'secondary', 'outline', 'ghost', 'danger', 'accent'].includes(value)
         },
         size: {
             type: String,

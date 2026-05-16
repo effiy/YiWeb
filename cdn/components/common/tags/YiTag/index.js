@@ -33,12 +33,12 @@ registerGlobalComponent({
         size: {
             type: String,
             default: '',
-            validator: (value) => !value || ['small', 'large'].includes(value)
+            validator: (value) => !value || ['sm', 'lg'].includes(value)
         },
         variant: {
             type: String,
             default: '',
-            validator: (value) => !value || ['primary', 'success', 'warning', 'danger', 'info'].includes(value)
+            validator: (value) => !value || ['primary', 'success', 'warning', 'danger', 'info', 'accent'].includes(value)
         },
         disabled: {
             type: Boolean,

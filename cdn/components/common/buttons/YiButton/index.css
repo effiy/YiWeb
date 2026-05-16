@@ -148,6 +148,11 @@
 .btn-lg {
   padding: var(--yi-space-3) var(--yi-space-6);
   font-size: var(--yi-text-lg);
+  min-height: 52px;
+}
+
+.btn-block {
+  width: 100%;
 }
 
 .btn-icon {

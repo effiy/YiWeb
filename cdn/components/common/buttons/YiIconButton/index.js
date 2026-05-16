@@ -11,7 +11,17 @@ registerGlobalComponent({
         },
         className: {
             type: String,
-            default: 'icon-button'
+            default: ''
+        },
+        size: {
+            type: String,
+            default: '',
+            validator: (value) => !value || ['sm', 'lg'].includes(value)
+        },
+        variant: {
+            type: String,
+            default: '',
+            validator: (value) => !value || ['primary', 'ghost'].includes(value)
         },
         active: {
             type: Boolean,
@@ -34,5 +44,23 @@ registerGlobalComponent({
             default: ''
         }
     },
-    emits: ['click']
+    emits: ['click'],
+    computed: {
+        computedClass() {
+            const classes = ['icon-button'];
+            if (this.size) {
+                classes.push(`icon-button-${this.size}`);
+            }
+            if (this.variant) {
+                classes.push(`icon-button-${this.variant}`);
+            }
+            if (this.className) {
+                classes.push(this.className);
+            }
+            if (this.active && this.activeClass) {
+                classes.push(this.activeClass);
+            }
+            return classes;
+        }
+    }
 });

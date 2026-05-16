@@ -61,7 +61,8 @@ registerGlobalComponent({
         },
         size: {
             type: String,
-            default: ''
+            default: '',
+            validator: (value) => !value || ['sm', 'lg'].includes(value)
         },
         wrapperClass: {
             type: String,

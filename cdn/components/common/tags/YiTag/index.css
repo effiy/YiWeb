@@ -53,13 +53,13 @@
   pointer-events: none;
 }
 
-.tag-small {
+.tag-sm {
   padding: 2px var(--yi-space-2);
   font-size: var(--yi-text-xs);
-  min-height: 22px;
+  min-height: 24px;
 }
 
-.tag-large {
+.tag-lg {
   padding: var(--yi-space-2) var(--yi-space-4);
   font-size: var(--yi-text-base);
   min-height: 36px;

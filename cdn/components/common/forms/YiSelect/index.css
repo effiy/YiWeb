@@ -3,7 +3,7 @@
  * Soft UI — based on --yi-* design tokens
  */
 
-.select-trigger {
+.select {
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -22,48 +22,61 @@
   user-select: none;
 }
 
-.select-trigger:hover {
+.select:hover {
   border-color: var(--yi-border-focus);
   background: var(--yi-surface-hover);
 }
 
-.select-trigger:focus-visible {
+.select:focus-visible {
   outline: none;
   box-shadow: var(--yi-shadow-focus);
   border-color: var(--yi-border-focus);
 }
 
-.select-trigger.open {
+.select.select-open {
   border-color: var(--yi-border-focus);
   box-shadow: var(--yi-shadow-focus);
 }
 
-.select-trigger.disabled,
-.select-trigger[aria-disabled="true"] {
+.select.select-disabled,
+.select[aria-disabled="true"] {
   opacity: 0.5;
   cursor: not-allowed;
   background: var(--yi-surface-hover);
 }
 
-.select-trigger-placeholder {
+/* Size variants */
+.select-sm {
+  padding: var(--yi-space-1) var(--yi-space-2);
+  min-height: 36px;
+  font-size: var(--yi-text-sm);
+}
+
+.select-lg {
+  padding: var(--yi-space-3) var(--yi-space-4);
+  min-height: 52px;
+  font-size: var(--yi-text-lg);
+}
+
+.select-placeholder {
   color: var(--yi-text-muted);
 }
 
-.select-trigger-value {
+.select-value {
   color: var(--yi-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.select-trigger-arrow {
+.select-arrow {
   color: var(--yi-text-muted);
   transition: transform var(--yi-duration-fast) var(--yi-easing-default);
   flex-shrink: 0;
   font-size: 12px;
 }
 
-.select-trigger.open .select-trigger-arrow {
+.select.select-open .select-arrow {
   transform: rotate(180deg);
 }
 
@@ -105,6 +118,18 @@
   cursor: pointer;
   transition: background var(--yi-duration-fast) var(--yi-easing-default);
   user-select: none;
+}
+
+.select-sm .select-option {
+  padding: var(--yi-space-1) var(--yi-space-2);
+  min-height: 32px;
+  font-size: var(--yi-text-sm);
+}
+
+.select-lg .select-option {
+  padding: var(--yi-space-2) var(--yi-space-3);
+  min-height: 48px;
+  font-size: var(--yi-text-lg);
 }
 
 .select-option:hover {
@@ -152,8 +177,8 @@
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .select-trigger,
-  .select-trigger-arrow,
+  .select,
+  .select-arrow,
   .select-option {
     transition: none;
   }

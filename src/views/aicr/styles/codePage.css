@@ -311,8 +311,8 @@
     --pet-chat-textarea-bg: rgba(var(--bg-primary-rgb), 0.55);
     --pet-chat-textarea-focus-bg: rgba(var(--bg-primary-rgb), 0.75);
     --pet-chat-textarea-border: rgba(var(--bg-tertiary-rgb), 0.85);
-    --pet-chat-textarea-focus-border: rgba(var(--yi-primary-rgb), 0.55);
-    --pet-chat-textarea-focus-shadow: rgba(var(--yi-primary-rgb), 0.18);
+    --pet-chat-textarea-focus-border: var(--yi-border-focus);
+    --pet-chat-textarea-focus-shadow: var(--yi-shadow-focus);
     --pet-chat-placeholder: rgba(var(--text-muted-rgb), 0.5);
 
     border-top: 1px solid var(--pet-chat-input-border);
@@ -364,7 +364,7 @@
 .pet-chat-right-panel .chat-message-input:focus {
     background: var(--pet-chat-textarea-focus-bg);
     border-color: var(--pet-chat-textarea-focus-border);
-    box-shadow: 0 0 0 3px var(--pet-chat-textarea-focus-shadow);
+    box-shadow: var(--pet-chat-textarea-focus-shadow);
     outline: none;
 }
 
@@ -451,7 +451,7 @@
 .pet-chat-textarea:focus {
     background: var(--pet-chat-textarea-focus-bg);
     border-color: var(--pet-chat-textarea-focus-border);
-    box-shadow: 0 0 0 3px var(--pet-chat-textarea-focus-shadow);
+    box-shadow: var(--pet-chat-textarea-focus-shadow);
 }
 
 .pet-chat-textarea::placeholder {

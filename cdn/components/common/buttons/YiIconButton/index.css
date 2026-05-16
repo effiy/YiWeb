@@ -7,8 +7,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   min-width: 44px;
   min-height: 44px;
   padding: 0;
@@ -54,20 +54,44 @@
 }
 
 /* Size variants */
-.icon-button-small {
-  width: 32px;
-  height: 32px;
+.icon-button-sm {
+  width: 36px;
+  height: 36px;
   min-width: 36px;
   min-height: 36px;
   font-size: var(--yi-text-sm);
 }
 
-.icon-button-large {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  min-height: 48px;
+.icon-button-lg {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  min-height: 52px;
   font-size: var(--yi-text-lg);
+}
+
+/* Variant: primary */
+.icon-button-primary {
+  background: var(--yi-primary-subtle);
+  color: var(--yi-primary);
+  border-color: rgba(var(--yi-primary-rgb), 0.25);
+}
+
+.icon-button-primary:hover:not([disabled]):not([aria-disabled="true"]) {
+  background: rgba(var(--yi-primary-rgb), 0.25);
+  border-color: rgba(var(--yi-primary-rgb), 0.4);
+}
+
+/* Variant: ghost */
+.icon-button-ghost {
+  background: transparent;
+  color: var(--yi-text-secondary);
+  border-color: transparent;
+}
+
+.icon-button-ghost:hover:not([disabled]):not([aria-disabled="true"]) {
+  background: var(--yi-surface-hover);
+  color: var(--yi-text);
 }
 
 /* Reduced motion */

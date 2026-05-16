@@ -87,8 +87,8 @@
 
 /* Header 一级目录标签：与侧边栏二级标签同尺寸，通过字重区分层级 */
 .aicr-header .tag-item {
-    font-size: 16px;
-    padding: 10px 20px;
+    font-size: 12px;
+    padding: 4px 6px;
     font-weight: 600;
 }
 

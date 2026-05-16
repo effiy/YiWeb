@@ -1,0 +1,86 @@
+/**
+ * YiInput Component Styles
+ * Unified input control — based on --yi-* design tokens
+ */
+
+.yi-input {
+  width: 100%;
+  padding: var(--yi-space-2) var(--yi-space-3);
+  min-height: 44px;
+  background: var(--yi-surface);
+  border: 1px solid var(--yi-border);
+  border-radius: var(--yi-radius-md);
+  font-family: var(--yi-font-ui);
+  font-size: var(--yi-text-base);
+  color: var(--yi-text);
+  line-height: var(--yi-leading-tight);
+  transition: all var(--yi-duration-fast) var(--yi-easing-default);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.yi-input::placeholder {
+  color: var(--yi-text-muted);
+}
+
+.yi-input:hover:not(:disabled):not([readonly]) {
+  border-color: var(--yi-border-focus);
+  background: var(--yi-surface-hover);
+}
+
+.yi-input:focus-visible {
+  border-color: var(--yi-border-focus);
+  box-shadow: var(--yi-shadow-focus);
+}
+
+.yi-input:disabled,
+.yi-input[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--yi-surface-hover);
+}
+
+.yi-input[readonly] {
+  cursor: default;
+}
+
+/* Size variants */
+.yi-input-sm {
+  padding: var(--yi-space-1) var(--yi-space-2);
+  min-height: 36px;
+  font-size: var(--yi-text-sm);
+}
+
+.yi-input-lg {
+  padding: var(--yi-space-3) var(--yi-space-4);
+  min-height: 52px;
+  font-size: var(--yi-text-lg);
+}
+
+/* Error variant */
+.yi-input-error {
+  border-color: var(--yi-danger);
+}
+
+.yi-input-error:focus-visible {
+  border-color: var(--yi-danger);
+  box-shadow: 0 0 0 3px var(--yi-danger-subtle);
+}
+
+/* High contrast */
+@media (prefers-contrast: high) {
+  .yi-input {
+    border-width: 2px;
+  }
+  .yi-input:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .yi-input {
+    transition: none;
+  }
+}

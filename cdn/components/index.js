@@ -4,6 +4,8 @@ export { default as YiIconButton } from './common/buttons/YiIconButton/index.js'
 export { default as YiTag } from './common/tags/YiTag/index.js';
 export { default as YiModal } from './common/modals/YiModal/index.js';
 export { default as YiSelect } from './common/forms/YiSelect/index.js';
+export { default as YiInput } from './common/forms/YiInput/index.js';
+export { default as YiTextarea } from './common/forms/YiTextarea/index.js';
 export { default as YiLoading } from './common/loaders/YiLoading/index.js';
 export { default as YiEmptyState } from './common/feedback/YiEmptyState/index.js';
 export { default as YiErrorState } from './common/feedback/YiErrorState/index.js';
@@ -22,6 +24,8 @@ export default {
   YiTag,
   YiModal,
   YiSelect,
+  YiInput,
+  YiTextarea,
   YiLoading,
   YiEmptyState,
   YiErrorState,

@@ -1,6 +1,6 @@
 <button
     :type="type"
-    :class="[className, { [activeClass]: active }]"
+    :class="computedClass"
     :disabled="disabled"
     :title="title"
     :aria-label="ariaLabel"
