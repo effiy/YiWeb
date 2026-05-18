@@ -1,13 +1,13 @@
 {
   "project": "YiWeb",
-  "story": "YiWeb-unify-basic-components",
-  "branch": "feat/YiWeb-unify-basic-components",
+  "story": "rui-story",
+  "branch": "feat/rui-story",
   "blocked": false,
   "current_stage": "delivery",
-  "timestamp": "2026-05-17T08:31:00Z",
+  "timestamp": "2026-05-18T21:10:00Z",
   "delivery_pipeline": {
     "log_appended": true,
     "docs_synced": true,
-    "notification_sent": true
+    "notification_sent": false
   }
 }

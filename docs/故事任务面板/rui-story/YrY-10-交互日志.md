@@ -168,3 +168,37 @@ T2 接口变更：移除 delete 和 rename 子命令，rui-story 精简为查询
 - ✅ ① 追加日志 → YrY-00-消息通知列表.md
 - ✅ ② 文档同步 → 16 份文档已同步至远端 api.effiy.cn
 - ✅ ③ 企微通知 → 发送成功
+
+---
+
+## 会话 2026-05-18-01 — 2026-05-18
+
+### 21:00:00 | turn-1 | claude
+
+**👤 用户**:
+/rui update rui-story 生成一个 view 页面用来管理故事任务面板下的故事任务
+
+**🤖 助手**:
+创建 storyPanel 视图（`src/views/storyPanel/`），包含 4 个组件（StoryPanelPage、StoryListTable、StoryDetailCard、StoryStatusBadge），3 个 hooks（store、useComputed、useMethods），以及入口文件（index.html、index.js、styles/index.css）。视图通过远程 API 查询故事任务面板数据，展示状态概览卡片 + 故事列表表格 + 详情卡片。
+
+**📋 关键决策**:
+- 遵循 aicr 视图模式：createBaseView + registerGlobalComponent
+- 使用 getAuthHeaders 获取认证头，credentials: 'omit' 遵守安全约束
+- 搜索功能内置于 StoryPanelPage 组件，避免 prop 修改问题
+- 状态判定逻辑与 rui-story SKILL.md 六状态模型对齐
+
+**📦 产出文件**:
+- `src/views/storyPanel/index.html` — HTML 入口
+- `src/views/storyPanel/index.js` — JS 入口（createBaseView 配置）
+- `src/views/storyPanel/styles/index.css` — 样式入口
+- `src/views/storyPanel/hooks/store.js` — 状态管理（fetchStories/selectStory/syncStory）
+- `src/views/storyPanel/hooks/useComputed.js` — 计算属性（statusCounts/totalStories）
+- `src/views/storyPanel/hooks/useMethods.js` — 方法（formatDate/statusLabel/typeLabel）
+- `src/views/storyPanel/components/storyPanelPage/` — 主页面组件
+- `src/views/storyPanel/components/storyListTable/` — 故事列表表格组件
+- `src/views/storyPanel/components/storyDetailCard/` — 故事详情卡片组件
+- `src/views/storyPanel/components/storyStatusBadge/` — 状态徽章组件
+
+**🔀 分支**: feat/rui-story
+**📝 Commit**: 5a64c98
+
