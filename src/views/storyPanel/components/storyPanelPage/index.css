@@ -1,0 +1,116 @@
+.sp-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+}
+.sp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+.sp-header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+.sp-header-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--yi-text-primary, #1a1a2e);
+    margin: 0;
+}
+.sp-header-count {
+    font-size: 14px;
+    color: var(--yi-text-secondary, #6b7280);
+}
+.sp-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.sp-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.sp-search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--yi-text-secondary, #6b7280);
+    font-size: 13px;
+    pointer-events: none;
+}
+.sp-search-input {
+    padding: 8px 12px 8px 36px;
+    border: 1px solid var(--yi-border, #e2e8f0);
+    border-radius: 8px;
+    font-size: 14px;
+    width: 240px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    background: var(--yi-surface, #ffffff);
+    color: var(--yi-text-primary, #1a1a2e);
+}
+.sp-search-input:focus {
+    border-color: var(--yi-color-primary, #1565c0);
+    box-shadow: 0 0 0 3px rgba(21,101,192,0.12);
+}
+.sp-search-input::placeholder {
+    color: var(--yi-text-secondary, #6b7280);
+}
+
+/* Status cards */
+.sp-status-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.sp-status-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 12px;
+    border-radius: 10px;
+    background: var(--yi-surface, #ffffff);
+    border: 1px solid var(--yi-border, #e2e8f0);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.sp-status-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.sp-status-card-value {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.sp-status-card-label {
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 4px;
+}
+.sp-status-card--code_done .sp-status-card-value { color: #1b5e20; }
+.sp-status-card--code_done .sp-status-card-label { color: #2e7d32; }
+.sp-status-card--code_in_progress .sp-status-card-value { color: #1565c0; }
+.sp-status-card--code_in_progress .sp-status-card-label { color: #1565c0; }
+.sp-status-card--docs_done .sp-status-card-value { color: #2e7d32; }
+.sp-status-card--docs_done .sp-status-card-label { color: #388e3c; }
+.sp-status-card--docs_in_progress .sp-status-card-value { color: #e65100; }
+.sp-status-card--docs_in_progress .sp-status-card-label { color: #e65100; }
+.sp-status-card--not_started .sp-status-card-value { color: #6b7280; }
+.sp-status-card--not_started .sp-status-card-label { color: #90a4ae; }
+.sp-status-card--blocked .sp-status-card-value { color: #c62828; }
+.sp-status-card--blocked .sp-status-card-label { color: #c62828; }
+
+.sp-overview,
+.sp-detail-view {
+    animation: sp-fade-in 0.2s ease;
+}
+@keyframes sp-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}

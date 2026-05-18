@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="故事任务面板管理，查看故事进度、详情与同步文档">
+    <meta name="keywords" content="故事任务, 面板管理, YiWeb, rui-story">
+    <title>YiWeb_-_故事任务面板</title>
+    <link rel="stylesheet" href="../../views/storyPanel/styles/index.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.5.26/dist/vue.global.prod.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <div id="app">
+        <story-panel-page
+            :loading="loading"
+            :error="error"
+            :stories="stories"
+            :status-counts="statusCounts"
+            :total-stories="totalStories"
+            :selected-story="selectedStory"
+            :syncing="syncing"
+            @refresh="refreshStories"
+            @select-story="viewStory"
+            @back="goBack"
+            @sync-story="syncStory"
+        ></story-panel-page>
+    </div>
+
+    <section id="global-loading-indicator" class="loading-indicator" aria-hidden="true" aria-label="全局加载中">
+        <div class="loading-content">
+            <div class="loading-spinner" role="status" aria-live="polite" aria-label="正在加载"></div>
+            <p class="loading-text" id="loading-text">正在加载...</p>
+        </div>
+    </section>
+
+    <script type="module" src="../../core/config.js"></script>
+    <script type="module" src="../../views/storyPanel/index.js"></script>
+    <script type="module" src="/cdn/utils/core/performance.js"></script>
+</body>
+
+</html>

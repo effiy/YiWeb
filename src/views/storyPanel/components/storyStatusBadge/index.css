@@ -1,0 +1,44 @@
+.sp-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 20px;
+    white-space: nowrap;
+}
+.sp-status-badge--sm {
+    font-size: 11px;
+    padding: 1px 8px;
+    line-height: 18px;
+}
+.sp-status-badge--lg {
+    font-size: 13px;
+    padding: 3px 12px;
+    line-height: 22px;
+}
+.sp-status-badge--not_started {
+    background: var(--yi-surface-variant, #f1f3f5);
+    color: var(--yi-text-secondary, #6b7280);
+}
+.sp-status-badge--docs_in_progress {
+    background: #fff3e0;
+    color: #e65100;
+}
+.sp-status-badge--docs_done {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+.sp-status-badge--code_in_progress {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+.sp-status-badge--code_done {
+    background: #c8e6c9;
+    color: #1b5e20;
+}
+.sp-status-badge--blocked {
+    background: #ffebee;
+    color: #c62828;
+}

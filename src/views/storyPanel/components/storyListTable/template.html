@@ -1,0 +1,37 @@
+<div class="sp-table-wrapper">
+    <div v-if="loading" class="sp-table-loading">
+        <i class="fas fa-spinner fa-spin"></i> 加载中...
+    </div>
+    <div v-else-if="error" class="sp-table-error">
+        <i class="fas fa-exclamation-circle"></i> {{ error }}
+    </div>
+    <div v-else-if="stories.length === 0" class="sp-table-empty">
+        <i class="fas fa-inbox"></i> 暂无故事任务
+    </div>
+    <table v-else class="sp-table">
+        <thead>
+            <tr>
+                <th class="sp-th sp-th--name">故事名称</th>
+                <th class="sp-th sp-th--status">状态</th>
+                <th class="sp-th sp-th--files">文件数</th>
+                <th class="sp-th sp-th--modified">最后修改</th>
+                <th class="sp-th sp-th--type">类型</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="story in stories" :key="story.name" class="sp-tr" @click="onSelect(story)">
+                <td class="sp-td sp-td--name">
+                    <span class="sp-story-name">{{ story.name }}</span>
+                </td>
+                <td class="sp-td sp-td--status">
+                    <story-status-badge :status="story.status" size="sm"></story-status-badge>
+                </td>
+                <td class="sp-td sp-td--files">{{ story.fileCount }}</td>
+                <td class="sp-td sp-td--modified">{{ formatDate(story.lastModified) }}</td>
+                <td class="sp-td sp-td--type">
+                    <span class="sp-type-tag sp-type-tag--{{ story.type }}">{{ typeLabel(story.type) }}</span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

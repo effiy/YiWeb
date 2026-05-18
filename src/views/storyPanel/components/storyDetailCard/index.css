@@ -1,0 +1,111 @@
+.sp-detail {
+    background: var(--yi-surface, #ffffff);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.sp-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+.sp-detail-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid var(--yi-border, #e2e8f0);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: var(--yi-text-secondary, #6b7280);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.sp-detail-back:hover {
+    background: var(--yi-surface-variant, #f1f3f5);
+    color: var(--yi-text-primary, #1a1a2e);
+}
+.sp-detail-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--yi-text-primary, #1a1a2e);
+    margin: 0;
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+}
+.sp-detail-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.sp-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.sp-meta-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--yi-text-secondary, #6b7280);
+}
+.sp-meta-value {
+    font-size: 14px;
+    color: var(--yi-text-primary, #1a1a2e);
+}
+.sp-meta-value--path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--yi-color-primary, #1565c0);
+}
+.sp-detail-section {
+    margin-bottom: 24px;
+}
+.sp-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--yi-text-primary, #1a1a2e);
+    margin: 0 0 12px;
+}
+.sp-file-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.sp-file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    transition: background 0.15s;
+}
+.sp-file-item:hover {
+    background: var(--yi-surface-variant, rgba(0,0,0,0.02));
+}
+.sp-file-icon {
+    color: var(--yi-text-secondary, #6b7280);
+    font-size: 12px;
+    width: 16px;
+    text-align: center;
+}
+.sp-file-name {
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--yi-text-primary, #1a1a2e);
+}
+.sp-file-date {
+    color: var(--yi-text-secondary, #6b7280);
+    font-size: 12px;
+    white-space: nowrap;
+}
+.sp-detail-actions {
+    padding-top: 16px;
+    border-top: 1px solid var(--yi-border, #e2e8f0);
+}

@@ -1,0 +1,41 @@
+<div v-if="story" class="sp-detail">
+    <div class="sp-detail-header">
+        <button class="sp-detail-back" @click="onBack">
+            <i class="fas fa-arrow-left"></i> 返回列表
+        </button>
+        <h2 class="sp-detail-title">{{ story.name }}</h2>
+        <story-status-badge :status="story.status" size="lg"></story-status-badge>
+    </div>
+
+    <div class="sp-detail-meta">
+        <div class="sp-meta-item">
+            <span class="sp-meta-label">远端路径</span>
+            <span class="sp-meta-value sp-meta-value--path">故事任务面板/{{ story.name }}/</span>
+        </div>
+        <div class="sp-meta-item">
+            <span class="sp-meta-label">类型</span>
+            <span class="sp-meta-value">{{ typeLabel(story.type) }}</span>
+        </div>
+        <div class="sp-meta-item">
+            <span class="sp-meta-label">文件数</span>
+            <span class="sp-meta-value">{{ story.fileCount }}</span>
+        </div>
+    </div>
+
+    <div class="sp-detail-section">
+        <h3 class="sp-section-title">文件清单</h3>
+        <ul class="sp-file-list">
+            <li v-for="file in story.files" :key="file.filePath" class="sp-file-item">
+                <i class="fas fa-file-alt sp-file-icon"></i>
+                <span class="sp-file-name">{{ file.fileName }}</span>
+                <span class="sp-file-date">{{ formatDate(file.updatedAt) }}</span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="sp-detail-actions">
+        <yi-button variant="primary" icon="fas fa-sync-alt" :loading="syncing" @click="onSync">
+            从远端同步文档
+        </yi-button>
+    </div>
+</div>
