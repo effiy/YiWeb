@@ -1,9 +1,8 @@
-<div v-if="story" class="sp-detail">
+<div v-if="story" :class="['sp-detail', { 'sp-detail--panel': panel }]">
     <div class="sp-detail-header">
-        <button class="sp-detail-back" @click="onBack">
+        <button v-if="!panel" class="sp-detail-back" @click="onBack">
             <i class="fas fa-arrow-left"></i> 返回列表
         </button>
-        <h2 class="sp-detail-title">{{ story.name }}</h2>
         <story-status-badge :status="story.status" size="lg"></story-status-badge>
     </div>
 

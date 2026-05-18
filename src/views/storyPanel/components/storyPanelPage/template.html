@@ -14,54 +14,77 @@
                     v-model="localSearchQuery"
                 />
             </div>
-            <yi-button variant="ghost" icon="fas fa-sync-alt" @click="$emit('refresh')">
-                刷新
-            </yi-button>
+            <button class="sp-view-toggle" @click="toggleView" :title="viewMode === 'board' ? '切换列表视图' : '切换看板视图'">
+                <i :class="viewMode === 'board' ? 'fas fa-list' : 'fas fa-columns'"></i>
+            </button>
+            <yi-button variant="ghost" icon="fas fa-sync-alt" @click="$emit('refresh')">刷新</yi-button>
         </div>
     </header>
 
-    <div v-if="!hasSelectedStory" class="sp-overview">
-        <div class="sp-status-cards">
-            <div class="sp-status-card sp-status-card--code_done">
-                <span class="sp-status-card-value">{{ statusCounts.code_done || 0 }}</span>
-                <span class="sp-status-card-label">编码完成</span>
-            </div>
-            <div class="sp-status-card sp-status-card--code_in_progress">
-                <span class="sp-status-card-value">{{ statusCounts.code_in_progress || 0 }}</span>
-                <span class="sp-status-card-label">编码进行中</span>
-            </div>
-            <div class="sp-status-card sp-status-card--docs_done">
-                <span class="sp-status-card-value">{{ statusCounts.docs_done || 0 }}</span>
-                <span class="sp-status-card-label">文档完成</span>
-            </div>
-            <div class="sp-status-card sp-status-card--docs_in_progress">
-                <span class="sp-status-card-value">{{ statusCounts.docs_in_progress || 0 }}</span>
-                <span class="sp-status-card-label">文档进行中</span>
-            </div>
-            <div class="sp-status-card sp-status-card--not_started">
-                <span class="sp-status-card-value">{{ statusCounts.not_started || 0 }}</span>
-                <span class="sp-status-card-label">未开始</span>
-            </div>
-            <div class="sp-status-card sp-status-card--blocked">
-                <span class="sp-status-card-value">{{ statusCounts.blocked || 0 }}</span>
-                <span class="sp-status-card-label">已阻断</span>
+    <div v-if="loading" class="sp-loading">
+        <i class="fas fa-spinner fa-spin"></i> 加载中...
+    </div>
+    <div v-else-if="error" class="sp-error">
+        <i class="fas fa-exclamation-circle"></i> {{ error }}
+    </div>
+
+    <template v-else>
+        <!-- Board View -->
+        <div v-if="viewMode === 'board'" class="sp-kanban">
+            <div v-for="col in kanbanColumns" :key="col.status" class="sp-column">
+                <div class="sp-column-header" :class="'sp-column-header--' + col.status">
+                    <story-status-badge :status="col.status" size="sm"></story-status-badge>
+                    <span class="sp-column-count">{{ col.stories.length }}</span>
+                </div>
+                <div class="sp-column-cards">
+                    <div
+                        v-for="story in col.stories"
+                        :key="story.name"
+                        class="sp-card"
+                        :class="'sp-card--' + story.status"
+                        @click="openDetail(story)"
+                    >
+                        <div class="sp-card-name">{{ story.name }}</div>
+                        <div class="sp-card-meta">
+                            <span class="sp-card-type">{{ typeLabel(story.type) }}</span>
+                            <span class="sp-card-files">{{ story.fileCount }} 个文件</span>
+                        </div>
+                        <div class="sp-card-date">{{ formatDate(story.lastModified) }}</div>
+                    </div>
+                    <div v-if="col.stories.length === 0" class="sp-column-empty">—</div>
+                </div>
             </div>
         </div>
 
-        <story-list-table
-            :stories="filteredStories"
-            :loading="loading"
-            :error="error"
-            @select="$emit('select-story', $event)"
-        ></story-list-table>
-    </div>
+        <!-- List View -->
+        <div v-if="viewMode === 'list'" class="sp-list-view">
+            <story-list-table
+                :stories="filteredStories"
+                :loading="false"
+                :error="null"
+                @select="openDetail"
+            ></story-list-table>
+        </div>
+    </template>
 
-    <div v-else class="sp-detail-view">
-        <story-detail-card
-            :story="selectedStory"
-            :syncing="syncing"
-            @back="$emit('back')"
-            @sync="$emit('sync-story', $event)"
-        ></story-detail-card>
+    <!-- Side Panel -->
+    <div v-if="panelVisible" class="sp-panel-backdrop" @click="onBackdropClick" @keydown.escape="closePanel">
+        <div class="sp-panel" role="dialog" aria-modal="true" aria-label="故事详情">
+            <div class="sp-panel-header">
+                <h2 class="sp-panel-title">{{ panelStory.name }}</h2>
+                <button class="sp-panel-close" @click="closePanel" aria-label="关闭面板">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="sp-panel-body">
+                <story-detail-card
+                    :story="panelStory"
+                    :syncing="syncing"
+                    :panel="true"
+                    @close="closePanel"
+                    @sync="$emit('sync-story', $event)"
+                ></story-detail-card>
+            </div>
+        </div>
     </div>
 </div>

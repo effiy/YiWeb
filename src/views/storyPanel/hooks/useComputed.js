@@ -23,8 +23,26 @@ export function useComputed(store) {
 
     const totalStories = computed(() => store.stories.value.length);
 
+    const storiesByStatus = computed(() => {
+        const groups = {
+            not_started: [],
+            docs_in_progress: [],
+            docs_done: [],
+            code_in_progress: [],
+            code_done: [],
+            blocked: []
+        };
+        for (const story of store.stories.value) {
+            if (groups[story.status]) {
+                groups[story.status].push(story);
+            }
+        }
+        return groups;
+    });
+
     return {
         statusCounts,
-        totalStories
+        totalStories,
+        storiesByStatus
     };
 }

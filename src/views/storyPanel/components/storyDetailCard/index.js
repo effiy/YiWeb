@@ -6,9 +6,10 @@ registerGlobalComponent({
     css: '/src/views/storyPanel/components/storyDetailCard/index.css',
     props: {
         story: { type: Object, default: null },
-        syncing: { type: Boolean, default: false }
+        syncing: { type: Boolean, default: false },
+        panel: { type: Boolean, default: false }
     },
-    emits: ['back', 'sync'],
+    emits: ['back', 'sync', 'close'],
     methods: {
         formatDate(ts) {
             if (!ts) return '—';

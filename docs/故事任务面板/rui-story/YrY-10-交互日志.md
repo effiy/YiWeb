@@ -202,3 +202,84 @@ T2 接口变更：移除 delete 和 rename 子命令，rui-story 精简为查询
 **🔀 分支**: feat/rui-story
 **📝 Commit**: 5a64c98
 
+---
+
+### 21:45:00 | turn-2 | claude
+
+**👤 用户**:
+/rui update rui-story 使用 https://github.com/nextlevelbuilder/ui-ux-pro-max-skill 优化下 src/views/storyPanel/index.html
+
+**🤖 助手**:
+基于 ui-ux-pro-max-skill 预交付检查表优化 index.html。8 项修复：(1) 标题 `YiWeb_-_` → `YiWeb |`；(2) Google Fonts 添加 `display=swap` 防 FOIT；(3) 添加 jsdelivr/cdnjs preconnect；(4) 添加 light/dark theme-color meta；(5) 添加 skip-to-content 可访问性链接；(6) 添加 semantic `<main>` 地标；(7) 修复 loading indicator ARIA（移除 aria-hidden、添加 role=status+aria-live=polite）；(8) 添加 `<noscript>` 回退。
+
+**📋 关键决策**:
+- 复用全局 `.skip-link` 样式（cdn/styles/base/reset.css:253）
+- `prefers-reduced-motion` 由全局 reset.css 覆盖，视图 CSS 无额外处理
+- Font Awesome/Vue CDN 添加 preconnect 减少 TLS 握手延迟
+
+**📦 产出文件**:
+- `src/views/storyPanel/index.html` — 8 项 ui-ux-pro-max 检查表修复
+
+**🔀 分支**: feat/rui-story
+**📝 交付**: 21 files overwritten → api.effiy.cn | wework-bot 通知已发送
+
+---
+
+### 22:45:00 | turn-3 | claude
+
+**👤 用户**:
+/rui update rui-story 补充YiWeb项目的文档及内容
+
+**🤖 助手**:
+创建 YiWeb 项目基线文档 5 份，与已有 YiAi (8 份) 和 YrY (9 份) 形成三项目对称文档基线。覆盖：01-故事任务（问题空间基线，6 Story · 10 FP · 8 SC · 12 AC · §0–§7 完整结构）、02-用户使用场景（3 人物画像 · 10+ 场景 · 5 组体验基线 · 3 段用户旅程 mermaid 图）、04-前端技术评审（7 章：视图架构/状态管理/API 通信/Markdown 管道/安全架构/性能策略/项目约束，含 8 个 mermaid 架构图）、05-测试用例评审（19 个用例：8 正常 + 5 边界 + 7 异常 + 4 回归，含关联矩阵）、10-交互日志。
+
+**📋 关键决策**:
+- 01 遵循基线规则：仅业务语言，无代码路径/组件名/API 路由
+- 04 为技术评审：可引用源码路径，含架构 mermaid 图 + 项目约束验证表
+- 不创建 03（后端，YiWeb 为纯前端）/ 06/07/08/09（实施/验证阶段文档）
+- 文档命名 YiWeb 前缀，与 YiAi、YrY 对称
+
+**📦 产出文件**:
+- `docs/故事任务面板/rui-story/YiWeb-01-故事任务.md` — 问题空间基线
+- `docs/故事任务面板/rui-story/YiWeb-02-用户使用场景.md` — 用户空间基线
+- `docs/故事任务面板/rui-story/YiWeb-04-前端技术评审.md` — 7 章架构评审
+- `docs/故事任务面板/rui-story/YiWeb-05-测试用例评审.md` — 19 个用例
+- `docs/故事任务面板/rui-story/YiWeb-10-交互日志.md` — 会话记录
+
+**🔀 分支**: feat/rui-story
+**📝 交付**: 5 created + 21 overwritten → api.effiy.cn | wework-bot 通知已发送
+
+---
+
+### 23:30:00 | turn-4 | claude
+
+**👤 用户**:
+/rui update rui-story 参考 jira 的任务看板，重构下
+
+**🤖 助手**:
+T3 UI 重构：将 storyPanel 从表格+详情页模式改造为 Jira 风格看板。6 列状态看板（not_started/docs_in_progress/docs_done/code_in_progress/code_done/blocked）、侧边滑出详情面板（440px 宽、slide-in 动画、Escape/×/遮罩关闭）、看板/列表视图切换按钮。看板卡片带状态色左边框、故事名、类型标签、文件数、最后修改日期。故事详情卡片适配面板模式（panel prop 隐藏返回按钮）。
+
+**📋 关键决策**:
+- 侧边面板替代全页详情，Jira 风格交互
+- 看板+列表双视图切换（viewMode: 'board' | 'list'）
+- CSS Grid 6 列布局，<1400px 降为 3 列，<800px 降为 2 列
+- 无拖拽（零 npm 约束）
+- 颜色体系对齐六状态：灰/琥珀/绿/蓝/深绿/红
+- storiesByStatus 从 useComputed 提供，修复 createBaseView 的 data 覆盖 bug
+
+**🐛 修复**:
+- index.js 中 `storiesByStatus: store.storiesByStatus` 引用了 createStore 不存在的属性，覆盖了 useComputed 的有效 computed。已从 data 配置中移除。
+
+**📦 产出文件**:
+- `src/views/storyPanel/index.js` — 移除错误的 storiesByStatus data 绑定
+- `src/views/storyPanel/index.html` — 新增 `:stories-by-status` prop 绑定
+- `src/views/storyPanel/hooks/useComputed.js` — 新增 storiesByStatus 计算属性
+- `src/views/storyPanel/components/storyPanelPage/index.js` — 新增 viewMode/panelStory/kanbanColumns/helper methods/Escape 键处理
+- `src/views/storyPanel/components/storyPanelPage/template.html` — 看板网格 + 列表视图 + 侧边面板模板
+- `src/views/storyPanel/components/storyPanelPage/index.css` — 看板/CSS Grid/卡片/侧面板/动画/响应式
+- `src/views/storyPanel/components/storyDetailCard/index.js` — 新增 panel prop + close emit
+- `src/views/storyPanel/components/storyDetailCard/template.html` — panel 模式下隐藏返回按钮
+- `src/views/storyPanel/components/storyDetailCard/index.css` — panel 模式下去除冗余 padding/shadow
+
+**🔀 分支**: feat/rui-story
+
