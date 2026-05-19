@@ -1,4 +1,5 @@
 import { registerGlobalComponent } from '/cdn/utils/view/componentLoader.js';
+import { clearCacheAndRefresh } from '/src/views/storyPanel/hooks/clearCacheMethods.js';
 
 registerGlobalComponent({
     name: 'StoryPanelPage',
@@ -13,7 +14,7 @@ registerGlobalComponent({
         selectedStory: { type: Object, default: null },
         storiesByStatus: { type: Object, default: () => ({}) },
     },
-    emits: ['refresh', 'select-story', 'back'],
+    emits: ['select-story', 'back'],
     data() {
         return {
             localSearchQuery: '',
@@ -102,6 +103,9 @@ registerGlobalComponent({
         typeLabel(type) {
             const map = { backend: '后端', frontend: '前端', fullstack: '全栈', meta: '元数据' };
             return map[type] || type;
+        },
+        clearCache() {
+            clearCacheAndRefresh();
         },
         formatDate(ts) {
             if (!ts) return '—';

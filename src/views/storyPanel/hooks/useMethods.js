@@ -2,10 +2,6 @@
  * 故事任务面板 - 方法
  */
 export function useMethods(store) {
-    function refreshStories() {
-        return store.fetchStories();
-    }
-
     function viewStory(name) {
         store.selectStory(name);
     }
@@ -57,7 +53,6 @@ export function useMethods(store) {
     }
 
     return {
-        refreshStories,
         viewStory,
         goBack,
         formatDate,

@@ -31,12 +31,6 @@
     font-size: 13px;
     color: var(--yi-text-secondary, #CBD5E1);
 }
-.sp-header-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
 /* Search */
 .sp-search {
     position: relative;

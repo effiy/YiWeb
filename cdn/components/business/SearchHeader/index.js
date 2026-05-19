@@ -2,36 +2,6 @@ import { registerGlobalComponent } from '/cdn/utils/view/componentLoader.js';
 import { SearchHandler } from '/cdn/utils/browser/events.js';
 import { getIconClass } from '/cdn/icons/iconMap.js';
 
-/**
- * Detect current environment
- * @returns {'local' | 'prod'} Environment type
- */
-function detectEnvironment() {
-  // Check URL first
-  const hostname = window.location.hostname;
-  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('local')) {
-    return 'local';
-  }
-
-  // Check env from config or localStorage
-  try {
-    const envFromStorage = localStorage.getItem('env');
-    if (envFromStorage === 'local' || envFromStorage === 'prod') {
-      return envFromStorage;
-    }
-  } catch (_) {}
-
-  // Check URL params
-  const params = new URLSearchParams(window.location.search);
-  const envFromParam = params.get('env');
-  if (envFromParam === 'local' || envFromParam === 'prod') {
-    return envFromParam;
-  }
-
-  // Default to prod
-  return 'prod';
-}
-
 registerGlobalComponent({
   name: 'SearchHeader',
   html: '/cdn/components/business/SearchHeader/template.html',
@@ -134,12 +104,6 @@ registerGlobalComponent({
     const activeIndex = Vue.ref(-1);
     const searchHandler = Vue.ref(null);
 
-    // Detect environment
-    const envType = Vue.ref(detectEnvironment());
-    const envLabel = Vue.computed(() => {
-      return envType.value === 'local' ? 'LOCAL' : 'PROD';
-    });
-
     // Resolve home icon class (supports both semantic names and raw FA classes)
     const resolvedHomeIconClass = Vue.computed(() => {
       const cls = props.homeIconClass;
@@ -213,10 +177,6 @@ registerGlobalComponent({
 
     const toggleSidebar = () => {
       emit('toggle-sidebar');
-    };
-
-    const clearCache = () => {
-      emit('clear-cache');
     };
 
     const handleInput = (event) => {
@@ -338,8 +298,6 @@ registerGlobalComponent({
       resolvedHomeIconClass,
       searchQuery,
       searchInput,
-      envType,
-      envLabel,
       isPanelVisible,
       activeIndex,
       filteredHistory,
@@ -347,7 +305,6 @@ registerGlobalComponent({
       goHome,
       openAuth,
       toggleSidebar,
-      clearCache,
       handleInput,
       handleFocus,
       handleBlur,

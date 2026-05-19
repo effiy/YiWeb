@@ -25,10 +25,12 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 'YiButton',
                 'YiTag',
                 'YiLoading',
+                'HeaderActions',
                 'YiEmptyState',
                 'YiErrorState',
             ],
             componentModules: [
+                '/cdn/components/business/HeaderActions/index.js',
                 '/src/views/storyPanel/components/storyPanelPage/index.js',
                 '/src/views/storyPanel/components/storyListTable/index.js',
                 '/src/views/storyPanel/components/storyDetailCard/index.js',
@@ -50,7 +52,6 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 store.fetchStories();
             },
             methods: {
-                refreshStories: () => store.fetchStories(),
                 viewStory: (name) => store.selectStory(name),
                 goBack: () => store.clearSelection(),
             }

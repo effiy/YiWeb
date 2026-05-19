@@ -4,7 +4,7 @@
             <h1 class="sp-header-title">故事任务面板</h1>
             <span v-if="totalStories > 0" class="sp-header-count">{{ totalStories }} 个故事</span>
         </div>
-        <div class="sp-header-right">
+        <header-actions @clear-cache="clearCache">
             <div class="sp-search">
                 <yi-icon name="search" class-name="sp-search-icon"></yi-icon>
                 <input
@@ -17,8 +17,7 @@
             <button class="sp-view-toggle" @click="toggleView" :title="viewMode === 'board' ? '切换列表视图' : '切换看板视图'">
                 <yi-icon :name="viewMode === 'board' ? 'list' : 'columns'"></yi-icon>
             </button>
-            <yi-button variant="ghost" icon="refresh" @click="$emit('refresh')">刷新</yi-button>
-        </div>
+        </header-actions>
     </header>
 
     <div v-if="loading" class="sp-loading">

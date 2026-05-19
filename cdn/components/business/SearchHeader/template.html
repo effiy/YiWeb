@@ -90,7 +90,11 @@
     <slot></slot>
   </div>
 
-  <div class="header-actions">
+  <header-actions
+    :show-clear-cache="showClearCacheButton"
+    :show-env-badge="true"
+    @clear-cache="$emit('clear-cache')"
+  >
     <button
       v-if="showNewsButton"
       type="button"
@@ -123,20 +127,5 @@
     >
       <yi-icon :name="sidebarCollapsed ? 'chevron-right' : 'chevron-left'"></yi-icon>
     </button>
-
-    <button
-      v-if="showClearCacheButton"
-      type="button"
-      class="header-icon-btn"
-      @click="clearCache"
-      title="清缓存并刷新"
-      aria-label="清缓存并刷新"
-    >
-      <yi-icon name="rotate-right"></yi-icon>
-    </button>
-
-    <span class="env-badge" :class="envType">
-      {{ envLabel }}
-    </span>
-  </div>
+  </header-actions>
 </header>

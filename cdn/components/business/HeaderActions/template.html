@@ -1,0 +1,14 @@
+<div class="header-actions">
+  <slot></slot>
+  <button
+    v-if="showClearCache"
+    type="button"
+    class="header-icon-btn"
+    @click="$emit('clear-cache')"
+    title="清缓存并刷新"
+    aria-label="清缓存并刷新"
+  >
+    <yi-icon name="rotate-right"></yi-icon>
+  </button>
+  <span v-if="showEnvBadge" class="env-badge" :class="envType">{{ envLabel }}</span>
+</div>
