@@ -1,3 +1,5 @@
+# YiWeb-04-前端技术评审
+
 > | v1.0 | 2026-05-19 | deepseek-v4-pro | 🌿 feat/header-actions | 📎 [../YiWeb-01-故事任务.md](./YiWeb-01-故事任务.md) |
 
 > **来源引用**: 上游 01-故事任务 §1 Story S1/S2/S3。项目类型 frontend。证据等级 A（源码级实现）。

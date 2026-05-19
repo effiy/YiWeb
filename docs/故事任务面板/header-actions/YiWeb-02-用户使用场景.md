@@ -1,3 +1,5 @@
+# YiWeb-02-用户使用场景
+
 > | v1.0 | 2026-05-19 | deepseek-v4-pro | 🌿 feat/header-actions | 📎 [../YiWeb-01-故事任务.md](./YiWeb-01-故事任务.md) |
 
 > **来源引用**: 上游 01-故事任务 §1–§5 的需求拆解。证据等级 A。

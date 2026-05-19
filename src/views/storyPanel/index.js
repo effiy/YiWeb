@@ -25,12 +25,11 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 'YiButton',
                 'YiTag',
                 'YiLoading',
-                'HeaderActions',
                 'YiEmptyState',
                 'YiErrorState',
+                'HeaderActions',
             ],
             componentModules: [
-                '/cdn/components/business/HeaderActions/index.js',
                 '/src/views/storyPanel/components/storyPanelPage/index.js',
                 '/src/views/storyPanel/components/storyListTable/index.js',
                 '/src/views/storyPanel/components/storyDetailCard/index.js',
@@ -41,6 +40,7 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 '/cdn/components/common/loaders/YiLoading/index.js',
                 '/cdn/components/common/feedback/YiEmptyState/index.js',
                 '/cdn/components/common/feedback/YiErrorState/index.js',
+                '/cdn/components/business/HeaderActions/index.js',
             ],
             data: {
                 loading: store.loading,

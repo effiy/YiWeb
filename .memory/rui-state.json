@@ -1,15 +1,15 @@
 {
   "project": "YiWeb",
-  "name": "header-actions",
-  "command": "doc --from-code header-actions",
+  "story": "header-actions",
+  "command": "code header-actions 补充header-actions的内容",
   "current_stage": "delivery",
   "status": "completed",
   "blocked": false,
   "branch": "feat/header-actions",
-  "commit": "b1cdf85",
-  "timestamp": "2026-05-19T12:55:00.000Z",
+  "timestamp": "2026-05-19T13:16:00.000Z",
   "stages_completed": [
-    "doc_from_code",
+    "code_restore",
+    "code_integration",
     "delivery"
   ],
   "output_files": [
@@ -20,6 +20,10 @@
     "cdn/components/business/SearchHeader/index.js",
     "src/views/storyPanel/components/storyPanelPage/template.html",
     "src/views/storyPanel/components/storyPanelPage/index.css",
+    "src/views/aicr/index.js",
+    "src/views/storyPanel/index.js",
+    "cdn/components/index.js",
+    "docs/故事任务面板/header-actions/YiWeb-00-消息通知列表.md",
     "docs/故事任务面板/header-actions/YiWeb-01-故事任务.md",
     "docs/故事任务面板/header-actions/YiWeb-02-用户使用场景.md",
     "docs/故事任务面板/header-actions/YiWeb-04-前端技术评审.md",

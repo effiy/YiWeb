@@ -6,25 +6,26 @@
 |------|-----|
 | 故事 | header-actions |
 | 描述 | 将 aicr 页面的 header-actions 做成组件，可供多个页面公用 |
-| 管线 | doc --from-code → 交付 |
-| 状态 | ✅ 文档完成 |
+| 管线 | code → 补充交付 |
+| 状态 | ✅ 代码完成 |
 
 ## 阶段记录
 
-### doc --from-code 阶段 (2026-05-19)
+### code 阶段 (2026-05-19)
 
-- PM 从已实现源码反推拆解为 3 个子故事：S1 创建 HeaderActions 组件、S2 SearchHeader 内部消费、S3 storyPanel 接入
-- Coder 补齐前端技术评审 (04) 和测试用例评审 (05)
-- 产出 4 份基线文档 + 交互日志
+- 恢复 HeaderActions 组件文件（index.js / template.html / index.css）
+- 重构 SearchHeader 消费 HeaderActions：模板替换 `<div class="header-actions">` → `<header-actions>`，JS 移除 detectEnvironment / envType / envLabel / clearCache
+- storyPanelPage 接入 HeaderActions：模板替换 `<div class="sp-header-right">` → `<header-actions>`，CSS 移除 .sp-header-right 和 .sp-clear-cache-btn
+- 注册 HeaderActions 到 cdn/components/index.js、aicr/index.js、storyPanel/index.js
 
-## 变更清单 (8 文件)
+## 变更清单 (10 文件)
 
 ### 新增 (3)
 - `cdn/components/business/HeaderActions/index.js` — 组件定义，环境检测 + 清缓存按钮 + 环境徽章
 - `cdn/components/business/HeaderActions/template.html` — 组件模板，默认插槽 + 清缓存按钮 + 环境徽章
 - `cdn/components/business/HeaderActions/index.css` — 组件样式（.header-actions, .header-icon-btn, .env-badge）
 
-### 修改 (5)
+### 修改 (7)
 - `cdn/components/business/SearchHeader/template.html` — `<div class="header-actions">` 替换为 `<header-actions>` 组件
 - `cdn/components/business/SearchHeader/index.js` — 移除 detectEnvironment / envType / envLabel / clearCache（迁移到 HeaderActions）
 - `src/views/storyPanel/components/storyPanelPage/template.html` — `<div class="sp-header-right">` 替换为 `<header-actions>`

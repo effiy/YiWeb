@@ -1,3 +1,5 @@
+# YiWeb-01-故事任务
+
 > | v1.0 | 2026-05-19 | deepseek-v4-pro | 🌿 feat/header-actions | 📎 [CLAUDE.md](../../../CLAUDE.md) |
 
 > **导航**: [02-用户使用场景 →](./YiWeb-02-用户使用场景.md) | [04-前端技术评审 →](./YiWeb-04-前端技术评审.md)

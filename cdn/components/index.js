@@ -13,8 +13,8 @@ export { default as YiErrorState } from './common/feedback/YiErrorState/index.js
 
 // Business Components
 export { default as SkeletonLoader } from './business/SkeletonLoader/index.js';
-export { default as SearchHeader } from './business/SearchHeader/index.js';
 export { default as HeaderActions } from './business/HeaderActions/index.js';
+export { default as SearchHeader } from './business/SearchHeader/index.js';
 export { default as MarkdownView } from './business/MarkdownView/index.js';
 // ... more to come
 
@@ -30,8 +30,8 @@ export default {
   YiLoading,
   YiEmptyState,
   YiErrorState,
-  SearchHeader,
   HeaderActions,
+  SearchHeader,
   SkeletonLoader,
   MarkdownView
 };
