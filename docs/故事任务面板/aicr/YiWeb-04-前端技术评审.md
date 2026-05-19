@@ -193,7 +193,7 @@ flowchart TD
 
 | 组件 | Props | Events | Expose |
 |------|-------|--------|--------|
-| aicrHeader | `allTags`, `selectedTags`, `tagFilterReverse`, `tagFilterNoTags`, `tagFilterExpanded`, `tagFilterSearchKeyword`, `tagCounts`, `tagFilterVisibleCount`, `searchQuery`, `sidebarCollapsed` | `select-tag`, `remove-tag`, `toggle-reverse`, `toggle-no-tags`, `toggle-expand`, `search-tags`, `load-more-tags`, `update-search-query`, `clear-search`, `reorder-tags` | — |
+| aicrHeader | `allTags`, `selectedTags`, `tagFilterReverse`, `tagFilterNoTags`, `tagFilterExpanded`, `tagFilterSearchKeyword`, `tagCounts`, `tagFilterVisibleCount`, `searchQuery`, `sidebarCollapsed` — 详见 [aicr-header 故事 04](../aicr-header/YiWeb-04-前端技术评审.md) | `select-tag`, `remove-tag`, `toggle-reverse`, `toggle-no-tags`, `toggle-expand`, `search-tags`, `load-more-tags`, `update-search-query`, `clear-search`, `reorder-tags` — 详见 [aicr-header 故事 04](../aicr-header/YiWeb-04-前端技术评审.md) | — |
 | aicrSidebar | (通过 viewContext) | `file-select`, `folder-toggle`, `batch-select`, `batch-mode-toggle`, `batch-delete`, `create-folder`, `create-file`, `rename-item`, `delete-item`, `file-drop`, `update:collapsed`, `create-faq-from-file`, `create-faq-from-session`, `search-query-change` | — |
 | aicrCodeArea | (通过 viewContext) | `send-message`, `stop-generation`, `regenerate-message`, `copy-message`, `delete-message`, `edit-message`, `save-context`, `optimize-context`, `translate-context`, `toggle-context-editor`, `select-model`, `refresh-models`, `toggle-settings`, `toggle-wechat`, `edit-session`, `delete-session`, `toggle-favorite`, `create-session`, `select-session`, `import-sessions`, `export-sessions` | — |
 | fileTree | `tree`, `selectedKey`, `expandedFolders`, `loading`, `error`, `collapsed`, `searchQuery`, `batchMode`, `selectedKeys`, `viewMode`, `selectedTags`, `tagFilterReverse`, `tagFilterNoTags`, `tagFilterExpanded`, `tagFilterSearchKeyword`, `tagFilterVisibleCount` | 18 个事件（同 aicrSidebar） | — |
@@ -471,3 +471,4 @@ flowchart TD
 | 日期 | 变更 | 触发 | 证据 |
 |------|------|------|------|
 | 2026-05-19 | 初始文档生成 | `/rui doc --from-code src/views/aicr/index.html` | 源码反推，Level B |
+| 2026-05-19 | aicrHeader 接口添加独立故事交叉引用 → aicr-header | `/rui aicrHeader 应该单独拆成一个故事目录` | feat/aicr-header 分支 |

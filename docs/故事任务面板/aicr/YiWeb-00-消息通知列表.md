@@ -32,3 +32,14 @@
 🌐 影响: YiWeb-01-故事任务.md (追加 mermaid 图) + YiWeb-10-交互日志.md (追加) + YiWeb-00-消息通知列表.md (追加)
 📎 证据: feat/aicr 分支
 ⏱️ 会话: update aicr | 1 turn
+
+【2026-05-19 00:00:00】
+
+【YiWeb】
+🎯 结论: 完成 aicr-header 文档拆分（doc 阶段）
+📝 描述: 将 aicrHeader 从 aicr 主故事拆分为独立故事目录，生成完整 frontend 文档基线
+📌 范围: docs/故事任务面板/aicr-header/（6 个新增文件）+ aicr 主故事 4 个文档交叉引用更新
+👉 下一步: 运行 /rui code aicr-header 进入实现阶段（如需要代码变更）
+🌐 影响: 新增 aicr-header 故事目录，含 01~05、10、00 文档
+📎 证据: feat/aicr-header 分支，.memory/rui-state.json
+⏱️ 会话: aicr-header 文档拆分 | 1 turn

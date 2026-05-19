@@ -127,7 +127,7 @@ flowchart TB
 | 优先级 | P0 |
 | 范围边界 | 单页面的代码审查工作台，不含用户登录/注册、不含多项目切换、不含实时协作 |
 | 依赖 | AI 对话服务（Ollama 兼容 API）、文件读写服务、企业微信 Webhook 服务 |
-| 子项目 | 无 |
+| 子项目 | [aicr-header](../aicr-header/YiWeb-01-故事任务.md)（顶部栏组件独立故事） |
 
 **范围外**：
 
@@ -305,3 +305,4 @@ flowchart TD
 | 日期 | 变更 | 触发 | 证据 |
 |------|------|------|------|
 | 2026-05-19 | 初始文档生成 | `/rui doc --from-code src/views/aicr/index.html` | 源码反推，Level B |
+| 2026-05-19 | 添加子项目引用 → aicr-header | `/rui aicrHeader 应该单独拆成一个故事目录` | feat/aicr-header 分支 |

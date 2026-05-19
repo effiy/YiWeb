@@ -71,3 +71,26 @@
 - 标注可拖拽宽度范围（侧边栏 280-560px、聊天面板 320-720px）
 
 ---
+
+## 会话 2026-05-19 — aicr-header-split
+
+### 00:00:00 | turn-1 | claude (deepseek-v4-pro)
+
+**👤 用户**:
+/rui aicrHeader 应该单独拆成一个故事目录
+
+**🤖 助手**:
+执行 doc 管线：将 aicrHeader 从 aicr 主故事拆分为独立故事目录 `docs/故事任务面板/aicr-header/`。
+
+1. 范围：仅文档拆分（无代码变更）
+2. 分支：创建 `feat/aicr-header` 从 main 拉出
+3. 生成 6 个 frontend 基线文档：01-故事任务、02-用户使用场景、04-前端技术评审、05-测试用例评审、10-交互日志、00-消息通知列表
+4. 更新 aicr 主故事 4 个文档（01/04/组件架构/10/00）添加交叉引用
+
+**📋 关键决策**:
+- aicrHeader 功能独立性强：11 个功能点、6 个用户场景、10 Props + 12 Events 接口契约
+- 文档从 `YiWeb-组件架构.md` §7（约 120 行详述）和源码拆分
+- 废弃 Props/Events（tagFilterReverse、tagFilterExpanded 等）在文档中标注为"保留兼容"
+- 拖拽排序是最复杂的交互点：HTML5 DnD + 方向自适应 + localStorage 持久化
+
+---
