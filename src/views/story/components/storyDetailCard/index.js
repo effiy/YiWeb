@@ -1,15 +1,15 @@
 import { registerGlobalComponent } from '/cdn/utils/view/componentLoader.js';
 
 registerGlobalComponent({
-    name: 'StoryListTable',
-    html: '/src/views/storyPanel/components/storyListTable/template.html',
-    css: '/src/views/storyPanel/components/storyListTable/index.css',
+    name: 'StoryDetailCard',
+    html: '/src/views/story/components/storyDetailCard/template.html',
+    css: '/src/views/story/components/storyDetailCard/index.css',
     props: {
-        stories: { type: Array, default: () => [] },
-        loading: { type: Boolean, default: false },
-        error: { type: String, default: null }
+        story: { type: Object, default: null },
+        syncing: { type: Boolean, default: false },
+        panel: { type: Boolean, default: false }
     },
-    emits: ['select'],
+    emits: ['back', 'sync', 'close'],
     methods: {
         formatDate(ts) {
             if (!ts) return '—';
@@ -22,8 +22,13 @@ registerGlobalComponent({
             const map = { backend: '后端', frontend: '前端', fullstack: '全栈', meta: '元数据' };
             return map[type] || type;
         },
-        onSelect(story) {
-            this.$emit('select', story.name);
+        onSync() {
+            if (this.story) {
+                this.$emit('sync', this.story.name);
+            }
+        },
+        onBack() {
+            this.$emit('back');
         }
     }
 });

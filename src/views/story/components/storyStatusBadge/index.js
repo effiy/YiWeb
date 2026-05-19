@@ -2,8 +2,8 @@ import { registerGlobalComponent } from '/cdn/utils/view/componentLoader.js';
 
 registerGlobalComponent({
     name: 'StoryStatusBadge',
-    html: '/src/views/storyPanel/components/storyStatusBadge/template.html',
-    css: '/src/views/storyPanel/components/storyStatusBadge/index.css',
+    html: '/src/views/story/components/storyStatusBadge/template.html',
+    css: '/src/views/story/components/storyStatusBadge/index.css',
     props: {
         status: { type: String, default: '' },
         size: { type: String, default: '', validator: v => !v || ['sm', 'lg'].includes(v) }
