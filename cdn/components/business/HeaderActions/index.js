@@ -25,9 +25,10 @@ registerGlobalComponent({
   css: '/cdn/components/business/HeaderActions/index.css',
   props: {
     showClearCache: { type: Boolean, default: true },
+    showAuthButton: { type: Boolean, default: true },
     showEnvBadge: { type: Boolean, default: true },
   },
-  emits: ['clear-cache'],
+  emits: ['clear-cache', 'open-auth'],
   setup(props, { emit }) {
     const Vue = window.Vue;
     if (!Vue) {
@@ -38,6 +39,13 @@ registerGlobalComponent({
     const envType = Vue.ref(detectEnvironment());
     const envLabel = Vue.computed(() => envType.value === 'local' ? 'LOCAL' : 'PROD');
 
-    return { envType, envLabel };
+    const openAuth = (event) => {
+      emit('open-auth', event);
+      if (typeof window.openAuth === 'function') {
+        window.openAuth(event);
+      }
+    };
+
+    return { envType, envLabel, openAuth };
   }
 });

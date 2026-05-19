@@ -1,6 +1,16 @@
 <div class="header-actions">
   <slot></slot>
   <button
+    v-if="showAuthButton"
+    type="button"
+    class="header-icon-btn"
+    @click="openAuth"
+    title="API 鉴权"
+    aria-label="API 鉴权"
+  >
+    <yi-icon name="key"></yi-icon>
+  </button>
+  <button
     v-if="showClearCache"
     type="button"
     class="header-icon-btn"
