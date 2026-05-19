@@ -2,11 +2,6 @@ const sessionListTagsComputed = {
     filteredTags() {
         let tags = this.allTags || [];
 
-        if (this.tagFilterSearchKeyword) {
-            const keyword = this.tagFilterSearchKeyword.toLowerCase();
-            tags = tags.filter(tag => tag.toLowerCase().includes(keyword));
-        }
-
         return tags.sort((a, b) => {
             const isSelectedA = this.selectedTags && this.selectedTags.includes(a);
             const isSelectedB = this.selectedTags && this.selectedTags.includes(b);
@@ -20,13 +15,10 @@ const sessionListTagsComputed = {
         });
     },
     visibleTags() {
-        if (this.tagFilterExpanded || this.tagFilterSearchKeyword) {
-            return this.filteredTags;
-        }
-        return this.filteredTags.slice(0, this.tagFilterVisibleCount || 8);
+        return this.filteredTags;
     },
     hasMoreTags() {
-        return this.filteredTags.length > (this.tagFilterVisibleCount || 8);
+        return false;
     }
 };
 

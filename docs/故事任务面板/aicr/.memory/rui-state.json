@@ -3,7 +3,7 @@
   "current_stage": "update",
   "blocked": false,
   "block_reason": null,
-  "timestamp": "2026-05-19T00:00:00.000Z",
-  "change_level": "T1",
-  "summary": "URL 带有 key 参数时默认收缩两侧侧边栏"
+  "timestamp": "2026-05-19T07:12:00.000Z",
+  "change_level": "T2",
+  "summary": "刷新 aicr 故事任务文档：01/04/10 同步标签过滤栏简化变更，移除 AC7 反向过滤验收标准"
 }

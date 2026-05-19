@@ -107,11 +107,7 @@ export function createAicrStoreState(vueRef) {
     const modelsLoading = vueRef(false);
     const modelsError = vueRef(null);
 
-    const tagFilterReverse = vueRef(false);
     const tagFilterNoTags = vueRef(false);
-    const tagFilterExpanded = vueRef(false);
-    const tagFilterVisibleCount = vueRef(8);
-    const tagFilterSearchKeyword = vueRef('');
     const tagOrder = vueRef(null);
 
     if (!sessions.value || !Array.isArray(sessions.value)) {
@@ -214,11 +210,7 @@ export function createAicrStoreState(vueRef) {
             sessionEditDescription,
             sessionEditGenerating,
             sessionEditData,
-            tagFilterReverse,
             tagFilterNoTags,
-            tagFilterExpanded,
-            tagFilterVisibleCount,
-            tagFilterSearchKeyword,
             tagOrder,
             availableModels,
             modelsLoading,

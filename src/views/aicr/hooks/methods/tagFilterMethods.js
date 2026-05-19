@@ -36,17 +36,6 @@ export const createTagFilterMethods = ({ store }) => {
     };
 
     /**
-     * 切换反向过滤
-     */
-    const handleTagFilterReverse = (reverse) => {
-        return safeExecute(() => {
-            if (store.tagFilterReverse) {
-                store.tagFilterReverse.value = reverse;
-            }
-        }, '切换反向过滤');
-    };
-
-    /**
      * 切换无标签筛选
      */
     const handleTagFilterNoTags = (noTags) => {
@@ -55,28 +44,6 @@ export const createTagFilterMethods = ({ store }) => {
                 store.tagFilterNoTags.value = noTags;
             }
         }, '切换无标签筛选');
-    };
-
-    /**
-     * 切换标签展开/折叠
-     */
-    const handleTagFilterExpand = (expanded) => {
-        return safeExecute(() => {
-            if (store.tagFilterExpanded) {
-                store.tagFilterExpanded.value = expanded;
-            }
-        }, '切换标签展开/折叠');
-    };
-
-    /**
-     * 标签搜索
-     */
-    const handleTagFilterSearch = (keyword) => {
-        return safeExecute(() => {
-            if (store.tagFilterSearchKeyword) {
-                store.tagFilterSearchKeyword.value = keyword || '';
-            }
-        }, '标签搜索');
     };
 
     /**
@@ -93,10 +60,7 @@ export const createTagFilterMethods = ({ store }) => {
     return {
         handleTagSelect,
         handleTagClear,
-        handleTagFilterReverse,
         handleTagFilterNoTags,
-        handleTagFilterExpand,
-        handleTagFilterSearch,
         handleSessionSearchChange
     };
 };

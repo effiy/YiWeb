@@ -101,13 +101,10 @@ const fileTreeComputed = {
         });
     },
     visibleTags() {
-        if (this.tagFilterExpanded) {
-            return this.filteredTags;
-        }
-        return this.filteredTags.slice(0, this.tagFilterVisibleCount);
+        return this.filteredTags;
     },
     hasMoreTags() {
-        return this.filteredTags.length > this.tagFilterVisibleCount;
+        return false;
     },
     sortedTree() {
         if (!Array.isArray(this.tree)) return [];
@@ -132,7 +129,7 @@ const fileTreeComputed = {
                     let shouldInclude = false;
 
                     if (firstLevelTags.length > 0) {
-                        shouldInclude = this.tagFilterReverse ? !isTagSelected : isTagSelected;
+                        shouldInclude = isTagSelected;
                     } else if (this.tagFilterNoTags) {
                         shouldInclude = false;
                     }
@@ -144,8 +141,6 @@ const fileTreeComputed = {
                     let shouldInclude = false;
 
                     if (this.tagFilterNoTags) {
-                        shouldInclude = true;
-                    } else if (firstLevelTags.length > 0 && this.tagFilterReverse) {
                         shouldInclude = true;
                     }
 

@@ -1,6 +1,6 @@
 > | v1 | 2026-05-19 | deepseek-v4-pro | 🌿 main | ⏱️ --:--–--:-- | 📎 [CLAUDE.md](../../../CLAUDE.md) |
 
-> **导航**: [← aicr-02-用户使用场景](./aicr-02-用户使用场景.md) · [aicr-05-测试用例评审 →](./aicr-05-测试用例评审.md)
+> **导航**: [← aicr-02-用户使用场景](./aicr-02-用户使用场景.md) · [组件架构 →](./YiWeb-组件架构.md) · [aicr-05-测试用例评审 →](./aicr-05-测试用例评审.md)
 
 > **来源引用**: 本文档由 `/rui doc --from-code src/views/aicr/index.html` 触发，从源码反推生成。证据等级 B（可推导，附源码路径）。
 
@@ -21,7 +21,7 @@
 
 | 本设计章节 | 实现 01 需求 | 服务 02 场景 | 覆盖状态 |
 |-----------|------------|------------|---------|
-| §1 组件架构 | FP1, FP2, FP3 | 场景1, 场景2 | 已覆盖 |
+| §1 组件架构 | FP1, FP2, FP3 | 场景1, 场景2 | 已覆盖 → [YiWeb-组件架构.md](./YiWeb-组件架构.md) |
 | §2 状态管理 | FP1-FP14 | 全场景 | 已覆盖 |
 | §3 交互设计 | FP3, FP6, FP7, FP11 | 场景2, 场景4 | 已覆盖 |
 | §4 样式方案 | FP1, FP2 | 场景1 | 已覆盖 |
@@ -61,145 +61,31 @@ flowchart LR
 | T4 | 实现代码查看（语法高亮/图片/Markdown）、编辑保存 | L | T3 | `codeView` 组件 + `storeFileContentOps.js` | coder | Gate A | T5 | FP2, FP8 |
 | T5 | 实现 AI 对话（发送/流式接收/中止/重生成）、模型选择 | L | T4 | `sessionChatContext*.js` + `AiModelSelector` | coder | Gate A | T6 | FP3, FP5 |
 | T6 | 实现会话列表 CRUD、收藏、复制、导入导出、FAQ | L | T5 | `sessionListMethods.js` + `sessionActionMethods.js` + `sessionFaqMethods.js` | coder | Gate B | T7 | FP4, FP12, FP13, FP14 |
-| T7 | 实现关键词搜索、标签过滤（正向/反向/无标签）、拖拽排序 | M | T6 | `searchMethods.js` + `tagFilterMethods.js` + `tagManagerMethods.js` | coder | Gate B | T8 | FP6, FP7 |
+| T7 | 实现关键词搜索、标签过滤（正向/无标签）、拖拽排序 | M | T6 | `searchMethods.js` + `tagFilterMethods.js` + `tagManagerMethods.js` | coder | Gate B | T8 | FP6, FP7 |
 | T8 | 实现企业微信 Webhook 配置、自动转发 | S | T7 | `sessionChatContextSettingsMethods.js` + `aicrModals` | coder | Gate B | — | FP10 |
 
 ---
 
 ### §1 组件架构
 
-#### 效果示意
+> **已独立**: 组件架构详细内容已抽取至独立文档 [YiWeb-组件架构.md](./YiWeb-组件架构.md)，包含：
+> - §1 页面效果图 — 模拟浏览器视口中的实际 UI 布局
+> - §2 组件层级结构 — 入口层 → 根组件层 → 布局层 → 功能组件层 → CDN 组件层
+> - §3 组件树 — 22 个组件的父子层级关系
+> - §4 页面布局分布 — 四区空间布局（顶部栏 / 左侧栏 / 代码面板 / 聊天面板 / 模态层）
+> - §5 组件清单 — 10 个业务组件 + 12 个 CDN 组件完整列表
+> - §6 组件接口 — Props / Events / Expose 契约
 
-```mermaid
-flowchart TD
-    subgraph 入口["入口层"]
-        HTML["index.html<br/>CDN库加载 + ESM入口"]:::entry
-    end
+**设计摘要**:
 
-    subgraph 根组件["根组件层"]
-        ROOT["&lt;aicr-page&gt;<br/>三栏布局容器 + 键盘快捷键"]:::root
-    end
-
-    subgraph 布局层["布局层"]
-        HEADER["&lt;aicr-header&gt;<br/>搜索 + 标签过滤"]:::layout
-        SIDEBAR["&lt;aicr-sidebar&gt;<br/>侧边栏容器"]:::layout
-        CODEAREA["&lt;aicr-code-area&gt;<br/>代码 + 聊天面板"]:::layout
-        MODALS["&lt;aicr-modals&gt;<br/>5个模态框"]:::layout
-    end
-
-    subgraph 功能组件["功能组件层"]
-        SEARCH["&lt;search-header&gt;"]:::cdn
-        FILETREE["&lt;file-tree&gt;"]:::feature
-        CODEVIEW["&lt;code-view&gt;"]:::feature
-        MARKDOWN["&lt;markdown-view&gt;"]:::cdn
-        MODEL["&lt;ai-model-selector&gt;"]:::feature
-        SHORTCUTS["&lt;keyboard-shortcuts-help&gt;"]:::feature
-    end
-
-    subgraph CDN组件["CDN 通用组件层"]
-        MODAL["YiModal"]:::cdn
-        BTN["YiButton / YiIconButton"]:::cdn
-        TAG["YiTag"]:::cdn
-        SELECT["YiSelect"]:::cdn
-        INPUT["YiInput / YiTextarea"]:::cdn
-        FEEDBACK["YiLoading / YiEmptyState / YiErrorState"]:::cdn
-        SKELETON["SkeletonLoader"]:::cdn
-    end
-
-    HTML --> ROOT
-    ROOT --> HEADER
-    ROOT --> SIDEBAR
-    ROOT --> CODEAREA
-    ROOT --> SHORTCUTS
-    HEADER --> SEARCH
-    SIDEBAR --> FILETREE
-    CODEAREA --> CODEVIEW
-    CODEAREA --> MARKDOWN
-    CODEAREA --> MODEL
-    CODEAREA --> MODALS
-    MODALS --> MODAL
-    MODALS --> BTN
-    MODALS --> SELECT
-    MODALS --> INPUT
-    HEADER --> TAG
-    SIDEBAR --> TAG
-    CODEAREA --> FEEDBACK
-    CODEAREA --> SKELETON
-
-    classDef entry fill:#e8f5e9,stroke:#2e7d32,color:#000;
-    classDef root fill:#fff3e0,stroke:#e65100,color:#000;
-    classDef layout fill:#e3f2fd,stroke:#1565c0,color:#000;
-    classDef feature fill:#f3e5f5,stroke:#6a1b9a,color:#000;
-    classDef cdn fill:#eceff1,stroke:#90a4ae,color:#000;
-```
-
-#### 1.1 组件树
-
-```mermaid
-flowchart TD
-    aicrPage["aicrPage (root)"] --> aicrHeader["aicrHeader"]
-    aicrPage --> aicrSidebar["aicrSidebar"]
-    aicrPage --> aicrCodeArea["aicrCodeArea"]
-    aicrPage --> keyboardShortcuts["keyboardShortcutsHelp"]
-    aicrPage --> aicrModals["aicrModals"]
-
-    aicrHeader --> searchHeader["SearchHeader (CDN)"]
-    aicrHeader --> sessionListTags1["sessionListTags"]
-
-    aicrSidebar --> fileTree["fileTree"]
-    fileTree --> fileTreeNode["fileTreeNode (recursive)"]
-
-    aicrCodeArea --> codeView["codeView"]
-    aicrCodeArea --> markdownView["MarkdownView (CDN)"]
-    aicrCodeArea --> aiModelSelector["AiModelSelector"]
-    aicrCodeArea --> yiLoading["YiLoading (CDN)"]
-    aicrCodeArea --> yiEmptyState["YiEmptyState (CDN)"]
-    aicrCodeArea --> yiErrorState["YiErrorState (CDN)"]
-    aicrCodeArea --> skeletonLoader["SkeletonLoader (CDN)"]
-
-    aicrModals --> yiModal["YiModal x5 (CDN)"]
-```
-
-#### 1.2 组件清单
-
-| 组件 | 类型 | 文件 | 注册路径 | 变更 |
-|------|------|------|---------|------|
-| aicrPage | 业务（新） | `src/views/aicr/components/aicrPage/index.js` | `createBaseView` components | 由源码反推 |
-| aicrHeader | 业务（新） | `src/views/aicr/components/aicrHeader/index.js` | `createBaseView` components | 由源码反推 |
-| aicrSidebar | 业务（新） | `src/views/aicr/components/aicrSidebar/index.js` | `createBaseView` components | 由源码反推 |
-| aicrCodeArea | 业务（新） | `src/views/aicr/components/aicrCodeArea/index.js` | `createBaseView` components | 由源码反推 |
-| aicrModals | 业务（新） | `src/views/aicr/components/aicrModals/index.js` | `createBaseView` components | 由源码反推 |
-| fileTree | 业务（新） | `src/views/aicr/components/fileTree/index.js` | `createBaseView` components | 由源码反推 |
-| codeView | 业务（新） | `src/views/aicr/components/codeView/index.js` | `createBaseView` components | 由源码反推 |
-| AiModelSelector | 业务（新） | `src/views/aicr/components/AiModelSelector/index.js` | `createBaseView` components | 由源码反推 |
-| keyboardShortcutsHelp | 业务（新） | `src/views/aicr/components/keyboardShortcutsHelp/index.js` | `createBaseView` components | 由源码反推 |
-| sessionListTags | 业务（新） | `src/views/aicr/components/sessionListTags/index.js` | `createBaseView` components | 由源码反推 |
-| YiModal | CDN 通用 | `cdn/components/common/modals/YiModal/index.js` | `createBaseView` components | 已有 |
-| YiLoading | CDN 通用 | `cdn/components/common/loaders/YiLoading/index.js` | `createBaseView` components | 已有 |
-| YiEmptyState | CDN 通用 | `cdn/components/common/feedback/YiEmptyState/index.js` | `createBaseView` components | 已有 |
-| YiErrorState | CDN 通用 | `cdn/components/common/feedback/YiErrorState/index.js` | `createBaseView` components | 已有 |
-| YiIcon | CDN 通用 | `cdn/icons/YiIcon/index.js` | `createBaseView` components | 已有 |
-| YiIconButton | CDN 通用 | `cdn/components/common/buttons/YiIconButton/index.js` | `createBaseView` components | 已有 |
-| YiButton | CDN 通用 | `cdn/components/common/buttons/YiButton/index.js` | `createBaseView` components | 已有 |
-| YiTag | CDN 通用 | `cdn/components/common/tags/YiTag/index.js` | `createBaseView` components | 已有 |
-| YiSelect | CDN 通用 | `cdn/components/common/forms/YiSelect/index.js` | `createBaseView` components | 已有 |
-| YiInput | CDN 通用 | `cdn/components/common/forms/YiInput/index.js` | `createBaseView` components | 已有 |
-| YiTextarea | CDN 通用 | `cdn/components/common/forms/YiTextarea/index.js` | `createBaseView` components | 已有 |
-| SearchHeader | CDN 业务 | `cdn/components/business/SearchHeader/index.js` | `createBaseView` components | 已有 |
-| MarkdownView | CDN 业务 | `cdn/components/business/MarkdownView/index.js` | `createBaseView` components | 已有 |
-| SkeletonLoader | CDN 业务 | `cdn/components/business/SkeletonLoader/index.js` | `createBaseView` components | 已有 |
-
-#### 1.3 组件接口
-
-| 组件 | Props | Events | Expose |
-|------|-------|--------|--------|
-| aicrHeader | `allTags`, `selectedTags`, `tagFilterReverse`, `tagFilterNoTags`, `tagFilterExpanded`, `tagFilterSearchKeyword`, `tagCounts`, `tagFilterVisibleCount`, `searchQuery`, `sidebarCollapsed` | `select-tag`, `remove-tag`, `toggle-reverse`, `toggle-no-tags`, `toggle-expand`, `search-tags`, `load-more-tags`, `update-search-query`, `clear-search`, `reorder-tags` | — |
-| aicrSidebar | (通过 viewContext) | `file-select`, `folder-toggle`, `batch-select`, `batch-mode-toggle`, `batch-delete`, `create-folder`, `create-file`, `rename-item`, `delete-item`, `file-drop`, `update:collapsed`, `create-faq-from-file`, `create-faq-from-session`, `search-query-change` | — |
-| aicrCodeArea | (通过 viewContext) | `send-message`, `stop-generation`, `regenerate-message`, `copy-message`, `delete-message`, `edit-message`, `save-context`, `optimize-context`, `translate-context`, `toggle-context-editor`, `select-model`, `refresh-models`, `toggle-settings`, `toggle-wechat`, `edit-session`, `delete-session`, `toggle-favorite`, `create-session`, `select-session`, `import-sessions`, `export-sessions` | — |
-| fileTree | `tree`, `selectedKey`, `expandedFolders`, `loading`, `error`, `collapsed`, `searchQuery`, `batchMode`, `selectedKeys`, `viewMode`, `selectedTags`, `tagFilterReverse`, `tagFilterNoTags`, `tagFilterExpanded`, `tagFilterSearchKeyword`, `tagFilterVisibleCount` | 18 个事件（同 aicrSidebar） | — |
-| codeView | (通过 viewContext: `currentFile`, `searchQuery`, `batchMode`, `viewMode`) | `file-save`, `file-edit`, `image-paste`, `line-click`, `open-markdown-file` | — |
-| AiModelSelector | `availableModels`, `modelsLoading`, `modelsError` | `select-model`, `refresh-models` | — |
-| keyboardShortcutsHelp | `visible` | `close` | — |
+| 维度 | 概要 |
+|------|------|
+| 根组件 | `<aicr-page>` — Vue `createBaseView` 实例，注册 22 个组件，三栏布局容器 |
+| 布局组件 | `aicrHeader` / `aicrSidebar` / `aicrCodeArea` / `aicrModals` — 各占页面一个区域 |
+| 业务组件 | `fileTree` / `codeView` / `AiModelSelector` / `keyboardShortcutsHelp` / `sessionListTags` |
+| CDN 通用 | `YiModal` / `YiButton` / `YiTag` / `YiSelect` / `YiInput` / `YiLoading` 等 12 个 |
+| 通信方式 | Props down / Events up，通过 `createBaseView` 的 viewContext 共享状态 |
+| 注册方式 | `componentModules` 数组声明式注册，路径即模块标识 |
 
 ---
 
@@ -248,9 +134,7 @@ flowchart TD
 
     subgraph 标签域["标签域"]
         SST["selectedSessionTags<br/>选中标签"]
-        TFR["tagFilterReverse<br/>反向过滤"]
         TFN["tagFilterNoTags<br/>无标签过滤"]
-        TFE["tagFilterExpanded<br/>标签展开"]
     end
 
     subgraph 设置域["设置域"]
@@ -298,7 +182,7 @@ flowchart LR
 | 文件保存 | Ctrl+S → `saveFileContent()` | `files`（更新缓存） | `codeView` 组件 |
 | AI 对话 | 用户发送消息 → `sendSessionChatMessage()` | `sessionChatSending`, `sessionChatAbortController` | `aicrCodeArea` 模板 |
 | 侧边栏宽度 | 拖拽 → `createSidebarResizers()` | `sidebarWidth`, `chatPanelWidth` + localStorage | CSS 变量 `--aicr-chat-width` |
-| 标签过滤 | 点击标签 → `toggleTag()` | `selectedSessionTags`, `tagFilterReverse` | `fileTree` 组件 |
+| 标签过滤 | 点击标签 → `toggleTag()` | `selectedSessionTags`, `tagFilterNoTags` | `fileTree` 组件 |
 | 会话选择 | 点击会话 → `selectSessionForChat()` | `activeSession`, `activeSessionLoading` | `aicrCodeArea`（聊天面板） |
 
 ---
@@ -335,7 +219,7 @@ flowchart TD
 | 聊天面板 | 对话气泡列表 | 发送中动画（打字指示器） | 欢迎卡片（快捷操作引导） | "消息发送失败，点击重试" | 发送中禁用输入框 |
 | 会话列表 | 会话卡片列表 | SkeletonLoader 骨架屏 | "暂无审查会话，点击创建" | "加载失败，点击重试" | — |
 | 模型选择器 | 下拉列表 | 加载中状态 | 列表为空时显示手动输入框 | 加载失败提示 + 手动输入 | 对话进行中禁用切换 |
-| 标签过滤 | 标签按钮列表 | — | 无标签时隐藏过滤栏 | — | — |
+| 标签过滤 | 标签按钮列表 + 无标签筛选 | — | 无标签时隐藏过滤栏 | — | — |
 | FAQ 面板 | FAQ 条目列表 | 加载中 | "暂无 FAQ" | 加载失败提示 | — |
 | 设置面板 | 表单控件 | 保存中 | — | 保存失败提示 | — |
 
@@ -471,3 +355,5 @@ flowchart TD
 | 日期 | 变更 | 触发 | 证据 |
 |------|------|------|------|
 | 2026-05-19 | 初始文档生成 | `/rui doc --from-code src/views/aicr/index.html` | 源码反推，Level B |
+| 2026-05-19 | §1 组件架构抽取独立文档 | `/rui update aicr` | feat/aicr 分支；新增 YiWeb-组件架构.md |
+| 2026-05-19 | 标签过滤栏简化：去除反向过滤切换按钮、搜索标签输入框、展开更多切换按钮 | `/rui update aicr SearchHeader 标签过滤栏` | feat/aicr 分支；移除 tagFilterReverse/tagFilterExpanded/tagFilterSearchKeyword/tagFilterVisibleCount 状态；简化 fileTree/sessionListTags/aicrHeader 组件 |

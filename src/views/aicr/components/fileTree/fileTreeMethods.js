@@ -199,17 +199,8 @@ const fileTreeMethods = {
             this.$emit('tag-select', newTags);
         }, '切换标签选择');
     },
-    toggleReverse() {
-        this.$emit('tag-filter-reverse', !this.tagFilterReverse);
-    },
     toggleNoTags() {
         this.$emit('tag-filter-no-tags', !this.tagFilterNoTags);
-    },
-    toggleExpand() {
-        this.$emit('tag-filter-expand', !this.tagFilterExpanded);
-    },
-    updateTagSearch(keyword) {
-        this.$emit('tag-filter-search', keyword);
     },
     clearAllFilters() {
         this.$emit('tag-clear');

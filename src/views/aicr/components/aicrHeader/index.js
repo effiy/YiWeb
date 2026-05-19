@@ -4,11 +4,6 @@ const sessionListTagsComputed = {
     filteredTags() {
         let tags = this.allTags || [];
 
-        if (this.tagFilterSearchKeyword) {
-            const keyword = this.tagFilterSearchKeyword.toLowerCase();
-            tags = tags.filter(tag => tag.toLowerCase().includes(keyword));
-        }
-
         return tags.sort((a, b) => {
             const countA = this.tagCounts && this.tagCounts.counts ? (this.tagCounts.counts[a] || 0) : 0;
             const countB = this.tagCounts && this.tagCounts.counts ? (this.tagCounts.counts[b] || 0) : 0;
@@ -26,9 +21,6 @@ const sessionListTagsComputed = {
 };
 
 const sessionListTagsMethods = {
-    updateTagSearch(keyword) {
-        this.$emit('tag-filter-search', keyword);
-    },
     toggleTag(tag) {
         const currentTags = this.selectedTags || [];
         const newTags = [...currentTags];
@@ -40,14 +32,8 @@ const sessionListTagsMethods = {
         }
         this.$emit('tag-select', newTags);
     },
-    toggleReverse() {
-        this.$emit('tag-filter-reverse', !this.tagFilterReverse);
-    },
     toggleNoTags() {
         this.$emit('tag-filter-no-tags', !this.tagFilterNoTags);
-    },
-    toggleExpand() {
-        this.$emit('tag-filter-expand', !this.tagFilterExpanded);
     },
     clearAllFilters() {
         this.$emit('tag-clear');
@@ -217,29 +203,13 @@ registerGlobalComponent({
             type: Array,
             default: () => []
         },
-        tagFilterReverse: {
-            type: Boolean,
-            default: false
-        },
         tagFilterNoTags: {
             type: Boolean,
             default: false
         },
-        tagFilterExpanded: {
-            type: Boolean,
-            default: false
-        },
-        tagFilterSearchKeyword: {
-            type: String,
-            default: ''
-        },
         tagCounts: {
             type: Object,
             default: () => ({ counts: {}, noTagsCount: 0 })
-        },
-        tagFilterVisibleCount: {
-            type: Number,
-            default: 8
         },
         searchQuery: {
             type: String,
@@ -253,10 +223,7 @@ registerGlobalComponent({
     emits: [
         'tag-select',
         'tag-clear',
-        'tag-filter-reverse',
         'tag-filter-no-tags',
-        'tag-filter-expand',
-        'tag-filter-search',
         'search-input',
         'search-keydown',
         'composition-start',

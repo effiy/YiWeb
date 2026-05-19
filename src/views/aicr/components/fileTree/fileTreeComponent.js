@@ -55,29 +55,13 @@ const componentOptions = {
             type: Array,
             default: () => []
         },
-        tagFilterReverse: {
-            type: Boolean,
-            default: false
-        },
         tagFilterNoTags: {
             type: Boolean,
             default: false
-        },
-        tagFilterExpanded: {
-            type: Boolean,
-            default: false
-        },
-        tagFilterSearchKeyword: {
-            type: String,
-            default: ''
-        },
-        tagFilterVisibleCount: {
-            type: Number,
-            default: 8
         }
     },
     computed: fileTreeComputed,
-    emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'tag-select', 'tag-clear', 'tag-filter-reverse', 'tag-filter-no-tags', 'tag-filter-expand', 'tag-filter-search', 'folder-import', 'folder-export'],
+    emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'tag-select', 'tag-clear', 'tag-filter-no-tags', 'folder-import', 'folder-export'],
     data() {
         return {
             searchDebounceTimer: null,

@@ -60,16 +60,6 @@
                 {{ tag }} ({{ tagCounts && tagCounts.counts ? (tagCounts.counts[tag] || 0) : 0 }})
             </button>
 
-            <button
-                type="button"
-                v-if="hasMoreTags && !tagFilterSearchKeyword"
-                class="tag-item tag-expand-btn"
-                :draggable="false"
-                @click="toggleExpand"
-                :title="tagFilterExpanded ? '收起标签' : '展开标签'">
-                <yi-icon :name="tagFilterExpanded ? 'chevron-up' : 'chevron-down'"></yi-icon>
-                {{ tagFilterExpanded ? '收起' : '展开 (' + (filteredTags.length - visibleTags.length) + ')' }}
-            </button>
         </div>
     </div>
     </div>

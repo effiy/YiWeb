@@ -113,11 +113,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 sessionMessageEditorMode: store.sessionMessageEditorMode,
                 sessionMessageEditorIndex: store.sessionMessageEditorIndex,
                 // 标签过滤相关状态
-                tagFilterReverse: store.tagFilterReverse,
                 tagFilterNoTags: store.tagFilterNoTags,
-                tagFilterExpanded: store.tagFilterExpanded,
-                tagFilterVisibleCount: store.tagFilterVisibleCount,
-                tagFilterSearchKeyword: store.tagFilterSearchKeyword,
                 // 会话批量选择相关状态
                 sessionBatchMode: store.sessionBatchMode,
                 selectedSessionKeys: store.selectedSessionKeys,
@@ -326,12 +322,8 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 'aicr-header': {
                     allTags: function () { return this.allTags; },
                     selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
-                    tagFilterReverse: function () { return store.tagFilterReverse ? store.tagFilterReverse.value : false; },
                     tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; },
-                    tagFilterExpanded: function () { return store.tagFilterExpanded ? store.tagFilterExpanded.value : false; },
-                    tagFilterSearchKeyword: function () { return store.tagFilterSearchKeyword ? store.tagFilterSearchKeyword.value : ''; },
                     tagCounts: function () { return this.tagCounts; },
-                    tagFilterVisibleCount: function () { return store.tagFilterVisibleCount ? store.tagFilterVisibleCount.value : 8; },
                     searchQuery: function () { return store.searchQuery ? store.searchQuery.value : ''; },
                     sidebarCollapsed: function () { return store.sidebarCollapsed ? store.sidebarCollapsed.value : false; }
                 },
@@ -347,11 +339,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     viewMode: function () { return store.viewMode ? store.viewMode.value : 'tree'; },
                     searchQuery: function () { return store.searchQuery ? store.searchQuery.value : ''; },
                     selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
-                    tagFilterReverse: function () { return store.tagFilterReverse ? store.tagFilterReverse.value : false; },
-                    tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; },
-                    tagFilterExpanded: function () { return store.tagFilterExpanded ? store.tagFilterExpanded.value : false; },
-                    tagFilterSearchKeyword: function () { return store.tagFilterSearchKeyword ? store.tagFilterSearchKeyword.value : ''; },
-                    tagFilterVisibleCount: function () { return store.tagFilterVisibleCount ? store.tagFilterVisibleCount.value : 8; }
+                    tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; }
                 }
             },
             methods: createMainPageMethods(store),

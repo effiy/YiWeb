@@ -348,17 +348,8 @@ const createFileTreeNode = () => {
                     this.$emit('tag-select', tag);
                 }, '切换标签选择');
             },
-            toggleReverse() {
-                this.$emit('tag-filter-reverse');
-            },
             toggleNoTags() {
                 this.$emit('tag-filter-no-tags');
-            },
-            toggleExpand() {
-                this.$emit('tag-filter-expand');
-            },
-            updateTagSearch(keyword) {
-                this.$emit('tag-filter-search', keyword);
             },
             clearAllFilters() {
                 this.$emit('tag-clear');
