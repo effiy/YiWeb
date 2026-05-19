@@ -1,12 +1,12 @@
 <div class="sp-table-wrapper">
     <div v-if="loading" class="sp-table-loading">
-        <i class="fas fa-spinner fa-spin"></i> 加载中...
+        <yi-icon name="loading" spin></yi-icon> 加载中...
     </div>
     <div v-else-if="error" class="sp-table-error">
-        <i class="fas fa-exclamation-circle"></i> {{ error }}
+        <yi-icon name="error"></yi-icon> {{ error }}
     </div>
     <div v-else-if="stories.length === 0" class="sp-table-empty">
-        <i class="fas fa-inbox"></i> 暂无故事任务
+        <yi-icon name="inbox"></yi-icon> 暂无故事任务
     </div>
     <table v-else class="sp-table">
         <thead>

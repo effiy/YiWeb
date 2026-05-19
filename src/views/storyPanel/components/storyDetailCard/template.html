@@ -1,7 +1,7 @@
 <div v-if="story" :class="['sp-detail', { 'sp-detail--panel': panel }]">
     <div class="sp-detail-header">
         <button v-if="!panel" class="sp-detail-back" @click="onBack">
-            <i class="fas fa-arrow-left"></i> 返回列表
+            <yi-icon name="arrow-left"></yi-icon> 返回列表
         </button>
         <story-status-badge :status="story.status" size="lg"></story-status-badge>
     </div>
@@ -24,17 +24,13 @@
     <div class="sp-detail-section">
         <h3 class="sp-section-title">文件清单</h3>
         <ul class="sp-file-list">
-            <li v-for="file in story.files" :key="file.filePath" class="sp-file-item">
-                <i class="fas fa-file-alt sp-file-icon"></i>
+            <li v-for="file in story.files" :key="file.filePath" class="sp-file-item" @click="onFileClick(file)" :title="'在代码审查中打开: ' + file.filePath">
+                <yi-icon name="file-alt" class-name="sp-file-icon"></yi-icon>
                 <span class="sp-file-name">{{ file.fileName }}</span>
                 <span class="sp-file-date">{{ formatDate(file.updatedAt) }}</span>
+                <yi-icon name="external-link" class-name="sp-file-action-icon"></yi-icon>
             </li>
         </ul>
     </div>
 
-    <div class="sp-detail-actions">
-        <yi-button variant="primary" icon="fas fa-sync-alt" :loading="syncing" @click="onSync">
-            从远端同步文档
-        </yi-button>
-    </div>
 </div>

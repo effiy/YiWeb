@@ -1,13 +1,27 @@
 {
   "project": "YiWeb",
   "story": "rui-story",
-  "branch": "feat/rui-story",
-  "blocked": false,
+  "command": "update rui-story 点击文件清单的文件可跳转到 aicr 页面并激活对应的文件并在文件树中定位",
   "current_stage": "delivery",
-  "timestamp": "2026-05-18T21:10:00Z",
+  "status": "completed",
+  "blocked": false,
+  "branch": "main",
+  "timestamp": "2026-05-19T10:45:00.000Z",
+  "stages_completed": [
+    "code_update",
+    "delivery"
+  ],
+  "output_files": [
+    "src/views/storyPanel/components/storyDetailCard/template.html",
+    "src/views/storyPanel/components/storyDetailCard/index.js",
+    "src/views/storyPanel/components/storyDetailCard/index.css",
+    "src/views/aicr/index.js"
+  ],
   "delivery_pipeline": {
     "log_appended": true,
     "docs_synced": true,
-    "notification_sent": false
-  }
+    "notification_sent": true
+  },
+  "model": "deepseek-v4-pro",
+  "project_type": "frontend"
 }

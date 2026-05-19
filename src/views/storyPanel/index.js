@@ -21,6 +21,7 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 'StoryListTable',
                 'StoryDetailCard',
                 'StoryStatusBadge',
+                'YiIcon',
                 'YiButton',
                 'YiTag',
                 'YiLoading',
@@ -32,6 +33,7 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 '/src/views/storyPanel/components/storyListTable/index.js',
                 '/src/views/storyPanel/components/storyDetailCard/index.js',
                 '/src/views/storyPanel/components/storyStatusBadge/index.js',
+                '/cdn/icons/YiIcon/index.js',
                 '/cdn/components/common/buttons/YiButton/index.js',
                 '/cdn/components/common/tags/YiTag/index.js',
                 '/cdn/components/common/loaders/YiLoading/index.js',
@@ -42,7 +44,6 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 loading: store.loading,
                 error: store.error,
                 selectedStory: store.selectedStory,
-                syncing: store.syncing,
             },
             onMounted: () => {
                 logInfo('[故事面板] 应用已挂载');
@@ -52,7 +53,6 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 refreshStories: () => store.fetchStories(),
                 viewStory: (name) => store.selectStory(name),
                 goBack: () => store.clearSelection(),
-                syncStory: (name) => store.syncStory(name),
             }
         });
 

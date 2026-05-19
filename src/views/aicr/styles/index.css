@@ -347,7 +347,7 @@ html, body {
 
 .aicr-code .line-copy-btn:hover {
     background: var(--yi-primary);
-    color: white;
+    color: var(--yi-text-on-primary);
     border-color: var(--yi-primary);
     transform: scale(1.1);
 }

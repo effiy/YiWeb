@@ -32,6 +32,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 'YiLoading',
                 'YiEmptyState',
                 'YiErrorState',
+                'YiIcon',
                 'YiIconButton',
                 'YiButton',
                 'YiTag',
@@ -56,6 +57,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 '/cdn/components/common/loaders/YiLoading/index.js',
                 '/cdn/components/common/feedback/YiEmptyState/index.js',
                 '/cdn/components/common/feedback/YiErrorState/index.js',
+                '/cdn/icons/YiIcon/index.js',
                 '/cdn/components/common/buttons/YiIconButton/index.js',
                 '/cdn/components/common/buttons/YiButton/index.js',
                 '/cdn/components/common/tags/YiTag/index.js',
@@ -221,6 +223,9 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                                     ? store.normalizeKey(fileParam)
                                     : String(fileParam || '');
                                 store.setSelectedKey(norm);
+                                if (typeof store.expandPathToFile === 'function') {
+                                    store.expandPathToFile(norm);
+                                }
                                 if (typeof store.loadFileByKey === 'function') {
                                     store.loadFileByKey(norm).then(() => {
                                         try {

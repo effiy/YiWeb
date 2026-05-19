@@ -94,7 +94,7 @@
 /* Accent */
 .btn-accent {
   background: var(--yi-info);
-  color: #fff;
+  color: var(--yi-text-on-primary);
   box-shadow: var(--yi-shadow-sm);
 }
 
@@ -107,7 +107,7 @@
 /* Status */
 .btn-success {
   background: var(--yi-success);
-  color: #fff;
+  color: var(--yi-text-on-primary);
   box-shadow: var(--yi-shadow-sm);
 }
 
@@ -129,7 +129,7 @@
 
 .btn-danger {
   background: var(--yi-danger);
-  color: #fff;
+  color: var(--yi-text-on-danger);
   box-shadow: var(--yi-shadow-sm);
 }
 

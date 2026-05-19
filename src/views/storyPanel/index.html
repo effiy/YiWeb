@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="故事任务面板 — 查看、搜索与同步故事任务进度，管理文档基线">
+    <meta name="description" content="故事任务面板 — 查看与搜索故事任务进度，管理文档基线">
     <meta name="keywords" content="故事任务, 面板管理, YiWeb, rui-story">
     <meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)">
     <meta name="theme-color" content="#F8FAFC" media="(prefers-color-scheme: light)">
@@ -31,12 +31,10 @@
                 :status-counts="statusCounts"
                 :total-stories="totalStories"
                 :selected-story="selectedStory"
-                :syncing="syncing"
                 :stories-by-status="storiesByStatus"
                 @refresh="refreshStories"
                 @select-story="viewStory"
                 @back="goBack"
-                @sync-story="syncStory"
             ></story-panel-page>
         </div>
     </main>

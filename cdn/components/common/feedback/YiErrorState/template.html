@@ -1,6 +1,6 @@
 <div :class="containerClass" role="alert" aria-live="polite">
     <div v-if="iconClass" :class="iconWrapperClass" aria-hidden="true">
-        <i :class="iconClass" aria-hidden="true"></i>
+        <i :class="resolvedIconClass" aria-hidden="true"></i>
     </div>
     <div :class="messageClass">{{ message }}</div>
     <button

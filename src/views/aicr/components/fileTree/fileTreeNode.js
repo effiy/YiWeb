@@ -525,12 +525,12 @@ const createFileTreeNode = () => {
                     <span class="file-name" v-html="highlightSearchMatch(item.name)"></span>
                     <span v-if="item.children" class="folder-count">({{ item.children.length }})</span>
                     <span class="file-actions" @click.stop>
-                        <button :title="'在 ' + item.name + ' 下新建文件夹'" @click="createSubFolder($event, item.key)"><i class="fas fa-folder-plus"></i></button>
-                        <button :title="'在 ' + item.name + ' 下新建文件'" @click="createSubFile($event, item.key)"><i class="fas fa-file"></i></button>
-                        <button :title="'导入文件到 ' + item.name" @click="importFile($event, item.key)"><i class="fas fa-file-upload"></i></button>
-                        <button :title="'导入目录到 ' + item.name" @click="importFolder($event, item.key)"><i class="fas fa-folder-open"></i></button>
-                        <button :title="'导出 ' + item.name" @click="exportFolder($event, item.key)"><i class="fas fa-download"></i></button>
-                        <button :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
+                        <button :title="'在 ' + item.name + ' 下新建文件夹'" @click="createSubFolder($event, item.key)"><yi-icon name="folder-plus"></yi-icon></button>
+                        <button :title="'在 ' + item.name + ' 下新建文件'" @click="createSubFile($event, item.key)"><yi-icon name="file"></yi-icon></button>
+                        <button :title="'导入文件到 ' + item.name" @click="importFile($event, item.key)"><yi-icon name="file-upload"></yi-icon></button>
+                        <button :title="'导入目录到 ' + item.name" @click="importFolder($event, item.key)"><yi-icon name="folder-open"></yi-icon></button>
+                        <button :title="'导出 ' + item.name" @click="exportFolder($event, item.key)"><yi-icon name="download"></yi-icon></button>
+                        <button :title="'重命名 ' + item.name" @click="renameItem($event, item)"><yi-icon name="i-cursor"></yi-icon></button>
                     </span>
                 </div>
                 
@@ -561,10 +561,10 @@ const createFileTreeNode = () => {
                     <span class="file-name" v-html="highlightSearchMatch(item.name)"></span>
                     <span v-if="getFileSizeDisplay(item)" class="file-size" :class="{ 'large-file-size': isLargeFile(item) }">{{ getFileSizeDisplay(item) }}</span>
                     <span v-if="isLargeFile(item)" class="file-warning-badge" title="大文件，加载可能较慢">
-                        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                        <yi-icon name="warning"></yi-icon>
                     </span>
                     <span class="file-actions" @click.stop>
-                        <button type="button" :title="'重命名 ' + item.name" @click="renameItem($event, item)"><i class="fas fa-i-cursor"></i></button>
+                        <button type="button" :title="'重命名 ' + item.name" @click="renameItem($event, item)"><yi-icon name="i-cursor"></yi-icon></button>
                     </span>
                 </div>
                 

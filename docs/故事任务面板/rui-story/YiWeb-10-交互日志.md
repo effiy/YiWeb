@@ -26,3 +26,57 @@
 - `docs/故事任务面板/rui-story/YiWeb-10-交互日志.md` (新增 · 本文档)
 
 **🔀 分支**: feat/rui-story
+
+---
+
+## 会话 2026-05-19-01 — 2026-05-19
+
+### 10:30:00 | turn-1 | claude
+
+**👤 用户**:
+/rui update rui-story 点击文件清单的文件可跳转到 aicr 页面并激活对应的文件
+
+**🤖 助手**:
+T2 增量更新 — 故事详情面板文件清单加入跨视图导航能力。
+
+**变更范围**: 前端 (storyPanel)
+
+**修改文件**:
+- `src/views/storyPanel/components/storyDetailCard/template.html:27` — 文件列表项添加 `@click` 与外链图标
+- `src/views/storyPanel/components/storyDetailCard/index.js:27-30` — 新增 `onFileClick(file)` 方法，通过 `window.open` 新标签页导航至 aicr 并传递 `?key=` 参数
+- `src/views/storyPanel/components/storyDetailCard/index.css:93,99-103,121-127` — 文件项添加 `cursor: pointer`、hover 文件名高亮、外链图标渐现样式
+
+**交互逻辑**:
+1. 用户在故事详情面板看到文件清单
+2. 鼠标悬停文件项 → 文件名变蓝 + 外链图标渐现
+3. 点击文件项 → 新标签页打开 `../aicr/index.html?key=<filePath>`
+4. aicr 页面通过 URL `?key=` 参数自动选中并加载对应文件
+
+**🔀 分支**: main
+
+---
+
+### 10:45:00 | turn-2 | claude
+
+**👤 用户**:
+/rui update rui-story 点击文件清单的文件可跳转到 aicr 页面并激活对应的文件并在文件树中定位
+
+**🤖 助手**:
+T2 增量更新 — 补齐跨视图导航后的文件树定位能力。
+
+**变更范围**: 前端 (aicr)
+
+**修改文件**:
+- `src/views/aicr/index.js:226-228` — 在 URL `?key=` 参数处理流程中新增 `store.expandPathToFile(norm)` 调用，展开文件树中所有父级文件夹以定位目标文件
+
+**交互逻辑 (完整链路)**:
+1. 用户在故事详情面板点击文件项 → 新标签页打开 `../aicr/index.html?key=<filePath>`
+2. aicr 页面解析 `?key=` → `setSelectedKey` 高亮文件 → `expandPathToFile` 展开父文件夹 → `loadFileByKey` 加载内容
+3. 文件树自动展开至目标文件所在层级，选中项高亮，代码区域展示文件内容
+
+**技术细节**:
+- `expandPathToFile` 由 `storeFileTreeOps.js:639` 定义，通过 `storeFactory.js:62` 展开到 store
+- 按文件路径逐级解析父文件夹（如 `src/views/aicr/index.js` → `src` + `src/views` + `src/views/aicr`）
+- 通过替换 entire `Set` 触发 Vue 响应式更新
+
+**🔀 分支**: main

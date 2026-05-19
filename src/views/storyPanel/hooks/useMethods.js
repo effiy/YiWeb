@@ -1,8 +1,6 @@
 /**
  * 故事任务面板 - 方法
  */
-import { logInfo, logWarn, logError } from '/cdn/utils/core/log.js';
-
 export function useMethods(store) {
     function refreshStories() {
         return store.fetchStories();
@@ -14,10 +12,6 @@ export function useMethods(store) {
 
     function goBack() {
         store.clearSelection();
-    }
-
-    async function syncStory(name) {
-        await store.syncStory(name);
     }
 
     function formatDate(ts) {
@@ -66,7 +60,6 @@ export function useMethods(store) {
         refreshStories,
         viewStory,
         goBack,
-        syncStory,
         formatDate,
         statusLabel,
         statusVariant,

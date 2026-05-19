@@ -31,8 +31,8 @@
         @click="handleRefresh"
         :title="modelsLoading ? '加载中...' : '刷新模型列表'"
       >
-        <i v-if="modelsLoading" class="fas fa-spinner fa-spin"></i>
-        <i v-else class="fas fa-sync-alt"></i>
+        <yi-icon name="loading" :spin="modelsLoading"></yi-icon>
+        <yi-icon v-if="!modelsLoading" name="refresh"></yi-icon>
       </button>
     </div>
 
@@ -58,13 +58,13 @@
       @click="toggleInputMode"
       :title="showManualInput ? '切换到下拉框选择' : '手动输入模型名称'"
     >
-      <i :class="showManualInput ? 'fas fa-list' : 'fas fa-keyboard'"></i>
+      <yi-icon :name="showManualInput ? 'list' : 'keyboard'"></yi-icon>
     </button>
   </div>
 
   <!-- 错误提示 -->
   <div v-if="modelsError" class="model-error">
-    <i class="fas fa-exclamation-triangle"></i>
+    <yi-icon name="warning"></yi-icon>
     <span>{{ modelsError }}</span>
   </div>
 </div>

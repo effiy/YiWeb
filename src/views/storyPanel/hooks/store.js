@@ -1,7 +1,7 @@
 /**
  * 故事任务面板 - 状态管理
  */
-import { logInfo, logWarn, logError } from '/cdn/utils/core/log.js';
+import { logInfo, logError } from '/cdn/utils/core/log.js';
 import { getAuthHeaders } from '/src/core/services/helper/authUtils.js?v=1';
 
 const { ref } = Vue;
@@ -11,8 +11,6 @@ export function createStore() {
     const loading = ref(false);
     const error = ref(null);
     const selectedStory = ref(null);
-    const syncing = ref(false);
-    const syncResult = ref(null);
 
     async function fetchStories() {
         loading.value = true;
@@ -123,89 +121,13 @@ export function createStore() {
         selectedStory.value = null;
     }
 
-    async function syncStory(name) {
-        syncing.value = true;
-        syncResult.value = null;
-        try {
-            logInfo('[故事面板] 开始同步:', name);
-            const apiUrl = window.API_URL || 'https://api.effiy.cn';
-            const authHeaders = getAuthHeaders();
-
-            // 1. Query remote sessions for this story
-            const body = {
-                module_name: 'services.database.data_service',
-                method_name: 'query_documents',
-                parameters: { cname: 'sessions', limit: 10000 }
-            };
-            const res = await fetch(apiUrl + '/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', ...authHeaders },
-                credentials: 'omit',
-                body: JSON.stringify(body)
-            });
-            const data = await res.json();
-            const items = data?.data?.list || data?.list || [];
-
-            const storyFiles = items.filter(s => {
-                const tags = s.tags || [];
-                return tags[0] === '故事任务面板' && tags[1] === name;
-            });
-
-            if (storyFiles.length === 0) {
-                syncResult.value = { success: false, name, error: '远端无此故事' };
-                syncing.value = false;
-                return;
-            }
-
-            // 2. Read each remote file and write to local
-            let written = 0;
-            let failed = 0;
-            const localDir = `docs/故事任务面板/${name}`;
-
-            for (const sf of storyFiles) {
-                const remotePath = sf.file_path;
-                if (!remotePath) { failed++; continue; }
-
-                try {
-                    const readRes = await fetch(apiUrl + '/read-file', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', ...authHeaders },
-                        credentials: 'omit',
-                        body: JSON.stringify({ target_file: remotePath })
-                    });
-                    const readData = await readRes.json();
-                    const content = readData?.data?.content ?? readData?.content ?? '';
-
-                    // Write to local via the write-file API pattern is not available in browser,
-                    // so we'll just track the result
-                    written++;
-                    logInfo('[故事面板] 读取远端文件:', remotePath);
-                } catch (err) {
-                    failed++;
-                    logWarn('[故事面板] 读取失败:', remotePath, err.message);
-                }
-            }
-
-            syncResult.value = { success: true, name, written, failed };
-            logInfo('[故事面板] 同步完成:', name, `写入=${written} 失败=${failed}`);
-        } catch (err) {
-            syncResult.value = { success: false, name, error: err.message };
-            logError('[故事面板] 同步失败:', err);
-        } finally {
-            syncing.value = false;
-        }
-    }
-
     return {
         stories,
         loading,
         error,
         selectedStory,
-        syncing,
-        syncResult,
         fetchStories,
         selectStory,
-        clearSelection,
-        syncStory
+        clearSelection
     };
 }

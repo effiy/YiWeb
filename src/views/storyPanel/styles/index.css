@@ -10,5 +10,5 @@ html, body {
 
 #app {
     min-height: 100vh;
-    background: var(--yi-background, #f8f9fa);
+    background: var(--yi-bg, #0F172A);
 }

@@ -1,0 +1,26 @@
+{
+  "story": "unify-icons",
+  "current_stage": "update",
+  "blocked": false,
+  "timestamp": "2026-05-19T09:25:00.000Z",
+  "update_context": "T2 fix: YiIcon Options API computed → setup() to fix missing icons in storyPanel",
+  "stages": {
+    "doc": {
+      "status": "completed",
+      "timestamp": "2026-05-19T01:09:00.000Z"
+    },
+    "code": {
+      "status": "completed",
+      "timestamp": "2026-05-19T09:09:00.000Z"
+    },
+    "update": {
+      "status": "completed",
+      "timestamp": "2026-05-19T09:25:00.000Z"
+    }
+  },
+  "delivery_pipeline": {
+    "log_appended": true,
+    "docs_synced": true,
+    "notification_sent": true
+  }
+}

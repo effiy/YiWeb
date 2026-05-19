@@ -7,7 +7,7 @@
 .sp-table-empty {
     text-align: center;
     padding: 48px 24px;
-    color: var(--yi-text-secondary, #6b7280);
+    color: var(--yi-text-secondary, #CBD5E1);
     font-size: 14px;
 }
 .sp-table-loading i,
@@ -17,7 +17,7 @@
     font-size: 16px;
 }
 .sp-table-error {
-    color: var(--yi-color-danger, #c62828);
+    color: var(--yi-danger, #EF4444);
 }
 .sp-table {
     width: 100%;
@@ -31,13 +31,13 @@
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--yi-text-secondary, #6b7280);
-    border-bottom: 2px solid var(--yi-border, #e2e8f0);
+    color: var(--yi-text-secondary, #CBD5E1);
+    border-bottom: 2px solid var(--yi-border, rgba(255,255,255,0.1));
     white-space: nowrap;
 }
 .sp-td {
     padding: 12px 16px;
-    border-bottom: 1px solid var(--yi-border, #e2e8f0);
+    border-bottom: 1px solid var(--yi-border, rgba(255,255,255,0.1));
     vertical-align: middle;
 }
 .sp-tr {
@@ -45,11 +45,11 @@
     transition: background 0.15s;
 }
 .sp-tr:hover {
-    background: var(--yi-surface-variant, rgba(0,0,0,0.03));
+    background: var(--yi-surface-hover, #334155);
 }
 .sp-story-name {
     font-weight: 500;
-    color: var(--yi-text-primary, #1a1a2e);
+    color: var(--yi-text, #F8FAFC);
     font-family: 'JetBrains Mono', monospace;
     font-size: 13px;
 }
@@ -60,7 +60,7 @@
     font-size: 11px;
     font-weight: 500;
 }
-.sp-type-tag--backend { background: #e3f2fd; color: #1565c0; }
-.sp-type-tag--frontend { background: #f3e5f5; color: #7b1fa2; }
-.sp-type-tag--fullstack { background: #fff3e0; color: #e65100; }
-.sp-type-tag--meta { background: #f1f3f5; color: #6b7280; }
+.sp-type-tag--backend { background: var(--yi-primary-subtle); color: var(--yi-primary); }
+.sp-type-tag--frontend { background: var(--yi-info-subtle); color: var(--yi-info); }
+.sp-type-tag--fullstack { background: var(--yi-warning-subtle); color: var(--yi-warning-hover); }
+.sp-type-tag--meta { background: var(--yi-surface); color: var(--yi-text-muted); }

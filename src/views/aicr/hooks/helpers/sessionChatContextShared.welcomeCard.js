@@ -1,3 +1,5 @@
+import { getIconClass } from '/cdn/icons/iconMap.js';
+
 export const createSessionChatContextWelcomeCard = ({
     renderMarkdownHtml,
     formatDate,
@@ -49,7 +51,7 @@ export const createSessionChatContextWelcomeCard = ({
                             <div class="welcome-card-section-header">
                                 <div class="welcome-card-section-title">🔗 网址</div>
                                 <button type="button" class="welcome-card-action-btn" data-copy-target="${urlId}" title="复制网址" aria-label="复制网址">
-                                    <i class="fas fa-copy"></i>
+                                    <yi-icon name="copy"></yi-icon>
                                 </button>
                             </div>
                             <a href="${escapeHtml(pageInfo.url)}" target="_blank" class="welcome-card-url" id="${urlId}">${escapeHtml(pageInfo.url)}</a>
@@ -64,7 +66,7 @@ export const createSessionChatContextWelcomeCard = ({
                             <div class="welcome-card-section-header">
                                 <div class="welcome-card-section-title">📝 页面描述</div>
                                 <button type="button" class="welcome-card-action-btn" data-copy-text="${escapeHtml(pageInfo.description)}" title="复制描述" aria-label="复制描述">
-                                    <i class="fas fa-copy"></i>
+                                    <yi-icon name="copy"></yi-icon>
                                 </button>
                             </div>
                             <div class="markdown-content md-preview-body" id="${descId}">${renderMarkdownHtml(pageInfo.description, { breaks: true, gfm: true })}</div>
@@ -169,10 +171,10 @@ export const createSessionChatContextWelcomeCard = ({
                 if (!textToCopy) return;
 
                 const showOk = () => {
-                    const icon = btn.querySelector('i');
+                    const icon = btn.querySelector('yi-icon i, .fas.fa-copy, .fas.fa-check');
                     if (!icon) return;
                     const originalClass = icon.className;
-                    icon.className = 'fas fa-check';
+                    icon.className = getIconClass('success');
                     btn.style.color = 'rgba(34, 197, 94, 0.9)';
                     setTimeout(() => {
                         icon.className = originalClass;

@@ -9,14 +9,14 @@
   @click="onClick"
 >
   <span v-if="loading" class="btn-spinner" aria-hidden="true"></span>
-  <span v-if="icon && iconPosition === 'left'" class="btn-icon btn-icon-left">
-    <slot name="icon-left">{{ icon }}</slot>
+  <span v-if="resolvedIconClass && iconPosition === 'left'" class="btn-icon btn-icon-left">
+    <slot name="icon-left"><i :class="resolvedIconClass" aria-hidden="true"></i></slot>
   </span>
   <span class="btn-content">
     <slot></slot>
   </span>
-  <span v-if="icon && iconPosition === 'right'" class="btn-icon btn-icon-right">
-    <slot name="icon-right">{{ icon }}</slot>
+  <span v-if="resolvedIconClass && iconPosition === 'right'" class="btn-icon btn-icon-right">
+    <slot name="icon-right"><i :class="resolvedIconClass" aria-hidden="true"></i></slot>
   </span>
 </button>
 <a
@@ -31,13 +31,13 @@
   @click="onClick"
 >
   <span v-if="loading" class="btn-spinner" aria-hidden="true"></span>
-  <span v-if="icon && iconPosition === 'left'" class="btn-icon btn-icon-left">
-    <slot name="icon-left">{{ icon }}</slot>
+  <span v-if="resolvedIconClass && iconPosition === 'left'" class="btn-icon btn-icon-left">
+    <slot name="icon-left"><i :class="resolvedIconClass" aria-hidden="true"></i></slot>
   </span>
   <span class="btn-content">
     <slot></slot>
   </span>
-  <span v-if="icon && iconPosition === 'right'" class="btn-icon btn-icon-right">
-    <slot name="icon-right">{{ icon }}</slot>
+  <span v-if="resolvedIconClass && iconPosition === 'right'" class="btn-icon btn-icon-right">
+    <slot name="icon-right"><i :class="resolvedIconClass" aria-hidden="true"></i></slot>
   </span>
 </a>

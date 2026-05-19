@@ -161,12 +161,14 @@ export function getDomainDisplayName(domain) {
  * @param {string} domain - 完整域名
  * @returns {Object} 分类信息
  */
+import { getIconClass } from '/cdn/icons/iconMap.js';
+
 export function getDomainCategory(domain) {
     if (!domain) {
         return {
             key: 'unknown',
             title: '未知来源',
-            icon: 'fas fa-question-circle',
+            icon: 'question',
             color: '#6c757d'
         };
     }
@@ -181,7 +183,7 @@ export function getDomainCategory(domain) {
             patterns: ['github.com', 'github.io'],
             category: {
                 key: 'github',
-                icon: 'fab fa-github',
+                icon: 'github',
                 color: '#24292e'
             }
         },
@@ -190,7 +192,7 @@ export function getDomainCategory(domain) {
             patterns: ['stackoverflow.com', 'stackexchange.com'],
             category: {
                 key: 'stackoverflow',
-                icon: 'fab fa-stack-overflow',
+                icon: 'stack-overflow',
                 color: '#f48024'
             }
         },
@@ -199,7 +201,7 @@ export function getDomainCategory(domain) {
             patterns: ['medium.com', 'dev.to', 'hashnode.com', 'devblogs.microsoft.com'],
             category: {
                 key: 'tech-blog',
-                icon: 'fas fa-blog',
+                icon: 'blog',
                 color: '#00ab6c'
             }
         },
@@ -208,7 +210,7 @@ export function getDomainCategory(domain) {
             patterns: ['youtube.com', 'youtu.be', 'bilibili.com', 'vimeo.com'],
             category: {
                 key: 'video',
-                icon: 'fab fa-youtube',
+                icon: 'youtube',
                 color: '#ff0000'
             }
         },
@@ -217,7 +219,7 @@ export function getDomainCategory(domain) {
             patterns: ['zhihu.com', 'juejin.cn', 'csdn.net', 'segmentfault.com', 'infoq.cn', 'oschina.net', '51cto.com', 'cnblogs.com', 'iteye.com'],
             category: {
                 key: 'chinese-tech',
-                icon: 'fas fa-globe-asia',
+                icon: 'globe-asia',
                 color: '#1890ff'
             }
         },
@@ -226,7 +228,7 @@ export function getDomainCategory(domain) {
             patterns: ['reddit.com', 'hackernews.com', 'news.ycombinator.com', 'lobste.rs', 'discord.com', 'slack.com'],
             category: {
                 key: 'community',
-                icon: 'fas fa-users',
+                icon: 'users',
                 color: '#ff6b35'
             }
         },
@@ -235,7 +237,7 @@ export function getDomainCategory(domain) {
             patterns: ['developer.mozilla.org', 'w3schools.com', 'freecodecamp.org', 'tutorialspoint.com', 'geeksforgeeks.org', 'docs.microsoft.com', 'web.dev'],
             category: {
                 key: 'documentation',
-                icon: 'fas fa-book',
+                icon: 'book',
                 color: '#4caf50'
             }
         },
@@ -244,7 +246,7 @@ export function getDomainCategory(domain) {
             patterns: ['leetcode.com', 'codewars.com', 'hackerrank.com', 'codecademy.com', 'exercism.io', 'topcoder.com'],
             category: {
                 key: 'coding-challenge',
-                icon: 'fas fa-code',
+                icon: 'code',
                 color: '#9c27b0'
             }
         },
@@ -253,7 +255,7 @@ export function getDomainCategory(domain) {
             patterns: ['gitlab.com', 'bitbucket.org', 'sourceforge.net', 'gitee.com'],
             category: {
                 key: 'code-hosting',
-                icon: 'fab fa-git-alt',
+                icon: 'git',
                 color: '#f39c12'
             }
         },
@@ -262,7 +264,7 @@ export function getDomainCategory(domain) {
             patterns: ['aws.amazon.com', 'azure.microsoft.com', 'cloud.google.com', 'heroku.com', 'vercel.com', 'netlify.com'],
             category: {
                 key: 'cloud-platform',
-                icon: 'fas fa-cloud',
+                icon: 'cloud',
                 color: '#3498db'
             }
         },
@@ -271,7 +273,7 @@ export function getDomainCategory(domain) {
             patterns: ['figma.com', 'sketch.com', 'adobe.com', 'canva.com', 'dribbble.com', 'behance.net'],
             category: {
                 key: 'design-tools',
-                icon: 'fas fa-palette',
+                icon: 'palette',
                 color: '#e74c3c'
             }
         },
@@ -280,7 +282,7 @@ export function getDomainCategory(domain) {
             patterns: ['techcrunch.com', 'theverge.com', 'arstechnica.com', 'engadget.com', 'wired.com', 'reuters.com', 'bbc.com'],
             category: {
                 key: 'tech-news',
-                icon: 'fas fa-newspaper',
+                icon: 'newspaper',
                 color: '#2c3e50'
             }
         },
@@ -289,7 +291,7 @@ export function getDomainCategory(domain) {
             patterns: ['twitter.com', 'linkedin.com', 'facebook.com', 'instagram.com', 'tiktok.com'],
             category: {
                 key: 'social-media',
-                icon: 'fas fa-share-alt',
+                icon: 'share',
                 color: '#8e44ad'
             }
         }
@@ -313,7 +315,7 @@ export function getDomainCategory(domain) {
     return {
         key: 'other',
         title: displayName,
-        icon: 'fas fa-external-link-alt',
+        icon: 'external-link',
         color: '#6c757d'
     };
 }

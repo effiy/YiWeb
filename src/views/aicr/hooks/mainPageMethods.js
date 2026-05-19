@@ -220,7 +220,7 @@ export const createMainPageMethods = (store) => {
             logInfo('[主页面] 收到侧边栏切换事件');
             try {
                 const methods = useMethods(store);
-                methods.toggleSidebar();
+                methods.handleToggleSidebar();
             } catch (error) {
                 logError('[主页面] 侧边栏切换处理失败:', error);
             }
@@ -284,8 +284,8 @@ export const createMainPageMethods = (store) => {
             try {
                 const methods = useMethods(store);
 
-                if (store?.sidebarCollapsed?.value && methods.toggleSidebar) {
-                    methods.toggleSidebar();
+                if (store?.sidebarCollapsed?.value && methods.handleToggleSidebar) {
+                    methods.handleToggleSidebar();
                 }
 
                 this.$nextTick(() => {

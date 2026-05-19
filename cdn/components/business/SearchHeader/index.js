@@ -1,5 +1,6 @@
 import { registerGlobalComponent } from '/cdn/utils/view/componentLoader.js';
 import { SearchHandler } from '/cdn/utils/browser/events.js';
+import { getIconClass } from '/cdn/icons/iconMap.js';
 
 /**
  * Detect current environment
@@ -42,7 +43,7 @@ registerGlobalComponent({
     },
     homeIconClass: {
       type: String,
-      default: 'fas fa-globe'
+      default: 'globe'
     },
     homeButtonTitle: {
       type: String,
@@ -137,6 +138,14 @@ registerGlobalComponent({
     const envType = Vue.ref(detectEnvironment());
     const envLabel = Vue.computed(() => {
       return envType.value === 'local' ? 'LOCAL' : 'PROD';
+    });
+
+    // Resolve home icon class (supports both semantic names and raw FA classes)
+    const resolvedHomeIconClass = Vue.computed(() => {
+      const cls = props.homeIconClass;
+      if (!cls) return '';
+      if (cls.includes(' ')) return getIconClass(cls.split(' ').pop());
+      return getIconClass(cls);
     });
 
     // Filtered history based on current input
@@ -326,6 +335,7 @@ registerGlobalComponent({
     };
 
     return {
+      resolvedHomeIconClass,
       searchQuery,
       searchInput,
       envType,

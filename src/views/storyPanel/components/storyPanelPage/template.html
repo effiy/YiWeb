@@ -6,7 +6,7 @@
         </div>
         <div class="sp-header-right">
             <div class="sp-search">
-                <i class="fas fa-search sp-search-icon"></i>
+                <yi-icon name="search" class-name="sp-search-icon"></yi-icon>
                 <input
                     type="text"
                     class="sp-search-input"
@@ -15,17 +15,17 @@
                 />
             </div>
             <button class="sp-view-toggle" @click="toggleView" :title="viewMode === 'board' ? '切换列表视图' : '切换看板视图'">
-                <i :class="viewMode === 'board' ? 'fas fa-list' : 'fas fa-columns'"></i>
+                <yi-icon :name="viewMode === 'board' ? 'list' : 'columns'"></yi-icon>
             </button>
-            <yi-button variant="ghost" icon="fas fa-sync-alt" @click="$emit('refresh')">刷新</yi-button>
+            <yi-button variant="ghost" icon="refresh" @click="$emit('refresh')">刷新</yi-button>
         </div>
     </header>
 
     <div v-if="loading" class="sp-loading">
-        <i class="fas fa-spinner fa-spin"></i> 加载中...
+        <yi-icon name="loading" spin></yi-icon> 加载中...
     </div>
     <div v-else-if="error" class="sp-error">
-        <i class="fas fa-exclamation-circle"></i> {{ error }}
+        <yi-icon name="error"></yi-icon> {{ error }}
     </div>
 
     <template v-else>
@@ -73,16 +73,14 @@
             <div class="sp-panel-header">
                 <h2 class="sp-panel-title">{{ panelStory.name }}</h2>
                 <button class="sp-panel-close" @click="closePanel" aria-label="关闭面板">
-                    <i class="fas fa-times"></i>
+                    <yi-icon name="close"></yi-icon>
                 </button>
             </div>
             <div class="sp-panel-body">
                 <story-detail-card
                     :story="panelStory"
-                    :syncing="syncing"
                     :panel="true"
                     @close="closePanel"
-                    @sync="$emit('sync-story', $event)"
                 ></story-detail-card>
             </div>
         </div>

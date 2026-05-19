@@ -19,26 +19,26 @@
     line-height: 22px;
 }
 .sp-status-badge--not_started {
-    background: var(--yi-surface-variant, #f1f3f5);
-    color: var(--yi-text-secondary, #6b7280);
+    background: var(--yi-surface, #1E293B);
+    color: var(--yi-text-secondary, #CBD5E1);
 }
 .sp-status-badge--docs_in_progress {
-    background: #fff3e0;
-    color: #e65100;
+    background: var(--yi-warning-subtle);
+    color: var(--yi-warning-hover);
 }
 .sp-status-badge--docs_done {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--yi-success-subtle);
+    color: var(--yi-success-hover);
 }
 .sp-status-badge--code_in_progress {
-    background: #e3f2fd;
-    color: #1565c0;
+    background: var(--yi-primary-subtle);
+    color: var(--yi-primary-hover);
 }
 .sp-status-badge--code_done {
-    background: #c8e6c9;
-    color: #1b5e20;
+    background: var(--yi-success-subtle);
+    color: var(--yi-success-hover);
 }
 .sp-status-badge--blocked {
-    background: #ffebee;
-    color: #c62828;
+    background: var(--yi-danger-subtle);
+    color: var(--yi-danger-hover);
 }

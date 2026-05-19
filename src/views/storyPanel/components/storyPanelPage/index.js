@@ -11,10 +11,9 @@ registerGlobalComponent({
         statusCounts: { type: Object, default: () => ({}) },
         totalStories: { type: Number, default: 0 },
         selectedStory: { type: Object, default: null },
-        syncing: { type: Boolean, default: false },
         storiesByStatus: { type: Object, default: () => ({}) },
     },
-    emits: ['refresh', 'select-story', 'back', 'sync-story'],
+    emits: ['refresh', 'select-story', 'back'],
     data() {
         return {
             localSearchQuery: '',

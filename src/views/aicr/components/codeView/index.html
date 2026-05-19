@@ -3,12 +3,12 @@
   <yi-error-state
     v-else-if="error"
     :message="error"
-    icon-class="fas fa-exclamation-triangle"
+    icon-class="warning"
   ></yi-error-state>
   <div v-else-if="file" class="code-content" :class="{ editing: isEditingFile, wrap: wrapEnabled, modified: hasUnsavedChanges }" :style="codeContentStyle">
     <div class="code-header">
       <div class="file-name" :title="fullFilePath">
-        <i :class="shouldShowImagePreview ? 'fas fa-file-image' : 'fas fa-file-code'" aria-hidden="true"></i>
+        <yi-icon :name="shouldShowImagePreview ? 'file-image' : 'file-code'"></yi-icon>
         <span class="file-name-text">{{ displayFileName }}</span>
         <span v-if="hasUnsavedChanges" class="unsaved-indicator" title="有未保存的更改">●</span>
       </div>
@@ -22,7 +22,7 @@
           title="编辑文件"
           aria-label="编辑文件"
         >
-          <i class="fas fa-pen" aria-hidden="true"></i>
+          <yi-icon name="edit"></yi-icon>
         </button>
         <template v-else>
           <button
@@ -33,7 +33,7 @@
             :title="editSaving ? '保存中' : '保存修改'"
             aria-label="保存修改"
           >
-            <i class="fas" :class="editSaving ? 'fa-spinner fa-spin' : 'fa-save'" aria-hidden="true"></i>
+            <yi-icon :name="editSaving ? 'loading' : 'save'" :spin="editSaving"></yi-icon>
           </button>
           <button
             type="button"
@@ -43,7 +43,7 @@
             title="取消编辑"
             aria-label="取消编辑"
           >
-            <i class="fas fa-times" aria-hidden="true"></i>
+            <yi-icon name="close"></yi-icon>
           </button>
         </template>
         <button
@@ -55,7 +55,7 @@
           title="下载文件"
           aria-label="下载文件"
         >
-          <i class="fas fa-download" aria-hidden="true"></i>
+          <yi-icon name="download"></yi-icon>
         </button>
         <button
           v-if="!isEditingFile"
@@ -66,7 +66,7 @@
           title="复制代码"
           aria-label="复制代码"
         >
-          <i class="fas fa-copy" aria-hidden="true"></i>
+          <yi-icon name="copy"></yi-icon>
         </button>
         <button
           v-if="!isEditingFile"
@@ -77,7 +77,7 @@
           title="在文件树中定位"
           aria-label="在文件树中定位"
         >
-          <i class="fas fa-crosshairs" aria-hidden="true"></i>
+          <yi-icon name="crosshairs"></yi-icon>
         </button>
         <button
           v-if="!isEditingFile"
@@ -88,7 +88,7 @@
           :title="isFullscreen ? '退出全屏' : '全屏模式'"
           :aria-label="isFullscreen ? '退出全屏' : '全屏模式'"
         >
-          <i class="fas" :class="isFullscreen ? 'fa-compress' : 'fa-expand'" aria-hidden="true"></i>
+          <yi-icon :name="isFullscreen ? 'compress' : 'expand'"></yi-icon>
         </button>
         <button
           v-if="!isEditingFile"
@@ -99,7 +99,7 @@
           title="在新标签页中打开静态文件"
           aria-label="在新标签页中打开静态文件"
         >
-          <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+          <yi-icon name="external-link"></yi-icon>
         </button>
       </div>
     </div>
@@ -115,7 +115,7 @@
         aria-label="编辑文件内容"
       ></textarea>
       <div class="save-error" v-if="saveError">
-        <i class="fas fa-exclamation-circle" aria-hidden="true"></i> {{ saveError }}
+        <yi-icon name="error"></yi-icon> {{ saveError }}
       </div>
     </div>
 
@@ -136,7 +136,7 @@
           title="点击查看大图"
         />
         <div v-else class="image-preview-error">
-          <i class="fas fa-image" aria-hidden="true"></i>
+          <yi-icon name="image"></yi-icon>
           <p>无法加载图片</p>
         </div>
       </div>
@@ -166,7 +166,7 @@
               title="复制此行"
               aria-label="复制此行"
             >
-              <i class="fas fa-copy" aria-hidden="true"></i>
+              <yi-icon name="copy"></yi-icon>
             </button>
             <span class="line-content" v-html="renderLineContent(line) || ' '"></span>
           </code>
@@ -185,13 +185,13 @@
     <template #icon>
       <div class="empty-hero" aria-hidden="true">
         <div class="empty-icon" aria-hidden="true">
-          <i class="fas fa-file-code" aria-hidden="true"></i>
+          <yi-icon name="file-code"></yi-icon>
         </div>
       </div>
     </template>
     <div class="empty-actions">
       <yi-button variant="primary" size="small" @click.stop="emitCreateSession" aria-label="新建会话">
-        <i class="fas fa-plus" aria-hidden="true"></i>
+        <yi-icon name="add"></yi-icon>
         <span>新建会话</span>
       </yi-button>
     </div>

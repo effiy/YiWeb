@@ -6,10 +6,9 @@ registerGlobalComponent({
     css: '/src/views/storyPanel/components/storyDetailCard/index.css',
     props: {
         story: { type: Object, default: null },
-        syncing: { type: Boolean, default: false },
         panel: { type: Boolean, default: false }
     },
-    emits: ['back', 'sync', 'close'],
+    emits: ['back', 'close'],
     methods: {
         formatDate(ts) {
             if (!ts) return '—';
@@ -22,13 +21,12 @@ registerGlobalComponent({
             const map = { backend: '后端', frontend: '前端', fullstack: '全栈', meta: '元数据' };
             return map[type] || type;
         },
-        onSync() {
-            if (this.story) {
-                this.$emit('sync', this.story.name);
-            }
-        },
         onBack() {
             this.$emit('back');
+        },
+        onFileClick(file) {
+            const key = encodeURIComponent(file.filePath || '');
+            window.open('../aicr/index.html?key=' + key, '_blank');
         }
     }
 });
