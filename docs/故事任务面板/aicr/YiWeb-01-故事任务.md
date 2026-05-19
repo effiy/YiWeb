@@ -53,6 +53,68 @@ flowchart TD
 - 🤖 支持多种 AI 模型切换，灵活适配不同审查场景
 - 📤 审查结果可通过企业微信机器人自动转发团队
 
+### 页面组件分布
+
+```mermaid
+flowchart TB
+    subgraph root[" "]
+        AP["aicr-page<br/>根组件"]
+    end
+
+    subgraph modal_layer["模态层"]
+        AM["aicr-modals<br/>模态容器"]
+        KSH["keyboard-shortcuts-help<br/>键盘快捷键帮助"]
+    end
+
+    subgraph header_row["顶部栏"]
+        AH["aicr-header<br/>顶部搜索栏 + 标签过滤"]
+    end
+
+    subgraph main_area["主体区域 (水平分割)"]
+        direction LR
+        subgraph left_panel["左侧栏 280-560px 可拖拽"]
+            AS["aicr-sidebar<br/>侧边栏容器"]
+            FT["file-tree<br/>文件树"]
+            SLT["session-list-tags<br/>会话标签列表"]
+        end
+        subgraph right_panel["代码区 (剩余宽度)"]
+            subgraph code_split["代码 + 聊天 (水平分割)"]
+                direction LR
+                subgraph code_main["代码主区"]
+                    CV["code-view<br/>代码查看器"]
+                end
+                subgraph chat_panel["聊天面板 320-720px 可拖拽"]
+                    CP["会话聊天面板<br/>消息列表 + 输入框"]
+                    AMS["ai-model-selector<br/>AI 模型选择器"]
+                end
+            end
+        end
+    end
+
+    AP --> AH
+    AP --> main_area
+    AP --> modal_layer
+    AS --> FT
+    AS --> SLT
+    right_panel --> CV
+    right_panel --> CP
+    CP --> AMS
+
+    classDef root fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
+    classDef header fill:#fff3e0,stroke:#e65100,color:#000
+    classDef sidebar fill:#e8f5e9,stroke:#2e7d32,color:#000
+    classDef code fill:#f3e5f5,stroke:#6a1b9a,color:#000
+    classDef chat fill:#fce4ec,stroke:#c62828,color:#000
+    classDef modal fill:#eceff1,stroke:#546e7a,color:#000
+
+    class AP root
+    class AH header
+    class AS,FT,SLT sidebar
+    class CV,code_main code
+    class CP,AMS chat
+    class AM,KSH modal
+```
+
 ---
 
 ### §1 Story
