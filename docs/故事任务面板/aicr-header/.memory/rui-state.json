@@ -1,0 +1,10 @@
+{
+  "project": "YiWeb",
+  "story": "aicr-header",
+  "stage": "doc",
+  "current_stage": "doc",
+  "timestamp": "2026-05-19T00:00:00.000Z",
+  "blocked": false,
+  "block_reason": null,
+  "summary": "完成 aicr-header 文档管线（doc 阶段）。将 aicrHeader 从 aicr 主故事拆分为独立故事目录，生成完整 frontend 文档基线（01/02/04/05/10）。分支：feat/aicr-header。"
+}
