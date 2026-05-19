@@ -166,67 +166,6 @@
 }
 
 /* ==============================================
-   Kanban Card
-   ============================================== */
-.sp-card {
-    background: var(--yi-surface, #1E293B);
-    border-radius: 8px;
-    padding: 12px 14px;
-    border-left: 3px solid transparent;
-    cursor: pointer;
-    transition: transform 0.12s, box-shadow 0.12s;
-    box-shadow: var(--yi-shadow-sm);
-}
-.sp-card:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--yi-shadow-md);
-}
-
-.sp-card--not_started       { border-left-color: var(--yi-text-muted); }
-.sp-card--docs_in_progress  { border-left-color: var(--yi-warning); }
-.sp-card--docs_done         { border-left-color: var(--yi-success); }
-.sp-card--code_in_progress  { border-left-color: var(--yi-primary); }
-.sp-card--code_done         { border-left-color: var(--yi-success-hover); }
-.sp-card--blocked           { border-left-color: var(--yi-danger); }
-
-.sp-card-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--yi-text, #F8FAFC);
-    font-family: 'JetBrains Mono', monospace;
-    word-break: break-word;
-    margin-bottom: 8px;
-    line-height: 1.35;
-}
-
-.sp-card-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
-}
-
-.sp-card-type {
-    display: inline-block;
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 500;
-    background: var(--yi-surface-hover, #334155);
-    color: var(--yi-text-secondary, #CBD5E1);
-}
-
-.sp-card-files {
-    font-size: 11px;
-    color: var(--yi-text-muted, #94A3B8);
-}
-
-.sp-card-date {
-    font-size: 11px;
-    color: var(--yi-text-muted, #94A3B8);
-}
-
-/* ==============================================
    List View
    ============================================== */
 .sp-list-view {

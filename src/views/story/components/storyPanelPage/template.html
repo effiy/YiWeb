@@ -36,20 +36,12 @@
                     <span class="sp-column-count">{{ col.stories.length }}</span>
                 </div>
                 <div class="sp-column-cards">
-                    <div
+                    <story-card
                         v-for="story in col.stories"
                         :key="story.name"
-                        class="sp-card"
-                        :class="'sp-card--' + story.status"
-                        @click="openDetail(story)"
-                    >
-                        <div class="sp-card-name">{{ story.name }}</div>
-                        <div class="sp-card-meta">
-                            <span class="sp-card-type">{{ typeLabel(story.type) }}</span>
-                            <span class="sp-card-files">{{ story.fileCount }} 个文件</span>
-                        </div>
-                        <div class="sp-card-date">{{ formatDate(story.lastModified) }}</div>
-                    </div>
+                        :story="story"
+                        @select="openDetail"
+                    ></story-card>
                     <div v-if="col.stories.length === 0" class="sp-column-empty">—</div>
                 </div>
             </div>

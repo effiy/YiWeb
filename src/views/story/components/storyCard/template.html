@@ -1,0 +1,12 @@
+<div v-if="story" :class="cardClass" @click="onClick">
+    <div class="sc-card-name">{{ story.name }}</div>
+    <div class="sc-card-badge">
+        <story-status-badge :status="story.status" size="sm"></story-status-badge>
+    </div>
+    <div class="sc-card-meta">
+        <span class="sc-card-type">{{ typeLabel }}</span>
+        <span class="sc-card-files">{{ story.fileCount }} 个文件</span>
+    </div>
+    <div class="sc-card-date">{{ formatDate(story.lastModified) }}</div>
+</div>
+<div v-else class="sc-card sc-card--empty">—</div>

@@ -134,6 +134,7 @@
 ⏱️ 会话: /rui update rui-story | T2 | ~5min
 
 ———
+
 变更文件:
   src/views/storyPanel/ → src/views/story/ (目录重命名 · 18 个文件)
   index.js (路径引用更新 · 7 处 · window 变量名更新)
@@ -143,3 +144,26 @@
   YrY-10-交互日志.md (路径引用更新)
   YrY-00-消息通知列表.md (路径引用更新)
   YiWeb-04-前端技术评审.md (路径引用 + window 变量名更新)
+
+---
+
+【2026-05-19 13:35:00】
+
+【YrY】
+🎯 结论: 完成 rui-story StoryCard 组件提取
+📝 描述: T2 增量更新 — 从 storyPanelPage 模板中提取内联卡片 HTML 为独立 StoryCard 组件（三件套），增强可复用性和可维护性。卡片内嵌 StoryStatusBadge 状态徽章。
+📌 范围: src/views/story/components/storyCard/
+👉 下一步: 浏览器验证 StoryCard 渲染效果
+🌐 影响: src/views/story/ (6 个文件变更)
+📎 证据: feat/rui-story | 26 文件同步至 api.effiy.cn
+⏱️ 会话: /rui update rui-story | T2 | ~5min
+
+———
+
+变更文件:
+  components/storyCard/index.js (新增 · 组件入口 · props/emits)
+  components/storyCard/template.html (新增 · 卡片模板 · 内嵌 StatusBadge)
+  components/storyCard/index.css (新增 · 卡片样式 · .sc-card 命名空间)
+  index.js (修改 · 注册 StoryCard 组件)
+  storyPanelPage/template.html (修改 · <story-card> 替换内联卡片)
+  storyPanelPage/index.css (修改 · 移除迁移的 .sp-card 样式)
