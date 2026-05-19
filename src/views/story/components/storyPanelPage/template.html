@@ -14,9 +14,19 @@
                     v-model="localSearchQuery"
                 />
             </div>
-            <button class="sp-view-toggle" @click="toggleView" :title="viewMode === 'board' ? '切换列表视图' : '切换看板视图'">
-                <yi-icon :name="viewMode === 'board' ? 'list' : 'columns'"></yi-icon>
-            </button>
+            <div class="sp-view-segmented">
+                <button
+                    v-for="mode in viewModes"
+                    :key="mode.value"
+                    class="sp-view-seg"
+                    :class="{ 'sp-view-seg--active': viewMode === mode.value }"
+                    @click="setView(mode.value)"
+                    :title="mode.label"
+                >
+                    <yi-icon :name="mode.icon"></yi-icon>
+                    <span class="sp-view-seg-label">{{ mode.label }}</span>
+                </button>
+            </div>
         </header-actions>
     </header>
 
@@ -45,6 +55,17 @@
                     <div v-if="col.stories.length === 0" class="sp-column-empty">—</div>
                 </div>
             </div>
+        </div>
+
+        <!-- Card Grid View -->
+        <div v-if="viewMode === 'cards'" class="sp-card-grid">
+            <story-card
+                v-for="story in filteredStories"
+                :key="story.name"
+                :story="story"
+                @select="openDetail"
+            ></story-card>
+            <div v-if="filteredStories.length === 0" class="sp-card-grid-empty">没有匹配的故事</div>
         </div>
 
         <!-- List View -->

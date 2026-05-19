@@ -1,4 +1,4 @@
-> | v1.0 | 2026-05-18 | deepseek-v4-pro | 🌿 main | 📎 [01-故事任务 ←](./YiWeb-01-故事任务.md) |
+> | v1.1 | 2026-05-19 | deepseek-v4-pro | 🌿 feat/rui-story | 📎 [01-故事任务 ←](./YiWeb-01-故事任务.md) |
 
 > **导航**: [← 01-故事任务](./YiWeb-01-故事任务.md) | [← 02-用户使用场景](./YiWeb-02-用户使用场景.md) | [05-测试用例评审 →](./YiWeb-05-测试用例评审.md)
 
@@ -150,7 +150,35 @@ flowchart TB
 
 **源码路径**: `/cdn/utils/view/componentLoader.js` — `registerGlobalComponent()` + `defineComponent()` (≈150 行)
 
-### 1.3 组件分类
+### 1.3 故事面板视图模式
+
+StoryPanelPage 使用分段滑块控件 (`sp-view-segmented`) 平铺展示三视图模式，点击即切：
+
+```mermaid
+flowchart LR
+    Seg["sp-view-segmented<br/>分段滑块"]:::ui --> Board["board<br/>看板视图"]:::mode
+    Seg --> Cards["cards<br/>卡片网格视图"]:::mode
+    Seg --> List["list<br/>列表视图"]:::mode
+    Board --> Kanban["6 列状态栏<br/>StoryCard 按 status 分组"]:::detail
+    Cards --> Grid["响应式 CSS Grid<br/>auto-fill minmax(260px, 1fr)"]:::detail
+    List --> Table["StoryListTable<br/>表格行展示"]:::detail
+
+    classDef ui fill:#f3e5f5,stroke:#6a1b9a;
+    classDef mode fill:#e3f2fd,stroke:#1565c0;
+    classDef detail fill:#e8f5e9,stroke:#2e7d32;
+```
+
+| 视图模式 | viewMode 值 | 布局方式 | 适用场景 |
+|---------|------------|---------|---------|
+| 看板 | `board` | 6 列 CSS Grid（按 status 分组） | 关注流程进度 |
+| 卡片网格 | `cards` | 响应式 auto-fill grid（260px 最小列宽） | 快速浏览、空间紧凑 |
+| 列表 | `list` | 单列表格 | 按列排序、批量对比 |
+
+分段滑块样式：容器 `inline-flex` + `overflow:hidden` + 统一边框圆角；按钮间 `border-right` 分隔；激活态 `--yi-primary` 背景。
+
+**源码路径**: `src/views/story/components/storyPanelPage/index.js:59–64` — `viewModes` computed；`src/views/story/components/storyPanelPage/template.html:17–29` — 分段滑块模板
+
+### 1.4 组件分类
 
 | 类别 | 位置 | 示例 | 注册方式 |
 |------|------|------|---------|
@@ -423,4 +451,4 @@ flowchart TB
 
 ---
 
-> **变更记录**: v1.0 初始基线 — 7 章架构评审：视图框架、状态管理、API 通信、Markdown 管道、安全架构、性能策略、项目约束
+> **变更记录**: v1.0 初始基线 — 7 章架构评审 · v1.1 新增 §1.3 故事面板三视图分段滑块（board/cards/list 平铺切换），iconMap 添加 `grid` 图标，卡片网格视图使用响应式 CSS Grid

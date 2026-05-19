@@ -51,6 +51,7 @@ export const iconMap = {
   // ── 视图 ──
   'list': 'fas fa-list',
   'columns': 'fas fa-columns',
+  'grid': 'fas fa-th-large',
   'tag': 'fas fa-tag',
 
   // ── 品牌 ──

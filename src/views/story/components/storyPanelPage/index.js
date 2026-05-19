@@ -56,6 +56,13 @@ registerGlobalComponent({
             }
             return groups;
         },
+        viewModes() {
+            return [
+                { value: 'board', label: '看板', icon: 'columns' },
+                { value: 'cards', label: '卡片', icon: 'grid' },
+                { value: 'list', label: '列表', icon: 'list' },
+            ];
+        },
         kanbanColumns() {
             const order = ['not_started', 'docs_in_progress', 'docs_done', 'code_in_progress', 'code_done', 'blocked'];
             const groups = this.filteredStoriesByStatus;
@@ -80,8 +87,8 @@ registerGlobalComponent({
         closePanel() {
             this.panelStory = null;
         },
-        toggleView() {
-            this.viewMode = this.viewMode === 'board' ? 'list' : 'board';
+        setView(view) {
+            this.viewMode = view;
         },
         onBackdropClick(e) {
             if (e.target === e.currentTarget) {
