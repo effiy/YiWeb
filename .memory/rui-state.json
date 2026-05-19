@@ -1,21 +1,30 @@
 {
   "project": "YiWeb",
-  "story": "rui-story",
-  "command": "update rui-story 点击文件清单的文件可跳转到 aicr 页面并激活对应的文件并在文件树中定位",
+  "name": "header-actions",
+  "command": "doc --from-code header-actions",
   "current_stage": "delivery",
   "status": "completed",
   "blocked": false,
-  "branch": "main",
-  "timestamp": "2026-05-19T10:45:00.000Z",
+  "branch": "feat/header-actions",
+  "commit": "b1cdf85",
+  "timestamp": "2026-05-19T12:55:00.000Z",
   "stages_completed": [
-    "code_update",
+    "doc_from_code",
     "delivery"
   ],
   "output_files": [
-    "src/views/storyPanel/components/storyDetailCard/template.html",
-    "src/views/storyPanel/components/storyDetailCard/index.js",
-    "src/views/storyPanel/components/storyDetailCard/index.css",
-    "src/views/aicr/index.js"
+    "cdn/components/business/HeaderActions/index.js",
+    "cdn/components/business/HeaderActions/template.html",
+    "cdn/components/business/HeaderActions/index.css",
+    "cdn/components/business/SearchHeader/template.html",
+    "cdn/components/business/SearchHeader/index.js",
+    "src/views/storyPanel/components/storyPanelPage/template.html",
+    "src/views/storyPanel/components/storyPanelPage/index.css",
+    "docs/故事任务面板/header-actions/YiWeb-01-故事任务.md",
+    "docs/故事任务面板/header-actions/YiWeb-02-用户使用场景.md",
+    "docs/故事任务面板/header-actions/YiWeb-04-前端技术评审.md",
+    "docs/故事任务面板/header-actions/YiWeb-05-测试用例评审.md",
+    "docs/故事任务面板/header-actions/YiWeb-10-交互日志.md"
   ],
   "delivery_pipeline": {
     "log_appended": true,
