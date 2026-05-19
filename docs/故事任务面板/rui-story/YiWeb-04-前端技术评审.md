@@ -92,7 +92,7 @@ flowchart LR
     end
 
     subgraph 输出["运行时产物"]
-        App["window.storyPanelApp<br/>或 window.aicrApp"]:::out
+        App["window.storyApp<br/>或 window.aicrApp"]:::out
         StoreObj["window.*Store<br/>全局可访问的 store"]:::out
     end
 
@@ -202,7 +202,7 @@ flowchart TB
 | computed 无副作用 | 计算属性仅读取状态，不触发 API 调用或 DOM 操作 |
 | API 调用隔离 | 网络请求仅在 store actions 中执行 |
 
-**源码路径**: `src/views/storyPanel/hooks/store.js` — 故事面板 store (211 行)；`src/views/aicr/hooks/state/storeFactory.js` — AICR store 工厂 (复合 4 子模块)
+**源码路径**: `src/views/story/hooks/store.js` — 故事面板 store (211 行)；`src/views/aicr/hooks/state/storeFactory.js` — AICR store 工厂 (复合 4 子模块)
 
 ### 2.2 故事六状态判定模型
 
@@ -225,7 +225,7 @@ flowchart TD
     classDef s4 fill:#c8e6c9,stroke:#2e7d32;
 ```
 
-**源码路径**: `src/views/storyPanel/hooks/store.js:55–76`
+**源码路径**: `src/views/story/hooks/store.js:55–76`
 
 ---
 

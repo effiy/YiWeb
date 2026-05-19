@@ -1,10 +1,10 @@
 import { registerGlobalComponent } from '/cdn/utils/view/componentLoader.js';
-import { clearCacheAndRefresh } from '/src/views/storyPanel/hooks/clearCacheMethods.js';
+import { clearCacheAndRefresh } from '/src/views/story/hooks/clearCacheMethods.js';
 
 registerGlobalComponent({
     name: 'StoryPanelPage',
-    html: '/src/views/storyPanel/components/storyPanelPage/template.html',
-    css: '/src/views/storyPanel/components/storyPanelPage/index.css',
+    html: '/src/views/story/components/storyPanelPage/template.html',
+    css: '/src/views/story/components/storyPanelPage/index.css',
     props: {
         loading: { type: Boolean, default: false },
         error: { type: String, default: null },

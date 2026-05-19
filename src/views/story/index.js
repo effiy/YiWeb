@@ -1,9 +1,9 @@
 /**
  * 故事任务面板 - 主入口
  */
-import { createStore } from '/src/views/storyPanel/hooks/store.js';
-import { useComputed } from '/src/views/storyPanel/hooks/useComputed.js';
-import { useMethods } from '/src/views/storyPanel/hooks/useMethods.js';
+import { createStore } from '/src/views/story/hooks/store.js';
+import { useComputed } from '/src/views/story/hooks/useComputed.js';
+import { useMethods } from '/src/views/story/hooks/useMethods.js';
 import { createBaseView } from '/cdn/utils/view/baseView.js';
 import { logInfo, logError } from '/cdn/utils/core/log.js';
 import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
@@ -30,10 +30,10 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
                 'HeaderActions',
             ],
             componentModules: [
-                '/src/views/storyPanel/components/storyPanelPage/index.js',
-                '/src/views/storyPanel/components/storyListTable/index.js',
-                '/src/views/storyPanel/components/storyDetailCard/index.js',
-                '/src/views/storyPanel/components/storyStatusBadge/index.js',
+                '/src/views/story/components/storyPanelPage/index.js',
+                '/src/views/story/components/storyListTable/index.js',
+                '/src/views/story/components/storyDetailCard/index.js',
+                '/src/views/story/components/storyStatusBadge/index.js',
                 '/cdn/icons/YiIcon/index.js',
                 '/cdn/components/common/buttons/YiButton/index.js',
                 '/cdn/components/common/tags/YiTag/index.js',
@@ -57,10 +57,10 @@ import { setupBrowserExtensionErrorFilter } from '/cdn/utils/core/error.js';
             }
         });
 
-        window.storyPanelApp = app;
-        window.storyPanelStore = store;
+        window.storyApp = app;
+        window.storyStore = store;
 
-        setupBrowserExtensionErrorFilter('storyPanel', true);
+        setupBrowserExtensionErrorFilter('story', true);
     } catch (error) {
         logError('[故事面板] 应用初始化失败:', error);
     }
