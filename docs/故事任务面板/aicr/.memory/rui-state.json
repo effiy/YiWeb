@@ -1,0 +1,9 @@
+{
+  "story": "aicr",
+  "current_stage": "update",
+  "blocked": false,
+  "block_reason": null,
+  "timestamp": "2026-05-19T00:00:00.000Z",
+  "change_level": "T1",
+  "summary": "URL 带有 key 参数时默认收缩两侧侧边栏"
+}

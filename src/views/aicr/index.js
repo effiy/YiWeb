@@ -219,6 +219,10 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                                 window.__aicrPendingHighlightRangeInfo = pendingHighlightRange;
                             }
                             if (fileParam) {
+                                // URL 带有 key 参数时默认收缩两侧侧边栏
+                                store.sidebarCollapsed.value = true;
+                                store.chatPanelCollapsed.value = true;
+
                                 const norm = typeof store.normalizeKey === 'function'
                                     ? store.normalizeKey(fileParam)
                                     : String(fileParam || '');

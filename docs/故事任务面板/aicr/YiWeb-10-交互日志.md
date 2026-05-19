@@ -28,3 +28,25 @@
 - 输出目录：docs/故事任务面板/aicr/
 
 ---
+
+## 会话 2026-05-19 — aicr-update-key-collapse
+
+### 00:00:00 | turn-1 | claude
+
+**👤 用户**:
+/rui update aicr 如果浏览器的页面链接中有key参数则默认收缩两边的侧边栏
+
+**🤖 助手**:
+执行 update 管线（T1 级别变更）：
+
+1. 变更范围判定：T1（小范围行为调整，无接口变更）
+2. 分支隔离：创建 `feat/aicr` 分支
+3. 代码变更：`src/views/aicr/index.js:222-224` — URL 带有 `key` 参数时，在 `onMounted` 中设置 `sidebarCollapsed = true` 和 `chatPanelCollapsed = true`
+4. 影响分析：仅影响带 `?key=` 参数的 URL 访问场景，无 API 变更，无破坏性影响
+
+**📋 关键决策**:
+- 两侧侧边栏同时收缩：左侧文件树侧边栏 + 右侧聊天面板
+- 触发时机：在文件树和文件数据加载完成后、处理 key 参数选中文件前
+- 用户仍可手动展开侧边栏，行为不受影响
+
+---

@@ -1,9 +1,13 @@
 /**
- * 清除浏览器全部缓存并硬刷新页面
+ * 清除浏览器全部缓存并硬刷新页面（等同于 Delete browsing data + Hard Reload）
  * 1. localStorage — 保留 Token 和模型选择，其余键全部移除
  * 2. sessionStorage — 全部清除
  * 3. CacheStorage — 清除所有 Service Worker 缓存的 JS/CSS/HTML 等静态资源
- * 4. 硬刷新 — 使用缓存爆破参数绕过浏览器 HTTP 缓存，确保从服务器重新请求所有静态文件
+ * 4. IndexedDB — 清除所有数据库
+ * 5. Service Worker — 注销所有注册
+ * 6. 硬刷新 — 使用缓存爆破参数导航，绕过浏览器 HTTP 缓存，强制从服务器重新请求所有
+ *    静态文件（cached images and files）。浏览器会将新 URL 视为全新请求，不会命中
+ *    任何 HTTP 磁盘缓存。
  */
 
 // 需要保留的 localStorage 键名
@@ -11,6 +15,18 @@ const PRESERVE_KEYS = new Set([
     'YiWeb.apiToken.v1',
     'YiWeb.apiModel.v1'
 ]);
+
+/**
+ * 执行硬刷新：使用唯一时间戳参数导航到当前页面，迫使浏览器绕过 HTTP 缓存，
+ * 重新请求 HTML 及所有静态资源（images、CSS、JS 等）。
+ * 用 location.replace 避免在历史记录中留下多余的缓存爆破条目。
+ */
+function hardReload() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('_t');
+    url.searchParams.set('_t', Date.now().toString(36));
+    window.location.replace(url.toString());
+}
 
 export const clearCacheAndRefresh = async () => {
     const confirmed = window.confirm('确定要清空缓存并刷新页面？Token 将被保留。');
@@ -75,8 +91,10 @@ export const clearCacheAndRefresh = async () => {
         }
     }
 
-    // 6. 硬刷新
-    window.location.reload();
+    // 6. 硬刷新 — 使用缓存爆破 URL 绕过浏览器 HTTP 缓存
+    //    location.replace 确保浏览器将此次导航视为全新的跨缓存请求，
+    //    该域名下的所有 cached images and files 都会被强制重新拉取。
+    hardReload();
 };
 
 // 向后兼容：暴露到全局
