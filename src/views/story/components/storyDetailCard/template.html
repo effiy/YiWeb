@@ -6,6 +6,27 @@
         <story-status-badge :status="story.status" size="lg"></story-status-badge>
     </div>
 
+    <div class="sp-detail-summary">
+        <div v-if="story.description" class="sp-summary-item">
+            <span class="sp-summary-label">📝 描述</span>
+            <span class="sp-summary-text">{{ story.description }}</span>
+        </div>
+        <div class="sp-summary-item">
+            <span class="sp-summary-label">👉 下一步</span>
+            <span class="sp-summary-text sp-summary-text--action">{{ story.nextStep }}</span>
+        </div>
+        <div class="sp-summary-item">
+            <span class="sp-summary-label">📨 消息通知</span>
+            <span v-if="story.hasNotify" class="sp-summary-text">有通知 · 最后: {{ formatDate(story.notifyUpdatedAt) }}</span>
+            <span v-else class="sp-summary-text sp-summary-text--muted">无</span>
+        </div>
+        <div class="sp-summary-item">
+            <span class="sp-summary-label">📜 交互日志</span>
+            <span v-if="story.hasLog" class="sp-summary-text">有记录 · 最后: {{ formatDate(story.logUpdatedAt) }}</span>
+            <span v-else class="sp-summary-text sp-summary-text--muted">无</span>
+        </div>
+    </div>
+
     <div class="sp-detail-meta">
         <div class="sp-meta-item">
             <span class="sp-meta-label">远端路径</span>

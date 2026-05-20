@@ -59,6 +59,8 @@ export function createStore() {
                 const has_06 = has('06');
                 const has_07 = has('07');
                 const has_08 = has('08');
+                const has_00 = has('00');
+                const has_10 = has('10');
 
                 let status = 'not_started';
                 if (has_01) {
@@ -83,16 +85,57 @@ export function createStore() {
                 const maxTs = Math.max(...files.map(f => f.updatedAt || 0));
                 const createdTs = Math.min(...files.map(f => f.createdAt || Infinity));
 
+                // 描述：从 01 文件的 title 字段提取，降级为空
+                const file01 = files.find(f => {
+                    const fn = (f.file_path || '').split('/').pop();
+                    return fn.includes('-01-');
+                });
+                const description = file01?.title || '';
+
+                // 下一步：从状态推导
+                const nextStepMap = {
+                    not_started: '启动文档管线',
+                    docs_in_progress: '补齐文档基线',
+                    docs_done: '启动编码实现',
+                    code_in_progress: '继续实现验证',
+                    code_done: '交付三步收口',
+                    blocked: '解除阻断'
+                };
+                const nextStep = nextStepMap[status] || '';
+
+                // 消息通知：00 文件
+                const file00 = files.find(f => {
+                    const fn = (f.file_path || '').split('/').pop();
+                    return fn.includes('-00-');
+                });
+                const hasNotify = has_00;
+                const notifyUpdatedAt = file00?.updatedAt || 0;
+
+                // 交互日志：10 文件
+                const file10 = files.find(f => {
+                    const fn = (f.file_path || '').split('/').pop();
+                    return fn.includes('-10-');
+                });
+                const hasLog = has_10;
+                const logUpdatedAt = file10?.updatedAt || 0;
+
                 results.push({
                     name,
                     status,
                     type,
+                    description,
+                    nextStep,
+                    hasNotify,
+                    hasLog,
+                    notifyUpdatedAt,
+                    logUpdatedAt,
                     fileCount: files.length,
                     files: files.map(f => ({
                         filePath: f.file_path,
                         fileName: (f.file_path || '').split('/').pop(),
                         updatedAt: f.updatedAt,
-                        createdAt: f.createdAt
+                        createdAt: f.createdAt,
+                        title: f.title || ''
                     })),
                     lastModified: maxTs,
                     createdAt: createdTs === Infinity ? 0 : createdTs

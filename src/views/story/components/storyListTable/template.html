@@ -13,6 +13,9 @@
             <tr>
                 <th class="sp-th sp-th--name">故事名称</th>
                 <th class="sp-th sp-th--status">状态</th>
+                <th class="sp-th sp-th--next">下一步</th>
+                <th class="sp-th sp-th--notify">消息</th>
+                <th class="sp-th sp-th--log">日志</th>
                 <th class="sp-th sp-th--files">文件数</th>
                 <th class="sp-th sp-th--modified">最后修改</th>
                 <th class="sp-th sp-th--type">类型</th>
@@ -26,6 +29,9 @@
                 <td class="sp-td sp-td--status">
                     <story-status-badge :status="story.status" size="sm"></story-status-badge>
                 </td>
+                <td class="sp-td sp-td--next">{{ story.nextStep }}</td>
+                <td class="sp-td sp-td--notify">{{ story.hasNotify ? '📨' : '—' }}</td>
+                <td class="sp-td sp-td--log">{{ story.hasLog ? '📜' : '—' }}</td>
                 <td class="sp-td sp-td--files">{{ story.fileCount }}</td>
                 <td class="sp-td sp-td--modified">{{ formatDate(story.lastModified) }}</td>
                 <td class="sp-td sp-td--type">

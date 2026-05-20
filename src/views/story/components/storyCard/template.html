@@ -6,7 +6,10 @@
     <div class="sc-card-meta">
         <span class="sc-card-type">{{ typeLabel }}</span>
         <span class="sc-card-files">{{ story.fileCount }} 个文件</span>
+        <span v-if="story.hasNotify" class="sc-card-badge-icon" title="有消息通知">📨</span>
+        <span v-if="story.hasLog" class="sc-card-badge-icon" title="有交互日志">📜</span>
     </div>
     <div class="sc-card-date">{{ formatDate(story.lastModified) }}</div>
+    <div class="sc-card-next">{{ story.nextStep }}</div>
 </div>
 <div v-else class="sc-card sc-card--empty">—</div>
