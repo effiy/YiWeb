@@ -35,7 +35,9 @@ registerGlobalComponent({
             return this.stories.filter(s =>
                 s.name.toLowerCase().includes(q) ||
                 s.status.toLowerCase().includes(q) ||
-                s.type.toLowerCase().includes(q)
+                s.type.toLowerCase().includes(q) ||
+                (s.description || '').toLowerCase().includes(q) ||
+                (s.nextStep || '').toLowerCase().includes(q)
             );
         },
         filteredStoriesByStatus() {
@@ -74,7 +76,9 @@ registerGlobalComponent({
             if (!q) return true;
             return story.name.toLowerCase().includes(q) ||
                 story.status.toLowerCase().includes(q) ||
-                story.type.toLowerCase().includes(q);
+                story.type.toLowerCase().includes(q) ||
+                (story.description || '').toLowerCase().includes(q) ||
+                (story.nextStep || '').toLowerCase().includes(q);
         },
         openDetail(story) {
             if (typeof story === 'string') {

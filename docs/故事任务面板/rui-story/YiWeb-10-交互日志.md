@@ -130,3 +130,118 @@ story 页面无需改动，自动继承 HeaderActions 默认行为。
 - `cdn/components/business/HeaderActions/template.html` (修改 · 新增 API 鉴权按钮)
 
 **🔀 分支**: feat/rui-story
+
+---
+
+### 2026-05-19 14:20 | turn-1 | claude
+
+**👤 用户**:
+/rui update rui-story 添加每个故事任务都添加描述、下一步
+
+**🤖 助手**:
+T2 增量更新 — rui-story skill 规范增强：概览/list/show 三条命令均新增「描述」和「下一步」字段。
+
+**变更范围**: 技能规范 (rui-story SKILL.md)
+
+**修改文件**:
+- `skills/rui-story/SKILL.md` (修改 · 新增「描述与下一步」章节 + 命令表/概览/list/show 输出格式更新)
+
+**规范变更详情**:
+1. **命令表** — 三条查询命令的作用描述补充描述/下一步
+2. **描述与下一步** (新章节) — 定义描述提取规则（优先级 1: 需求概述 → 2: §1 Story → 3: title 字段；截取 ≤80 字）和下一步推导规则（6 状态 → 对应推荐操作）
+3. **概览** — 输出新增 📋 故事列表块（每故事展示描述 + 下一步）
+4. **list** — 输出列新增 Description 和 Next Step
+5. **show** — 输出新增 📝 描述 和 👉 下一步 字段
+
+**🔀 分支**: feat/rui-story
+
+---
+
+### 2026-05-19 14:35 | turn-1 | claude
+
+**👤 用户**:
+/rui update rui-story 添加每个故事任务都添加消息通知、交互日志的功能
+
+**🤖 助手**:
+T2 增量更新 — rui-story skill 规范增强：概览/list/show 三条命令均新增「消息通知」和「交互日志」字段。
+
+**变更范围**: 技能规范 (rui-story SKILL.md)
+
+**修改文件**:
+- `skills/rui-story/SKILL.md` (修改 · 新增「消息通知与交互日志」章节 + 命令表/概览/list/show 输出格式更新)
+
+**规范变更详情**:
+1. **命令表** — 三条查询命令补充消息/日志描述
+2. **消息通知与交互日志** (新章节) — 定义 00 消息通知列表和 10 交互日志的存在性检测与展示规则；概览/list 仅展示存在性，show 按需读取文件内容展示条数
+3. **概览** — 故事列表每项新增 `消息: 📨 N 条 · 最后 MM-DD HH:mm` 和 `日志: 📜 N 条 · 最后 MM-DD HH:mm`
+4. **list** — 输出列新增 Notify 和 Log
+5. **show** — 详情卡新增 📨 消息通知 和 📜 交互日志 两行（含条数 + 最后更新时间）
+
+**🔀 分支**: feat/rui-story
+
+---
+
+### 2026-05-19 14:50 | turn-2 | claude
+
+**👤 用户**:
+rui-story 添加每个故事任务都添加消息通知、交互日志的功能
+
+**🤖 助手**:
+T2 增量更新 — 浏览器 storyPanel 视图实现消息通知与交互日志展示。
+
+**变更范围**: 前端 (storyPanel)
+
+**修改文件**:
+- `src/views/story/hooks/store.js:58-141` (修改 · 新增 has_00/has_10 检测 + description/nextStep/hasNotify/hasLog/notifyUpdatedAt/logUpdatedAt 字段派生 + files 项保留 title)
+- `src/views/story/components/storyCard/template.html:7-13` (修改 · 卡片新增 📨/📜 角标 + nextStep 行)
+- `src/views/story/components/storyCard/index.css:84-91` (修改 · 新增 .sc-card-badge-icon 和 .sc-card-next 样式)
+- `src/views/story/components/storyListTable/template.html:14-16,30-32` (修改 · 表头新增下一步/消息/日志列 + 数据行新增对应单元格)
+- `src/views/story/components/storyDetailCard/template.html:9-28` (修改 · 新增 sp-detail-summary 区：📝描述 + 👉下一步 + 📨消息通知 + 📜交互日志)
+- `src/views/story/components/storyDetailCard/index.css:45-75` (修改 · 新增 .sp-detail-summary / .sp-summary-* 样式)
+- `src/views/story/components/storyPanelPage/index.js:35-39,75-79` (修改 · 搜索范围扩展至 description + nextStep)
+
+**数据流**:
+1. store.fetchStories() → 远端 API → 按 00/10 文件存在性派生 hasNotify/hasLog
+2. 下一步从 status 映射推导（6 状态 → 中文操作指引）
+3. 描述从 01 文件的 API title 字段提取
+4. 所有字段随 story 对象传递至 StoryCard / StoryListTable / StoryDetailCard
+
+**🔀 分支**: feat/rui-story
+
+---
+
+### 2026-05-19 15:10 | turn-3 | claude
+
+**👤 用户**:
+描述需要120字以内描述任务故事，下一步需要给出下一步的明确指令，消息通知图标后需要有数字，点击后可看到消息通知列表，交互日志也需要后面添加数字，点击后可以看到交互日志列表
+
+**🤖 助手**:
+T2 增量更新 — storyPanel 视图字段精细化。
+
+**变更范围**: 前端 (storyPanel)
+
+**修改文件**:
+- `src/views/story/hooks/store.js` (修改 · description 截断至 ≤120 字 + nextStep 改为具体命令含故事名 + 新增 notifyCount/logCount/notifyFilePath/logFilePath 字段 + 新增 fetchFileContent/fetchCountsForAll 异步计数方法)
+- `src/views/story/components/storyCard/template.html` (修改 · 📨/📜 后显示数字 + @click.stop 事件)
+- `src/views/story/components/storyCard/index.js` (修改 · 新增 onNotifyClick/onLogClick 方法 → aicr 新标签页打开)
+- `src/views/story/components/storyCard/index.css` (修改 · 角标增加 hover 样式 + cursor:pointer)
+- `src/views/story/components/storyListTable/template.html` (修改 · 消息/日志列显示数字 + @click.stop 事件)
+- `src/views/story/components/storyListTable/index.js` (修改 · 新增 onNotifyClick/onLogClick 方法)
+- `src/views/story/components/storyListTable/index.css` (修改 · 新增 .sp-indicator 样式)
+- `src/views/story/components/storyDetailCard/template.html` (修改 · 消息/日志显示条数 + 「查看列表 →」按钮)
+- `src/views/story/components/storyDetailCard/index.js` (修改 · 新增 onNotifyClick/onLogClick 方法)
+- `src/views/story/components/storyDetailCard/index.css` (修改 · 新增 .sp-summary-link 样式)
+
+**字段变化详情**:
+| 字段 | 变更前 | 变更后 |
+|------|--------|--------|
+| description | file01.title (无限制) | file01.title 截断至 ≤120 字 |
+| nextStep | "启动文档管线" | `/rui doc <name>` |
+| notifyCount | — | 异步读取 00 文件，统计 `## 会话` 条数 |
+| logCount | — | 异步读取 10 文件，统计 `## 会话` 条数 |
+| notifyFilePath | — | 00 文件的远端路径 |
+| logFilePath | — | 10 文件的远端路径 |
+
+**交互链路**: 点击 📨/📜 → `window.open('../aicr/index.html?key=<filePath>', '_blank')` → aicr 视图加载对应 Markdown 文件内容
+
+**🔀 分支**: feat/rui-story

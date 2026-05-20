@@ -81,3 +81,14 @@
     font-size: 11px;
     color: var(--yi-text-muted, #94A3B8);
 }
+
+.sc-card-badge-icon {
+    font-size: 12px;
+    line-height: 1;
+}
+
+.sc-card-next {
+    font-size: 11px;
+    color: var(--yi-primary, #60A5FA);
+    margin-top: 2px;
+}
