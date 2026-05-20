@@ -80,10 +80,14 @@ export const buildDataUrl = (path) => {
   return base + (p.startsWith('/') ? '' : '/') + p.replace(/^\/+/, '');
 };
 
+// --- Project Identity ---
+const PROJECT_NAME = 'YiWeb';
+
 // --- Backward Compatibility (Global Injection) ---
 if (typeof window !== 'undefined') {
   window.DATA_URL = config.dataUrl;
   window.API_URL = config.apiUrl;
+  window.PROJECT_NAME = PROJECT_NAME;
   window.__ENV__ = {
     name: config.env,
     isLocal: config.isLocal,
