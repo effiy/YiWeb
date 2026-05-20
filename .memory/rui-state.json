@@ -1,34 +1,23 @@
 {
   "project": "YiWeb",
-  "story": "header-actions",
-  "command": "code header-actions 补充header-actions的内容",
-  "current_stage": "delivery",
+  "story": "story-panel",
+  "command": "doc --from-code src/views/story/index.html",
+  "current_stage": "doc_complete",
   "status": "completed",
   "blocked": false,
-  "branch": "feat/header-actions",
-  "timestamp": "2026-05-19T13:16:00.000Z",
+  "branch": "feat/story-panel",
+  "timestamp": "2026-05-20T10:10:00.000Z",
   "stages_completed": [
-    "code_restore",
-    "code_integration",
-    "delivery"
+    "doc_generation"
   ],
   "output_files": [
-    "cdn/components/business/HeaderActions/index.js",
-    "cdn/components/business/HeaderActions/template.html",
-    "cdn/components/business/HeaderActions/index.css",
-    "cdn/components/business/SearchHeader/template.html",
-    "cdn/components/business/SearchHeader/index.js",
-    "src/views/storyPanel/components/storyPanelPage/template.html",
-    "src/views/storyPanel/components/storyPanelPage/index.css",
-    "src/views/aicr/index.js",
-    "src/views/storyPanel/index.js",
-    "cdn/components/index.js",
-    "docs/故事任务面板/header-actions/YiWeb-00-消息通知列表.md",
-    "docs/故事任务面板/header-actions/YiWeb-01-故事任务.md",
-    "docs/故事任务面板/header-actions/YiWeb-02-用户使用场景.md",
-    "docs/故事任务面板/header-actions/YiWeb-04-前端技术评审.md",
-    "docs/故事任务面板/header-actions/YiWeb-05-测试用例评审.md",
-    "docs/故事任务面板/header-actions/YiWeb-10-交互日志.md"
+    "docs/故事任务面板/story-panel/YiWeb-故事任务.md",
+    "docs/故事任务面板/story-panel/YiWeb-使用场景.md",
+    "docs/故事任务面板/story-panel/YiWeb-技术评审.md",
+    "docs/故事任务面板/story-panel/YiWeb-测试设计.md",
+    "docs/故事任务面板/story-panel/YiWeb-安全审计.md",
+    "docs/故事任务面板/story-panel/YiWeb-交互日志.md",
+    "docs/故事任务面板/story-panel/YiWeb-消息通知列表.md"
   ],
   "delivery_pipeline": {
     "log_appended": true,
@@ -36,5 +25,6 @@
     "notification_sent": true
   },
   "model": "deepseek-v4-pro",
-  "project_type": "frontend"
+  "project_type": "frontend",
+  "p0_checks_passed": true
 }
