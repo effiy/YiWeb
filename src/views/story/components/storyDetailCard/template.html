@@ -44,14 +44,17 @@
 
     <div class="sp-detail-section">
         <h3 class="sp-section-title">文件清单</h3>
-        <ul class="sp-file-list">
-            <li v-for="file in story.files" :key="file.filePath" class="sp-file-item" @click="onFileClick(file)" :title="'在代码审查中打开: ' + file.filePath">
-                <yi-icon name="file-alt" class-name="sp-file-icon"></yi-icon>
-                <span class="sp-file-name">{{ file.fileName }}</span>
-                <span class="sp-file-date">{{ formatDate(file.updatedAt) }}</span>
-                <yi-icon name="external-link" class-name="sp-file-action-icon"></yi-icon>
-            </li>
-        </ul>
+        <div v-for="group in fileGroups" :key="group.prefix" class="sp-file-group">
+            <h4 class="sp-file-group-title">{{ group.prefix }} <span class="sp-file-group-count">{{ group.files.length }}</span></h4>
+            <ul class="sp-file-list">
+                <li v-for="file in group.files" :key="file.filePath" class="sp-file-item" @click="onFileClick(file)" :title="'在代码审查中打开: ' + file.filePath">
+                    <yi-icon name="file-alt" class-name="sp-file-icon"></yi-icon>
+                    <span class="sp-file-name">{{ file.fileName }}</span>
+                    <span class="sp-file-date">{{ formatDate(file.updatedAt) }}</span>
+                    <yi-icon name="external-link" class-name="sp-file-action-icon"></yi-icon>
+                </li>
+            </ul>
+        </div>
     </div>
 
 </div>

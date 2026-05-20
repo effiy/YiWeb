@@ -111,6 +111,27 @@
     color: var(--yi-text, #F8FAFC);
     margin: 0 0 12px;
 }
+.sp-file-group {
+    margin-bottom: 16px;
+}
+.sp-file-group:last-child {
+    margin-bottom: 0;
+}
+.sp-file-group-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--yi-text-secondary, #CBD5E1);
+    margin: 0 0 6px;
+    padding: 0 12px;
+    text-transform: none;
+    letter-spacing: 0.3px;
+}
+.sp-file-group-count {
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--yi-text-muted, #94A3B8);
+    margin-left: 4px;
+}
 .sp-file-list {
     list-style: none;
     padding: 0;

@@ -9,6 +9,21 @@ registerGlobalComponent({
         panel: { type: Boolean, default: false }
     },
     emits: ['back', 'close'],
+    computed: {
+        fileGroups() {
+            const files = this.story?.files || [];
+            const groups = new Map();
+            for (const file of files) {
+                const fn = file.fileName || '';
+                const m = fn.match(/^(.+?)-/);
+                const prefix = m ? m[1] : fn;
+                if (!groups.has(prefix)) groups.set(prefix, []);
+                groups.get(prefix).push(file);
+            }
+            const sorted = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+            return sorted.map(([prefix, files]) => ({ prefix, files }));
+        }
+    },
     methods: {
         formatDate(ts) {
             if (!ts) return '—';
