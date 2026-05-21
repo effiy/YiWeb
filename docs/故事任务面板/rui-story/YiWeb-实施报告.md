@@ -133,6 +133,23 @@
 
 ## §4 样式与依赖
 
+### 4.1 布局实现
+
+> 完整布局规范见 [技术评审 §5.5 布局规范](./YiWeb-技术评审.md#55-布局规范) — 含盒模型、定位策略、栅格系统、Z 轴层级、响应式断点、CSS 命名空间的精确规约。
+
+| 布局维度 | 实现方式 | 与评审偏差 |
+|---------|---------|-----------|
+| 页面容器 | `flex: 1` · `min-height: 0` · `overflow: hidden`（#app 提供 `100vh` flex 容器） | 无偏差 |
+| 头部栏 | `padding: 8px 24px` · `border-bottom: 1px solid var(--yi-border)` · `background: var(--yi-bg)` — 对齐 aicr header | 无偏差 |
+| 看板视图 | `grid` 六列 `repeat(6, 1fr)` · `gap: 12px` · `min-width: 200px` · `padding: 20px 24px` | 无偏差 |
+| 卡片网格 | `grid` · `auto-fill` · `minmax(260px, 1fr)` · `gap: 12px` · `padding: 20px 24px` | 无偏差 |
+| 列表视图 | `table` `width: 100%` · `border-collapse: collapse` · 8 列 · `padding: 20px 24px` · 斑马条纹 `nth-child(even)` | 无偏差 |
+| 侧边面板 | `fixed` · `right: 0` · `w: 440px` · `z-index: 1001` · `border-left: 1px solid var(--yi-border)` | 无偏差 |
+| 响应式 | `@media (max-width: 1400px)` 3 列 · `@media (max-width: 800px)` 2 列 + 面板全屏 | 无偏差 |
+| Z 轴 | 内容层(默认) → 遮罩(1000) → 面板(1001) | 无偏差 |
+| 滚动条 | 6px 宽 · 透明轨道 · `var(--yi-border)` 滑块 · hover 高亮 `var(--yi-primary)` — 对齐 aicr | 无偏差 |
+| 模块区分 | 头部底边线 · 看板列奇偶底色 · 表格斑马纹 · 面板左侧分割线 · 详情摘要区边框 | 无偏差 |
+
 ### 4.2 样式与隔离
 
 | 文件 | 隔离方式 | 与评审偏差 |
@@ -250,4 +267,7 @@
 
 | 日期 | 变更 | 触发 | 证据 |
 |------|------|------|------|
+| 2026-05-21 | 更新 §4.1 布局实现 — 视图区 padding 上下对称（底部 8px→20px），消除底部压抑感 | `/rui update rui-story 视图区域底部留白和上面保持一致` | `storyPanelPage/index.css` |
+| 2026-05-21 | 更新 §4.1 布局实现 — 对齐 aicr header: 页面容器 flex 自适应 · 头部 border-bottom · 视图区 padding · 滚动条 · 模块分割线与奇偶配色，从 8 项扩展到 10 项校验 | `/rui update rui-story sp-header 高度对齐 aicr，视图自适应全屏，滚动条与分割线` | `styles/index.css` + `storyPanelPage/index.css` |
+| 2026-05-21 | 新增 §4.1 布局实现 — 引用技术评审 §5.5 布局规范，记录 8 项布局维度校验 | `/rui update rui-story 新增页面组件的布局文档` | 5 组件 CSS 文件 + HTML 模板 |
 | 2026-05-20 | 初始生成 — 从 `src/views/story/` 源码反推 | `/rui update rui-story 补充其他的文档` | 全部 22 个源文件 + 技术评审 §0.2 任务规划 |

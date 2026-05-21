@@ -382,6 +382,432 @@ flowchart TD
 | Font Awesome 6.4.0 | 图标字体 | CDN `<link>` |
 | Google Fonts | Inter + JetBrains Mono | CDN `<link>` |
 
+### 5.5 布局规范
+
+> 每个页面组件的盒模型、定位策略、栅格系统与响应式断点的精确规约。所有尺寸基于实际 CSS 实现提取。
+
+#### 5.5.0 布局全景
+
+```mermaid
+flowchart TD
+    subgraph PAGE["sp-page (全局面板)"]
+        direction TB
+        HDR["sp-header<br/>flex row · justify:space-between<br/>flex-shrink: 0"]
+        subgraph BODY["视图区域 flex: 1 · min-height: 0"]
+            KANBAN["sp-kanban<br/>grid 6 列 · gap: 12px<br/>overflow-x: auto"]
+            GRID["sp-card-grid<br/>grid auto-fill · minmax(260px, 1fr)<br/>overflow-y: auto"]
+            TABLE["sp-table<br/>table 100% · overflow-x: auto"]
+        end
+    end
+
+    subgraph OVERLAY["固定层 (z-index ≥ 1000)"]
+        BACKDROP["sp-panel-backdrop<br/>fixed · inset: 0<br/>z-index: 1000"]
+        PANEL["sp-panel<br/>fixed · right: 0 · w: 440px · h: 100vh<br/>z-index: 1001"]
+    end
+
+    subgraph CARD["sc-card (卡片原子)"]
+        direction TB
+        C_NAME["sc-card-name<br/>font: 13px JetBrains Mono"]
+        C_BADGE["sc-card-badge"]
+        C_META["sc-card-meta<br/>flex row · gap: 8px"]
+        C_DATE["sc-card-date"]
+        C_NEXT["sc-card-next"]
+    end
+
+    subgraph DETAIL["sp-detail (详情卡片)"]
+        direction TB
+        D_HDR["sp-detail-header<br/>flex row · gap: 16px · wrap"]
+        D_SUM["sp-detail-summary<br/>flex column · gap: 10px"]
+        D_META["sp-detail-meta<br/>grid auto-fit · minmax(200px, 1fr)"]
+        D_SECTION["sp-detail-section"]
+    end
+
+    PAGE --> OVERLAY
+    classDef page fill:#e3f2fd,stroke:#1565c0;
+    classDef overlay fill:#ffebee,stroke:#c62828;
+    classDef card fill:#e8f5e9,stroke:#2e7d32;
+    classDef detail fill:#fff3e0,stroke:#e65100;
+    class PAGE page;
+    class OVERLAY overlay;
+    class CARD card;
+    class DETAIL detail;
+```
+
+#### 5.5.1 页面容器 — sp-page
+
+| 属性 | 值 | 说明 |
+|------|-----|------|
+| display | `flex` | 纵向弹性容器，继承自 #app 的 flex 布局 |
+| flex-direction | `column` | 头部 → 内容区 自上而下 |
+| flex | `1` | 填充 #app 剩余高度（替代 `calc(100vh - 48px)`） |
+| min-height | `0` | 允许内容区滚动 |
+| max-width | `100%` | 不溢出视口 |
+| overflow | `hidden` | 防止双滚动条 |
+| **根布局** | `#app { height: 100vh; display: flex; flex-direction: column }` | 对齐 aicr 页面的全屏 flex 布局模式 |
+
+```
+┌─────────────────────────────────────────────────────┐
+│ #app (height: 100vh · display: flex · column)        │
+│ ┌─────────────────────────────────────────────────┐ │
+│ │ sp-header (flex-shrink: 0)                      │ │
+│ │ padding: 8px 24px    border-bottom: 1px solid   │ │
+│ └─────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────┐ │
+│ │ 视图区域 (flex: 1 · min-height: 0)               │ │
+│ │ overflow: auto · 自带滚动条                       │ │
+│ │ sp-kanban / sp-card-grid / sp-list-view         │ │
+│ └─────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────┘
+```
+
+#### 5.5.2 头部栏 — sp-header
+
+> 对齐 aicr header 规格：紧凑垂直间距 + 底边分割线区分模块。
+
+| 属性 | 值 | 说明 |
+|------|-----|------|
+| display | `flex` | 水平弹性容器 |
+| align-items | `center` | 垂直居中 |
+| justify-content | `space-between` | 标题左 · 操作右 |
+| padding | `8px 24px` | 对齐 aicr header 的紧凑垂直间距 |
+| border-bottom | `1px solid var(--yi-border)` | 分割线隔离头部与内容区 |
+| gap | `12px` | 换行时行间距 |
+| flex-wrap | `wrap` | 窄屏时自动换行 |
+| flex-shrink | `0` | 不参与压缩 |
+| background | `var(--yi-bg)` | 与页面背景一致 |
+
+**子区域：**
+- `sp-header-left` — `flex` · `align-items: baseline` · `gap: 12px`（标题 + 计数）
+- `sp-header-title` — `font-size: 22px` · `font-weight: 700`
+- `sp-header-count` — `font-size: 13px` · 次级文字色
+- `sp-search` — `position: relative`（图标绝对定位 left: 12px）
+- `sp-search-input` — `width: 240px` · `padding: 8px 12px 8px 36px`（左侧给图标留空）
+- `sp-view-segmented` — `inline-flex` · `border-radius: 8px` · `overflow: hidden`（分段按钮组）
+
+#### 5.5.3 看板视图 — sp-kanban
+
+| 属性 | 值 | 说明 |
+|------|-----|------|
+| display | `grid` | CSS Grid 六列布局 |
+| grid-template-columns | `repeat(6, 1fr)` | 六列等宽 |
+| gap | `12px` | 列间距 |
+| flex | `1` | 占满剩余高度 |
+| min-height | `0` | 允许内容溢出滚动 |
+| overflow-x | `auto` | 窄屏时横向滚动 |
+| padding | `20px 24px` | 上下对称留白 + 水平与 header 对齐 |
+
+**看板列 — sp-column：**
+
+| 属性 | 值 | 说明 |
+|------|-----|------|
+| display | `flex` · `flex-direction: column` | 纵向弹性 |
+| min-width | `200px` | 最小列宽防挤压 |
+| background | `var(--yi-surface)` / 奇数列 `var(--yi-surface-elevated)` | 奇偶列微差底色区分 |
+| border-radius | `10px` | 圆角容器 |
+| overflow | `hidden` | 裁剪溢出圆角 |
+
+**列头 — sp-column-header：**
+- `padding: 12px 14px` · `flex-shrink: 0`
+- `border-bottom: 2px solid` — 颜色按状态变化（六色语义）
+- `justify-content: space-between` — 状态标签左 · 计数右
+
+**列卡片区 — sp-column-cards：**
+- `flex: 1` · `overflow-y: auto` · `padding: 10px`
+- `display: flex` · `flex-direction: column` · `gap: 8px`
+
+**列空态 — sp-column-empty：**
+- `display: flex` · `align-items: center` · `justify-content: center`
+- `padding: 24px 0` · 显示 "—" 占位符
+
+```
+┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+│未开始    │ │文档进行中│ │文档完成  │ │编码进行中│ │编码完成  │ │已阻断    │
+│────2px──│ │───2px───│ │───2px───│ │───2px───│ │───2px───│ │───2px───│
+│          │ │          │ │          │ │          │ │          │ │          │
+│ sc-card  │ │ sc-card  │ │ sc-card  │ │ sc-card  │ │ sc-card  │ │ sc-card  │
+│ sc-card  │ │ sc-card  │ │          │ │          │ │          │ │          │
+│          │ │          │ │          │ │          │ │          │ │          │
+└──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘
+ min-w:200px  min-w:200px ...                gap: 12px
+```
+
+#### 5.5.4 卡片网格视图 — sp-card-grid
+
+| 属性 | 值 | 说明 |
+|------|-----|------|
+| display | `grid` | CSS Grid 响应式 |
+| grid-template-columns | `repeat(auto-fill, minmax(260px, 1fr))` | 自动填充 ≥260px 的列 |
+| gap | `12px` | 卡片间距 |
+| flex | `1` | 占满剩余高度 |
+| overflow-y | `auto` | 纵向滚动 |
+| align-content | `start` | 不足一行时顶部对齐 |
+| padding | `20px 24px` | 上下对称留白 + 水平与 header 对齐 |
+
+**空态 — sp-card-grid-empty：**
+- `grid-column: 1 / -1`（跨全部列）
+- `padding: 64px 24px` · 居中显示 "没有匹配的故事"
+
+```
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+│ sc-card       │ │ sc-card       │ │ sc-card       │
+│ min-w: 260px  │ │               │ │               │
+└──────────────┘ └──────────────┘ └──────────────┘
+┌──────────────┐ ┌──────────────┐
+│ sc-card       │ │ sc-card       │    gap: 12px
+└──────────────┘ └──────────────┘
+```
+
+#### 5.5.5 列表视图 — sp-list-view · sp-table
+
+| 属性 | 值 | 说明 |
+|------|-----|------|
+| sp-list-view: flex | `1` | 占满剩余高度 |
+| sp-list-view: overflow-y | `auto` | 纵向滚动 |
+| sp-list-view: padding | `20px 24px` | 上下对称留白 + 水平与 header 对齐 |
+| sp-table-wrapper: width | `100%` | 满宽 |
+| sp-table-wrapper: overflow-x | `auto` | 横向滚动 |
+| sp-table: width | `100%` | 满宽表格 |
+| sp-table: border-collapse | `collapse` | 合并边框 |
+| sp-th: padding | `12px 16px` | 表头单元格 |
+| sp-th: font-size | `12px` · `uppercase` | 紧凑大写 |
+| sp-th: border-bottom | `2px solid` | 表头底线 |
+| sp-td: padding | `12px 16px` | 数据单元格 |
+| sp-td: border-bottom | `1px solid` | 行分隔线 |
+| sp-tr: transition | `background 0.15s` | 悬停过渡 |
+
+**表格列配置：**
+
+| 列 | CSS 类 | 内容 |
+|----|--------|------|
+| 故事名称 | `sp-th--name` | `JetBrains Mono` 等宽字体 · `font-weight: 500` |
+| 状态 | `sp-th--status` | `<story-status-badge>` 组件 |
+| 下一步 | `sp-th--next` | 纯文本 |
+| 消息 | `sp-th--notify` | 图标/文本 |
+| 日志 | `sp-th--log` | 图标/文本 |
+| 文件数 | `sp-th--files` | 数字 |
+| 最后修改 | `sp-th--modified` | 格式化日期 |
+| 类型 | `sp-th--type` | `sp-type-tag` 彩色标签 |
+
+**状态态：**
+- 加载态 — `sp-table-loading` · `text-align: center` · `padding: 48px 24px`
+- 错误态 — `sp-table-error` · 同上 + `color: var(--yi-danger)`
+- 空态 — `sp-table-empty` · 同上 · "暂无故事任务"
+
+#### 5.5.6 侧边面板 — sp-panel
+
+| 属性 | 值 | 说明 |
+|------|-----|------|
+| position | `fixed` | 脱离文档流 |
+| top / right | `0` / `0` | 右上固定 |
+| width | `440px` | 面板宽度 |
+| max-width | `calc(100vw - 48px)` | 窄屏不遮全屏 |
+| height | `100vh` | 全屏高度 |
+| z-index | `1001` | 高于遮罩层 |
+| border-left | `1px solid var(--yi-border)` | 与主内容区之间的视觉分割线 |
+| animation | `sp-panel-in 0.2s ease` | `translateX(100%) → translateX(0)` |
+
+**Z 轴层级：**
+
+| 层 | 元素 | z-index | 说明 |
+|----|------|---------|------|
+| 0 | 页面内容 | 默认 | 文档流 |
+| 1 | `sp-panel-backdrop` | `1000` | 半透明遮罩 `rgba(0,0,0,0.6)` |
+| 2 | `sp-panel` | `1001` | 侧边面板 |
+| 3 | 关闭按钮 | 内容流内 | 面板内 flex-shrink: 0 |
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    sp-panel-backdrop                      │
+│               fixed · inset: 0 · z: 1000                  │
+│               background: rgba(0, 0, 0, 0.6)              │
+│                                                           │
+│                                    ┌────────────────────┐ │
+│                                    │ sp-panel           │ │
+│                                    │ fixed · right: 0   │ │
+│                                    │ w: 440px           │ │
+│                                    │ z: 1001            │ │
+│                                    │                    │ │
+│                                    │ sp-panel-header    │ │
+│                                    │ sp-panel-body      │ │
+│                                    │ (overflow-y: auto) │ │
+│                                    └────────────────────┘ │
+└──────────────────────────────────────────────────────────┘
+```
+
+**面板内部布局：**
+- `sp-panel-header` — `flex` · `space-between` · `padding: 18px 20px` · `border-bottom: 1px solid` · `flex-shrink: 0`
+- `sp-panel-title` — `font-size: 16px` · `JetBrains Mono` · `overflow: hidden` · `text-overflow: ellipsis`（长名称截断）
+- `sp-panel-close` — `32×32px` · `border-radius: 8px` · 悬停变色
+- `sp-panel-body` — `flex: 1` · `overflow-y: auto` · `padding: 20px`
+
+#### 5.5.7 故事卡片 — sc-card
+
+| 属性 | 值 | 说明 |
+|------|-----|------|
+| display | `flex` | 纵向弹性卡片 |
+| flex-direction | `column` | 名称 → 标签 → 元信息 → 时间 → 下一步 |
+| gap | `6px` | 子元素间距 |
+| padding | `12px 14px` | 卡片内部留白 |
+| border-radius | `8px` | 圆角 |
+| border-left | `3px solid`（按状态配色） | 左侧色条 |
+| box-shadow | `var(--yi-shadow-sm)` | 微阴影 |
+| cursor | `pointer` | 可点击 |
+| transition | `transform 0.12s` · `box-shadow 0.12s` | 悬停动效 |
+
+**悬停效果：**
+- `transform: translateY(-1px)` — 微上浮
+- `box-shadow: var(--yi-shadow-md)` — 阴影加深
+
+**空态 — sc-card--empty：**
+- `cursor: default` · `hover` 不触发上浮 · 居中显示 "—"
+
+```
+┌─────────────────────────────┐
+│ border-left: 3px (状态色)    │ sc-card-name    (13px · JetBrains Mono)
+│                             │ sc-card-badge   (storyStatusBadge)
+│ padding: 12px 14px          │ sc-card-meta    (type · fileCount · icons)
+│ gap: 6px                    │ sc-card-date    (11px · muted)
+│                             │ sc-card-next    (11px · primary)
+└─────────────────────────────┘
+```
+
+#### 5.5.8 详情卡片 — sp-detail
+
+| 属性 | 值 | 说明 |
+|------|-----|------|
+| padding | `24px` | 内部留白 |
+| border-radius | `12px` | 外层圆角 |
+| box-shadow | `var(--yi-shadow-sm)` | 微阴影 |
+
+**面板模式 — sp-detail--panel：**
+- `background: transparent` · `border-radius: 0` · `padding: 0` · `box-shadow: none`
+- 嵌入 `sp-panel-body` 时去除独立卡片样式
+
+**内部子布局：**
+
+| 区块 | 布局 | 说明 |
+|------|------|------|
+| sp-detail-header | `flex` · `gap: 16px` · `flex-wrap: wrap` | 返回按钮 + 状态标签 + 标题 |
+| sp-detail-summary | `flex` · `flex-direction: column` · `gap: 10px` | 描述 · 下一步 · 通知 · 日志 |
+| sp-detail-meta | `grid` · `auto-fit` · `minmax(200px, 1fr)` · `gap: 16px` | 远端路径 · 类型 · 文件数 |
+| sp-detail-section | `margin-bottom: 24px` | 文件清单分组 |
+| sp-file-item | `flex` · `gap: 10px` · `padding: 8px 12px` · `border-radius: 6px` | 文件行，悬停变色 + 箭头显隐 |
+
+```
+┌─────────────────────────────────────────────┐
+│ sp-detail-header                            │
+│ [← 返回列表]  [storyStatusBadge lg]          │
+└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│ sp-detail-summary                           │
+│ 📝 描述    │ 故事描述文本                     │
+│ 👉 下一步  │ 下一步行动 (primary 色)          │
+│ 📨 消息通知 │ 有/无                          │
+│ 📜 交互日志 │ 有/无                          │
+└─────────────────────────────────────────────┘
+┌──────────────┬──────────────┐
+│ 远端路径      │ 类型          │   sp-detail-meta
+│ 故事任务面板   │ 前端          │   grid · 2 列
+│ /name/       │              │
+├──────────────┼──────────────┤
+│ 文件数        │              │
+│ 10           │              │
+└──────────────┴──────────────┘
+┌─────────────────────────────────────────────┐
+│ sp-detail-section                           │
+│ 文件清单                                     │
+│ ┌─ 故事任务面板 ───────────────────── [2] ─┐ │
+│ │ 📄 YiWeb-故事任务.md    2026-05-20  ↗    │ │
+│ │ 📄 YiWeb-使用场景.md    2026-05-20  ↗    │ │
+│ └──────────────────────────────────────────┘ │
+│ ┌─ 技术设计文档 ───────────────────── [3] ─┐ │
+│ │ 📄 YiWeb-技术评审.md    2026-05-20  ↗    │ │
+│ │ 📄 YiWeb-测试设计.md    2026-05-20  ↗    │ │
+│ │ 📄 YiWeb-安全审计.md    2026-05-20  ↗    │ │
+│ └──────────────────────────────────────────┘ │
+└─────────────────────────────────────────────┘
+```
+
+#### 5.5.9 状态标签 — sp-status-badge
+
+| 属性 | 值 | 说明 |
+|------|-----|------|
+| display | `inline-flex` | 行内弹性 |
+| align-items | `center` | 垂直居中 |
+| padding | `2px 10px` | 默认尺寸 |
+| border-radius | `9999px` | 全圆角胶囊形 |
+| font-size | `12px` · `font-weight: 500` | 字重中等 |
+| white-space | `nowrap` | 不换行 |
+
+**尺寸变体：**
+
+| 变体 | padding | font-size | line-height |
+|------|---------|-----------|-------------|
+| 默认 | `2px 10px` | `12px` | `20px` |
+| sm | `1px 8px` | `11px` | `18px` |
+| lg | `3px 12px` | `13px` | `22px` |
+
+**六状态配色方案：**
+
+| 状态 | background | color |
+|------|-----------|-------|
+| not_started | `var(--yi-surface)` | `var(--yi-text-secondary)` |
+| docs_in_progress | `var(--yi-warning-subtle)` | `var(--yi-warning-hover)` |
+| docs_done | `var(--yi-success-subtle)` | `var(--yi-success-hover)` |
+| code_in_progress | `var(--yi-primary-subtle)` | `var(--yi-primary-hover)` |
+| code_done | `var(--yi-success-subtle)` | `var(--yi-success-hover)` |
+| blocked | `var(--yi-danger-subtle)` | `var(--yi-danger-hover)` |
+
+#### 5.5.10 响应式断点
+
+| 断点 | 触发条件 | 布局变化 |
+|------|---------|---------|
+| > 1400px | 默认 | 看板 6 列 · 面板 440px |
+| 800px–1400px | `@media (max-width: 1400px)` | 看板 3 列 |
+| < 800px | `@media (max-width: 800px)` | 看板 2 列 · 面板 `width: 100vw` 全屏 |
+
+#### 5.5.10b 滚动条 — 对齐 aicr 规格
+
+| 属性 | 值 | 说明 |
+|------|-----|------|
+| width | `6px` | 纵向滚动条宽度 |
+| height | `6px` | 横向滚动条高度 |
+| track: background | `transparent` | 轨道透明 |
+| thumb: background | `var(--yi-border)` | 滑块使用边框色 |
+| thumb: border-radius | `3px` | 滑块圆角 |
+| thumb:hover: background | `var(--yi-primary)` | 悬停时高亮为主题色 |
+
+适用范围：`sp-kanban` · `sp-card-grid` · `sp-list-view` · `sp-column-cards` · `sp-panel-body`
+
+#### 5.5.10c 模块分割线与色彩区分
+
+| 模块 | 分割方式 | 说明 |
+|------|---------|------|
+| 头部 ↔ 内容区 | `sp-header { border-bottom: 1px solid var(--yi-border) }` | 对齐 aicr header 的底边线模式 |
+| 看板列之间 | `sp-column:nth-child(odd) { background: var(--yi-surface-elevated) }` | 奇偶列微差底色辅助区分 |
+| 表格行之间 | `sp-tr:nth-child(even) { background: var(--yi-surface) }` | 斑马条纹提升可读性 |
+| 侧边面板 ↔ 主内容 | `sp-panel { border-left: 1px solid var(--yi-border) }` | 左侧分割线划分面板边界 |
+| 详情摘要区 | `sp-detail-summary { background: var(--yi-surface); border: 1px solid var(--yi-border) }` | 浅色底 + 边框围合 |
+| 空态提示 | `sp-card-grid-empty { background: var(--yi-surface); border-radius: 8px }` | 次级背景区分 |
+
+#### 5.5.11 CSS 命名空间与文件映射
+
+| 前缀 | 命名空间 | 对应文件 | 样式作用域 |
+|------|---------|---------|-----------|
+| `sp-` | Story Panel | `storyPanelPage/index.css` | 页面容器 · 搜索框 · 视图切换 · 看板 · 卡片网格 · 列表 · 加载/错误 · 侧边面板 · 响应式 |
+| `sc-` | Story Card | `storyCard/index.css` | 卡片盒模型 · 状态色条 · 悬停 · 空态 |
+| `sp-table-` | Table | `storyListTable/index.css` | 表格样式 · 列宽 · 行悬停 · 类型标签 · 空/错/加载态 |
+| `sp-detail-` | Detail | `storyDetailCard/index.css` | 详情盒模型 · 摘要 · 元信息网格 · 文件列表 · 面板变体 |
+| `sp-status-badge-` | Status Badge | `storyStatusBadge/index.css` | 胶囊形 · 尺寸变体 (sm/lg) · 六状态配色 |
+
+**命名约定：**
+- 组件前缀为 BEM 风格：`[prefix]-[block][--modifier]`
+- 看板列头状态修饰符：`sp-column-header--{status}`（6 个变体）
+- 卡片左侧色条：`sc-card--{status}`（6 个变体 + `--empty`）
+- 类型标签修饰符：`sp-type-tag--{type}`（4 个变体）
+- 状态标签：`sp-status-badge--{status}` + `sp-status-badge--{size}`
+- 全局无 `!important` 声明 — 优先级由选择器特异性控制
+
 ---
 
 ## §6 DOM·事件·依赖
@@ -490,4 +916,7 @@ flowchart TD
 
 | 日期 | 变更 | 触发 | 证据 |
 |------|------|------|------|
+| 2026-05-21 | 更新 §5.5 布局规范 — 视图区 padding 从 `20px 24px 8px` 统一为 `20px 24px`（上下对称），消除底部压抑感 | `/rui update rui-story 视图区域底部留白和上面保持一致` | `storyPanelPage/index.css` |
+| 2026-05-21 | 更新 §5.5 布局规范 — 对齐 aicr header: sp-page 从 `calc(100vh-48px)` 迁移到 flex 自适应布局; sp-header 新增 `border-bottom` + `padding: 8px 24px`; 新增滚动条样式 + 模块分割线与奇偶色彩区分 (§5.5.10b/c) | `/rui update rui-story sp-header 高度对齐 aicr，视图自适应全屏，滚动条与分割线` | `src/views/story/styles/index.css` + `storyPanelPage/index.css` |
+| 2026-05-21 | 新增 §5.5 布局规范 — 页面组件盒模型、定位策略、栅格系统、响应式断点、Z 轴层级、CSS 命名空间 | `/rui update rui-story 新增页面组件的布局文档` | 全部 5 组件 CSS + HTML 模板 |
 | 2026-05-20 | 初始生成 — 从 `src/views/story/` 源码反推 | `/rui doc --from-code src/views/story/index.html --name rui-story` | 全部组件 JS/HTML + hooks 源码 |

@@ -1,20 +1,23 @@
 .sp-page {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 48px);
+    flex: 1;
+    min-height: 0;
     max-width: 100%;
-    padding: 20px 24px;
+    overflow: hidden;
 }
 
-/* Header */
+/* Header — 对齐 aicr header 规格: 紧凑垂直间距 + 底边分割线 */
 .sp-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    padding: 8px 24px;
+    border-bottom: 1px solid var(--yi-border);
     flex-wrap: wrap;
     gap: 12px;
     flex-shrink: 0;
+    background: var(--yi-bg, #0F172A);
 }
 .sp-header-left {
     display: flex;
@@ -105,14 +108,15 @@
     font-weight: 500;
 }
 
-/* Loading / Error */
+/* Loading / Error — 自适应居中，填充剩余高度 */
 .sp-loading,
 .sp-error {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    padding: 64px 24px;
+    flex: 1;
+    min-height: 0;
     font-size: 14px;
     color: var(--yi-text-secondary, #CBD5E1);
 }
@@ -130,7 +134,7 @@
     flex: 1;
     min-height: 0;
     overflow-x: auto;
-    padding-bottom: 8px;
+    padding: 20px 24px;
 }
 
 .sp-column {
@@ -196,7 +200,7 @@
     flex: 1;
     overflow-y: auto;
     align-content: start;
-    padding-bottom: 8px;
+    padding: 20px 24px;
 }
 .sp-card-grid-empty {
     grid-column: 1 / -1;
@@ -214,6 +218,7 @@
 .sp-list-view {
     flex: 1;
     overflow-y: auto;
+    padding: 20px 24px;
 }
 
 /* ==============================================
@@ -295,6 +300,80 @@
     flex: 1;
     overflow-y: auto;
     padding: 20px;
+}
+
+/* ==============================================
+   Scrollbar — 对齐 aicr 滚动条规格
+   ============================================== */
+.sp-kanban::-webkit-scrollbar,
+.sp-card-grid::-webkit-scrollbar,
+.sp-list-view::-webkit-scrollbar,
+.sp-column-cards::-webkit-scrollbar,
+.sp-panel-body::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.sp-kanban::-webkit-scrollbar-track,
+.sp-card-grid::-webkit-scrollbar-track,
+.sp-list-view::-webkit-scrollbar-track,
+.sp-column-cards::-webkit-scrollbar-track,
+.sp-panel-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sp-kanban::-webkit-scrollbar-thumb,
+.sp-card-grid::-webkit-scrollbar-thumb,
+.sp-list-view::-webkit-scrollbar-thumb,
+.sp-column-cards::-webkit-scrollbar-thumb,
+.sp-panel-body::-webkit-scrollbar-thumb {
+    background: var(--yi-border);
+    border-radius: 3px;
+}
+.sp-kanban::-webkit-scrollbar-thumb:hover,
+.sp-card-grid::-webkit-scrollbar-thumb:hover,
+.sp-list-view::-webkit-scrollbar-thumb:hover,
+.sp-column-cards::-webkit-scrollbar-thumb:hover,
+.sp-panel-body::-webkit-scrollbar-thumb:hover {
+    background: var(--yi-primary, #2563EB);
+}
+
+/* ==============================================
+   Module Dividers — 分割线与模块色彩区分
+   ============================================== */
+/* 看板列之间使用背景色微差区分 */
+.sp-column {
+    background: var(--yi-surface, #1E293B);
+}
+.sp-column:nth-child(odd) {
+    background: var(--yi-surface-elevated, #1A2332);
+}
+
+/* 卡片网格中的空态提示使用次级背景区分 */
+.sp-card-grid-empty {
+    background: var(--yi-surface, #1E293B);
+    border-radius: 8px;
+    margin: 0 24px;
+}
+
+/* 列表表格行悬停与奇偶区分 */
+.sp-tr:nth-child(even) {
+    background: var(--yi-surface, #1A2332);
+}
+.sp-tr:nth-child(odd) {
+    background: transparent;
+}
+.sp-tr:hover {
+    background: var(--yi-surface-hover, #334155);
+}
+
+/* 侧边面板与主内容区之间的视觉分割 */
+.sp-panel {
+    border-left: 1px solid var(--yi-border);
+}
+
+/* 详情摘要区使用微背景区分 */
+.sp-detail-summary {
+    background: var(--yi-surface, #1A2332);
+    border: 1px solid var(--yi-border);
 }
 
 /* Responsive: narrower kanban columns on small screens */

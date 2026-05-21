@@ -8,7 +8,13 @@ html, body {
     height: 100%;
 }
 
+#main-content {
+    height: 100%;
+}
+
 #app {
-    min-height: 100vh;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
     background: var(--yi-bg, #0F172A);
 }
