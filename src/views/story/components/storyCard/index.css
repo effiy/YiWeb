@@ -16,7 +16,7 @@
 }
 .sc-card:hover {
     transform: translateY(-1px);
-    box-shadow: var(--yi-shadow-md);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.12), 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .sc-card--not_started       { border-left-color: var(--yi-text-muted); }

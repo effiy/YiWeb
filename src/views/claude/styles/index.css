@@ -15,5 +15,5 @@ html, body {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    background: var(--yi-bg);
+    background: var(--quantum-app-nebula);
 }

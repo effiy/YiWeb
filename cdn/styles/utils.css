@@ -8,21 +8,21 @@
    ============================================ */
 
 .card {
-  background: var(--bg-secondary, #1e293b);
-  border: 1px solid var(--border-primary, rgba(255,255,255,0.12));
+  background: var(--bg-secondary, #12121A);
+  border: 1px solid var(--border-primary, rgba(255,255,255,0.08));
   border-radius: var(--radius-lg, 0.75rem);
   box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.4));
   transition: all var(--transition-normal, 250ms ease);
 }
 
 .card:hover {
-  border-color: var(--border-secondary, rgba(6,182,212,0.3));
+  border-color: var(--border-secondary, rgba(139,92,246,0.3));
   box-shadow: var(--shadow-md, 0 4px 16px rgba(0,0,0,0.5));
 }
 
 .card-header {
   padding: 16px 20px;
-  border-bottom: 1px solid var(--border-primary, rgba(255,255,255,0.12));
+  border-bottom: 1px solid var(--border-primary, rgba(255,255,255,0.08));
 }
 
 .card-body {
@@ -31,14 +31,14 @@
 
 .card-footer {
   padding: 16px 20px;
-  border-top: 1px solid var(--border-primary, rgba(255,255,255,0.12));
-  background: var(--bg-tertiary, #334155);
+  border-top: 1px solid var(--border-primary, rgba(255,255,255,0.08));
+  background: var(--bg-tertiary, #1A1A2E);
   border-radius: 0 0 var(--radius-lg, 0.75rem) var(--radius-lg, 0.75rem);
 }
 
 /* 卡片变体 */
 .card-elevated {
-  background: var(--bg-elevated, rgba(30,41,59,0.9));
+  background: var(--bg-elevated, rgba(18,18,26,0.95));
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -89,32 +89,32 @@
 
 .alert-message {
   font-size: 14px;
-  color: var(--text-secondary, #e2e8f0);
+  color: var(--text-secondary, #CBD5E1);
 }
 
 /* 提示变体 */
 .alert-info {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: var(--info, #3b82f6);
+  background: var(--yi-primary-subtle);
+  border-color: rgba(var(--yi-primary-rgb), 0.3);
+  color: var(--info, #8B5CF6);
 }
 
 .alert-success {
-  background: rgba(34, 197, 94, 0.1);
-  border-color: rgba(34, 197, 94, 0.3);
-  color: var(--success, #22c55e);
+  background: var(--yi-success-subtle);
+  border-color: rgba(var(--yi-success-rgb), 0.3);
+  color: var(--success, #10B981);
 }
 
 .alert-warning {
-  background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.3);
-  color: var(--warning, #f59e0b);
+  background: var(--yi-warning-subtle);
+  border-color: rgba(var(--yi-warning-rgb), 0.3);
+  color: var(--warning, #F59E0B);
 }
 
 .alert-error {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: var(--error, #ef4444);
+  background: var(--yi-danger-subtle);
+  border-color: rgba(var(--yi-danger-rgb), 0.3);
+  color: var(--error, #EF4444);
 }
 
 /* ============================================
@@ -136,7 +136,7 @@
 
 /* 消息元素基础样式 */
 .message {
-  background: #1890ff;
+  background: var(--quantum-wave);
   color: white;
   padding: 14px 16px;
   margin-bottom: 0;
@@ -173,23 +173,23 @@
 
 /* 消息类型样式 - 量子渐变 */
 .message-success {
-  background: linear-gradient(135deg, #52c41a, #73d13d);
-  border-color: rgba(82, 196, 26, 0.2);
+  background: linear-gradient(135deg, #10B981, #34D399);
+  border-color: rgba(16, 185, 129, 0.2);
 }
 
 .message-error {
-  background: linear-gradient(135deg, #ff4d4f, #ff7875);
-  border-color: rgba(255, 77, 79, 0.2);
+  background: linear-gradient(135deg, #EF4444, #F87171);
+  border-color: rgba(239, 68, 68, 0.2);
 }
 
 .message-warning {
-  background: linear-gradient(135deg, #faad14, #ffc53d);
-  border-color: rgba(250, 173, 20, 0.2);
+  background: linear-gradient(135deg, #F59E0B, #FBBF24);
+  border-color: rgba(245, 158, 11, 0.2);
 }
 
 .message-info {
-  background: linear-gradient(135deg, #1890ff, #40a9ff);
-  border-color: rgba(24, 144, 255, 0.2);
+  background: var(--quantum-wave);
+  border-color: rgba(139, 92, 246, 0.2);
 }
 
 /* 消息内容布局 */
@@ -372,7 +372,7 @@
 
 .divider {
   height: 1px;
-  background: var(--border-primary, rgba(255,255,255,0.12));
+  background: var(--border-primary, rgba(255,255,255,0.08));
   margin: 20px 0;
 }
 
@@ -391,7 +391,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--border-primary, rgba(255,255,255,0.12));
+  background: var(--border-primary, rgba(255,255,255,0.08));
 }
 
 

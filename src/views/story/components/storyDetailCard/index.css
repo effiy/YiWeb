@@ -22,7 +22,7 @@
     align-items: center;
     gap: 6px;
     background: none;
-    border: 1px solid var(--yi-border, rgba(255,255,255,0.1));
+    border: 1px solid var(--yi-border, rgba(255,255,255,0.08));
     border-radius: 8px;
     padding: 6px 14px;
     font-size: 13px;

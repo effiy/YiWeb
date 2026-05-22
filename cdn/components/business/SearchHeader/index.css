@@ -196,13 +196,13 @@
 }
 
 .env-badge.local {
-  background: rgba(245, 158, 11, 0.15);
+  background: var(--yi-warning-subtle);
   color: var(--warning);
   border: 1px solid var(--border-warning);
 }
 
 .env-badge.prod {
-  background: rgba(34, 197, 94, 0.15);
+  background: var(--yi-success-subtle);
   color: var(--success);
   border: 1px solid var(--border-success);
 }

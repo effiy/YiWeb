@@ -3,7 +3,7 @@
     padding: var(--yi-space-4) !important;
     background: var(--yi-surface) !important;
     border-radius: var(--yi-radius-xl) !important;
-    border-left: 3px solid var(--yi-info) !important;
+    border-left: 3px solid var(--yi-primary) !important;
     transition: all var(--yi-duration-fast) var(--yi-easing-default) !important;
     position: relative !important;
     overflow: hidden !important;
@@ -16,8 +16,8 @@
 
 .welcome-card:hover {
     background: var(--yi-surface-hover) !important;
-    border-left-color: var(--yi-info) !important;
-    box-shadow: var(--yi-shadow-md) !important;
+    border-left-color: var(--yi-primary) !important;
+    box-shadow: 0 0 24px rgba(139, 92, 246, 0.12), var(--yi-shadow-md) !important;
 }
 
 .welcome-card-header {

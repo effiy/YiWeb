@@ -1,8 +1,9 @@
 /**
  * YiWeb Design System — Theme Tokens
  * author: liangliang
- * Based on UI UX Pro Max recommendations for SaaS / AI Platform
- * Soft UI Evolution + Minimalism & Swiss Style
+ * Quantum Gradient Aesthetic — 渐变量子美学
+ * Multi-dimensional color system with iridescent gradient transitions,
+ * quantum glow effects, and deep-space surface hierarchy.
  */
 
 /* ============================================
@@ -14,17 +15,18 @@
 :root {
   /* ============================================
      Yi Design Token Namespace (NEW — canonical)
+     Quantum Gradient Edition
      ============================================ */
 
-  /* --- Colors: Primary --- */
-  --yi-primary: #2563EB;
-  --yi-primary-hover: #1D4ED8;
-  --yi-primary-subtle: rgba(37, 99, 235, 0.15);
-  --yi-primary-rgb: 37, 99, 235;
+  /* --- Colors: Primary (Quantum Violet–Indigo) --- */
+  --yi-primary: #8B5CF6;
+  --yi-primary-hover: #7C3AED;
+  --yi-primary-subtle: rgba(139, 92, 246, 0.15);
+  --yi-primary-rgb: 139, 92, 246;
 
   /* --- Colors: Secondary --- */
-  --yi-secondary: #64748B;
-  --yi-secondary-hover: #475569;
+  --yi-secondary: #6B7280;
+  --yi-secondary-hover: #4B5563;
 
   /* --- Colors: Semantic --- */
   --yi-success: #10B981;
@@ -36,27 +38,27 @@
   --yi-danger: #EF4444;
   --yi-danger-hover: #DC2626;
   --yi-danger-subtle: rgba(239, 68, 68, 0.15);
-  --yi-info: #06B6D4;
-  --yi-info-hover: #0891B2;
-  --yi-info-subtle: rgba(6, 182, 212, 0.15);
-  --yi-info-rgb: 6, 182, 212;
-  --yi-self-improve: #A855F7;
-  --yi-self-improve-rgb: 168, 85, 247;
+  --yi-info: #22D3EE;
+  --yi-info-hover: #06B6D4;
+  --yi-info-subtle: rgba(34, 211, 238, 0.15);
+  --yi-info-rgb: 34, 211, 238;
+  --yi-self-improve: #C084FC;
+  --yi-self-improve-rgb: 192, 132, 252;
   --yi-success-rgb: 16, 185, 129;
   --yi-warning-rgb: 245, 158, 11;
   --yi-danger-rgb: 239, 68, 68;
 
-  /* --- Colors: Surfaces (Dark-first, Soft UI) --- */
-  --yi-bg: #0F172A;
-  --yi-surface: #1E293B;
-  --yi-surface-elevated: #334155;
-  --yi-surface-hover: #334155;
-  --yi-surface-active: #475569;
+  /* --- Colors: Surfaces (Quantum Void hierarchy) --- */
+  --yi-bg: #09090B;
+  --yi-surface: #12121A;
+  --yi-surface-elevated: #1A1A2E;
+  --yi-surface-hover: #1E1E36;
+  --yi-surface-active: #2A2A48;
 
-  /* --- Colors: Borders --- */
-  --yi-border: rgba(255, 255, 255, 0.1);
-  --yi-border-subtle: rgba(255, 255, 255, 0.06);
-  --yi-border-focus: #3B82F6;
+  /* --- Colors: Borders (Iridescent) --- */
+  --yi-border: rgba(255, 255, 255, 0.08);
+  --yi-border-subtle: rgba(255, 255, 255, 0.05);
+  --yi-border-focus: #8B5CF6;
 
   /* --- Colors: Text --- */
   --yi-text: #F8FAFC;
@@ -69,12 +71,12 @@
   --yi-text-on-danger: #FFFFFF;
 
   /* --- Colors: Code / Dark surfaces --- */
-  --yi-code-bg: #1E293B;
-  --yi-code-bg-rgb: 30, 41, 59;
+  --yi-code-bg: #12121A;
+  --yi-code-bg-rgb: 18, 18, 26;
   --yi-code-text: #E2E8F0;
   --yi-code-text-rgb: 226, 232, 240;
-  --yi-dark-surface: #0F172A;
-  --yi-dark-surface-rgb: 15, 23, 42;
+  --yi-dark-surface: #09090B;
+  --yi-dark-surface-rgb: 9, 9, 11;
   --yi-dark-text-secondary-rgb: 226, 232, 240;
   --yi-dark-text-muted-rgb: 148, 163, 184;
   --yi-dark-border-subtle-rgb: 255, 255, 255;
@@ -110,13 +112,13 @@
   --yi-space-10: 40px;
   --yi-space-12: 48px;
 
-  /* --- Shadows (Dark-first) --- */
-  --yi-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --yi-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
-  --yi-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -4px rgba(0, 0, 0, 0.35);
-  --yi-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
-  --yi-shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-  --yi-shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  /* --- Shadows (Quantum glow) --- */
+  --yi-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --yi-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --yi-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  --yi-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  --yi-shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  --yi-shadow-focus: 0 0 0 3px rgba(139, 92, 246, 0.3);
 
   /* --- Radius --- */
   --yi-radius-sm: 4px;
@@ -143,6 +145,55 @@
   --yi-z-tooltip: 1070;
 
   /* ============================================
+     Quantum Gradient System
+     Multi-stop gradients for depth and dimension
+     ============================================ */
+
+  /* Quantum Wave — primary action gradient (Violet → Indigo → Blue) */
+  --quantum-wave: linear-gradient(135deg, #8B5CF6 0%, #6366F1 40%, #3B82F6 100%);
+  --quantum-wave-hover: linear-gradient(135deg, #7C3AED 0%, #4F46E5 40%, #2563EB 100%);
+  --quantum-wave-subtle: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%);
+
+  /* Quantum Coherence — accent/info gradient (Cyan → Teal → Emerald) */
+  --quantum-coherence: linear-gradient(135deg, #22D3EE 0%, #14B8A6 50%, #10B981 100%);
+  --quantum-coherence-hover: linear-gradient(135deg, #06B6D4 0%, #0D9488 50%, #059669 100%);
+
+  /* Quantum Field — surface gradient for cards and panels */
+  --quantum-field: linear-gradient(135deg, rgba(139, 92, 246, 0.06) 0%, rgba(99, 102, 241, 0.04) 50%, rgba(34, 211, 238, 0.03) 100%);
+  --quantum-field-hover: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.06) 50%, rgba(34, 211, 238, 0.05) 100%);
+
+  /* Quantum Nebula — background ambient gradients */
+  --quantum-nebula: radial-gradient(ellipse at 20% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                    radial-gradient(ellipse at 80% 20%, rgba(34, 211, 238, 0.06) 0%, transparent 50%),
+                    radial-gradient(ellipse at 50% 80%, rgba(99, 102, 241, 0.06) 0%, transparent 50%);
+
+  /* Quantum App Nebula — lighter variant for view container backgrounds */
+  --quantum-app-nebula: radial-gradient(ellipse at 20% 50%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(34, 211, 238, 0.03) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(99, 102, 241, 0.04) 0%, transparent 50%);
+
+  /* Quantum Code Nebula — for code area pseudo-elements */
+  --quantum-code-nebula: radial-gradient(ellipse at 30% 30%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
+                         radial-gradient(ellipse at 70% 70%, rgba(34, 211, 238, 0.03) 0%, transparent 50%),
+                         radial-gradient(ellipse at 50% 50%, rgba(99, 102, 241, 0.04) 0%, transparent 40%);
+
+  /* Quantum Panel gradients — shared by view panel components */
+  --quantum-heading-text: linear-gradient(135deg, #C084FC 0%, #8B5CF6 15%, #6366F1 30%, #22D3EE 50%, #6366F1 70%, #8B5CF6 85%, #C084FC 100%);
+  --quantum-header-border: linear-gradient(90deg, transparent 0%, rgba(139, 92, 246, 0.4) 25%, rgba(34, 211, 238, 0.3) 50%, rgba(139, 92, 246, 0.4) 75%, transparent 100%);
+  --quantum-meta-row-bg: linear-gradient(90deg, rgba(139, 92, 246, 0.06) 0%, rgba(99, 102, 241, 0.04) 20%, rgba(34, 211, 238, 0.04) 40%, rgba(16, 185, 129, 0.03) 60%, rgba(139, 92, 246, 0.05) 80%, rgba(99, 102, 241, 0.04) 100%);
+  --quantum-stats-bar-bg: linear-gradient(90deg, transparent 0%, rgba(139, 92, 246, 0.04) 30%, rgba(34, 211, 238, 0.03) 50%, rgba(139, 92, 246, 0.04) 70%, transparent 100%);
+  --quantum-filter-border: linear-gradient(90deg, transparent 0%, rgba(34, 211, 238, 0.2) 30%, rgba(139, 92, 246, 0.25) 50%, rgba(34, 211, 238, 0.2) 70%, transparent 100%);
+
+  /* Quantum Pulse — glow effects */
+  --quantum-glow-violet: 0 0 30px rgba(139, 92, 246, 0.35);
+  --quantum-glow-indigo: 0 0 30px rgba(99, 102, 241, 0.35);
+  --quantum-glow-cyan: 0 0 30px rgba(34, 211, 238, 0.35);
+  --quantum-glow-emerald: 0 0 30px rgba(16, 185, 129, 0.35);
+
+  /* Quantum Halo — focus rings and active states */
+  --quantum-halo: 0 0 0 3px rgba(139, 92, 246, 0.25), 0 0 20px rgba(139, 92, 246, 0.15);
+
+  /* ============================================
      Legacy Variable Map (BACKWARD COMPAT — @deprecated)
      Maps old names to new canonical tokens.
      Do NOT add new references to these variables.
@@ -150,27 +201,27 @@
      ============================================ */
   --primary: var(--yi-primary);
   --primary-hover: var(--yi-primary-hover);
-  --primary-light: #60A5FA;
+  --primary-light: #A78BFA;
   --primary-dark: var(--yi-primary-hover);
-  --primary-dark-rgb: 29, 78, 216;
-  --primary-blue: var(--yi-primary);
+  --primary-dark-rgb: 124, 58, 237;
+  --primary-blue: #6366F1;
   --primary-cyan: var(--yi-info);
-  --primary-gradient: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
-  --primary-gradient-hover: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%);
+  --primary-gradient: var(--quantum-wave);
+  --primary-gradient-hover: var(--quantum-wave-hover);
   --primary-rgb: var(--yi-primary-rgb);
   --primary-alpha: rgba(var(--yi-primary-rgb), 0.1);
 
   --accent: var(--yi-info);
-  --accent-gradient: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
-  --accent-rgb: 6, 182, 212;
+  --accent-gradient: var(--quantum-coherence);
+  --accent-rgb: var(--yi-info-rgb);
   --success: var(--yi-success);
-  --success-gradient: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  --success-gradient: linear-gradient(135deg, #10B981 0%, #34D399 100%);
   --warning: var(--yi-warning);
-  --warning-gradient: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  --warning-gradient: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
   --error: var(--yi-danger);
-  --error-gradient: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  --error-gradient: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
   --info: var(--yi-primary);
-  --info-gradient: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  --info-gradient: var(--quantum-wave);
   --danger-color: var(--yi-danger);
   --danger-color-alpha: var(--yi-danger-subtle);
 
@@ -179,27 +230,27 @@
   --geek-green: var(--yi-success);
   --geek-teal: #14B8A6;
   --artist-purple: var(--yi-self-improve);
-  --artist-pink: #EC4899;
+  --artist-pink: #F472B6;
   --artist-orange: var(--yi-warning);
   --artist-emerald: var(--yi-success);
 
-  --gradient-primary: var(--primary-gradient);
-  --gradient-secondary: var(--accent-gradient);
+  --gradient-primary: var(--quantum-wave);
+  --gradient-secondary: var(--quantum-coherence);
   --gradient-success: var(--success-gradient);
   --gradient-warning: var(--warning-gradient);
   --gradient-error: var(--error-gradient);
-  --gradient-info: var(--info-gradient);
-  --gradient-accent: var(--accent-gradient);
-  --gradient-rainbow: linear-gradient(135deg, #2563EB 0%, #8B5CF6 33%, #EC4899 66%, #F59E0B 100%);
-  --gradient-sunset: linear-gradient(135deg, #F59E0B 0%, #EC4899 50%, #8B5CF6 100%);
-  --gradient-ocean: linear-gradient(135deg, #06B6D4 0%, #2563EB 100%);
-  --gradient-forest: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  --gradient-info: var(--quantum-wave);
+  --gradient-accent: var(--quantum-coherence);
+  --gradient-rainbow: linear-gradient(135deg, #8B5CF6 0%, #6366F1 20%, #22D3EE 40%, #10B981 60%, #F59E0B 80%, #F472B6 100%);
+  --gradient-sunset: linear-gradient(135deg, #8B5CF6 0%, #F472B6 50%, #F59E0B 100%);
+  --gradient-ocean: linear-gradient(135deg, #22D3EE 0%, #6366F1 50%, #8B5CF6 100%);
+  --gradient-forest: linear-gradient(135deg, #10B981 0%, #14B8A6 50%, #22D3EE 100%);
 
-  --pet-color-1: var(--gradient-primary);
-  --pet-color-2: linear-gradient(135deg, #2563EB 0%, #8B5CF6 100%);
-  --pet-color-3: linear-gradient(135deg, #06B6D4 0%, #2563EB 100%);
+  --pet-color-1: var(--quantum-wave);
+  --pet-color-2: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+  --pet-color-3: linear-gradient(135deg, #22D3EE 0%, #6366F1 100%);
   --pet-color-4: var(--gradient-forest);
-  --pet-color-5: linear-gradient(135deg, #F59E0B 0%, #EC4899 100%);
+  --pet-color-5: linear-gradient(135deg, #F472B6 0%, #8B5CF6 100%);
 
   --gray-50: #F8FAFC;
   --gray-100: #F1F5F9;
@@ -215,15 +266,15 @@
 
   --bg-primary: var(--yi-dark-surface);
   --bg-secondary: var(--yi-code-bg);
-  --bg-tertiary: var(--gray-700);
-  --bg-elevated: rgba(30, 41, 59, 0.95);
-  --bg-glass: rgba(255, 255, 255, 0.03);
-  --bg-surface: rgba(30, 41, 59, 0.6);
-  --bg-surface-hover: rgba(51, 65, 85, 0.7);
-  --bg-gradient: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
-  --bg-primary-rgb: 15, 23, 42;
-  --bg-secondary-rgb: 30, 41, 59;
-  --bg-tertiary-rgb: 51, 65, 85;
+  --bg-tertiary: #1A1A2E;
+  --bg-elevated: rgba(18, 18, 26, 0.95);
+  --bg-glass: rgba(139, 92, 246, 0.03);
+  --bg-surface: rgba(18, 18, 26, 0.6);
+  --bg-surface-hover: rgba(26, 26, 46, 0.7);
+  --bg-gradient: linear-gradient(135deg, #09090B 0%, #12121A 50%, #1A1A2E 100%);
+  --bg-primary-rgb: 9, 9, 11;
+  --bg-secondary-rgb: 18, 18, 26;
+  --bg-tertiary-rgb: 26, 26, 46;
 
   --text-primary: var(--yi-code-text);
   --text-secondary: var(--gray-300);
@@ -240,41 +291,41 @@
   --text-secondary-rgb: 226, 232, 240;
   --text-muted-rgb: 148, 163, 184;
 
-  --border-primary: rgba(255, 255, 255, 0.1);
-  --border-secondary: rgba(6, 182, 212, 0.3);
+  --border-primary: rgba(255, 255, 255, 0.08);
+  --border-secondary: rgba(139, 92, 246, 0.3);
   --border-focus: var(--yi-info);
-  --border-glass: rgba(255, 255, 255, 0.06);
-  --border-color: rgba(255, 255, 255, 0.1);
-  --border-hover: rgba(255, 255, 255, 0.2);
+  --border-glass: rgba(255, 255, 255, 0.05);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.15);
 
   /* Search Panel */
   --search-panel-bg: var(--bg-elevated);
   --search-panel-border: var(--border-primary);
   --search-panel-shadow: var(--shadow-lg);
   --search-panel-item-hover: var(--bg-surface-hover);
-  --search-panel-item-active: rgba(37, 99, 235, 0.15);
+  --search-panel-item-active: rgba(139, 92, 246, 0.15);
   --search-panel-max-height: 320px;
   --border-success: rgba(16, 185, 129, 0.3);
   --border-warning: rgba(245, 158, 11, 0.3);
   --border-error: rgba(239, 68, 68, 0.3);
-  --border-info: rgba(37, 99, 235, 0.3);
+  --border-info: rgba(139, 92, 246, 0.3);
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
-  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.45);
-  --shadow-2xl: 0 32px 96px rgba(0, 0, 0, 0.5);
-  --shadow-primary: 0 4px 20px rgba(37, 99, 235, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-  --shadow-glow: 0 0 30px rgba(6, 182, 212, 0.35);
-  --shadow-quantum: 0 0 50px rgba(37, 99, 235, 0.25);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.55);
+  --shadow-2xl: 0 32px 96px rgba(0, 0, 0, 0.6);
+  --shadow-primary: 0 4px 20px rgba(139, 92, 246, 0.35), 0 0 0 1px rgba(139, 92, 246, 0.1) inset;
+  --shadow-glow: 0 0 30px rgba(139, 92, 246, 0.35);
+  --shadow-quantum: 0 0 50px rgba(139, 92, 246, 0.25), 0 0 100px rgba(99, 102, 241, 0.15);
   --shadow-success: 0 4px 20px rgba(16, 185, 129, 0.3);
   --shadow-warning: 0 4px 20px rgba(245, 158, 11, 0.3);
   --shadow-error: 0 4px 20px rgba(239, 68, 68, 0.3);
-  --shadow-info: 0 4px 20px rgba(37, 99, 235, 0.3);
-  --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.12);
-  --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.15);
-  --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.2);
+  --shadow-info: 0 4px 20px rgba(139, 92, 246, 0.3);
+  --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.15);
+  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.25);
+  --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.3);
 
   --opacity-light: 0.03;
   --opacity-medium: 0.08;
@@ -327,7 +378,7 @@
   --primary-color: var(--primary);
   --primary-color-hover: var(--primary-hover);
   --primary-color-alpha: var(--primary-alpha);
-  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-hover: rgba(139, 92, 246, 0.06);
 }
 
 /* ============================================
@@ -343,9 +394,9 @@
   :root {
     --text-secondary: var(--gray-100);
     --text-muted: var(--gray-200);
-    --border-primary: rgba(255, 255, 255, 0.3);
-    --border-secondary: rgba(6, 182, 212, 0.5);
-    --primary-alpha: rgba(37, 99, 235, 0.2);
+    --border-primary: rgba(255, 255, 255, 0.25);
+    --border-secondary: rgba(139, 92, 246, 0.5);
+    --primary-alpha: rgba(139, 92, 246, 0.2);
     --yi-border: #94A3B8;
     --yi-border-subtle: #CBD5E1;
     --yi-text-secondary: #E2E8F0;

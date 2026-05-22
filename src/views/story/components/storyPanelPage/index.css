@@ -13,11 +13,14 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 24px;
-    border-bottom: 1px solid var(--yi-border);
+    border-bottom: 1px solid transparent;
+    border-image: var(--quantum-header-border) 1;
     flex-wrap: wrap;
     gap: 12px;
     flex-shrink: 0;
-    background: var(--yi-bg);
+    background: var(--quantum-meta-row-bg);
+    background-size: 200% 100%;
+    animation: quantumFieldFlow 8s ease infinite;
 }
 .sp-header-left {
     display: flex;
@@ -27,8 +30,13 @@
 .sp-header-title {
     font-size: 22px;
     font-weight: 700;
-    color: var(--yi-text);
     margin: 0;
+    background: var(--quantum-heading-text);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: quantumTextWave 12s ease infinite;
 }
 .sp-header-count {
     font-size: 13px;
@@ -91,18 +99,27 @@
     align-items: center;
     border-bottom: 1px solid var(--yi-border);
     flex-shrink: 0;
+    background: var(--quantum-meta-row-bg);
+    background-size: 200% 100%;
+    animation: quantumFieldFlow 8s ease infinite;
 }
 .sp-header-tags-row {
     flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 6px;
     padding: 12px 24px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+}
+.sp-header-tags-row::-webkit-scrollbar {
+    display: none;
 }
 /* Stats Bar */
 .sp-stats-bar {
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -110,6 +127,9 @@
     padding: 12px 24px;
     flex-shrink: 0;
     flex-wrap: wrap;
+    background: var(--quantum-stats-bar-bg);
+    background-size: 200% 100%;
+    animation: quantumFieldFlow 10s ease infinite;
 }
 .sp-stat-item {
     display: flex;
@@ -121,6 +141,7 @@
 .sp-stat-icon {
     font-size: 14px;
     color: var(--yi-primary);
+    animation: quantumIconPulse 4s ease-in-out infinite;
 }
 .sp-stat-value {
     font-weight: 600;
@@ -136,7 +157,8 @@
     align-items: center;
     justify-content: flex-start;
     padding: 8px 24px;
-    border-bottom: 1px solid var(--yi-border);
+    border-bottom: 1px solid transparent;
+    border-image: var(--quantum-filter-border) 1;
     flex-shrink: 0;
     flex-wrap: wrap;
     gap: 16px;
@@ -571,5 +593,26 @@
     .sp-panel {
         width: 100vw;
         max-width: 100vw;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sp-header-title {
+        animation: none !important;
+        -webkit-text-fill-color: inherit;
+        background: none;
+        color: var(--yi-text);
+    }
+    .sp-stat-icon {
+        animation: none !important;
+    }
+    .sp-meta-row,
+    .sp-stats-bar {
+        animation: none !important;
+    }
+    .sp-header,
+    .sp-filter-bar {
+        border-image: none;
+        border-bottom: 1px solid var(--yi-border);
     }
 }

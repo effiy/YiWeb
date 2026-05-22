@@ -75,25 +75,25 @@
 .tag-accent {
   background: var(--yi-info-subtle);
   color: var(--yi-info);
-  border-color: rgba(6, 182, 212, 0.25);
+  border-color: rgba(var(--yi-info-rgb), 0.25);
 }
 
 .tag-success {
   background: var(--yi-success-subtle);
   color: var(--yi-success);
-  border-color: rgba(16, 185, 129, 0.25);
+  border-color: rgba(var(--yi-success-rgb), 0.25);
 }
 
 .tag-warning {
   background: var(--yi-warning-subtle);
   color: var(--yi-warning);
-  border-color: rgba(245, 158, 11, 0.25);
+  border-color: rgba(var(--yi-warning-rgb), 0.25);
 }
 
 .tag-error {
   background: var(--yi-danger-subtle);
   color: var(--yi-danger);
-  border-color: rgba(239, 68, 68, 0.25);
+  border-color: rgba(var(--yi-danger-rgb), 0.25);
 }
 
 .tag-gray {

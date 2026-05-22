@@ -18,6 +18,7 @@ html, body {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    background: var(--quantum-app-nebula);
 }
 
 /**
@@ -62,8 +63,8 @@ html, body {
 }
 
 .aicr-sidebar:hover {
-    box-shadow: var(--yi-shadow-md);
-    border-right-color: rgba(var(--yi-info-rgb), 0.3);
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.1), var(--yi-shadow-md);
+    border-right-color: rgba(var(--yi-primary-rgb), 0.3);
 }
 
 /* ========== 代码区域 ========== */
@@ -125,8 +126,10 @@ html, body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: radial-gradient(circle at 50% 50%, rgba(var(--yi-primary-rgb), 0.02) 0%, transparent 50%);
+    background: var(--quantum-code-nebula);
     pointer-events: none;
+    animation: quantumFieldFlow 20s ease infinite;
+    background-size: 200% 200%;
 }
 
 .aicr-code .code-view-container {

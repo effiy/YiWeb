@@ -13,11 +13,14 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 24px;
-    border-bottom: 1px solid var(--yi-border);
+    border-bottom: 1px solid transparent;
+    border-image: var(--quantum-header-border) 1;
     flex-wrap: wrap;
     gap: 12px;
     flex-shrink: 0;
-    background: var(--yi-bg);
+    background: var(--quantum-meta-row-bg);
+    background-size: 200% 100%;
+    animation: quantumFieldFlow 8s ease infinite;
 }
 .cp-header-left {
     display: flex;
@@ -27,8 +30,13 @@
 .cp-header-title {
     font-size: 22px;
     font-weight: 700;
-    color: var(--yi-text);
     margin: 0;
+    background: var(--quantum-heading-text);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: quantumTextWave 12s ease infinite;
 }
 .cp-header-count {
     font-size: 13px;
@@ -122,7 +130,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 24px;
-    border-bottom: 1px solid var(--yi-border);
+    border-bottom: 1px solid transparent;
+    border-image: var(--quantum-filter-border) 1;
     flex-shrink: 0;
     flex-wrap: wrap;
     gap: 10px;
@@ -186,6 +195,9 @@
     border-bottom: 1px solid var(--yi-border);
     flex-shrink: 0;
     flex-wrap: wrap;
+    background: var(--quantum-stats-bar-bg);
+    background-size: 200% 100%;
+    animation: quantumFieldFlow 10s ease infinite;
 }
 .cp-stat-item {
     display: flex;
@@ -197,6 +209,7 @@
 .cp-stat-icon {
     font-size: 14px;
     color: var(--yi-primary);
+    animation: quantumIconPulse 4s ease-in-out infinite;
 }
 .cp-stat-value {
     font-weight: 600;
@@ -375,5 +388,25 @@
     }
     .cp-stats-bar {
         gap: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cp-header-title {
+        animation: none !important;
+        -webkit-text-fill-color: inherit;
+        background: none;
+        color: var(--yi-text);
+    }
+    .cp-stat-icon {
+        animation: none !important;
+    }
+    .cp-stats-bar {
+        animation: none !important;
+    }
+    .cp-header,
+    .cp-filter-bar {
+        border-image: none;
+        border-bottom: 1px solid var(--yi-border);
     }
 }
