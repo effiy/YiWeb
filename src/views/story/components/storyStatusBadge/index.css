@@ -42,7 +42,3 @@
     background: rgba(168, 85, 247, 0.15);
     color: #A855F7;
 }
-.sp-status-badge--blocked {
-    background: var(--yi-danger-subtle);
-    color: var(--yi-danger-hover);
-}

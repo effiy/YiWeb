@@ -1,5 +1,5 @@
 import { registerGlobalComponent } from '/cdn/utils/view/componentLoader.js';
-import { clearCacheAndRefresh } from '/src/views/story/hooks/clearCacheMethods.js';
+import { clearCacheAndRefresh } from '/cdn/utils/core/clearCache.js';
 
 registerGlobalComponent({
     name: 'StoryPanelPage',
@@ -48,8 +48,8 @@ registerGlobalComponent({
                 docs_in_progress: [],
                 docs_done: [],
                 code_in_progress: [],
-                self_improve: [],
-                code_done: []
+                code_done: [],
+                self_improve: []
             };
             for (const story of this.stories) {
                 if (groups[story.status] && this._matchSearch(story, q)) {

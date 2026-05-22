@@ -25,7 +25,7 @@ export function useMethods(store) {
             docs_done: '文档完成',
             code_in_progress: '编码进行中',
             code_done: '编码完成',
-            blocked: '已阻断'
+            self_improve: '自改进'
         };
         return map[status] || status;
     }
@@ -37,7 +37,7 @@ export function useMethods(store) {
             docs_done: 'info',
             code_in_progress: 'accent',
             code_done: 'success',
-            blocked: 'danger'
+            self_improve: 'accent'
         };
         return map[status] || '';
     }

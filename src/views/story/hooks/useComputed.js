@@ -6,12 +6,12 @@ export function useComputed(store) {
 
     const statusCounts = computed(() => {
         const counts = {
-            code_done: 0,
-            code_in_progress: 0,
-            docs_done: 0,
-            docs_in_progress: 0,
             not_started: 0,
-            blocked: 0
+            docs_in_progress: 0,
+            docs_done: 0,
+            code_in_progress: 0,
+            code_done: 0,
+            self_improve: 0
         };
         for (const story of store.stories.value) {
             if (counts[story.status] !== undefined) {
@@ -30,7 +30,7 @@ export function useComputed(store) {
             docs_done: [],
             code_in_progress: [],
             code_done: [],
-            blocked: []
+            self_improve: []
         };
         for (const story of store.stories.value) {
             if (groups[story.status]) {

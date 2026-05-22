@@ -1,9 +1,7 @@
 /**
  * 故事任务面板 - 状态管理
- * 状态判定逻辑与 rui-story.mjs 对齐：
- *   基于语义文档名（{project}-故事任务.md 等）而非数字编号前缀
- *   类型推断通过读取远端技术评审文档内容
- *   阻断状态检查远端 .memory/rui-state.json
+ * 状态判定基于语义文档名（{project}-故事任务.md 等）
+ * 类型推断通过读取远端技术评审文档内容
  */
 import { logInfo, logError } from '/cdn/utils/core/log.js';
 import { getAuthHeaders } from '/src/core/services/helper/authUtils.js?v=1';
@@ -29,7 +27,7 @@ function hasProjectFile(filenames, docType) {
     return filenames.includes(target);
 }
 
-function determineStatus(filenames, blockedState) {
+function determineStatus(filenames) {
     if (!hasProjectFile(filenames, '故事任务'))
         return 'not_started';
 
@@ -47,9 +45,6 @@ function determineStatus(filenames, blockedState) {
 
     if (!hasProjectFile(filenames, '自改进复盘'))
         return 'code_done';
-
-    if (blockedState?.blocked)
-        return 'blocked';
 
     return 'self_improve';
 }
@@ -105,35 +100,6 @@ async function inferTypesBatch(apiUrl, storyFilesMap, authHeaders) {
     );
     await Promise.all(workers);
     return results;
-}
-
-async function checkBlockedState(apiUrl, storyFiles, authHeaders) {
-    const stateFile = storyFiles.find(f =>
-        (f.file_path || '').includes('.memory/rui-state.json')
-    );
-    if (!stateFile) return null;
-
-    try {
-        const res = await fetch(apiUrl + '/read-file', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                ...authHeaders,
-            },
-            credentials: 'omit',
-            body: JSON.stringify({ target_file: stateFile.file_path }),
-        });
-        const data = await res.json();
-        const raw = data?.data?.content ?? data?.content ?? '{}';
-        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-        return {
-            blocked: parsed.blocked === true,
-            block_reason: parsed.block_reason || null,
-        };
-    } catch {
-        return null;
-    }
 }
 
 export function createStore() {
@@ -193,10 +159,7 @@ export function createStore() {
                     (f.file_path || '').split('/').pop()
                 );
 
-                // 阻断状态（远端 .memory/rui-state.json）
-                const blockedState = await checkBlockedState(apiUrl, files, authHeaders);
-
-                const status = determineStatus(filenames, blockedState);
+                const status = determineStatus(filenames);
                 const type = typeMap.get(name) || 'meta';
 
                 const maxTs = Math.max(...files.map(f => f.updatedAt || 0));
@@ -218,11 +181,8 @@ export function createStore() {
                     code_in_progress: '继续实现验证',
                     self_improve: '执行自改进',
                     code_done: '交付三步收口',
-                    blocked: '解除阻断',
                 };
-                const nextStep = blockedState?.block_reason
-                    ? `阻断: ${blockedState.block_reason}`
-                    : (nextStepMap[status] || '');
+                const nextStep = nextStepMap[status] || '';
 
                 // 消息通知列表
                 const notifyFile = files.find(f => {

@@ -1,5 +1,5 @@
 import { registerGlobalComponent } from '/cdn/utils/view/componentLoader.js';
-import { clearCacheAndRefresh } from '/src/views/aicr/hooks/clearCacheMethods.js';
+import { clearCacheAndRefresh } from '/cdn/utils/core/clearCache.js';
 
 registerGlobalComponent({
     name: 'AicrPage',

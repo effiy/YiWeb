@@ -26,6 +26,7 @@
 .sc-card--code_done         { border-left-color: var(--yi-success); }
 .sc-card--self_improve      { border-left-color: #A855F7; }
 
+
 .sc-card--empty {
     display: flex;
     align-items: center;

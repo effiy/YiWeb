@@ -161,6 +161,7 @@
 .sp-column-header--code_done      { border-bottom-color: var(--yi-success); }
 .sp-column-header--self_improve   { border-bottom-color: #A855F7; }
 
+
 .sp-column-count {
     font-size: 13px;
     font-weight: 600;

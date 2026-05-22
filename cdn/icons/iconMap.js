@@ -76,6 +76,13 @@ export const iconMap = {
   'question': 'fas fa-question-circle',
   'crosshairs': 'fas fa-crosshairs',
   'key': 'fas fa-key',
+
+  // ── Claude 面板 ──
+  'puzzle-piece': 'fas fa-puzzle-piece',
+  'robot': 'fas fa-robot',
+  'folder': 'fas fa-folder',
+  'check-circle': 'fas fa-check-circle',
+  'circle': 'far fa-circle',
 };
 
 /**

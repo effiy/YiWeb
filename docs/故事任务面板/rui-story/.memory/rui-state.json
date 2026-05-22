@@ -1,0 +1,17 @@
+{
+  "story": "rui-story",
+  "status": "self_improve",
+  "current_stage": "delivery",
+  "blocked": false,
+  "block_reason": null,
+  "version": "1.0.0",
+  "version_history": [
+    {"version": "1.0.0", "date": "2026-05-20", "trigger": "doc --from-code", "change": "初始生成"}
+  ],
+  "timestamp": "2026-05-22T02:15:00.000Z",
+  "last_delivery": {
+    "step": "log",
+    "status": "success",
+    "timestamp": "2026-05-22T02:15:00.000Z"
+  }
+}
