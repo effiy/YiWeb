@@ -280,16 +280,19 @@ flowchart TD
     Q3 -->|否| DD["docs_done"]
     Q3 -->|是| Q4{"有 测试报告.md?"}
     Q4 -->|否| CIP["code_in_progress"]
-    Q4 -->|是| Q5{"阻断状态?"}
-    Q5 -->|是| BL["blocked"]
+    Q4 -->|是| Q5{"有 自改进复盘.md?"}
     Q5 -->|否| CD["code_done"]
+    Q5 -->|是| Q6{"阻断状态?"}
+    Q6 -->|是| BL["blocked"]
+    Q6 -->|否| SI["self_improve"]
 
     style NS fill:#f5f5f5,stroke:#9e9e9e
     style DIP fill:#fff3e0,stroke:#e65100
     style DD fill:#e3f2fd,stroke:#1565c0
     style CIP fill:#e8f5e9,stroke:#2e7d32
-    style BL fill:#ffebee,stroke:#c62828
     style CD fill:#c8e6c9,stroke:#388e3c
+    style BL fill:#ffebee,stroke:#c62828
+    style SI fill:#f3e5f5,stroke:#6a1b9a
 ```
 
 **类型推断逻辑**（`inferType`）:
@@ -521,7 +524,7 @@ flowchart TD
 
 ```
 ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
-│未开始    │ │文档进行中│ │文档完成  │ │编码进行中│ │编码完成  │ │已阻断    │
+│任务      │ │设计      │ │实施      │ │测试      │ │报告      │ │改进      │
 │────2px──│ │───2px───│ │───2px───│ │───2px───│ │───2px───│ │───2px───│
 │          │ │          │ │          │ │          │ │          │ │          │
 │ sc-card  │ │ sc-card  │ │ sc-card  │ │ sc-card  │ │ sc-card  │ │ sc-card  │
@@ -747,16 +750,17 @@ flowchart TD
 | sm | `1px 8px` | `11px` | `18px` |
 | lg | `3px 12px` | `13px` | `22px` |
 
-**六状态配色方案：**
+**七状态配色方案：**
 
 | 状态 | background | color |
 |------|-----------|-------|
 | not_started | `var(--yi-surface)` | `var(--yi-text-secondary)` |
 | docs_in_progress | `var(--yi-warning-subtle)` | `var(--yi-warning-hover)` |
-| docs_done | `var(--yi-success-subtle)` | `var(--yi-success-hover)` |
-| code_in_progress | `var(--yi-primary-subtle)` | `var(--yi-primary-hover)` |
+| docs_done | `var(--yi-primary-subtle)` | `var(--yi-primary-hover)` |
+| code_in_progress | `var(--yi-info-subtle)` | `var(--yi-info-hover)` |
 | code_done | `var(--yi-success-subtle)` | `var(--yi-success-hover)` |
 | blocked | `var(--yi-danger-subtle)` | `var(--yi-danger-hover)` |
+| self_improve | `rgba(168, 85, 247, 0.15)` | `#A855F7` |
 
 #### 5.5.10 响应式断点
 
