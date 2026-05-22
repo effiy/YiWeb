@@ -7,7 +7,7 @@
 .sp-table-empty {
     text-align: center;
     padding: 48px 24px;
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
     font-size: 14px;
 }
 .sp-table-loading i,
@@ -17,7 +17,7 @@
     font-size: 16px;
 }
 .sp-table-error {
-    color: var(--yi-danger, #EF4444);
+    color: var(--yi-danger);
 }
 .sp-table {
     width: 100%;
@@ -31,7 +31,7 @@
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
     border-bottom: 2px solid var(--yi-border, rgba(255,255,255,0.1));
     white-space: nowrap;
     user-select: none;
@@ -41,10 +41,10 @@
     transition: color 0.15s;
 }
 .sp-th--sortable:hover {
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
 }
 .sp-th--sorted {
-    color: var(--yi-primary, #2563EB);
+    color: var(--yi-primary);
 }
 .sp-sort-arrow {
     margin-left: 4px;
@@ -63,11 +63,11 @@
     transition: background 0.15s;
 }
 .sp-tr:hover {
-    background: var(--yi-surface-hover, #334155);
+    background: var(--yi-surface-hover);
 }
 .sp-story-name {
     font-weight: 500;
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
     font-family: 'JetBrains Mono', monospace;
     font-size: 13px;
 }

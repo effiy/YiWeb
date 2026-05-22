@@ -3,7 +3,7 @@
    ============================================== */
 
 .sc-card {
-    background: var(--yi-surface, #1E293B);
+    background: var(--yi-surface);
     border-radius: 8px;
     padding: 12px 14px;
     border-left: 3px solid transparent;
@@ -24,7 +24,7 @@
 .sc-card--docs_done         { border-left-color: var(--yi-primary); }
 .sc-card--code_in_progress  { border-left-color: var(--yi-info); }
 .sc-card--code_done         { border-left-color: var(--yi-success); }
-.sc-card--self_improve      { border-left-color: #A855F7; }
+.sc-card--self_improve      { border-left-color: var(--yi-self-improve); }
 
 
 .sc-card--empty {
@@ -32,7 +32,7 @@
     align-items: center;
     justify-content: center;
     padding: 24px 0;
-    color: var(--yi-text-muted, #94A3B8);
+    color: var(--yi-text-muted);
     font-size: 16px;
     cursor: default;
     border-left-color: transparent;
@@ -46,7 +46,7 @@
 .sc-card-name {
     font-size: 13px;
     font-weight: 600;
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
     font-family: 'JetBrains Mono', monospace;
     word-break: break-word;
     line-height: 1.35;
@@ -69,18 +69,18 @@
     border-radius: 4px;
     font-size: 10px;
     font-weight: 500;
-    background: var(--yi-surface-hover, #334155);
-    color: var(--yi-text-secondary, #CBD5E1);
+    background: var(--yi-surface-hover);
+    color: var(--yi-text-secondary);
 }
 
 .sc-card-files {
     font-size: 11px;
-    color: var(--yi-text-muted, #94A3B8);
+    color: var(--yi-text-muted);
 }
 
 .sc-card-date {
     font-size: 11px;
-    color: var(--yi-text-muted, #94A3B8);
+    color: var(--yi-text-muted);
 }
 
 .sc-card-badge-icon {
@@ -90,6 +90,6 @@
 
 .sc-card-next {
     font-size: 11px;
-    color: var(--yi-primary, #60A5FA);
+    color: var(--yi-primary);
     margin-top: 2px;
 }

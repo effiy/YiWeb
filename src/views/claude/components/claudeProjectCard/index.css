@@ -1,6 +1,6 @@
 /* ClaudeProjectCard */
 .cc-card {
-    background: var(--yi-surface, #1E293B);
+    background: var(--yi-surface);
     border-radius: 10px;
     padding: 16px;
     border: 1px solid var(--yi-border, rgba(255,255,255,0.08));
@@ -14,7 +14,7 @@
 .cc-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--yi-shadow-md);
-    border-color: var(--yi-primary, #2563EB);
+    border-color: var(--yi-primary);
 }
 
 .cc-card--empty {
@@ -22,7 +22,7 @@
     align-items: center;
     justify-content: center;
     padding: 24px 0;
-    color: var(--yi-text-muted, #94A3B8);
+    color: var(--yi-text-muted);
     font-size: 16px;
     cursor: default;
 }
@@ -42,7 +42,7 @@
 .cc-card-name {
     font-size: 15px;
     font-weight: 600;
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
     font-family: 'JetBrains Mono', monospace;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -62,16 +62,16 @@
 }
 .cc-stat-icon {
     font-size: 13px;
-    color: var(--yi-text-muted, #94A3B8);
+    color: var(--yi-text-muted);
 }
 .cc-stat-num {
     font-size: 14px;
     font-weight: 600;
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
 }
 .cc-stat-lbl {
     font-size: 11px;
-    color: var(--yi-text-muted, #94A3B8);
+    color: var(--yi-text-muted);
 }
 
 /* Flags */
@@ -90,11 +90,11 @@
 }
 .cc-flag--on {
     background: rgba(37, 99, 235, 0.15);
-    color: var(--yi-primary, #60A5FA);
+    color: var(--yi-primary);
 }
 .cc-flag--off {
-    background: var(--yi-surface-hover, #334155);
-    color: var(--yi-text-muted, #64748B);
+    background: var(--yi-surface-hover);
+    color: var(--yi-text-muted);
     text-decoration: line-through;
 }
 
@@ -106,5 +106,5 @@
 
 .cc-card-date {
     font-size: 11px;
-    color: var(--yi-text-muted, #94A3B8);
+    color: var(--yi-text-muted);
 }

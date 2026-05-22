@@ -19,8 +19,8 @@
     line-height: 22px;
 }
 .sp-status-badge--not_started {
-    background: var(--yi-surface, #1E293B);
-    color: var(--yi-text-secondary, #CBD5E1);
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
 }
 .sp-status-badge--docs_in_progress {
     background: var(--yi-warning-subtle);
@@ -39,6 +39,6 @@
     color: var(--yi-success-hover);
 }
 .sp-status-badge--self_improve {
-    background: rgba(168, 85, 247, 0.15);
-    color: #A855F7;
+    background: rgba(var(--yi-self-improve-rgb), 0.15);
+    color: var(--yi-self-improve);
 }
