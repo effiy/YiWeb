@@ -45,10 +45,13 @@ function determineStatus(filenames, blockedState) {
     if (!hasProjectFile(filenames, '测试报告'))
         return 'code_in_progress';
 
+    if (!hasProjectFile(filenames, '自改进复盘'))
+        return 'code_done';
+
     if (blockedState?.blocked)
         return 'blocked';
 
-    return 'code_done';
+    return 'self_improve';
 }
 
 async function inferType(apiUrl, files, authHeaders) {
@@ -213,6 +216,7 @@ export function createStore() {
                     docs_in_progress: '补齐文档基线',
                     docs_done: '启动编码实现',
                     code_in_progress: '继续实现验证',
+                    self_improve: '执行自改进',
                     code_done: '交付三步收口',
                     blocked: '解除阻断',
                 };

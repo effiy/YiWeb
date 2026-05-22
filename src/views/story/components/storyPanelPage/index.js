@@ -48,8 +48,8 @@ registerGlobalComponent({
                 docs_in_progress: [],
                 docs_done: [],
                 code_in_progress: [],
-                code_done: [],
-                blocked: []
+                self_improve: [],
+                code_done: []
             };
             for (const story of this.stories) {
                 if (groups[story.status] && this._matchSearch(story, q)) {
@@ -66,7 +66,7 @@ registerGlobalComponent({
             ];
         },
         kanbanColumns() {
-            const order = ['not_started', 'docs_in_progress', 'docs_done', 'code_in_progress', 'code_done', 'blocked'];
+            const order = ['not_started', 'docs_in_progress', 'docs_done', 'code_in_progress', 'code_done', 'self_improve'];
             const groups = this.filteredStoriesByStatus;
             return order.map(status => ({ status, stories: groups[status] || [] }));
         }
@@ -106,8 +106,8 @@ registerGlobalComponent({
         },
         statusLabel(status) {
             const map = {
-                not_started: '未开始', docs_in_progress: '文档进行中', docs_done: '文档完成',
-                code_in_progress: '编码进行中', code_done: '编码完成', blocked: '已阻断'
+                not_started: '任务', docs_in_progress: '设计', docs_done: '实施',
+                code_in_progress: '测试', self_improve: '改进', code_done: '报告'
             };
             return map[status] || status;
         },

@@ -156,10 +156,10 @@
 }
 .sp-column-header--not_started    { border-bottom-color: var(--yi-text-muted); }
 .sp-column-header--docs_in_progress { border-bottom-color: var(--yi-warning); }
-.sp-column-header--docs_done      { border-bottom-color: var(--yi-success); }
-.sp-column-header--code_in_progress { border-bottom-color: var(--yi-primary); }
-.sp-column-header--code_done      { border-bottom-color: var(--yi-success-hover); }
-.sp-column-header--blocked        { border-bottom-color: var(--yi-danger); }
+.sp-column-header--docs_done      { border-bottom-color: var(--yi-primary); }
+.sp-column-header--code_in_progress { border-bottom-color: var(--yi-info); }
+.sp-column-header--code_done      { border-bottom-color: var(--yi-success); }
+.sp-column-header--self_improve   { border-bottom-color: #A855F7; }
 
 .sp-column-count {
     font-size: 13px;

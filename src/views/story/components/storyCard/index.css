@@ -21,10 +21,10 @@
 
 .sc-card--not_started       { border-left-color: var(--yi-text-muted); }
 .sc-card--docs_in_progress  { border-left-color: var(--yi-warning); }
-.sc-card--docs_done         { border-left-color: var(--yi-success); }
-.sc-card--code_in_progress  { border-left-color: var(--yi-primary); }
-.sc-card--code_done         { border-left-color: var(--yi-success-hover); }
-.sc-card--blocked           { border-left-color: var(--yi-danger); }
+.sc-card--docs_done         { border-left-color: var(--yi-primary); }
+.sc-card--code_in_progress  { border-left-color: var(--yi-info); }
+.sc-card--code_done         { border-left-color: var(--yi-success); }
+.sc-card--self_improve      { border-left-color: #A855F7; }
 
 .sc-card--empty {
     display: flex;

@@ -27,16 +27,20 @@
     color: var(--yi-warning-hover);
 }
 .sp-status-badge--docs_done {
-    background: var(--yi-success-subtle);
-    color: var(--yi-success-hover);
-}
-.sp-status-badge--code_in_progress {
     background: var(--yi-primary-subtle);
     color: var(--yi-primary-hover);
+}
+.sp-status-badge--code_in_progress {
+    background: var(--yi-info-subtle);
+    color: var(--yi-info-hover);
 }
 .sp-status-badge--code_done {
     background: var(--yi-success-subtle);
     color: var(--yi-success-hover);
+}
+.sp-status-badge--self_improve {
+    background: rgba(168, 85, 247, 0.15);
+    color: #A855F7;
 }
 .sp-status-badge--blocked {
     background: var(--yi-danger-subtle);
