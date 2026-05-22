@@ -4,7 +4,7 @@
 
 ## 变更摘要
 
-增强三个面板（AICR、Claude、Story）的搜索与过滤交互功能，并为 AICR 和 Story 面板添加数据统计栏。共修改 13 个文件，新增约 790 行，删除约 51 行。
+增强三个面板（AICR、Claude、Story）的搜索与过滤交互功能，并为 AICR 和 Story 面板添加数据统计栏。第二轮 AICR 深度优化新增代码搜索 UI、排序下拉、会话搜索过滤。共修改 27 个文件，新增约 1313 行，删除约 71 行。
 
 ## 模块变更
 
@@ -51,6 +51,26 @@
 
 **验证**：统计栏与 Claude 面板视觉一致，数据从已有 computed/props 读取无需额外接口
 
+### 模块 5：AICR 代码搜索、排序与会话搜索
+
+| 文件 | 变更 |
+|------|------|
+| `src/views/aicr/components/codeView/index.html` | 新增代码搜索按钮、搜索栏 UI（输入框 + 匹配计数 + 上/下导航 + 关闭按钮） |
+| `src/views/aicr/components/codeView/index.js` | 新增 `showSearchBar` 状态、`toggleSearchBar`、`onCodeSearchKeydown` 方法；Ctrl+F 打开搜索、Escape 关闭搜索、Enter 跳转匹配 |
+| `src/views/aicr/components/codeView/index.css` | 新增代码搜索栏完整样式（`.code-search-bar`、输入框、导航按钮等 ~110 行） |
+| `src/views/aicr/components/fileTree/fileTreeComponent.js` | 新增 `sessionSearchQuery` prop、`sortField`/`sortDirection` data |
+| `src/views/aicr/components/fileTree/fileTreeComputed.js` | `sortedTree` 新增 `sessionSearchQuery` 过滤（顶层文件夹名称匹配）、可配置排序（`sortTreeItem` 替代硬编码 `sortFileTreeRecursively`） |
+| `src/views/aicr/components/fileTree/fileTreeMethods.js` | 新增 `sortTreeItem`、`sortChildren`、`handleSortChange`、`handleSessionSearchInput` 方法 |
+| `src/views/aicr/components/fileTree/index.html` | 新增排序下拉选择器（默认/名称 A-Z/名称 Z-A） |
+| `src/views/aicr/components/fileTree/fileTreeLayout.css` | 新增排序下拉样式 `.file-tree-sort-bar`、`.file-tree-sort-select` |
+| `src/views/aicr/components/aicrSidebar/index.html` | 传递 `session-search-query` prop 和 `@session-search-change` 事件 |
+| `src/views/aicr/index.js` | file-tree props 新增 `sessionSearchQuery` |
+| `src/views/aicr/components/aicrPage/index.html` | 新增筛选工具栏 `.aicr-filter-bar`（会话搜索输入框 + 清除筛选按钮） |
+| `src/views/aicr/components/aicrPage/index.css` | 新增筛选工具栏样式（搜索输入框、清除按钮、清除所有筛选按钮 ~60 行） |
+| `src/views/aicr/components/aicrPage/index.js` | 新增 `handleSessionSearchInput`（300ms 防抖）、`handleSessionSearchKeydown`（Escape 清除）、`clearSessionSearch`、`clearAllAicrFilters` 方法；Escape 处理扩展为同时清除会话搜索 |
+
+**验证**：Ctrl+F 打开代码搜索、Escape 关闭搜索栏并清除所有筛选、排序下拉即时生效、会话搜索过滤顶层文件夹
+
 ## P0 审查结果
 
 | 检查项 | 状态 | 备注 |
@@ -74,4 +94,4 @@
 
 > **回溯链**：YiWeb-技术评审.md → YiWeb-测试设计.md
 >
-> **变更记录**：2026-05-22 — 初始实施 (v1.0.0)
+> **变更记录**：2026-05-22 — 初始实施 (v1.0.0) · 2026-05-22 — AICR 深度优化：代码搜索 UI + 排序下拉 + 会话搜索 (v1.1.0)

@@ -18,6 +18,8 @@
 | self-improve | ✓ | — | D1–D3 诊断, P1–P2 改进提案记录 |
 | delivery | ✓ | — | hook-log → rui-import (34 created, 15 overwritten, 0 failed) → rui-bot (发送成功) |
 | code — M4 (Stats) | ✓ | — | AICR 面板: 会话/标签/文件夹/文件统计栏；Story 面板: 故事/未开始/进行中/已完成统计栏 |
+| code — M5 (AICR Deep) | ✓ | — | AICR: 代码搜索 UI (Ctrl+F/Escape/Enter)、排序下拉、sessionSearchQuery 过滤、会话搜索输入、Escape 统一清除、清除全部筛选按钮 |
+| delivery — M5 | ✓ | — | git commit a61b843 (14 files, +523/-20) |
 
 ## 执行决策
 
