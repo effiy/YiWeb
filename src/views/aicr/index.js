@@ -108,6 +108,8 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                 sessionMessageEditorDraft: store.sessionMessageEditorDraft,
                 sessionMessageEditorMode: store.sessionMessageEditorMode,
                 sessionMessageEditorIndex: store.sessionMessageEditorIndex,
+                // 文件树数据
+                fileTree: store.fileTree,
                 // 标签过滤相关状态
                 tagFilterNoTags: store.tagFilterNoTags,
                 // 会话批量选择相关状态
@@ -406,6 +408,100 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                         } else if (item.type === 'folder') {
                             counts[item.name] = countFilesInFolder(item.children || []);
                         }
+                    }
+
+                    return { counts, noTagsCount };
+                },
+                // 二级标签：全部模式展示所有一级目录下的二级标签；选中一级标签后仅展示对应二级标签
+                subTags: function () {
+                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) return [];
+
+                    const selectedTags = store.selectedSessionTags?.value || [];
+
+                    const firstLevelNames = new Set();
+                    for (const item of store.fileTree.value) {
+                        if (item.type === 'folder') firstLevelNames.add(item.name);
+                    }
+                    const firstLevelTags = Array.isArray(selectedTags)
+                        ? selectedTags.filter(t => firstLevelNames.has(t))
+                        : [];
+
+                    const tags = new Set();
+                    for (const item of store.fileTree.value) {
+                        if (item.type === 'folder' && Array.isArray(item.children)) {
+                            // 全部模式：收集所有一级目录的二级标签；选中模式：仅收集选中目录
+                            if (firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) continue;
+                            for (const child of item.children) {
+                                if (child.type === 'folder') {
+                                    tags.add(child.name);
+                                }
+                            }
+                        }
+                    }
+
+                    if (tags.size === 0) return [];
+
+                    const allTagsArray = Array.from(tags).sort();
+
+                    try {
+                        const saved = localStorage.getItem('aicr_file_tag_order');
+                        const savedOrder = saved ? JSON.parse(saved) : null;
+                        if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
+                            const orderedTags = savedOrder.filter(tag => tags.has(tag));
+                            const newTags = allTagsArray.filter(tag => !savedOrder.includes(tag));
+                            return [...orderedTags, ...newTags];
+                        }
+                    } catch (e) {
+                        console.warn('[index.js] 加载标签顺序失败:', e);
+                    }
+
+                    return allTagsArray;
+                },
+                // 二级标签计数：全部模式统计所有目录；选中模式仅统计选中目录
+                subTagCounts: function () {
+                    const counts = {};
+                    let noTagsCount = 0;
+
+                    if (!store.fileTree?.value || !Array.isArray(store.fileTree.value)) {
+                        return { counts, noTagsCount };
+                    }
+
+                    const selectedTags = store.selectedSessionTags?.value || [];
+
+                    const countFilesInFolder = (items) => {
+                        let fileCount = 0;
+                        if (!Array.isArray(items)) return fileCount;
+                        for (const item of items) {
+                            if (item.type === 'file') {
+                                fileCount++;
+                            } else if (item.type === 'folder' && item.children) {
+                                fileCount += countFilesInFolder(item.children);
+                            }
+                        }
+                        return fileCount;
+                    };
+
+                    const firstLevelNames = new Set();
+                    for (const item of store.fileTree.value) {
+                        if (item.type === 'folder') firstLevelNames.add(item.name);
+                    }
+                    const firstLevelTags = Array.isArray(selectedTags)
+                        ? selectedTags.filter(t => firstLevelNames.has(t))
+                        : [];
+
+                    for (const item of store.fileTree.value) {
+                        if (item.type === 'folder' && Array.isArray(item.children)) {
+                            if (firstLevelTags.length > 0 && !firstLevelTags.includes(item.name)) continue;
+                            for (const child of item.children) {
+                                if (child.type === 'folder') {
+                                    counts[child.name] = (counts[child.name] || 0) + countFilesInFolder(child.children || []);
+                                }
+                            }
+                        }
+                    }
+
+                    for (const item of store.fileTree.value) {
+                        if (item.type === 'file') noTagsCount++;
                     }
 
                     return { counts, noTagsCount };

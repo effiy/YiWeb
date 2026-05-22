@@ -115,6 +115,11 @@ registerGlobalComponent({
             if (typeof this.handleTagClear === 'function') this.handleTagClear();
             if (typeof this.handleTagFilterNoTags === 'function') this.handleTagFilterNoTags(false);
         },
+        toggleTagFilterNoTags() {
+            if (typeof this.handleTagFilterNoTags === 'function') {
+                this.handleTagFilterNoTags(!this.tagFilterNoTags);
+            }
+        },
         handleTagsScroll(event) {
             const el = event.target;
             this.tagsScrollLeft = el.scrollLeft;

@@ -75,6 +75,24 @@
     </div>
 
     <div v-if="!sessionLoading && sessions && sessions.length > 0" class="aicr-filter-bar">
+        <div v-if="subTags && subTags.length > 0" class="aicr-filter-group">
+            <span class="aicr-filter-label">标签</span>
+            <button
+                v-if="subTagCounts && subTagCounts.noTagsCount > 0"
+                type="button"
+                class="aicr-filter-tag"
+                :class="{ active: tagFilterNoTags }"
+                @click="toggleTagFilterNoTags"
+            >没有标签 ({{ subTagCounts.noTagsCount }})</button>
+            <button
+                v-for="tag in subTags"
+                :key="tag"
+                type="button"
+                class="aicr-filter-tag"
+                :class="{ active: selectedSessionTags && selectedSessionTags.includes(tag) }"
+                @click="toggleAicrTag(tag)"
+            >{{ tag }} ({{ subTagCounts && subTagCounts.counts ? (subTagCounts.counts[tag] || 0) : 0 }})</button>
+        </div>
         <button
             v-if="sessionSearchQuery || (selectedSessionTags && selectedSessionTags.length > 0) || tagFilterNoTags"
             type="button"
