@@ -30,25 +30,29 @@
     </header>
 
     <div v-if="!sessionLoading && sessions && sessions.length > 0" class="aicr-meta-row">
-        <div v-if="allTags && (allTags.length > 0 || (tagCounts && tagCounts.noTagsCount > 0))" class="aicr-header-tags-row" :class="{ 'is-scrolled-right': tagsScrollLeft > 0, 'is-overflowing-right': !tagsScrollAtEnd }" @scroll="handleTagsScroll">
-            <button
-                class="aicr-project-tag aicr-project-tag--all"
-                :class="{ 'aicr-project-tag--active': !tagFilterNoTags && (!selectedSessionTags || selectedSessionTags.length === 0) }"
-                @click="clearAllTags"
-            >全部</button>
-            <button
-                v-if="tagCounts && tagCounts.noTagsCount > 0"
-                class="aicr-project-tag"
-                :class="{ 'aicr-project-tag--active': tagFilterNoTags }"
-                @click="handleTagFilterNoTags(!tagFilterNoTags)"
-            >没有标签 ({{ tagCounts.noTagsCount }})</button>
-            <button
-                v-for="tag in allTags"
-                :key="tag"
-                class="aicr-project-tag"
-                :class="{ 'aicr-project-tag--active': selectedSessionTags && selectedSessionTags.includes(tag) }"
-                @click="toggleAicrTag(tag)"
-            >{{ tag }} ({{ tagCounts && tagCounts.counts ? (tagCounts.counts[tag] || 0) : 0 }})</button>
+        <div v-if="allTags && (allTags.length > 0 || (tagCounts && tagCounts.noTagsCount > 0))" class="aicr-header-tags-wrapper">
+            <div class="aicr-header-tags-row" :class="{ 'is-scrolled-right': tagsScrollLeft > 0, 'is-overflowing-right': !tagsScrollAtEnd }" @scroll="handleTagsScroll">
+                <button
+                    class="aicr-project-tag aicr-project-tag--all"
+                    :class="{ 'aicr-project-tag--active': !tagFilterNoTags && (!selectedSessionTags || selectedSessionTags.length === 0) }"
+                    @click="clearAllTags"
+                >全部</button>
+                <button
+                    v-if="tagCounts && tagCounts.noTagsCount > 0"
+                    class="aicr-project-tag"
+                    :class="{ 'aicr-project-tag--active': tagFilterNoTags }"
+                    @click="handleTagFilterNoTags(!tagFilterNoTags)"
+                >没有标签 ({{ tagCounts.noTagsCount }})</button>
+                <button
+                    v-for="tag in allTags"
+                    :key="tag"
+                    class="aicr-project-tag"
+                    :class="{ 'aicr-project-tag--active': selectedSessionTags && selectedSessionTags.includes(tag) }"
+                    @click="toggleAicrTag(tag)"
+                >{{ tag }} ({{ tagCounts && tagCounts.counts ? (tagCounts.counts[tag] || 0) : 0 }})</button>
+            </div>
+            <div class="aicr-tags-fade aicr-tags-fade--left" :class="{ 'is-visible': tagsScrollLeft > 0 }"></div>
+            <div class="aicr-tags-fade aicr-tags-fade--right" :class="{ 'is-visible': !tagsScrollAtEnd }"></div>
         </div>
         <div class="aicr-stats-bar">
             <div class="aicr-stat-item">

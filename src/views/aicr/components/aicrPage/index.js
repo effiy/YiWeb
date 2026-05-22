@@ -14,7 +14,9 @@ registerGlobalComponent({
             sessionSearchDebounceTimer: null,
             tagsScrollLeft: 0,
             tagsScrollAtEnd: true,
-            filterBarCollapsed: false
+            filterBarCollapsed: true,
+            tagsResizeObserver: null,
+            tagsMutationObserver: null
         };
     },
     computed: {
@@ -73,6 +75,10 @@ registerGlobalComponent({
         };
 
         window.addEventListener('keydown', this._onKeydown);
+        this.$nextTick(() => {
+            this.checkTagsOverflow();
+            this.setupTagsObservers();
+        });
     },
     beforeUnmount() {
         if (this._onKeydown) {
@@ -81,6 +87,14 @@ registerGlobalComponent({
         if (this.sessionSearchDebounceTimer) {
             clearTimeout(this.sessionSearchDebounceTimer);
             this.sessionSearchDebounceTimer = null;
+        }
+        if (this.tagsResizeObserver) {
+            this.tagsResizeObserver.disconnect();
+            this.tagsResizeObserver = null;
+        }
+        if (this.tagsMutationObserver) {
+            this.tagsMutationObserver.disconnect();
+            this.tagsMutationObserver = null;
         }
     },
     methods: {
@@ -157,6 +171,27 @@ registerGlobalComponent({
             const el = event.target;
             this.tagsScrollLeft = el.scrollLeft;
             this.tagsScrollAtEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+        },
+        checkTagsOverflow() {
+            const el = this.$el?.querySelector('.aicr-header-tags-row');
+            if (!el) return;
+            this.tagsScrollAtEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+        },
+        setupTagsObservers() {
+            const el = this.$el?.querySelector('.aicr-header-tags-row');
+            if (!el) return;
+
+            if (this.tagsResizeObserver) this.tagsResizeObserver.disconnect();
+            this.tagsResizeObserver = new ResizeObserver(() => {
+                this.checkTagsOverflow();
+            });
+            this.tagsResizeObserver.observe(el);
+
+            if (this.tagsMutationObserver) this.tagsMutationObserver.disconnect();
+            this.tagsMutationObserver = new MutationObserver(() => {
+                this.checkTagsOverflow();
+            });
+            this.tagsMutationObserver.observe(el, { childList: true, subtree: true });
         }
     }
 });

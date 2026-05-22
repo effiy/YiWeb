@@ -49,8 +49,14 @@
     border-bottom: 1px solid var(--yi-border);
     flex-shrink: 0;
 }
+/* Tags wrapper — fills remaining space in meta row, positions fade overlays */
+.aicr-header-tags-wrapper {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+}
 .aicr-header-tags-row {
-    width: 50vw;
+    width: 100%;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -58,56 +64,32 @@
     flex-wrap: nowrap;
     overflow-x: auto;
     overflow-y: hidden;
-    position: relative;
-    scrollbar-width: thin;
-    scrollbar-color: var(--yi-border) transparent;
+    scrollbar-width: none;
 }
-/* Fade indicators — signal hidden content on each side */
-.aicr-header-tags-row::before,
-.aicr-header-tags-row::after {
-    content: '';
-    position: sticky;
+.aicr-header-tags-row::-webkit-scrollbar {
+    display: none;
+}
+/* Fade overlays — absolutely positioned against the wrapper, outside scroll flow */
+.aicr-tags-fade {
+    position: absolute;
     top: 0;
     bottom: 0;
     width: 64px;
-    min-width: 64px;
     pointer-events: none;
-    flex-shrink: 0;
     z-index: 2;
+    opacity: 0;
     transition: opacity 0.3s ease;
 }
-/* Left fade — hidden when at scroll start */
-.aicr-header-tags-row::before {
+.aicr-tags-fade--left {
     left: 0;
-    margin-right: -64px;
     background: linear-gradient(to right, var(--yi-bg) 30%, transparent 100%);
-    opacity: 0;
 }
-.aicr-header-tags-row.is-scrolled-right::before {
-    opacity: 1;
-}
-/* Right fade — hidden when scrolled to end */
-.aicr-header-tags-row::after {
+.aicr-tags-fade--right {
     right: 0;
-    margin-left: -64px;
     background: linear-gradient(to left, var(--yi-bg) 30%, transparent 100%);
-    opacity: 0;
 }
-.aicr-header-tags-row.is-overflowing-right::after {
+.aicr-tags-fade.is-visible {
     opacity: 1;
-}
-.aicr-header-tags-row::-webkit-scrollbar {
-    height: 4px;
-}
-.aicr-header-tags-row::-webkit-scrollbar-track {
-    background: transparent;
-}
-.aicr-header-tags-row::-webkit-scrollbar-thumb {
-    background: var(--yi-border);
-    border-radius: 2px;
-}
-.aicr-header-tags-row::-webkit-scrollbar-thumb:hover {
-    background: var(--yi-text-muted);
 }
 
 /* Project tag filter — pill-shaped, matching story */
