@@ -17,7 +17,7 @@
     flex-wrap: wrap;
     gap: 12px;
     flex-shrink: 0;
-    background: var(--yi-bg, #0F172A);
+    background: var(--yi-bg);
 }
 .sp-header-left {
     display: flex;
@@ -27,12 +27,12 @@
 .sp-header-title {
     font-size: 22px;
     font-weight: 700;
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
     margin: 0;
 }
 .sp-header-count {
     font-size: 13px;
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
 }
 /* Search */
 .sp-search {
@@ -43,27 +43,27 @@
 .sp-search-icon {
     position: absolute;
     left: 12px;
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
     font-size: 13px;
     pointer-events: none;
 }
 .sp-search-input {
     padding: 8px 12px 8px 36px;
-    border: 1px solid var(--yi-border, rgba(255,255,255,0.1));
+    border: 1px solid var(--yi-border);
     border-radius: 8px;
     font-size: 14px;
     width: 240px;
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
-    background: var(--yi-surface, #1E293B);
-    color: var(--yi-text, #F8FAFC);
+    background: var(--yi-surface);
+    color: var(--yi-text);
 }
 .sp-search-input:focus {
-    border-color: var(--yi-primary, #2563EB);
+    border-color: var(--yi-primary);
     box-shadow: var(--yi-shadow-focus);
 }
 .sp-search-input::placeholder {
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
 }
 .sp-search-clear {
     position: absolute;
@@ -75,23 +75,39 @@
     height: 20px;
     border: none;
     border-radius: 50%;
-    background: var(--yi-text-muted, #94A3B8);
-    color: var(--yi-bg, #0F172A);
+    background: var(--yi-text-muted);
+    color: var(--yi-bg);
     font-size: 10px;
     cursor: pointer;
     padding: 0;
 }
 .sp-search-clear:hover {
-    background: var(--yi-text-secondary, #CBD5E1);
+    background: var(--yi-text-secondary);
 }
 
-/* Stats Bar */
-.sp-stats-bar {
+/* Meta Row — tags + stats side by side */
+.sp-meta-row {
     display: flex;
     align-items: center;
+    border-bottom: 1px solid var(--yi-border);
+    flex-shrink: 0;
+}
+.sp-header-tags-row {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 24px;
+    flex-wrap: wrap;
+}
+/* Stats Bar */
+.sp-stats-bar {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
     gap: 24px;
     padding: 12px 24px;
-    border-bottom: 1px solid var(--yi-border);
     flex-shrink: 0;
     flex-wrap: wrap;
 }
@@ -100,18 +116,18 @@
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
 }
 .sp-stat-icon {
     font-size: 14px;
-    color: var(--yi-primary, #60A5FA);
+    color: var(--yi-primary);
 }
 .sp-stat-value {
     font-weight: 600;
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
 }
 .sp-stat-label {
-    color: var(--yi-text-muted, #94A3B8);
+    color: var(--yi-text-muted);
 }
 
 /* Filter Bar */
@@ -133,7 +149,7 @@
 }
 .sp-filter-label {
     font-size: 12px;
-    color: var(--yi-text-muted, #94A3B8);
+    color: var(--yi-text-muted);
     margin-right: 4px;
     white-space: nowrap;
 }
@@ -141,23 +157,23 @@
     display: inline-flex;
     align-items: center;
     padding: 4px 12px;
-    border: 1px solid var(--yi-border, rgba(255,255,255,0.1));
+    border: 1px solid var(--yi-border);
     border-radius: 6px;
     font-size: 12px;
-    background: var(--yi-surface, #1E293B);
-    color: var(--yi-text-secondary, #CBD5E1);
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
     white-space: nowrap;
 }
 .sp-filter-tag:hover {
-    border-color: var(--yi-primary, #2563EB);
-    color: var(--yi-text, #F8FAFC);
+    border-color: var(--yi-primary);
+    color: var(--yi-text);
 }
 .sp-filter-tag.active {
-    background: var(--yi-primary, #2563EB);
-    border-color: var(--yi-primary, #2563EB);
-    color: #fff;
+    background: var(--yi-primary);
+    border-color: var(--yi-primary);
+    color: var(--yi-text-on-primary);
 }
 .sp-filter-clear {
     display: inline-flex;
@@ -168,30 +184,30 @@
     border-radius: 6px;
     font-size: 12px;
     background: transparent;
-    color: var(--yi-danger, #EF4444);
+    color: var(--yi-danger);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
     margin-left: auto;
 }
 .sp-filter-clear:hover {
-    background: rgba(239, 68, 68, 0.1);
+    background: rgba(var(--yi-danger-rgb), 0.1);
 }
 .sp-empty-clear-btn {
     display: inline-flex;
     align-items: center;
     padding: 6px 16px;
-    border: 1px solid var(--yi-primary, #2563EB);
+    border: 1px solid var(--yi-primary);
     border-radius: 8px;
     font-size: 13px;
     background: transparent;
-    color: var(--yi-primary, #2563EB);
+    color: var(--yi-primary);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
     margin-top: 4px;
 }
 .sp-empty-clear-btn:hover {
-    background: var(--yi-primary, #2563EB);
-    color: #fff;
+    background: var(--yi-primary);
+    color: var(--yi-text-on-primary);
 }
 
 /* Project tag filter */
@@ -205,39 +221,39 @@
     display: inline-flex;
     align-items: center;
     padding: 4px 12px;
-    border: 1px solid var(--yi-border, rgba(255,255,255,0.1));
+    border: 1px solid var(--yi-border);
     border-radius: 9999px;
-    background: var(--yi-surface, #1E293B);
-    color: var(--yi-text-secondary, #CBD5E1);
+    background: var(--yi-surface);
+    color: var(--yi-text-secondary);
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
     white-space: nowrap;
 }
 .sp-project-tag:hover {
-    border-color: var(--yi-primary, #2563EB);
-    color: var(--yi-text, #F8FAFC);
-    background: var(--yi-surface-hover, #334155);
+    border-color: var(--yi-primary);
+    color: var(--yi-text);
+    background: var(--yi-surface-hover);
 }
 .sp-project-tag--active {
-    background: var(--yi-primary, #2563EB);
-    border-color: var(--yi-primary, #2563EB);
-    color: #fff;
+    background: var(--yi-primary);
+    border-color: var(--yi-primary);
+    color: var(--yi-text-on-primary);
 }
 .sp-project-tag--active:hover {
-    background: var(--yi-primary-hover, #3b82f6);
-    border-color: var(--yi-primary-hover, #3b82f6);
-    color: #fff;
+    background: var(--yi-primary-hover);
+    border-color: var(--yi-primary-hover);
+    color: var(--yi-text-on-primary);
 }
 
 /* View segmented slider */
 .sp-view-segmented {
     display: inline-flex;
-    border: 1px solid var(--yi-border, rgba(255,255,255,0.1));
+    border: 1px solid var(--yi-border);
     border-radius: 8px;
     overflow: hidden;
-    background: var(--yi-surface, #1E293B);
+    background: var(--yi-surface);
 }
 .sp-view-seg {
     display: inline-flex;
@@ -245,28 +261,28 @@
     gap: 6px;
     padding: 7px 14px;
     border: none;
-    border-right: 1px solid var(--yi-border, rgba(255,255,255,0.1));
+    border-right: 1px solid var(--yi-border);
     background: transparent;
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
     font-size: 12px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
     white-space: nowrap;
 }
 .sp-view-seg:last-child {
     border-right: none;
 }
 .sp-view-seg:hover {
-    background: var(--yi-surface-hover, #334155);
-    color: var(--yi-text, #F8FAFC);
+    background: var(--yi-surface-hover);
+    color: var(--yi-text);
 }
 .sp-view-seg--active {
-    background: var(--yi-primary, #2563EB);
-    color: #fff;
+    background: var(--yi-primary);
+    color: var(--yi-text-on-primary);
 }
 .sp-view-seg--active:hover {
-    background: var(--yi-primary-hover, #3b82f6);
-    color: #fff;
+    background: var(--yi-primary-hover);
+    color: var(--yi-text-on-primary);
 }
 .sp-view-seg-label {
     font-size: 12px;
@@ -283,10 +299,10 @@
     flex: 1;
     min-height: 0;
     font-size: 14px;
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
 }
 .sp-error {
-    color: var(--yi-danger, #EF4444);
+    color: var(--yi-danger);
 }
 
 /* ==============================================
@@ -306,7 +322,7 @@
     display: flex;
     flex-direction: column;
     min-width: 200px;
-    background: var(--yi-surface, #1E293B);
+    background: var(--yi-surface);
     border-radius: 10px;
     overflow: hidden;
 }
@@ -324,14 +340,14 @@
 .sp-column-header--docs_done      { border-bottom-color: var(--yi-primary); }
 .sp-column-header--code_in_progress { border-bottom-color: var(--yi-info); }
 .sp-column-header--code_done      { border-bottom-color: var(--yi-success); }
-.sp-column-header--self_improve   { border-bottom-color: #A855F7; }
+.sp-column-header--self_improve   { border-bottom-color: var(--yi-self-improve); }
 
 
 .sp-column-count {
     font-size: 13px;
     font-weight: 600;
-    color: var(--yi-text-secondary, #CBD5E1);
-    background: var(--yi-surface, #1E293B);
+    color: var(--yi-text-secondary);
+    background: var(--yi-surface);
     padding: 1px 8px;
     border-radius: 9999px;
     min-width: 22px;
@@ -352,7 +368,7 @@
     align-items: center;
     justify-content: center;
     padding: 24px 0;
-    color: var(--yi-text-muted, #94A3B8);
+    color: var(--yi-text-muted);
     font-size: 16px;
 }
 
@@ -375,7 +391,7 @@
     justify-content: center;
     padding: 64px 24px;
     font-size: 14px;
-    color: var(--yi-text-muted, #94A3B8);
+    color: var(--yi-text-muted);
 }
 
 /* ==============================================
@@ -409,7 +425,7 @@
     width: 440px;
     max-width: calc(100vw - 48px);
     height: 100vh;
-    background: var(--yi-surface, #1E293B);
+    background: var(--yi-surface);
     box-shadow: var(--yi-shadow-xl);
     display: flex;
     flex-direction: column;
@@ -426,14 +442,14 @@
     align-items: center;
     justify-content: space-between;
     padding: 18px 20px;
-    border-bottom: 1px solid var(--yi-border, rgba(255,255,255,0.1));
+    border-bottom: 1px solid var(--yi-border);
     flex-shrink: 0;
 }
 
 .sp-panel-title {
     font-size: 16px;
     font-weight: 600;
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
     margin: 0;
     font-family: 'JetBrains Mono', monospace;
     overflow: hidden;
@@ -451,15 +467,15 @@
     border: none;
     border-radius: 8px;
     background: transparent;
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
     font-size: 16px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--yi-duration-fast) var(--yi-easing-default);
     flex-shrink: 0;
 }
 .sp-panel-close:hover {
-    background: var(--yi-surface-hover, #334155);
-    color: var(--yi-text, #F8FAFC);
+    background: var(--yi-surface-hover);
+    color: var(--yi-text);
 }
 
 .sp-panel-body {
@@ -499,7 +515,7 @@
 .sp-list-view::-webkit-scrollbar-thumb:hover,
 .sp-column-cards::-webkit-scrollbar-thumb:hover,
 .sp-panel-body::-webkit-scrollbar-thumb:hover {
-    background: var(--yi-primary, #2563EB);
+    background: var(--yi-primary);
 }
 
 /* ==============================================
@@ -507,28 +523,28 @@
    ============================================== */
 /* 看板列之间使用背景色微差区分 */
 .sp-column {
-    background: var(--yi-surface, #1E293B);
+    background: var(--yi-surface);
 }
 .sp-column:nth-child(odd) {
-    background: var(--yi-surface-elevated, #1A2332);
+    background: var(--yi-surface-elevated);
 }
 
 /* 卡片网格中的空态提示使用次级背景区分 */
 .sp-card-grid-empty {
-    background: var(--yi-surface, #1E293B);
+    background: var(--yi-surface);
     border-radius: 8px;
     margin: 0 24px;
 }
 
 /* 列表表格行悬停与奇偶区分 */
 .sp-tr:nth-child(even) {
-    background: var(--yi-surface, #1A2332);
+    background: var(--yi-surface);
 }
 .sp-tr:nth-child(odd) {
     background: transparent;
 }
 .sp-tr:hover {
-    background: var(--yi-surface-hover, #334155);
+    background: var(--yi-surface-hover);
 }
 
 /* 侧边面板与主内容区之间的视觉分割 */
@@ -538,7 +554,7 @@
 
 /* 详情摘要区使用微背景区分 */
 .sp-detail-summary {
-    background: var(--yi-surface, #1A2332);
+    background: var(--yi-surface);
     border: 1px solid var(--yi-border);
 }
 

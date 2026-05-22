@@ -7,23 +7,23 @@
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
+    background: var(--yi-surface);
     border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(var(--yi-text-muted-rgb), 0.2);
     border-radius: 5px;
-    border: 2px solid var(--bg-secondary);
-    transition: background 0.2s ease;
+    border: 2px solid var(--yi-surface);
+    transition: background var(--yi-duration-fast) var(--yi-easing-default);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(var(--yi-text-muted-rgb), 0.35);
 }
 
 ::-webkit-scrollbar-thumb:active {
-    background: rgba(255, 255, 255, 0.35);
+    background: rgba(var(--yi-text-muted-rgb), 0.45);
 }
 
 /* 细滚动条变体 - 用于小容器 */
@@ -49,7 +49,7 @@
 /* Firefox */
 * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.15) var(--bg-secondary);
+    scrollbar-color: rgba(var(--yi-text-muted-rgb), 0.2) var(--yi-surface);
 }
 
 /* 特定区域的滚动条样式 */
@@ -62,12 +62,12 @@
 
 .file-tree-container ::-webkit-scrollbar-thumb,
 .sidebar-scroll-container::-webkit-scrollbar-thumb {
-    background: rgba(79, 70, 229, 0.2);
+    background: rgba(var(--yi-primary-rgb), 0.2);
 }
 
 .file-tree-container ::-webkit-scrollbar-thumb:hover,
 .sidebar-scroll-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(79, 70, 229, 0.35);
+    background: rgba(var(--yi-primary-rgb), 0.35);
 }
 
 /* 代码视图滚动条 */
@@ -77,20 +77,20 @@
 }
 
 .code-scroll::-webkit-scrollbar-track {
-    background: var(--bg-primary);
+    background: var(--yi-bg);
 }
 
 .code-scroll::-webkit-scrollbar-thumb {
-    background: rgba(79, 172, 254, 0.2);
-    border: 2px solid var(--bg-primary);
+    background: rgba(var(--yi-primary-rgb), 0.2);
+    border: 2px solid var(--yi-bg);
 }
 
 .code-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(79, 172, 254, 0.35);
+    background: rgba(var(--yi-primary-rgb), 0.35);
 }
 
 .code-scroll::-webkit-scrollbar-corner {
-    background: var(--bg-primary);
+    background: var(--yi-bg);
 }
 
 /* 聊天面板滚动条 */
@@ -99,11 +99,11 @@
 }
 
 .pet-chat-messages::-webkit-scrollbar-thumb {
-    background: rgba(16, 185, 129, 0.2);
+    background: rgba(var(--yi-success-rgb), 0.2);
 }
 
 .pet-chat-messages::-webkit-scrollbar-thumb:hover {
-    background: rgba(16, 185, 129, 0.35);
+    background: rgba(var(--yi-success-rgb), 0.35);
 }
 
 /* Markdown 预览滚动条 */
@@ -112,11 +112,11 @@
 }
 
 .markdown-preview-wrapper::-webkit-scrollbar-thumb {
-    background: rgba(234, 179, 8, 0.2);
+    background: rgba(var(--yi-warning-rgb), 0.2);
 }
 
 .markdown-preview-wrapper::-webkit-scrollbar-thumb:hover {
-    background: rgba(234, 179, 8, 0.35);
+    background: rgba(var(--yi-warning-rgb), 0.35);
 }
 
 /* 模态框滚动条 */
@@ -125,11 +125,11 @@
 }
 
 .yi-modal-body::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(var(--yi-text-muted-rgb), 0.2);
 }
 
 .yi-modal-body::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(var(--yi-text-muted-rgb), 0.3);
 }
 
 /* 响应式优化 - 移动端使用原生滚动条 */
@@ -143,7 +143,6 @@
         height: 8px;
     }
 
-    /* 移动端触摸设备使用更细的滚动条 */
     @media (hover: none) and (pointer: coarse) {
         ::-webkit-scrollbar {
             width: 4px;
@@ -156,29 +155,14 @@
     }
 }
 
-/* 暗色主题优化 */
-@media (prefers-color-scheme: dark) {
-    ::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.2);
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
-    }
-}
-
 /* 高对比度模式 */
 @media (prefers-contrast: high) {
     ::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.4);
+        background: rgba(var(--yi-text-muted-rgb), 0.5);
         border-width: 1px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.6);
+        background: rgba(var(--yi-text-muted-rgb), 0.7);
     }
 }

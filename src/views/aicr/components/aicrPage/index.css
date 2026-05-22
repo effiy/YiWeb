@@ -19,18 +19,18 @@
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
 }
 .aicr-stat-icon {
     font-size: 14px;
-    color: var(--yi-primary, #60A5FA);
+    color: var(--yi-primary);
 }
 .aicr-stat-value {
     font-weight: 600;
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
 }
 .aicr-stat-label {
-    color: var(--yi-text-muted, #94A3B8);
+    color: var(--yi-text-muted);
 }
 
 /* Filter Bar */

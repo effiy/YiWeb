@@ -1,5 +1,5 @@
 .cd-detail {
-    background: var(--yi-surface, #1E293B);
+    background: var(--yi-surface);
     border-radius: 12px;
     padding: 24px;
     box-shadow: var(--yi-shadow-sm);
@@ -18,7 +18,7 @@
     gap: 10px;
     margin-bottom: 20px;
     padding: 14px 16px;
-    background: var(--yi-surface-hover, #334155);
+    background: var(--yi-surface-hover);
     border-radius: 8px;
 }
 .cd-summary-item {
@@ -30,12 +30,12 @@
 .cd-summary-label {
     font-size: 12px;
     font-weight: 600;
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
 }
 .cd-summary-value {
     font-size: 14px;
     font-weight: 600;
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
 }
 
 /* Flags */
@@ -45,7 +45,7 @@
     gap: 8px;
     margin-bottom: 20px;
     padding: 14px 16px;
-    background: var(--yi-surface-hover, #334155);
+    background: var(--yi-surface-hover);
     border-radius: 8px;
 }
 .cd-flag-row {
@@ -54,20 +54,20 @@
     gap: 10px;
 }
 .cd-flag-icon--on {
-    color: var(--yi-success, #22C55E);
+    color: var(--yi-success);
     font-size: 14px;
 }
 .cd-flag-icon--off {
-    color: var(--yi-text-muted, #64748B);
+    color: var(--yi-text-muted);
     font-size: 14px;
 }
 .cd-flag-text--on {
     font-size: 13px;
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
 }
 .cd-flag-text--off {
     font-size: 13px;
-    color: var(--yi-text-muted, #64748B);
+    color: var(--yi-text-muted);
     text-decoration: line-through;
 }
 
@@ -88,16 +88,16 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
 }
 .cd-meta-value {
     font-size: 14px;
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
 }
 .cd-meta-value--path {
     font-family: 'JetBrains Mono', monospace;
     font-size: 13px;
-    color: var(--yi-primary, #2563EB);
+    color: var(--yi-primary);
 }
 
 /* File section */
@@ -107,7 +107,7 @@
 .cd-section-title {
     font-size: 14px;
     font-weight: 600;
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
     margin: 0 0 12px;
 }
 .cd-file-group {
@@ -119,14 +119,14 @@
 .cd-file-group-title {
     font-size: 12px;
     font-weight: 600;
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
     margin: 0 0 6px;
     padding: 0 12px;
 }
 .cd-file-group-count {
     font-weight: 400;
     font-size: 11px;
-    color: var(--yi-text-muted, #94A3B8);
+    color: var(--yi-text-muted);
     margin-left: 4px;
 }
 .cd-file-list {
@@ -145,16 +145,16 @@
     transition: background 0.15s, color 0.15s;
 }
 .cd-file-item:hover {
-    background: var(--yi-surface-hover, #334155);
+    background: var(--yi-surface-hover);
 }
 .cd-file-item:hover .cd-file-name {
-    color: var(--yi-primary, #2563EB);
+    color: var(--yi-primary);
 }
 .cd-file-item:hover .cd-file-action-icon {
     opacity: 1;
 }
 .cd-file-icon {
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
     font-size: 12px;
     width: 16px;
     text-align: center;
@@ -162,18 +162,18 @@
 .cd-file-name {
     flex: 1;
     font-family: 'JetBrains Mono', monospace;
-    color: var(--yi-text, #F8FAFC);
+    color: var(--yi-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 .cd-file-date {
-    color: var(--yi-text-secondary, #CBD5E1);
+    color: var(--yi-text-secondary);
     font-size: 12px;
     white-space: nowrap;
 }
 .cd-file-action-icon {
-    color: var(--yi-primary, #2563EB);
+    color: var(--yi-primary);
     font-size: 12px;
     opacity: 0;
     transition: opacity 0.15s;

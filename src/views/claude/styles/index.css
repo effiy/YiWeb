@@ -15,5 +15,5 @@ html, body {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    background: var(--yi-bg, #0F172A);
+    background: var(--yi-bg);
 }
