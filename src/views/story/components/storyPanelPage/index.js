@@ -22,6 +22,10 @@ registerGlobalComponent({
             viewMode: 'board',
             panelStory: null,
             selectedProjectTag: null,
+            selectedStatus: null,
+            selectedType: null,
+            sortField: 'lastModified',
+            sortDirection: 'desc',
         };
     },
     computed: {
@@ -31,21 +35,54 @@ registerGlobalComponent({
         panelVisible() {
             return !!this.panelStory;
         },
+        hasActiveFilters() {
+            return !!(this.localSearchQuery || this.selectedProjectTag || this.selectedStatus || this.selectedType);
+        },
+        statusOptions() {
+            return [
+                { value: null, label: '全部状态' },
+                { value: 'not_started', label: '未开始' },
+                { value: 'docs_in_progress', label: '文档进行中' },
+                { value: 'docs_done', label: '文档完成' },
+                { value: 'code_in_progress', label: '编码进行中' },
+                { value: 'code_done', label: '编码完成' },
+                { value: 'self_improve', label: '自改进' },
+            ];
+        },
+        typeOptions() {
+            return [
+                { value: null, label: '全部类型' },
+                { value: 'frontend', label: '前端' },
+                { value: 'backend', label: '后端' },
+                { value: 'fullstack', label: '全栈' },
+                { value: 'meta', label: '元数据' },
+            ];
+        },
         filteredStories() {
             const tag = this.selectedProjectTag;
             const q = (this.localSearchQuery || '').trim().toLowerCase();
             let result = this.stories;
+
             if (tag) {
                 result = result.filter(s => (s.projectTags || []).includes(tag));
             }
-            if (!q) return result;
-            return result.filter(s =>
-                s.name.toLowerCase().includes(q) ||
-                s.status.toLowerCase().includes(q) ||
-                s.type.toLowerCase().includes(q) ||
-                (s.description || '').toLowerCase().includes(q) ||
-                (s.nextStep || '').toLowerCase().includes(q)
-            );
+            if (this.selectedStatus) {
+                result = result.filter(s => s.status === this.selectedStatus);
+            }
+            if (this.selectedType) {
+                result = result.filter(s => s.type === this.selectedType);
+            }
+            if (q) {
+                result = result.filter(s =>
+                    s.name.toLowerCase().includes(q) ||
+                    s.status.toLowerCase().includes(q) ||
+                    s.type.toLowerCase().includes(q) ||
+                    (s.description || '').toLowerCase().includes(q) ||
+                    (s.nextStep || '').toLowerCase().includes(q)
+                );
+            }
+
+            return this.sortStories(result);
         },
         filteredStoriesByStatus() {
             const tag = this.selectedProjectTag;
@@ -61,6 +98,8 @@ registerGlobalComponent({
             for (const story of this.stories) {
                 if (!groups[story.status]) continue;
                 if (tag && !(story.projectTags || []).includes(tag)) continue;
+                if (this.selectedStatus && story.status !== this.selectedStatus) continue;
+                if (this.selectedType && story.type !== this.selectedType) continue;
                 if (q && !this._matchSearch(story, q)) continue;
                 groups[story.status].push(story);
             }
@@ -77,7 +116,7 @@ registerGlobalComponent({
             const order = ['not_started', 'docs_in_progress', 'docs_done', 'code_in_progress', 'code_done', 'self_improve'];
             const groups = this.filteredStoriesByStatus;
             return order.map(status => ({ status, stories: groups[status] || [] }));
-        }
+        },
     },
     methods: {
         _matchSearch(story, q) {
@@ -87,6 +126,33 @@ registerGlobalComponent({
                 story.type.toLowerCase().includes(q) ||
                 (story.description || '').toLowerCase().includes(q) ||
                 (story.nextStep || '').toLowerCase().includes(q);
+        },
+        sortStories(list) {
+            const field = this.sortField;
+            const dir = this.sortDirection;
+            const sorted = [...list];
+            sorted.sort((a, b) => {
+                let va = a[field];
+                let vb = b[field];
+                if (field === 'lastModified' || field === 'createdAt') {
+                    va = va || 0;
+                    vb = vb || 0;
+                }
+                if (typeof va === 'string') va = va.toLowerCase();
+                if (typeof vb === 'string') vb = vb.toLowerCase();
+                if (va < vb) return dir === 'asc' ? -1 : 1;
+                if (va > vb) return dir === 'asc' ? 1 : -1;
+                return 0;
+            });
+            return sorted;
+        },
+        toggleSort(field) {
+            if (this.sortField === field) {
+                this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.sortField = field;
+                this.sortDirection = 'desc';
+            }
         },
         openDetail(story) {
             if (typeof story === 'string') {
@@ -108,8 +174,12 @@ registerGlobalComponent({
             }
         },
         onKeydown(e) {
-            if (e.key === 'Escape' && this.panelVisible) {
-                this.closePanel();
+            if (e.key === 'Escape') {
+                if (this.panelVisible) {
+                    this.closePanel();
+                } else if (this.hasActiveFilters) {
+                    this.clearAllFilters();
+                }
             }
         },
         statusLabel(status) {
@@ -129,6 +199,20 @@ registerGlobalComponent({
         clearProjectTag() {
             this.selectedProjectTag = null;
         },
+        selectStatus(status) {
+            this.selectedStatus = this.selectedStatus === status ? null : status;
+        },
+        selectType(type) {
+            this.selectedType = this.selectedType === type ? null : type;
+        },
+        clearAllFilters() {
+            this.localSearchQuery = '';
+            this.selectedProjectTag = null;
+            this.selectedStatus = null;
+            this.selectedType = null;
+            this.sortField = 'lastModified';
+            this.sortDirection = 'desc';
+        },
         clearCache() {
             clearCacheAndRefresh();
         },
@@ -138,7 +222,7 @@ registerGlobalComponent({
             if (isNaN(d.getTime())) return '—';
             const pad = (n) => String(n).padStart(2, '0');
             return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        }
+        },
     },
     mounted() {
         document.addEventListener('keydown', this.onKeydown);

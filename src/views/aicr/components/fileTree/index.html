@@ -15,6 +15,7 @@
             class="file-tree-search-input"
             :value="searchQuery"
             @input="handleSearchInput"
+            @keydown="handleSearchKeydown"
             placeholder="搜索文件..."
             aria-label="搜索文件"
         >

@@ -16,6 +16,29 @@
     @clear-cache="clearCacheAndRefresh"
 ></aicr-header>
 
+<div v-if="!sessionLoading && sessions && sessions.length > 0" class="aicr-stats-bar">
+    <div class="aicr-stat-item">
+        <yi-icon name="inbox" class-name="aicr-stat-icon"></yi-icon>
+        <span class="aicr-stat-value">{{ sessions.length }}</span>
+        <span class="aicr-stat-label">会话</span>
+    </div>
+    <div class="aicr-stat-item">
+        <yi-icon name="tag" class-name="aicr-stat-icon"></yi-icon>
+        <span class="aicr-stat-value">{{ allTags.length }}</span>
+        <span class="aicr-stat-label">标签</span>
+    </div>
+    <div class="aicr-stat-item">
+        <yi-icon name="folder" class-name="aicr-stat-icon"></yi-icon>
+        <span class="aicr-stat-value">{{ fileTreeStats.folders }}</span>
+        <span class="aicr-stat-label">文件夹</span>
+    </div>
+    <div class="aicr-stat-item">
+        <yi-icon name="file" class-name="aicr-stat-icon"></yi-icon>
+        <span class="aicr-stat-value">{{ fileTreeStats.files }}</span>
+        <span class="aicr-stat-label">文件</span>
+    </div>
+</div>
+
 <main class="aicr-main">
     <aicr-sidebar></aicr-sidebar>
     <aicr-code-area></aicr-code-area>

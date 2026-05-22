@@ -2,6 +2,20 @@ import { safeExecute, createError, ErrorTypes } from '/cdn/utils/core/error.js';
 import { normalizeFilePath } from '../../utils/fileFieldNormalizer.js';
 import { formatFileSizeCompact, sortFileTreeItems } from './fileTreeUtils.js';
 
+const escapeHtml = (str) => {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+};
+
+const highlightText = (text, query) => {
+    if (!query || !text) return escapeHtml(text);
+    const escapedQuery = escapeHtml(query);
+    const escapedText = escapeHtml(text);
+    const regex = new RegExp(`(${escapedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return escapedText.replace(regex, '<mark class="search-highlight">$1</mark>');
+};
+
 const fileTreeMethods = {
     filterTree(items, query) {
         if (!query) return items;
@@ -35,7 +49,14 @@ const fileTreeMethods = {
 
         this.searchDebounceTimer = setTimeout(() => {
             this.$emit('search-change', value);
-        }, 200);
+        }, 300);
+    },
+    handleSearchKeydown(event) {
+        if (event.key === 'Escape') {
+            event.target.value = '';
+            this.$emit('search-change', '');
+            event.target.focus();
+        }
     },
     handleSearchClear() {
         const input = this.$refs.searchInput;

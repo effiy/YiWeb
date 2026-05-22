@@ -11,14 +11,17 @@
     <table v-else class="sp-table">
         <thead>
             <tr>
-                <th class="sp-th sp-th--name">故事名称</th>
-                <th class="sp-th sp-th--status">状态</th>
-                <th class="sp-th sp-th--next">下一步</th>
-                <th class="sp-th sp-th--notify">消息</th>
-                <th class="sp-th sp-th--log">日志</th>
-                <th class="sp-th sp-th--files">文件数</th>
-                <th class="sp-th sp-th--modified">最后修改</th>
-                <th class="sp-th sp-th--type">类型</th>
+                <th
+                    v-for="col in sortableColumns"
+                    :key="col.label"
+                    :class="['sp-th', thClass(col.field)]"
+                    @click="col.sortable ? onSort(col.field) : null"
+                >
+                    <span class="sp-th-label">{{ col.label }}</span>
+                    <span v-if="col.sortable && sortField === col.field" class="sp-sort-arrow">
+                        {{ sortDirection === 'asc' ? '↑' : '↓' }}
+                    </span>
+                </th>
             </tr>
         </thead>
         <tbody>

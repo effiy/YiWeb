@@ -27,6 +27,15 @@
                     placeholder="搜索故事..."
                     v-model="localSearchQuery"
                 />
+                <button
+                    v-if="localSearchQuery"
+                    type="button"
+                    class="sp-search-clear"
+                    @click="localSearchQuery = ''"
+                    aria-label="清除搜索"
+                >
+                    <yi-icon name="close"></yi-icon>
+                </button>
             </div>
             <div class="sp-view-segmented">
                 <button
@@ -43,6 +52,69 @@
             </div>
         </header-actions>
     </header>
+
+    <div v-if="totalStories > 0 && !loading" class="sp-stats-bar">
+        <div class="sp-stat-item">
+            <yi-icon name="list" class-name="sp-stat-icon"></yi-icon>
+            <span class="sp-stat-value">{{ totalStories }}</span>
+            <span class="sp-stat-label">故事</span>
+        </div>
+        <div class="sp-stat-item">
+            <yi-icon name="circle" class-name="sp-stat-icon"></yi-icon>
+            <span class="sp-stat-value">{{ statusCounts.not_started || 0 }}</span>
+            <span class="sp-stat-label">未开始</span>
+        </div>
+        <div class="sp-stat-item">
+            <yi-icon name="edit" class-name="sp-stat-icon"></yi-icon>
+            <span class="sp-stat-value">{{ (statusCounts.docs_in_progress || 0) + (statusCounts.code_in_progress || 0) }}</span>
+            <span class="sp-stat-label">进行中</span>
+        </div>
+        <div class="sp-stat-item">
+            <yi-icon name="check-circle" class-name="sp-stat-icon"></yi-icon>
+            <span class="sp-stat-value">{{ (statusCounts.docs_done || 0) + (statusCounts.code_done || 0) }}</span>
+            <span class="sp-stat-label">已完成</span>
+        </div>
+        <div v-if="statusCounts.self_improve > 0" class="sp-stat-item">
+            <yi-icon name="lightbulb" class-name="sp-stat-icon"></yi-icon>
+            <span class="sp-stat-value">{{ statusCounts.self_improve || 0 }}</span>
+            <span class="sp-stat-label">自改进</span>
+        </div>
+    </div>
+
+    <div v-if="totalStories > 0 && !loading" class="sp-filter-bar">
+        <div class="sp-filter-group">
+            <span class="sp-filter-label">状态</span>
+            <button
+                v-for="opt in statusOptions"
+                :key="opt.value || 'all-status'"
+                type="button"
+                class="sp-filter-tag"
+                :class="{ active: selectedStatus === opt.value }"
+                @click="selectStatus(opt.value)"
+            >{{ opt.label }}</button>
+        </div>
+        <div class="sp-filter-group">
+            <span class="sp-filter-label">类型</span>
+            <button
+                v-for="opt in typeOptions"
+                :key="opt.value || 'all-type'"
+                type="button"
+                class="sp-filter-tag"
+                :class="{ active: selectedType === opt.value }"
+                @click="selectType(opt.value)"
+            >{{ opt.label }}</button>
+        </div>
+        <button
+            v-if="hasActiveFilters"
+            type="button"
+            class="sp-filter-clear"
+            @click="clearAllFilters"
+            title="清除所有筛选条件"
+        >
+            <yi-icon name="close"></yi-icon>
+            <span>清除筛选</span>
+        </button>
+    </div>
 
     <div v-if="loading" class="sp-loading">
         <yi-icon name="loading" spin></yi-icon> 加载中...
@@ -79,7 +151,15 @@
                 :story="story"
                 @select="openDetail"
             ></story-card>
-            <div v-if="filteredStories.length === 0" class="sp-card-grid-empty">没有匹配的故事</div>
+            <div v-if="filteredStories.length === 0" class="sp-card-grid-empty">
+                <span>{{ hasActiveFilters ? '没有匹配的故事' : '暂无故事' }}</span>
+                <button
+                    v-if="hasActiveFilters"
+                    type="button"
+                    class="sp-empty-clear-btn"
+                    @click="clearAllFilters"
+                >清除筛选条件</button>
+            </div>
         </div>
 
         <!-- List View -->
@@ -88,7 +168,10 @@
                 :stories="filteredStories"
                 :loading="false"
                 :error="null"
+                :sort-field="sortField"
+                :sort-direction="sortDirection"
                 @select="openDetail"
+                @sort="toggleSort"
             ></story-list-table>
         </div>
     </template>
