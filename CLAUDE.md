@@ -47,10 +47,10 @@
 
 ## 安全面
 
-- **输入**：URLSearchParams（`src/core/config.js`）、文件上传（`projectZipMethods.js`）、聊天输入（`sessionChatInput`）。
-- **API**：所有后端请求经 `requestHelper.js` → `crud.js`，支持自动重试、批量、缓存。
+- **输入**：URLSearchParams（`src/core/config.js`）、文件上传（`src/views/aicr/hooks/projectZipMethods.js`）、聊天输入（`src/views/aicr/hooks/methods/inputMethods.js`）。
+- **API**：所有后端请求经 `src/core/services/helper/requestHelper.js` → `src/core/services/modules/crud.js`，支持自动重试、批量、缓存。
 - **存储**：`localStorage` 存 `X-Token`、`env`、`debug`；`sessionStorage` 未使用。
-- **认证**：`authUtils.js` 管理 Token 生命周期；`authErrorHandler.js` 拦截 401 并触发登录弹窗。
+- **认证**：`src/core/services/helper/authUtils.js` 管理 Token 生命周期；`src/core/services/helper/authErrorHandler.js` 拦截 401 并触发登录弹窗。
 - **第三方**：Markdown 渲染启用 `SanitizePlugin`，防止 XSS。
 
 <!-- rui:project-end -->

@@ -1,0 +1,110 @@
+/* ClaudeProjectCard */
+.cc-card {
+    background: var(--yi-surface, #1E293B);
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid var(--yi-border, rgba(255,255,255,0.08));
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+    box-shadow: var(--yi-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.cc-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--yi-shadow-md);
+    border-color: var(--yi-primary, #2563EB);
+}
+
+.cc-card--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 0;
+    color: var(--yi-text-muted, #94A3B8);
+    font-size: 16px;
+    cursor: default;
+}
+.cc-card--empty:hover {
+    transform: none;
+    box-shadow: var(--yi-shadow-sm);
+    border-color: var(--yi-border, rgba(255,255,255,0.08));
+}
+
+.cc-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.cc-card-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--yi-text, #F8FAFC);
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+/* Stats row */
+.cc-card-stats {
+    display: flex;
+    gap: 16px;
+}
+.cc-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.cc-stat-icon {
+    font-size: 13px;
+    color: var(--yi-text-muted, #94A3B8);
+}
+.cc-stat-num {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--yi-text, #F8FAFC);
+}
+.cc-stat-lbl {
+    font-size: 11px;
+    color: var(--yi-text-muted, #94A3B8);
+}
+
+/* Flags */
+.cc-card-flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.cc-flag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+}
+.cc-flag--on {
+    background: rgba(37, 99, 235, 0.15);
+    color: var(--yi-primary, #60A5FA);
+}
+.cc-flag--off {
+    background: var(--yi-surface-hover, #334155);
+    color: var(--yi-text-muted, #64748B);
+    text-decoration: line-through;
+}
+
+.cc-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.cc-card-date {
+    font-size: 11px;
+    color: var(--yi-text-muted, #94A3B8);
+}

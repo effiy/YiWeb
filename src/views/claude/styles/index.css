@@ -1,0 +1,19 @@
+@import url('/cdn/styles/index.css');
+@import url('/src/views/claude/components/claudePanelPage/index.css');
+@import url('/src/views/claude/components/claudeProjectCard/index.css');
+@import url('/src/views/claude/components/claudeDetailCard/index.css');
+
+html, body {
+    height: 100%;
+}
+
+#main-content {
+    height: 100%;
+}
+
+#app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--yi-bg, #0F172A);
+}

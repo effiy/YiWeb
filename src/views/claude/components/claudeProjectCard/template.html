@@ -1,0 +1,41 @@
+<div v-if="project" class="cc-card" @click="onClick">
+    <div class="cc-card-top">
+        <div class="cc-card-name" :title="project.name">{{ project.name }}</div>
+        <yi-tag :variant="healthVariant" size="sm">{{ healthLabel }}</yi-tag>
+    </div>
+
+    <div class="cc-card-stats">
+        <div class="cc-stat" title="Skills 数量">
+            <yi-icon name="puzzle-piece" class-name="cc-stat-icon"></yi-icon>
+            <span class="cc-stat-num">{{ project.skillCount }}</span>
+            <span class="cc-stat-lbl">Skills</span>
+        </div>
+        <div class="cc-stat" title="Agents 数量">
+            <yi-icon name="robot" class-name="cc-stat-icon"></yi-icon>
+            <span class="cc-stat-num">{{ project.agentCount }}</span>
+            <span class="cc-stat-lbl">Agents</span>
+        </div>
+        <div class="cc-stat" title="文件总数">
+            <yi-icon name="file-alt" class-name="cc-stat-icon"></yi-icon>
+            <span class="cc-stat-num">{{ project.fileCount }}</span>
+            <span class="cc-stat-lbl">文件</span>
+        </div>
+    </div>
+
+    <div class="cc-card-flags">
+        <span v-if="project.hasClaudeMd" class="cc-flag cc-flag--on" title="有 CLAUDE.md">CLAUDE.md</span>
+        <span v-else class="cc-flag cc-flag--off" title="无 CLAUDE.md">CLAUDE.md</span>
+        <span v-if="project.hasSettings" class="cc-flag cc-flag--on" title="有 settings.json">settings</span>
+        <span v-else class="cc-flag cc-flag--off" title="无 settings.json">settings</span>
+        <span v-if="project.hasMemory" class="cc-flag cc-flag--on" title="有 memory">{{ project.memoryFileCount }} memory</span>
+        <span v-if="project.hasHooks" class="cc-flag cc-flag--on" title="有 hooks">hooks</span>
+        <span v-if="project.hasRules" class="cc-flag cc-flag--on" :title="project.ruleCount + ' rules'">{{ project.ruleCount }} rules</span>
+        <span v-if="project.hasTemplates" class="cc-flag cc-flag--on" :title="project.templateCount + ' templates'">{{ project.templateCount }} tmpl</span>
+        <span v-if="project.hasScheduledTasks" class="cc-flag cc-flag--on" title="有计划任务">tasks</span>
+    </div>
+
+    <div class="cc-card-footer">
+        <span class="cc-card-date">{{ formatDate(project.lastModified) }}</span>
+    </div>
+</div>
+<div v-else class="cc-card cc-card--empty">—</div>

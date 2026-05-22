@@ -1,0 +1,84 @@
+<div class="cp-page">
+    <header class="cp-header">
+        <div class="cp-header-left">
+            <h1 class="cp-header-title">Claude 管理面板</h1>
+            <span v-if="totalProjects > 0" class="cp-header-count">{{ totalProjects }} 个项目</span>
+        </div>
+        <header-actions @clear-cache="clearCache">
+            <div class="cp-search">
+                <yi-icon name="search" class-name="cp-search-icon"></yi-icon>
+                <input
+                    type="text"
+                    class="cp-search-input"
+                    placeholder="搜索项目..."
+                    v-model="localSearchQuery"
+                />
+            </div>
+        </header-actions>
+    </header>
+
+    <div v-if="totalProjects > 0 && !loading" class="cp-stats-bar">
+        <div class="cp-stat-item">
+            <yi-icon name="folder" class-name="cp-stat-icon"></yi-icon>
+            <span class="cp-stat-value">{{ totalProjects }}</span>
+            <span class="cp-stat-label">项目</span>
+        </div>
+        <div class="cp-stat-item">
+            <yi-icon name="puzzle-piece" class-name="cp-stat-icon"></yi-icon>
+            <span class="cp-stat-value">{{ totalSkills }}</span>
+            <span class="cp-stat-label">Skills</span>
+        </div>
+        <div class="cp-stat-item">
+            <yi-icon name="robot" class-name="cp-stat-icon"></yi-icon>
+            <span class="cp-stat-value">{{ totalAgents }}</span>
+            <span class="cp-stat-label">Agents</span>
+        </div>
+        <div class="cp-stat-item">
+            <span class="cp-stat-value">{{ healthSummary.withClaudeMd || 0 }}/{{ totalProjects }}</span>
+            <span class="cp-stat-label">含 CLAUDE.md</span>
+        </div>
+        <div class="cp-stat-item">
+            <span class="cp-stat-value">{{ healthSummary.withSettings || 0 }}/{{ totalProjects }}</span>
+            <span class="cp-stat-label">含 settings</span>
+        </div>
+    </div>
+
+    <div v-if="loading" class="cp-loading">
+        <yi-icon name="loading" spin></yi-icon> 加载中...
+    </div>
+    <div v-else-if="error" class="cp-error">
+        <yi-icon name="error"></yi-icon> {{ error }}
+    </div>
+
+    <div v-else class="cp-card-grid">
+        <claude-project-card
+            v-for="project in filteredProjects"
+            :key="project.name"
+            :project="project"
+            @select="openDetail"
+        ></claude-project-card>
+        <div v-if="filteredProjects.length === 0 && !loading" class="cp-card-grid-empty">
+            <yi-icon name="folder-open" class-name="cp-empty-icon"></yi-icon>
+            <span>{{ localSearchQuery ? '没有匹配的项目' : '暂无 .claude 配置项目' }}</span>
+        </div>
+    </div>
+
+    <!-- Side Panel -->
+    <div v-if="panelVisible" class="cp-panel-backdrop" @click="onBackdropClick">
+        <div class="cp-panel" role="dialog" aria-modal="true" aria-label="项目详情">
+            <div class="cp-panel-header">
+                <h2 class="cp-panel-title">{{ panelProject.name }}</h2>
+                <button class="cp-panel-close" @click="closePanel" aria-label="关闭面板">
+                    <yi-icon name="close"></yi-icon>
+                </button>
+            </div>
+            <div class="cp-panel-body">
+                <claude-detail-card
+                    :project="panelProject"
+                    :panel="true"
+                    @close="closePanel"
+                ></claude-detail-card>
+            </div>
+        </div>
+    </div>
+</div>
