@@ -1,0 +1,15 @@
+{
+  "project": "YiWeb",
+  "type": "frontend",
+  "init_at": "2026-05-22T13:28:00+08:00",
+  "reinit_at": "2026-05-22T14:36:00+08:00",
+  "views": ["aicr", "claude", "story"],
+  "branch_prefix": "feat",
+  "doc_prefix": "YiWeb",
+  "build_tool": null,
+  "test_framework": null,
+  "package_manager": null,
+  "module_system": "esm",
+  "framework": "createBaseView (self-built, Vue 3 CDN)",
+  "architecture": "single-page with view isolation"
+}

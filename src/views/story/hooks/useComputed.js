@@ -23,6 +23,8 @@ export function useComputed(store) {
 
     const totalStories = computed(() => store.stories.value.length);
 
+    const allProjectTags = computed(() => store.allProjectTags.value);
+
     const storiesByStatus = computed(() => {
         const groups = {
             not_started: [],
@@ -43,6 +45,7 @@ export function useComputed(store) {
     return {
         statusCounts,
         totalStories,
+        allProjectTags,
         storiesByStatus
     };
 }

@@ -5,6 +5,20 @@
             <span v-if="totalStories > 0" class="sp-header-count">{{ totalStories }} 个故事</span>
         </div>
         <header-actions @clear-cache="clearCache">
+            <div v-if="allProjectTags.length > 0" class="sp-project-tags">
+                <button
+                    class="sp-project-tag"
+                    :class="{ 'sp-project-tag--active': !selectedProjectTag }"
+                    @click="clearProjectTag"
+                >全部</button>
+                <button
+                    v-for="tag in allProjectTags"
+                    :key="tag"
+                    class="sp-project-tag"
+                    :class="{ 'sp-project-tag--active': selectedProjectTag === tag }"
+                    @click="selectProjectTag(tag)"
+                >{{ tag }}</button>
+            </div>
             <div class="sp-search">
                 <yi-icon name="search" class-name="sp-search-icon"></yi-icon>
                 <input

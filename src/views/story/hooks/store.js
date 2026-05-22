@@ -13,6 +13,15 @@ const PROJECT_PREFIX = PROJECT_NAME + '-';
 
 const BASELINE_DOCS = ['使用场景', '技术评审', '测试设计', '安全审计'];
 
+function extractProjectTags(filenames) {
+    const tags = new Set();
+    for (const fn of filenames) {
+        const m = fn.match(/^([A-Za-z][A-Za-z0-9]*)-/);
+        if (m) tags.add(m[1]);
+    }
+    return [...tags].sort();
+}
+
 const TYPE_CONCURRENCY = 4;
 
 function extractStoryName(filePath) {
@@ -107,6 +116,7 @@ export function createStore() {
     const loading = ref(false);
     const error = ref(null);
     const selectedStory = ref(null);
+    const allProjectTags = ref([]);
 
     async function fetchStories() {
         loading.value = true;
@@ -146,6 +156,7 @@ export function createStore() {
 
             if (storyMap.size === 0) {
                 stories.value = [];
+                allProjectTags.value = [];
                 loading.value = false;
                 return;
             }
@@ -158,6 +169,8 @@ export function createStore() {
                 const filenames = files.map(f =>
                     (f.file_path || '').split('/').pop()
                 );
+
+                const projectTags = extractProjectTags(filenames);
 
                 const status = determineStatus(filenames);
                 const type = typeMap.get(name) || 'meta';
@@ -206,6 +219,7 @@ export function createStore() {
                     type,
                     description,
                     nextStep,
+                    projectTags,
                     hasNotify,
                     hasLog,
                     notifyUpdatedAt,
@@ -225,6 +239,12 @@ export function createStore() {
 
             results.sort((a, b) => b.lastModified - a.lastModified);
             stories.value = results;
+
+            const tagSet = new Set();
+            for (const r of results) {
+                for (const t of r.projectTags) tagSet.add(t);
+            }
+            allProjectTags.value = [...tagSet].sort();
             logInfo('[故事面板] 加载完成:', results.length, '个故事');
         } catch (err) {
             error.value = err.message || '加载失败';
@@ -250,6 +270,7 @@ export function createStore() {
         loading,
         error,
         selectedStory,
+        allProjectTags,
         fetchStories,
         selectStory,
         clearSelection,

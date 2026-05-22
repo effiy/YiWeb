@@ -16,7 +16,7 @@
 | **组件库** | CDN 托管通用组件（`YiModal`、`YiButton`、`YiTag`、`YiLoading` 等） |
 | **渲染增强** | CDN Markdown 渲染器（含 Mermaid、Sanitize、TOC 插件） |
 | **状态管理** | `vueRef` 响应式 + 中心化 `store`（hooks/state/） |
-| **路由** | 无 — 当前仅单视图 `aicr` |
+| **路由** | 无 — 当前包含 `aicr`、`claude`、`story` 三个视图，通过 `location.href` 切换 |
 | **API 层** | 封装 fetch，统一认证头 + 401 处理 + 内存缓存 |
 | **测试框架** | None |
 
@@ -47,7 +47,7 @@
 
 ## 安全面
 
-- **输入**：URLSearchParams（`src/core/config.js`）、文件上传（`src/views/aicr/hooks/projectZipMethods.js`）、聊天输入（`src/views/aicr/hooks/methods/inputMethods.js`）。
+- **输入**：URLSearchParams（`src/core/config.js`）、文件上传（`src/views/aicr/hooks/projectZipMethods.js`）、聊天输入（`src/views/aicr/hooks/methods/inputMethods.js`）、故事面板数据加载（`src/views/story/`）、Claude 面板数据加载（`src/views/claude/`）。
 - **API**：所有后端请求经 `src/core/services/helper/requestHelper.js` → `src/core/services/modules/crud.js`，支持自动重试、批量、缓存。
 - **存储**：`localStorage` 存 `X-Token`、`env`、`debug`；`sessionStorage` 未使用。
 - **认证**：`src/core/services/helper/authUtils.js` 管理 Token 生命周期；`src/core/services/helper/authErrorHandler.js` 拦截 401 并触发登录弹窗。

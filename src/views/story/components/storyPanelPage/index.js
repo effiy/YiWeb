@@ -13,6 +13,7 @@ registerGlobalComponent({
         totalStories: { type: Number, default: 0 },
         selectedStory: { type: Object, default: null },
         storiesByStatus: { type: Object, default: () => ({}) },
+        allProjectTags: { type: Array, default: () => [] },
     },
     emits: ['select-story', 'back'],
     data() {
@@ -20,6 +21,7 @@ registerGlobalComponent({
             localSearchQuery: '',
             viewMode: 'board',
             panelStory: null,
+            selectedProjectTag: null,
         };
     },
     computed: {
@@ -30,9 +32,14 @@ registerGlobalComponent({
             return !!this.panelStory;
         },
         filteredStories() {
+            const tag = this.selectedProjectTag;
             const q = (this.localSearchQuery || '').trim().toLowerCase();
-            if (!q) return this.stories;
-            return this.stories.filter(s =>
+            let result = this.stories;
+            if (tag) {
+                result = result.filter(s => (s.projectTags || []).includes(tag));
+            }
+            if (!q) return result;
+            return result.filter(s =>
                 s.name.toLowerCase().includes(q) ||
                 s.status.toLowerCase().includes(q) ||
                 s.type.toLowerCase().includes(q) ||
@@ -41,8 +48,8 @@ registerGlobalComponent({
             );
         },
         filteredStoriesByStatus() {
+            const tag = this.selectedProjectTag;
             const q = (this.localSearchQuery || '').trim().toLowerCase();
-            if (!q) return this.storiesByStatus;
             const groups = {
                 not_started: [],
                 docs_in_progress: [],
@@ -52,9 +59,10 @@ registerGlobalComponent({
                 self_improve: []
             };
             for (const story of this.stories) {
-                if (groups[story.status] && this._matchSearch(story, q)) {
-                    groups[story.status].push(story);
-                }
+                if (!groups[story.status]) continue;
+                if (tag && !(story.projectTags || []).includes(tag)) continue;
+                if (q && !this._matchSearch(story, q)) continue;
+                groups[story.status].push(story);
             }
             return groups;
         },
@@ -114,6 +122,12 @@ registerGlobalComponent({
         typeLabel(type) {
             const map = { backend: '后端', frontend: '前端', fullstack: '全栈', meta: '元数据' };
             return map[type] || type;
+        },
+        selectProjectTag(tag) {
+            this.selectedProjectTag = this.selectedProjectTag === tag ? null : tag;
+        },
+        clearProjectTag() {
+            this.selectedProjectTag = null;
         },
         clearCache() {
             clearCacheAndRefresh();

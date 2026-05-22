@@ -7,9 +7,10 @@
 ```mermaid
 flowchart TB
     subgraph Browser["浏览器"]
-        subgraph View["视图层 src/views/aicr/"]
-            UI["组件树（HTML+CSS+JS）"]
-            Hooks["Hooks（computed / methods / state）"]
+        subgraph View["视图层 src/views/"]
+            AICR["aicr — AI 代码审查"]
+            ClaudeV["claude — Claude 管理面板"]
+            StoryV["story — 故事任务面板"]
         end
         subgraph Core["服务层 src/core/"]
             Config["config.js"]
@@ -79,14 +80,16 @@ YiWeb/
 │   │       ├── helper/           # API 请求、认证、错误处理
 │   │       └── modules/          # CRUD、 goals 等通用模块
 │   └── views/
-│       └── aicr/                 # AI 代码审查视图（当前唯一视图）
-│           ├── components/         # 业务组件
-│           ├── hooks/              # computed / methods / state / store
-│           ├── styles/             # 视图级样式
-│           ├── utils/              # 视图工具（resizer、listenerManager）
-│           ├── constants/          # 常量
-│           ├── index.html          # 视图模板
-│           └── index.js            # 视图入口
+│       ├── aicr/                 # AI 代码审查视图
+│       │   ├── components/         # 业务组件
+│       │   ├── hooks/              # computed / methods / state / store
+│       │   ├── styles/             # 视图级样式
+│       │   ├── utils/              # 视图工具（resizer、listenerManager）
+│       │   ├── constants/          # 常量
+│       │   ├── index.html          # 视图模板
+│       │   └── index.js            # 视图入口
+│       ├── claude/               # Claude 管理面板视图
+│       └── story/                # 故事任务面板视图
 ├── docs/故事任务面板/              # rui 故事文档
 ├── index.html                    # 根入口（当前仅占位）
 └── CLAUDE.md                     # 项目画像与执行准则
