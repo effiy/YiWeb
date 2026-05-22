@@ -3,7 +3,9 @@
  * 管理远端各项目 .claude 目录
  */
 import { logInfo, logError } from '/cdn/utils/core/log.js';
-import { getAuthHeaders } from '/src/core/services/helper/authUtils.js?v=1';
+import { getData } from '/src/core/services/index.js';
+import { buildServiceUrl } from '/src/core/services/helper/requestHelper.js';
+import { safeExecuteAsync } from '/cdn/utils/core/error.js';
 
 const { ref } = Vue;
 
@@ -35,101 +37,106 @@ export function createStore() {
     async function fetchProjects() {
         loading.value = true;
         error.value = null;
-        try {
-            const apiUrl = window.API_URL || 'https://api.effiy.cn';
-            const authHeaders = getAuthHeaders();
-            const body = {
-                module_name: 'services.database.data_service',
-                method_name: 'query_documents',
-                parameters: { cname: 'sessions', limit: 10000 },
-            };
-            const res = await fetch(apiUrl + '/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    ...authHeaders,
-                },
-                credentials: 'omit',
-                body: JSON.stringify(body),
-            });
-            const data = await res.json();
-            const items = data?.data?.list || data?.list || [];
-            const claudeItems = items.filter(i => isClaudeFile(i.file_path));
+        await safeExecuteAsync(async () => {
+            try {
+                const url = buildServiceUrl('query_documents', { cname: 'sessions', limit: 10000 });
+                const response = await getData(url, {}, false);
 
-            const projectMap = new Map();
-            for (const item of claudeItems) {
-                const name = extractProjectName(item.file_path);
-                if (!name) continue;
-                if (!projectMap.has(name)) projectMap.set(name, []);
-                projectMap.get(name).push(item);
+                let items = [];
+                if (Array.isArray(response)) {
+                    items = response;
+                } else if (response && Array.isArray(response.data)) {
+                    items = response.data;
+                } else if (response && response.data && Array.isArray(response.data.list)) {
+                    items = response.data.list;
+                } else if (response && Array.isArray(response.list)) {
+                    items = response.list;
+                }
+
+                if (!Array.isArray(items) || items.length === 0) {
+                    error.value = '未获取到会话数据';
+                    return;
+                }
+
+                const claudeItems = items.filter(i => isClaudeFile(i.file_path));
+
+                const projectMap = new Map();
+                for (const item of claudeItems) {
+                    const name = extractProjectName(item.file_path);
+                    if (!name) continue;
+                    if (!projectMap.has(name)) projectMap.set(name, []);
+                    projectMap.get(name).push(item);
+                }
+
+                const results = [];
+                for (const [name, files] of projectMap) {
+                    const skillCount = countByDir(files, 'skills');
+                    const agentCount = countByDir(files, 'agents');
+                    const ruleCount = countByDir(files, 'rules');
+                    const templateCount = countByDir(files, 'templates');
+                    const filenames = files.map(f => (f.file_path || '').split('/').pop());
+
+                    const hasClaudeMd = filenames.some(fn => fn === 'CLAUDE.md');
+                    const hasSettings = filenames.some(fn => fn === 'settings.json');
+                    const hasScheduledTasks = filenames.some(fn => fn === 'scheduled_tasks.json');
+                    const hasMemory = files.some(f => (f.file_path || '').includes('/.claude/memory/'));
+                    const hasHooks = files.some(f => (f.file_path || '').includes('/.claude/hooks/'));
+                    const hasRules = ruleCount > 0;
+                    const hasTemplates = templateCount > 0;
+
+                    const memoryFiles = files.filter(f =>
+                        (f.file_path || '').includes('/.claude/memory/') &&
+                        !(f.file_path || '').endsWith('/')
+                    );
+
+                    const mcpCount = files.filter(f =>
+                        (f.file_path || '').includes('/.claude/mcp/')
+                    ).length;
+
+                    const maxTs = Math.max(...files.map(f => f.updatedAt || 0));
+                    const createdTs = Math.min(...files.map(f => f.createdAt || Infinity));
+
+                    results.push({
+                        name,
+                        skillCount,
+                        agentCount,
+                        mcpCount,
+                        hasClaudeMd,
+                        hasSettings,
+                        hasScheduledTasks,
+                        hasMemory,
+                        hasHooks,
+                        hasRules,
+                        hasTemplates,
+                        ruleCount,
+                        templateCount,
+                        memoryFileCount: memoryFiles.length,
+                        fileCount: files.length,
+                        files: files.map(f => ({
+                            filePath: f.file_path,
+                            fileName: (f.file_path || '').split('/').pop(),
+                            updatedAt: f.updatedAt,
+                            createdAt: f.createdAt,
+                            title: f.title || '',
+                        })),
+                        lastModified: maxTs,
+                        createdAt: createdTs === Infinity ? 0 : createdTs,
+                    });
+                }
+
+                results.sort((a, b) => b.lastModified - a.lastModified);
+                projects.value = results;
+                logInfo('[Claude面板] 加载完成:', results.length, '个项目');
+            } catch (err) {
+                error.value = err?.message || '加载失败';
+                logError('[Claude面板] 加载失败:', err);
             }
+        }, '加载Claude项目列表');
 
-            const results = [];
-            for (const [name, files] of projectMap) {
-                const skillCount = countByDir(files, 'skills');
-                const agentCount = countByDir(files, 'agents');
-                const ruleCount = countByDir(files, 'rules');
-                const templateCount = countByDir(files, 'templates');
-                const filenames = files.map(f => (f.file_path || '').split('/').pop());
-
-                const hasClaudeMd = filenames.some(fn => fn === 'CLAUDE.md');
-                const hasSettings = filenames.some(fn => fn === 'settings.json');
-                const hasScheduledTasks = filenames.some(fn => fn === 'scheduled_tasks.json');
-                const hasMemory = files.some(f => (f.file_path || '').includes('/.claude/memory/'));
-                const hasHooks = files.some(f => (f.file_path || '').includes('/.claude/hooks/'));
-                const hasRules = ruleCount > 0;
-                const hasTemplates = templateCount > 0;
-
-                const memoryFiles = files.filter(f =>
-                    (f.file_path || '').includes('/.claude/memory/') &&
-                    !(f.file_path || '').endsWith('/')
-                );
-
-                const mcpCount = files.filter(f =>
-                    (f.file_path || '').includes('/.claude/mcp/')
-                ).length;
-
-                const maxTs = Math.max(...files.map(f => f.updatedAt || 0));
-                const createdTs = Math.min(...files.map(f => f.createdAt || Infinity));
-
-                results.push({
-                    name,
-                    skillCount,
-                    agentCount,
-                    mcpCount,
-                    hasClaudeMd,
-                    hasSettings,
-                    hasScheduledTasks,
-                    hasMemory,
-                    hasHooks,
-                    hasRules,
-                    hasTemplates,
-                    ruleCount,
-                    templateCount,
-                    memoryFileCount: memoryFiles.length,
-                    fileCount: files.length,
-                    files: files.map(f => ({
-                        filePath: f.file_path,
-                        fileName: (f.file_path || '').split('/').pop(),
-                        updatedAt: f.updatedAt,
-                        createdAt: f.createdAt,
-                        title: f.title || '',
-                    })),
-                    lastModified: maxTs,
-                    createdAt: createdTs === Infinity ? 0 : createdTs,
-                });
-            }
-
-            results.sort((a, b) => b.lastModified - a.lastModified);
-            projects.value = results;
-            logInfo('[Claude面板] 加载完成:', results.length, '个项目');
-        } catch (err) {
-            error.value = err.message || '加载失败';
-            logError('[Claude面板] 加载失败:', err);
-        } finally {
-            loading.value = false;
+        if (!projects.value.length && !error.value) {
+            error.value = '未找到项目数据';
         }
+        loading.value = false;
     }
 
     function selectProject(name) {
