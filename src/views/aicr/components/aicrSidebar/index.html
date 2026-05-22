@@ -18,6 +18,7 @@
         <file-tree :tree="fileTree" :selected-key="selectedKey"
             :expanded-folders="expandedFolders" :loading="loading" :error="errorMessage"
             :collapsed="sidebarCollapsed" :search-query="searchQuery"
+            :session-search-query="sessionSearchQuery || ''"
             :batch-mode="batchMode" :selected-keys="selectedKeys" :view-mode="'tree'"
             :selected-tags="(selectedSessionTags && Array.isArray(selectedSessionTags)) ? selectedSessionTags : []"
             :tag-filter-no-tags="tagFilterNoTags || false" @file-select="handleFileSelect"
@@ -31,7 +32,8 @@
             @file-import="handleFileImport"
             @folder-export="handleFolderExport"
             @tag-select="handleTagSelect" @tag-clear="handleTagClear"
-            @tag-filter-no-tags="handleTagFilterNoTags"></file-tree>
+            @tag-filter-no-tags="handleTagFilterNoTags"
+            @session-search-change="handleSessionSearchChange"></file-tree>
     </div>
 </aside>
 

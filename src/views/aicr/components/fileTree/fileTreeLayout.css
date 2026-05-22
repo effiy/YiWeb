@@ -390,6 +390,33 @@
     transform: scale(0.95);
 }
 
+/* ========== 排序下拉 ========== */
+.file-tree-sort-bar {
+    padding: 0 var(--spacing-sm) var(--spacing-xs) var(--spacing-sm);
+    display: flex;
+    align-items: center;
+}
+
+.file-tree-sort-select {
+    width: 100%;
+    height: 28px;
+    padding: 0 8px;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--yi-text-secondary);
+    background: var(--yi-surface-hover);
+    border: 1px solid var(--yi-border);
+    border-radius: 5px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color var(--yi-duration-fast);
+}
+
+.file-tree-sort-select:focus {
+    border-color: var(--yi-primary);
+    box-shadow: var(--yi-shadow-focus);
+}
+
 /* ========== 收起按钮 ========== */
 .file-tree-toggle {
     position: absolute;

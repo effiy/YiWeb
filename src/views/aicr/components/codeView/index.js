@@ -160,7 +160,8 @@ const componentOptions = {
             fontSizeMin: 11,
             fontSizeMax: 18,
             hoveredLine: null,
-            isFullscreen: false
+            isFullscreen: false,
+            showSearchBar: false
         };
     },
     computed: {
@@ -332,11 +333,19 @@ const componentOptions = {
             if (!e) return;
             if (this.isEditingFile) return;
             const key = String(e.key || '');
+            const ctrl = !!(e.ctrlKey || e.metaKey);
             if (key === 'Escape') {
-                if (this.isFullscreen) {
+                if (this.showSearchBar) {
+                    e.preventDefault();
+                    this.toggleSearchBar();
+                } else if (this.isFullscreen) {
                     e.preventDefault();
                     this.toggleFullscreen();
                 }
+            }
+            if (ctrl && (key === 'f' || key === 'F')) {
+                e.preventDefault();
+                if (!this.showSearchBar) this.toggleSearchBar();
             }
         };
         window.addEventListener('keydown', this._onCodeKeydown);
@@ -416,6 +425,30 @@ const componentOptions = {
             }
             const idx = currentLine ? matches.indexOf(currentLine) : -1;
             this.activeMatchIndex = idx >= 0 ? idx : 0;
+        },
+        toggleSearchBar() {
+            this.showSearchBar = !this.showSearchBar;
+            if (this.showSearchBar) {
+                this.$nextTick(() => {
+                    const input = this.$refs && this.$refs.codeSearchInput;
+                    if (input && input.focus) input.focus();
+                });
+            } else {
+                this.clearSearch();
+            }
+        },
+        onCodeSearchKeydown(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                this.toggleSearchBar();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    this.findPrevMatch();
+                } else {
+                    this.findNextMatch();
+                }
+            }
         },
         clearSearch() {
             this.searchQuery = '';

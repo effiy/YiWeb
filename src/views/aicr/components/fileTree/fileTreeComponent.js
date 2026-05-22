@@ -58,14 +58,20 @@ const componentOptions = {
         tagFilterNoTags: {
             type: Boolean,
             default: false
+        },
+        sessionSearchQuery: {
+            type: String,
+            default: ''
         }
     },
     computed: fileTreeComputed,
-    emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'tag-select', 'tag-clear', 'tag-filter-no-tags', 'folder-import', 'folder-export'],
+    emits: ['file-select', 'folder-toggle', 'toggle-collapse', 'create-folder', 'create-file', 'rename-item', 'delete-item', 'create-session', 'search-change', 'toggle-batch-mode', 'batch-select-file', 'download-project', 'upload-project', 'view-mode-change', 'tag-select', 'tag-clear', 'tag-filter-no-tags', 'folder-import', 'folder-export', 'session-search-change', 'sort-change'],
     data() {
         return {
             searchDebounceTimer: null,
-            tagOrderVersion: 0
+            tagOrderVersion: 0,
+            sortField: 'default',
+            sortDirection: 'asc'
         };
     },
     methods: fileTreeMethods

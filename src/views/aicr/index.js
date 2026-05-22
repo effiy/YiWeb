@@ -338,6 +338,7 @@ import { setupAicrEventListeners } from '/src/views/aicr/utils/listenerManager.j
                     selectedKeys: function () { return store.selectedKeys ? store.selectedKeys.value : new Set(); },
                     viewMode: function () { return store.viewMode ? store.viewMode.value : 'tree'; },
                     searchQuery: function () { return store.searchQuery ? store.searchQuery.value : ''; },
+                    sessionSearchQuery: function () { return store.sessionSearchQuery ? store.sessionSearchQuery.value : ''; },
                     selectedTags: function () { return store.selectedSessionTags ? store.selectedSessionTags.value : []; },
                     tagFilterNoTags: function () { return store.tagFilterNoTags ? store.tagFilterNoTags.value : false; }
                 }

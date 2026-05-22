@@ -1,5 +1,3 @@
-import { sortFileTreeRecursively } from './fileTreeUtils.js';
-
 const fileTreeComputed = {
     allTags() {
         if (!Array.isArray(this.tree)) return [];
@@ -119,11 +117,31 @@ const fileTreeComputed = {
 
         let filteredItems = this.tree;
 
+        // 会话搜索：按顶层文件夹名称过滤
+        const sessionQuery = this.sessionSearchQuery && this.sessionSearchQuery.trim()
+            ? this.sessionSearchQuery.trim().toLowerCase()
+            : '';
+        if (sessionQuery) {
+            filteredItems = filteredItems.filter(item => {
+                if (item.type === 'folder') {
+                    const nameMatch = (item.name || '').toLowerCase().includes(sessionQuery);
+                    if (nameMatch) return true;
+                    if (Array.isArray(item.children)) {
+                        return item.children.some(child =>
+                            (child.name || '').toLowerCase().includes(sessionQuery)
+                        );
+                    }
+                    return false;
+                }
+                return (item.name || '').toLowerCase().includes(sessionQuery);
+            });
+        }
+
         // 一级标签筛选
         if (firstLevelTags.length > 0 || this.tagFilterNoTags) {
             const result = [];
 
-            for (const item of this.tree) {
+            for (const item of filteredItems) {
                 if (item.type === 'folder') {
                     const isTagSelected = firstLevelTags.includes(item.name);
                     let shouldInclude = false;
@@ -167,7 +185,10 @@ const fileTreeComputed = {
             });
         }
 
-        const sorted = filteredItems.map(item => sortFileTreeRecursively(item));
+        // 排序
+        const sortField = this.sortField || 'default';
+        const sortDir = this.sortDirection || 'asc';
+        const sorted = filteredItems.map(item => this.sortTreeItem(item, sortField, sortDir));
 
         if (this.searchQuery && this.searchQuery.trim()) {
             return this.filterTree(sorted, this.searchQuery.trim().toLowerCase());

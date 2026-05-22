@@ -101,6 +101,56 @@ const fileTreeMethods = {
     sortFileTreeItems(items) {
         return sortFileTreeItems(items);
     },
+    sortTreeItem(node, sortField, sortDir) {
+        if (!node || typeof node !== 'object') return node;
+        if (node.type === 'folder' && Array.isArray(node.children)) {
+            const sortedChildren = this.sortChildren(node.children, sortField, sortDir);
+            node = { ...node, children: sortedChildren };
+            node.children.forEach(child => this.sortTreeItem(child, sortField, sortDir));
+        }
+        return node;
+    },
+    sortChildren(items, sortField, sortDir) {
+        if (!Array.isArray(items)) return items;
+        const dir = sortDir === 'desc' ? -1 : 1;
+        return [...items].sort((a, b) => {
+            if (sortField === 'name') {
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                return dir * nameA.localeCompare(nameB, 'zh-CN');
+            }
+            // default: folders first, then alphabetical
+            if (a.type === 'folder' && b.type !== 'folder') return -1;
+            if (a.type !== 'folder' && b.type === 'folder') return 1;
+            const nameA = (a.name || '').toLowerCase();
+            const nameB = (b.name || '').toLowerCase();
+            return dir * nameA.localeCompare(nameB, 'zh-CN');
+        });
+    },
+    handleSortChange(event) {
+        const value = event.target.value;
+        if (value === 'default' || value === 'name-asc' || value === 'name-desc') {
+            const [field, dir] = value === 'default' ? ['default', 'asc'] : value.split('-');
+            this.sortField = field;
+            this.sortDirection = dir || 'asc';
+        }
+    },
+    handleSessionSearchInput(event) {
+        const value = event.target.value;
+        if (this.sessionSearchDebounceTimer) {
+            clearTimeout(this.sessionSearchDebounceTimer);
+        }
+        this.sessionSearchDebounceTimer = setTimeout(() => {
+            this.$emit('session-search-change', value);
+        }, 300);
+    },
+    handleSessionSearchClear() {
+        const input = this.$refs.sessionSearchInput;
+        if (input) {
+            input.value = '';
+        }
+        this.$emit('session-search-change', '');
+    },
     toggleCollapse() {
         return safeExecute(() => {
             this.$emit('toggle-collapse');

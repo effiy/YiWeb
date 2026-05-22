@@ -29,6 +29,20 @@
         </button>
     </div>
 
+    <!-- 排序下拉 -->
+    <div class="file-tree-sort-bar">
+        <select
+            class="file-tree-sort-select"
+            :value="sortField === 'default' ? 'default' : sortField + '-' + sortDirection"
+            @change="handleSortChange"
+            aria-label="排序方式"
+        >
+            <option value="default">📁 默认排序</option>
+            <option value="name-asc">🔤 名称 A-Z</option>
+            <option value="name-desc">🔤 名称 Z-A</option>
+        </select>
+    </div>
+
     <!-- 标签筛选列表 -->
     <div v-if="!loading && !error && tree.length > 0 && allTags.length > 0" class="session-list-tags">
         <div class="tags-list">
