@@ -83,3 +83,27 @@
 - 理由：上轮 CSS 重构时底部留 8px 微留白，用户反馈视觉压抑，底部应与顶部同等留白
 
 ---
+
+## 会话 session-20260522-001 — 2026-05-22
+
+### 09:35:00 | turn-1 | update
+
+**👤 用户**:
+`/rui` → 推荐任务 → `go ahead`
+
+**🤖 助手**:
+执行 update T2 管线：分支隔离修复（main → feat/story-panel-v2）→ 代码变更分析 → 文档刷新 → 交付三步。
+
+**📋 关键决策**:
+- T2 范围：状态模型重构（blocked → self_improve，标签语义化）+ 配色重分配
+- 7 状态管线：not_started(任务) → docs_in_progress(设计) → docs_done(实施) → code_in_progress(测试) → code_done(报告) → blocked(已阻断) / self_improve(改进)
+- 新增自改进复盘检查步骤（determineStatus 第 48 行），全部文档齐备且未阻断 → self_improve
+- 配色变更：docs_done success→primary, code_in_progress primary→info, code_done success-hover→success, self_improve 新增紫色 #A855F7
+- 刷新文档：故事任务 §1.1/§2(R1)/数据约束 · 技术评审 §4.3 状态判定流程图/§5.5.9 配色方案表 · 使用场景 场景 A 列名 · 测试设计 TC-B02 状态引用
+- 阻断状态 `blocked` 保留为条件状态（blockedState.blocked === true），不在看板常驻列中
+
+**📊 变更统计**:
+- 源码：6 files, +32/-24（storyCard/storyPanelPage/storyStatusBadge CSS+JS, store.js）
+- 文档：4 files, +17/-13（故事任务/使用场景/技术评审/测试设计）
+
+---
